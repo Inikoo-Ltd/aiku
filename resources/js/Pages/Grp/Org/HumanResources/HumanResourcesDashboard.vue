@@ -24,9 +24,9 @@ import { useFormatTime, useSecondsToMS } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight, faChevronLeft, faChevronRight, faChessClock, faStopwatch, faUserPlus, faNotesMedical, faCommentsAlt } from "@fal"
+import { faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight, faChevronLeft, faChevronRight, faChessClock, faStopwatch, faUserPlus, faNotesMedical, faCommentsAlt, faCalendarMinus, faCalendarAlt } from "@fal"
 
-library.add(faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight, faChevronLeft, faChevronRight, faChessClock, faStopwatch, faUserPlus, faNotesMedical, faCommentsAlt)
+library.add(faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight, faChevronLeft, faChevronRight, faChessClock, faStopwatch, faUserPlus, faNotesMedical, faCommentsAlt, faCalendarMinus, faCalendarAlt)
 ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 interface AttendanceRow {
@@ -240,21 +240,19 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 	<!-- Left: row 1 (6 overview) + row 2 (4 attendance) · Right: Quick actions spanning both rows -->
 	<div class="flex flex-col gap-4 px-4 pt-4 xl:flex-row xl:items-stretch">
 		<div class="flex flex-1 flex-col gap-4">
-			<div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+			<dl class="grid grid-cols-3 divide-x divide-gray-100 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100 md:grid-cols-6">
 				<component
 					:is="card.route ? Link : 'div'"
 					v-for="card in stats"
 					:key="card.name"
 					:href="card.route ? route(card.route.name, card.route.parameters) : undefined"
-					class="group overflow-hidden rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-gray-100 transition"
-					:class="card.route ? 'cursor-pointer hover:shadow-md' : ''">
-					<dd class="text-2xl font-bold tracking-tight text-gray-800">{{ card.stat }}</dd>
-					<dt class="mt-0.5 flex items-center gap-1.5 truncate text-sm font-medium text-gray-500">
-						<FontAwesomeIcon :icon="card.icon" :class="iconColors[card.color]?.icon ?? 'text-gray-400'" fixed-width />
-						{{ card.name }}
-					</dt>
+					class="flex items-center gap-2 px-3 py-2 text-xs"
+					:class="card.route ? 'hover:bg-gray-50' : ''">
+					<FontAwesomeIcon :icon="card.icon" :class="iconColors[card.color]?.icon ?? 'text-gray-400'" fixed-width />
+					<dt class="truncate text-gray-500">{{ card.name }}</dt>
+					<dd class="ml-auto font-semibold tabular-nums text-gray-800">{{ card.stat }}</dd>
 				</component>
-			</div>
+			</dl>
 
 			<div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
 				<div

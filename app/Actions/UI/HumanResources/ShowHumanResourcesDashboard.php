@@ -193,18 +193,26 @@ class ShowHumanResourcesDashboard extends OrgAction
                         ],
                     ],
                     [
-                        'label' => __('Create clocking machine'),
-                        'icon'  => ['fal', 'fa-chess-clock'],
+                        'label' => __('Record leave (sick, annual...)'),
+                        'icon'  => ['fal', 'fa-notes-medical'],
                         'route' => [
-                            'name'       => 'grp.org.hr.clocking_machines.index',
+                            'name'       => 'grp.org.hr.leaves.index',
+                            'parameters' => array_merge($routeParameters, ['record' => 1]),
+                        ],
+                    ],
+                    [
+                        'label' => __('Leave requests'),
+                        'icon'  => ['fal', 'fa-calendar-minus'],
+                        'route' => [
+                            'name'       => 'grp.org.hr.leaves.index',
                             'parameters' => $routeParameters,
                         ],
                     ],
                     [
-                        'label' => __('Create working place'),
-                        'icon'  => ['fal', 'fa-building'],
+                        'label' => __('Leave calendar'),
+                        'icon'  => ['fal', 'fa-calendar-alt'],
                         'route' => [
-                            'name'       => 'grp.org.hr.workplaces.create',
+                            'name'       => 'grp.org.hr.leaves.dashboard',
                             'parameters' => $routeParameters,
                         ],
                     ],

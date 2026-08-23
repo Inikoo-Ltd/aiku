@@ -214,6 +214,7 @@ Route::prefix('leaves')->as('leaves.')->group(function () {
     Route::get('export', [ExportLeaveReport::class, 'asController'])->name('export');
     Route::get('export/calendar', [ExportCalendar::class, 'asController'])->name('export.calendar');
     Route::get('print', [PrintCalendar::class, 'asController'])->name('print');
+    Route::post('employees/{employee}', \App\Actions\HumanResources\Leave\StoreEmployeeLeave::class)->name('store');
     Route::post('{leave}/approve', ApproveLeave::class)->name('approve');
     Route::post('{leave}/reject', RejectLeave::class)->name('reject');
     Route::patch('{leave}/admin', UpdateLeave::class)->name('admin.update');
