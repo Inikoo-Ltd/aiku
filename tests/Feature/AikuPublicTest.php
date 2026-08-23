@@ -142,6 +142,45 @@ test('llms.txt and home JSON-LD are served', function () {
         ->assertSee('"@type":"WebSite"', false);
 });
 
+test('visit beacon logs humans with referrer and country, skips bots', function () {
+    $visits = fn () => \Illuminate\Support\Facades\DB::table('aiku_public_visits');
+    $before = $visits()->count();
+
+    get($this->host.'/visit.json?p=/blog&r=https://news.ycombinator.com/item', ['CF-IPCountry' => 'ES'])->assertNoContent();
+    expect($visits()->count())->toBe($before + 1);
+    $visit = $visits()->latest('id')->first();
+    expect($visit->path)->toBe('/blog')
+        ->and($visit->referrer)->toBe('news.ycombinator.com')
+        ->and($visit->country)->toBe('ES')
+        ->and(mb_strlen($visit->visitor_hash))->toBe(16);
+
+    get($this->host.'/visit.json?p=/blog', ['User-Agent' => 'Googlebot/2.1'])->assertNoContent();
+    get($this->host.'/visit.json?p=https://evil.example/x')->assertNoContent();
+    get($this->host.'/visit.json')->assertNoContent();
+    expect($visits()->count())->toBe($before + 1);
+
+    get($this->host.'/blog')->assertSee(route('aiku-public.visit'), false);
+});
+
+test('visit stats aggregate for devops dashboard widget and analytics page', function () {
+    get($this->host.'/visit.json?p=/~search/warehouse%20layout')->assertNoContent();
+    get($this->host.'/visit.json?p=/blog/anatomy-of-a-deploy&r=https://lobste.rs/s/abc', ['CF-IPCountry' => 'SK'])->assertNoContent();
+
+    $stats = \App\Actions\DevOps\UI\ShowAikuPublicAnalytics::make()->handle();
+    expect(collect($stats['searches'])->pluck('query'))->toContain('warehouse layout')
+        ->and(collect($stats['pages'])->pluck('path'))->toContain('/blog/anatomy-of-a-deploy')
+        ->and(collect($stats['pages'])->pluck('path'))->not->toContain('/~search/warehouse%20layout')
+        ->and(collect($stats['referrers'])->pluck('referrer'))->toContain('lobste.rs')
+        ->and(collect($stats['page_referrers'])->first(fn ($row) => $row->path === '/blog/anatomy-of-a-deploy')->referrer)->toBe('lobste.rs')
+        ->and(collect($stats['countries'])->pluck('country'))->toContain('SK')
+        ->and(collect($stats['pages'])->first(fn ($row) => $row->path === '/blog/anatomy-of-a-deploy')->last_visited_at)->not->toBeNull();
+
+    $widget = \App\Actions\DevOps\UI\ShowDevopsDashboard::make()->getPublicSiteVisits();
+    expect($widget['views'])->toBeGreaterThanOrEqual(2)
+        ->and($widget['visitors'])->toBeGreaterThanOrEqual(1)
+        ->and($widget['daily'])->not->toBeEmpty();
+});
+
 test('indexnow key file is served and the ping submits every public url', function () {
     expect(route('aiku-public.indexnow-key'))->toEndWith('.txt');
     get(route('aiku-public.indexnow-key'))->assertOk()->assertHeader('Content-Type', 'text/plain; charset=UTF-8');

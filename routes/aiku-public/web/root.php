@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Dropshipping\Tiktok\User\UI\OnboardingTiktokUser;
+use App\Actions\UI\AikuPublic\LogPublicVisit;
 use App\Actions\UI\AikuPublic\SearchNotes;
 use App\Actions\UI\AikuPublic\ShowBlog;
 use App\Actions\UI\AikuPublic\ShowBlogPost;
@@ -46,6 +47,7 @@ Route::get('llms.txt', function () {
 Route::get('/', ShowHome::class)->name('home');
 Route::get('blog', ShowBlog::class)->name('blog.index');
 Route::get('blog/search.json', SearchNotes::class)->middleware('throttle:60,1')->name('search');
+Route::get('visit.json', LogPublicVisit::class)->middleware('throttle:30,1')->name('visit');
 Route::get('blog/{slug}', ShowBlogPost::class)->name('blog.show');
 Route::get('sitemap.xml', ShowSitemap::class)->name('sitemap');
 Route::get('feed.xml', ShowFeed::class)->name('feed');

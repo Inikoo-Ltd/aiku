@@ -166,9 +166,18 @@
 </div>
 
 <script>
+    fetch('{{ route('aiku-public.visit') }}?p=' + encodeURIComponent(location.pathname + location.search) + '&r=' + encodeURIComponent(document.referrer), {keepalive: true});
     window.wireNotesSearch = function (input, results) {
         if (!input || !results) return;
         var timer = null;
+        var logTimer = null;
+
+        function logSearch(query) {
+            clearTimeout(logTimer);
+            logTimer = setTimeout(function () {
+                fetch('{{ route('aiku-public.visit') }}?p=/~search/' + encodeURIComponent(query), {keepalive: true});
+            }, 2000);
+        }
 
         function clearResults() {
             results.hidden = true;
@@ -198,7 +207,7 @@
             timer = setTimeout(function () {
                 fetch('{{ route('aiku-public.search') }}?q=' + encodeURIComponent(query))
                     .then(function (response) { return response.json(); })
-                    .then(function (data) { render(data, query); })
+                    .then(function (data) { render(data, query); logSearch(query); })
                     .catch(clearResults);
             }, 150);
         });

@@ -7,7 +7,9 @@
  */
 
 
+use App\Actions\DevOps\UI\ShowAikuPublicAnalytics;
 use App\Actions\DevOps\UI\ShowDevopsDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', ShowDevopsDashboard::class)->name('dashboard');
+Route::get('/aiku-public-analytics', ShowAikuPublicAnalytics::class)->name('aiku-public-analytics');
