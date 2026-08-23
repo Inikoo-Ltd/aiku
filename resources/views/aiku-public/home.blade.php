@@ -1,7 +1,7 @@
-<x-aiku-public.layout title="aiku — the open source operating system for commerce" description="aiku runs a whole trading business from one codebase: ERP, warehouse and dispatch, 3PL fulfilment, storefronts, marketplaces, dropshipping, CRM, marketing and accounting. Free software, AGPL.">
+<x-aiku-public.layout title="aiku — the open source operating system for commerce" description="aiku runs a whole trading business from one codebase: ERP, warehouse and dispatch, 3PL fulfilment, storefronts, marketplaces, dropshipping, CRM, marketing and accounting. Open source, AGPL.">
     <div class="wrap">
         <section class="hero">
-            <div class="eyebrow">Free software for people who ship things</div>
+            <div class="eyebrow">Open source software for people who ship things</div>
             <h1>The open source operating system for commerce.</h1>
             <p class="lede">One codebase that runs wholesale, retail, dropshipping, marketplaces, third‑party fulfilment and your own storefronts — across many companies, warehouses, countries and currencies. Built by a team that runs it every day.</p>
             <div class="actions">
@@ -18,7 +18,7 @@
         <section class="chapter narrow">
             <h2>Why one system</h2>
             <p>Most trading businesses glue together an ERP, a warehouse system, a shop platform, a marketplace connector, a mailing tool and a CRM — and then spend their lives reconciling them. aiku is all of those at once, with one source of truth: a product is defined once and sold everywhere; stock moves once and every channel knows; a customer is one record whether they bought on your website, on a marketplace or through your sales team.</p>
-            <p>It is not a prototype. aiku is the production system behind a multi‑country wholesale and retail operation, and it is released as free software under the AGPL so that anyone can run it, read it, and improve it.</p>
+            <p>It is not a prototype. aiku is the production system behind a multi‑country wholesale and retail operation, and it is released as open source under the AGPL so that anyone can run it, read it, and improve it.</p>
         </section>
 
         <section class="chapter narrow">

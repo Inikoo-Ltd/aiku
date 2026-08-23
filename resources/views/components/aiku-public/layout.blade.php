@@ -129,7 +129,7 @@
             <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/LICENSE" rel="noopener">AGPL-3.0</a>
             <a href="{{ route('aiku-public.sitemap') }}">Sitemap</a>
         </div>
-        <div>aiku is free software.</div>
+        <div>aiku is open source software (AGPL-3.0).</div>
     </footer>
 </div>
 </body>
