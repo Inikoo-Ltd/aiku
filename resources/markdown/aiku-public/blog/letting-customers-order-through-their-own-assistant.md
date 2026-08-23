@@ -2,7 +2,7 @@
 title: Letting customers order through their own assistant
 summary: The next thing we are building — an MCP server for customers, so a trade buyer or a dropshipper can connect their own AI assistant to their account and ask, browse and eventually order without an integration project. What it will do first, what it will not do until someone accountable says so, and the groundwork already in place.
 date: 2026-08-24
-tags: mcp, ai, retina, dropshipping, b2b
+tags: mcp, ai, customer-portal, dropshipping, b2b
 ---
 
 We already run an [MCP server for staff](/blog/an-mcp-server-for-a-whole-business). The question that followed within a week was obvious: why not for customers?
