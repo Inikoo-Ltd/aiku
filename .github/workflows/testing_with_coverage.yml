@@ -82,6 +82,11 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+      - name: Prepare environment
+        run: |
+          mkdir private
+          cd private
+          ln -s ../../../../../artifacts/fa .
       - name: npm ci
         run: npm ci
       - name: Build and upload bundle stats
