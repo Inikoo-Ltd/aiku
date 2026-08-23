@@ -30,9 +30,9 @@ class IndexPaymentMethods extends OrgAction
     protected Organisation|Shop $parent;
 
     /**
-     * One row per method + sub method + provider, amounts in the parent's currency, all time.
-     * Grouping into method → schemes happens in the page; the totals row is summed there too so
-     * it always adds up to what is on screen.
+     * One row per provider + method (+ card scheme), amounts in the parent's currency, all time.
+     * The scheme only matters for plain cards: Apple Pay is Apple Pay, nobody cares which card sits
+     * behind the wallet. The page groups the rows both ways, provider → method and method → provider.
      */
     public function handle(Organisation|Shop $parent): array
     {
@@ -55,14 +55,14 @@ class IndexPaymentMethods extends OrgAction
 
         $rows = $query->select([
             'payments.method',
-            'payments.sub_method',
+            DB::raw("CASE WHEN payments.method = 'card' THEN payments.sub_method END as sub_method"),
             'payment_accounts.type as payment_account_type',
             DB::raw('COUNT(*) as number_payments'),
             DB::raw("COUNT(*) FILTER (WHERE $success) as number_success"),
             DB::raw("COALESCE(SUM($amountColumn) FILTER (WHERE $success), 0) as total_sales"),
             DB::raw("MAX(payments.date) as last_payment_at"),
         ])
-            ->groupBy('payments.method', 'payments.sub_method', 'payment_accounts.type')
+            ->groupBy('payments.method', DB::raw("CASE WHEN payments.method = 'card' THEN payments.sub_method END"), 'payment_accounts.type')
             ->orderByDesc('total_sales')
             ->get();
 
@@ -78,6 +78,7 @@ class IndexPaymentMethods extends OrgAction
                 'sub_method'           => $row->sub_method,
                 'sub_method_label'     => $row->sub_method ? Payment::methodLabel($row->sub_method) : null,
                 'payment_account_type' => $row->payment_account_type,
+                'payment_account_label' => Payment::methodLabel($row->payment_account_type),
                 'number_payments'      => (int) $row->number_payments,
                 'number_success'       => (int) $row->number_success,
                 'total_sales'          => (float) $row->total_sales,
