@@ -51,6 +51,16 @@ class StorePayment extends OrgAction
         /** @var Payment $payment */
         $payment = $paymentAccount->payments()->create($modelData);
 
+        /** checkout.com can decline and later capture the same payment id: once the money is in,
+         * the earlier failed attempt for that id is not a failed attempt, it is this payment */
+        if ($payment->status == PaymentStatusEnum::SUCCESS && $payment->reference) {
+            $paymentAccount->payments()
+                ->where('reference', $payment->reference)
+                ->where('status', PaymentStatusEnum::FAIL)
+                ->where('id', '!=', $payment->id)
+                ->delete();
+        }
+
         $this->hydratePaymentSideEffects($payment);
 
         if ($payment->status == PaymentStatusEnum::SUCCESS) {

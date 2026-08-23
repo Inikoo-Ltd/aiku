@@ -22,12 +22,15 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Enums\Accounting\OrderPaymentApiPoint\OrderPaymentApiPointStateEnum;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Enums\Accounting\PaymentGatewayLog\PaymentGatewayLogStateEnum;
 use App\Enums\Accounting\PaymentGatewayLog\PaymentGatewayLogStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\OrderPaymentApiPoint;
+use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Accounting\PaymentServiceProvider;
@@ -307,7 +310,9 @@ test('declined redirect followed by captured webhook recovers the order', functi
         ->and($orderPaymentApiPoint->state)->toBe(OrderPaymentApiPointStateEnum::SUCCESS)
         ->and($order->state)->toBe(OrderStateEnum::SUBMITTED)
         ->and($order->payments()->count())->toBe(1)
-        ->and($order->payments()->first()->reference)->toBe('pay_test_recovery');
+        ->and($order->payments()->first()->reference)->toBe('pay_test_recovery')
+        ->and(Payment::where('reference', 'pay_test_recovery')->count())->toBe(1)
+        ->and(Payment::where('reference', 'pay_test_recovery')->first()->status)->toBe(PaymentStatusEnum::SUCCESS);
 });
 
 test('failure redirect does not clobber a webhook confirmed success', function () {
@@ -351,8 +356,14 @@ test('webhook payment_declined marks the api point as failure and leaves the ord
     $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
     list($order, $orderPaymentApiPoint) = createOrderWithCheckoutApiPoint($this->customer, $this->product, $paymentAccountShop);
 
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $payload = fakeCheckoutComWebhookPayload('payment_declined', 'evt_test_declined', 'pay_test_declined', $orderPaymentApiPoint, 2500);
+    $payload['data']['source']           = ['type' => 'card', 'scheme' => 'VISA'];
+    $payload['data']['response_summary'] = 'Insufficient Funds';
+
     $paymentGatewayLog = $this->group->paymentGatewayLogs()->create([
-        'payload' => fakeCheckoutComWebhookPayload('payment_declined', 'evt_test_declined', 'pay_test_declined', $orderPaymentApiPoint, 2500),
+        'payload' => $payload,
         'gateway' => 'checkout-com',
     ]);
 
@@ -367,6 +378,26 @@ test('webhook payment_declined marks the api point as failure and leaves the ord
         ->and($orderPaymentApiPoint->state)->toBe(OrderPaymentApiPointStateEnum::FAILURE)
         ->and($order->state)->toBe(OrderStateEnum::CREATING)
         ->and($order->payments()->count())->toBe(0);
+
+    /** The decline is kept as a failed attempt for the payment methods report, never attached to the order */
+    $failedPayment = Payment::where('reference', 'pay_test_declined')->first();
+    expect($failedPayment)->not->toBeNull()
+        ->and($failedPayment->status)->toBe(PaymentStatusEnum::FAIL)
+        ->and($failedPayment->state)->toBe(PaymentStateEnum::DECLINED)
+        ->and($failedPayment->method)->toBe('card')
+        ->and($failedPayment->sub_method)->toBe('visa')
+        ->and((float) $failedPayment->amount)->toBe(25.0)
+        ->and($failedPayment->data['checkout_com']['response_summary'])->toBe('Insufficient Funds')
+        ->and($failedPayment->orders()->count())->toBe(0);
+
+    /** The same decline delivered again (duplicate webhook, or redirect after webhook) is stored once */
+    $duplicateLog = $this->group->paymentGatewayLogs()->create([
+        'payload' => array_merge($payload, ['id' => 'evt_test_declined_again']),
+        'gateway' => 'checkout-com',
+    ]);
+    PreProcessCheckoutComPaymentGatewayLog::run($duplicateLog);
+
+    expect(Payment::where('reference', 'pay_test_declined')->count())->toBe(1);
 });
 
 test('captured event with pending gateway status is left for retry', function () {
@@ -490,6 +521,8 @@ test('duplicate top up capture does not double credit', function (array $context
 })->depends('webhook payment_captured processes a top up');
 
 test('webhook payment_declined marks the top up api point as failure', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
     $paymentAccountShop   = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
     $topUpPaymentApiPoint = createTopUpApiPointForCheckout($this->customer, $paymentAccountShop);
     $balanceBefore        = (float)$this->customer->balance;
@@ -508,7 +541,8 @@ test('webhook payment_declined marks the top up api point as failure', function 
     expect($paymentGatewayLog->state)->toBe(PaymentGatewayLogStateEnum::PROCESSED)
         ->and($paymentGatewayLog->status)->toBe(PaymentGatewayLogStatusEnum::OK)
         ->and($topUpPaymentApiPoint->state)->toBe(TopUpPaymentApiPointStateEnum::FAILURE)
-        ->and((float)$this->customer->balance)->toBe($balanceBefore);
+        ->and((float)$this->customer->balance)->toBe($balanceBefore)
+        ->and(Payment::where('reference', 'pay_test_topup_declined')->where('status', PaymentStatusEnum::FAIL)->exists())->toBeTrue();
 });
 
 test('sweeper recovers a stuck order whose payment was captured', function () {
