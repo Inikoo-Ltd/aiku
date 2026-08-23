@@ -5,6 +5,8 @@ date: 2026-08-22
 tags: discounts, ordering, pricing, postgres
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>About 91,000 offers across roughly forty trigger types feed one ~1,000-line calculator action that runs on every basket change: it loads offers, builds running meters per trigger, decides allowances per line, and writes each one to a pivot row so every discounted amount traces to a cause. Submitted orders freeze to the offers in force at submission; marketplace orders skip the engine entirely. A float rounding bug (<code>1 − 0.9</code>) was quietly stealing a penny on 10%-off lines ending in .x5 until it was fixed to round the discount amount at the point it's computed.</aside>
+
 A consumer shop has a coupon box. A wholesaler has a *price book* — and the price book is alive. Buy six of this family and the seventh is free. Spend over a threshold in that department and the whole department is 10% off. Your third order this quarter earns a gift. A carton of twelve is priced as a carton. This customer, and only this customer, gets an extra 5% on candles because someone agreed it in 2019. All at once, on the same basket, recalculated every time a line changes.
 
 Our numbers today: about **91,000 offers** in the database across the group's shops, organised into campaigns, and **4.6 million** order lines that carry at least one allowance from them. This note is how the engine that applies them works.
@@ -26,6 +28,12 @@ There is one place that turns a basket into discounted lines: a single action of
 
 Every discount is therefore a **row with a cause**. An invoice line's net amount can be traced to the exact offer that produced it, which is the difference between "we gave 10% somewhere" and a report that says which campaign cost what, which is what the [marketing dashboard](/blog/marketing-attribution-that-adds-up) reads.
 
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>The calculator is <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Ordering/Order/CalculateOrderDiscounts.php">app/Actions/Ordering/Order/CalculateOrderDiscounts.php</a>.</li>
+<li>The "row with a cause" pivots: <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Discounts/TransactionHasOfferAllowance.php">app/Models/Discounts/TransactionHasOfferAllowance.php</a> and <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Discounts/InvoiceTransactionHasOfferAllowance.php">app/Models/Discounts/InvoiceTransactionHasOfferAllowance.php</a>.</li>
+</ul></aside>
+
 ## Submitted means frozen
 
 Baskets are recalculated on every change. Submitted orders are not — the discounts are regenerated only in the narrow cases where an order is legitimately edited after submission, and then from the offers that were in force *at submission*. A campaign ending on Monday does not change an order placed on Sunday.
@@ -45,3 +53,5 @@ The fix is to compute the discount *amount* from the gross and round it at that 
 ## What the sales team gets
 
 A screen per offer with its trigger, its allowance, its window and its performance; a campaign calendar; the ability to suspend or finish a campaign and have every open basket re‑priced within minutes; customer‑exclusive offers that travel with the customer; and, on every invoice, a line that says which offer gave what. Ninety‑one thousand of them, one calculator, and a penny we will not give back to the float.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Ninety-one thousand offers reduce to one calculator, one meter system, and one auditable row per discount — and even a single float rounding rule is enough to steal a penny across thousands of orders if you don't watch it.</aside>

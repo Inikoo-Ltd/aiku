@@ -5,6 +5,8 @@ date: 2026-07-27
 tags: catalogue, masters, pricing, currencies, architecture
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>The group catalogue holds <code>62,000</code> master products feeding <code>317,000</code> shop products across 34 shops. Prices are per-currency, with majors set by hand and minors following an agreed rate; a "follow the master" switch exists at shop, family and product level. An audit found <code>33,897</code> products silently diverging from their master. A cascade bug multiplied RRPs by pack size for a month before a repair fixed <code>1,635</code> values, and the old single-currency scalar price column is being retired.</aside>
+
 A group that runs thirty‑four shops in a dozen countries has a problem that a single‑shop business never meets: the same candle exists thirty times, with thirty names, thirty prices, thirty descriptions, and someone has to keep them honest. Our numbers today: **62,000 master products** feeding **317,000 shop products**. The answer in aiku is a **group catalogue** — *masters* — sitting above the shops. A master product is the thing described once; a shop product is that thing as sold here. The ambition, stated plainly, is that one person at one desk can name, describe, photograph and price the whole range, put it on every website, and every shop follows — and that this is not the hard part of their day. This note is about how the two stay in step, and the three lessons that cost us something.
 
 ## The shape
@@ -36,3 +38,5 @@ Then we measured. Declared rebels: one family and seventy products. **Products s
 ## What the catalogue team gets
 
 One place to name, describe, photograph and price a thing; a cascade that takes it to every shop that should have it, in every currency, with an audit line per product; an explicit, visible way to say "not this one"; and reports that say when reality drifted from the rule. The thirty candles are one candle again.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>One catalogue described once and pushed everywhere works, but only with an audited cascade as the sole writer of prices and reports that catch drift before customers do.</aside>

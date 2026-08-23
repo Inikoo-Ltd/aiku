@@ -5,6 +5,8 @@ date: 2026-08-02
 tags: tax, accounting, ordering, postgres
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Once aiku started selling tea alongside candles, one VAT rate per order stopped being true, so tax now resolves per order line. Staff pick a named preset (<em>Standard</em>, <em>Food</em>, <em>Dried flowers</em>, or read-only <em>Custom</em>) instead of a country tax code; the preset expands to a per-country map that is versioned like price, frozen once a line is sold. The migration re-rated open baskets — 305 UK tea lines moved to 0% — to the penny, while historic invoices stayed untouched.</aside>
+
 For most of aiku's life the question "which VAT rate does this line pay" had one answer per order, and that answer was right: giftware, candles, aromatherapy, incense — everything in the range sat at the standard rate of whichever country the order fell under. One tax category on the order, applied to every line, was not a simplification; it was the truth of the catalogue.
 
 Then the range changed. We started selling tea, and then other food and drink, and a box of herbal tea next to a candle on a UK order is zero‑rated next to twenty per cent. In Spain the same tea is at a reduced rate and the candle is not. A per‑order rate stopped being true the day the first tea shipped, and the per‑product tax data that had been sitting in the catalogue since the migration — stored, never needed — suddenly was. So we rebuilt how tax attaches to a line.
@@ -18,6 +20,12 @@ The first change is the obvious one: every order line resolves its own tax categ
 The temptation is to put a tax‑category dropdown on the product. It has forty entries per country, it is different per country, and the person editing a product is a buyer, not an accountant. So at the master‑product level there are three **presets**, shown as cards: *Standard*, *Food*, *Dried flowers* (one market only) — plus a read‑only *Custom* for the handful of products whose map matches none. A preset is a named list of countries and the reduced rate that applies in each. The buyer picks a card; the system expands it to the per‑country map that the money path reads.
 
 The preset name is stored for bulk edits and *derived again* on every write of the map, never trusted on its own. The expanded map is the only thing the price calculation ever reads.
+
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>Preset expansion and per-line tax resolution live in [app/Actions/Traits/WithLineTaxCategories.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Traits/WithLineTaxCategories.php).</li>
+<li>Bulk editing of the master-product presets is exposed in [resources/js/Components/Tables/Grp/Goods/TableMasterProductsBulkEditV2.vue](https://github.com/Inikoo-Ltd/aiku/blob/main/resources/js/Components/Tables/Grp/Goods/TableMasterProductsBulkEditV2.vue).</li>
+</ul></aside>
 
 ## Tax is versioned like price
 

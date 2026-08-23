@@ -5,6 +5,8 @@ date: 2026-08-13
 tags: hr, clocking, timesheets, ux, agile
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>The clocking system grew eight machine types — biometric, phone QR, tablet PIN, badge scan, NFC tag, camera-QR, handheld app, legacy import — by saying yes to each site cheaply, because the plumbing underneath is tiny and shared. Machines are shared group-wide across organisations. The two rules that actually keep timesheets honest: always order out-of-order timestamps before measuring a period, and resolve clockings to the current employment, not the first one found — a bug in each cost 479 negative periods and misattributed days respectively.</aside>
+
 Clocking in sounds like the most solved problem in business software: a person arrives, a person leaves, subtract. It is also the feature where every site, every country and every manager has an opinion, because it touches pay and it touches habit. This note is how aiku ended up with **eight kinds of clocking machine**, why that is a success rather than a mess, and the two rules underneath them that matter more than any of the eight.
 
 ## How it grew
@@ -34,6 +36,13 @@ The machines are the visible part. What makes the timesheets correct is two ungl
 
 **Order the timestamps, then measure.** A machine that loses its connection uploads its clockings later, as a batch, *out of order*. Clocking ids arrive in upload order; the times on them do not. So a clocking stamped 10:50 could close a work period that opened at 11:06, and a signed difference made the period *negative* — and negative seconds were being added straight into the day's worked time. We found 479 such periods across 90 people going back nearly two years; historic hours had been slightly too low. Now every period passes through one normaliser that orders its two endpoints (swapping the clockings with them) and clamps at zero, on both the opening and the closing path. A repair command re‑ordered the old ones and re‑hydrated the days.
 
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>The eight kinds of clocking machine are the cases of <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Enums/HumanResources/ClockingMachine/ClockingMachineTypeEnum.php">app/Enums/HumanResources/ClockingMachine/ClockingMachineTypeEnum.php</a>.</li>
+<li>Machines themselves are <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/HumanResources/ClockingMachine.php">app/Models/HumanResources/ClockingMachine.php</a>, with CRUD actions under <code>app/Actions/HumanResources/ClockingMachine</code>.</li>
+<li>Ordering the two endpoints of a period before measuring is the same discipline PostgreSQL's own <code>LEAST()</code>/<code>GREATEST()</code> encourage at the SQL level: never subtract two timestamps without first deciding which is earlier.</li>
+</ul></aside>
+
 **Find the right employment, not the first one.** A person who leaves one company in the group and joins another has two employee records; the old one is *left*, the new one is *working*. A handful of call sites picked "the user's first employee record" — unordered — and sometimes attached a new clocking to the closed employment. Now there is one resolver, *current employee for this user* (working or leaving, preferring the organisation in context), and every one of the fifteen places that used to guess calls it. The repair for the handful of misattributed days was careful to *not* "fix" legitimate cross‑site clockings, which look similar and are fine.
 
 ## What a timesheet is
@@ -43,3 +52,5 @@ Clockings become **time trackers** (a start clocking, an end clocking, a duratio
 ## What we learned
 
 Say yes to the floor when yes is cheap; make yes cheap by keeping the core tiny. Let people clock wherever they are, and record both organisations rather than forcing one. And spend the real engineering on the two invisible things — time that cannot go backwards, and a clocking that lands on the right employment — because those are what the payslip is made of.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Eight clocking machine types were cheap to add because the core underneath each is tiny; the two rules that actually protect the payslip — ordering out-of-order timestamps and resolving to the current employment — were the expensive, unglamorous work.</aside>

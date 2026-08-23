@@ -5,6 +5,8 @@ date: 2026-08-16
 tags: postgres, email, archive, performance
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Eight years of email history — <code>245 million</code> rows, <code>217 GB</code> — was slowing a daily rollup and bloating every developer database dump. A batched, replica-aware archiver copies emails and their child tracking rows to a separate archive database, verifies row counts, then deletes, all within one transaction per batch. The retention window is 90 days, comfortably past the email provider's 60-day tracking cutoff. Archived counts are banked as baselines in the same delete transaction so historical statistics never silently shrink after rows are gone.</aside>
+
 Every email aiku sends — order confirmations, newsletters, reorder reminders, password resets — is a row in `dispatched_emails`, with its delivery and open/click events as children. We had been doing that since 2018 and never thrown anything away. By August 2026 the production database was 489 GB and the email stack was 217 GB of it: 245 million emails, 332 million tracking events, 14 GB of stored email bodies, and a dozen pivot tables hanging off them.
 
 Disk was not the problem. The problem was that a daily aggregation job was spending nine hours of database time a month walking that table, and that every developer pulling production down to work against real data was downloading two hundred gigabytes of email nobody would ever open again.
@@ -44,3 +46,5 @@ While we were in there we audited the table's indexes, expecting to drop a coupl
 ## What we would tell our past selves
 
 Measure when the data stops being useful before choosing a retention number; the answer may be a hard external limit, which makes the decision easy. Verify every batch before deleting. And if anything in your system counts rows to produce history, write down the count *before* the rows leave — in the same transaction — or the history will rewrite itself.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Archiving old rows safely means measuring how long the data stays useful, verifying every batch, and banking any counts you'll need before the rows that produced them are gone.</aside>

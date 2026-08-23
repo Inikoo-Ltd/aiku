@@ -5,6 +5,8 @@ date: 2026-08-18
 tags: accounting, invoices, ordering, architecture
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Of roughly <code>1.08 million</code> invoices and <code>53,000</code> credit notes, every one follows the same rule: an invoice is a frozen snapshot of an order at billing time, and nothing afterward can change it. Totals are always recomputed from transaction lines, never edited directly. Credit notes reference the exact lines and tax they return. Paid status is derived from attached payments, not set by a person, and invoices are categorised by a rule engine for accounting reports.</aside>
+
 There are about **1.08 million invoices** and **53,000 credit notes** in the system, going back to the start of the migration, and one rule governs how all of them are made and kept: **an invoice is a snapshot.** It is a frozen picture of an order — lines, quantities, prices, discounts, tax per line, addresses, the customer's tax number and the category it was rated under — at the moment it was billed. Everything downstream of that moment is designed so the picture cannot move.
 
 ## Minted from the order, then detached
@@ -42,3 +44,5 @@ An invoice that must be withdrawn (raised in error before anything was sent) is 
 ## Why a snapshot
 
 Because the alternative is an invoice that quietly changes when a product is renamed, a price is corrected or a tax rule is updated — and a customer's copy that no longer matches ours. A snapshot, totals from lines, credit notes that reference their lines, a pay status that is derived, categories that only label: five rules, a million invoices, and a set of books an auditor can walk from any line back to the event that made it.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>An invoice that can never move after it's issued, with totals always recomputed from its own lines, is what lets a million invoices stay trustworthy years later.</aside>

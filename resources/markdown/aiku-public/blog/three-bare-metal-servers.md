@@ -5,6 +5,8 @@ date: 2026-08-12
 tags: infrastructure, postgres, deploy, ops
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>aiku runs on three rented bare-metal boxes — a primary (PostgreSQL, Redis, Octane, queues, search, Varnish), a replica for read-heavy work, and a staging box — behind a CDN, with no Kubernetes or managed database. Metal wins because the workload is predictable, PostgreSQL wants dedicated RAM and disk, and the bill is flat. The trade-off is manual failover and no managed alarms, illustrated by two incidents: a disk filled by 377 GB of retained WAL, and a RAID resync that slowed a restore.</aside>
+
 People assume that a system with 800 tables, a few hundred million email rows and storefronts in several countries must live on a large cloud account with autoscaling groups and a managed database. It does not. It lives on **three rented bare‑metal servers**, one small CDN in front of them, and a deploy script. This note is why, and what that looks like day to day.
 
 ## The shape
@@ -44,3 +46,5 @@ Neither incident lost data. Both would have been invisible on a managed platform
 ## What we would tell a team deciding
 
 If your traffic is spiky and unknowable, or your team is two people who never want to see a shell, the cloud's premium buys something real. If your workload is a known shape, your database is your product, and you have people who can read `iostat`, rent big machines, put a CDN in front, write the deploy script once, and spend the difference on engineers. It has worked for us for years, and the bill still fits on one line.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Three plain rented servers, a CDN, and a deploy script have run a multi-country commerce operation for years, at a predictable cost and with two honest, well-understood incidents to show for it.</aside>

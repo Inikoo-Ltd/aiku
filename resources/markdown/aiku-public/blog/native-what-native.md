@@ -5,6 +5,8 @@ date: 2026-08-14
 tags: warehouse, frontend, vue, picking, ux
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Pickers and packers use the ordinary web app on a tablet with a Bluetooth "keyboard wedge" scanner, not a native app. A composable tells scanner bursts from human typing by inter-key timing, then posts the code to one server action that matches, chooses, locates and records the pick in a single round-trip. Full-row targets, sound feedback and a screen that never loses its place make it feel native without one.</aside>
+
 There is a reflex, when someone says *handheld warehouse app*, to reach for React Native, two app stores, a release pipeline with signing keys, and a second codebase that drifts from the first. We have that reflex too — there is a half‑built native project in our repository to prove it. What the warehouse actually uses is the web application, on a tablet, with a scanner. Same URL as the office. This note is how that works and why it is enough.
 
 ## The hardware
@@ -34,6 +36,12 @@ One action, one round‑trip, and it answers a question that sounds simple and i
 
 The same shape serves packing: scan an item at the bench, the server says which box it goes in and what is left.
 
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>Scanner-vs-typing detection lives in <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/resources/js/Composables/useBarcodeScanner.ts">resources/js/Composables/useBarcodeScanner.ts</a>.</li>
+<li>Scan-to-pick and scan-to-pack UI: <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/resources/js/Components/DeliveryNote/ScanToPickDeliveryNote.vue">resources/js/Components/DeliveryNote/ScanToPickDeliveryNote.vue</a> and <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/resources/js/Components/DeliveryNote/ScanToPackDeliveryNote.vue">resources/js/Components/DeliveryNote/ScanToPackDeliveryNote.vue</a>.</li>
+</ul></aside>
+
 ## Feeling like an app is a discipline
 
 The tablet shows the same Vue application as a desk in the office; it feels like an app because of a handful of rules we hold to on warehouse screens and nowhere else:
@@ -53,3 +61,5 @@ A web app cannot wake the device, cannot scan with the camera as smoothly as a n
 ## The payoff
 
 One codebase, one deploy, one release number. A fix for the picking screen at ten in the morning is on every tablet at half past, [with the rest of that day's releases](/blog/369-production-releases-in-five-months). No store review, no "please update the app", no second team. When a new warehouse opens, the tablet setup is: open the browser, bookmark the URL, pair the scanner.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>A tablet, a Bluetooth scanner and disciplined UI rules on the same web app the office uses give the warehouse an app-like experience without a native codebase, app stores, or a second release pipeline.</aside>

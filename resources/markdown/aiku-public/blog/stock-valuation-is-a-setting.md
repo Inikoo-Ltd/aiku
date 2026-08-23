@@ -5,6 +5,8 @@ date: 2026-08-13
 tags: inventory, accounting, postgres
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>aiku computes weighted average cost (WAC) and FIFO in one pass over the stock movement history, storing both per movement with a per-organisation cutoff date. LIFO is deliberately not built because IFRS prohibits it. Which method is "official" is one group-level enum setting with an audited switch, not a column per SKU — and a missing-purchase-cost bug that had gone unnoticed for five months got two repair commands, leaving about 1.5% of purchases still costless on purpose.</aside>
+
 Ask three accountants what your stock is worth and you get three numbers: last purchase price, weighted average cost, first‑in‑first‑out. All three are defensible. Only one of them is *the* figure on the balance sheet, and which one depends on jurisdiction and on what your auditors signed off last year.
 
 We used to store one number per SKU, computed from the last purchase price, and call it the value. That is not allowed in the UK and it moves every time a supplier changes a price. So we rebuilt it.
@@ -43,6 +45,12 @@ Everything that needs a value — margins, cost of goods sold, product costing, 
 
 The switch lives in the group settings as two radio cards, with a confirmation that tells you, in plain words, to consult every accountant in the group before pressing it. The change is audited. After switching you run three rehydrate commands per organisation; the UI tells you which.
 
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>The switch is <code>OrgStockValuationMethodEnum</code> in [app/Enums/Inventory/OrgStock/OrgStockValuationMethodEnum.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Enums/Inventory/OrgStock/OrgStockValuationMethodEnum.php), with cases <code>WAC</code> and <code>FIFO</code> and an <code>official()</code> resolver.</li>
+<li>Everything reading a value calls <code>official()</code> rather than storing the method locally, so a stray "last purchase price" setting can never silently become the accounting figure.</li>
+</ul></aside>
+
 ## The bug we found along the way
 
 The purchase cost on movements had been filled by a one‑off import and then by nothing. Every purchase for five months had a null cost, and WAC carried forward a stale figure without complaint. Two repair commands later — one that pulls landed costs from the old system, one that derives cost from the purchase amount where there is nothing better — about 1.5% of purchases remain costless. That is fine: WAC carries forward, and the next purchase corrects it.
@@ -50,3 +58,5 @@ The purchase cost on movements had been filled by a one‑off import and then by
 ## What we would tell our past selves
 
 Value is a *function of history plus a policy*, not a fact about a SKU. Store the history, compute all the policies you are allowed to report, and make "which one counts" a setting someone accountable can change.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Stock value is a function of history plus a policy, not a fact about a SKU — store the movement history, compute every method you are legally allowed to report, and make "which one counts" a setting someone accountable can change.</aside>

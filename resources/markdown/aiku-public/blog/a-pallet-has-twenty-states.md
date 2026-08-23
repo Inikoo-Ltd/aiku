@@ -5,6 +5,8 @@ date: 2026-05-20
 tags: fulfilment, 3pl, warehouse, billing
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Third-party fulfilment runs inside the same warehouse and system as the group's own stock. A fulfilment customer has a rental agreement with dated, snapshotted clauses; everything they send is a pallet (or box or oversize item), tracked through roughly twenty lifecycle states covering inbound, storage, outbound and incidents like damage or loss. A recurring bill accrues per transaction as things happen and consolidates into an invoice at the end of each billing cycle.</aside>
+
 Alongside selling our own goods, we store and ship other people's. A brand sends us pallets; we book them in, keep them, pick from them, and send them back or send their contents out — and bill for the space and the work, on the brand's cycle, with an agreement behind every line. That is third‑party fulfilment, and it lives in aiku in the same warehouse, on the same racks, handled by the same pickers as our own stock. This note is how it is modelled so that the two never blur.
 
 ## Whose stuff is this
@@ -42,3 +44,5 @@ The fulfilment customer logs into the same portal our trade customers use and se
 ## What we learned
 
 Model the other party's goods with the same objects and the same people as your own, and separate them by ownership, not by code path. Give a pallet as many states as the dock actually has, and show the customer the real ones. Put the contract in dated clauses and snapshot them, so every line of every bill has a sentence behind it. And let the bill accrue as things happen; the end of the month should be a consolidation, not a reconstruction.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Running other people's stock through the same warehouse and system as your own works cleanly once ownership, contract terms and billing are modelled explicitly rather than bolted on.</aside>

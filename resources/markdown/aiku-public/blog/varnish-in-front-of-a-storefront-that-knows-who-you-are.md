@@ -5,6 +5,8 @@ date: 2025-10-20
 tags: varnish, iris, ssr, caching
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>aiku's server-rendered, personalised storefront (Iris) sits behind Varnish by hashing the cache key on the Inertia headers to separate HTML and JSON payloads, and by collapsing personalisation to one `X-Logged-Status: In|Out` header instead of per-user pages. Responses are tagged with website/webpage/host/URL so bans can be surgical instead of full flushes. A traffic-weighted warmer, capped by a single fleet-wide reduce-only concurrency budget, pre-warms only the pages people actually visit.</aside>
+
 aiku's storefront engine (we call it Iris) renders product pages on the server and then hydrates them as a single‑page app. Logged‑in trade customers see their prices, their basket, their favourites. Anonymous visitors see the catalogue. Search engines see the same HTML as humans. All of that is good for customers and bad for caching: the naive rule "cache the page" serves one person's basket to the next.
 
 In October 2025 we put Varnish in front of it anyway. This note is what made that possible.
@@ -67,6 +69,14 @@ if (req.http.x-ban-website) {
 
 When a product changes, the application bans exactly the pages that carry it. When a website's design changes, it bans the website. When a canonical URL changes, it bans both the old and the new object — we learned that one the hard way, after cached 301s that pointed at each other produced an intermittent redirect loop on a couple of shops. Redirects are still cached for ten days (that is deliberate; they are the cheapest thing we serve), but now the VCL refuses to follow a redirect to itself and the application evicts the pair on change.
 
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>Ban and purge actions live under [app/Actions/Web/Webpage](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Webpage/BanVarnishWebpage.php) and [app/Actions/Web/Website](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Website/BreakWebsiteVarnishCache.php), with the shared ban logic in [app/Actions/Traits/WithVarnishBan.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Traits/WithVarnishBan.php).</li>
+<li>The VCL that implements the hash buckets and tag-based bans is checked into [devops/varnish/default.vcl](https://github.com/Inikoo-Ltd/aiku/blob/main/devops/varnish/default.vcl).</li>
+<li>Hit-rate and memory usage are recorded by [RecordVarnishHitRatio.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Website/Analytics/RecordVarnishHitRatio.php) and [RecordVarnishMemoryUsage.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Website/Analytics/RecordVarnishMemoryUsage.php).</li>
+<li>Varnish's own ban and vary mechanics are documented at <code>vcl_hash</code> and <code>ban()</code> in the <a href="https://varnish-cache.org/docs/">Varnish documentation</a>.</li>
+</ul></aside>
+
 ## Don't flush what you didn't change
 
 A deploy used to flush the whole cache. Now it computes a checksum of the storefront build outputs and flushes only when that changed — a separate [note](/blog/only-flush-the-cache-you-changed) covers the bug that hid behind that.
@@ -80,3 +90,5 @@ The current warmer takes the pages viewed in the last thirty days, weights logge
 ## What it looks like from the outside
 
 Most storefront requests never reach PHP. The ones that do are the ones that should: a first view of a rarely‑seen page, a logged‑in payload, a basket. Deploys no longer cause a cold‑start dip unless the storefront actually changed. And when something is wrong on a page, the fix is a ban against a tag, not a prayer and a full flush.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>A personalised, server-rendered storefront can still sit behind an HTTP cache if you shrink personalisation to a single header, tag every response with what it contains, and warm only the pages people actually visit.</aside>

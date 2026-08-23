@@ -5,6 +5,8 @@ date: 2026-08-27
 tags: manufacture, production, design, warehouse
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>The factory still runs on a paper tally per worker per task, totted up Friday. The new manufacture module models a product as an artefact linked to a trade unit and stock like anything bought in, a recipe as ordered tasks with materials per step, job orders that expand into a work queue, and a task session as the single payable fact — its pay rate frozen the moment it closes. It is built, tested and locally migrated, not yet on the floor.</aside>
+
 Our group makes some of what it sells: candles, aromatherapy blends, incense, a long tail of hand‑finished things. The making has run, for years, on paper — a tally sheet per worker per task, collected and totted up at the end of the week for pay. It works, and it is invisible: nobody can say, on Wednesday, how many units of what were made by whom, from which batch of wax, for which order.
 
 The manufacture module replaces the paper. It is built, it is covered by tests, it has been fed with the old system's data in a local migration, and it is not yet in use on a real floor — rollout is a two‑week parallel run with the paper, one line at a time. So this is Part I: the model. Part II is what the floor thinks of it.
@@ -40,3 +42,5 @@ Three organisations make things; one of them is much bigger than the other two. 
 Whether artisans should see only the subset of hundreds of artefacts they know; how a job order's reference should be minted; what the payroll export looks like once it replaces the spreadsheet; how waste is recorded; whether rejects are paid. These are written down as questions for management, with our defaults, and the defaults are the paper sheet's — because the way to get answers out of a busy factory is to ship something that works and wait for the complaints.
 
 Part II will have those complaints, and the numbers.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>The manufacture module is built, tested and migrated locally — artefacts as trade units, recipes as ordered tasks, and the task session as the frozen, payable fact — but it stays off the real floor until a two-week parallel run proves it against the paper it replaces.</aside>

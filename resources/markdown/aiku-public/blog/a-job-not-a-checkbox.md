@@ -5,6 +5,8 @@ date: 2026-07-22
 tags: permissions, security, architecture, hr
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Staff access is granted by HR job position, which expands to roles and then to permissions, each scoped to a group, organisation, shop or warehouse. The same permission check runs for the UI, API and MCP server, so all three agree by construction. If the multi-tenancy "team id" context isn't set for a request, job or console command, every permission check silently returns false. Admin roles don't bypass scope, grant SQL access, expose payment data, or allow impersonating a customer.</aside>
+
 A new picker starts in the Spanish warehouse on Monday. Nobody opens a matrix of two hundred checkboxes. HR records the person, the contract and **the job position** — *picker, warehouse ES* — and the system already knows what a picker in that warehouse may see and do. When they move to the packing bench, the position changes and the access follows. When they leave, it goes. This note is how staff authorisation works, at the level a reader needs — the principles and the shapes, not the map of the locks.
 
 ## Position → roles → permissions
@@ -43,3 +45,5 @@ The permission library underneath supports multi‑tenancy through a "team" cont
 ## What we would tell a team starting
 
 Grant by job, scoped by place. Check in the action, once, for every door. Put the tenancy context where it cannot be forgotten, and test that it is there. And keep the list of people with the big roles short enough to read aloud.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Granting access by job position rather than by checkbox keeps the question "what can this person do" answerable by looking at HR records, not by archaeology.</aside>

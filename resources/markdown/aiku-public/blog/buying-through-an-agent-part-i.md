@@ -5,6 +5,8 @@ date: 2026-08-26
 tags: procurement, supply-chain, purchase-orders, design
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Four European hubs buy from Asian suppliers through commission-based agents. The new procurement module models suppliers as group data with the agent owning its own supplier records, splits a hub's purchase order per supplier, treats a stock delivery as a delivery note in reverse, adds a cross-organisation shopping list against MOQ, and tracks deposits as money paid before goods arrive. It is built and tested against real data but not yet live — this is the design, Part II is the results.</aside>
+
 This is the last module to leave the previous system, and the one with the most people in it who are not in the same building. It is built, it is tested against the real data in a local migration, and it is not yet switched on in production. So this is Part I — the design and the decisions — and Part II will be the numbers after it has run for a season.
 
 ## The shape of the business
@@ -52,3 +54,5 @@ On top of all of it sits a board: stalled agent orders by age, deposits at risk,
 ## What is not in Part I
 
 Payment accounts for agents (deposits talk to accounting by hand for now); an exchange‑rate capture when a deposit and a delivery are in different currencies; barcodes and picking sessions at goods‑in, which we have decided not to build until someone at the dock asks. And the results — lead times, deposit exposure, how many fights the timestamps settled — which is Part II.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>The procurement module is built and locally tested against real data, modelling suppliers, agent-split purchase orders, reverse delivery notes and deposits as their own risk objects — but it stays unswitched until Part II reports how it performs on the floor.</aside>

@@ -5,6 +5,8 @@ date: 2026-06-25
 tags: customer-portal, dropshipping, b2b, fulfilment, architecture
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>One customer portal codebase, live since early 2024 under a storefront's <code>/app</code>, serves three kinds of customer: the trade buyer (catalogue, basket, invoices, statements), the dropshipper (channels, portfolios, clients, orders placed under their name), and the fulfilment customer (pallets, deliveries, returns, billing). It shares actions and models with the staff app, so every screen shows the same truth staff see. It scopes every query to the authenticated customer and never invents a number that differs from the underlying rows.</aside>
+
 Every shop in aiku has a public face — the storefront — and a private one: the **customer portal**, reached from the storefront's own domain under `/app`, where a logged‑in customer does everything that is not browsing. It has been live since early 2024 and it serves three quite different people with one codebase. This note is what they have in common, what they do not, and where the complexity actually lives.
 
 ## The same bones as the staff app
@@ -42,3 +44,5 @@ Fewer calls. Every "where is my order", "send me the invoice", "what is my balan
 ## Next door
 
 The next step for the portal is the one we are [designing in the open](/blog/letting-customers-order-through-their-own-assistant): the same account, reachable by the customer's own AI assistant, read first and write when management says so. The portal already draws the lines that server will have to respect.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>One portal codebase, sharing the staff app's truth, serves trade buyers, dropshippers and fulfilment customers alike — scoped strictly to one customer and never showing them a number the rest of the business doesn't also see.</aside>

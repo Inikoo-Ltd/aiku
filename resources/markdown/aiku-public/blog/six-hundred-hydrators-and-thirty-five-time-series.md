@@ -5,6 +5,8 @@ date: 2026-07-30
 tags: postgres, architecture, performance, time-series
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>aiku precomputes every count and trend with ~650 <code>hydrator</code> jobs that run at the point of change (plus a nightly sweep) into ~150 stats tables and 35 partitioned time series at five frequencies. A bug where windows were stored as whole periods once let a single day's redo flatten a month; the fix expands any window to full periods before aggregating. Partitioned tables also hid index traps that pinned a replica's CPU until found.</aside>
+
 Open any list in aiku — shops, customers, products, warehouses — and every row carries numbers: orders this month, sales year‑to‑date, stock value, registrations, a Δ against last year. Those numbers are never computed when the page loads. They are read from a stats row or a time‑series record that was written earlier by something we call a **hydrator**.
 
 There are about 650 of them. This note is about why, and what that choice costs.
@@ -43,6 +45,14 @@ The records tables are large, so the indexes matter, and partitioning changes wh
 
 None of this is exotic. All of it pinned a replica's CPU for a day until someone looked.
 
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>Hydrators live per domain, e.g. <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/CRM/Customer/Hydrators/CustomerHydrateInvoices.php">app/Actions/CRM/Customer/Hydrators/CustomerHydrateInvoices.php</a> and <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Catalogue/Shop/Hydrators/ShopHydrateCustomers.php">app/Actions/Catalogue/Shop/Hydrators/ShopHydrateCustomers.php</a>.</li>
+<li>Jobs are <code>ShouldBeUnique</code>, keyed on the model id, so repeated writes collapse into one recompute.</li>
+<li>Time-series windowing goes through a shared helper, <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Helpers/TimeSeriesPeriodCalculator.php">app/Helpers/TimeSeriesPeriodCalculator.php</a>, which expands an incoming window to the full periods it touches before aggregating.</li>
+<li>Per-entity time-series hydrators follow the same naming pattern, e.g. <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Goods/TradeUnit/Hydrators/TradeUnitTimeSeriesHydrateNumberRecords.php">app/Actions/Goods/TradeUnit/Hydrators/TradeUnitTimeSeriesHydrateNumberRecords.php</a>.</li>
+</ul></aside>
+
 ## The refactor we still owe
 
 The processors loop per period: an upsert plus, for some, four metric queries per period — about 2,200 round‑trips for a year of daily records on one customer. The known fix is to group the metric queries by period and bulk‑upsert, which needs a `(series_id, period, frequency)` unique index on the partitioned tables. It is on the list; it becomes urgent the day historic redos are a daily event rather than a rare one.
@@ -50,3 +60,5 @@ The processors loop per period: an upsert plus, for some, four metric queries pe
 ## What we would tell our past selves
 
 Decide early that numbers are written, not computed, and put every one of them in a stats row or a time‑series record with a named owner. Run the owner at the point of change *and* at night, and treat a nightly correction as a bug report. Make every window a full period. And when a partitioned table is slow, suspect the index you assumed it would use.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Write every number at the point of change instead of computing it on read, give each one a named owner, make every window a full period, and suspect the index a partitioned table assumed it would use.</aside>

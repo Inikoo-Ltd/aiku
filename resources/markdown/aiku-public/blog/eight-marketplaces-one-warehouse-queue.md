@@ -5,6 +5,8 @@ date: 2026-08-10
 tags: dropshipping, shopify, marketplaces, integrations, warehouse
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Two years of connecting Shopify, WooCommerce, TikTok Shop, Magento, Amazon, eBay, Allegro, Wix and a wholesale marketplace to one warehouse rest on three unchanged objects — platform, customer sales channel, portfolio — so the picker never knows which platform an order came from. The rule that survived every integration: the marketplace owns the money and the relationship, we own the box, enforced in the discount engine itself rather than at each call site.</aside>
+
 The first external platform we connected was Shopify, in July 2024. A customer of ours had a Shopify store; they wanted to list our products, take the order, and have us ship it to their buyer under their name. That is dropshipping, and it is simple to describe and full of edges to build.
 
 Two years later there are eight platform types in the enum — Shopify, WooCommerce, TikTok Shop, Magento, Amazon, eBay, Allegro, Wix — plus a "manual" channel for customers who want to key orders themselves, plus a wholesale marketplace whose orders land through the same door. Every one of them was an odyssey. This note is what stayed constant and what each one taught us.
@@ -24,6 +26,13 @@ Orders from a channel become ordinary orders in the customer's account, with the
 The rule we learned slowest and now hold hardest: **for a marketplace order, the marketplace owns the money and the relationship; we own the box.**
 
 Shopify tells us the fulfilment order; we fulfil it and tell Shopify, and we do not invent a price. Our wholesale‑marketplace shops are typed *external*, and our discount engine returns early for them — not at the call site, in the engine, because nine callers reach it — so none of our own pricing rules can ever rewrite what the marketplace said the buyer paid. A buyer who edits an order on that marketplace, whatever state our delivery note is in, is accepted: the note walks back (unpack, undo pick, back to handling) in one locked transaction rather than refusing. And there is deliberately **no return button** on a dispatched marketplace order in our app, because a return raised only on our side makes the two systems stop agreeing; returns are raised where the order lives. Goods can still come back to the warehouse — the box is ours — but the money is theirs.
+
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>Marketplace-specific ingestion lives under <code>app/Actions/Dropshipping</code>, with per-platform order handling such as <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Dropshipping/Tiktok/Order/ProcessTiktokOrderShipment.php">app/Actions/Dropshipping/Tiktok/Order/ProcessTiktokOrderShipment.php</a>.</li>
+<li>The "return early for external shops" guard sits in <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Ordering/Order/CalculateOrderDiscounts.php">app/Actions/Ordering/Order/CalculateOrderDiscounts.php</a>, not the call sites — gating the rule once in the shared action rather than in each of its nine callers.</li>
+<li>Delivery notes walking backward through <code>unpack → undo pick → handling</code> in one locked transaction is the standard Laravel pattern of wrapping the whole state reversal in a single DB transaction so no intermediate state is ever visible.</li>
+</ul></aside>
 
 ## What each one taught us
 
@@ -49,3 +58,5 @@ Shopify tells us the fulfilment order; we fulfil it and tell Shopify, and we do 
 ## What we would tell someone starting
 
 Model platform, channel and portfolio on day one and never let a platform leak into the warehouse. Decide, per platform, who owns the money and write it into the engine, not the edge. Assume tokens expire, merchants reinstall, buyers edit, and webhooks contain zeros. And keep a list of what each one taught you — the next marketplace will ask the same questions, and the answers are already there.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Eight platforms and a wholesale marketplace all fit through the same three objects and the same warehouse queue, because the model draws one hard line — who owns the money versus who owns the box — and enforces it in the engine rather than at each integration's edge.</aside>

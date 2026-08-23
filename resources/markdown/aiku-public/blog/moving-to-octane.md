@@ -5,6 +5,8 @@ date: 2025-02-28
 tags: octane, roadrunner, deploy, performance
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>We moved production to <a href="https://laravel.com/docs/octane">Laravel Octane</a> on RoadRunner on 4 February 2025, cutting time to first byte and machine count but exposing state leaks, oversized headers, and an Octane response-handling bug. The hardest fix: deploys were deleting code out from under running workers, solved by an <code>anchor/octane</code> directory the deploy rsyncs into and <code>octane:reload</code> against, with <code>stopwaitsecs=3600</code> so in-flight jobs finish.</aside>
+
 Classic PHP‑FPM boots the whole framework for every request: autoload, service providers, config, routes — thousands of files — then throws it all away. For a small app that is a few milliseconds. For aiku, with around six thousand action classes, hundreds of routes per sub‑app and a long list of providers, it was a tax on every single page, and it was paid most heavily by the pages customers see first.
 
 [Laravel Octane](https://laravel.com/docs/octane) changes the model: the application boots once into long‑lived workers and each request is handled by an already‑warm process. We moved production to it on **4 February 2025**, running on RoadRunner behind nginx.
@@ -50,6 +52,11 @@ Workers finish their current request, exit, and come back on the new code. Nothi
 
 `stopwaitsecs=3600` is not a typo. A worker in the middle of a long import must be allowed to finish; the supervisor restart waits for it. The pairing rule we learned from Horizon applies here too: *the supervisor's stop timeout must exceed the job's*.
 
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>The anchor sync and reload are deploy tasks in <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/deploy/deploy.php">deploy/deploy.php</a>: <code>deploy:sync-octane-anchor</code> rsyncs the release into <code>anchor/octane</code>, and <code>artisan:octane:reload</code> runs <code>octane:reload</code> afterwards, tolerating a box that has no running process yet.</li>
+</ul></aside>
+
 ## Things we would tell our past selves
 
 - Read every singleton before you switch. All of them.
@@ -58,3 +65,5 @@ Workers finish their current request, exit, and come back on the new code. Nothi
 - A long‑lived process is a different animal from FPM. Memory, headers, connection pools, caches of "current user" — they all need a second look.
 
 We would not go back.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Octane made aiku faster and steadier, but a long-running process demands respect for state, headers and how deploys touch running code — the anchor directory is the fix that made zero-downtime deploys boring again.</aside>

@@ -5,6 +5,8 @@ date: 2026-08-06
 tags: analytics, storefront, privacy, marketing, varnish
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Every storefront page fires one browser-side <code>POST /analytics/hit</code> to our own endpoint, because Varnish-cached pages never reach the app server for server-side logging. Each hit becomes a visitor, page view, traffic-source touch and conversion event, feeding the live-visitor view, per-site analytics, attribution, the cache warmer's most-visited-page list, and customer service's visitor timeline. Roughly half of raw hits are bots and get filtered before any row is written; no third-party script, fingerprinting, or stored IP address.</aside>
+
 We ran a hosted analytics script on the storefronts for years, like everyone. Then we put [Varnish in front](/blog/varnish-in-front-of-a-storefront-that-knows-who-you-are) of the storefronts, started doing [attribution](/blog/marketing-attribution-that-adds-up) properly, and found we needed to *join* visits to customers, orders and products — the one thing a hosted tool can never do, because it does not have the rows. So the storefronts now report to us. This note is what the beacon does, and what it does not.
 
 ## One request per page
@@ -19,6 +21,11 @@ When a storefront page renders in the browser, a tiny script sends one `POST /an
 - A **conversion event** when the visitor registers or adds to basket, so a source's registrations and baskets can be counted the same way as its orders.
 
 All of it lands on queues; the request itself returns in a few milliseconds.
+
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>The endpoint's action is [app/Actions/Web/Website/Analytics/RecordWebsiteHit.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Website/Analytics/RecordWebsiteHit.php), routed at <code>POST /analytics/hit</code> in [routes/analytics/analytics.php](https://github.com/Inikoo-Ltd/aiku/blob/main/routes/analytics/analytics.php).</li>
+</ul></aside>
 
 ## Bots
 
@@ -39,3 +46,5 @@ No third‑party script, no fingerprinting, no cross‑site anything: the cookie
 ## What we would tell a team weighing it
 
 If you cache your pages, your analytics must fire from the browser or it will lie. If you want visits to mean anything commercially, the rows must live next to your customers and orders. And if you write the beacon yourself, you get to decide — and publish — exactly what it collects, which is a sentence you cannot write about a script someone else serves.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Owning the beacon means the storefront's analytics still work when pages are cached, and it lets visits join directly to customers, orders and products — the one thing a hosted script could never do.</aside>

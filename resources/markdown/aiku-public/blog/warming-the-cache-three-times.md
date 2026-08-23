@@ -5,6 +5,8 @@ date: 2026-08-15
 tags: varnish, caching, performance, horizon, storefront
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>We built the storefront cache warmer three times: a link-following crawler that couldn't tell which of 267,000 pages anyone visited, a two-pass seeder-then-deep crawl whose surge-protection code accidentally raised concurrency right after a deploy (load hit 60 on 32 cores), and the version we kept — warming only the pages people actually viewed in the last 30 days, weighted by login status, covering 90% of traffic, under a single fleet-wide reduce-only concurrency budget.</aside>
+
 The storefronts are [served from Varnish](/blog/varnish-in-front-of-a-storefront-that-knows-who-you-are). A deploy that changes the storefront flushes the cache; the first visitor to each page afterwards waits for a full server render. A **cache warmer** is the job that visits pages first so customers do not. We have built it three times. Each version was right for the cache we had and wrong for the one we got next.
 
 ## Version one: follow the links (May 2026)

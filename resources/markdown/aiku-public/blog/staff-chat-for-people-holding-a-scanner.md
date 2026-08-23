@@ -5,11 +5,20 @@ date: 2026-08-23
 tags: chat, warehouse, realtime, hr
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>aiku got its own internal messenger for warehouse and office staff, kept structurally separate from customer chat (own tables, routes, realtime channels), designed first for pickers on tablets, with automatic message translation, conversations that attach to an order or delivery note, presence that combines realtime and recent activity, and a written rule that staff chat is work communication HR may read, not private.</aside>
+
 A warehouse runs on small questions. *Is there more of this in the back? The customer wants to add a line, have you picked it yet? Which box did the fragile one go in?* For years those questions travelled by shouting, by phone, and by a messaging app on personal phones that nobody in the office could see. In August 2026 we built a messenger into aiku itself. This is what we decided and why.
 
 ## Separate from customer chat, structurally
 
 aiku already has a live chat for customers on the storefronts, with agents answering from the staff app. The tempting shortcut was to reuse it for staff talking to staff. We refused, and made the refusal structural: staff messaging has its own tables, its own routes under the staff app only, and its realtime channels are typed for staff users and nothing else. There is no code path by which a staff message could end up in front of a customer, because there is no shared code path at all. The conversation about *where* an order is must never be one bug away from the person who placed it.
+
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>Staff messaging has its own models: <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Chat/StaffConversation.php">app/Models/Chat/StaffConversation.php</a> and <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Chat/StaffMessage.php">app/Models/Chat/StaffMessage.php</a>, separate from the customer-facing <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Chat/ChatSession.php">app/Models/Chat/ChatSession.php</a>.</li>
+<li>Sending goes through <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Chat/Staff/SendStaffMessage.php">app/Actions/Chat/Staff/SendStaffMessage.php</a>; translation is queued per message by <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Chat/Staff/TranslateStaffMessage.php">app/Actions/Chat/Staff/TranslateStaffMessage.php</a>, storing each translation in <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Chat/StaffMessageTranslation.php">app/Models/Chat/StaffMessageTranslation.php</a>.</li>
+<li>Conversations can be archived and reopened via <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Chat/Staff/ArchiveStaffConversation.php">app/Actions/Chat/Staff/ArchiveStaffConversation.php</a>, dispatching <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Events/StaffConversationArchived.php">app/Events/StaffConversationArchived.php</a>.</li>
+</ul></aside>
 
 ## The first users hold a scanner, not a mouse
 
@@ -38,3 +47,5 @@ We would rather say this up front than have someone discover it.
 ## What we did not build (yet)
 
 Rooms, threads and floating chat heads are in the schema and not in the UI. Closing a chat archives it for you and it comes back on the next message. Nicknames, themes, emoji and a GIF picker arrived because people asked within a day. The rest waits until a few weeks of warehouse‑to‑office use tells us what is actually missing — a pattern we try to hold to for every module: ship the thing people will use on day one, and let day thirty write the next list.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Build staff messaging as its own structurally isolated system, design it first for the person holding a scanner, and say plainly that it is work communication, not private.</aside>

@@ -5,6 +5,8 @@ date: 2026-07-30
 tags: shipping, warehouse, integrations, dispatch
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>One tap at the packing bench books a shipment across eight carrier API integrations and 72 shipper records, sharing one <code>shipment</code> object and one state machine while each carrier gets its own request-building class. Lessons from ~60,000 shipments: escape XML for ampersands, treat "one parcel", "one COD amount" and "one consignment" as separate questions per carrier, and never overwrite multiple label nodes. Every API has a manual twin so a down carrier degrades to a keyboard, never a stuck order.</aside>
+
 At the end of the packing bench there is a button. The packer has weighed the boxes; they tap it; a label prints, a tracking number appears on the delivery note, and the customer's dispatch email goes out with a link they can click. Behind that tap is one of **eight carrier API integrations** — DPD in two countries, GLS in two, APC, CTT, Packeta, a regional courier — and 72 shipper records in the database, because the same carrier is a different contract, account and dialect in each country. About 60,000 shipments have gone through them. This note is what is common, what is not, and the rules we hold.
 
 ## The shipment object
@@ -12,6 +14,13 @@ At the end of the packing bench there is a button. The packer has weighed the bo
 Every carrier call starts from the same thing: a **delivery note** with its boxes (count, weight, dimensions), the delivery address, the customer's contact details, the shop's sender details, the declared value, and whether the order is **cash on delivery** and for how much. It ends with the same thing: a **shipment** row — shipper, reference, tracking number(s), the label as a PDF, a state (*in process, success, fixed, error*) and the raw response kept for the day someone asks. The note's dispatch email reads the tracking link from the shipment; the customer's portal shows it; the marketplace (when the order came from one) is told.
 
 The carrier‑specific part is one class per integration: *build the request from the shipment object, call, parse the response into tracking + label + errors*. Everything else — the bench button, the PDF merge, the retry, the state — is shared.
+
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>The shared row is <code>Shipment</code> — <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Dispatching/Shipment.php">app/Models/Dispatching/Shipment.php</a>.</li>
+<li>Booking flow lives under <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Dispatching/Shipment/StoreShipment.php">app/Actions/Dispatching/Shipment</a> (<code>StoreShipment</code>, <code>UpdateShipment</code>), the same actions every carrier-specific class calls into.</li>
+<li>Escape untrusted values going into a SOAP body with PHP's own <code>htmlspecialchars</code>/XML writer rather than string concatenation — that's the fix behind the ampersand paragraph above.</li>
+</ul></aside>
 
 ## What the carriers taught us
 
@@ -38,3 +47,5 @@ Each integration's successes and errors over time are a report; the "manual" shi
 ## What we would tell a team
 
 Model the shipment once and make carriers adapters over it. Escape everything. Treat "one parcel", "one COD amount" and "one consignment" as three different questions with carrier‑specific answers. Keep every raw response. Parse offline against fixtures. And give every API a manual twin, because the courier's server will be down on the day the warehouse is busiest.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Model the shipment once, make every carrier a thin adapter over it, and give each one a manual twin — the eight-carrier integration holds up because the shared object and state machine absorb the differences, not the other way round.</aside>

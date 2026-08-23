@@ -5,6 +5,8 @@ date: 2026-08-17
 tags: postgres, architecture, schema, migration
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Four years and <code>1,659</code> migrations produced <code>793</code> tables, ~20,000 columns, ~5,000 indexes and <code>2,080</code> foreign keys. The schema stays legible on a few rules: <code>group_id</code>/<code>organisation_id</code>/<code>shop_id</code> on almost every row, a stats table beside every entity (146 of them), slugs (not ids) in every URL, boringly named <code>*_has_*</code> pivot tables, and <code>jsonb</code> columns for shapes the business hasn't finalised yet.</aside>
+
 The first migration in this repository is dated August 2022. The latest is from last night. In between there are 1,659 of them, and together they describe **793 tables**, about **20,000 columns**, **5,000 indexes** and **2,080 foreign keys**. People who see the number for the first time assume it is a mess. It is not — it is big because the business is big, and it has a small number of rules that have held since the beginning. This note is those rules, and the story of how we got here.
 
 ## Where it came from
@@ -54,3 +56,5 @@ Not again: letting a handful of derived values live only in nightly jobs, and le
 ## And counting
 
 A migration lands most days. The next batch is already queued: a customer‑facing MCP, more time‑series dimensions for marketing, the per‑line tax work. The table count will pass eight hundred this autumn and nobody will notice, which is the point — the rules are what keep a schema this size legible, not the size.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>A schema can grow to hundreds of tables without becoming a mess, as long as a handful of naming and scoping rules are applied consistently from the first migration on.</aside>

@@ -5,6 +5,8 @@ date: 2026-08-20
 tags: marketplaces, ordering, warehouse, integrations, data
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Selling through a wholesale marketplace means the marketplace, not the shop, owns the order: its payload sets prices, discount and commission; buyers can edit orders mid-pick; lines can appear after dispatch; and returns and refunds happen on the marketplace's side, not ours. Six hard-won rules cover this: never let the discount engine touch external-shop numbers, accept edits in any state short of dispatched, give homeless post-dispatch lines an explicit destination, never bulk-resync terminal orders, filter every "first()" lookup by type, and skip the return button entirely for these shops.</aside>
+
 Most of our marketplace integrations are *outbound*: we list, they order, we ship. The wholesale marketplace is different. Retailers buy from our brand's storefront *on their platform*; the marketplace collects the money, applies its own promotions and commission, pays us later, and — the part that reshaped our code — lets the buyer keep editing the order while it moves through our warehouse. Each of our brands on it is a separate **external** shop in aiku, and this note is the six rules those shops forced on us.
 
 ## 1. Their payload is the money
@@ -36,3 +38,5 @@ A buyer's return is raised on the marketplace, and the money moves there. So on 
 For a stretch this summer most of the hardest tickets had the marketplace's name on them, and each fix surfaced the next: the discount, then the edit‑in‑flight, then the post‑dispatch lines, then the bulk resync, then the refund mirror. It was a nightmare in the specific sense that every assumption we held about *our* orders turned out to be conditional on us owning them. The payoff is that the six rules above are now tests, guards and one‑line decisions in the code, and the shops on that marketplace reconcile to its statements without anyone touching a spreadsheet.
 
 If you are about to sell through a marketplace that owns the order: decide *in the engine* whose numbers win, accept edits in every state you can, make a home for lines you cannot act on, never bulk‑write terminal history, filter every "first", and let returns happen where the money is.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Every assumption about owning an order turns out to be conditional on actually owning it, and a marketplace integration has to be built around that fact everywhere at once.</aside>

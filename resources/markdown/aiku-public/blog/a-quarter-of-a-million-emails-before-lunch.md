@@ -5,6 +5,8 @@ date: 2026-08-04
 tags: email, ses, horizon, marketing, comms
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Fifty-five kinds of email — newsletters, order confirmations, dispatch notices and more — all run through one pipeline: an outbox per kind, a recipient list prepared before sending, dispatch through Amazon SES via a Horizon queue, and delivery/open/click/bounce events tracked back through SNS webhooks and attributed to orders. A morning newsletter can reach a quarter of a million emails before lunch. A retry back-off bug once caused a throttling storm; fixing it to exponential back-off with jitter eliminated the errors.</aside>
+
 The busiest hour of an ordinary day is the morning newsletter: around a hundred thousand emails in the first hour, a quarter of a million by lunch on a big day. Alongside that, the system sends order confirmations, dispatch notices, invoices, password resets, back‑in‑stock alerts, abandoned‑basket nudges, reorder reminders, review requests, pallet notices for fulfilment customers, chat notifications — **fifty‑five outbox types** in the enum at last count — and every one of them goes through the same pipeline. This note is that pipeline.
 
 ## Outboxes: every kind of email is a thing with stats
@@ -38,3 +40,5 @@ The lesson is less about sleep units than about diagnosis: when a provider says 
 ## What the marketing team sees
 
 Per outbox and per mailshot: sent, delivered, opened, clicked, bounced, unsubscribed, with a time series and a comparison to the previous send; an email's journey on the customer's page; and, through attribution, the orders and revenue each send produced. The engine behind it is an outbox row, a dispatched email row, a tracking event row — three tables and a queue — and a quarter of a million of them before lunch.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>One pipeline for fifty-five kinds of email, with delivery tracked back event by event, turns "does this email work" into a dashboard row instead of an investigation.</aside>
