@@ -7,6 +7,8 @@
  */
 
 use App\Actions\UI\AikuPublic\BlogPosts;
+use App\Actions\UI\AikuPublic\PingIndexNow;
+use Illuminate\Support\Facades\Http;
 
 use function Pest\Laravel\get;
 
@@ -128,4 +130,20 @@ test('llms.txt and home JSON-LD are served', function () {
     get($this->host.'/')
         ->assertSee('"@type":"Organization"', false)
         ->assertSee('"@type":"WebSite"', false);
+});
+
+test('indexnow key file is served and the ping submits every public url', function () {
+    expect(route('aiku-public.indexnow-key'))->toEndWith('.txt');
+    get(route('aiku-public.indexnow-key'))->assertOk()->assertHeader('Content-Type', 'text/plain; charset=UTF-8');
+
+    config(['services.indexnow.key' => 'abc123']);
+
+    Http::fake(['api.indexnow.org/*' => Http::response('', 200)]);
+    expect((new PingIndexNow())->handle())->toBe(BlogPosts::all()->count() + 2);
+    Http::assertSent(fn ($request) => $request['key'] === 'abc123'
+        && $request['host'] === config('app.domain')
+        && in_array(route('aiku-public.blog.show', BlogPosts::all()->first()['slug']), $request['urlList'], true));
+
+    config(['services.indexnow.key' => null]);
+    expect((new PingIndexNow())->handle())->toBe(0);
 });

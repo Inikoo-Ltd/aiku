@@ -49,5 +49,8 @@ Route::get('blog/search.json', SearchNotes::class)->middleware('throttle:60,1')-
 Route::get('blog/{slug}', ShowBlogPost::class)->name('blog.show');
 Route::get('sitemap.xml', ShowSitemap::class)->name('sitemap');
 Route::get('feed.xml', ShowFeed::class)->name('feed');
+Route::get(config('services.indexnow.key', 'indexnow-key-not-set').'.txt', function () {
+    return response(config('services.indexnow.key'), 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+})->name('indexnow-key');
 
 Route::get('tiktok/onboarding', OnboardingTiktokUser::class)->name('tiktok.onboarding');

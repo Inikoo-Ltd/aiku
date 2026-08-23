@@ -503,6 +503,15 @@ task('deploy:aiku-public:index-notes', function () {
     }
 });
 
+desc('Submit public URLs to IndexNow');
+task('deploy:aiku-public:indexnow', function () {
+    try {
+        artisan('aiku-public:indexnow', ['skipIfNoEnv', 'showOutput'])();
+    } catch (\Throwable $e) {
+        writeln('<comment>aiku-public:indexnow skipped: '.$e->getMessage().'</comment>');
+    }
+});
+
 
 desc('Strip node_modules from all but the 5 newest releases');
 task('deploy:prune-node-modules', function () {
@@ -538,4 +547,5 @@ task('deploy', [
     'deploy:flush-varnish',
     'deploy:translations:setup-guess-language',
     'deploy:aiku-public:index-notes',
+    'deploy:aiku-public:indexnow',
 ]);
