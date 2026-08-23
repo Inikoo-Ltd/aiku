@@ -83,7 +83,12 @@
         .posts h3 { margin: 0 0 6px; font-size: 24px; }
         .posts p { margin: 0; color: var(--muted); }
         .tags { margin-top: 10px; font-size: 13px; color: var(--muted); }
-        .tags span { margin-right: 12px; }
+        .tags span, .tags a { margin-right: 12px; color: var(--muted); }
+        .tagbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 28px 0 8px; }
+        .tagbar a { font-size: 13px; padding: 5px 11px; border: 1px solid var(--rule); border-radius: 999px; color: var(--muted); }
+        .tagbar a span { opacity: .6; margin-left: 3px; }
+        .tagbar a[aria-current] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+        .tagbar a:hover { text-decoration: none; border-color: var(--ink); }
         article.post { padding: 64px 0; }
         article.post .meta { color: var(--muted); font-size: 15px; margin-bottom: 40px; }
         article.post .body { font-size: 18px; }

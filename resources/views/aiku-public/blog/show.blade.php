@@ -16,7 +16,7 @@
             <h1 style="font-size:clamp(34px,4.6vw,52px)">{{ $post['title'] }}</h1>
             <div class="meta">
                 <time datetime="{{ $post['date']->toDateString() }}">{{ $post['date']->format('j F Y') }}</time>
-                @foreach ($post['tags'] as $tag) · #{{ $tag }} @endforeach
+                @foreach ($post['tags'] as $tag) · <a href="{{ route('aiku-public.blog.index', ['tag' => $tag]) }}">#{{ $tag }}</a> @endforeach
             </div>
             <div class="body">{!! $post['html'] !!}</div>
         </article>

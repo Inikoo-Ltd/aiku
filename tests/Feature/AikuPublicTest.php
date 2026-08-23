@@ -30,6 +30,21 @@ test('blog index lists every post', function () {
     BlogPosts::all()->each(fn (array $post) => $response->assertSee(route('aiku-public.blog.show', $post['slug']), false));
 });
 
+test('blog index filters by tag and ignores unknown tags', function () {
+    $first = BlogPosts::all()->first();
+    $tag = $first['tags'][0];
+    $count = BlogPosts::all()->filter(fn (array $post) => in_array($tag, $post['tags'], true))->count();
+
+    get($this->host.'/blog?tag='.$tag)
+        ->assertOk()
+        ->assertSee(route('aiku-public.blog.show', $first['slug']), false)
+        ->assertSee('#'.$tag.' <span>'.$count.'</span>', false);
+
+    $response = get($this->host.'/blog?tag=nope');
+    $response->assertOk();
+    BlogPosts::all()->each(fn (array $post) => $response->assertSee(route('aiku-public.blog.show', $post['slug']), false));
+});
+
 test('blog post renders markdown and structured data', function () {
     $post = BlogPosts::all()->first();
 
