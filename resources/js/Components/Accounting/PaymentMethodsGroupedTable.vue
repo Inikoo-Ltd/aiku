@@ -56,7 +56,8 @@ const groups = computed(() => {
     const byKey: Record<string, any> = {}
     for (const row of props.rows) {
         const key = groupKeyOf(row)
-        byKey[key] ??= { key, label: groupLabelOf(row), logo: props.groupBy === 'provider' ? paymentProviderLogo(row.payment_account_type) : null, children: {} as Record<string, any>, ...blank() }
+        byKey[key] ??= { key, label: groupLabelOf(row), logo: props.groupBy === 'provider' ? paymentProviderLogo(row.payment_account_type) : null, providers: new Set<string>(), children: {} as Record<string, any>, ...blank() }
+        byKey[key].providers.add(row.payment_account_type)
         const g = byKey[key]
         add(g, row)
         const childKey = childKeyOf(row)
@@ -74,8 +75,8 @@ const totals = computed(() => groups.value.reduce((t: any, g: any) => ({
     total_sales: t.total_sales + g.total_sales,
 }), { number_payments: 0, number_success: 0, total_sales: 0 }))
 
-/* A group with a single child that says the same thing as the group (Bank → Bank) has nothing to expand. */
-const expandable = (g: any) => g.children.length > 1 || g.children[0].label !== g.label
+/* One child is not a breakdown: the group row carries its provider mark instead of a second line. */
+const expandable = (g: any) => g.children.length > 1
 
 const money = (value: number) => locale.currencyFormat(props.currencyCode, value)
 const share = (part: number, whole: number) => whole > 0 ? (part / whole * 100).toFixed(1) + '%' : '—'
@@ -126,6 +127,8 @@ const columnHelp = {
                                 <img v-if="group.logo" :src="group.logo" :alt="group.label" class="h-3 w-auto max-w-16 opacity-70" />
                             </span>
                             <span>{{ group.label }}</span>
+                            <img v-if="groupBy === 'method' && group.providers.size === 1 && [...group.providers][0] !== group.key && paymentProviderLogo([...group.providers][0])"
+                                :src="paymentProviderLogo([...group.providers][0])" :alt="[...group.providers][0]" :title="[...group.providers][0]" class="h-3 w-auto max-w-16 opacity-60" />
                         </span>
                     </td>
                     <td class="text-right px-2 tabular-nums whitespace-nowrap">
