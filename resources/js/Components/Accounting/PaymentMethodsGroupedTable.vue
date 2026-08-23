@@ -37,11 +37,12 @@ const showDetail = ref(true)
 const groupKeyOf = (row: PaymentMethodRow) => props.groupBy === 'provider' ? row.payment_account_type : row.method
 const groupLabelOf = (row: PaymentMethodRow) => props.groupBy === 'provider' ? row.payment_account_label : row.method_label
 /* The card scheme is a curiosity, not a decision: it only shows as the last level under Card in the
-   method view. The provider view stops at the method. */
-const childKeyOf = (row: PaymentMethodRow) => props.groupBy === 'provider' ? row.method : row.payment_account_type + '|' + (row.sub_method ?? '')
+   method view, across every provider. Other methods break down by provider. The provider view stops
+   at the method. */
+const childKeyOf = (row: PaymentMethodRow) => props.groupBy === 'provider' ? row.method : (row.sub_method ?? row.payment_account_type)
 const childLabelOf = (row: PaymentMethodRow) => props.groupBy === 'provider'
     ? row.method_label
-    : row.payment_account_label + (row.sub_method_label ? ' · ' + row.sub_method_label : '')
+    : (row.sub_method_label ?? row.payment_account_label)
 const later = (a: string | null, b: string | null) => !a ? b : !b ? a : a > b ? a : b
 
 const blank = () => ({ number_payments: 0, number_success: 0, total_sales: 0, last_payment_at: null as string | null })
