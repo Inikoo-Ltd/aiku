@@ -191,7 +191,7 @@ const copyChatId = async () => {
     <div class="w-96 shrink-0 flex flex-col border-l border-gray-200 bg-white overflow-hidden">
         <!-- Contact Header -->
         <div class="relative flex flex-col items-center px-4 py-4 border-b border-gray-100 text-center shrink-0">
-            <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" @click="emit('close')">
+            <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" @click="emit('close')" aria-label="Close">
                 <FontAwesomeIcon :icon="['fal', 'fa-times']" class="text-sm" />
             </button>
             <div class="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold mb-2" :style="avatarStyle">
@@ -251,7 +251,7 @@ const copyChatId = async () => {
                         <div class="text-gray-500 text-xs">Chat ID</div>
                         <div class="col-span-2 flex items-center gap-1">
                             <code class="text-[11px] font-mono text-gray-700 bg-gray-100 rounded px-1.5 py-0.5 truncate">{{ session.ulid }}</code>
-                            <button class="shrink-0 text-gray-400 hover:text-gray-600" @click="copyChatId">
+                            <button class="shrink-0 text-gray-400 hover:text-gray-600" @click="copyChatId" aria-label="Copy chat ID">
                                 <FontAwesomeIcon :icon="isCopied ? ['fal', 'fa-check'] : ['fal', 'fa-copy']" class="text-xs" />
                             </button>
                         </div>

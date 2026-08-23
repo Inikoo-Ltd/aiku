@@ -456,7 +456,7 @@ onMounted(async () => {
             </span>
 
             <button class="p-1.5 rounded hover:bg-gray-100 text-gray-500" @click="openGlobalChatSettings"
-                title="Chat settings">
+                title="Chat settings" :aria-label="trans('Chat settings')">
                 <FontAwesomeIcon :icon="faCog" class="text-sm" />
             </button>
         </div>
@@ -468,37 +468,46 @@ onMounted(async () => {
         </Dialog>
 
         <!-- My Chats / Team Chats toggle -->
-        <div class="flex border-b text-xs bg-gray-50">
+        <div class="flex border-b text-xs bg-gray-50" role="tablist">
             <div
                 class="tabItem flex-1 text-center"
                 :class="viewMode === 'my' ? 'tabPrimary' : 'tabInactive'"
-                @click="viewMode = 'my'">
+                role="tab"
+                tabindex="0"
+                :aria-selected="viewMode === 'my'"
+                @click="viewMode = 'my'"
+                @keydown.enter="viewMode = 'my'">
                 {{ trans("My Chats") }}
             </div>
             <div
                 class="tabItem flex-1 text-center"
                 :class="viewMode === 'team' ? 'tabPrimary' : 'tabInactive'"
-                @click="viewMode = 'team'">
+                role="tab"
+                tabindex="0"
+                :aria-selected="viewMode === 'team'"
+                @click="viewMode = 'team'"
+                @keydown.enter="viewMode = 'team'">
                 {{ trans("Team Chats") }}
             </div>
         </div>
 
         <!-- Status tabs -->
-        <div class="flex items-center border-b text-xs">
-            <div v-if="viewMode === 'my'" class="tabItem" :class="tabClass('waiting')" @click="activeTab = 'waiting'">
+        <div class="flex items-center border-b text-xs" role="tablist">
+            <div v-if="viewMode === 'my'" class="tabItem" :class="tabClass('waiting')" role="tab" tabindex="0" :aria-selected="activeTab === 'waiting'" @click="activeTab = 'waiting'" @keydown.enter="activeTab = 'waiting'">
                 {{ trans("Waiting") }}
             </div>
-            <div class="tabItem" :class="tabClass('active')" @click="activeTab = 'active'">
+            <div class="tabItem" :class="tabClass('active')" role="tab" tabindex="0" :aria-selected="activeTab === 'active'" @click="activeTab = 'active'" @keydown.enter="activeTab = 'active'">
                 {{ trans("Active") }}
             </div>
-            <div class="tabItem" :class="tabClass('closed')" @click="activeTab = 'closed'">
+            <div class="tabItem" :class="tabClass('closed')" role="tab" tabindex="0" :aria-selected="activeTab === 'closed'" @click="activeTab = 'closed'" @keydown.enter="activeTab = 'closed'">
                 {{ trans("Closed") }}
             </div>
             <div class="ml-auto pr-2">
                 <button
                     @click="toggleSearch"
                     class="p-1.5 rounded hover:bg-gray-100 transition-colors"
-                    :class="showSearch ? 'text-indigo-500' : 'text-gray-400'">
+                    :class="showSearch ? 'text-indigo-500' : 'text-gray-400'"
+                    :aria-label="trans('Toggle search')">
                     <FontAwesomeIcon :icon="faSearch" class="text-xs" />
                 </button>
             </div>
@@ -519,7 +528,8 @@ onMounted(async () => {
                     <button
                         v-if="searchQuery"
                         @click="searchQuery = ''"
-                        class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        :aria-label="trans('Clear search')">
                         <FontAwesomeIcon :icon="faTimes" class="text-xs" />
                     </button>
                 </div>
@@ -573,7 +583,10 @@ onMounted(async () => {
                         <div v-show="!isInboxCollapsed(group.key)">
                             <div v-for="c in group.contacts" :key="c.ulid">
                                 <div class="relative flex items-center gap-3 px-3 py-2 border-b hover:bg-gray-50 cursor-pointer"
-                                    @click="handleClickContact(c)">
+                                    role="button"
+                                    tabindex="0"
+                                    @click="handleClickContact(c)"
+                                    @keydown.enter="handleClickContact(c)">
                             <!-- Loading overlay -->
                             <div v-if="isAssigning[c.ulid]"
                                 class="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
