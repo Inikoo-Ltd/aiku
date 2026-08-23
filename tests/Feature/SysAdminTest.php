@@ -409,6 +409,20 @@ test('set user employed in organisation command', function (User $user) {
 })->depends('set user employed in organisation');
 
 
+test('grp llms txt is served only to logged in users', function (User $user) {
+    expect(get(route('grp.llms_txt'))->getStatusCode())->toBeIn([302, 401]);
+
+    actingAs($user);
+
+    $response = get(route('grp.llms_txt'));
+
+    $response->assertOk()
+        ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
+        ->assertHeader('X-Robots-Tag', 'noindex, nofollow')
+        ->assertSee('You are acting as '.$user->username, false)
+        ->assertSee('Never submit, dispatch, cancel', false);
+})->depends('SetUserAuthorisedModels command');
+
 test('UI index users (active)', function (User $user) {
     $this->withoutExceptionHandling();
     actingAs($user);
@@ -1681,14 +1695,14 @@ test('UI sysadmin staff chat analytics index', function (User $user) {
     $this->withoutExceptionHandling();
     actingAs($user);
 
-    $otherUser = StoreGuest::make()->action(group(), Guest::factory()->definition())->getUser();
+    $otherUser = StoreGuest::make()->action($user->group, Guest::factory()->definition())->getUser();
 
     $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($user, ['user_ids' => [$otherUser->id]]);
     \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $user, ['body' => 'hello']);
     \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $otherUser, ['body' => 'hi']);
     \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $user, ['body' => 'how are you']);
 
-    $insights = \App\Actions\SysAdmin\GetStaffChatAnalytics::run(group());
+    $insights = \App\Actions\SysAdmin\GetStaffChatAnalytics::run($user->group);
     expect($insights['messages'])->toBe(3)
         ->and($insights['users'])->toBe(2)
         ->and($insights['conversations'])->toBe(1)
