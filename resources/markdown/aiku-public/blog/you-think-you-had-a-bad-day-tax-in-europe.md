@@ -9,8 +9,6 @@ tags: tax, accounting, vies, ordering, europe
 
 A B2B order from a shop in one EU country to a customer in another is zero‑rated *if* the customer's VAT number is valid — and standard‑rated if it is not. A parcel to Tenerife is outside EU VAT even though Tenerife is Spain. A parcel to Madeira pays a different Portuguese rate than Lisbon. Monaco is France for this purpose. A Spanish sole trader on the surcharge regime pays an extra 5.2% on top of IVA. And in the UK, after Brexit, the question is simply "are both addresses in the UK?".
 
-<figure><img src="/art/readme/draw-note-tax.svg" alt="Loose sketch of Europe with sticky-note tax rate labels" width="1200" height="750" loading="lazy"><figcaption>Same product, different rate everywhere.</figcaption></figure>
-
 aiku sells from shops in several of these countries to customers in all of them, so every order resolves a **tax category** before its totals mean anything. This note is how.
 
 ## First: is the tax number real?
@@ -58,6 +56,8 @@ shop in the EU:
 Every leaf is a row in the `tax_categories` table — a rate, a label, a country, a type, an active flag — not a constant in code. When a rate changes, a row changes. When a new regime appears (the Spanish surcharge was one), it is a new row plus one branch.
 
 The tree is deliberately explicit rather than clever. Tax rules are lists of exceptions; a "general" algorithm that derives them is a place for a bug to hide, and the branch that says *Madeira* in plain text is the one an accountant can read and agree with.
+
+<figure><img src="/art/readme/draw-note-tax.svg" alt="Loose sketch of Europe with sticky-note tax rate labels" width="1200" height="750" loading="lazy"><figcaption>Same product, different rate everywhere.</figcaption></figure>
 
 ## The parts that talk to each other
 

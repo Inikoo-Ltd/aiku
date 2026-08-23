@@ -7,8 +7,6 @@ tags: mcp, ai, permissions, architecture
 
 <aside class="tldr"><strong>TL;DR</strong>For a live business, retrieval over documents is the wrong shape: the answers are not in a document, they are in a query that has not been run yet. aiku exposes forty‑five read‑only <strong>tools</strong> over the <a href="https://modelcontextprotocol.io">Model Context Protocol</a> — thin wrappers on the same actions the staff app uses, scoped by the same permissions, identified by slugs so the model cannot guess its way into the wrong shop, with a guide served alongside. Any assistant that speaks MCP connects with a personal token and asks. Reports that used to be a day's work or an engineering ticket take thirty seconds, with real figures. Some staff were afraid of it; most, after checking the numbers were not random, called it magic.</aside>
 
-<figure><img src="/art/readme/draw-note-mcp.svg" alt="Hand-drawn sketch: an assistant on the left, a row of labelled tools in the middle with a locked door for what the user may not see, the business on the right" width="1200" height="750" loading="eager"><figcaption>Not retrieval: tools. The assistant asks; the tool runs the real query under the real permissions; the answer is the answer.</figcaption></figure>
-
 ## Why not RAG
 
 The fashionable way to put an AI on top of a business is retrieval‑augmented generation: chunk your documents, embed them, and at question time fetch the chunks that look most similar and paste them into the prompt. It is a reasonable design for a library. It is the wrong design for a trading company, for a reason that is obvious once said: **the answer to "how did lavender candles do last quarter in the Spanish shop" is not in any document.** It is the result of a query nobody has run yet, over rows that changed this morning, filtered by what *you* are allowed to see. No amount of embedding a PDF gets you there, and a chunk of last year's sales report pasted into a prompt gets you a confident, stale, wrong number.
@@ -20,6 +18,8 @@ So we did not build RAG. We built **tools** — and gave the model the same door
 aiku ships its own MCP server. Any client that speaks the protocol — a desktop assistant, an IDE, an agent framework — connects with a personal access token and sees a list of tools: *shop sales, top products, family sales, order status, customer lookup, stock levels, slow stock, warehouse performance, mailshot performance, marketing by channel, employee attendance, refunds by product…* forty‑five of them. Each tool is a thin wrapper over an action class the web application already runs, returns structured data, and carries a description written for the model: what it answers, what it needs, what to call first if you do not have it. A guide served from the same endpoint says how they fit together.
 
 The model decides which tools to call and in what order; the tools decide what it is allowed to see. That division is the whole design.
+
+<figure><img src="/art/readme/draw-note-mcp.svg" alt="Hand-drawn sketch: an assistant on the left, a row of labelled tools in the middle with a locked door for what the user may not see, the business on the right" width="1200" height="750" loading="eager"><figcaption>Not retrieval: tools. The assistant asks; the tool runs the real query under the real permissions; the answer is the answer.</figcaption></figure>
 
 ## Read-only, and that is a management decision
 

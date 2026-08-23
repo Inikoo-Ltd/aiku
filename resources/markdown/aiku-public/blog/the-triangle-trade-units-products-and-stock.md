@@ -9,8 +9,6 @@ tags: architecture, catalogue, inventory, goods, postgres
 
 Ask three people in a trading company what "a lavender candle" is and you get three different answers. To the buyer it is a SKU from a supplier, in cartons of twelve. To the warehouse it is a thing on a shelf in location B‑11‑01, counted in units. To the shop it is a product at £4.50, or a six‑pack at £24, or — on a trade price list — a carton. To the factory, if we make it, it is 180 grams of wax and a wick.
 
-<figure><img src="/art/readme/draw-note-triangle.svg" alt="Sketch of the trade unit, product, and org stock triangle with quantities on each edge" width="1200" height="750" loading="lazy"><figcaption>The number on the edge is the truth.</figcaption></figure>
-
 Most systems pick one of those and make the others suffer. aiku models all of them, and the model is a triangle.
 
 ## Three corners
@@ -30,6 +28,8 @@ The corners are connected by pivots, and every pivot carries a **quantity**:
 - *trade unit ↔ master product, trade unit ↔ ingredients*: the same idea, up and down.
 
 The product also carries a scalar `units` — a denormalised "how many physical units is one of these" — which must always agree with its pivot. That agreement is an invariant, and it is the one that breaks.
+
+<figure><img src="/art/readme/draw-note-triangle.svg" alt="Sketch of the trade unit, product, and org stock triangle with quantities on each edge" width="1200" height="750" loading="lazy"><figcaption>The number on the edge is the truth.</figcaption></figure>
 
 ## When a fraction is a bug and when it is the truth
 

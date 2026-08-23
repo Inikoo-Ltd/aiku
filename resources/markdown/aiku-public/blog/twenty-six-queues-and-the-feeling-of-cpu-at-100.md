@@ -7,8 +7,6 @@ tags: horizon, queues, ops, reliability, laravel
 
 <aside class="tldr"><strong>TL;DR</strong>Twenty‑six Horizon supervisors across two servers run everything that is not a page view. The bad mornings: stray workers after a deploy (a query 780k×/hour), a supervisor killed with its children alive (every queue twice), retry‑after shorter than the job, ten thousand jobs from one loop, a 5 s timeout on a 6 s job, an O(n²) recipient list. Each became a rule. The beast is tamed; the dashboard is boring.</aside>
 
-<figure><img src="/art/readme/draw-note-queues.svg" alt="Sketch of Horizon queue lanes with a CPU gauge" width="1200" height="750" loading="lazy"><figcaption>Lanes, not a single line: default, long, historic backfill, notifications.</figcaption></figure>
-
 Open Horizon's dashboard on a normal afternoon and you see the whole business breathing: emails going out, stock counters recalculating, time series folding, search reindexing, marketplace portfolios syncing, a newsletter's recipient list being prepared, a backfill of two million historic jobs quietly draining at the back. **Twenty‑six supervisors**, each with its own queues, process counts, memory and timeout, split across the primary and the replica. Almost everything that makes aiku feel instant is something that was done on a queue a moment earlier.
 
 That same dashboard, on a bad morning, shows CPU pinned at 100% and a number in the tens of thousands next to a queue name, and you know — before you know why — that a small bug has found a way to multiply itself. This note is about the queues, and about those mornings, because the second part is what taught us how to run the first.
@@ -26,7 +24,6 @@ The supervisors exist because jobs are not alike. A rough map:
 - **long‑running**, **long‑high‑priority**, **long‑low‑priority** — the honest admission that some jobs take an hour.
 
 Two Redis connections back them: one with a short reservation window for fast jobs that should self‑heal quickly, one with a long window for jobs that genuinely run long. Which connection a supervisor uses is the single most consequential line in its config, as we will see.
-
 
 <aside class="technical"><strong>Technical box</strong>
 <ul>
@@ -49,6 +46,8 @@ Two Redis connections back them: one with a short reservation window for fast jo
 **A five‑second timeout on a six‑second job.** The analytics supervisor had a 5 s timeout; a hydrator's slow tail ran to 8 s; failures every night. Raised to 60. Not every lesson is deep.
 
 **The O(n²) recipient list.** Preparing a newsletter's recipients with offset pagination over 77,000 subscribers took up to seventeen minutes and, on the *urgent* lane, blocked everything the staff expected to be instant. Cursor pagination took it to seconds. It stayed on *urgent*, because moving it would have been treating the lane as the problem.
+
+<figure><img src="/art/readme/draw-note-queues.svg" alt="Sketch of Horizon queue lanes with a CPU gauge" width="1200" height="750" loading="lazy"><figcaption>Lanes, not a single line: default, long, historic backfill, notifications.</figcaption></figure>
 
 ## What we do now, because of all that
 

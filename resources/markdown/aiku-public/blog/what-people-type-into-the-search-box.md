@@ -9,8 +9,6 @@ tags: search, typesense, iris, ai, merchandising
 
 For years the search box on our storefronts was a hosted third‑party service. It worked, it cost money, and it kept the most interesting data we had — *what people wanted and could not find* — in somebody else's dashboard. In the summer of 2026 we brought it home. This note is what we learned doing it.
 
-<figure><img src="/art/readme/draw-note-search.svg" alt="Sketch of a misspelt search query still finding the right result" width="1200" height="750" loading="lazy"><figcaption>Typos forgiven.</figcaption></figure>
-
 ## Our own index, our own rules
 
 The storefront search runs on Typesense: one collection per shop, fed from the same product data the warehouse uses, including the barcode (the first "no results" bug we fixed was trade customers typing a barcode from a box — the field simply was not in the schema). Queries go through a single action that builds a multi‑search — products, categories, content — in one round‑trip, with a fallback to the plain driver if the engine is unreachable, so a search outage is a degraded search, not a dead page.
@@ -22,6 +20,8 @@ Every search is logged: the query, how many results, whether the user clicked an
 Typesense's typo tolerance has a handful of knobs. We tuned them against two lists that came with the old provider's exports: 14,600 queries that had returned nothing, and the ~700 queries that work today and must keep working. Splitting and joining tokens (so "aromcandles" finds aromatherapy candles) and the minimum word length before a second typo is allowed were the two that mattered. **Tuning alone fixed 69% of the historical no‑result queries**, and the regression list lost nothing.
 
 We then measured one more notch — allowing two typos only from seven letters instead of six — and found it was free: zero trending queries lost, zero top hits moved, and half the junk queries ("guitar" on a giftware shop) stopped returning five hundred irrelevant products. Measure one notch at a time; the notch after that is where it costs.
+
+<figure><img src="/art/readme/draw-note-search.svg" alt="Sketch of a misspelt search query still finding the right result" width="1200" height="750" loading="lazy"><figcaption>Typos forgiven.</figcaption></figure>
 
 ## Synonyms, shared across fourteen languages
 
