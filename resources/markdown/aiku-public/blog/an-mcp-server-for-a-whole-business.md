@@ -1,5 +1,5 @@
 ---
-title: RAG is dead. Give the model the tools.
+title: RAG is dead. Give the model the tools. (Enterprise AI at zero cost)
 summary: We did not embed the business into a vector store and hope the right chunk came back. We gave the model forty‑five tools — the same actions the staff app runs, under the same permissions — and a guide on how to use them. The result is a report that used to take three people a day, or a ticket to engineering, arriving in thirty seconds with real figures. The reactions, in order: disbelief, checking whether the numbers were random, and then a very quiet "oh".
 date: 2026-08-23
 tags: mcp, ai, permissions, architecture
