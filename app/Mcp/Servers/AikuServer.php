@@ -34,6 +34,7 @@ use App\Mcp\Tools\ShopReviewsTool;
 use App\Mcp\Tools\ShopSalesTool;
 use App\Mcp\Tools\SlowStockTool;
 use App\Mcp\Tools\SqlQueryTool;
+use App\Mcp\Tools\StaffChatAnalyticsTool;
 use App\Mcp\Tools\StockLevelsTool;
 use App\Mcp\Tools\TopProductsTool;
 use App\Mcp\Tools\TradeUnitFamilySalesTool;
@@ -85,6 +86,7 @@ class AikuServer extends Server
         CustomerConversionTool::class,
         RefundsByProductTool::class,
         MarginTrendTool::class,
+        StaffChatAnalyticsTool::class,
         SqlQueryTool::class,
         DescribeTablesTool::class,
     ];

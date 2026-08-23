@@ -41,6 +41,7 @@ use App\Mcp\Tools\ShopReviewsTool;
 use App\Mcp\Tools\ShopSalesTool;
 use App\Mcp\Tools\SlowStockTool;
 use App\Mcp\Tools\SqlQueryTool;
+use App\Mcp\Tools\StaffChatAnalyticsTool;
 use App\Mcp\Tools\StockLevelsTool;
 use App\Mcp\Tools\TopProductsTool;
 use App\Mcp\Tools\TradeUnitFamilySalesTool;
@@ -654,6 +655,29 @@ describe('crm email tools', function () {
         $response->assertOk()
             ->assertSee('"total_emails":0')
             ->assertSee('"customers_reached":0');
+    });
+});
+
+describe('staff chat analytics tool', function () {
+    test('user without admin or hr permission is denied', function () {
+        $guest = guestWithoutPositions($this->group);
+
+        $response = AikuServer::actingAs($guest->getUser())->tool(StaffChatAnalyticsTool::class, []);
+
+        $response->assertHasErrors(['Permission denied.']);
+    });
+
+    test('admin gets staff chat analytics without message bodies', function () {
+        $otherUser    = guestWithoutPositions($this->group)->getUser();
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$otherUser->id]]);
+        \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'top secret body']);
+
+        $response = AikuServer::actingAs($this->user)->tool(StaffChatAnalyticsTool::class, ['days' => 7]);
+
+        $response->assertOk()
+            ->assertSee('"top_pairs"')
+            ->assertSee('"messages":1')
+            ->assertDontSee('top secret body');
     });
 });
 
