@@ -87,7 +87,8 @@ const expandable = (g: any) => g.children.length > 1
 
 const money = (value: number) => locale.currencyFormat(props.currencyCode, value)
 const share = (part: number, whole: number) => whole > 0 ? (part / whole * 100).toFixed(1) + '%' : '—'
-const successRate = (success: number, total: number) => total > 0 ? (success / total * 100).toFixed(1) + '%' : '—'
+/* Shown only when something failed: a column of 100% says nothing, the one 93% line is the signal. */
+const successRate = (success: number, total: number) => total > 0 && success < total ? (success / total * 100).toFixed(1) + '%' : ''
 const rateClass = (success: number, total: number) => {
     if (total === 0) return 'text-gray-400'
     const rate = success / total
