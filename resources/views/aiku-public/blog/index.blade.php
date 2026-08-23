@@ -7,7 +7,7 @@
         </section>
         <nav class="tagbar" aria-label="Filter by tag">
             <a href="{{ route('aiku-public.blog.index') }}" @if(!$tag) aria-current="true" @endif>all <span>{{ \App\Actions\UI\AikuPublic\BlogPosts::all()->count() }}</span></a>
-            @foreach ($tags as $name => $count)
+            @foreach ($tags->filter(fn ($count) => $count >= 2) as $name => $count)
                 <a href="{{ route('aiku-public.blog.index', ['tag' => $name]) }}" @if($tag === $name) aria-current="true" @endif>#{{ $name }} <span>{{ $count }}</span></a>
             @endforeach
         </nav>
