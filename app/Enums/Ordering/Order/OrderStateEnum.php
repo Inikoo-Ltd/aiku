@@ -186,6 +186,8 @@ enum OrderStateEnum: string
             'in_warehouse'     => $stats->number_orders_state_in_warehouse,
             'handling'         => $stats->number_orders_state_handling,
             'handling_blocked' => $stats->number_orders_state_handling_blocked,
+            'picked'           => $stats->number_orders_state_picked,
+            'packing'          => $stats->number_orders_state_packing,
             'packed'           => $stats->number_orders_state_packed,
             'finalised'        => $stats->number_orders_state_finalised,
             'dispatched'       => $stats->number_orders_state_dispatched,

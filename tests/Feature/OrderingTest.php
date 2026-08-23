@@ -2812,3 +2812,19 @@ describe('order margin data', function () {
             ->and($trait->aggregate([$exact, $gift])['profit_amount'])->toBe(40.0);
     });
 });
+
+describe('order state element group', function () {
+    test('every state label has a count so no chip renders NaN', function () {
+        $elements = array_merge_recursive(
+            OrderStateEnum::labels(),
+            OrderStateEnum::count($this->shop)
+        );
+
+        foreach (OrderStateEnum::cases() as $case) {
+            expect($elements[$case->value])->toBeArray()->toHaveCount(2)
+                ->and($elements[$case->value][1])->toBeInt();
+        }
+        expect($elements['picked'][1])->toBe(0)
+            ->and($elements['packing'][1])->toBe(0);
+    });
+});
