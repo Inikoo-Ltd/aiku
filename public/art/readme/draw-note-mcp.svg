@@ -43,6 +43,9 @@
   </g>
   <g class="m">
     <path d="M80 330 L280 326" stroke="#6d63d6"/>
+    <path d="M76 606 L190 604" stroke="#f3c04a"/>
+    <path d="M76 642 L200 640" stroke="#f3c04a"/>
+    <path d="M76 678 L280 676" stroke="#f3c04a"/>
     <path d="M940 690 L1140 686" stroke="#9dcab0"/>
   </g>
   <g class="pen">
@@ -89,6 +92,9 @@
     <text x="430" y="120">tools, not retrieval</text>
     <text x="430" y="410">same permissions as the UI</text>
     <text x="80" y="500">30 seconds later: a table</text>
+    <text x="80" y="600" font-size="24">no RAG</text>
+    <text x="80" y="636" font-size="24">no GPUs</text>
+    <text x="80" y="672" font-size="24">no AI API costs</text>
   </g>
   <g class="h" font-size="19" opacity=".7"><text x="70" y="732">— an MCP server for a whole business</text></g>
 </svg>
