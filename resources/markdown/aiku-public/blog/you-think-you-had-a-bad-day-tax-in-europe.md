@@ -1,5 +1,5 @@
 ---
-title: Which tax does this order pay?
+title: You think you had a bad day? Let me tell you about tax in Europe
 summary: Selling across Europe and the UK means every order has to answer one question before a price is final — and the answer depends on two addresses, a postcode, and whether a VAT number is real. How aiku validates tax numbers against VIES and HMRC (with retries, rate limits and an audit trail), and the decision tree that turns a shipping address into a tax category, Canaries and Madeira included.
 date: 2026-08-03
 tags: tax, accounting, vies, ordering, europe
