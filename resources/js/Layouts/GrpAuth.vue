@@ -21,6 +21,8 @@ if (usePage().props.language) {
 }
 
 const layout = useLayoutStore()
+const publicSiteUrl = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname.replace(/^app\./, '')}` : '/'
+
 
 console.log('environment:', useLayoutStore().app.environment)
 
@@ -35,10 +37,10 @@ console.log('environment:', useLayoutStore().app.environment)
         <div class="absolute top-9 right-10 max-w-xs text-right select-none hidden sm:block" style="font-family: Caveat, 'Segoe Print', 'Bradley Hand', cursive" aria-hidden="true">
             <span class="text-2xl leading-tight text-[#1c1b22]/70">{{ dailyLine() }}</span>
         </div>
-        <div class="absolute top-8 left-10 flex items-center gap-x-3 select-none">
+        <a :href="publicSiteUrl" class="absolute top-8 left-10 flex items-center gap-x-3 select-none hover:opacity-80" title="About aiku">
             <img class="h-14 w-auto" src="/art/logo-sketch.svg" alt="aiku" />
             <span style="font-family: Georgia, 'Times New Roman', serif" class="text-4xl font-semibold text-[#1c1b22] leading-none tracking-tight">aiku</span>
-        </div>
+        </a>
 
         <div class="mt-8 mx-auto md:w-full max-w-md">
             <div class="relative bg-white/80 backdrop-blur-sm py-8 px-4 rounded-lg md:px-10 border border-[#1c1b22]/10 shadow-[0_8px_30px_rgba(28,27,34,0.08)]">
