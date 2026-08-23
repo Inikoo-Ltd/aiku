@@ -64,7 +64,7 @@ const isDebug = false   //  True will show the column key in the header
             :dusk="cell?.sortable ? `sort-${cell?.key}` : null" @click.prevent="onClick">
             <!-- <slot name="pagehead" :data="{isCellNumber : isCellNumber, cell}"> -->
                 <div class="flex items-center justify-start"
-                    :class="{'justify-center': cell?.type == 'avatar' || cell?.type == 'icon', 'justify-end': isCellNumber()}">
+                    :class="{'justify-center': cell?.type == 'avatar' || cell?.type == 'icon', 'justify-end': isCellNumber() || cell?.align === 'right'}">
                     
                     <!-- Label: object -->
                     <div v-if="typeof cell?.label === 'object'">

@@ -724,10 +724,9 @@ class ShowOrder extends OrgAction
         }
 
         $symbol = $order->currency->symbol ?? $order->currency->code;
-        $tilde  = $summary['is_estimated'] ? '~' : '';
 
         $marginRow = [
-            'margin_label'  => __('Margin').": {$tilde}{$summary['margin_pct']}%",
+            'margin_label'  => __('Margin').": {$summary['margin_pct']}%",
             'status'        => $summary['margin_status'],
             'thin'          => $summary['margin_status'] === 'warning' ? __('thin margin, careful with further discounts') : null,
             'profit_label'  => $symbol.number_format($summary['profit_amount'], 2),
