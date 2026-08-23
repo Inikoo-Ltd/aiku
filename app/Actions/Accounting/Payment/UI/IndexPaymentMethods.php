@@ -75,7 +75,7 @@ class IndexPaymentMethods extends OrgAction
             'rows'          => $rows->map(fn ($row) => [
                 'method'               => $row->method,
                 'method_label'         => $row->method === $row->payment_account_type && in_array($row->method, ['checkout', 'braintree'])
-                    ? __('Unknown')
+                    ? __('Unidentified')
                     : Payment::methodLabel($row->method),
                 'sub_method'           => $row->sub_method,
                 'sub_method_label'     => $row->sub_method ? Payment::methodLabel($row->sub_method) : null,
