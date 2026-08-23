@@ -1,5 +1,5 @@
 ---
-title: The ticket is the conversation
+title: The ticket is the conversation — our love/hate relationship
 summary: How support requests flow from a picker, an accountant or a customer‑service agent into a Jira project, how they come back out as commits, and the rules we hold when we answer — plain words, what we did, why it happened, what you do next. And a tease: we may build our own ticket system, because we can, and because we would do it our way.
 date: 2026-08-21
 tags: support, workflow, jira, communication
