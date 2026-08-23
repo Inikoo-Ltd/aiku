@@ -3,6 +3,12 @@ on:
   schedule:
     - cron: '0 1 * * *'
   workflow_dispatch:
+    inputs:
+      only:
+        description: Run only this job
+        type: choice
+        default: all
+        options: [ all, coverage, bundle ]
 
 env:
   HOME: /home/aiku_test
@@ -11,6 +17,7 @@ env:
 jobs:
   coverage:
     name: Coverage → Codecov 📊
+    if: ${{ inputs.only == 'all' || inputs.only == 'coverage' || inputs.only == '' }}
     runs-on: [ self-hosted ]
     steps:
       - name: Checkout repo
@@ -68,6 +75,7 @@ jobs:
 
   bundle-analysis:
     name: Bundle analysis → Codecov 📦
+    if: ${{ inputs.only == 'all' || inputs.only == 'bundle' || inputs.only == '' }}
     runs-on: [ self-hosted ]
     steps:
       - name: Checkout repo
