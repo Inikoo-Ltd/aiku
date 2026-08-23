@@ -24,7 +24,7 @@ class ShowBlog
         $tag = $tags->has($tag) ? $tag : null;
 
         $filtered = $tag ? $posts->filter(fn (array $post) => in_array($tag, $post['tags'], true))->values() : $posts;
-        $perPage = 10;
+        $perPage = 20;
         $page = max(1, (int) $request->query('page', 1));
         $lastPage = max(1, (int) ceil($filtered->count() / $perPage));
         $page = min($page, $lastPage);
