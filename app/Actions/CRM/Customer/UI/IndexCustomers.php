@@ -588,7 +588,7 @@ class IndexCustomers extends OrgAction
                 $table->column(key: 'location', label: __('Location'), canBeHidden: false, searchable: true);
             }
 
-            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true, className: 'w-[18%] min-w-[160px]');
 
             if ($this->upcomingFilter !== null) {
                 $table->column(
@@ -598,7 +598,7 @@ class IndexCustomers extends OrgAction
                 );
             }
 
-            $table->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
+            $table->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
 
             if ($isDropshipping) {
                 $table->column(
@@ -631,7 +631,7 @@ class IndexCustomers extends OrgAction
             $table
                 ->column(key: 'last_invoiced_at', label: __('Last Invoice'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
                 ->column(key: 'number_invoices_type_invoice', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'sales_all', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'sales_all', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
             /* A customer touched by several channels is only partly this source's, so show the share
                rather than implying the source earned the whole of the sales beside it. */
@@ -647,7 +647,8 @@ class IndexCustomers extends OrgAction
             $table->column(
                 key: 'tags',
                 label: __('Tags'),
-                canBeHidden: false
+                canBeHidden: false,
+                className: 'w-72 !px-3'
             );
 
             $table->defaultSort('-created_at');
