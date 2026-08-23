@@ -5,12 +5,20 @@
             <h1 style="font-size:clamp(34px,4.6vw,52px)">How parts of aiku came to be the way they are.</h1>
             <p class="lede">Short write‑ups of problems we hit running a real commerce operation and what we changed in the code because of them. No product announcements; just the reasoning.</p>
         </section>
+        <form class="search" method="get" action="{{ route('aiku-public.blog.index') }}" role="search">
+            @if ($tag)<input type="hidden" name="tag" value="{{ $tag }}">@endif
+            <input type="search" name="q" value="{{ $query }}" placeholder="Search the notes…" aria-label="Search the notes">
+            @if ($query)<a href="{{ route('aiku-public.blog.index', array_filter(['tag' => $tag])) }}">clear</a>@endif
+        </form>
         <nav class="tagbar" aria-label="Filter by tag">
             <a href="{{ route('aiku-public.blog.index') }}" @if(!$tag) aria-current="true" @endif>all <span>{{ \App\Actions\UI\AikuPublic\BlogPosts::all()->count() }}</span></a>
             @foreach ($tags->filter(fn ($count) => $count >= 2) as $name => $count)
                 <a href="{{ $tag === $name ? route('aiku-public.blog.index') : route('aiku-public.blog.index', ['tag' => $name]) }}" @if($tag === $name) aria-current="true" title="Clear filter" @endif>#{{ $name }} <span>{{ $count }}</span></a>
             @endforeach
         </nav>
+        @if ($posts->isEmpty())
+            <p style="color:var(--muted);margin-top:32px">Nothing matches "{{ $query }}"@if($tag) in #{{ $tag }}@endif.</p>
+        @endif
         <ul class="posts">
             @foreach ($posts as $post)
                 <li>
@@ -26,13 +34,13 @@
         @if ($lastPage > 1)
             <nav class="pager" aria-label="Pages">
                 @if ($page > 1)
-                    <a href="{{ route('aiku-public.blog.index', array_filter(['tag' => $tag, 'page' => $page - 1 > 1 ? $page - 1 : null])) }}">← Newer notes</a>
+                    <a href="{{ route('aiku-public.blog.index', array_filter(['tag' => $tag, 'q' => $query, 'page' => $page - 1 > 1 ? $page - 1 : null])) }}">← Newer notes</a>
                 @else
                     <span></span>
                 @endif
                 <span class="muted">Page {{ $page }} of {{ $lastPage }}</span>
                 @if ($page < $lastPage)
-                    <a href="{{ route('aiku-public.blog.index', array_filter(['tag' => $tag, 'page' => $page + 1])) }}">Older notes →</a>
+                    <a href="{{ route('aiku-public.blog.index', array_filter(['tag' => $tag, 'q' => $query, 'page' => $page + 1])) }}">Older notes →</a>
                 @else
                     <span></span>
                 @endif

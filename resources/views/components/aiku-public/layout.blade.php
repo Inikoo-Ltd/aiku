@@ -86,6 +86,10 @@
         .tags span, .tags a { margin-right: 12px; color: var(--muted); }
         .pager { display: flex; justify-content: space-between; align-items: center; padding: 28px 0 0; border-top: 1px solid var(--rule); font-weight: 500; }
         .pager .muted { color: var(--muted); font-size: 14px; font-weight: 400; }
+        .search { display: flex; gap: 12px; align-items: center; margin: 32px 0 4px; }
+        .search input { flex: 1; max-width: 420px; font: inherit; font-size: 15px; padding: 9px 14px; border: 1px solid var(--rule); border-radius: 999px; background: transparent; color: var(--ink); }
+        .search input:focus { outline: none; border-color: var(--accent); }
+        .search a { font-size: 14px; }
         .tagbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 28px 0 8px; }
         .tagbar a { font-size: 13px; padding: 5px 11px; border: 1px solid var(--rule); border-radius: 999px; color: var(--muted); }
         .tagbar a span { opacity: .6; margin-left: 3px; }

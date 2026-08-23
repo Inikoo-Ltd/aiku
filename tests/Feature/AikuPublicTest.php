@@ -51,6 +51,14 @@ test('blog index filters by tag and ignores unknown tags', function () {
     BlogPosts::all()->take(20)->each(fn (array $post) => $response->assertSee(route('aiku-public.blog.show', $post['slug']), false));
 });
 
+test('blog index searches title, summary and body', function () {
+    $first = BlogPosts::all()->first();
+    $word = collect(preg_split('/\W+/', $first['title']))->filter(fn ($w) => mb_strlen($w) > 5)->first();
+
+    get($this->host.'/blog?q='.urlencode($word))->assertOk()->assertSee(route('aiku-public.blog.show', $first['slug']), false);
+    get($this->host.'/blog?q=zzqqxxnothing')->assertOk()->assertSee('Nothing matches', false);
+});
+
 test('blog post renders markdown and structured data', function () {
     $post = BlogPosts::all()->first();
 
