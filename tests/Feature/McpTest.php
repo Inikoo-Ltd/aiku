@@ -1144,7 +1144,8 @@ describe('shop catalogue tools', function () {
         ]);
 
         $response->assertOk()
-            ->assertSee($order->reference);
+            ->assertSee($order->reference)
+            ->assertSee('/ordering/orders/'.$order->slug);
     });
 
     test('order status for unknown reference errors', function () {
@@ -1267,7 +1268,8 @@ describe('lookup tools', function () {
         $response->assertOk()
             ->assertSee('"code":"'.$product->code.'"')
             ->assertSee('"price"')
-            ->assertSee('"available_quantity"');
+            ->assertSee('"available_quantity"')
+            ->assertSee('/catalogue/products/all/'.$product->slug);
 
         $response = AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\ProductLookupTool::class, [
             'shop'  => $this->shop->slug,
@@ -1296,6 +1298,7 @@ describe('lookup tools', function () {
 
         $response->assertOk()
             ->assertSee('"slug":"'.$this->customer->slug.'"')
+            ->assertSee('/crm/customers/'.$this->customer->slug)
             ->assertSee('"number_orders"');
     });
 

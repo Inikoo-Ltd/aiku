@@ -16,7 +16,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Find customers in a shop by reference, name, company, email or phone and return their contact details, status, balance, order counts, lifetime sales and last order/invoice dates. Returns the customer slug needed by customer-notes-tool.')]
+#[Description('Find customers in a shop by reference, name, company, email or phone and return their contact details, status, balance, order counts, lifetime sales and last order/invoice dates, plus the aiku (grp) page URL to open them in the browser. Returns the customer slug needed by customer-notes-tool.')]
 #[IsReadOnly]
 class CustomerLookupTool extends AikuTool
 {
@@ -42,6 +42,7 @@ class CustomerLookupTool extends AikuTool
         $like  = '%'.$query.'%';
 
         $customers = Customer::where('shop_id', $shop->id)
+            ->with('organisation:id,slug')
             ->with('stats:customer_id,number_orders,number_invoices,sales_all,last_order_submitted_at,last_invoiced_at,number_unpaid_invoices,unpaid_invoices_amount')
             ->where(function ($q) use ($query, $like) {
                 $q->whereRaw('lower(reference) = ?', [strtolower($query)])
@@ -61,6 +62,7 @@ class CustomerLookupTool extends AikuTool
             'currency' => $shop->currency->code,
             'results'  => $customers->map(fn (Customer $customer) => [
                 'slug'                   => $customer->slug,
+                'grp_url'                => route('grp.org.shops.show.crm.customers.show', [$customer->organisation->slug, $shop->slug, $customer->slug]),
                 'reference'              => $customer->reference,
                 'name'                   => $customer->name,
                 'contact_name'           => $customer->contact_name,
