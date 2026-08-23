@@ -105,6 +105,7 @@ organisation, group (parent only — group records table does not exist yet).
 | Reviews | `reviews`, `shop_review_stats` |
 | Web | `websites`, `webpages`, `web_user_requests` (logged-in traffic only) |
 | HR | `employees`, `timesheets` (`working_duration` in seconds), `clockings`, `leaves` |
+| Staff chat (internal messaging between staff, NOT customer chat) | `staff_conversations` (`type` dm/group, `context_type`/`context_id` when opened from an order or delivery note, `dm_key`), `staff_conversation_participants` (`last_read_at`), `staff_messages` (`user_id` sender, `body`, `media_id`, `parent_id`), `staff_message_reactions`, `staff_message_translations`. Usage/who-chats-with-whom questions: aggregate counts only, never return message bodies. Customer chat is `chat_sessions`/`chat_messages`, a different system |
 | Audit / notes | `audits` (customer notes live here: `event = 'customer_note'`, text in `new_values->>'note'`) |
 
 ## Suggested workflow
