@@ -43,31 +43,34 @@ class IndexPaymentMethods extends OrgAction
         $queryBuilder = QueryBuilder::for(Payment::class);
         if ($parent instanceof Shop) {
             $queryBuilder->where('payments.shop_id', $parent->id);
+            $amountColumn = 'payments.amount';
         } else {
             $queryBuilder->where('payments.organisation_id', $parent->id);
+            $amountColumn = 'payments.org_amount';
         }
-        $queryBuilder->leftJoin('currencies', 'payments.currency_id', 'currencies.id');
-        $queryBuilder->leftJoin('organisations', 'payments.organisation_id', 'organisations.id');
         $queryBuilder->leftJoin('payment_accounts', 'payments.payment_account_id', 'payment_accounts.id');
-        $queryBuilder->whereNotNull('payments.method');
+        $queryBuilder->whereNotNull('payments.method')->where('payments.method', '!=', '');
         $queryBuilder->where('payments.type', PaymentTypeEnum::PAYMENT);
+
+        $successfulSales = "SUM(CASE WHEN payments.status = '".PaymentStatusEnum::SUCCESS->value."' THEN $amountColumn ELSE 0 END)";
 
         return $queryBuilder
             ->defaultSort('method')
             ->select([
                 'payments.method',
+                'payments.sub_method',
                 'payment_accounts.type as payment_account_type',
                 DB::raw('COUNT(*) as number_payments'),
-                DB::raw("SUM(CASE WHEN payments.status = '" . PaymentStatusEnum::SUCCESS->value . "' THEN payments.amount ELSE 0 END) as total_sales"),
-                DB::raw("COUNT(CASE WHEN payments.status = '" . PaymentStatusEnum::SUCCESS->value . "' THEN 1 END) as number_success"),
-                DB::raw("ROUND((COUNT(CASE WHEN payments.status = '" . PaymentStatusEnum::SUCCESS->value . "' THEN 1 END) * 100.0 / COUNT(*)), 2) as success_rate"),
-                DB::raw("SUM(SUM(CASE WHEN payments.status = '" . PaymentStatusEnum::SUCCESS->value . "' THEN payments.amount ELSE 0 END)) OVER (PARTITION BY currencies.code) as currency_total_sales"),
-                'currencies.code as currency_code',
-                'organisations.slug as organisation_slug',
+                DB::raw("$successfulSales as total_sales"),
+                DB::raw("COUNT(CASE WHEN payments.status = '".PaymentStatusEnum::SUCCESS->value."' THEN 1 END) as number_success"),
+                DB::raw("ROUND((COUNT(CASE WHEN payments.status = '".PaymentStatusEnum::SUCCESS->value."' THEN 1 END) * 100.0 / COUNT(*)), 2) as success_rate"),
+                DB::raw("SUM($successfulSales) OVER () as currency_total_sales"),
+                DB::raw("'".$parent->currency->code."' as currency_code"),
+                DB::raw("'".($parent instanceof Shop ? $parent->organisation->slug : $parent->slug)."' as organisation_slug"),
                 DB::raw(($parent instanceof Shop ? "'".$parent->slug."'" : 'NULL').' as shop_slug'),
             ])
-            ->groupBy('payments.method', 'payment_accounts.type', 'currencies.code', 'organisations.slug')
-            ->allowedSorts(['method', 'number_payments', 'total_sales', 'number_success', 'success_rate'])
+            ->groupBy('payments.method', 'payments.sub_method', 'payment_accounts.type')
+            ->allowedSorts(['method', 'sub_method', 'number_payments', 'total_sales', 'number_success', 'success_rate'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -87,12 +90,12 @@ class IndexPaymentMethods extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->defaultSort('method')
                 ->column(key: 'method', label: __('Payment Method'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'sub_method', label: __('Sub method'), canBeHidden: false, sortable: true)
                 ->column(key: 'number_payments', label: __('Total Payments'), canBeHidden: false, sortable: true, type: 'number')
                 ->column(key: 'total_sales', label: __('Total Sales'), canBeHidden: false, sortable: true, type: 'number')
                 ->column(key: 'sales_share', label: __('Share of Sales'), canBeHidden: false, type: 'number')
                 ->column(key: 'number_success', label: __('Successful Payments'), canBeHidden: false, sortable: true, type: 'number')
-                ->column(key: 'success_rate', label: __('Success Rate (%)'), canBeHidden: false, sortable: true, type: 'number')
-                ->column(key: 'currency_code', label: __('Currency'), canBeHidden: false, searchable: true);
+                ->column(key: 'success_rate', label: __('Success Rate (%)'), canBeHidden: false, sortable: true, type: 'number');
         };
     }
 

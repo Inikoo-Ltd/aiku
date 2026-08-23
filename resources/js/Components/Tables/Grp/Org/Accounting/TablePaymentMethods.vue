@@ -28,6 +28,10 @@ defineProps<{
 			</div>
 		</template>
 
+		<template #cell(sub_method)="{ item }">
+			<span class="text-gray-600">{{ item.sub_method_label || '' }}</span>
+		</template>
+
 		<template #cell(number_payments)="{ item }">
 			<div class="text-gray-700 tabular-nums">
 				{{ item.number_payments.toLocaleString() }}
@@ -65,10 +69,5 @@ defineProps<{
 			</div>
 		</template>
 
-		<template #cell(currency_code)="{ item }">
-			<div class="text-gray-500 text-xs uppercase">
-				{{ item.currency_code }}
-			</div>
-		</template>
 	</Table>
 </template>

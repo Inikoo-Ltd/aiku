@@ -26,6 +26,8 @@ class PaymentMethodsResource extends JsonResource
         return [
             'method'           => $this->method,
             'method_label'     => Payment::methodLabel($this->method),
+            'sub_method'       => $this->sub_method,
+            'sub_method_label' => Payment::methodLabel($this->sub_method),
             'payment_account_type' => $this->payment_account_type,
             'sales_share'      => (float) $this->currency_total_sales > 0
                 ? number_format((float) $this->total_sales * 100 / (float) $this->currency_total_sales, 2, '.', '')
@@ -39,11 +41,11 @@ class PaymentMethodsResource extends JsonResource
                 ? route('grp.org.shops.show.dashboard.payments.accounting.payments.index', [
                     'organisation' => $this->organisation_slug,
                     'shop'         => $this->shop_slug,
-                    'filter'       => ['method' => $this->method],
+                    'filter'       => array_filter(['method' => $this->method, 'sub_method' => $this->sub_method]),
                 ])
                 : route('grp.org.accounting.payments.index', [
                     'organisation' => $this->organisation_slug,
-                    'filter'       => ['method' => $this->method],
+                    'filter'       => array_filter(['method' => $this->method, 'sub_method' => $this->sub_method]),
                 ]),
         ];
     }
