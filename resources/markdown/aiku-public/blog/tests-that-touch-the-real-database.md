@@ -42,6 +42,12 @@ Sharing a database within a file, and parallelising across files, reveals a part
 
 We also learned that one infrastructure failure — a lock‑exhaustion on the CI database, say — aborts files early and *masks* the flakes behind it, so a green‑again push surfaces the next layer. When a run goes red, separate the infrastructure errors from the real ones first, then reproduce the real ones in full‑file context, not in isolation.
 
+## The coverage number is not the point
+
+A coverage percentage says which lines were *executed*, not which behaviours were *proven*. A suite of unit tests with mocked repositories can reach ninety per cent and never once exercise the path that matters: order in → stock reserved → picked short → amount recalculated → invoice raised → stats hydrated. Those are five tables, three jobs and a generated column talking to each other, and the only test that means anything walks the whole path against semi‑real data and checks the numbers at the end.
+
+So we do not chase the coverage figure. We chase process paths: the ones a customer, a picker or an accountant actually travels, with the data shapes they actually produce. A hundred per cent coverage of code that never met the database is a comforting lie; sixty per cent of code that did, along the paths that move money and stock, is a test suite.
+
 ## Honest about the cost
 
 This suite is a nightmare to create and a nightmare to maintain. Every schema change ripples into a dump regeneration and a dozen fixtures. Every new module means writing the fixture helpers before the first assertion. Dependent tests make a file read well and make a single early failure take the rest of the file with it. A flaky test in a three‑thousand‑line file is an afternoon. We are not going to pretend otherwise.
