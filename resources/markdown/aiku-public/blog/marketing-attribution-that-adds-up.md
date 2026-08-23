@@ -1,6 +1,6 @@
 ---
 title: Marketing attribution that adds up to one
-summary: We had an attribution feature for years and it had credited 0.08% of customers. Here is what was wrong, what we rebuilt, and the one invariant we now check after every change.
+summary: We had an attribution feature for years and it had credited 0.08% of customers. Here is what was wrong, what we rebuilt — twenty channels, three email channels, ROAS and CAC with real costs, a per-customer journey — and the one invariant we now check after every change.
 date: 2026-08-08
 tags: marketing, attribution, postgres
 ---
@@ -36,6 +36,20 @@ Attributed revenue is measured from invoices, by order date, in three currencies
 | Shop | shop | `net_amount` |
 
 Organisation and group dashboards are aggregates for management, never a repeat of the level below. The group level deliberately stops at channels, because a campaign belongs to one shop; the drill-down continues there.
+
+## What the dashboard actually shows
+
+Attribution is only worth doing if someone can act on it before lunch. The shop marketing dashboard is three tabs:
+
+**Dashboard** — channels grouped into Paid / Organic / Email / Other, each row with visits, registrations, orders, attributed revenue, cost, and the two figures people came for: **ROAS** (revenue over spend) and **CAC** (spend over new customers). Costs come in two ways: a spreadsheet import for anything, and automated daily ingestion of Google Ads spend per campaign, so the paid rows are rarely stale. Every date range the rest of the system understands works here too — yesterday, last week, month to date, a year — with the previous period alongside.
+
+**Offer performance** — the same attribution applied to promotions: which offers were live on the orders a channel brought in, and what the lift looked like against orders with no offer. This is where "the newsletter worked" turns into "the newsletter worked *because of the 10% on candles*".
+
+**Data quality** — below.
+
+Behind the tables, every customer has a **journey timeline**: each touch in order, with its channel, campaign reference and the share it ended up with. When a number on the dashboard looks wrong, the timeline is where the argument is settled, customer by customer.
+
+Attribution windows are set per shop with a sensible default; a shop that overrides the window is evaluated with its own window even inside the group aggregate. The group and organisation dashboards are aggregates of the shops and link down to them; they do not repeat the shop view with bigger numbers.
 
 ## The data quality tab
 
