@@ -11,11 +11,27 @@
             @if ($query)<a href="{{ route('aiku-public.blog.index', array_filter(['tag' => $tag])) }}">clear</a>@endif
         </form>
         <ul class="search-results" id="notes-search-results" hidden></ul>
+        @php
+            $shown = $tags->filter(fn ($count) => $count >= 2);
+            $top = $shown->sortByDesc(fn ($count, $name) => [$count, $name])->sortBy(fn ($count, $name) => -$count)->take(12);
+            if ($tag && !$top->has($tag) && $shown->has($tag)) { $top = $top->put($tag, $shown[$tag]); }
+            $rest = $shown->except($top->keys())->sortKeys();
+        @endphp
         <nav class="tagbar" aria-label="Filter by tag">
             <a href="{{ route('aiku-public.blog.index') }}" @if(!$tag) aria-current="true" @endif>all <span>{{ \App\Actions\UI\AikuPublic\BlogPosts::all()->count() }}</span></a>
-            @foreach ($tags->filter(fn ($count) => $count >= 2) as $name => $count)
+            @foreach ($top->sortKeys() as $name => $count)
                 <a href="{{ $tag === $name ? route('aiku-public.blog.index') : route('aiku-public.blog.index', ['tag' => $name]) }}" @if($tag === $name) aria-current="true" title="Clear filter" @endif>#{{ $name }} <span>{{ $count }}</span></a>
             @endforeach
+            @if ($rest->isNotEmpty())
+                <details class="moretags">
+                    <summary>more tags <span>{{ $rest->count() }}</span></summary>
+                    <div>
+                        @foreach ($rest as $name => $count)
+                            <a href="{{ route('aiku-public.blog.index', ['tag' => $name]) }}">#{{ $name }} <span>{{ $count }}</span></a>
+                        @endforeach
+                    </div>
+                </details>
+            @endif
         </nav>
         @if ($posts->isEmpty())
             <p style="color:var(--muted);margin-top:32px">Nothing matches "{{ $query }}"@if($tag) in #{{ $tag }}@endif.</p>

@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive">
+  <defs>
+    <filter id="pen" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="bleed" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.014" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="22" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="1.6" result="b"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="4" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 -0.2" result="ga"/>
+      <feComposite in="b" in2="ga" operator="in" result="mottled"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="mottled"/></feMerge>
+    </filter>
+    <filter id="marker" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="21" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" seed="2" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.90  0 0 0 0 0.87  0 0 0 0 0.80  0 0 0 0.28 0" result="c"/>
+      <feComposite in="c" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <style>
+      .pen { fill: none; stroke: #23222e; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: url(#pen); }
+      .soft { stroke-width: 1.4; opacity: .6; }
+      .w { mix-blend-mode: multiply; filter: url(#bleed); stroke: none; opacity: .8; }
+      .m { fill: none; stroke-linecap: round; stroke-width: 26; opacity: .55; mix-blend-mode: multiply; filter: url(#marker); }
+      .h { fill: #23222e; filter: url(#pen); }
+      .hl { fill: #8a4b9e; filter: url(#pen); }
+    </style>
+  </defs>
+  <rect width="1200" height="750" fill="#fbf7ee"/>
+  <rect width="1200" height="750" fill="#fbf7ee" filter="url(#paper)"/>
+  <g class="w">
+    <path d="M50 100 C300 70 900 90 1150 110 C1160 160 1150 190 1140 200 C900 210 300 200 60 190 C40 160 40 130 50 100 Z" fill="#76b7c2" opacity=".3"/>
+    <path d="M50 240 C300 210 900 230 1150 250 C1160 300 1150 330 1140 340 C900 350 300 340 60 330 C40 300 40 270 50 240 Z" fill="#f3c04a" opacity=".32"/>
+    <path d="M50 380 C300 350 900 370 1150 390 C1160 440 1150 470 1140 480 C900 490 300 480 60 470 C40 440 40 410 50 380 Z" fill="#e88a73" opacity=".34"/>
+    <path d="M50 520 C300 490 900 510 1150 530 C1160 580 1150 610 1140 620 C900 630 300 620 60 610 C40 580 40 550 50 520 Z" fill="#6d63d6" opacity=".3"/>
+  </g>
+  <g class="m"><path d="M100 480 L400 476" stroke="#e88a73"/></g>
+  <g class="pen">
+    <path d="M60 130 C300 122 900 130 1150 126" stroke-width="2.6"/>
+    <path d="M60 270 C300 262 900 270 1150 266" stroke-width="2.6"/>
+    <path d="M60 410 C300 402 900 410 1150 406" stroke-width="2.6"/>
+    <path d="M60 550 C300 542 900 550 1150 546" stroke-width="2.6"/>
+    <path d="M120 106 l30 -4 l2 30 l-32 4 z M200 108 l30 -4 l2 30 l-32 4 z M300 104 l30 -4 l2 30 l-32 4 z M420 106 l30 -4 l2 30 l-32 4 z M560 104 l30 -4 l2 30 l-32 4 z"/>
+    <path d="M120 246 l30 -4 l2 30 l-32 4 z M180 248 l30 -4 l2 30 l-32 4 z"/>
+    <path d="M120 386 l26 -4 l2 26 l-28 4 z M170 388 l26 -4 l2 26 l-28 4 z M220 384 l26 -4 l2 26 l-28 4 z M270 386 l26 -4 l2 26 l-28 4 z M320 388 l26 -4 l2 26 l-28 4 z M370 384 l26 -4 l2 26 l-28 4 z"/>
+    <path d="M120 526 l30 -4 l2 30 l-32 4 z M200 528 l30 -4 l2 30 l-32 4 z"/>
+  </g>
+  <g class="h" font-size="22">
+    <text x="60" y="90">default</text>
+    <text x="60" y="230">long</text>
+    <text x="60" y="370">historic backfill</text>
+    <text x="60" y="510">notifications</text>
+  </g>
+  <g class="pen">
+    <path d="M960 560 C960 520 1000 500 1030 520 C1060 500 1100 520 1100 560 C1100 620 1030 660 1030 660 C1030 660 960 620 960 560 Z"/>
+    <path d="M980 610 A50 50 0 0 1 1080 610" class="soft" stroke-width="3"/>
+    <path d="M1030 610 L1010 580" stroke-width="2.6"/>
+    <circle cx="1030" cy="610" r="5"/>
+    <path d="M980 610 l-10 4 M1080 610 l10 4 M1030 560 l0 -10" class="soft"/>
+  </g>
+  <g class="h" font-size="22">
+    <text x="960" y="500">CPU</text>
+  </g>
+  <g class="hl" font-size="22">
+    <text x="700" y="700">reduce-only budget: shrink long queues before adding more</text>
+  </g>
+  <g class="h" font-size="19" opacity=".7"><text x="70" y="732">— Horizon: lanes, not a single line</text></g>
+</svg>

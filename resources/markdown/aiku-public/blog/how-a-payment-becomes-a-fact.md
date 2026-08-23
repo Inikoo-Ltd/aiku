@@ -5,6 +5,8 @@ date: 2026-07-24
 tags: payments, accounting, architecture, webhooks
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>A payment arrives via browser callback, redirect and webhook, but only a server-verified <em>captured</em> status counts as money. Every path funnels into one processing method keyed to an <code>api point</code>, deduped by provider reference under a row lock, with failure recoverable but success final. Every webhook lands in a gateway log with a terminal status, and a sweeper recovers stuck payments every thirty minutes. The same shape, written down as a ten-rule playbook, let a second provider ship in a week.</aside>
+
 Taking a card payment online looks like a widget and a callback. Recording it correctly — so that the warehouse ships exactly the orders that were paid, once, and the accountant can trace every penny back to an event — is an architecture. This summer we rebuilt ours around a modern card provider, then used the same shape for a buy‑now‑pay‑later provider for trade customers, and wrote down the rules so the next one is cheap. This is that architecture.
 
 ## Three messengers, one truth
@@ -33,6 +35,14 @@ Every inbound webhook lands in a **gateway log** table — received, pre‑proce
 
 Webhooks arrive late, clients close tabs, networks drop. Every thirty minutes a sweeper looks for api points stuck in progress between thirty minutes and forty‑eight hours old, asks the provider by reference, and recovers any captured payment through the same idempotent success path — trusting only payments whose metadata names the attempt it is looking at. An abandoned basket is queried once, then marked. Nothing is lost because a message was.
 
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>The gateway log table is modelled by <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Accounting/PaymentGatewayLog.php">app/Models/Accounting/PaymentGatewayLog.php</a>.</li>
+<li>The api point per order lives in <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Accounting/OrderPaymentApiPoint.php">app/Models/Accounting/OrderPaymentApiPoint.php</a> (top-ups have their own: <code>app/Models/Accounting/TopUpPaymentApiPoint.php</code>).</li>
+<li>The thirty-minute sweeper lives under <code>app/Actions/Accounting/Payment/</code> (one per provider), scheduled from the console kernel; each recovers captured payments through the same idempotent success path.</li>
+<li>Locking the api point row before deduping is a standard <code>SELECT ... FOR UPDATE</code> inside a DB transaction — see PostgreSQL's own notes on row locking: <a href="https://www.postgresql.org/docs/current/explicit-locking.html">postgresql.org/docs/current/explicit-locking.html</a>.</li>
+</ul></aside>
+
 ## Saved cards and merchant‑initiated charges
 
 Customers on the portal can save a card; orders that arrive from their marketplace channels are charged server‑side with no browser in the loop, and the order proceeds regardless — the webhook that follows is reconciliation, not authorisation. That is what lets a dropshipper's overnight orders be picked in the morning.
@@ -48,3 +58,5 @@ Ten rules, in a file, read before any new provider: verify server‑side; webhoo
 ## What the accountants get
 
 A payments report by provider and by method — card by scheme, wallets, BNPL, bank, cash on delivery — over any interval, with failed attempts as their own column, because a declined card is a fact too. Every row links to its gateway events. And the warehouse ships what was paid, once.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>The whole architecture reduces to one sentence — never trust a browser as proof of payment, only a server-verified capture counts — and everything else (one processing path, locked idempotency, a forgiving state machine, a full event log, a sweeper) exists to make that sentence hold under real-world timing.</aside>

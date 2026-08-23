@@ -7,6 +7,8 @@ tags: email, ses, horizon, marketing, comms
 
 <aside class="tldr"><strong>TL;DR</strong>Fifty-five kinds of email — newsletters, order confirmations, dispatch notices and more — all run through one pipeline: an outbox per kind, a recipient list prepared before sending, dispatch through Amazon SES via a Horizon queue, and delivery/open/click/bounce events tracked back through SNS webhooks and attributed to orders. A morning newsletter can reach a quarter of a million emails before lunch. A retry back-off bug once caused a throttling storm; fixing it to exponential back-off with jitter eliminated the errors.</aside>
 
+<figure><img src="/art/readme/draw-note-email.svg" alt="Sketch of envelopes queued through SES with delivery events returning to a ledger" width="1200" height="750" loading="lazy"><figcaption>Queued out through SES, every event tracked back in.</figcaption></figure>
+
 The busiest hour of an ordinary day is the morning newsletter: around a hundred thousand emails in the first hour, a quarter of a million by lunch on a big day. Alongside that, the system sends order confirmations, dispatch notices, invoices, password resets, back‑in‑stock alerts, abandoned‑basket nudges, reorder reminders, review requests, pallet notices for fulfilment customers, chat notifications — **fifty‑five outbox types** in the enum at last count — and every one of them goes through the same pipeline. This note is that pipeline.
 
 ## Outboxes: every kind of email is a thing with stats

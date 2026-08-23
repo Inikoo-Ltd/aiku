@@ -5,7 +5,11 @@ date: 2026-08-03
 tags: tax, accounting, vies, ordering, europe
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Every aiku order resolves a tax category from the shop's country, billing/delivery addresses, VAT number and status. EU numbers are validated against VIES (with timeouts, rechecks at 2/24/48 hours, and a per-shop hourly cap) and UK numbers against HMRC; every status change is audited. The category itself comes from an explicit decision tree — Canaries, Madeira, Azores, Monaco, the Spanish surcharge regime — with rates stored as rows in `tax_categories`, not hardcoded, so a rate change is a data change.</aside>
+
 A B2B order from a shop in one EU country to a customer in another is zero‑rated *if* the customer's VAT number is valid — and standard‑rated if it is not. A parcel to Tenerife is outside EU VAT even though Tenerife is Spain. A parcel to Madeira pays a different Portuguese rate than Lisbon. Monaco is France for this purpose. A Spanish sole trader on the surcharge regime pays an extra 5.2% on top of IVA. And in the UK, after Brexit, the question is simply "are both addresses in the UK?".
+
+<figure><img src="/art/readme/draw-note-tax.svg" alt="Loose sketch of Europe with sticky-note tax rate labels" width="1200" height="750" loading="lazy"><figcaption>Same product, different rate everywhere.</figcaption></figure>
 
 aiku sells from shops in several of these countries to customers in all of them, so every order resolves a **tax category** before its totals mean anything. This note is how.
 
@@ -18,6 +22,14 @@ A customer gives us a VAT number. We store it with a *type* (EU VAT, UK VAT, oth
 **UK numbers go to HMRC's** check‑VAT API, behind OAuth client credentials, when the integration is enabled for the shop; otherwise a format check. Same statuses, same audit.
 
 Staff can override — mark a number valid manually with a reason — because registries lag and customers do not wait. The override is visible as such.
+
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>EU validation runs through [ValidateEuropeanTaxNumber.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Helpers/TaxNumber/ValidateEuropeanTaxNumber.php); the UK/HMRC path is [ValidateOnlineGBTaxNumber.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Helpers/TaxNumber/ValidateOnlineGBTaxNumber.php) and [ValidateGBTaxNumber.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Helpers/TaxNumber/ValidateGBTaxNumber.php), with the shared entrypoint in [ValidateTaxNumber.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Helpers/TaxNumber/ValidateTaxNumber.php).</li>
+<li>Status, type and validation method are enums under [app/Enums/Helpers/TaxNumber](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Enums/Helpers/TaxNumber/TaxNumberStatusEnum.php); the audit trail comes from [WithValidateTaxNumberCustomAudit.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Helpers/TaxNumber/Traits/WithValidateTaxNumberCustomAudit.php).</li>
+<li>The category model is [app/Models/Helpers/TaxCategory.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Helpers/TaxCategory.php), resolved by [GetTaxCategory.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Helpers/TaxCategory/GetTaxCategory.php).</li>
+<li>VIES is the EU Commission's SOAP VAT-checking service; see the <a href="https://ec.europa.eu/taxation_customs/vies/">VIES service</a> and HMRC's <a href="https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/vat-registered-companies-api">Check VAT API</a> docs.</li>
+</ul></aside>
 
 ## Then: which category?
 
@@ -60,3 +72,5 @@ All of the above decides *which country's regime* an order falls under. Inside t
 ## What we learned
 
 Treat tax‑number validation as an *operation with a history*, not a boolean: status, method, timestamp, audit, retry. Write the tax tree as the list of exceptions it really is, one readable branch per regime, with the rates in data. And test it with real addresses — a Tenerife postcode, a Funchal postcode, a Monaco delivery — against the real database, because that is where the next exception will be found.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>European VAT is a list of exceptions, not an algorithm, so aiku writes it as an explicit, readable decision tree with rates in data and treats every tax-number check as an audited operation with retries, not a boolean.</aside>

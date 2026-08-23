@@ -5,6 +5,8 @@ date: 2026-08-23
 tags: mcp, ai, observability, sysadmin
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>We log every call to aiku's staff MCP server — user, tool, duration, error and error text — and surface it on a sysadmin dashboard. Two weeks of data showed one user driving 63% of traffic and another with 454 calls at a 100% error rate, because her assistant kept reaching for tools she had no permission for. The fix was server-side: register denied tools with a reason instead of "unknown tool", and route the instructions so the model's first guess is right.</aside>
+
 When we opened the [staff MCP server](/blog/an-mcp-server-for-a-whole-business), the question we could not answer was the obvious one: *is anyone using it, and is it working for them?* A model talking to an API fails quietly. It gets a permission error, tries a different tool, gets another, gives up, and the person on the other end sees a vague "I couldn't find that" — and never files a bug.
 
 So the first thing we added after the tools was a log.
@@ -12,6 +14,13 @@ So the first thing we added after the tools was a log.
 ## One row per call
 
 Every tool call writes a row: the user, the tool, the arguments, the duration in milliseconds, whether it errored, and — after the incident below — the error text. It is a plain table with three indexes; the middleware that writes it is a dozen lines. The arguments are kept because "what did the model ask for" is the whole debugging story; the results are not, because they would be a second copy of the business.
+
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>The logging middleware is [app/Http/Middleware/LogMcpRequest.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Http/Middleware/LogMcpRequest.php); access gating is [app/Http/Middleware/EnsureCanUseMcp.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Http/Middleware/EnsureCanUseMcp.php).</li>
+<li>The server and its tools live under [app/Mcp/Servers/AikuServer.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Servers/AikuServer.php) and [app/Mcp/Tools](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Tools/SqlQueryTool.php), including the SQL-gating trait [WithMcpSqlAccess.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Tools/WithMcpSqlAccess.php).</li>
+<li>Built on <code>laravel/mcp</code> — see the <a href="https://laravel.com/docs/mcp">Laravel MCP docs</a> for tool registration and authorization patterns.</li>
+</ul></aside>
 
 ## The dashboard
 
@@ -65,3 +74,5 @@ This is ongoing work, and it will stay ongoing: every new tool is a new surface,
 A human who hits a wall tells you. A model that hits a wall tries another door, and the person watching sees only that the assistant seemed confused. Without the log we would have concluded that the MCP server was lightly used and fine. With it we learned that one of our more engaged users had been failing silently for two weeks — and that the cheapest fix was a sentence in the server's instructions.
 
 If you run an MCP server for real people: log every call with the error text, put it where a sysadmin looks weekly, and read it as "what is the model being told" rather than "what is the user doing". The model is a user with infinite patience and no voice.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>An MCP server fails silently unless you log every call with its error text and read the log as feedback on the server's own instructions, not on the user.</aside>

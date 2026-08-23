@@ -108,6 +108,12 @@
         .tagbar a span { opacity: .6; margin-left: 3px; }
         .tagbar a[aria-current] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
         .tagbar a:hover { text-decoration: none; border-color: var(--ink); }
+        .tagbar details { display: contents; }
+        .tagbar summary { list-style: none; cursor: pointer; font-size: 13px; padding: 5px 11px; border: 1px dashed var(--rule); border-radius: 999px; color: var(--muted); }
+        .tagbar summary::-webkit-details-marker { display: none; }
+        .tagbar summary span { opacity: .6; margin-left: 3px; }
+        .tagbar details[open] summary { display: none; }
+        .tagbar details > div { display: contents; }
         article.post { padding: 72px 0; }
         article.post .meta { color: var(--muted); font-size: 15px; margin-bottom: 40px; }
         article.post .body { font-size: 18px; }

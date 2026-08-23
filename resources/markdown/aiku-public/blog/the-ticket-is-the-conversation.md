@@ -5,6 +5,8 @@ date: 2026-08-21
 tags: support, workflow, jira, communication
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Support requests from staff, customer service and engineering all land in one Jira project and come back out as commits, closed with three plain-words lines: what we did, why, what you do now. Tickets are swept periodically for stale duplicates, but the honest part is that not everything arrives as a ticket, conflicting requests still get decided by a person in the middle, and the team keeps wondering whether to build its own ticket system instead.</aside>
+
 Every system that real people use every day generates a stream of "this is wrong / could this do X / what happened to order 48213". For us that stream goes into a Jira project named after its purpose — *help* — and comes back out as commits. This note is how that works, the rules we hold when we answer, and why we keep wondering whether we should write the ticket system ourselves.
 
 ## Where tickets come from
@@ -60,3 +62,5 @@ We have not decided. When we do, it will be a ticket — titled, plainly, in the
 If you have ever raised one of the tickets above and are reading this: none of it was personal. We did our best with the odd job of being engineers and, some of the time, referees — the people who have to say "not this one", or "not yet", or "those two cannot both be true". Ninety‑nine per cent of what you ask for is a good idea. The trouble is that a system is an equilibrium: every good idea for one desk moves something on another desk, and somebody has to hold the balance. We would love the process to be a democracy; a company, by its nature, is not quite one, and the engineer in the middle is neither the voter nor the government — just the person trying to keep the building standing while everyone redecorates.
 
 Two things will get better. Assistance from AI is already shortening the wait between "I raised it" and "it is fixed", and that gap will keep closing. And the more of this we write down — here, in the tickets, in the three closing lines — the fewer decisions are made in a corridor. Thank you for your patience, and for the haunting screams. We hear them.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>The ticket system works for the part that is a form, a thread and a status — the harder part is everything that never becomes a ticket, and that stays a matter of process and habit, not tooling.</aside>

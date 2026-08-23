@@ -7,6 +7,8 @@ tags: deploy, ci, ops, octane, zero-downtime
 
 <aside class="tldr"><strong>TL;DR</strong>Push to <code>production</code> → GitHub Actions bumps the semver and hands to Deployer. Twenty steps in order: prepare, vendors, stop crawls, set release, build caches into the new dir, migrate on one host only, diff the front end and build‑or‑rsync, save the SSR checksum, publish, prune, Horizon terminate, sync the Octane anchor, restart telemetry if its code changed, Octane reload, SSR restart‑if‑changed + health check, log, tell open tabs, flush Varnish‑if‑changed + warm, chores. No half‑deployed request, no killed job, rollback is a redeploy.</aside>
 
+<figure><img src="/art/readme/draw-note-deploy.svg" alt="Sketch of a release symlink swap and workers reloading one by one" width="1200" height="750" loading="lazy"><figcaption>Releases, a symlink flip, and workers that finish before they come back.</figcaption></figure>
+
 Other notes cover *why* we ship [seventeen times a week](/blog/369-production-releases-in-five-months), *why* the application server reloads from an [anchor directory](/blog/moving-to-octane), and *why* the storefront cache is [flushed only when it changed](/blog/only-flush-the-cache-you-changed). This one is the *how*: the exact sequence a deploy runs, in order, and what each step is protecting. It is a Deployer script in the repository; anyone can read it, which is part of the point.
 
 ## Before the script: the push

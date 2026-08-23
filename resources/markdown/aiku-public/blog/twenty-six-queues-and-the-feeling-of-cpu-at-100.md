@@ -7,6 +7,8 @@ tags: horizon, queues, ops, reliability, laravel
 
 <aside class="tldr"><strong>TL;DR</strong>Twenty‑six Horizon supervisors across two servers run everything that is not a page view. The bad mornings: stray workers after a deploy (a query 780k×/hour), a supervisor killed with its children alive (every queue twice), retry‑after shorter than the job, ten thousand jobs from one loop, a 5 s timeout on a 6 s job, an O(n²) recipient list. Each became a rule. The beast is tamed; the dashboard is boring.</aside>
 
+<figure><img src="/art/readme/draw-note-queues.svg" alt="Sketch of Horizon queue lanes with a CPU gauge" width="1200" height="750" loading="lazy"><figcaption>Lanes, not a single line: default, long, historic backfill, notifications.</figcaption></figure>
+
 Open Horizon's dashboard on a normal afternoon and you see the whole business breathing: emails going out, stock counters recalculating, time series folding, search reindexing, marketplace portfolios syncing, a newsletter's recipient list being prepared, a backfill of two million historic jobs quietly draining at the back. **Twenty‑six supervisors**, each with its own queues, process counts, memory and timeout, split across the primary and the replica. Almost everything that makes aiku feel instant is something that was done on a queue a moment earlier.
 
 That same dashboard, on a bad morning, shows CPU pinned at 100% and a number in the tens of thousands next to a queue name, and you know — before you know why — that a small bug has found a way to multiply itself. This note is about the queues, and about those mornings, because the second part is what taught us how to run the first.

@@ -5,6 +5,8 @@ date: 2026-08-14
 tags: inventory, warehouse, postgres, audits
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Stock quantities are never written directly; they are the sum of seventeen million typed movements (purchase, pick, return, transfer, production, found, write-off, audit) across 88,000 org stocks and 45,000 locations. Audits are movements too — they record a delta against the ledger rather than overwriting a count, and a lock stops a low-stock audit racing an in-flight pick. A migration-era <code>-error</code> naming convention on retired SKUs caused live products to sometimes bind to a discontinued twin; the fix is to prefer active org stocks and treat "error" in a name as never the real one.</aside>
+
 Ask the system how many lavender candles are in the UK warehouse and it will tell you, instantly, from a counter on the stock row. But that counter is not where the truth lives. The truth is **seventeen million stock movements** — every time a unit came in, went out, moved, was found, was written off or was counted — and the counter is their sum. This note is how that is organised, and why we will not let anyone type a stock figure directly.
 
 ## The shape
@@ -28,6 +30,12 @@ A count is the one moment the physical world overrides the ledger, so it is mode
 
 One guard we added after watching the floor: **a low‑stock audit is locked while a pick is in flight** on that row. Without it, a picker takes the last three, an auditor counts zero at the same moment, and the ledger records a phantom loss of three. The lock is short and boring and it closed a whole class of deltas.
 
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>Movements: [app/Models/Inventory/OrgStockMovement.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Inventory/OrgStockMovement.php), written via [app/Actions/Inventory/OrgStockMovement/StoreOrgStockMovement.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Inventory/OrgStockMovement/StoreOrgStockMovement.php).</li>
+<li>Audits: [app/Actions/Inventory/LocationOrgStock/AuditLocationOrgStock.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Inventory/LocationOrgStock/AuditLocationOrgStock.php) and the bulk variant [app/Actions/Inventory/LocationOrgStock/BulkAuditLocationOrgStock.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Inventory/LocationOrgStock/BulkAuditLocationOrgStock.php).</li>
+</ul></aside>
+
 ## Lost, found, and the `-error` rule
 
 Things go missing and things turn up. *Found* is a movement with no purchase behind it; a write‑off is the reverse. Both need a reason.
@@ -45,3 +53,5 @@ Every night each org stock writes a **history** row: quantities, value by each v
 ## What we would tell our past selves
 
 Never let a quantity be written; only movements. Type the movements generously. Treat an audit as a movement with a delta and a reason, not as an overwrite. Lock the count against the pick. And if your migration leaves twins with a warning in their name, believe the warning.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Never let a quantity be written directly — type every movement, treat an audit as a movement with a delta and a reason, lock the count against the pick, and believe a migration's own warning when it names a twin "error".</aside>

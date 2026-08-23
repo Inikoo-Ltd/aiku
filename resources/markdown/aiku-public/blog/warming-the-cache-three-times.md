@@ -19,6 +19,13 @@ The second version kept the crawler but made it two‑pass: a *seeder* crawl to 
 
 Then a Thursday. After a deploy, the primary's load went to 60 on 32 cores, 45% of it in system time, all of the SSR workers pinned, while real customer traffic was under one request per second. Twenty thousand server renders in half an hour. The culprit was a function called *protect from surges*: it capped a site's concurrency with `min()` and then, one line later, floored it back *up* with `max()` to a per‑tier minimum — so a crawl starting on an idle box was *promoted*, never limited. Every long‑tail site went from one worker to three, and a fleet crawl was at its most aggressive in the minute after a deploy, which is the one minute it should have been gentlest. The function was rewritten to be reduce‑only and the global budget halved. It was also the moment we admitted the crawler was the wrong tool.
 
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>The <code>Crawl</code> state machine lives at [app/Models/Web/Crawl.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Web/Crawl.php), with its states and trigger/type enums in [app/Enums/Web/Crawl](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Enums/Web/Crawl/CrawlStateEnum.php).</li>
+<li>The crawl actions themselves are [CrawlWebsite.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Crawl/CrawlWebsite.php) and [CrawlWebsites.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Crawl/CrawlWebsites.php), with stale rows swept by [PurgeStaleCrawls.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Crawl/PurgeStaleCrawls.php) and a manual stop in [StopCrawl.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Crawl/StopCrawl.php).</li>
+<li>The bug class — a <code>min()</code> cap immediately re-raised by a later <code>max()</code> floor — is the classic Horizon/queue concurrency footgun: a reduce-only budget must never have a later step that raises it back up. See the general pattern in the <a href="https://laravel.com/docs/horizon">Laravel Horizon docs</a> on balancing strategies and <code>maxProcesses</code>.</li>
+</ul></aside>
+
 ## Version three: warm what people visit (August 2026)
 
 We already had [our own page‑view rows](/blog/our-own-analytics-beacon). So the warmer stopped crawling. It now takes, per website, the pages viewed in the last thirty days, scores them — a logged‑in view counts three, an anonymous one counts one, because anonymous still includes whatever bots slipped through — and fetches enough of them, in descending order, to cover **90% of the weighted traffic**. On a typical large site that is about 3,400 URLs out of 8,700 that had any view and 267,000 that exist; the last 10% of traffic would have cost 60% more fetching. Never‑visited pages are not warmed; they render on demand as they always did. Zero‑traffic sites warm only their home page.
@@ -34,3 +41,5 @@ It is blind to pages that only bots visit. Our beacon fires from the browser, so
 ## What we learned
 
 Do not warm everything; warm what is visited, in order, to a coverage you can defend. Make the concurrency budget global and *reduce‑only* — any code path that can raise it is a surge waiting for a deploy. Let the warmer run through the same front door as customers, so you are warming what they will actually hit. And keep the page‑view rows next to the warmer; the crawler was only ever a way of guessing what those rows already knew.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Three rewrites taught the same lesson: don't guess what to warm by crawling links, warm what your own traffic data says people visit, and make any concurrency safety valve reduce-only so it can never promote itself into a surge.</aside>

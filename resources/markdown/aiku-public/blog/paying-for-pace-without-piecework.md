@@ -5,6 +5,8 @@ date: 2026-08-25
 tags: manufacture, payroll, hr, design
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Coming to the manufacture module: a banded hourly pay scheme replacing a manual spreadsheet, not piecework. Four performance bands are earned by pace against a per-task standard rate, with band zero pinned to the statutory minimum wage; band targets are set so cost per unit stays the same at every band. It's built and tested but not yet switched on — pay bands, standard rates and pay-calculation snapshots are now dated rows, and a live ladder on the shop-floor screen shows the operator their current band in real time.</aside>
+
 Our manufacturing floor has, for years, run a reward scheme out of a spreadsheet: a tab of tasks, a tab of targets, a tab of rates, a weekly tab that someone fills in by hand. It works, it is fair in intent, and it is one person's afternoon every week. We have rebuilt it inside aiku's manufacture module. It is built and tested and not yet switched on, so this is a note about the design rather than the results. Those come later.
 
 ## Not piecework
@@ -34,3 +36,5 @@ The shop‑floor screen shows the operator their current band as a small ladder 
 Whether a quality gate should hold a band back, and at what threshold; how a rate review gets requested and approved; reconciling attendance against the production sessions; a KPI view for supervisors. All of these are rows and switches in the data — *requires approval*, *quality threshold*, *effective from* — not code, so that when management answers the open questions, the change is an edit, and when they do not, the defaults are the spreadsheet's.
 
 We will write the second half of this note when it has run for a few pay periods and the numbers are real.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Banded hourly pay, cost-neutral by construction and built as dated rows instead of a spreadsheet, replaces piecework without breaking the floor's original logic — the results come once it has run for real.</aside>

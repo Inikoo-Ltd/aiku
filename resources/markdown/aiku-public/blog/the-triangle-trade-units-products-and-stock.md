@@ -5,7 +5,11 @@ date: 2026-07-28
 tags: architecture, catalogue, inventory, goods, postgres
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>aiku models a product as a triangle — trade unit (the physical thing), org stock (that thing in a warehouse) and product (that thing as sold in a shop) — connected by pivots that each carry a quantity. A fraction on that quantity is sometimes a migration bug (a 1/12 fraction copied in the wrong direction) and sometimes the honest truth (aromatics sold as fractions of a litre). Changing a product's composition while an order is in flight is the most dangerous edit: it must mint a new historic version so submitted orders stay frozen at what was actually ordered.</aside>
+
 Ask three people in a trading company what "a lavender candle" is and you get three different answers. To the buyer it is a SKU from a supplier, in cartons of twelve. To the warehouse it is a thing on a shelf in location B‑11‑01, counted in units. To the shop it is a product at £4.50, or a six‑pack at £24, or — on a trade price list — a carton. To the factory, if we make it, it is 180 grams of wax and a wick.
+
+<figure><img src="/art/readme/draw-note-triangle.svg" alt="Sketch of the trade unit, product, and org stock triangle with quantities on each edge" width="1200" height="750" loading="lazy"><figcaption>The number on the edge is the truth.</figcaption></figure>
 
 Most systems pick one of those and make the others suffer. aiku models all of them, and the model is a triangle.
 
@@ -46,6 +50,14 @@ The rules that came out of it:
 - Pack‑size display on the floor follows one contract everywhere: *the value stays in packs; only the fractional part is shown as loose units over the pack size.* A rewrite that multiplied every quantity by the pack size — which looked right in one screenshot — broke every order screen for a day and was reverted.
 - When a whole group of shops must match their master's pack size, the repair writes through the real sync action so weights, stock links and flags cascade, and it requires a *strict* majority before it calls a product wrong.
 
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>The units-integrity repair command is [app/Actions/Maintenance/Masters/RepairMasterProductUnitsIntegrity.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Maintenance/Masters/RepairMasterProductUnitsIntegrity.php).</li>
+<li>The group-wide sync that cascades weights, stock links and flags when a master's pack size changes is [app/Actions/Maintenance/Masters/SyncMasterChildTradeUnitCompositionToMaster.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Maintenance/Masters/SyncMasterChildTradeUnitCompositionToMaster.php).</li>
+</ul></aside>
+
 ## Why keep the triangle at all
 
 Because collapsing it is how you lose something. Collapse trade unit into product and you cannot share a barcode, a weight, an ingredients list or an image across thirty shops. Collapse stock into product and you cannot store one thing once and sell it as a single, a six‑pack and a carton. Collapse product into stock and you cannot price the same thing differently in Spain and in the UK. Three corners, a number on every edge, and the discipline that the number on the edge is the only truth — that is what lets a candle be one thing to the buyer, twelve to the warehouse and a litre to the factory, and still be one row in the stock count.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Three corners — trade unit, stock, product — with a number on every edge, and the discipline that the number on the edge is the only truth, is what lets one candle be a single to the buyer, twelve to the warehouse and a litre to the factory, and still be one row in the stock count.</aside>

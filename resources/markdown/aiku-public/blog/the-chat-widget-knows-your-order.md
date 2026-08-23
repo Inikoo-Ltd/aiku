@@ -5,6 +5,8 @@ date: 2026-07-15
 tags: chat, customer-service, realtime, ux
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>aiku built its own storefront live chat because a third-party widget can't show the agent the customer's account, orders and history beside the conversation. A chat session starts anonymous and links to a customer on login; messages translate both ways over the same helper the catalogue uses; a session can become a ticket, a Slack thread or a summary. When an assistant started drafting agent replies, the team wrote down tone rules: warm and human, no scripted phrases, no bot tells, and hand over to a person the moment anyone asks.</aside>
+
 In the corner of every storefront there is a small chat bubble. Behind it is a customer‑service agent in the staff application, and behind the agent is the whole system: the customer's account, their open orders, the delivery note that is sitting in *waiting*, the invoice they are asking about. That is the one thing a third‑party chat widget could never give us, and the reason we built our own. This note is how it works and what we decided along the way.
 
 ## A session, a visitor, an agent
@@ -22,6 +24,12 @@ This is the point. Beside the conversation the agent has the **customer profile*
 A customer writes in Romanian; the agent reads it in English and answers in English; the customer reads Romanian. Translation is a queued job on every message, in both directions, using the same translation helper the product catalogue uses; the original is kept under the translation and a tap shows it. Agents are hired for what they know about the products, not for the number of languages they speak.
 
 ## A session can become other things
+
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>The core session model is [app/Models/Chat/ChatSession.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Chat/ChatSession.php), surfaced via [app/Http/Resources/CRM/Livechat/ChatSessionResource.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Http/Resources/CRM/Livechat/ChatSessionResource.php).</li>
+<li>Turning a session into something else is its own action: [app/Actions/Chat/ChatSession/SummarizeChatSession.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Chat/ChatSession/SummarizeChatSession.php) and [app/Actions/Chat/ChatSession/ShareChatSessionToSlack.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Chat/ChatSession/ShareChatSessionToSlack.php).</li>
+</ul></aside>
 
 From a session, with the context pre‑filled: a **ticket** in the help project (the conversation, the customer, the order, the agent's chosen priority and labels); a **Slack thread** for a shop's channel when the team wants eyes on something; a **summary**, generated on demand, for the handover at the end of a shift or the note on the customer's record. Closing a session does not lose it — closed sessions are searchable, exportable, and appear on the customer's timeline for the next agent.
 
@@ -44,3 +52,5 @@ The rules are served to the assistant from the same place the MCP tools are, so 
 ## What it replaced
 
 A hosted widget that knew the visitor's name and nothing else, and a team that had to alt‑tab to find an order. The chat is not a feature on top of the system; it is a window into it, with a person on the other side.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>The chat is not a feature bolted onto the system, it is a window into it — an agent who sees the whole customer record beside the conversation, with tone rules written down the moment a machine started drafting the words.</aside>

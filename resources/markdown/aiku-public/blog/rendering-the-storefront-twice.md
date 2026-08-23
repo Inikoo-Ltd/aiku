@@ -5,6 +5,8 @@ date: 2026-07-31
 tags: ssr, inertia, vue, performance, storefront
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Every storefront page renders twice: once server-side via a long-lived Bun process (running the same Vue components), once again in the browser, so crawlers and slow phones get real HTML while logged-in users get an instant app. A supervisor once reported the SSR process as running while its port was dead, silently falling back to client-side rendering for hours — fixed with a post-deploy health check. Profiling found catalogue pages' p50 of 1.1s was dominated not by the database but by rendering and hydrating a 418 KB props payload, mostly image URLs.</aside>
+
 A storefront page in aiku is a Vue application. That is good for the experience once it is loaded — navigation is instant, the basket updates in place — and bad for the two visitors who matter most and do not run JavaScript well: a search engine's crawler and a phone on a bad connection. So every storefront page is rendered **twice**: once on the server into complete HTML, and once in the browser, where the same components take over the HTML they were given and become interactive. This note is how the first render is made to happen, and what it costs.
 
 ## The shape
@@ -18,6 +20,11 @@ The two renders must agree exactly — same component, same props, same output �
 A supervisor can report a process as *running* while the port it is supposed to listen on is dead. One July afternoon that happened to the SSR process: Inertia noticed, fell back to client‑side rendering, every page still worked for humans, and nothing alarmed — except that for some hours crawlers were receiving an empty shell, and first loads on slow phones were noticeably slower. Nobody reported it, because nothing was broken in the ordinary sense.
 
 The fix went into the deploy: after every release the SSR port is **health‑checked**, and the process is restarted if the check fails — independently of whether the release changed the storefront. And the restart is otherwise gated on the [storefront build checksum](/blog/only-flush-the-cache-you-changed), so a staff‑only deploy does not bounce it for nothing.
+
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>SSR checksum saving, health-checking and the supervisor restart are deploy tasks in [deploy/deploy.php](https://github.com/Inikoo-Ltd/aiku/blob/main/deploy/deploy.php): <code>deploy:save-ssr-checksums</code> and <code>deploy:restart-ssr-by-supervisorctl</code>.</li>
+</ul></aside>
 
 ## Where the second goes
 
@@ -34,3 +41,5 @@ The second lever is done. The first and third are open, and honest: field trimmi
 ## Why we keep both renders
 
 Because the alternatives are worse in specific ways. Client‑only rendering hands crawlers nothing and phones a spinner. Server‑only rendering gives up the instant basket and the in‑app navigation that trade customers placing forty‑line orders actually use. Rendering twice costs a Bun process, a health check and a discipline about purity; it buys a page that is a document to a crawler and an application to a person.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Rendering twice costs a Bun process, a health check, and discipline about purity — but it's the only way to give a crawler a document and a customer an app at once, and the real cost turned out to be the size of what gets rendered, not the data behind it.</aside>

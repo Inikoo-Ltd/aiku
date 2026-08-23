@@ -46,3 +46,5 @@ A VAT‑only credit note must return exactly the VAT the invoice charged — per
 ## What we learned
 
 Tax is a property of the line, versioned like price, chosen by staff as a named intent rather than a code, and frozen once sold. And a model that was true for years can stop being true the day the catalogue grows — the range changes faster than the schema, so the schema should be ready for the range.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Tax is a property of the line, versioned like price, chosen by staff as a named intent rather than a code, and frozen once sold — and a model that was true for years can stop being true the day the catalogue grows.</aside>

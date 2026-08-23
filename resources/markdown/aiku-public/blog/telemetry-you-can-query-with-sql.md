@@ -5,6 +5,8 @@ date: 2026-08-01
 tags: observability, telemetry, postgres, mcp, open-source
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>A commercial APM agent stopped matching reality once the app moved to Octane's long-lived workers, and broke the CI test runner outright, so it was removed everywhere. It was replaced with NightOwl, an open-source Laravel telemetry stack: an agent per server with a local SQLite buffer, draining into a PostgreSQL store on an existing server, with years of retention at zero extra cost. The unplanned win was giving an AI assistant read-only SQL access to that database, which has since diagnosed several production incidents by query.</aside>
+
 For years the application wore a commercial APM agent. It was fine for a PHP‑FPM world: a process boots, handles one request, reports, dies. Then we moved to [Octane](/blog/moving-to-octane) — one process, thousands of requests — and the agent's model stopped matching ours: transactions blurred into each other, background work was invisible, and a few metrics were simply wrong. On the CI runner it was worse: the agent wraps PHP's exception handler in a way the test framework did not expect, and the whole suite died on memory before running a single test. We removed it from the runner, then from everywhere.
 
 ## What we wanted
@@ -20,6 +22,12 @@ We settled on [NightOwl](https://usenightowl.com), an open‑source telemetry st
 - **A dashboard** on top for the everyday view — slow requests, failing jobs, exception groups — that reads the same tables.
 
 We host the store ourselves, on the staging box: a machine we already run for [backups, the CI runner and the email archive](/blog/three-bare-metal-servers), with slow, enormous disks that are exactly right for telemetry. Retention is therefore not a plan tier; it is how much disk is left, and the answer is *years*. The software is free. The server we needed anyway.
+
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>NightOwl config lives in [config/nightowl.php](https://github.com/Inikoo-Ltd/aiku/blob/main/config/nightowl.php).</li>
+<li>Read-only SQL access to the telemetry store is exposed to the AI assistant through [app/Mcp/Tools/SqlQueryTool.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Tools/SqlQueryTool.php) and [app/Mcp/Tools/DescribeTablesTool.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Tools/DescribeTablesTool.php), gated by [app/Mcp/Tools/WithMcpSqlAccess.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Tools/WithMcpSqlAccess.php).</li>
+</ul></aside>
 
 ## The accident: SQL to the telemetry
 
@@ -37,3 +45,5 @@ It is also how several of the incidents written up elsewhere on this site were d
 ## The bill
 
 Zero for the software. The server was already there. The assistant's queries cost what a query costs. We would not go back to a per‑host subscription for a picture that was, in the end, less true.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Own the telemetry as rows in a database you already run, and it stops being a monitoring product and becomes part of the system's own memory — queryable by anyone, including an AI assistant, in seconds.</aside>

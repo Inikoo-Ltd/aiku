@@ -5,7 +5,11 @@ date: 2026-08-05
 tags: search, typesense, iris, ai, merchandising
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>We replaced a hosted storefront search with our own Typesense index, logging every query. Measuring typo-tolerance knobs against real no-result and known-good query lists fixed 69% of historical failures for free. A synonym pass across fourteen languages, staff-driven merchandising boosts, and a harness-tuned semantic arm followed — the semantic arm mattered less than expected once typo tuning was on, and mostly helped an "assortment gap" the keyword side can't see. Total AI spend: about six cents.</aside>
+
 For years the search box on our storefronts was a hosted third‑party service. It worked, it cost money, and it kept the most interesting data we had — *what people wanted and could not find* — in somebody else's dashboard. In the summer of 2026 we brought it home. This note is what we learned doing it.
+
+<figure><img src="/art/readme/draw-note-search.svg" alt="Sketch of a misspelt search query still finding the right result" width="1200" height="750" loading="lazy"><figcaption>Typos forgiven.</figcaption></figure>
 
 ## Our own index, our own rules
 
@@ -42,6 +46,13 @@ We chose the small multilingual model that the search engine can run in‑proces
 
 And one finding that revised our whole view: **the dominant search‑quality problem was the keyword arm, live today**, not the missing semantic one. Natural‑language queries ("where is my order", "account") matched descriptions and returned a hundred products. The fix is weighting and drop‑token thresholds on the keyword side — unglamorous, measurable, and worth more than any embedding.
 
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>Scout is configured to Typesense in [config/scout.php](https://github.com/Inikoo-Ltd/aiku/blob/main/config/scout.php).</li>
+<li>Typesense-specific actions live under [app/Actions/Search](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Search/WithTypesenseApi.php), including [SetupTypesenseSearchAnalytics.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Search/SetupTypesenseSearchAnalytics.php) and the metrics reader [GetTypesenseMetrics.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Overview/GetTypesenseMetrics.php).</li>
+<li>Typo-tolerance parameters (<code>num_typos</code>, <code>min_len_1typo</code>, token splitting/joining) and synonym sets are documented in the <a href="https://typesense.org/docs/">Typesense docs</a>.</li>
+</ul></aside>
+
 ## The best part: telling the buyers what people want
 
 Queries that return nothing are not a search problem; they are a demand signal. Once our own logs held them, the reports wrote themselves: per shop and across the group, the most‑searched things we do not stock, with volumes. The first run handed the buyers about six hundred assortment gaps per market — "trousers", a couple of specific stones, a filter brand — things nobody had asked for because nobody had been able to see that customers were asking.
@@ -51,3 +62,5 @@ That report is the reason to own your search box. The engine is a means.
 ## What it cost
 
 The language model work — proposing synonyms, embedding products for the tuning harness — cost roughly **six cents** in API fees across the whole programme. The expensive part was the engineer‑day with the harness, and that is exactly where the money should go.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Owning your search index turns "no results" from a dead end into a demand signal, and the cheapest, biggest wins came from measuring typo tolerance against real queries rather than reaching for a semantic model first.</aside>

@@ -5,6 +5,8 @@ date: 2026-08-08
 tags: marketing, attribution, postgres
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>The old attribution feature had touched 501 of 600,000 customers because a capture cookie sat on a path the registration form never read — and nothing errored, so nobody noticed. The rebuild starts from one invariant: every customer's touch shares must sum to exactly 1.00, checked by SQL after any change. It now tracks twenty channels (three separate email ones), revenue by order date at group/organisation/shop level, ROAS and CAC with real ad-spend costs, per-customer journey timelines, and a data-quality tab that surfaces gaps before a dashboard number looks wrong.</aside>
+
 For a long time our marketing attribution looked finished. There was a table of traffic sources, a cookie that captured click ids, a dashboard. When we finally looked at the numbers it had touched 501 customers out of six hundred thousand, zero orders and zero campaigns. It had never worked.
 
 The cause was boring: the capture cookie was set on a path that the registration form never read. Nothing errored, so nothing was noticed. The lesson we took was not "fix the cookie" but "a feature that cannot report on its own health is not finished". So the rebuild started from the reporting end.
@@ -18,6 +20,13 @@ A customer can have many touches, and money has to be split between them. We sto
 > For every customer, the shares must sum to exactly 1.00.
 
 That sentence is the whole design. Multi-touch splitting, attribution windows, overrides per shop — they are all just different ways of producing shares that add up to one.
+
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>The traffic source model is <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/CRM/TrafficSource.php">app/Models/CRM/TrafficSource.php</a>.</li>
+<li>Shop-level dashboard aggregation is built by <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/CRM/TrafficSource/GetShopMarketingOverview.php">app/Actions/CRM/TrafficSource/GetShopMarketingOverview.php</a>, with the group/organisation roll-up in <code>app/Actions/CRM/TrafficSource/GetAggregatedMarketingOverview.php</code> and per-shop windows in <code>app/Actions/CRM/TrafficSource/WithAttributionWindow.php</code>.</li>
+<li>The repair path for referrer/campaign mismatches is <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/CRM/TrafficSource/RepairHostReferencedCampaignAttribution.php">app/Actions/CRM/TrafficSource/RepairHostReferencedCampaignAttribution.php</a>.</li>
+</ul></aside>
 
 ## Three email channels, not one
 
@@ -78,3 +87,5 @@ SELECT count(*) FROM per_customer WHERE total <> 1.00;
 ```
 
 The expected answer is zero. It has been zero since the day it went live.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>A feature that touched 501 customers by silent failure was rebuilt around a single checkable invariant — shares sum to 1.00 — and everything from three email channels to the data-quality tab exists so that invariant, and the numbers built on it, can be trusted without waiting for someone to notice a broken cookie.</aside>
