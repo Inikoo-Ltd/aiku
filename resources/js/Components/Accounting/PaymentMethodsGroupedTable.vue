@@ -19,7 +19,6 @@ export type PaymentMethodRow = {
     number_success: number
     total_sales: number
     last_payment_at: string | null
-    route: routeType
 }
 
 const props = defineProps<{
@@ -27,6 +26,7 @@ const props = defineProps<{
     subtitle: string
     currencyCode: string
     rows: PaymentMethodRow[]
+    paymentsRoute: routeType
     /* 'provider': Checkout.com → Card · Visa, Apple Pay, Klarna...   'method': PayPal → Checkout.com, PayPal */
     groupBy: 'provider' | 'method'
 }>()
@@ -43,6 +43,12 @@ const childKeyOf = (row: PaymentMethodRow) => props.groupBy === 'provider' ? row
 const childLabelOf = (row: PaymentMethodRow) => props.groupBy === 'provider'
     ? row.method_label
     : (row.sub_method_label ?? row.payment_account_label)
+/* Every row drills down to the payments list filtered to exactly what the row counts. */
+const groupFilterOf = (row: PaymentMethodRow) => props.groupBy === 'provider' ? { payment_account_type: row.payment_account_type } : { method: row.method }
+const childFilterOf = (row: PaymentMethodRow) => props.groupBy === 'provider'
+    ? { payment_account_type: row.payment_account_type, method: row.method }
+    : (row.sub_method ? { method: row.method, sub_method: row.sub_method } : { method: row.method, payment_account_type: row.payment_account_type })
+const paymentsHref = (filter: Record<string, string>) => route(props.paymentsRoute.name, { ...props.paymentsRoute.parameters, filter })
 const later = (a: string | null, b: string | null) => !a ? b : !b ? a : a > b ? a : b
 
 const blank = () => ({ number_payments: 0, number_success: 0, total_sales: 0, last_payment_at: null as string | null })
@@ -57,12 +63,12 @@ const groups = computed(() => {
     const byKey: Record<string, any> = {}
     for (const row of props.rows) {
         const key = groupKeyOf(row)
-        byKey[key] ??= { key, label: groupLabelOf(row), logo: props.groupBy === 'provider' ? paymentProviderLogo(row.payment_account_type) : null, providers: new Set<string>(), children: {} as Record<string, any>, ...blank() }
+        byKey[key] ??= { key, label: groupLabelOf(row), href: paymentsHref(groupFilterOf(row)), logo: props.groupBy === 'provider' ? paymentProviderLogo(row.payment_account_type) : null, providers: new Set<string>(), children: {} as Record<string, any>, ...blank() }
         byKey[key].providers.add(row.payment_account_type)
         const g = byKey[key]
         add(g, row)
         const childKey = childKeyOf(row)
-        g.children[childKey] ??= { key: childKey, label: childLabelOf(row), route: row.route, ...blank() }
+        g.children[childKey] ??= { key: childKey, label: childLabelOf(row), href: paymentsHref(childFilterOf(row)), ...blank() }
         add(g.children[childKey], row)
     }
     return Object.values(byKey)
@@ -127,7 +133,7 @@ const columnHelp = {
                             <span v-if="groupBy === 'provider'" class="inline-flex w-16 shrink-0 justify-center">
                                 <img v-if="group.logo" :src="group.logo" :alt="group.label" class="h-3 w-auto max-w-16 opacity-70" />
                             </span>
-                            <span>{{ group.label }}</span>
+                            <Link :href="group.href" class="hover:underline">{{ group.label }}</Link>
                             <img v-if="groupBy === 'method' && group.providers.size === 1 && [...group.providers][0] !== group.key && paymentProviderLogo([...group.providers][0])"
                                 :src="paymentProviderLogo([...group.providers][0])" :alt="[...group.providers][0]" :title="[...group.providers][0]" class="h-3 w-auto max-w-16 opacity-60" />
                         </span>
@@ -157,7 +163,7 @@ const columnHelp = {
                 <tr v-for="child in (showDetail && expandable(group) ? group.children : [])" :key="child.key"
                     class="border-b border-gray-50 text-gray-600">
                     <td class="py-1.5 pr-2" :class="groupBy === 'provider' ? 'pl-[4.5rem]' : 'pl-5'">
-                        <Link :href="route(child.route.name, child.route.parameters)" class="text-gray-500 hover:text-gray-900 hover:underline">{{ child.label }}</Link>
+                        <Link :href="child.href" class="text-gray-500 hover:text-gray-900 hover:underline">{{ child.label }}</Link>
                     </td>
                     <td class="text-right px-2 tabular-nums whitespace-nowrap">
                         <span class="inline-grid grid-cols-[4.5rem_3.25rem]">
@@ -185,7 +191,9 @@ const columnHelp = {
 
             <tfoot>
                 <tr class="text-gray-900 border-t-2 border-gray-300 font-medium">
-                    <td class="py-1.5 pr-2" :class="groupBy === 'provider' ? 'pl-[4.5rem]' : ''">{{ trans('All') }}</td>
+                    <td class="py-1.5 pr-2" :class="groupBy === 'provider' ? 'pl-[4.5rem]' : ''">
+                        <Link :href="route(paymentsRoute.name, paymentsRoute.parameters)" class="hover:underline">{{ trans('All') }}</Link>
+                    </td>
                     <td class="text-right px-2 tabular-nums"><span class="inline-grid grid-cols-[4.5rem_3.25rem]"><span>{{ locale.number(totals.number_payments) }}</span><span></span></span></td>
                     <td class="text-right px-2 tabular-nums">
                         <span class="inline-grid grid-cols-[4.5rem_3.5rem]">

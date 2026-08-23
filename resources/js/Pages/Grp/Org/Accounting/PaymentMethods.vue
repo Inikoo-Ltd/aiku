@@ -9,11 +9,12 @@ import { trans } from 'laravel-vue-i18n'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
 import PaymentMethodsGroupedTable, { PaymentMethodRow } from '@/Components/Accounting/PaymentMethodsGroupedTable.vue'
+import { routeType } from '@/types/route'
 
 defineProps<{
     title: string
     pageHead: any
-    data: { currency_code: string, rows: PaymentMethodRow[] }
+    data: { currency_code: string, payments_route: routeType, rows: PaymentMethodRow[] }
 }>()
 </script>
 
@@ -25,10 +26,10 @@ defineProps<{
         <PaymentMethodsGroupedTable
             :title="trans('By provider')"
             :subtitle="trans('who processed it, and what customers paid with through them · all time, in :currency', { currency: data.currency_code })"
-            :currencyCode="data.currency_code" :rows="data.rows" groupBy="provider" />
+            :currencyCode="data.currency_code" :rows="data.rows" :paymentsRoute="data.payments_route" groupBy="provider" />
         <PaymentMethodsGroupedTable
             :title="trans('By payment method')"
             :subtitle="trans('what customers paid with, and which provider carried it · all time, in :currency', { currency: data.currency_code })"
-            :currencyCode="data.currency_code" :rows="data.rows" groupBy="method" />
+            :currencyCode="data.currency_code" :rows="data.rows" :paymentsRoute="data.payments_route" groupBy="method" />
     </div>
 </template>

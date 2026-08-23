@@ -63,6 +63,9 @@ class IndexPayments extends OrgAction
         $subMethodFilter = AllowedFilter::callback('sub_method', function ($query, $value) {
             $query->where('payments.sub_method', $value);
         });
+        $paymentAccountTypeFilter = AllowedFilter::callback('payment_account_type', function ($query, $value) {
+            $query->where('payment_accounts.type', $value);
+        });
 
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
@@ -139,7 +142,7 @@ class IndexPayments extends OrgAction
             ->leftJoin('payment_service_providers', 'payment_accounts.payment_service_provider_id', 'payment_service_providers.id')
             ->allowedSorts(['reference', 'status', 'type', 'date', 'amount', 'payment_account_name', 'method'])
             ->withBetweenDates(['date'])
-            ->allowedFilters([$globalSearch, $methodFilter, $subMethodFilter])
+            ->allowedFilters([$globalSearch, $methodFilter, $subMethodFilter, $paymentAccountTypeFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

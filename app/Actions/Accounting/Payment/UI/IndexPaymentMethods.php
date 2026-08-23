@@ -71,8 +71,9 @@ class IndexPaymentMethods extends OrgAction
             : ['name' => 'grp.org.accounting.payments.index', 'parameters' => ['organisation' => $organisation->slug]];
 
         return [
-            'currency_code' => $parent->currency->code,
-            'rows'          => $rows->map(fn ($row) => [
+            'currency_code'  => $parent->currency->code,
+            'payments_route' => $paymentsRoute,
+            'rows'           => $rows->map(fn ($row) => [
                 'method'               => $row->method,
                 'method_label'         => $row->method === $row->payment_account_type && in_array($row->method, ['checkout', 'braintree'])
                     ? __('Unidentified')
@@ -85,12 +86,6 @@ class IndexPaymentMethods extends OrgAction
                 'number_success'       => (int) $row->number_success,
                 'total_sales'          => (float) $row->total_sales,
                 'last_payment_at'      => $row->last_payment_at,
-                'route'                => [
-                    'name'       => $paymentsRoute['name'],
-                    'parameters' => array_merge($paymentsRoute['parameters'], [
-                        'filter' => array_filter(['method' => $row->method, 'sub_method' => $row->sub_method]),
-                    ]),
-                ],
             ])->values()->all(),
         ];
     }
