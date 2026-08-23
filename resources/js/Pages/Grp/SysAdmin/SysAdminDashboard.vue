@@ -9,10 +9,11 @@ import { Head } from '@inertiajs/vue3';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import SearchAnalyticsDisplay from '@/Components/DataDisplay/Dashboard/Widget/SearchAnalyticsDisplay.vue';
 import McpAnalyticsDisplay from '@/Components/DataDisplay/Dashboard/Widget/McpAnalyticsDisplay.vue';
+import StaffChatAnalyticsDisplay from '@/Components/DataDisplay/Dashboard/Widget/StaffChatAnalyticsDisplay.vue';
 import UsersInsightsDisplay from '@/Components/DataDisplay/Dashboard/Widget/UsersInsightsDisplay.vue';
 import { capitalize } from "@/Composables/capitalize"
 
-defineProps(['title', 'pageHead', 'users_insights', 'search_insights', 'ai_insights']);
+defineProps(['title', 'pageHead', 'users_insights', 'search_insights', 'ai_insights', 'staff_chat_insights']);
 </script>
 
 <template>
@@ -22,5 +23,6 @@ defineProps(['title', 'pageHead', 'users_insights', 'search_insights', 'ai_insig
         <UsersInsightsDisplay :widget="users_insights"/>
         <SearchAnalyticsDisplay :widget="search_insights"/>
         <McpAnalyticsDisplay :widget="ai_insights"/>
+        <StaffChatAnalyticsDisplay :widget="staff_chat_insights"/>
     </div>
 </template>

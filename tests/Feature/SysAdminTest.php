@@ -1677,6 +1677,45 @@ test('UI sysadmin ai analytics index', function (User $user) {
     });
 })->depends('SetUserAuthorisedModels command');
 
+test('UI sysadmin staff chat analytics index', function (User $user) {
+    $this->withoutExceptionHandling();
+    actingAs($user);
+
+    $otherUser = StoreGuest::make()->action(group(), Guest::factory()->definition())->getUser();
+
+    $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($user, ['user_ids' => [$otherUser->id]]);
+    \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $user, ['body' => 'hello']);
+    \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $otherUser, ['body' => 'hi']);
+    \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $user, ['body' => 'how are you']);
+
+    $insights = \App\Actions\SysAdmin\GetStaffChatAnalytics::run(group());
+    expect($insights['messages'])->toBe(3)
+        ->and($insights['users'])->toBe(2)
+        ->and($insights['conversations'])->toBe(1)
+        ->and($insights['top_users'][0]->username)->toBe($user->username)
+        ->and($insights['top_pairs'][0]['messages'])->toBe(3)
+        ->and($insights['top_pairs'][0]['members'])->toContain($user->username)
+        ->and($insights['top_pairs'][0]['members'])->toContain($otherUser->username);
+
+    $response = get(route('grp.sysadmin.dashboard'));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->component('SysAdmin/SysAdminDashboard')
+            ->where('staff_chat_insights.messages', 3);
+    });
+
+    $response = get(route('grp.sysadmin.staff_chat.index'));
+    $response->assertInertia(function (AssertableInertia $page) use ($user) {
+        $page
+            ->component('SysAdmin/StaffChatAnalytics')
+            ->where('insights.messages', 3)
+            ->has('users.data', 2)
+            ->where('users.data.0.username', $user->username)
+            ->where('users.data.0.messages', 2)
+            ->has('conversations.data', 1)
+            ->where('conversations.data.0.messages', 3);
+    });
+})->depends('SetUserAuthorisedModels command');
+
 test('UI sysadmin guest show and edit', function (User $user) {
     $this->withoutExceptionHandling();
     actingAs($user);
