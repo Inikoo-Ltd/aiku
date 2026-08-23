@@ -14,7 +14,9 @@ use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\BackInStockReminder\DeleteBackInStockReminder;
 use App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder;
 use App\Actions\Comms\Mailshot\StoreMailshot;
+use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
+use App\Actions\CRM\Customer\AnonymiseCustomer;
 use App\Actions\CRM\Customer\DeleteCustomer;
 use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\HydrateCustomers;
@@ -72,7 +74,9 @@ use App\Models\Analytics\AikuScopedSection;
 use App\Models\Comms\BackInStockReminder;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
+use App\Models\Accounting\Invoice;
 use App\Models\CRM\Customer;
+use App\Models\Helpers\Audit;
 use App\Models\CRM\CustomerNote;
 use App\Models\CRM\Favourite;
 use App\Models\CRM\Poll;
@@ -86,6 +90,7 @@ use App\Models\Web\Website;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
@@ -1485,5 +1490,124 @@ describe('EU VAT re-validation (HELP-2374)', function () {
         ValidateEuropeanTaxNumber::make()->handle($taxNumber, null, false);
 
         Queue::assertNothingPushed();
+    });
+});
+
+describe('anonymise customer (GDPR erasure)', function () {
+    beforeEach(function () {
+        $this->erasureEmail    = 'jane.'.uniqid().'@example.com';
+        $this->erasureUsername = 'jane-'.uniqid();
+        $this->erasureCustomer = StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), [
+            'contact_name' => 'Jane Erasure',
+            'email'        => $this->erasureEmail,
+            'phone'        => '+441234567890',
+        ]));
+        $this->erasureWebUser = StoreWebUser::make()->action($this->erasureCustomer, [
+            'email'    => $this->erasureEmail,
+            'username' => $this->erasureUsername,
+            'password' => 'password',
+        ]);
+        $this->erasureOrder   = StoreOrder::make()->action($this->erasureCustomer, []);
+        $this->erasureInvoice = StoreInvoice::make()->action($this->erasureCustomer, Invoice::factory()->definition());
+        $this->erasureAddressId = $this->erasureCustomer->address_id;
+
+        $this->erasureCustomer = AnonymiseCustomer::make()->action($this->erasureCustomer, 'Erasure request by email', false);
+        $this->erasureCustomer->refresh();
+    });
+
+    test('personal fields are erased and the customer is soft deleted', function () {
+        $customer = $this->erasureCustomer;
+
+        expect($customer->trashed())->toBeTrue()
+            ->and($customer->name)->toBe('Anonymised '.$customer->reference)
+            ->and($customer->contact_name)->toBeNull()
+            ->and($customer->company_name)->toBeNull()
+            ->and($customer->email)->toBeNull()
+            ->and($customer->phone)->toBeNull()
+            ->and($customer->identity_document_number)->toBeNull()
+            ->and($customer->contact_website)->toBeNull()
+            ->and($customer->address_id)->toBeNull()
+            ->and($customer->addresses()->count())->toBe(0)
+            ->and($customer->searchable_text)->not->toContain('jane')
+            ->and($customer->reference)->not->toBeNull()
+            ->and($customer->shop_id)->toBe($this->shop->id)
+            ->and(Arr::get($customer->data, 'deleted.cause'))->toBe('anonymised');
+
+        $address = \App\Models\Helpers\Address::find($this->erasureAddressId);
+        expect($address->address_line_1)->toBeNull()
+            ->and($address->postal_code)->toBeNull()
+            ->and($address->country_id)->not->toBeNull();
+    });
+
+    test('invoices and orders stay linked and untouched', function () {
+        $invoice = Invoice::find($this->erasureInvoice->id);
+        $order   = Order::find($this->erasureOrder->id);
+
+        expect($invoice->customer_id)->toBe($this->erasureCustomer->id)
+            ->and($invoice->total_amount)->toBe($this->erasureInvoice->total_amount)
+            ->and($invoice->deleted_at)->toBeNull()
+            ->and($order->customer_id)->toBe($this->erasureCustomer->id)
+            ->and($order->deleted_at)->toBeNull()
+            ->and($this->erasureCustomer->invoices()->count())->toBe(1);
+    });
+
+    test('web user is anonymised, soft deleted and can not log in', function () {
+        $webUser = WebUser::withTrashed()->find($this->erasureWebUser->id);
+
+        expect($webUser->trashed())->toBeTrue()
+            ->and($webUser->username)->toBe('gdpr-'.$webUser->id)
+            ->and($webUser->email)->toBe('anonymised-'.$webUser->id.'@example.invalid')
+            ->and($webUser->contact_name)->toBeNull()
+            ->and($webUser->password)->toBeNull()
+            ->and(Auth::guard('retina')->attempt(['username' => $this->erasureUsername, 'password' => 'password']))->toBeFalse()
+            ->and(Auth::guard('retina')->attempt(['username' => $webUser->username, 'password' => 'password']))->toBeFalse();
+    });
+
+    test('the old email and username can register again', function () {
+        $customer = StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), [
+            'contact_name' => 'Jane Again',
+            'email'        => $this->erasureEmail,
+        ]));
+        $webUser  = StoreWebUser::make()->action($customer, [
+            'email'    => $this->erasureEmail,
+            'username' => $this->erasureUsername,
+            'password' => 'password',
+        ]);
+
+        expect($customer->email)->toBe($this->erasureEmail)
+            ->and($webUser->username)->toBe($this->erasureUsername);
+    });
+
+    test('audit records who, when and why without the erased values', function () {
+        $audit = Audit::where('auditable_type', 'Customer')
+            ->where('auditable_id', $this->erasureCustomer->id)
+            ->where('event', AnonymiseCustomer::AUDIT_EVENT)
+            ->first();
+
+        expect($audit)->not->toBeNull()
+            ->and($audit->new_values['reason'])->toBe('Erasure request by email')
+            ->and(json_encode($audit->old_values).json_encode($audit->new_values))->not->toContain('jane');
+
+        $leakedAudits = Audit::where('auditable_type', 'Customer')
+            ->where('auditable_id', $this->erasureCustomer->id)
+            ->get()
+            ->filter(fn (Audit $audit) => str_contains(json_encode($audit->old_values).json_encode($audit->new_values), 'jane'));
+        expect($leakedAudits)->toBeEmpty();
+    });
+
+    test('customer is no longer found by search', function () {
+        Config::set('scout.driver', 'collection');
+
+        expect(Customer::search($this->erasureEmail)->get())->toBeEmpty()
+            ->and(Customer::search('Jane Erasure')->get())->toBeEmpty();
+    });
+
+    test('a second run is a no-op', function () {
+        $auditsBefore = Audit::where('auditable_type', 'Customer')->where('auditable_id', $this->erasureCustomer->id)->count();
+
+        $customer = AnonymiseCustomer::make()->action($this->erasureCustomer, 'again', false);
+
+        expect($customer->trashed())->toBeTrue()
+            ->and(Audit::where('auditable_type', 'Customer')->where('auditable_id', $this->erasureCustomer->id)->count())->toBe($auditsBefore);
     });
 });
