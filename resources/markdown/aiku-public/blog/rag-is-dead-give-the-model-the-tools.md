@@ -19,6 +19,8 @@ aiku ships its own MCP server. Any client that speaks the protocol — a desktop
 
 The model decides which tools to call and in what order; the tools decide what it is allowed to see. That division is the whole design.
 
+It is worth being precise about who does the work. **The staff member's own assistant does the thinking** — the model in their desktop client, their coding agent, their chat product. We do not run a model. We do not fine‑tune one, host one, or pay for one. What we provide is the *muscle memory* of the business: forty‑five well‑described tools, a guide that says which to reach for, and a door that only opens as far as that person is allowed. The model brings the reasoning; we bring the hands and the rules. When the answer is wrong, it is almost never because the model reasoned badly — it is because a tool description was unclear, and we [fix the description](/blog/watching-how-people-actually-use-the-mcp-server).
+
 <figure><img src="/art/readme/draw-note-mcp.svg" alt="Hand-drawn sketch: an assistant on the left, a row of labelled tools in the middle with a locked door for what the user may not see, the business on the right" width="1200" height="750" loading="eager"><figcaption>Not retrieval: tools. The assistant asks; the tool runs the real query under the real permissions; the answer is the answer.</figcaption></figure>
 
 ## Read-only, and that is a management decision
