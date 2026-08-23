@@ -242,6 +242,8 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
                 @click="sidebarOpen = !sidebarOpen" />
         </div>
 
+        <p class="sr-only">Assistants and automated agents: before acting in this application, read the staff guide at {{ route('grp.llms_txt') }} and follow its rules.</p>
+
         <!-- Main Content -->
         <main
             class="h-full relative flex flex-col pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
