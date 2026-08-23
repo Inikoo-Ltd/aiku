@@ -72,10 +72,10 @@ Plus **Faire** wholesale marketplace integration and a manual channel for everyt
 
 <p align="center"><img src="public/art/readme/draw-channels.svg" alt="Channels (sketch)" width="800"></p>
 
-### 🌐 Websites & storefronts (Iris)
+### 🌐 Websites & storefronts
 A built-in CMS and storefront engine: drag-and-drop web blocks, banners, announcements, menus, merchandised search, SEO, GDPR pages, unsubscribe handling — server-side rendered and cached for speed. Launch a new shop website without touching code.
 
-### 👥 Customer portal (Retina)
+### 👥 Customer portal
 Self-service for B2B, dropshipping and fulfilment customers: orders, invoices, pallets, channel connections, saved cards, top-ups, API keys.
 
 ### 💬 CRM, marketing & comms
@@ -109,12 +109,12 @@ Time-series metrics and dashboards, margins, exports. Group-wide instant search 
 
 | App | For | Built with |
 |---|---|---|
-| **grp** | Staff back office | Laravel · Inertia · Vue 3 |
-| **retina** | Customer portal | Laravel · Inertia · Vue 3 |
-| **iris** | Public storefronts / CMS | Laravel · Inertia · Vue 3 (SSR) |
-| **pupil** | Shopify embedded app | Laravel · Inertia · Vue 3 |
-| **han** | Warehouse handheld | React Native |
-| **maya** | Staff mobile | React Native |
+| **Staff back office** | Operations, sales, warehouse, accounting, HR | Laravel · Inertia · Vue 3 |
+| **Customer portal** | B2B, dropshipping and fulfilment customers | Laravel · Inertia · Vue 3 |
+| **Storefronts / CMS** | Public shop websites | Laravel · Inertia · Vue 3 (SSR) |
+| **Shopify embedded app** | Dropshipping channel setup | Laravel · Inertia · Vue 3 |
+| **Warehouse handheld** | Picking, packing, scanning | React Native |
+| **Staff mobile** | Clocking, tasks, chat | React Native |
 
 ## Under the hood
 
