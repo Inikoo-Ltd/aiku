@@ -90,6 +90,16 @@
         .search input { flex: 1; max-width: 420px; font: inherit; font-size: 15px; padding: 9px 14px; border: 1px solid var(--rule); border-radius: 999px; background: transparent; color: var(--ink); }
         .search input:focus { outline: none; border-color: var(--accent); }
         .search a { font-size: 14px; }
+        .search-results { position: relative; list-style: none; margin: -4px 0 4px; padding: 0; max-width: 420px; border: 1px solid var(--rule); border-radius: 12px; background: var(--paper); }
+        .search-results li { padding: 10px 14px; border-top: 1px solid var(--rule); }
+        .search-results li:first-child { border-top: none; }
+        .search-results li a { font-weight: 500; }
+        .search-results li p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+        .search-results li.empty, .search-results li.engine { color: var(--muted); font-size: 13px; }
+        .search-results mark { background: var(--accent-soft); color: inherit; border-radius: 3px; padding: 0 2px; }
+        header.site .search-header { display: flex; align-items: center; }
+        header.site .search-header input { font: inherit; font-size: 14px; padding: 7px 12px; border: 1px solid var(--rule); border-radius: 999px; background: transparent; color: var(--ink); width: 160px; }
+        header.site .search-header input:focus { outline: none; border-color: var(--accent); }
         .tagbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 28px 0 8px; }
         .tagbar a { font-size: 13px; padding: 5px 11px; border: 1px solid var(--rule); border-radius: 999px; color: var(--muted); }
         .tagbar a span { opacity: .6; margin-left: 3px; }
@@ -127,6 +137,9 @@
             <a href="{{ route('aiku-public.blog.index') }}" @if(request()->routeIs('aiku-public.blog.*')) aria-current="page" @endif>Engineering notes</a>
             <a href="https://github.com/Inikoo-Ltd/aiku" rel="noopener"><svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Source</a>
         </nav>
+        <form class="search-header" method="get" action="{{ route('aiku-public.blog.index') }}" role="search">
+            <input type="search" name="q" placeholder="Search notes…" aria-label="Search the engineering notes">
+        </form>
     </header>
 </div>
 

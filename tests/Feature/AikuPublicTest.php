@@ -84,3 +84,21 @@ test('sitemap and robots are served', function () {
         ->assertOk()
         ->assertSee('Sitemap: '.route('aiku-public.sitemap'), false);
 });
+
+test('search.json returns hits for a word from the first post title', function () {
+    $first = BlogPosts::all()->first();
+    $word = collect(preg_split('/\W+/', $first['title']))->filter(fn ($w) => mb_strlen($w) > 5)->first();
+
+    $response = get($this->host.'/blog/search.json?q='.urlencode($word))->assertOk();
+    $response->assertJsonStructure(['hits', 'found', 'engine']);
+    expect($response->json('hits'))->not->toBeEmpty();
+    expect(collect($response->json('hits'))->pluck('slug'))->toContain($first['slug']);
+    expect(collect($response->json('hits'))->firstWhere('slug', $first['slug'])['url'])
+        ->toBe(route('aiku-public.blog.show', $first['slug']));
+});
+
+test('search.json returns empty for a query shorter than 2 characters', function () {
+    get($this->host.'/blog/search.json?q=a')
+        ->assertOk()
+        ->assertJson(['hits' => [], 'found' => 0]);
+});

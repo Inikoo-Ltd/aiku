@@ -494,6 +494,16 @@ task('deploy:translations:setup-guess-language', function () {
 });
 
 
+desc('Index engineering notes into Typesense');
+task('deploy:aiku-public:index-notes', function () {
+    try {
+        artisan('aiku-public:index-notes', ['skipIfNoEnv', 'showOutput'])();
+    } catch (\Throwable $e) {
+        writeln('<comment>aiku-public:index-notes skipped: '.$e->getMessage().'</comment>');
+    }
+});
+
+
 desc('Strip node_modules from all but the 5 newest releases');
 task('deploy:prune-node-modules', function () {
     run("ls -1t {{deploy_path}}/releases | tail -n +6 | while read r; do rm -rf \"{{deploy_path}}/releases/\$r/node_modules\"; done");
@@ -527,4 +537,5 @@ task('deploy', [
     'deploy:refresh-vue',
     'deploy:flush-varnish',
     'deploy:translations:setup-guess-language',
+    'deploy:aiku-public:index-notes',
 ]);

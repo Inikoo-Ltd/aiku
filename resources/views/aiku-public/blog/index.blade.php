@@ -5,11 +5,12 @@
             <h1 style="font-size:clamp(34px,4.6vw,52px)">How parts of aiku came to be the way they are.</h1>
             <p class="lede">Short write‑ups of problems we hit running a real commerce operation and what we changed in the code because of them. No product announcements; just the reasoning.</p>
         </section>
-        <form class="search" method="get" action="{{ route('aiku-public.blog.index') }}" role="search">
+        <form class="search" method="get" action="{{ route('aiku-public.blog.index') }}" role="search" id="notes-search-form" autocomplete="off">
             @if ($tag)<input type="hidden" name="tag" value="{{ $tag }}">@endif
-            <input type="search" name="q" value="{{ $query }}" placeholder="Search the notes…" aria-label="Search the notes">
+            <input type="search" name="q" value="{{ $query }}" placeholder="Search the notes…" aria-label="Search the notes" id="notes-search-input">
             @if ($query)<a href="{{ route('aiku-public.blog.index', array_filter(['tag' => $tag])) }}">clear</a>@endif
         </form>
+        <ul class="search-results" id="notes-search-results" hidden></ul>
         <nav class="tagbar" aria-label="Filter by tag">
             <a href="{{ route('aiku-public.blog.index') }}" @if(!$tag) aria-current="true" @endif>all <span>{{ \App\Actions\UI\AikuPublic\BlogPosts::all()->count() }}</span></a>
             @foreach ($tags->filter(fn ($count) => $count >= 2) as $name => $count)
@@ -47,4 +48,54 @@
             </nav>
         @endif
     </div>
+    <script>
+        (function () {
+            var input = document.getElementById('notes-search-input');
+            var results = document.getElementById('notes-search-results');
+            if (!input || !results) return;
+            var timer = null;
+            var lastQuery = '';
+
+            function clearResults() {
+                results.hidden = true;
+                results.innerHTML = '';
+            }
+
+            function render(data, query) {
+                lastQuery = query;
+                if (!data.hits.length) {
+                    results.innerHTML = '<li class="empty">No matches for "' + query + '".</li>';
+                    results.hidden = false;
+                    return;
+                }
+                results.innerHTML = data.hits.map(function (hit) {
+                    return '<li><a href="' + hit.url + '">' + hit.highlight.title + '</a>'
+                        + '<p>' + hit.highlight.summary + '</p></li>';
+                }).join('') + '<li class="engine">via ' + (data.engine === 'typesense' ? 'Typesense' : 'search') + '</li>';
+                results.hidden = false;
+            }
+
+            input.addEventListener('input', function () {
+                var query = input.value.trim();
+                clearTimeout(timer);
+                if (query.length < 2) {
+                    clearResults();
+                    return;
+                }
+                timer = setTimeout(function () {
+                    fetch('{{ route('aiku-public.search') }}?q=' + encodeURIComponent(query))
+                        .then(function (response) { return response.json(); })
+                        .then(function (data) { render(data, query); })
+                        .catch(clearResults);
+                }, 150);
+            });
+
+            input.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    input.value = '';
+                    clearResults();
+                }
+            });
+        })();
+    </script>
 </x-aiku-public.layout>
