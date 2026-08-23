@@ -1,6 +1,6 @@
 ---
 title: Twenty‑six queues, and the feeling of CPU at 100%
-summary: Everything that is not a page view runs on Horizon — twenty‑six supervisors across two servers, from "urgent" to "sales_slave_historic". It is the best thing about the system and was the source of its worst mornings: stray workers surviving a deploy and running a query 780,000 times an hour; a supervisor killed but its children kept alive so every queue ran twice; a retry‑after shorter than the job; ten thousand jobs in a queue from a loop that should have been one. What each one taught us, in the order they hurt — and how the beast was finally tamed.
+summary: Everything that is not a page view runs on Horizon — twenty‑six supervisors across two servers, from "urgent" to "historic backfill". It is the best thing about the system and was the source of its worst mornings: stray workers surviving a deploy and running a query 780,000 times an hour; a supervisor killed but its children kept alive so every queue ran twice; a retry‑after shorter than the job; ten thousand jobs in a queue from a loop that should have been one. What each one taught us, in the order they hurt — and how the beast was finally tamed.
 date: 2026-08-01
 tags: horizon, queues, ops, reliability, laravel
 ---
@@ -14,10 +14,10 @@ That same dashboard, on a bad morning, shows CPU pinned at 100% and a number in 
 The supervisors exist because jobs are not alike. A rough map:
 
 - **urgent / normal / low‑priority** — the bread and butter; the staff expect "instant" from *urgent* (a mailshot's recipient list, a screen waiting on a result).
-- **hydrators‑slave**, **stock‑control**, **stock‑history**, **price_change** — the [counter and valuation work](/blog/six-hundred-hydrators-and-thirty-five-time-series); most of it on the replica, where it cannot compete with an order being placed.
-- **sales**, **sales_slave**, **sales_slave_historic** — time‑series processors; *historic* is the lane for backfills, with its own worker count that is turned up overnight and down at nine.
+- **hydrators (replica)**, **stock‑control**, **stock‑history**, **price_change** — the [counter and valuation work](/blog/six-hundred-hydrators-and-thirty-five-time-series); most of it on the replica, where it cannot compete with an order being placed.
+- **sales**, **sales (replica)**, **sales historic backfill** — time‑series processors; *historic backfill* is the lane for backfills, with its own worker count that is turned up overnight and down at nine.
 - **ses‑send**, **ses‑analytics** — [email out, events in](/blog/a-quarter-of-a-million-emails-before-lunch).
-- **dropshipping**, **dropshipping‑long**, **shopify‑slave** — [marketplace sync](/blog/eight-marketplaces-one-warehouse-queue), with a separate long lane for the unbounded bulk loops.
+- **dropshipping**, **dropshipping‑long**, **shopify (replica)** — [marketplace sync](/blog/eight-marketplaces-one-warehouse-queue), with a separate long lane for the unbounded bulk loops.
 - **search**, **cache‑warming**, **analytics**, **metrics**, **trim** — index, warm, count, prune.
 - **long‑running**, **long‑high‑priority**, **long‑low‑priority** — the honest admission that some jobs take an hour.
 
