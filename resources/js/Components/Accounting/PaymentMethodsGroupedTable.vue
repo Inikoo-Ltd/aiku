@@ -89,20 +89,21 @@ const expandable = (g: any) => g.children.length > 1
 
 const money = (value: number) => locale.currencyFormat(props.currencyCode, value)
 const share = (part: number, whole: number) => whole > 0 ? (part / whole * 100).toFixed(1) + '%' : '—'
-/* A rate only when something failed: a column of 100% says nothing, the one 93% line is the signal.
-   All-good rows carry a faint tick instead so the column does not look unfinished. */
-const successRate = (success: number, total: number) => total > 0 && success < total ? (success / total * 100).toFixed(1) + '%' : ''
+/* Failures are the signal, not successes: the column counts attempts that did not go through and
+   what share of attempts that was. Nothing failed reads as a faint tick, not a zero. */
+const failed = (success: number, total: number) => total - success
+const failureRate = (success: number, total: number) => total > 0 && success < total ? ((total - success) / total * 100).toFixed(1) + '%' : ''
 const allGood = (success: number, total: number) => total > 0 && success === total
 const rateClass = (success: number, total: number) => {
-    if (total === 0) return 'text-gray-400'
-    const rate = success / total
-    return rate >= 0.95 ? 'text-[#006300]' : rate >= 0.85 ? 'text-amber-600' : 'text-[#d03b3b]'
+    if (total === 0 || success === total) return 'text-gray-400'
+    const rate = (total - success) / total
+    return rate <= 0.05 ? 'text-gray-500' : rate <= 0.15 ? 'text-amber-600' : 'text-[#d03b3b]'
 }
 
 const columnHelp = {
     payments: trans('All payment attempts, successful or not. Refunds are not counted.'),
     sales: trans('Amount of the successful payments, in the accounting currency.'),
-    success: trans('Successful payments against all attempts. A low rate on cards usually means declined cards, on wallets or redirects usually means people giving up halfway.'),
+    failed: trans('Attempts that did not go through, and their share of all attempts. On cards that is usually declined cards, on wallets and redirects usually people giving up halfway.'),
     last: trans('When it was last used.'),
 }
 </script>
@@ -125,8 +126,8 @@ const columnHelp = {
                 <tr class="text-gray-400 border-b border-gray-100">
                     <th class="text-left font-normal py-1.5 pr-2">{{ groupBy === 'provider' ? trans('Provider') : trans('Method') }}</th>
                     <th class="text-right font-normal py-1.5 px-2">{{ trans('Payments') }}<sup v-tooltip="columnHelp.payments" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
-                    <th class="text-right font-normal py-1.5 px-2">{{ trans('Successful') }}<sup v-tooltip="columnHelp.success" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
-                    <th class="text-right font-normal py-1.5 px-2">{{ trans('Sales') }}<sup v-tooltip="columnHelp.sales" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                    <th class="text-right font-normal py-1.5 px-2">{{ trans('Failed') }}<sup v-tooltip="columnHelp.failed" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                    <th class="text-right font-normal py-1.5 px-2">{{ trans('Amount') }}<sup v-tooltip="columnHelp.sales" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
                     <th class="text-right font-normal py-1.5 pl-2">{{ trans('Last used') }}<sup v-tooltip="columnHelp.last" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
                 </tr>
             </thead>
@@ -151,8 +152,8 @@ const columnHelp = {
                     </td>
                     <td class="text-right px-2 tabular-nums whitespace-nowrap">
                         <span class="inline-grid grid-cols-[4.5rem_3.5rem]">
-                            <span>{{ locale.number(group.number_success) }}</span>
-                            <span class="font-normal" :class="rateClass(group.number_success, group.number_payments)"><FontAwesomeIcon v-if="allGood(group.number_success, group.number_payments)" :icon="faCheckCircle" class="opacity-25" fixed-width /><template v-else>{{ successRate(group.number_success, group.number_payments) }}</template></span>
+                            <span>{{ allGood(group.number_success, group.number_payments) ? '' : locale.number(failed(group.number_success, group.number_payments)) }}</span>
+                            <span class="font-normal" :class="rateClass(group.number_success, group.number_payments)"><FontAwesomeIcon v-if="allGood(group.number_success, group.number_payments)" :icon="faCheckCircle" class="opacity-25" fixed-width /><template v-else>{{ failureRate(group.number_success, group.number_payments) }}</template></span>
                         </span>
                     </td>
                     <td class="text-right px-2 tabular-nums whitespace-nowrap">
@@ -178,8 +179,8 @@ const columnHelp = {
                     </td>
                     <td class="text-right px-2 tabular-nums whitespace-nowrap">
                         <span class="inline-grid grid-cols-[4.5rem_3.5rem]">
-                            <span>{{ locale.number(child.number_success) }}</span>
-                            <span :class="rateClass(child.number_success, child.number_payments)"><FontAwesomeIcon v-if="allGood(child.number_success, child.number_payments)" :icon="faCheckCircle" class="opacity-25" fixed-width /><template v-else>{{ successRate(child.number_success, child.number_payments) }}</template></span>
+                            <span>{{ allGood(child.number_success, child.number_payments) ? '' : locale.number(failed(child.number_success, child.number_payments)) }}</span>
+                            <span :class="rateClass(child.number_success, child.number_payments)"><FontAwesomeIcon v-if="allGood(child.number_success, child.number_payments)" :icon="faCheckCircle" class="opacity-25" fixed-width /><template v-else>{{ failureRate(child.number_success, child.number_payments) }}</template></span>
                         </span>
                     </td>
                     <td class="text-right px-2 tabular-nums whitespace-nowrap">
@@ -202,8 +203,8 @@ const columnHelp = {
                     <td class="text-right px-2 tabular-nums"><span class="inline-grid grid-cols-[4.5rem_3.25rem]"><span>{{ locale.number(totals.number_payments) }}</span><span></span></span></td>
                     <td class="text-right px-2 tabular-nums">
                         <span class="inline-grid grid-cols-[4.5rem_3.5rem]">
-                            <span>{{ locale.number(totals.number_success) }}</span>
-                            <span class="font-normal" :class="rateClass(totals.number_success, totals.number_payments)"><FontAwesomeIcon v-if="allGood(totals.number_success, totals.number_payments)" :icon="faCheckCircle" class="opacity-25" fixed-width /><template v-else>{{ successRate(totals.number_success, totals.number_payments) }}</template></span>
+                            <span>{{ allGood(totals.number_success, totals.number_payments) ? '' : locale.number(failed(totals.number_success, totals.number_payments)) }}</span>
+                            <span class="font-normal" :class="rateClass(totals.number_success, totals.number_payments)"><FontAwesomeIcon v-if="allGood(totals.number_success, totals.number_payments)" :icon="faCheckCircle" class="opacity-25" fixed-width /><template v-else>{{ failureRate(totals.number_success, totals.number_payments) }}</template></span>
                         </span>
                     </td>
                     <td class="text-right px-2 tabular-nums"><span class="inline-grid grid-cols-[7rem_3.5rem]"><span>{{ money(totals.total_sales) }}</span><span></span></span></td>
