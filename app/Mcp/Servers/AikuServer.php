@@ -33,6 +33,7 @@ use App\Mcp\Tools\OrgFamilySalesTool;
 use App\Mcp\Tools\OrgStockSalesTool;
 use App\Mcp\Tools\ProductLookupTool;
 use App\Mcp\Tools\ProductsWithoutImagesTool;
+use App\Mcp\Tools\PaymentMethodsTool;
 use App\Mcp\Tools\RefundsByProductTool;
 use App\Mcp\Tools\ShopReviewsTool;
 use App\Mcp\Tools\ShopSalesTool;
@@ -93,6 +94,7 @@ class AikuServer extends Server
         OrderFunnelTool::class,
         CustomerConversionTool::class,
         RefundsByProductTool::class,
+        PaymentMethodsTool::class,
         MarginTrendTool::class,
         StaffChatAnalyticsTool::class,
         SqlQueryTool::class,

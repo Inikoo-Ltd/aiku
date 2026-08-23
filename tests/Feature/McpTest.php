@@ -40,6 +40,7 @@ use App\Mcp\Tools\OrderStatusTool;
 use App\Mcp\Tools\OrgFamilySalesTool;
 use App\Mcp\Tools\OrgStockSalesTool;
 use App\Mcp\Tools\ProductsWithoutImagesTool;
+use App\Mcp\Tools\PaymentMethodsTool;
 use App\Mcp\Tools\RefundsByProductTool;
 use App\Mcp\Tools\ShopReviewsTool;
 use App\Mcp\Tools\ShopSalesTool;
@@ -1360,5 +1361,28 @@ describe('marketing attribution tools', function () {
         AikuServer::actingAs($this->user)->tool(OfferPerformanceTool::class, [
             'shop' => $this->shop->slug,
         ])->assertOk()->assertSee('"offers"');
+    });
+});
+
+describe('payment methods tool', function () {
+    test('guest without permissions is denied', function () {
+        $guest = guestWithoutPositions($this->group);
+
+        AikuServer::actingAs($guest->getUser())->tool(PaymentMethodsTool::class, [
+            'organisation' => $this->organisation->slug,
+        ])->assertHasErrors();
+    });
+
+    test('admin gets the report for the organisation and for a shop', function () {
+        AikuServer::actingAs($this->user)->tool(PaymentMethodsTool::class, [
+            'organisation' => $this->organisation->slug,
+        ])->assertOk()->assertSee('"rows"');
+
+        AikuServer::actingAs($this->user)->tool(PaymentMethodsTool::class, [
+            'organisation' => $this->organisation->slug,
+            'shop'         => $this->shop->slug,
+            'from'         => '2026-01-01',
+            'to'           => '2026-12-31',
+        ])->assertOk()->assertSee('"currency"');
     });
 });

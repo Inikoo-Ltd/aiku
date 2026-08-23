@@ -18,6 +18,7 @@ use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Payment;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -95,6 +96,17 @@ class IndexPaymentMethods extends OrgAction
                 'last_payment_at'      => $row->last_payment_at,
             ])->values()->all(),
         ];
+    }
+
+    /** Same rows the page shows, for the MCP tool and anything else that wants the report as data */
+    public static function report(Organisation|Shop $parent, ?Carbon $from = null, ?Carbon $to = null): array
+    {
+        $instance             = new self();
+        $instance->parent     = $parent;
+        $instance->periodFrom = $from;
+        $instance->periodTo   = $to;
+
+        return $instance->handle($parent);
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): array
