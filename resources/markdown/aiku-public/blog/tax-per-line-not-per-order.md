@@ -25,15 +25,15 @@ Prices in aiku are versioned: a line points at the *historic* version of the pro
 
 The consequence is exactly what accountants want: change a product's preset and a new historic version is minted; open baskets move to it and reprice; **sold lines are frozen**. A tax change is a fact about the future, not a correction of the past.
 
-## The repair
+## The migration
 
 Going live was a data problem as much as a code one. The legacy system held per‑product tax data for hundreds of thousands of products, and its "empty" marker differed between the live copy and our local mirrors — a filter that looked right locally chewed through 409,000 rows of filler in production for hours before we noticed. Once fixed, the seeder mapped 166 products to *Food* and 10 to *Dried flowers*, zero to *Custom*, and re‑rated the open baskets: 305 UK tea lines to 0%, Spanish lines to their 10% and 11.4% reduced rates, with the rehearsed basket matching production to the penny.
 
-Historic invoices are **not** recalculated; anything about the past is a conversation with the accountants, not a script. We have the number; the decision is theirs.
+Historic invoices are **not** recalculated; the past is frozen by design, and any question about it belongs to the accountants, not to a script.
 
 ## A note on credit notes
 
-A VAT‑only credit note must return exactly the VAT the invoice charged — per line, per rate — not a recomputation at today's rates. That was its own small fix and its own test.
+A VAT‑only credit note must return exactly the VAT the invoice charged — per line, per rate — not a recomputation at today's rates. That was its own small piece of work and its own test.
 
 ## What we learned
 
