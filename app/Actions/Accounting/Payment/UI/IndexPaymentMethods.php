@@ -14,14 +14,9 @@ use App\Actions\Comms\Traits\WithAccountingSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
-use App\Http\Resources\Accounting\PaymentMethodsResource;
-use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Payment;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
-use App\Services\QueryBuilder;
-use Closure;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -34,72 +29,70 @@ class IndexPaymentMethods extends OrgAction
 
     protected Organisation|Shop $parent;
 
-    public function handle(Organisation|Shop $parent, ?string $prefix = null): LengthAwarePaginator
+    /**
+     * One row per method + sub method + provider, amounts in the parent's currency, all time.
+     * Grouping into method → schemes happens in the page; the totals row is summed there too so
+     * it always adds up to what is on screen.
+     */
+    public function handle(Organisation|Shop $parent): array
     {
-        if ($prefix) {
-            InertiaTable::updateQueryBuilderParameters($prefix);
-        }
+        $query = Payment::query()
+            ->leftJoin('payment_accounts', 'payments.payment_account_id', 'payment_accounts.id')
+            ->whereNotNull('payments.method')->where('payments.method', '!=', '')
+            ->where('payments.type', PaymentTypeEnum::PAYMENT);
 
-        $queryBuilder = QueryBuilder::for(Payment::class);
         if ($parent instanceof Shop) {
-            $queryBuilder->where('payments.shop_id', $parent->id);
+            $query->where('payments.shop_id', $parent->id);
             $amountColumn = 'payments.amount';
+            $organisation = $parent->organisation;
         } else {
-            $queryBuilder->where('payments.organisation_id', $parent->id);
+            $query->where('payments.organisation_id', $parent->id);
             $amountColumn = 'payments.org_amount';
+            $organisation = $parent;
         }
-        $queryBuilder->leftJoin('payment_accounts', 'payments.payment_account_id', 'payment_accounts.id');
-        $queryBuilder->whereNotNull('payments.method')->where('payments.method', '!=', '');
-        $queryBuilder->where('payments.type', PaymentTypeEnum::PAYMENT);
 
-        $successfulSales = "SUM(CASE WHEN payments.status = '".PaymentStatusEnum::SUCCESS->value."' THEN $amountColumn ELSE 0 END)";
+        $success = "payments.status = '".PaymentStatusEnum::SUCCESS->value."'";
 
-        return $queryBuilder
-            ->defaultSort('method')
-            ->select([
-                'payments.method',
-                'payments.sub_method',
-                'payment_accounts.type as payment_account_type',
-                DB::raw('COUNT(*) as number_payments'),
-                DB::raw("$successfulSales as total_sales"),
-                DB::raw("COUNT(CASE WHEN payments.status = '".PaymentStatusEnum::SUCCESS->value."' THEN 1 END) as number_success"),
-                DB::raw("ROUND((COUNT(CASE WHEN payments.status = '".PaymentStatusEnum::SUCCESS->value."' THEN 1 END) * 100.0 / COUNT(*)), 2) as success_rate"),
-                DB::raw("SUM($successfulSales) OVER () as currency_total_sales"),
-                DB::raw("'".$parent->currency->code."' as currency_code"),
-                DB::raw("'".($parent instanceof Shop ? $parent->organisation->slug : $parent->slug)."' as organisation_slug"),
-                DB::raw(($parent instanceof Shop ? "'".$parent->slug."'" : 'NULL').' as shop_slug'),
-            ])
+        $rows = $query->select([
+            'payments.method',
+            'payments.sub_method',
+            'payment_accounts.type as payment_account_type',
+            DB::raw('COUNT(*) as number_payments'),
+            DB::raw("COUNT(*) FILTER (WHERE $success) as number_success"),
+            DB::raw("COALESCE(SUM($amountColumn) FILTER (WHERE $success), 0) as total_sales"),
+            DB::raw("MAX(payments.date) as last_payment_at"),
+        ])
             ->groupBy('payments.method', 'payments.sub_method', 'payment_accounts.type')
-            ->allowedSorts(['method', 'sub_method', 'number_payments', 'total_sales', 'number_success', 'success_rate'])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+            ->orderByDesc('total_sales')
+            ->get();
+
+        $paymentsRoute = $parent instanceof Shop
+            ? ['name' => 'grp.org.shops.show.dashboard.payments.accounting.payments.index', 'parameters' => ['organisation' => $organisation->slug, 'shop' => $parent->slug]]
+            : ['name' => 'grp.org.accounting.payments.index', 'parameters' => ['organisation' => $organisation->slug]];
+
+        return [
+            'currency_code' => $parent->currency->code,
+            'rows'          => $rows->map(fn ($row) => [
+                'method'               => $row->method,
+                'method_label'         => Payment::methodLabel($row->method),
+                'sub_method'           => $row->sub_method,
+                'sub_method_label'     => $row->sub_method ? Payment::methodLabel($row->sub_method) : null,
+                'payment_account_type' => $row->payment_account_type,
+                'number_payments'      => (int) $row->number_payments,
+                'number_success'       => (int) $row->number_success,
+                'total_sales'          => (float) $row->total_sales,
+                'last_payment_at'      => $row->last_payment_at,
+                'route'                => [
+                    'name'       => $paymentsRoute['name'],
+                    'parameters' => array_merge($paymentsRoute['parameters'], [
+                        'filter' => array_filter(['method' => $row->method, 'sub_method' => $row->sub_method]),
+                    ]),
+                ],
+            ])->values()->all(),
+        ];
     }
 
-    public function tableStructure(?array $modelOperations = null, ?string $prefix = null): Closure
-    {
-        return function (InertiaTable $table) use ($modelOperations, $prefix) {
-            if ($prefix) {
-                $table
-                    ->name($prefix)
-                    ->pageName($prefix . 'Page');
-            }
-
-            $table
-                ->withGlobalSearch()
-                ->withLabelRecord([__('method'), __('methods')])
-                ->withModelOperations($modelOperations)
-                ->defaultSort('method')
-                ->column(key: 'method', label: __('Payment Method'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'sub_method', label: __('Sub method'), canBeHidden: false, sortable: true)
-                ->column(key: 'number_payments', label: __('Total Payments'), canBeHidden: false, sortable: true, type: 'number')
-                ->column(key: 'total_sales', label: __('Total Sales'), canBeHidden: false, sortable: true, type: 'number')
-                ->column(key: 'sales_share', label: __('Share of Sales'), canBeHidden: false, type: 'number')
-                ->column(key: 'number_success', label: __('Successful Payments'), canBeHidden: false, sortable: true, type: 'number')
-                ->column(key: 'success_rate', label: __('Success Rate (%)'), canBeHidden: false, sortable: true, type: 'number');
-        };
-    }
-
-    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, ActionRequest $request): array
     {
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
@@ -107,7 +100,7 @@ class IndexPaymentMethods extends OrgAction
         return $this->handle($organisation);
     }
 
-    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): array
     {
         $this->parent = $shop;
         $this->initialisation($organisation, $request);
@@ -115,7 +108,7 @@ class IndexPaymentMethods extends OrgAction
         return $this->handle($shop);
     }
 
-    public function htmlResponse(LengthAwarePaginator $paymentMethods, ActionRequest $request): Response
+    public function htmlResponse(array $paymentMethods, ActionRequest $request): Response
     {
         $routeName       = $request->route()->getName();
         $routeParameters = $request->route()->originalParameters();
@@ -130,12 +123,12 @@ class IndexPaymentMethods extends OrgAction
                 'title'       => __('Payment Methods'),
                 'pageHead'    => [
                     'subNavigation' => $subNavigation,
-                    'icon'      => ['fal', 'fa-credit-card'],
-                    'title'     => __('Payment Methods'),
+                    'icon'          => ['fal', 'fa-credit-card'],
+                    'title'         => __('Payment Methods'),
                 ],
-                'data'        => PaymentMethodsResource::collection($paymentMethods),
+                'data'        => $paymentMethods,
             ]
-        )->table($this->tableStructure());
+        );
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

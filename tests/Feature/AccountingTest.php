@@ -1121,7 +1121,8 @@ test('UI show shop payment methods', function () {
             ->component('Org/Accounting/PaymentMethods')
             ->has('title')
             ->has('pageHead.subNavigation')
-            ->has('data');
+            ->has('data.currency_code')
+            ->has('data.rows');
     });
 });
 
