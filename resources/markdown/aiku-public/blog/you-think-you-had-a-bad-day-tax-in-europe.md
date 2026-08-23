@@ -53,6 +53,10 @@ The tree is deliberately explicit rather than clever. Tax rules are lists of exc
 - Changing a customer's VAT status **re‑rates their open baskets**, not their invoices. The past is frozen; the future follows the number.
 - Invoices carry both the category and the number that justified it, so a zero‑rated invoice can always show the validated number it relied on.
 
+## And, as a cherry on top: food
+
+All of the above decides *which country's regime* an order falls under. Inside that regime, the rate still depends on what is in the box — tea is zero‑rated in one country and reduced‑rated in another, dried flowers have their own rate in one market, and a candle is standard everywhere. That is a second decision tree, per line, and it has its own note: [Tax per line, not per order](/blog/tax-per-line-not-per-order).
+
 ## What we learned
 
 Treat tax‑number validation as an *operation with a history*, not a boolean: status, method, timestamp, audit, retry. Write the tax tree as the list of exceptions it really is, one readable branch per regime, with the rates in data. And test it with real addresses — a Tenerife postcode, a Funchal postcode, a Monaco delivery — against the real database, because that is where the next exception will be found.
