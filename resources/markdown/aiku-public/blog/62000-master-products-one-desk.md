@@ -1,11 +1,11 @@
 ---
-title: Define it once, sell it in thirty shops
-summary: The group catalogue — master products, master families, master departments — is where a thing is described once and pushed to every shop that sells it. Majors and minors for multi‑currency prices, a "follow the master" switch at three levels, the scalar column we are retiring because it silently mixed currencies, and a price cascade that ran for a month multiplying RRPs by pack size before a repair put 1,635 values back.
+title: 62,000 master products, 317,000 shop products, one desk
+summary: The group catalogue — 62,000 master products feeding 317,000 shop products across 34 open shops — is where a thing is described once and pushed to every shop that sells it, so that in theory one person at one desk can run the lot. Majors and minors for multi‑currency prices, a "follow the master" switch at three levels, the scalar column we are retiring because it silently mixed currencies, and a price cascade that ran for a month multiplying RRPs by pack size before a repair put 1,635 values back.
 date: 2026-07-27
 tags: catalogue, masters, pricing, currencies, architecture
 ---
 
-A group that runs thirty shops in a dozen countries has a problem that a single‑shop business never meets: the same candle exists thirty times, with thirty names, thirty prices, thirty descriptions, and someone has to keep them honest. The answer in aiku is a **group catalogue** — *masters* — sitting above the shops. A master product is the thing described once; a shop product is that thing as sold here. This note is about how the two stay in step, and the three lessons that cost us something.
+A group that runs thirty‑four shops in a dozen countries has a problem that a single‑shop business never meets: the same candle exists thirty times, with thirty names, thirty prices, thirty descriptions, and someone has to keep them honest. Our numbers today: **62,000 master products** feeding **317,000 shop products**. The answer in aiku is a **group catalogue** — *masters* — sitting above the shops. A master product is the thing described once; a shop product is that thing as sold here. The ambition, stated plainly, is that one person at one desk can name, describe, photograph and price the whole range, and every shop follows. This note is about how the two stay in step, and the three lessons that cost us something.
 
 ## The shape
 
