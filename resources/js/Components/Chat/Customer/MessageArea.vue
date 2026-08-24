@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, inject, onMounted, watch, computed, onUnmounted } from "vue"
+import { ref, inject, onMounted, watch, computed, onUnmounted, defineAsyncComponent } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faStar, faPlus, faSpinner, faPaperPlane, faImage, faPaperclip, faXmark, faFilePdf } from "@fortawesome/free-solid-svg-icons"
+import { faStar, faPlus, faSpinner, faPaperPlane, faImage, faPaperclip, faXmark, faFilePdf, faFaceSmile } from "@fortawesome/free-solid-svg-icons"
+
+const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
 import GuestProfileForm from "@/Components/Chat/Customer/GuestProfileForm.vue"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import { notify } from "@kyvg/vue3-notification"
@@ -41,7 +43,34 @@ const emit = defineEmits(["send-message", "reload", "mounted", "new-session"])
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
 const input = ref("")
+const textareaRef = ref<HTMLTextAreaElement | null>(null)
+const showEmojiPicker = ref(false)
+const emojiPickerContainer = ref<HTMLElement | null>(null)
 const isSending = ref(false)
+
+const pickEmoji = (emoji: string) => {
+    const el = textareaRef.value
+    if (!el) {
+        input.value += emoji
+        return
+    }
+
+    const start = el.selectionStart ?? input.value.length
+    const end = el.selectionEnd ?? input.value.length
+    input.value = input.value.slice(0, start) + emoji + input.value.slice(end)
+
+    setTimeout(() => {
+        el.focus()
+        const pos = start + emoji.length
+        el.setSelectionRange(pos, pos)
+    })
+}
+
+const handleClickOutsideEmoji = (event: MouseEvent) => {
+    if (showEmojiPicker.value && emojiPickerContainer.value && !emojiPickerContainer.value.contains(event.target as Node)) {
+        showEmojiPicker.value = false
+    }
+}
 const messagesContainer = ref<HTMLElement | null>(null)
 const selectedRating = ref<number | null>(null)
 const starPop = ref<number | null>(null)
@@ -376,6 +405,14 @@ const initSocket = () => {
 
     chatChannel = window.Echo.channel(`chat-session.${chatSession.value.ulid}`)
 
+    chatChannel.listen(".reaction", ({ message }: any) => {
+        if (!message?.id) return
+        const target = localMessages.value.find((m) => m.id === message.id)
+        if (target) {
+            target.reactions = message.reactions ?? []
+        }
+    })
+
     chatChannel.listen(".typing", (payload: any) => {
         if (payload.user_name === myUserName) return
 
@@ -424,10 +461,12 @@ onMounted(async () => {
 
     emit("mounted")
     scrollToBottom()
+    document.addEventListener("click", handleClickOutsideEmoji)
 })
 
 onUnmounted(() => {
     if (chatChannel) chatChannel.stopListening(".typing")
+    document.removeEventListener("click", handleClickOutsideEmoji)
 })
 
 defineExpose({
@@ -453,7 +492,8 @@ defineExpose({
 
                 <div v-for="m in group" :key="m.id" class="flex"
                     :class="isUserMessage(m) ? 'justify-end' : 'justify-start'">
-                    <BubbleChat :message="m" viewerType="user" :agentName="props.assignedAgent" />
+                    <BubbleChat :message="m" viewerType="user" :agentName="props.assignedAgent"
+                        :sessionUlid="session?.ulid" :apiBase="baseUrl" />
                 </div>
             </template>
 
@@ -530,41 +570,54 @@ defineExpose({
         </div>
 
         <!-- Input -->
-        <div v-if="!isRating" class="border-t p-2 flex gap-2 items-end shrink-0">
+        <div v-if="!isRating" class="border-t p-2 shrink-0">
             <GuestProfileForm v-if="!isLoggedIn && !guestProfileSubmitted && !isUser" :sessionUlid="session?.ulid"
                 @submitted="onGuestProfileSubmitted" />
 
-            <template v-else>
-                <template v-if="isLoggedIn">
-                    <button @click="imageInput?.click()"
-                        class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100"
-                        title="Upload image">
-                        <FontAwesomeIcon :icon="faImage" />
-                    </button>
+            <div v-else
+                class="rounded-xl border bg-white shadow-sm focus-within:shadow-md transition-shadow"
+                :style="{ borderColor: layout.app.theme[4] }">
+                <textarea ref="textareaRef" v-model="input" rows="1" @input="handleTyping" @keydown="handleKeyDown"
+                    :placeholder="trans('Type a message...')"
+                    class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent" />
 
-                    <button @click="fileInput?.click()"
-                        class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100"
-                        title="Upload file">
-                        <FontAwesomeIcon :icon="faPaperclip" />
-                    </button>
+                <div class="flex items-center justify-between px-2 pb-2 pt-1">
+                    <div ref="emojiPickerContainer" class="relative flex items-center gap-1">
+                        <template v-if="isLoggedIn">
+                            <button @click="imageInput?.click()"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+                                :title="trans('Upload image')">
+                                <FontAwesomeIcon :icon="faImage" class="text-sm" />
+                            </button>
 
-                    <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" class="hidden"
-                        @change="handleImageSelect" />
+                            <button @click="fileInput?.click()"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+                                :title="trans('Upload file')">
+                                <FontAwesomeIcon :icon="faPaperclip" class="text-sm" />
+                            </button>
 
-                    <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden"
-                        @change="handleDocSelect" />
-                </template>
-                <textarea v-model="input" rows="1" @input="
-                    () => {
-                        handleTyping()
-                    }
-                " @keydown="handleKeyDown" :placeholder="trans('Type a message...')"
-                    class="flex-1 resize-none px-3 py-2 rounded-lg text-sm outline-none border"
-                    :style="{ borderColor: layout.app.theme[4] }" />
+                            <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" class="hidden"
+                                @change="handleImageSelect" />
 
-                <Button :icon="isSending ? faSpinner : faPaperPlane" :loading="isSending" @click="sendMessage" />
-            </template>
+                            <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden"
+                                @change="handleDocSelect" />
+                        </template>
 
+                        <button type="button" @click.stop="showEmojiPicker = !showEmojiPicker"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+                            :class="showEmojiPicker ? 'text-indigo-600 bg-gray-100' : 'text-gray-500'"
+                            :title="trans('Emoji')">
+                            <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" />
+                        </button>
+
+                        <div v-if="showEmojiPicker" class="absolute bottom-full left-0 mb-1 z-30 max-w-[calc(100vw-2rem)]">
+                            <EmojiPicker @pick="pickEmoji" />
+                        </div>
+                    </div>
+
+                    <Button :icon="isSending ? faSpinner : faPaperPlane" :loading="isSending" @click="sendMessage" />
+                </div>
+            </div>
         </div>
     </div>
 </template>

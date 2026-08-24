@@ -20,8 +20,16 @@ class UpdateDeliveryNoteStateToHandlingBlocked extends OrgAction
 
     private DeliveryNote $deliveryNote;
 
+    /**
+     * Blocked is a fact about the lines, not a state anyone can put a note into. Asked for on a
+     * note with nothing blocking it, this leaves the note alone rather than strand it.
+     */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
+        if (!$deliveryNote->hasBlockingItems()) {
+            return $deliveryNote;
+        }
+
         data_set($modelData, 'handling_blocked_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value);
 

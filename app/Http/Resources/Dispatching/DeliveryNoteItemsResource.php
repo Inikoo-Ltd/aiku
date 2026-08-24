@@ -38,6 +38,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $warehouse_slug
  * @property mixed $warehouse_code
  * @property mixed $org_stocks_batch_code_count
+ * @property mixed $org_stocks_batch_code_id
  * @property mixed $org_stocks_batch_code
  * @property mixed $un_numbers
  * @property mixed $packings_quantity
@@ -183,7 +184,7 @@ class DeliveryNoteItemsResource extends JsonResource
                         'warehouse_slug'          => $this->warehouse_slug,
                         'warehouse_code'          => $this->warehouse_code,
                         'show_batch_code_ui'      => $this->org_stocks_batch_code_count > 0,
-                        'batch_code_id'           => $picking->batch_code_id ?? $this->org_stocks_batch_code_count,
+                        'batch_code_id'           => $picking->batch_code_id ?? $this->org_stocks_batch_code_id,
                         'batch_code'              => $picking->batch_code ?? $this->org_stocks_batch_code,
                         'update_route'            => [
                             'name'       => 'grp.models.picking.update',

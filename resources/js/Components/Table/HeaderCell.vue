@@ -52,7 +52,7 @@ const isDebug = false   //  True will show the column key in the header
 <template>
 
     <!-- <pre>{{ cell?.icon }}</pre> -->
-    <th v-show="!cell?.hidden" class="font-normal"
+    <th v-show="!cell?.hidden" scope="col" class="font-normal"
         :class="[
             cell?.type == 'avatar' || cell?.type == 'icon' ? 'thead-avatar px-3 w-1' : 'px-6 w-auto',
             cell?.align === 'right' || isCellNumber() || cell?.type == 'number' || cell?.type == 'currency' || cell?.type === 'date' || cell?.type === 'date_hm' || cell?.type === 'date_hms' ? 'text-right' : 'text-left',
@@ -64,7 +64,7 @@ const isDebug = false   //  True will show the column key in the header
             :dusk="cell?.sortable ? `sort-${cell?.key}` : null" @click.prevent="onClick">
             <!-- <slot name="pagehead" :data="{isCellNumber : isCellNumber, cell}"> -->
                 <div class="flex items-center justify-start"
-                    :class="{'justify-center': cell?.type == 'avatar' || cell?.type == 'icon', 'justify-end': isCellNumber()}">
+                    :class="{'justify-center': cell?.type == 'avatar' || cell?.type == 'icon', 'justify-end': isCellNumber() || cell?.align === 'right'}">
                     
                     <!-- Label: object -->
                     <div v-if="typeof cell?.label === 'object'">

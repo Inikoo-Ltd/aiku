@@ -77,6 +77,7 @@ use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\OrgPaymentServiceProvider;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
+use App\Transfers\Aurora\FetchAuroraPayment;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\Accounting\TopUp;
@@ -820,7 +821,8 @@ test('UI show accounting dashboard', function () {
                     ->where('title', 'Accounting')
                     ->etc()
             )
-            ->has('flatTreeMaps');
+            ->has('flatTreeMaps')
+            ->has('payment_methods.summary.methods');
     });
 });
 
@@ -1109,6 +1111,18 @@ test('UI edit payment account', function () {
                     ->etc()
             )
             ->has('formData.blueprint.0.fields', 2);
+    });
+});
+
+test('UI show shop payment methods', function () {
+    $response = get(route('grp.org.shops.show.dashboard.payments.accounting.payments.methods.index', [$this->organisation->slug, $this->shop->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Accounting/PaymentMethods')
+            ->has('title')
+            ->has('pageHead.subNavigation')
+            ->has('data.currency_code')
+            ->has('data.rows');
     });
 });
 
@@ -2845,4 +2859,64 @@ test('a payment already spoken for by one invoice is not offered to another on t
         ->and((float) $open->payment_amount)->toBe(120.00)
         ->and($open->payments()->count())->toBe(1)
         ->and((float) $settled->refresh()->payment_amount)->toBe(300.00);
+});
+
+describe('payment method from checkout.com source', function () {
+    test('method is the instrument family and the card scheme is the sub method', function () {
+        $checkout = new PaymentAccount(['type' => PaymentAccountTypeEnum::CHECKOUT]);
+
+        expect(StorePayment::methodFromSource(['type' => 'klarna'], $checkout))->toBe(['method' => 'klarna', 'sub_method' => null])
+            ->and(StorePayment::methodFromSource(['type' => 'paypal'], $checkout))->toBe(['method' => 'paypal', 'sub_method' => null])
+            ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => 'VISA'], $checkout))->toBe(['method' => 'card', 'sub_method' => 'visa'])
+            ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => 'American Express'], $checkout))->toBe(['method' => 'card', 'sub_method' => 'american express'])
+            ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => 'AMEX'], $checkout))->toBe(['method' => 'card', 'sub_method' => 'american express'])
+            ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => 'VISA', 'card_wallet_type' => 'applepay'], $checkout))->toBe(['method' => 'applepay', 'sub_method' => 'visa'])
+            ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => ''], $checkout))->toBe(['method' => 'card', 'sub_method' => null])
+            ->and(StorePayment::methodFromSource([], $checkout))->toBe(['method' => 'checkout', 'sub_method' => null])
+            ->and(StorePayment::methodFromSource(null, $checkout))->toBe(['method' => 'checkout', 'sub_method' => null]);
+    });
+
+    test('aurora payment metadata yields the checkout.com source', function () {
+        $metadata = json_encode(['id' => 'pay_x', 'source' => ['type' => 'card', 'scheme' => 'Mastercard', 'last4' => '4069']]);
+
+        expect(FetchAuroraPayment::sourceFromMetadata($metadata))->toMatchArray(['type' => 'card', 'scheme' => 'Mastercard'])
+            ->and(FetchAuroraPayment::sourceFromMetadata(json_encode(['source' => ['id' => 'src_only']])))->toBeNull()
+            ->and(FetchAuroraPayment::sourceFromMetadata('not json'))->toBeNull()
+            ->and(FetchAuroraPayment::sourceFromMetadata(null))->toBeNull();
+    });
+
+    test('stored payment keeps method and sub method and drops the raw source', function () {
+        GetCurrencyExchange::shouldRun()->andReturn(1);
+
+        $paymentAccount = $this->shop->paymentAccountShops()
+            ->where('type', PaymentAccountTypeEnum::ACCOUNT)
+            ->first()->paymentAccount;
+        $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+        $klarna = StorePayment::make()->action($customer, $paymentAccount, array_merge(Payment::factory()->definition(), [
+            'source' => ['type' => 'klarna', 'id' => 'src_x'],
+        ]));
+        $visa   = StorePayment::make()->action($customer, $paymentAccount, array_merge(Payment::factory()->definition(), [
+            'source' => ['type' => 'card', 'scheme' => 'VISA'],
+        ]));
+        $plain  = StorePayment::make()->action($customer, $paymentAccount, Payment::factory()->definition());
+
+        expect($klarna->method)->toBe('klarna')
+            ->and($klarna->sub_method)->toBeNull()
+            ->and($klarna->data)->not->toHaveKey('source')
+            ->and($visa->method)->toBe('card')
+            ->and($visa->sub_method)->toBe('visa')
+            ->and($plain->method)->toBe('account')
+            ->and($plain->sub_method)->toBeNull();
+    });
+
+    test('method labels read well for staff', function () {
+        expect(Payment::methodLabel('klarna'))->toBe('Klarna')
+            ->and(Payment::methodLabel('paypal'))->toBe('PayPal')
+            ->and(Payment::methodLabel('card', 'american express'))->toBe('Card · American Express')
+            ->and(Payment::methodLabel('applepay', 'visa'))->toBe('Apple Pay · Visa')
+            ->and(Payment::methodLabel('checkout'))->toBe('Checkout.com')
+            ->and(Payment::methodLabel('cash_on_delivery'))->toBe('Cash on delivery')
+            ->and(Payment::methodLabel(null))->toBe('');
+    });
 });

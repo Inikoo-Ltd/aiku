@@ -29,6 +29,7 @@ use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\SerialReference;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Support\Forms\SesConfigurationBlueprint;
 use Exception;
 use Illuminate\Support\Arr;
@@ -188,6 +189,28 @@ class EditShop extends OrgAction
                             'value' => $shop->data['vat_number'] ?? '',
                         ],
                     ]
+                ],
+                [
+                    'label' => __('Staff chat'),
+                    'icon' => 'fal fa-comments',
+                    'fields' => [
+                        'staff_chat_crm_user_ids' => [
+                            'type' => 'multiselect-tags',
+                            'label' => __('Ask CRM goes to'),
+                            'options' => User::where('group_id', $shop->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])->map(fn ($user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                            'labelProp' => 'name',
+                            'valueProp' => 'id',
+                            'value' => Arr::get($shop->settings, 'staff_chat.crm_user_ids', []),
+                        ],
+                        'staff_chat_crm_backup_user_ids' => [
+                            'type' => 'multiselect-tags',
+                            'label' => __('Ask CRM backup'),
+                            'options' => User::where('group_id', $shop->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])->map(fn ($user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                            'labelProp' => 'name',
+                            'valueProp' => 'id',
+                            'value' => Arr::get($shop->settings, 'staff_chat.crm_backup_user_ids', []),
+                        ],
+                    ],
                 ],
                 [
                     'label'  => __('Properties'),

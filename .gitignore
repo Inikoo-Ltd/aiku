@@ -133,3 +133,4 @@ laradumps.yaml
 storage/oauth-*.key
 /docs/gsl-es
 /devops/search
+public/art/logo-source.png

@@ -14,7 +14,8 @@ import Image from "@common/Components/Image.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUser, faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faFilter } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faFilter, faStoreAlt } from "@fal"
+import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faAngleDown, faChevronRight, faStar as faStarSolid } from "@fortawesome/free-solid-svg-icons"
 import {
     Contact,
     SessionAPI,
@@ -41,6 +42,23 @@ const PLUS_8_HOURS = layout.app?.environment === "local" ? 8 * 60 * 60 * 1000 : 
 
 const contacts = ref<Contact[]>([])
 const activeTab = ref<"waiting" | "active" | "closed">("waiting")
+const spamView = ref(false)
+const trashView = ref(false)
+const highlightView = ref(false)
+const openMenuUlid = ref<string | null>(null)
+const confirmDeleteUlid = ref<string | null>(null)
+const menuPos = ref({ top: 0, left: 0 })
+const isSpamming = ref<Record<string, boolean>>({})
+
+const PRIORITIES: Array<{ value: string; label: string; color: string; icon: any }> = [
+    { value: "urgent", label: "Urgent", color: "#ef4444", icon: faAnglesUp },
+    { value: "high", label: "High", color: "#f59e0b", icon: faAngleUp },
+    { value: "normal", label: "Normal", color: "#3b82f6", icon: faEquals },
+    { value: "low", label: "Low", color: "#6b7280", icon: faAngleDown },
+]
+
+const priorityMeta = (val?: string | null) =>
+    PRIORITIES.find((p) => p.value === val) ?? PRIORITIES.find((p) => p.value === "normal")!
 const viewMode = ref<"my" | "team">("my")
 const searchQuery = ref("")
 const showSearch = ref(false)
@@ -107,6 +125,8 @@ const mapSession = (s: SessionAPI): Contact => ({
         : undefined,
     unread: s.unread_count,
     status: s.status,
+    is_spam: (s as any).is_spam ?? false,
+    is_highlighted: (s as any).is_highlighted ?? false,
     webUser: s.web_user,
     priority: s.priority,
     guest_profile: s.guest_profile,
@@ -119,11 +139,17 @@ const mapSession = (s: SessionAPI): Contact => ({
 const selectedShopId = ref<number | null>(props.inboxes?.[0]?.id ?? null)
 
 const buildParams = (page: number) => ({
-    statuses: [activeTab.value],
+    ...(trashView.value
+        ? { trashed: 1 }
+        : spamView.value
+            ? { is_spam: 1 }
+            : highlightView.value
+                ? { highlighted: 1, statuses: [activeTab.value] }
+                : { statuses: [activeTab.value] }),
     assigned_to_me: myAgentId,
     organisation_id: props.organisation.id,
     page,
-    ...(selectedShopId.value ? { shop_id: selectedShopId.value } : {}),
+    ...(selectedShopId.value && !highlightView.value ? { shop_id: selectedShopId.value } : {}),
     ...(viewMode.value === "team" ? { view_team: 1 } : {}),
     ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
 })
@@ -155,6 +181,64 @@ const loadMore = async () => {
     }
 }
 
+const menuContact = computed(() => contacts.value.find((c) => c.ulid === openMenuUlid.value) ?? null)
+
+const closeRowMenu = () => {
+    openMenuUlid.value = null
+    confirmDeleteUlid.value = null
+}
+
+const toggleRowMenu = (ulid: string, ev?: MouseEvent) => {
+    confirmDeleteUlid.value = null
+    if (openMenuUlid.value === ulid) {
+        openMenuUlid.value = null
+        return
+    }
+    if (ev) {
+        const MENU_W = 192
+        const MENU_H = 200
+        let left = ev.clientX - MENU_W
+        if (left < 8) left = ev.clientX + 4
+        let top = ev.clientY + 4
+        if (top + MENU_H > window.innerHeight) top = Math.max(8, window.innerHeight - MENU_H - 8)
+        menuPos.value = { top, left: Math.max(8, left) }
+    }
+    openMenuUlid.value = ulid
+}
+
+const onSpamFromThread = () => {
+    const ulid = selectedSession.value?.ulid
+    if (ulid) {
+        contacts.value = contacts.value.filter((x) => x.ulid !== ulid)
+    }
+    selectedSession.value = null
+    messages.value = []
+    fetchInboxNotifications()
+}
+
+const markSpam = async (c: Contact, spam: boolean) => {
+    if (isSpamming.value[c.ulid]) return
+    openMenuUlid.value = null
+    isSpamming.value = { ...isSpamming.value, [c.ulid]: true }
+    try {
+        const routeName = spam
+            ? "grp.org.chat.agents.sessions.spam"
+            : "grp.org.chat.agents.sessions.not_spam"
+        await axios.patch(route(routeName, [props.organisation.slug, c.ulid]), {}, { withCredentials: true })
+        // It moved to (or out of) the Spam tab — drop it from the current list.
+        contacts.value = contacts.value.filter((x) => x.ulid !== c.ulid)
+        if (selectedSession.value?.ulid === c.ulid) {
+            selectedSession.value = null
+            messages.value = []
+        }
+        fetchInboxNotifications()
+    } catch (e: any) {
+        errorPerContact.value[c.ulid] = e?.response?.data?.message ?? "Failed to update spam"
+    } finally {
+        isSpamming.value = { ...isSpamming.value, [c.ulid]: false }
+    }
+}
+
 const showAgentFilter = ref(false)
 const selectedAgentIds = ref<Array<number | string>>([])
 
@@ -183,8 +267,8 @@ const clearAgentFilter = () => {
 
 const filteredContacts = computed(() =>
     contacts.value.filter(
-        (c) => c.status === activeTab.value &&
-            (!selectedShopId.value || c.shop?.id === selectedShopId.value) &&
+        (c) => (spamView.value || trashView.value ? true : c.status === activeTab.value) &&
+            (highlightView.value || !selectedShopId.value || c.shop?.id === selectedShopId.value) &&
             (!selectedAgentIds.value.length ||
                 (c.agent?.id && selectedAgentIds.value.includes(c.agent.id)))
     )
@@ -210,12 +294,131 @@ const shopAvatarStyle = (inbox: { id: number }) => {
 }
 
 const selectShop = (shopId: number) => {
-    if (selectedShopId.value === shopId) return
+    if (selectedShopId.value === shopId && !spamView.value && !trashView.value && !highlightView.value) return
+    spamView.value = false
+    trashView.value = false
+    highlightView.value = false
     selectedShopId.value = shopId
     selectedSession.value = null
     messages.value = []
     clearAgentFilter()
     reloadContacts()
+}
+
+const selectSpam = () => {
+    if (spamView.value) return
+    spamView.value = true
+    trashView.value = false
+    highlightView.value = false
+    selectedShopId.value = null
+    selectedSession.value = null
+    messages.value = []
+    clearAgentFilter()
+    reloadContacts()
+}
+
+const selectTrash = () => {
+    if (trashView.value) return
+    trashView.value = true
+    spamView.value = false
+    highlightView.value = false
+    selectedShopId.value = null
+    selectedSession.value = null
+    messages.value = []
+    clearAgentFilter()
+    reloadContacts()
+}
+
+const selectHighlight = () => {
+    if (highlightView.value) return
+    highlightView.value = true
+    spamView.value = false
+    trashView.value = false
+    selectedShopId.value = null
+    selectedSession.value = null
+    messages.value = []
+    if (viewMode.value === "team" && activeTab.value === "waiting") {
+        activeTab.value = "active"
+    }
+    clearAgentFilter()
+    reloadContacts()
+}
+
+const patchSession = async (c: Contact, routeName: string, method: "patch" | "delete", body: Record<string, any> = {}) => {
+    if (isSpamming.value[c.ulid]) return
+    isSpamming.value = { ...isSpamming.value, [c.ulid]: true }
+    try {
+        const url = route(routeName, [props.organisation.slug, c.ulid])
+        await (method === "delete" ? axios.delete(url, { withCredentials: true }) : axios.patch(url, body, { withCredentials: true }))
+        return true
+    } catch (e: any) {
+        errorPerContact.value[c.ulid] = e?.response?.data?.message ?? "Action failed"
+        return false
+    } finally {
+        isSpamming.value = { ...isSpamming.value, [c.ulid]: false }
+    }
+}
+
+const removeFromList = (ulid: string) => {
+    contacts.value = contacts.value.filter((x) => x.ulid !== ulid)
+    if (selectedSession.value?.ulid === ulid) {
+        selectedSession.value = null
+        messages.value = []
+    }
+}
+
+const setPriority = async (c: Contact, priority: string) => {
+    openMenuUlid.value = null
+    const ok = await patchSession(c, "grp.org.chat.agents.sessions.priority", "patch", { priority })
+    if (ok) {
+        const found = contacts.value.find((x) => x.ulid === c.ulid)
+        if (found) found.priority = priority
+        if (selectedSession.value?.ulid === c.ulid) selectedSession.value.priority = priority
+    }
+}
+
+const onPriorityUpdated = (value: string) => {
+    const ulid = selectedSession.value?.ulid
+    if (selectedSession.value) selectedSession.value.priority = value
+    const found = contacts.value.find((x) => x.ulid === ulid)
+    if (found) found.priority = value
+}
+
+const trashChat = async (c: Contact) => {
+    openMenuUlid.value = null
+    if (await patchSession(c, "grp.org.chat.agents.sessions.trash", "delete")) {
+        removeFromList(c.ulid)
+        fetchInboxNotifications()
+    }
+}
+
+const toggleHighlight = async (c: Contact) => {
+    openMenuUlid.value = null
+    const next = !c.is_highlighted
+    if (await patchSession(c, "grp.org.chat.agents.sessions.highlight", "patch")) {
+        const found = contacts.value.find((x) => x.ulid === c.ulid)
+        if (found) found.is_highlighted = next
+        if (selectedSession.value?.ulid === c.ulid) selectedSession.value.is_highlighted = next
+        if (highlightView.value && !next) {
+            removeFromList(c.ulid)
+        }
+    }
+}
+
+const restoreChat = async (c: Contact) => {
+    openMenuUlid.value = null
+    if (await patchSession(c, "grp.org.chat.agents.sessions.restore", "patch")) {
+        removeFromList(c.ulid)
+        fetchInboxNotifications()
+    }
+}
+
+const forceDeleteChat = async (c: Contact) => {
+    confirmDeleteUlid.value = null
+    openMenuUlid.value = null
+    if (await patchSession(c, "grp.org.chat.agents.sessions.force_delete", "delete")) {
+        removeFromList(c.ulid)
+    }
 }
 
 // Per-agent (My Chats) incoming-chat counts used for the badges.
@@ -267,9 +470,20 @@ const openChat = (c: Contact) => {
         shop: c.shop,
         organisation: c.organisation,
         ai_summary: c.ai_summary ?? null,
+        is_trashed: trashView.value,
     } as SessionAPI
     messages.value = c.messages ?? []
     updateUrl(String(c.ulid))
+}
+
+const onRestoreFromThread = () => {
+    const ulid = selectedSession.value?.ulid
+    if (ulid) {
+        contacts.value = contacts.value.filter((x) => x.ulid !== ulid)
+    }
+    selectedSession.value = null
+    messages.value = []
+    fetchInboxNotifications()
 }
 
 const handleClickContact = (c: Contact) => {
@@ -557,12 +771,43 @@ onUnmounted(() => {
                 </div>
             </div>
 
-            <!-- Future: Highlighted (placeholder) -->
+            <!-- Spam -->
             <div class="border-t border-gray-200 py-1">
-                <button type="button" disabled v-tooltip="trans('Highlighted (coming soon)')"
-                    class="w-full flex items-center text-sm text-gray-400 cursor-not-allowed"
-                    :class="inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2'">
-                    <FontAwesomeIcon :icon="faStar" class="text-sm shrink-0" />
+                <button type="button" @click="selectSpam"
+                    v-tooltip="inboxRailCollapsed ? trans('Spam') : undefined"
+                    class="w-full flex items-center text-sm transition-colors"
+                    :class="[
+                        inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        spamView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
+                    ]"
+                    :style="spamView ? selectedItemStyle : {}">
+                    <FontAwesomeIcon :icon="faBan" class="text-sm shrink-0" :class="spamView ? 'text-red-500' : ''" />
+                    <span v-if="!inboxRailCollapsed">{{ trans("Spam") }}</span>
+                </button>
+                <button type="button" @click="selectTrash"
+                    v-tooltip="inboxRailCollapsed ? trans('Trash') : undefined"
+                    class="w-full flex items-center text-sm transition-colors"
+                    :class="[
+                        inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        trashView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
+                    ]"
+                    :style="trashView ? selectedItemStyle : {}">
+                    <FontAwesomeIcon :icon="faTrash" class="text-sm shrink-0" :class="trashView ? 'text-red-500' : ''" />
+                    <span v-if="!inboxRailCollapsed">{{ trans("Trash") }}</span>
+                </button>
+            </div>
+
+            <!-- Highlighted -->
+            <div class="border-t border-gray-200 py-1">
+                <button type="button" @click="selectHighlight"
+                    v-tooltip="inboxRailCollapsed ? trans('Highlighted') : undefined"
+                    class="w-full flex items-center text-sm transition-colors"
+                    :class="[
+                        inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        highlightView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
+                    ]"
+                    :style="highlightView ? selectedItemStyle : {}">
+                    <FontAwesomeIcon :icon="faStar" class="text-sm shrink-0" :class="highlightView ? 'text-amber-400' : ''" />
                     <span v-if="!inboxRailCollapsed">{{ trans("Highlighted") }}</span>
                 </button>
             </div>
@@ -574,9 +819,9 @@ onUnmounted(() => {
             <div class="px-3 py-2.5 border-b flex items-center justify-between gap-2">
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-semibold text-gray-800 truncate mb-1.5">
-                        {{ selectedInbox?.name ?? trans("Inbox") }}
+                        {{ trashView ? trans("Trash") : spamView ? trans("Spam") : highlightView ? trans("Highlighted") : (selectedInbox?.name ?? trans("Inbox")) }}
                     </div>
-                    <div class="inline-flex items-center bg-gray-100 rounded-lg p-0.5 text-[11px]">
+                    <div v-if="!spamView && !trashView" class="inline-flex items-center bg-gray-100 rounded-lg p-0.5 text-[11px]">
                         <button type="button" class="px-2.5 py-1 rounded-md transition-all"
                             :class="viewMode === 'my' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                             @click="viewMode = 'my'">
@@ -644,7 +889,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Status segmented tabs -->
-            <div class="px-3 py-2 border-b">
+            <div v-if="!spamView && !trashView" class="px-3 py-2 border-b">
                 <div class="flex items-center bg-gray-100 rounded-lg p-1 text-xs">
                     <button v-if="viewMode === 'my'" type="button"
                         class="flex-1 py-1.5 rounded-md transition-all inline-flex items-center justify-center gap-1"
@@ -652,7 +897,7 @@ onUnmounted(() => {
                         :style="activeTab === 'waiting' ? { color: 'var(--theme-color-4)' } : {}"
                         @click="activeTab = 'waiting'">
                         {{ trans("Waiting") }}
-                        <span v-if="viewMode === 'my' && tabUnread.waiting"
+                        <span v-if="viewMode === 'my' && !highlightView && tabUnread.waiting"
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
                             :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.waiting }}</span>
                     </button>
@@ -662,7 +907,7 @@ onUnmounted(() => {
                         :style="activeTab === 'active' ? { color: 'var(--theme-color-4)' } : {}"
                         @click="activeTab = 'active'">
                         {{ trans("Active") }}
-                        <span v-if="viewMode === 'my' && tabUnread.active"
+                        <span v-if="viewMode === 'my' && !highlightView && tabUnread.active"
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
                             :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.active }}</span>
                     </button>
@@ -672,7 +917,7 @@ onUnmounted(() => {
                         :style="activeTab === 'closed' ? { color: 'var(--theme-color-4)' } : {}"
                         @click="activeTab = 'closed'">
                         {{ trans("Closed") }}
-                        <span v-if="viewMode === 'my' && tabUnread.closed"
+                        <span v-if="viewMode === 'my' && !highlightView && tabUnread.closed"
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
                             :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.closed }}</span>
                     </button>
@@ -689,14 +934,22 @@ onUnmounted(() => {
 
                 <div v-else>
                     <div v-for="c in filteredContacts" :key="c.ulid">
-                        <div class="relative flex items-center gap-3 px-3 py-2 border-b cursor-pointer transition-colors"
+                        <div class="group relative flex items-center gap-3 px-3 py-2 border-b cursor-pointer transition-colors"
                             :class="selectedSession?.ulid === c.ulid ? '' : 'hover:bg-gray-50'"
                             :style="selectedSession?.ulid === c.ulid ? selectedItemStyle : {}"
-                            @click="handleClickContact(c)">
-                            <div v-if="isAssigning[c.ulid]"
+                            @click="handleClickContact(c)"
+                            @contextmenu.prevent="toggleRowMenu(c.ulid, $event)">
+                            <div v-if="isAssigning[c.ulid] || isSpamming[c.ulid]"
                                 class="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
                                 <LoadingIcon class="w-8 h-8 text-white" />
                             </div>
+
+                            <button type="button"
+                                class="absolute top-1/2 right-2 -translate-y-1/2 z-30 w-7 h-7 flex items-center justify-center rounded-full bg-white text-gray-500 shadow-md ring-1 ring-gray-200 hover:bg-gray-100 hover:text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                                :class="{ '!opacity-100': openMenuUlid === c.ulid }"
+                                @click.stop="toggleRowMenu(c.ulid, $event)">
+                                <FontAwesomeIcon :icon="faEllipsisVertical" class="text-sm" />
+                            </button>
 
                             <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
                                 <Image v-if="c.avatar" :src="c.avatar" class="w-full h-full rounded-full object-cover" />
@@ -707,6 +960,10 @@ onUnmounted(() => {
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-sm font-medium text-gray-800 truncate">{{ capitalize(c.name) }}</span>
                                     <span class="text-[10px] text-gray-400 shrink-0">{{ c.lastMessageTime }}</span>
+                                </div>
+                                <div v-if="(spamView || trashView || highlightView) && c.shop?.name" class="flex items-center gap-1 text-[10px] text-gray-400 truncate">
+                                    <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" />
+                                    <span class="truncate">{{ c.shop.name }}</span>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <span v-if="c.agent?.name" class="text-[10px] text-gray-400 truncate">
@@ -720,6 +977,13 @@ onUnmounted(() => {
                                 </div>
                                 <div class="flex items-center gap-1.5">
                                     <span class="text-xs text-gray-500 truncate flex-1 leading-snug">{{ c.lastMessage }}</span>
+                                    <button v-if="!trashView" type="button"
+                                        v-tooltip="c.is_highlighted ? trans('Remove highlight') : trans('Highlight')"
+                                        class="shrink-0 flex items-center justify-center transition-opacity"
+                                        :class="c.is_highlighted ? 'text-amber-400 opacity-100' : 'text-gray-300 opacity-0 group-hover:opacity-100 hover:text-amber-400'"
+                                        @click.stop="toggleHighlight(c)">
+                                        <FontAwesomeIcon :icon="faStarSolid" class="text-[11px]" />
+                                    </button>
                                     <span class="shrink-0 text-[9px] px-1 py-0.5 border leading-none"
                                         :class="c.webUser?.id ? 'border-green-400 text-green-500' : 'border-blue-300 text-blue-400'">
                                         {{ c.webUser?.id ? 'C' : 'G' }}
@@ -757,12 +1021,91 @@ onUnmounted(() => {
                     @transfer-agent-success="onTransferAgentSuccess"
                     @assign-self-success="onAssignSelfSuccess" @messages-read="onMessagesRead"
                     @open-jira-settings="onOpenJiraSettings"
-                    @open-slack-settings="onOpenSlackSettings" />
+                    @open-slack-settings="onOpenSlackSettings"
+                    @spam-success="onSpamFromThread"
+                    @restore-success="onRestoreFromThread" />
             </div>
         </div>
 
         <!-- RIGHT: conversation profile panel (Conversation-style) -->
         <ChatConversationSidePanel v-if="panelSession && sidePanelVisible"
-            :session="panelSession" @close="closeSidePanel" />
+            :session="panelSession" @close="closeSidePanel" @priority-updated="onPriorityUpdated" />
+
+        <!-- Row action menu (teleported so it is never clipped by the list's overflow) -->
+        <Teleport to="body">
+            <template v-if="menuContact">
+                <div class="fixed inset-0 z-[998]" @click="closeRowMenu" @contextmenu.prevent="closeRowMenu"></div>
+                <div class="fixed z-[999] w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1"
+                    :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }" @click.stop>
+                    <template v-if="trashView">
+                        <button type="button"
+                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                            @click="restoreChat(menuContact)">
+                            <FontAwesomeIcon :icon="faTrashArrowUp" class="text-[10px]" /> {{ trans("Restore") }}
+                        </button>
+                        <button v-if="confirmDeleteUlid !== menuContact.ulid" type="button"
+                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
+                            @click.stop="confirmDeleteUlid = menuContact.ulid">
+                            <FontAwesomeIcon :icon="faTrash" class="text-[10px]" /> {{ trans("Delete permanently") }}
+                        </button>
+                        <button v-else type="button"
+                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700"
+                            @click="forceDeleteChat(menuContact)">
+                            <FontAwesomeIcon :icon="faTrash" class="text-[10px]" /> {{ trans("Click again to confirm") }}
+                        </button>
+                    </template>
+
+                    <template v-else>
+                        <div class="relative group/prio">
+                            <button type="button"
+                                class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100">
+                                <FontAwesomeIcon :icon="priorityMeta(menuContact.priority).icon" class="text-[11px] w-3.5" :style="{ color: priorityMeta(menuContact.priority).color }" />
+                                <span>{{ trans("Priority") }}</span>
+                                <span class="ml-auto flex items-center gap-1 text-[10px] text-gray-500">
+                                    {{ trans(priorityMeta(menuContact.priority).label) }}
+                                    <FontAwesomeIcon :icon="faChevronRight" class="text-[8px] text-gray-400" />
+                                </span>
+                            </button>
+                            <div class="absolute left-full top-0 hidden group-hover/prio:block w-40 bg-white border border-gray-200 rounded-md shadow-lg py-1">
+                                <button v-for="p in PRIORITIES" :key="p.value" type="button"
+                                    class="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-100"
+                                    :class="menuContact.priority === p.value ? 'font-semibold text-gray-900' : 'text-gray-700'"
+                                    @click="setPriority(menuContact, p.value)">
+                                    <FontAwesomeIcon :icon="p.icon" class="text-[11px] w-3.5" :style="{ color: p.color }" />
+                                    <span>{{ trans(p.label) }}</span>
+                                    <span v-if="menuContact.priority === p.value" class="ml-auto text-[11px]" :style="{ color: p.color }">✓</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="border-t border-gray-100 my-1"></div>
+
+                        <button type="button"
+                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                            @click="toggleHighlight(menuContact)">
+                            <FontAwesomeIcon :icon="faStar" class="text-[10px]"
+                                :class="menuContact.is_highlighted ? 'text-amber-400' : ''" />
+                            {{ menuContact.is_highlighted ? trans("Remove highlight") : trans("Highlight") }}
+                        </button>
+                        <div class="border-t border-gray-100 my-1"></div>
+
+                        <button v-if="!menuContact.is_spam" type="button"
+                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                            @click="markSpam(menuContact, true)">
+                            <FontAwesomeIcon :icon="faBan" class="text-[10px]" /> {{ trans("Report spam") }}
+                        </button>
+                        <button v-else type="button"
+                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                            @click="markSpam(menuContact, false)">
+                            <FontAwesomeIcon :icon="faRotateLeft" class="text-[10px]" /> {{ trans("Not spam") }}
+                        </button>
+                        <button type="button"
+                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
+                            @click="trashChat(menuContact)">
+                            <FontAwesomeIcon :icon="faTrash" class="text-[10px]" /> {{ trans("Move to trash") }}
+                        </button>
+                    </template>
+                </div>
+            </template>
+        </Teleport>
     </div>
 </template>

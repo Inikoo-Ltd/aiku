@@ -81,6 +81,22 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, "settings.invoicing.show_tax_liability_date", Arr::pull($modelData, 'show_tax_liability_date'));
         }
 
+        if (Arr::has($modelData, 'staff_chat_crm_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.crm_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'staff_chat_warehouse_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.warehouse_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_warehouse_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'staff_chat_crm_backup_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.crm_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_backup_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'staff_chat_warehouse_backup_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.warehouse_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_warehouse_backup_user_ids'))));
+        }
+
         if (Arr::has($modelData, 'margin_break_even_pct')) {
             data_set($modelData, 'settings.margins.break_even_pct', (float) Arr::pull($modelData, 'margin_break_even_pct'));
         }
@@ -254,6 +270,14 @@ class UpdateOrganisation extends OrgAction
             'allow_stock_controller_set_not_picked' => ['sometimes', 'boolean'],
             'allow_scan_to_pick'                    => ['sometimes', 'boolean'],
             'allow_scan_to_pack'                    => ['sometimes', 'boolean'],
+            'staff_chat_crm_user_ids'               => ['sometimes', 'array'],
+            'staff_chat_crm_user_ids.*'              => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
+            'staff_chat_warehouse_user_ids'         => ['sometimes', 'array'],
+            'staff_chat_warehouse_user_ids.*'        => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
+            'staff_chat_crm_backup_user_ids'         => ['sometimes', 'array'],
+            'staff_chat_crm_backup_user_ids.*'       => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
+            'staff_chat_warehouse_backup_user_ids'   => ['sometimes', 'array'],
+            'staff_chat_warehouse_backup_user_ids.*' => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
             'banned_countries'                      => ['sometimes', 'nullable', 'array'],
             'banned_countries.banned_list'          => ['sometimes', 'nullable', 'array'],
             'banned_countries.banned_list.*'        => ['required', 'array'],

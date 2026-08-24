@@ -178,6 +178,18 @@ class EditGroupSettings extends OrgAction
                         ),
                     ],
                     [
+                        'label'  => __('Staff chat'),
+                        'icon'   => 'fal fa-comments',
+                        'fields' => [
+                            'staff_chat_quick_replies' => [
+                                'type'        => 'textarea',
+                                'label'       => __('Quick replies'),
+                                'information' => __('One per line, shown as buttons in the staff chat composer'),
+                                'value'       => implode("\n", Arr::get($group->settings, 'staff_chat.quick_replies', [])),
+                            ],
+                        ],
+                    ],
+                    [
                         'label'  => __('Printer'),
                         'icon'   => 'fa-light fa-print',
                         'fields' => [

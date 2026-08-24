@@ -172,7 +172,7 @@ class IndexTransactions extends OrgAction
             }
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
             if ($withMargins) {
-                $table->column(key: 'margin', label: __('Margin'), canBeHidden: false);
+                $table->column(key: 'margin', label: __('Margin'), canBeHidden: false, align: 'right');
             }
             if (
                 $parent instanceof Order

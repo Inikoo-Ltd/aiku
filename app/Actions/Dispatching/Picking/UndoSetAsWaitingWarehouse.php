@@ -34,7 +34,6 @@ class UndoSetAsWaitingWarehouse extends OrgAction
         $dataToUpdate = [
             'state'                      => DeliveryNoteItemStateEnum::HANDLING,
             'quantity_waiting_warehouse' => 0,
-            'has_waiting_warehouse'      => false,
             'is_handled'                 => false,
         ];
 

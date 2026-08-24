@@ -63,6 +63,20 @@ class ChatMessageResource extends JsonResource
                 'method'     => 'get',
                 'url'        => route('grp.api.chats.chat.attachment.download', ['ulid' => $chatMessage->attachment->ulid])
             ] : null,
+            'reactions' => $chatMessage->reactions
+                ->groupBy('emoji')
+                ->map(function ($group, $emoji) {
+                    return [
+                        'emoji'    => $emoji,
+                        'count'    => $group->count(),
+                        'reactors' => $group->map(function ($reaction) {
+                            return [
+                                'type' => $reaction->reactor_type,
+                                'id'   => $reaction->reactor_id,
+                            ];
+                        })->values(),
+                    ];
+                })->values(),
             'metadata' => $chatMessage->metadata,
             'is_offline_message' => $chatMessage->metadata['is_offline_message'] ?? false,
             'edited_at' => $chatMessage->edited_at,

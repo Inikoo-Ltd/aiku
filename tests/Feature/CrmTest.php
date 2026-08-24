@@ -47,6 +47,9 @@ use App\Actions\CRM\Prospect\UpdateProspectEmailUnsubscribed;
 use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\HydrateWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
+use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
+use App\Actions\Helpers\TaxNumber\ValidateEuropeanTaxNumber;
+use App\Actions\Ordering\Order\ResetCustomerOrdersTaxCategory;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\Web\Website\StoreWebsite;
@@ -62,6 +65,8 @@ use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Enums\CRM\Prospect\ProspectContactedStateEnum;
 use App\Enums\CRM\Prospect\ProspectFailStatusEnum;
 use App\Enums\CRM\Prospect\ProspectStateEnum;
+use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
+use App\Enums\Helpers\TaxNumber\TaxNumberValidationTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Comms\BackInStockReminder;
@@ -84,7 +89,10 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
+use Lorisleiva\Actions\Decorators\JobDecorator;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -1358,5 +1366,124 @@ test('sync customers to google ads uploads hashed identifiers', function () {
             && $request['encoding'] === 'HEX'
             && $request['termsOfService']['customerMatchTermsOfServiceStatus'] === 'ACCEPTED'
             && $matchedMember !== null;
+    });
+});
+
+describe('EU VAT re-validation (HELP-2374)', function () {
+    beforeEach(function () {
+        $this->euCountry = Country::where('code', 'ES')->first();
+        $this->euCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    });
+
+    $storeTaxNumber = function (string $number, array $extra = []) {
+        return StoreTaxNumber::run($this->euCustomer, array_merge([
+            'country_id' => $this->euCountry->id,
+            'number'     => $number,
+        ], $extra), false);
+    };
+
+    test('invalid EU tax number schedules three delayed re-checks', function () use ($storeTaxNumber) {
+        Queue::fake();
+
+        $taxNumber = $storeTaxNumber->call($this, 'B12345678');
+        $taxNumber->update(['valid' => false, 'status' => TaxNumberStatusEnum::INVALID]);
+
+        ValidateEuropeanTaxNumber::make()->scheduleRechecks($taxNumber);
+
+        Queue::assertPushed(JobDecorator::class, 3);
+    });
+
+    test('valid EU tax number schedules no re-checks', function () use ($storeTaxNumber) {
+        Queue::fake();
+
+        $taxNumber = $storeTaxNumber->call($this, 'B12345678');
+        $taxNumber->update(['valid' => true, 'status' => TaxNumberStatusEnum::VALID]);
+
+        ValidateEuropeanTaxNumber::make()->scheduleRechecks($taxNumber);
+
+        Queue::assertNothingPushed();
+    });
+
+    test('implausible EU tax numbers are not re-checked', function () use ($storeTaxNumber) {
+        $action = ValidateEuropeanTaxNumber::make();
+
+        expect($action->isPlausibleEuropeanTaxNumber($storeTaxNumber->call($this, 'B12345678')))->toBeTrue()
+            ->and($action->isPlausibleEuropeanTaxNumber($storeTaxNumber->call($this, 'ESB12345678')))->toBeTrue()
+            ->and($action->isPlausibleEuropeanTaxNumber($storeTaxNumber->call($this, 'no idea')))->toBeFalse()
+            ->and($action->isPlausibleEuropeanTaxNumber($storeTaxNumber->call($this, 'FR12345678901')))->toBeFalse()
+            ->and($action->isPlausibleEuropeanTaxNumber($storeTaxNumber->call($this, 'ABCDEFGHI')))->toBeFalse()
+            ->and($action->isPlausibleEuropeanTaxNumber($storeTaxNumber->call($this, '12345678901234')))->toBeFalse();
+    });
+
+    test('a delayed re-check turning valid re-rates the customer orders', function () use ($storeTaxNumber) {
+        $taxNumber = $storeTaxNumber->call($this, 'B12345678');
+        $taxNumber->update(['valid' => false, 'status' => TaxNumberStatusEnum::INVALID]);
+
+        ResetCustomerOrdersTaxCategory::shouldRun()->once();
+
+        $taxNumber->update(['valid' => true, 'status' => TaxNumberStatusEnum::VALID]);
+    });
+
+    test('repeated edits schedule only one round of re-checks per 48 hours', function () use ($storeTaxNumber) {
+        Queue::fake();
+
+        $taxNumber = $storeTaxNumber->call($this, 'B12345678');
+        $taxNumber->update(['valid' => false, 'status' => TaxNumberStatusEnum::INVALID]);
+
+        $action = ValidateEuropeanTaxNumber::make();
+        $action->scheduleRechecks($taxNumber);
+        $action->scheduleRechecks($taxNumber->refresh());
+        $action->scheduleRechecks($taxNumber->refresh());
+
+        Queue::assertPushed(JobDecorator::class, 3);
+
+        $taxNumber->updateQuietly(['rechecks_scheduled_at' => now()->subHours(49)]);
+        $action->scheduleRechecks($taxNumber->refresh());
+
+        Queue::assertPushed(JobDecorator::class, 6);
+    });
+
+    test('a customer hammering the number gets the check deferred, not dropped', function () use ($storeTaxNumber) {
+        Queue::fake();
+
+        $taxNumber = $storeTaxNumber->call($this, 'B12345678');
+        $action    = ValidateEuropeanTaxNumber::make();
+
+        for ($i = 0; $i < ValidateEuropeanTaxNumber::MAX_CHECKS_PER_HOUR; $i++) {
+            RateLimiter::hit($action->rateLimiterKey($taxNumber));
+        }
+
+        expect($action->isCustomerDriven())->toBeFalse();
+
+        $customerDrivenAction = Mockery::mock(ValidateEuropeanTaxNumber::class)->makePartial();
+        $customerDrivenAction->shouldReceive('isCustomerDriven')->andReturnTrue();
+        $customerDrivenAction->handle($taxNumber);
+
+        expect($taxNumber->refresh()->checked_at)->toBeNull();
+        Queue::assertPushed(JobDecorator::class, 1);
+    });
+
+    test('a delayed re-check is skipped once the number is valid', function () use ($storeTaxNumber) {
+        $taxNumber = $storeTaxNumber->call($this, 'B12345678');
+        $taxNumber->update([
+            'valid'           => true,
+            'status'          => TaxNumberStatusEnum::VALID,
+            'validation_type' => TaxNumberValidationTypeEnum::MANUAL,
+            'checked_at'      => null,
+        ]);
+
+        ValidateEuropeanTaxNumber::make()->handle($taxNumber, null, false);
+
+        expect($taxNumber->refresh()->valid)->toBeTrue()
+            ->and($taxNumber->checked_at)->toBeNull();
+    });
+
+    test('a delayed re-check does not schedule further re-checks', function () use ($storeTaxNumber) {
+        Queue::fake();
+
+        $taxNumber = $storeTaxNumber->call($this, 'B12345678');
+        ValidateEuropeanTaxNumber::make()->handle($taxNumber, null, false);
+
+        Queue::assertNothingPushed();
     });
 });

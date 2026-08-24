@@ -2349,6 +2349,9 @@ describe('aurora provisional cost fix', function () {
     test('update does not clobber a supplied org_amount', function () {
         [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFE');
 
+        $this->organisation->update(['wac_calculations_start_date' => '2025-08-01']);
+        $orgStock->refresh()->unsetRelation('organisation');
+
         $movement = StoreOrgStockMovement::make()->action($orgStock, $location, [
             'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
             'quantity' => 100,
@@ -2357,9 +2360,9 @@ describe('aurora provisional cost fix', function () {
         $movement = UpdateOrgStockMovement::make()->action($movement, ['quantity' => 100, 'org_amount' => 500], strict: false);
         expect((float) $movement->org_amount)->toBe(500.0);
 
-        $orgStock->update(['value_in_locations' => 7905]);
-        $movement = UpdateOrgStockMovement::make()->action($movement->fresh(), ['quantity' => 100], strict: false);
-        expect((float) $movement->org_amount)->toBe(790500.0);
+        $orgStock->update(['value_in_locations' => 7905, 'current_supplier_sku_cost' => 7]);
+        $movement = UpdateOrgStockMovement::make()->action($movement->fresh(), ['quantity' => 200], strict: false);
+        expect((float) $movement->org_amount)->toBe(1000.0);
     });
 
     test('restore command reverts pre corruption-window movements to snapshot values', function () {
@@ -2506,4 +2509,31 @@ test('merging a duplicate stock moves its links to the stocked twin and retires 
         ->and($held->refresh()->code)->toBe('ArtTT-MERGE')
         ->and($held->slug)->toBe('arttt-merge')
         ->and($empty->refresh()->slug)->not->toBe('arttt-merge');
+});
+
+describe('product available quantity resync', function () {
+    test('hydrator resyncs an out-of-sync product even when quantity_available does not change', function () {
+        list(, , $shop) = createShop();
+        list(, $product) = createProduct($shop);
+
+        $orgStock = $product->orgStocks()->first();
+        if (!$orgStock) {
+            $orgStock = OrgStock::first();
+            $product->orgStocks()->attach($orgStock->id, ['quantity' => 1, 'created_at' => now(), 'updated_at' => now()]);
+        }
+
+        $location         = StoreLocation::make()->action(createWarehouse(), Location::factory()->definition());
+        $locationOrgStock = StoreLocationOrgStock::make()->action($orgStock, $location, []);
+        UpdateLocationOrgStock::make()->action($locationOrgStock, ['quantity' => 50]);
+
+        OrgStockHydrateQuantityInLocations::run($orgStock->id);
+        $expected = (int) floor($orgStock->refresh()->quantity_available);
+        expect($expected)->toBeGreaterThan(0);
+
+        DB::table('products')->where('id', $product->id)->update(['available_quantity' => $expected + 7]);
+
+        OrgStockHydrateQuantityInLocations::run($orgStock->id);
+
+        expect($product->refresh()->available_quantity)->toBe($expected);
+    });
 });

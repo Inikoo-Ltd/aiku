@@ -15,7 +15,7 @@ use Illuminate\Support\MessageBag;
 if (!function_exists('group')) {
     function group(): ?Group
     {
-        return Group::first();
+        return Group::orderBy('id')->first();
     }
 }
 
@@ -648,24 +648,13 @@ if (!function_exists('riseDivisor')) {
             return $input;
         }
 
-        $numerator = ($input[0] * $divisor + $input[1][0]) * $raiser;
+        $numerator = $input[1][0] * $raiser / $divisor;
 
-        $whole     = intdiv((int)$numerator, (int)$divisor);
-        $remainder = $numerator - $whole * $divisor;
-
-        if ($remainder == round($remainder) && $divisor == round($divisor)) {
-            $a = (int)abs($remainder);
-            $b = (int)$divisor;
-            while ($a) {
-                [$a, $b] = [$b % $a, $a];
-            }
-            if ($b > 1) {
-                $remainder /= $b;
-                $divisor   /= $b;
-            }
+        if ($numerator != round($numerator)) {
+            return $input;
         }
 
-        return [$whole, [$remainder, $divisor]];
+        return [$input[0], [(int) round($numerator), $raiser]];
     }
 }
 
@@ -1025,5 +1014,23 @@ if (!function_exists('discountAmountOffGross')) {
         $grossUnits = (int)round(abs($grossAmount) * 10000);
 
         return $sign * intdiv($grossUnits * $offBasisPoints + 500000, 1000000) / 100;
+    }
+}
+
+if (!function_exists('soldPackUnits')) {
+    /**
+     * The pack size a sold line was actually sold in.
+     *
+     * The historic asset records the composition at the moment of the sale and is therefore the
+     * answer whenever it has one, including when that answer is 1. The product is consulted only
+     * where no historic composition was ever recorded, which is 171 rows out of 5.26 million.
+     *
+     * Testing the historic value with `> 1` instead of for its absence is the bug this replaces:
+     * it reads "sold as a single" as "not set", so a line whose product later became a pack is
+     * relabelled with a pack size that was never part of that sale.
+     */
+    function soldPackUnits(int|float|string|null $historicUnits, int|float|string|null $productUnits): int|float|string|null
+    {
+        return $historicUnits ?? $productUnits;
     }
 }

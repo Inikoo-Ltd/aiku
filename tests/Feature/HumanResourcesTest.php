@@ -81,6 +81,7 @@ use App\Actions\HumanResources\Leave\StoreLeave;
 use App\Actions\HumanResources\Leave\UpdateLeave;
 use App\Actions\HumanResources\Leave\DeleteLeave;
 use App\Actions\HumanResources\Leave\ApproveLeave;
+use App\Actions\HumanResources\Leave\StoreEmployeeLeave;
 use App\Actions\HumanResources\Leave\RejectLeave;
 use App\Actions\HumanResources\Leave\StoreLeaveApprover;
 use App\Actions\HumanResources\Leave\DeleteLeaveApprover;
@@ -2498,4 +2499,34 @@ test('a QR scan log records the resolved employee, not the scanning user', funct
     $unresolvedLog = \App\Models\HumanResources\QrScanLog::latest('id')->first();
 
     expect($unresolvedLog->employee_id)->toBeNull();
+});
+
+describe('hr records leave on behalf of employee', function () {
+    test('leave is created approved, past dates allowed, balance deducted', function () {
+        $employee = Employee::factory()->create([
+            'organisation_id' => $this->organisation->id,
+            'group_id' => $this->group->id,
+        ]);
+        $leaveType = StoreLeaveType::make()->action($this->organisation, [
+            'code' => 'SICKHR' . rand(1000, 9999),
+            'name' => 'Sick leave',
+            'category' => \App\Enums\HumanResources\Leave\LeaveCategoryEnum::MEDICAL,
+        ]);
+
+        $leave = StoreEmployeeLeave::make()->handle($employee, [
+            'type' => $leaveType->code,
+            'start_date' => now()->subDays(3)->toDateString(),
+            'end_date' => now()->subDay()->toDateString(),
+            'reason' => 'Called in sick',
+        ]);
+
+        expect($leave->status)->toBe(LeaveStatusEnum::APPROVED)
+            ->and($leave->approved_at)->not->toBeNull()
+            ->and($leave->employee_id)->toBe($employee->id)
+            ->and($leave->leave_type_id)->toBe($leaveType->id)
+            ->and($leave->duration_days)->toBeGreaterThan(0);
+
+        $balance = \App\Models\HumanResources\EmployeeLeaveBalance::where('employee_id', $employee->id)->first();
+        expect((float) $balance->medical_used)->toBe((float) $leave->duration_days);
+    });
 });

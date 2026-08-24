@@ -11,6 +11,7 @@ library.add(faCopy, faCheck, faEye, faEyeSlash,faTimesCircle,faSpinnerThird)
 
 const props = withDefaults(defineProps<{
     modelValue: string | number | null | any
+    label?: string
     placeholder?: string
     readonly?: boolean
     inputName?: string
@@ -132,6 +133,7 @@ const checkNumber = (event: KeyboardEvent) => {
                 @blur ="(event: Event) => emits('blur', event.target?.value)"
                 :id="inputName"
                 :name="inputName"
+                :aria-label="label || placeholder || undefined"
                 :readonly="isLoading || readonly"
                 :type="type == 'password' ? showPassword : type"
                 :placeholder="placeholder"

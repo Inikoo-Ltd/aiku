@@ -28,6 +28,10 @@ use App\Mcp\Tools\EmployeeDirectoryTool;
 use App\Mcp\Tools\FamilySalesTool;
 use App\Mcp\Tools\GroupSalesTool;
 use App\Mcp\Tools\MailshotPerformanceTool;
+use App\Mcp\Tools\MarketingPerformanceTool;
+use App\Mcp\Tools\MarketingTrendTool;
+use App\Mcp\Tools\EmailMarketingPerformanceTool;
+use App\Mcp\Tools\OfferPerformanceTool;
 use App\Mcp\Tools\MarginTrendTool;
 use App\Mcp\Tools\MyAccessTool;
 use App\Mcp\Tools\OffersOverviewTool;
@@ -36,11 +40,13 @@ use App\Mcp\Tools\OrderStatusTool;
 use App\Mcp\Tools\OrgFamilySalesTool;
 use App\Mcp\Tools\OrgStockSalesTool;
 use App\Mcp\Tools\ProductsWithoutImagesTool;
+use App\Mcp\Tools\PaymentMethodsTool;
 use App\Mcp\Tools\RefundsByProductTool;
 use App\Mcp\Tools\ShopReviewsTool;
 use App\Mcp\Tools\ShopSalesTool;
 use App\Mcp\Tools\SlowStockTool;
 use App\Mcp\Tools\SqlQueryTool;
+use App\Mcp\Tools\StaffChatAnalyticsTool;
 use App\Mcp\Tools\StockLevelsTool;
 use App\Mcp\Tools\TopProductsTool;
 use App\Mcp\Tools\TradeUnitFamilySalesTool;
@@ -352,16 +358,14 @@ describe('the schema guide', function () {
         $response->assertHasErrors(['SQL access is disabled: this environment has no dedicated read-only database user configured.']);
     });
 
-    test('a user without sql access cannot even reach the tool', function () {
+    test('a user without sql access gets an actionable denial instead of an unknown tool error', function () {
         $this->user->update(['can_use_mcp_sql' => false]);
 
-        actingAs($this->user);
+        $response = AikuServer::actingAs($this->user)->tool(DescribeTablesTool::class, [
+            'search' => 'shops',
+        ]);
 
-        expect((new DescribeTablesTool())->shouldRegister(new Laravel\Mcp\Request()))->toBeFalse();
-
-        $this->user->update(['can_use_mcp_sql' => true]);
-
-        expect((new DescribeTablesTool())->shouldRegister(new Laravel\Mcp\Request()))->toBeTrue();
+        $response->assertHasErrors()->assertSee('SQL access is not enabled for this user. Do not retry');
     });
 
     test('search finds tables by partial name', function () {
@@ -421,14 +425,23 @@ describe('the sql query tool', function () {
         config()->set('mcp.sql_read_only_user', 'aiku_read_only_test');
     });
 
-    test('user without sql access is not offered the tool at all', function () {
-        actingAs($this->user);
+    test('user without sql access is denied with guidance', function () {
+        $this->user->update(['can_use_mcp_sql' => false]);
 
-        expect((new SqlQueryTool())->shouldRegister(new Laravel\Mcp\Request()))->toBeFalse();
+        $response = AikuServer::actingAs($this->user)->tool(SqlQueryTool::class, [
+            'sql' => 'select 1',
+        ]);
 
-        $this->user->update(['can_use_mcp_sql' => true]);
+        $response->assertHasErrors()->assertSee('ask a sysadmin to enable it');
+    });
 
-        expect((new SqlQueryTool())->shouldRegister(new Laravel\Mcp\Request()))->toBeTrue();
+    test('the request logger captures the error message', function () {
+        $middleware = new App\Http\Middleware\LogMcpRequest();
+        $method = new ReflectionMethod($middleware, 'responseError');
+
+        expect($method->invoke($middleware, '{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"ok"}]}}'))->toBeNull()
+            ->and($method->invoke($middleware, '{"jsonrpc":"2.0","id":1,"error":{"code":-32602,"message":"Tool [sql-query-tool] not found."}}'))->toBe('Tool [sql-query-tool] not found.')
+            ->and($method->invoke($middleware, "event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"isError\":true,\"content\":[{\"type\":\"text\",\"text\":\"Query failed: column x does not exist\"}]}}\n\n"))->toBe('Query failed: column x does not exist');
     });
 
     test('user with sql access can run a select', function () {
@@ -531,19 +544,17 @@ describe('the my access tool', function () {
         $response->assertOk()->assertSee($this->shop->name);
     });
 
-    test('sql users are offered only the database tools', function () {
+    test('sql users are not offered the purpose built tools', function () {
         $this->user->update(['can_use_mcp_sql' => true]);
 
         actingAs($this->user);
         $mcpRequest = new Laravel\Mcp\Request();
 
-        expect((new ShopSalesTool())->shouldRegister($mcpRequest))->toBeFalse()
-            ->and((new SqlQueryTool())->shouldRegister($mcpRequest))->toBeTrue();
+        expect((new ShopSalesTool())->shouldRegister($mcpRequest))->toBeFalse();
 
         $this->user->update(['can_use_mcp_sql' => false]);
 
-        expect((new ShopSalesTool())->shouldRegister($mcpRequest))->toBeTrue()
-            ->and((new SqlQueryTool())->shouldRegister($mcpRequest))->toBeFalse();
+        expect((new ShopSalesTool())->shouldRegister($mcpRequest))->toBeTrue();
     });
 });
 
@@ -649,6 +660,29 @@ describe('crm email tools', function () {
         $response->assertOk()
             ->assertSee('"total_emails":0')
             ->assertSee('"customers_reached":0');
+    });
+});
+
+describe('staff chat analytics tool', function () {
+    test('user without admin or hr permission is denied', function () {
+        $guest = guestWithoutPositions($this->group);
+
+        $response = AikuServer::actingAs($guest->getUser())->tool(StaffChatAnalyticsTool::class, []);
+
+        $response->assertHasErrors(['Permission denied.']);
+    });
+
+    test('admin gets staff chat analytics without message bodies', function () {
+        $otherUser    = guestWithoutPositions($this->group)->getUser();
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$otherUser->id]]);
+        \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'top secret body']);
+
+        $response = AikuServer::actingAs($this->user)->tool(StaffChatAnalyticsTool::class, ['days' => 7]);
+
+        $response->assertOk()
+            ->assertSee('"top_pairs"')
+            ->assertSee('"messages":1')
+            ->assertDontSee('top secret body');
     });
 });
 
@@ -1110,7 +1144,8 @@ describe('shop catalogue tools', function () {
         ]);
 
         $response->assertOk()
-            ->assertSee($order->reference);
+            ->assertSee($order->reference)
+            ->assertSee('/ordering/orders/'.$order->slug);
     });
 
     test('order status for unknown reference errors', function () {
@@ -1218,5 +1253,139 @@ describe('web tools', function () {
 
         $response->assertOk()
             ->assertSee('"website_name":"'.$website->name.'"');
+    });
+});
+
+describe('lookup tools', function () {
+    test('product lookup finds a product by code and name', function () {
+        [, $product] = createProduct($this->shop);
+
+        $response = AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\ProductLookupTool::class, [
+            'shop'  => $this->shop->slug,
+            'query' => $product->code,
+        ]);
+
+        $response->assertOk()
+            ->assertSee('"code":"'.$product->code.'"')
+            ->assertSee('"price"')
+            ->assertSee('"available_quantity"')
+            ->assertSee('/catalogue/products/all/'.$product->slug);
+
+        $response = AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\ProductLookupTool::class, [
+            'shop'  => $this->shop->slug,
+            'query' => 'no-such-product-xyz',
+        ]);
+
+        $response->assertOk()->assertSee('"results":[]');
+    });
+
+    test('product lookup is denied without products permission', function () {
+        $guest = guestWithoutPositions($this->group);
+
+        $response = AikuServer::actingAs($guest->getUser())->tool(App\Mcp\Tools\ProductLookupTool::class, [
+            'shop'  => $this->shop->slug,
+            'query' => 'abc',
+        ]);
+
+        $response->assertHasErrors(['You do not have access to any shop.']);
+    });
+
+    test('customer lookup finds a customer by name and returns the slug for notes', function () {
+        $response = AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\CustomerLookupTool::class, [
+            'shop'  => $this->shop->slug,
+            'query' => substr($this->customer->name, 0, 4),
+        ]);
+
+        $response->assertOk()
+            ->assertSee('"slug":"'.$this->customer->slug.'"')
+            ->assertSee('/crm/customers/'.$this->customer->slug)
+            ->assertSee('"number_orders"');
+    });
+
+    test('customer lookup is denied without crm permission', function () {
+        $guest = guestWithoutPositions($this->group);
+
+        $response = AikuServer::actingAs($guest->getUser())->tool(App\Mcp\Tools\CustomerLookupTool::class, [
+            'shop'  => $this->shop->slug,
+            'query' => 'abc',
+        ]);
+
+        $response->assertHasErrors(['You do not have access to any shop.']);
+    });
+});
+
+describe('marketing attribution tools', function () {
+    test('user without marketing view permission is denied on every marketing tool', function () {
+        $guest = guestWithoutPositions($this->group);
+
+        foreach ([MarketingPerformanceTool::class, MarketingTrendTool::class, EmailMarketingPerformanceTool::class, OfferPerformanceTool::class] as $tool) {
+            AikuServer::actingAs($guest->getUser())->tool($tool, ['shop' => $this->shop->slug])
+                ->assertHasErrors(['You do not have access to any shop.']);
+        }
+
+        AikuServer::actingAs($guest->getUser())->tool(MarketingPerformanceTool::class, [])
+            ->assertHasErrors(['You do not have marketing access to any shop. Pass a shop or organisation you may read.']);
+    });
+
+    test('admin user gets shop marketing performance with a previous period comparison', function () {
+        $response = AikuServer::actingAs($this->user)->tool(MarketingPerformanceTool::class, [
+            'shop' => $this->shop->slug,
+            'from' => '2026-08-01',
+            'to'   => '2026-08-31',
+        ]);
+
+        $response->assertOk()
+            ->assertSee('"type":"shop"')
+            ->assertSee('"previous_period":{"from":"2026-07-01","to":"2026-07-31"}')
+            ->assertSee('"channel_groups"')
+            ->assertSee('"change_pct"')
+            ->assertDontSee('"route"');
+    });
+
+    test('admin user gets organisation and group marketing roll-ups', function () {
+        AikuServer::actingAs($this->user)->tool(MarketingPerformanceTool::class, [
+            'organisation' => $this->organisation->slug,
+        ])->assertOk()->assertSee('"type":"organisation"')->assertSee('"shops"');
+
+        AikuServer::actingAs($this->user)->tool(MarketingPerformanceTool::class, [])
+            ->assertOk()->assertSee('"type":"group"');
+    });
+
+    test('admin user gets the monthly marketing trend, email and offer performance', function () {
+        AikuServer::actingAs($this->user)->tool(MarketingTrendTool::class, [
+            'shop'  => $this->shop->slug,
+            'group' => 'organic',
+        ])->assertOk()->assertSee('"granularity":"month"')->assertSee('"series"');
+
+        AikuServer::actingAs($this->user)->tool(EmailMarketingPerformanceTool::class, [
+            'shop' => $this->shop->slug,
+        ])->assertOk()->assertSee('"mailshots":[]');
+
+        AikuServer::actingAs($this->user)->tool(OfferPerformanceTool::class, [
+            'shop' => $this->shop->slug,
+        ])->assertOk()->assertSee('"offers"');
+    });
+});
+
+describe('payment methods tool', function () {
+    test('guest without permissions is denied', function () {
+        $guest = guestWithoutPositions($this->group);
+
+        AikuServer::actingAs($guest->getUser())->tool(PaymentMethodsTool::class, [
+            'organisation' => $this->organisation->slug,
+        ])->assertHasErrors();
+    });
+
+    test('admin gets the report for the organisation and for a shop', function () {
+        AikuServer::actingAs($this->user)->tool(PaymentMethodsTool::class, [
+            'organisation' => $this->organisation->slug,
+        ])->assertOk()->assertSee('"rows"');
+
+        AikuServer::actingAs($this->user)->tool(PaymentMethodsTool::class, [
+            'organisation' => $this->organisation->slug,
+            'shop'         => $this->shop->slug,
+            'from'         => '2026-01-01',
+            'to'           => '2026-12-31',
+        ])->assertOk()->assertSee('"currency"');
     });
 });

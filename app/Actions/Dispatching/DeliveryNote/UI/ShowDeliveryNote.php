@@ -217,14 +217,7 @@ class ShowDeliveryNote extends OrgAction
      */
     public function getHandlingBlockedActions(DeliveryNote $deliveryNote): array
     {
-        $stillWaiting = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
-            ->where(function ($query) {
-                $query->where('has_waiting_crm', true)
-                    ->orWhere('has_waiting_warehouse', true);
-            })
-            ->exists();
-
-        if ($stillWaiting) {
+        if ($deliveryNote->hasBlockingItems()) {
             return [];
         }
 
@@ -253,10 +246,7 @@ class ShowDeliveryNote extends OrgAction
         }
 
         $hasUnHandledItems = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
-            ->where(function ($q) {
-                $q->where('is_handled', false)
-                ->orWhere('is_dirty', true);
-            })
+            ->where('is_handled', false)
             ->exists();
 
         $actions = [];
@@ -452,13 +442,6 @@ class ShowDeliveryNote extends OrgAction
                         'deliveryNote' => $deliveryNote->id
                     ]
                 ],
-            ];
-        }
-
-        if ($deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED && $deliveryNote->shop?->type != ShopTypeEnum::EXTERNAL) {
-            $actions[] = [
-                'type' => 'button',
-                'key'  => 'return',
             ];
         }
 
@@ -1108,6 +1091,11 @@ class ShowDeliveryNote extends OrgAction
             'navigation'    => [
                 'previous' => $this->getPrevious($deliveryNote, $request),
                 'next'     => $this->getNext($deliveryNote, $request),
+            ],
+            'staff_chat'    => [
+                'context_type' => 'DeliveryNote',
+                'context_id'   => $deliveryNote->id,
+                'audiences'    => [['key' => 'crm', 'label' => __('Ask CRM')]],
             ],
             'pageHead'      => [
                 'title'           => $deliveryNote->reference,

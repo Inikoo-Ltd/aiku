@@ -46,6 +46,7 @@ enum TrafficSourcesTypeEnum: string
     case EMAIL_AUTOMATED = 'email-automated';
     case ORGANIC_SEARCH = 'organic-search';
     case REFERRAL = 'referral';
+    case AI = 'ai';
 
     public static function labels(): array
     {
@@ -71,6 +72,7 @@ enum TrafficSourcesTypeEnum: string
             self::EMAIL_AUTOMATED->value   => 'Automatic Marketing',
             self::ORGANIC_SEARCH->value    => 'Organic Search (other)',
             self::REFERRAL->value          => 'Referral',
+            self::AI->value                => 'AI Assistants',
         ];
     }
 
@@ -98,6 +100,7 @@ enum TrafficSourcesTypeEnum: string
             self::EMAIL_AUTOMATED->value   => true,
             self::ORGANIC_SEARCH->value    => true,
             self::REFERRAL->value          => true,
+            self::AI->value                => true,
         ];
     }
 
@@ -125,6 +128,7 @@ enum TrafficSourcesTypeEnum: string
             self::EMAIL_AUTOMATED->value   => 's',
             self::ORGANIC_SEARCH->value    => 'r',
             self::REFERRAL->value          => 'q',
+            self::AI->value                => 'v',
         ];
     }
 
@@ -164,7 +168,8 @@ enum TrafficSourcesTypeEnum: string
             str_starts_with($this->value, 'organic-')              => ['key' => 'organic', 'label' => __('Organic'), 'position' => 2],
             in_array($this, [self::NEWSLETTER, self::MARKETING_MAILSHOT, self::EMAIL_AUTOMATED], true)
                                                                    => ['key' => 'email', 'label' => __('Email'), 'position' => 3],
-            default                                                => ['key' => 'other', 'label' => __('Other'), 'position' => 4],
+            $this === self::AI                                     => ['key' => 'ai', 'label' => __('AI'), 'position' => 4],
+            default                                                => ['key' => 'other', 'label' => __('Other'), 'position' => 5],
         };
     }
 
@@ -175,6 +180,40 @@ enum TrafficSourcesTypeEnum: string
     public function isPaid(): bool
     {
         return str_ends_with($this->value, '-ads');
+    }
+
+    /**
+     * The channels whose campaign reference is a referring host rather than an ad platform's campaign
+     * id. They share every rule that follows from that: the reference is client-controlled, so it is
+     * revalidated as a hostname wherever it is read, and campaign rows are capped rather than minted
+     * freely.
+     *
+     * @return array<int, self>
+     */
+    public static function hostReferenced(): array
+    {
+        return [self::REFERRAL, self::ORGANIC_SEARCH, self::AI];
+    }
+
+    /**
+     * How a host-referenced campaign is labelled in the referrers list: the host alone does not say
+     * whether it is a search engine, an AI assistant or somebody's website.
+     */
+    public static function referrerKind(string $type): string
+    {
+        return match (self::tryFrom($type)) {
+            self::ORGANIC_SEARCH => 'search',
+            self::AI             => 'ai',
+            default              => 'site',
+        };
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function hostReferencedValues(): array
+    {
+        return array_map(fn (self $type) => $type->value, self::hostReferenced());
     }
 
 

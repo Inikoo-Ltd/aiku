@@ -8,6 +8,7 @@ import { useEchoGrpGeneral } from '@/Stores/echo-grp-general.js'
 import { useLiveUsers } from '@/Stores/active-users'
 import { useChatAgentPresence } from '@/Composables/useChatAgentPresence'
 import { resetStuckOverlays } from '@/Composables/resetStuckOverlays'
+import { applyChatTheme } from '@/Composables/useChatThemes'
 
 export const initialiseApp = () => {
     const layout = useLayoutStore()
@@ -175,6 +176,9 @@ export const initialiseApp = () => {
         if (usePage().props.layout?.app_theme) {
             layout.app.theme = usePage().props.layout?.app_theme
         }
+
+        // Set Chat theme
+        applyChatTheme(usePage().props.layout?.chat_theme as string | undefined)
 
         // Set App Environment
         if (usePage().props?.environment) {

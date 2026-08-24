@@ -39,8 +39,6 @@ trait AutoIgnoreZeroQuantityItems
              */
             if ($ignoredItem->has_waiting_warehouse || $ignoredItem->has_waiting_crm) {
                 $ignoredItem->update([
-                    'has_waiting_warehouse'      => false,
-                    'has_waiting_crm'            => false,
                     'quantity_waiting_warehouse' => 0,
                     'quantity_waiting_crm'       => 0,
                 ]);

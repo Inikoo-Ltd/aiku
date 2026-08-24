@@ -55,6 +55,8 @@ use App\Actions\HumanResources\Workplace\UI\IndexWorkplaces;
 use App\Actions\HumanResources\Workplace\UI\ShowWorkplace;
 use App\Actions\SysAdmin\User\UI\EditUser;
 use App\Actions\SysAdmin\User\UI\ShowUser;
+use App\Actions\HumanResources\StaffChat\UI\ShowStaffChatConversation;
+use App\Actions\SysAdmin\UI\IndexStaffChatAnalytics;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Actions\UI\HumanResources\ShowOrgChart;
 use App\Actions\HumanResources\Leave\ApproveLeave;
@@ -87,6 +89,8 @@ use App\Actions\HumanResources\HolidayYear\ActivateHolidayYear;
 
 Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
 Route::get('/org-chart', ShowOrgChart::class)->name('org_chart');
+Route::get('/staff-chat', [IndexStaffChatAnalytics::class, 'inOrganisation'])->name('staff_chat.index');
+Route::get('/staff-chat/{staffConversation}', ShowStaffChatConversation::class)->name('staff_chat.show');
 
 Route::prefix('employees')->as('employees.')->group(function () {
     Route::get('', IndexEmployees::class)->name('index');
@@ -210,6 +214,7 @@ Route::prefix('leaves')->as('leaves.')->group(function () {
     Route::get('export', [ExportLeaveReport::class, 'asController'])->name('export');
     Route::get('export/calendar', [ExportCalendar::class, 'asController'])->name('export.calendar');
     Route::get('print', [PrintCalendar::class, 'asController'])->name('print');
+    Route::post('employees/{employee}', \App\Actions\HumanResources\Leave\StoreEmployeeLeave::class)->name('store');
     Route::post('{leave}/approve', ApproveLeave::class)->name('approve');
     Route::post('{leave}/reject', RejectLeave::class)->name('reject');
     Route::patch('{leave}/admin', UpdateLeave::class)->name('admin.update');

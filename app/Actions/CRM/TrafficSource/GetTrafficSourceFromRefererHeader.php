@@ -31,6 +31,17 @@ class GetTrafficSourceFromRefererHeader
         $domain = $urlComponents['host'];
 
 
+        /* AI assistants are their own acquisition channel, not a referral from a website and not
+           organic search: people arrive having been recommended, not having searched. Matched before
+           anything else because gemini.google.com would otherwise be swallowed by the organic Google
+           rule. The assistant's host rides along as the campaign reference, so each one is its own row
+           inside the channel, the same way individual search engines are. */
+        if (self::isAiAssistantHost($domain)) {
+            $assistant = self::normaliseHost($domain);
+
+            return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::AI->value].($assistant ?? '');
+        }
+
         if (preg_match('/google\.[a-z.]{2,}$/', $domain)) {
             return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_GOOGLE->value];
         }
@@ -112,8 +123,8 @@ class GetTrafficSourceFromRefererHeader
             }
         }
 
-        /* Anything else external is a referral rather than nothing: a trade directory, a blog, an AI
-           assistant. Before this they were indistinguishable from someone typing the address in, and
+        /* Anything else external is a referral rather than nothing: a trade directory, a blog, a
+           forum. Before this they were indistinguishable from someone typing the address in, and
            whole acquisition channels were invisible. The host travels as the campaign reference so
            each referrer is reportable on its own. */
         $host = self::normaliseHost($domain);
@@ -123,6 +134,31 @@ class GetTrafficSourceFromRefererHeader
         }
 
         return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::REFERRAL->value].$host;
+    }
+
+    /**
+     * The assistants recognised as their own channel. Shared with the backfill that reclassifies the
+     * touches recorded before this channel existed, so one list decides both.
+     */
+    public const array AI_ASSISTANT_PATTERNS = [
+        '/(^|\.)chatgpt\.com$/',
+        '/(^|\.)gemini\.google\.com$/',
+        '/(^|\.)copilot\.microsoft\.com$/',
+        '/(^|\.)claude\.ai$/',
+        '/(^|\.)perplexity\.ai$/',
+    ];
+
+    public static function isAiAssistantHost(?string $domain): bool
+    {
+        $host = strtolower(trim((string) $domain));
+
+        foreach (self::AI_ASSISTANT_PATTERNS as $pattern) {
+            if (preg_match($pattern, $host)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

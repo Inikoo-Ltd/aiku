@@ -123,34 +123,31 @@ test('findSmallestFactors handles edge cases', function () {
     expect($result)->toBe([2.0, 1]);
 });
 
-describe('riseDivisor expresses a quantity of org stocks as a count of packs', function () {
-    test('a fraction of an outer becomes a whole number of packs', function () {
-        expect(riseDivisor(divideWithRemainder(findSmallestFactors(0.25)), 4))->toBe([1, [0, 1]])
-            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(0.16666667)), 6))->toBe([1, [0, 1]])
-            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(0.5)), 4))->toBe([2, [0, 1]])
-            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(0.75)), 4))->toBe([3, [0, 1]]);
-    });
-
-    test('an unpacked stock keeps its fraction so fractional units survive', function () {
-        expect(riseDivisor(divideWithRemainder(findSmallestFactors(0.25)), 1))->toBe([0, [1, 4]])
-            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(0.5)), 1))->toBe([0, [1, 2]])
-            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(1 / 3)), 1))->toBe([0, [1, 3]]);
-    });
-
-    test('whole quantities scale by the packing', function () {
-        expect(riseDivisor(divideWithRemainder(findSmallestFactors(1.0)), 4))->toBe([4, [0, 1]])
-            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(2.5)), 4))->toBe([10, [0, 1]])
+describe('riseDivisor keeps quantities in packs, fractions expressed in loose units', function () {
+    test('the whole number of packs is never scaled', function () {
+        expect(riseDivisor(divideWithRemainder(findSmallestFactors(1.0)), 12))->toBe([1, [0, 12]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(5.0)), 6))->toBe([5, [0, 6]])
             ->and(riseDivisor(divideWithRemainder(findSmallestFactors(3.0)), 1))->toBe([3, [0, 1]]);
     });
 
-    test('partial packs keep a reduced fraction, negatives included', function () {
-        expect(riseDivisor(divideWithRemainder(findSmallestFactors(0.3)), 4))->toBe([1, [1, 5]])
-            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(4.33)), 6))->toBe([25, [49, 50]])
-            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(-0.3)), 4))->toBe([-1, [-1, 5]]);
+    test('a partial pack becomes loose units over the pack size', function () {
+        expect(riseDivisor(divideWithRemainder(findSmallestFactors(0.25)), 4))->toBe([0, [1, 4]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(0.5)), 6))->toBe([0, [3, 6]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(2.5)), 4))->toBe([2, [2, 4]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(-0.5)), 6))->toBe([0, [-3, 6]]);
+    });
+
+    test('a fraction that is not a whole number of units passes through unrounded', function () {
+        expect(riseDivisor(divideWithRemainder(findSmallestFactors(0.25)), 1))->toBe([0, [1, 4]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(0.5)), 1))->toBe([0, [1, 2]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(1 / 3)), 1))->toBe([0, [1, 3]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(0.3)), 4))->toBe([0, [3, 10]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(4.33)), 6))->toBe([4, [33, 100]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(-0.3)), 4))->toBe([0, [-3, 10]]);
     });
 
     test('zero and unknown packing are left alone', function () {
-        expect(riseDivisor(divideWithRemainder(findSmallestFactors(0.0)), 4))->toBe([0, [0, 1]])
+        expect(riseDivisor(divideWithRemainder(findSmallestFactors(0.0)), 4))->toBe([0, [0, 4]])
             ->and(riseDivisor([0, [1, 4]], null))->toBe([0, [1, 4]])
             ->and(riseDivisor([0, [1, 4]], 0))->toBe([0, [1, 4]]);
     });

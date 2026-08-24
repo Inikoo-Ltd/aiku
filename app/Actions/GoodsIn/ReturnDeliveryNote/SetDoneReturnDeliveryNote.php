@@ -19,6 +19,7 @@ use App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpdateReturnDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
 use App\Models\Accounting\Invoice;
@@ -49,6 +50,12 @@ class SetDoneReturnDeliveryNote extends OrgAction
         if (!$originalInvoice) {
             throw ValidationException::withMessages([
                 'message' => __('Return cannot be finished. Missing invoice detected'),
+            ]);
+        }
+
+        if (Arr::get($modelData, 'createRefund') && $returnDeliveryNote->order->shop->type === ShopTypeEnum::EXTERNAL) {
+            throw ValidationException::withMessages([
+                'message' => __('A marketplace order is refunded on the marketplace. The goods can be received back here, but no refund is issued in Aiku.'),
             ]);
         }
 

@@ -4,6 +4,7 @@ import axios from 'axios'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt } from '@fal'
+import { faAnglesUp, faAngleUp, faEquals, faAngleDown, faChevronDown } from '@fortawesome/free-solid-svg-icons'
 import CustomerTimeline from '@/Components/Showcases/Grp/CustomerTimeline.vue'
 import ChatActivityTimeline from '@/Components/Chat/ChatActivityTimeline.vue'
 
@@ -49,7 +50,45 @@ const props = defineProps<{
     session: PanelSession
 }>()
 
-const emit = defineEmits<{ (e: 'close'): void }>()
+const emit = defineEmits<{ (e: 'close'): void; (e: 'priority-updated', value: string): void }>()
+
+const PRIORITIES: Array<{ value: string; label: string; color: string; icon: any }> = [
+    { value: 'urgent', label: 'Urgent', color: '#ef4444', icon: faAnglesUp },
+    { value: 'high', label: 'High', color: '#f59e0b', icon: faAngleUp },
+    { value: 'normal', label: 'Normal', color: '#3b82f6', icon: faEquals },
+    { value: 'low', label: 'Low', color: '#6b7280', icon: faAngleDown },
+]
+
+// Optimistic override; falls back to the prop so external changes (e.g. from the
+// chat-list row menu) stay reactive here.
+const pendingPriority = ref<string | null>(null)
+const effectivePriority = computed(() => pendingPriority.value ?? props.session.priority ?? null)
+const currentPriority = computed(() => PRIORITIES.find(p => p.value === effectivePriority.value) ?? null)
+const isPriorityOpen = ref(false)
+const isSavingPriority = ref(false)
+
+watch(() => props.session.ulid, () => { pendingPriority.value = null })
+
+const updatePriority = async (value: string) => {
+    isPriorityOpen.value = false
+    if (value === effectivePriority.value) return
+    pendingPriority.value = value
+    isSavingPriority.value = true
+    try {
+        const organisation = String((route().params as Record<string, any>)?.organisation ?? '')
+        await axios.patch(
+            route('grp.org.chat.agents.sessions.priority', [organisation, props.session.ulid]),
+            { priority: value },
+            { withCredentials: true }
+        )
+        emit('priority-updated', value)
+    } catch (e) {
+        // keep pending null so it reverts to the prop value
+    } finally {
+        pendingPriority.value = null
+        isSavingPriority.value = false
+    }
+}
 
 const layout: any = inject('layout', {})
 const baseUrl = layout?.appUrl ?? ''
@@ -152,7 +191,7 @@ const copyChatId = async () => {
     <div class="w-96 shrink-0 flex flex-col border-l border-gray-200 bg-white overflow-hidden">
         <!-- Contact Header -->
         <div class="relative flex flex-col items-center px-4 py-4 border-b border-gray-100 text-center shrink-0">
-            <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" @click="emit('close')">
+            <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" @click="emit('close')" aria-label="Close">
                 <FontAwesomeIcon :icon="['fal', 'fa-times']" class="text-sm" />
             </button>
             <div class="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold mb-2" :style="avatarStyle">
@@ -212,7 +251,7 @@ const copyChatId = async () => {
                         <div class="text-gray-500 text-xs">Chat ID</div>
                         <div class="col-span-2 flex items-center gap-1">
                             <code class="text-[11px] font-mono text-gray-700 bg-gray-100 rounded px-1.5 py-0.5 truncate">{{ session.ulid }}</code>
-                            <button class="shrink-0 text-gray-400 hover:text-gray-600" @click="copyChatId">
+                            <button class="shrink-0 text-gray-400 hover:text-gray-600" @click="copyChatId" aria-label="Copy chat ID">
                                 <FontAwesomeIcon :icon="isCopied ? ['fal', 'fa-check'] : ['fal', 'fa-copy']" class="text-xs" />
                             </button>
                         </div>
@@ -230,9 +269,30 @@ const copyChatId = async () => {
                             </span>
                         </div>
                     </div>
-                    <div v-if="session.priority" class="grid grid-cols-3 gap-2 items-center">
+                    <div class="grid grid-cols-3 gap-2 items-center">
                         <div class="text-gray-500 text-xs">Priority</div>
-                        <div class="col-span-2 text-xs font-medium text-gray-800 capitalize">{{ session.priority }}</div>
+                        <div class="col-span-2 relative">
+                            <div v-if="isPriorityOpen" class="fixed inset-0 z-20" @click="isPriorityOpen = false"></div>
+                            <button type="button"
+                                class="w-full flex items-center gap-2 rounded-md border border-gray-200 px-2 py-1 text-xs hover:bg-gray-50 disabled:opacity-60"
+                                :disabled="isSavingPriority"
+                                @click="isPriorityOpen = !isPriorityOpen">
+                                <FontAwesomeIcon v-if="currentPriority" :icon="currentPriority.icon" class="text-[11px]" :style="{ color: currentPriority.color }" />
+                                <span class="font-medium text-gray-800">{{ currentPriority?.label ?? 'Set priority' }}</span>
+                                <FontAwesomeIcon :icon="faChevronDown" class="ml-auto text-[9px] text-gray-400" />
+                            </button>
+                            <div v-if="isPriorityOpen"
+                                class="absolute right-0 z-30 mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg py-1">
+                                <button v-for="p in PRIORITIES" :key="p.value" type="button"
+                                    class="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-100"
+                                    :class="effectivePriority === p.value ? 'font-semibold text-gray-900' : 'text-gray-700'"
+                                    @click="updatePriority(p.value)">
+                                    <FontAwesomeIcon :icon="p.icon" class="text-[11px] w-3.5" :style="{ color: p.color }" />
+                                    <span>{{ p.label }}</span>
+                                    <span v-if="effectivePriority === p.value" class="ml-auto text-[11px]" :style="{ color: p.color }">✓</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div v-if="session.assigned_agent" class="grid grid-cols-3 gap-2 items-center">
                         <div class="text-gray-500 text-xs">Agent</div>

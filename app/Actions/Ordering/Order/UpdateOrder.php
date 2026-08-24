@@ -112,33 +112,9 @@ class UpdateOrder extends OrgAction
                 }
 
 
-                if (Arr::has($changes, 'customer_notes')) {
-                    $deliveryNote->update(
-                        [
-                            'customer_notes' => $order->customer_notes,
-                        ]
-                    );
-                    UpdateOrderNotesEvent::dispatch($deliveryNote);
-                } elseif (Arr::has($changes, 'public_notes')) {
-                    $deliveryNote->update(
-                        [
-                            'public_notes' => $order->public_notes,
-                        ]
-                    );
-                    UpdateOrderNotesEvent::dispatch($deliveryNote);
-                } elseif (Arr::has($changes, 'private_warehouse_note')) {
-                    $deliveryNote->update(
-                        [
-                            'private_warehouse_note' => $order->private_warehouse_note,
-                        ]
-                    );
-                    UpdateOrderNotesEvent::dispatch($deliveryNote);
-                } elseif (Arr::has($changes, 'shipping_notes')) {
-                    $deliveryNote->update(
-                        [
-                            'shipping_notes' => $order->shipping_notes,
-                        ]
-                    );
+                $changedNotes = Arr::only($changes, ['customer_notes', 'public_notes', 'private_warehouse_note', 'shipping_notes']);
+                if ($changedNotes) {
+                    $deliveryNote->update($changedNotes);
                     UpdateOrderNotesEvent::dispatch($deliveryNote);
                 }
             }
