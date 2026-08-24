@@ -15,7 +15,7 @@ import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUser, faSearch, faTimes } from "@far"
 import { faCog, faStar, faAngleLeft, faAngleRight, faFilter, faStoreAlt } from "@fal"
-import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faAngleDown, faChevronRight } from "@fortawesome/free-solid-svg-icons"
+import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faAngleDown, faChevronRight, faStar as faStarSolid } from "@fortawesome/free-solid-svg-icons"
 import {
     Contact,
     SessionAPI,
@@ -44,6 +44,7 @@ const contacts = ref<Contact[]>([])
 const activeTab = ref<"waiting" | "active" | "closed">("waiting")
 const spamView = ref(false)
 const trashView = ref(false)
+const highlightView = ref(false)
 const openMenuUlid = ref<string | null>(null)
 const confirmDeleteUlid = ref<string | null>(null)
 const menuPos = ref({ top: 0, left: 0 })
@@ -125,6 +126,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     unread: s.unread_count,
     status: s.status,
     is_spam: (s as any).is_spam ?? false,
+    is_highlighted: (s as any).is_highlighted ?? false,
     webUser: s.web_user,
     priority: s.priority,
     guest_profile: s.guest_profile,
@@ -141,11 +143,13 @@ const buildParams = (page: number) => ({
         ? { trashed: 1 }
         : spamView.value
             ? { is_spam: 1 }
-            : { statuses: [activeTab.value] }),
+            : highlightView.value
+                ? { highlighted: 1, statuses: [activeTab.value] }
+                : { statuses: [activeTab.value] }),
     assigned_to_me: myAgentId,
     organisation_id: props.organisation.id,
     page,
-    ...(selectedShopId.value ? { shop_id: selectedShopId.value } : {}),
+    ...(selectedShopId.value && !highlightView.value ? { shop_id: selectedShopId.value } : {}),
     ...(viewMode.value === "team" ? { view_team: 1 } : {}),
     ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
 })
@@ -264,7 +268,7 @@ const clearAgentFilter = () => {
 const filteredContacts = computed(() =>
     contacts.value.filter(
         (c) => (spamView.value || trashView.value ? true : c.status === activeTab.value) &&
-            (!selectedShopId.value || c.shop?.id === selectedShopId.value) &&
+            (highlightView.value || !selectedShopId.value || c.shop?.id === selectedShopId.value) &&
             (!selectedAgentIds.value.length ||
                 (c.agent?.id && selectedAgentIds.value.includes(c.agent.id)))
     )
@@ -290,9 +294,10 @@ const shopAvatarStyle = (inbox: { id: number }) => {
 }
 
 const selectShop = (shopId: number) => {
-    if (selectedShopId.value === shopId && !spamView.value && !trashView.value) return
+    if (selectedShopId.value === shopId && !spamView.value && !trashView.value && !highlightView.value) return
     spamView.value = false
     trashView.value = false
+    highlightView.value = false
     selectedShopId.value = shopId
     selectedSession.value = null
     messages.value = []
@@ -304,6 +309,7 @@ const selectSpam = () => {
     if (spamView.value) return
     spamView.value = true
     trashView.value = false
+    highlightView.value = false
     selectedShopId.value = null
     selectedSession.value = null
     messages.value = []
@@ -315,9 +321,25 @@ const selectTrash = () => {
     if (trashView.value) return
     trashView.value = true
     spamView.value = false
+    highlightView.value = false
     selectedShopId.value = null
     selectedSession.value = null
     messages.value = []
+    clearAgentFilter()
+    reloadContacts()
+}
+
+const selectHighlight = () => {
+    if (highlightView.value) return
+    highlightView.value = true
+    spamView.value = false
+    trashView.value = false
+    selectedShopId.value = null
+    selectedSession.value = null
+    messages.value = []
+    if (viewMode.value === "team" && activeTab.value === "waiting") {
+        activeTab.value = "active"
+    }
     clearAgentFilter()
     reloadContacts()
 }
@@ -367,6 +389,19 @@ const trashChat = async (c: Contact) => {
     if (await patchSession(c, "grp.org.chat.agents.sessions.trash", "delete")) {
         removeFromList(c.ulid)
         fetchInboxNotifications()
+    }
+}
+
+const toggleHighlight = async (c: Contact) => {
+    openMenuUlid.value = null
+    const next = !c.is_highlighted
+    if (await patchSession(c, "grp.org.chat.agents.sessions.highlight", "patch")) {
+        const found = contacts.value.find((x) => x.ulid === c.ulid)
+        if (found) found.is_highlighted = next
+        if (selectedSession.value?.ulid === c.ulid) selectedSession.value.is_highlighted = next
+        if (highlightView.value && !next) {
+            removeFromList(c.ulid)
+        }
     }
 }
 
@@ -762,12 +797,17 @@ onUnmounted(() => {
                 </button>
             </div>
 
-            <!-- Future: Highlighted (placeholder) -->
+            <!-- Highlighted -->
             <div class="border-t border-gray-200 py-1">
-                <button type="button" disabled v-tooltip="trans('Highlighted (coming soon)')"
-                    class="w-full flex items-center text-sm text-gray-400 cursor-not-allowed"
-                    :class="inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2'">
-                    <FontAwesomeIcon :icon="faStar" class="text-sm shrink-0" />
+                <button type="button" @click="selectHighlight"
+                    v-tooltip="inboxRailCollapsed ? trans('Highlighted') : undefined"
+                    class="w-full flex items-center text-sm transition-colors"
+                    :class="[
+                        inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        highlightView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
+                    ]"
+                    :style="highlightView ? selectedItemStyle : {}">
+                    <FontAwesomeIcon :icon="faStar" class="text-sm shrink-0" :class="highlightView ? 'text-amber-400' : ''" />
                     <span v-if="!inboxRailCollapsed">{{ trans("Highlighted") }}</span>
                 </button>
             </div>
@@ -779,7 +819,7 @@ onUnmounted(() => {
             <div class="px-3 py-2.5 border-b flex items-center justify-between gap-2">
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-semibold text-gray-800 truncate mb-1.5">
-                        {{ trashView ? trans("Trash") : spamView ? trans("Spam") : (selectedInbox?.name ?? trans("Inbox")) }}
+                        {{ trashView ? trans("Trash") : spamView ? trans("Spam") : highlightView ? trans("Highlighted") : (selectedInbox?.name ?? trans("Inbox")) }}
                     </div>
                     <div v-if="!spamView && !trashView" class="inline-flex items-center bg-gray-100 rounded-lg p-0.5 text-[11px]">
                         <button type="button" class="px-2.5 py-1 rounded-md transition-all"
@@ -937,6 +977,13 @@ onUnmounted(() => {
                                 </div>
                                 <div class="flex items-center gap-1.5">
                                     <span class="text-xs text-gray-500 truncate flex-1 leading-snug">{{ c.lastMessage }}</span>
+                                    <button v-if="!trashView" type="button"
+                                        v-tooltip="c.is_highlighted ? trans('Remove highlight') : trans('Highlight')"
+                                        class="shrink-0 flex items-center justify-center transition-opacity"
+                                        :class="c.is_highlighted ? 'text-amber-400 opacity-100' : 'text-gray-300 opacity-0 group-hover:opacity-100 hover:text-amber-400'"
+                                        @click.stop="toggleHighlight(c)">
+                                        <FontAwesomeIcon :icon="faStarSolid" class="text-[11px]" />
+                                    </button>
                                     <span class="shrink-0 text-[9px] px-1 py-0.5 border leading-none"
                                         :class="c.webUser?.id ? 'border-green-400 text-green-500' : 'border-blue-300 text-blue-400'">
                                         {{ c.webUser?.id ? 'C' : 'G' }}
@@ -1030,6 +1077,15 @@ onUnmounted(() => {
                                 </button>
                             </div>
                         </div>
+                        <div class="border-t border-gray-100 my-1"></div>
+
+                        <button type="button"
+                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                            @click="toggleHighlight(menuContact)">
+                            <FontAwesomeIcon :icon="faStar" class="text-[10px]"
+                                :class="menuContact.is_highlighted ? 'text-amber-400' : ''" />
+                            {{ menuContact.is_highlighted ? trans("Remove highlight") : trans("Highlight") }}
+                        </button>
                         <div class="border-t border-gray-100 my-1"></div>
 
                         <button v-if="!menuContact.is_spam" type="button"
