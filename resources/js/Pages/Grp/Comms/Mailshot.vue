@@ -2,6 +2,7 @@
 import { Head, router } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import MailshotJourney from "@/Components/Navigation/MailshotJourney.vue";
+import MailshotSubjectEdit from "@/Components/Workshop/Mailshot/MailshotSubjectEdit.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import { capitalize } from "@/Composables/capitalize";
@@ -37,6 +38,9 @@ const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     journey?: any
+    mailshot_copy?: { subject: string, name: string | null, preview_text: string | null }
+    updateMailshotRoute?: routeType
+    suggestCopyRoute?: routeType
     tabs: TSTabs
     showcase?: string
     email_preview?: Object
@@ -68,6 +72,9 @@ const props = defineProps<{
     timeZoneOptions?: any[]
     defaultShopTimezone?: string
 }>();
+
+const savedSubject = ref<string | null>(null)
+const pageHeadData = computed(() => savedSubject.value ? { ...props.pageHead, title: savedSubject.value } : props.pageHead)
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const TAB_HIDE_RULES: Record<string, string[]> = {
@@ -640,8 +647,11 @@ watch(
 
     <Head :title="capitalize(pageHead.title)" />
 
-    <PageHeading :data="pageHead">
+    <PageHeading :data="pageHeadData">
         <template #afterTitle2>
+            <MailshotSubjectEdit v-if="journey?.length && mailshot_copy && updateMailshotRoute && suggestCopyRoute"
+                :mailshot="mailshot_copy" :updateMailshotRoute="updateMailshotRoute" :suggestCopyRoute="suggestCopyRoute"
+                @saved="subject => savedSubject = subject" />
             <MailshotJourney :steps="journey" class="ml-4" />
         </template>
         <template #otherBefore>

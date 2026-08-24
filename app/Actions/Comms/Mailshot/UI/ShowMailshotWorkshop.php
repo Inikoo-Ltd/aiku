@@ -79,6 +79,7 @@ class ShowMailshotWorkshop extends OrgAction
                 'pageHead'    => [
                     'title'      => $mailshot->subject,
                     'model'      => __('Subject:'),
+                    'modelStyle' => 'text-sm',
                     'titleStyle' => 'font-normal text-lg',
                     'icon'      => [
                         'tooltip' => __('snapshot'),

@@ -33,12 +33,18 @@ trait WithMailshotJourney
             $mailshot->slug
         ];
 
+        $email      = $mailshot->email;
+        $snapshot   = $email?->unpublishedSnapshot;
+        $isComposed = (bool) $email?->liveSnapshot?->compiled_layout
+            || ($snapshot && !$snapshot->updated_at->eq($snapshot->created_at));
+
         $steps = [];
         if ($isMarketing) {
             $estimatedRecipients = GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count('customers.id') ?? 0;
 
             $steps[] = [
                 'key'   => 'recipients',
+                'done'  => (bool) $mailshot->recipients_recipe,
                 'label' => __('Recipients').' ('.Number::abbreviate($estimatedRecipients).')',
                 'route' => [
                     'name'       => 'grp.org.shops.show.marketing.mailshots.recipients',
@@ -48,6 +54,7 @@ trait WithMailshotJourney
         }
         $steps[] = [
             'key'   => 'compose',
+            'done'  => $isComposed,
             'label' => __('Compose'),
             'route' => [
                 'name'       => "grp.org.shops.show.marketing.$prefix.workshop",
@@ -55,23 +62,22 @@ trait WithMailshotJourney
             ]
         ];
         $steps[] = [
-            'key'   => 'review',
-            'label' => __('Review & send'),
+            'key'      => 'review',
+            'done'     => false,
+            'disabled' => !$isComposed,
+            'label'    => __('Review & send'),
             'route' => [
                 'name'       => "grp.org.shops.show.marketing.$prefix.show",
                 'parameters' => $parameters
             ]
         ];
 
-        $currentIndex = array_search($current, array_column($steps, 'key'));
-
         return array_map(
-            fn (array $step, int $index) => $step + [
-                'current' => $index === $currentIndex,
-                'done'    => $currentIndex !== false && $index < $currentIndex
-            ],
-            $steps,
-            array_keys($steps)
+            fn (array $step) => array_merge($step, [
+                'current' => $step['key'] === $current,
+                'done'    => $step['done'] && $step['key'] !== $current
+            ]),
+            $steps
         );
     }
 }

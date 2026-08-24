@@ -97,15 +97,35 @@ class ShowMailshot extends OrgAction
             [
                 'title'                           => $mailshot->id,
                 'journey'                         => $this->getMailshotJourney($mailshot, 'review'),
+                'mailshot_copy'                   => [
+                    'subject'      => $mailshot->subject,
+                    'name'         => $mailshot->name,
+                    'preview_text' => $mailshot->preview_text,
+                ],
+                'updateMailshotRoute'             => [
+                    'name'       => 'grp.models.shop.mailshot.update',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'patch'
+                ],
+                'suggestCopyRoute'                => [
+                    'name'       => 'grp.json.mailshot.copy_suggestion',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'post'
+                ],
                 'breadcrumbs'                     => $this->getBreadcrumbs(
                     $mailshot,
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
                 'pageHead'                        => [
-                    'icon'       => 'fal fa-coins',
+                    'icon'       => 'fal fa-mail-bulk',
                     'title'      => $mailshot->subject,
                     'model'      => __('Subject:'),
+                    'modelStyle' => 'text-sm',
                     'titleStyle' => 'font-normal text-lg',
                     'edit'    => $this->canEdit ? [
                         'route' => [
@@ -114,20 +134,6 @@ class ShowMailshot extends OrgAction
                         ]
                     ] : false,
                     'actions' => [
-                        $isShowActions || $isShowEditName ? [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => __('Edit'),
-                            'icon'  => ["fal", "fa-sliders-h"],
-                            'route' => [
-                                'name'       => $mailshot->type === MailshotTypeEnum::MARKETING ? "grp.org.shops.show.marketing.mailshots.edit" : "grp.org.shops.show.marketing.newsletters.edit",
-                                'parameters' => [
-                                    $this->organisation->slug,
-                                    $this->shop->slug,
-                                    $mailshot->slug
-                                ]
-                            ]
-                        ] : [],
                         $isShowEditName && !$webpage && !$hasSourceReference ? [
                             'type'  => 'button',
                             'style' => 'edit',
