@@ -24,10 +24,14 @@ library.add(faComments, faSearch, faUser, faChevronLeft)
 const layout = inject("layout", layoutStructure)
 const store = useStaffMessaging()
 const desktopAnchor = computed(() => (layout.messagingSidebar.show ? "right-60" : "right-16"))
+// Two thresholds on purpose: the floating button only makes sense where the rail is hidden,
+// while a conversation is a full-screen sheet on anything tablet-sized or smaller.
 const isMobile = ref(window.innerWidth < 768)
+const isCompact = ref(window.innerWidth < 1024)
 const maxVisible = computed(() => (window.innerWidth < 1280 ? 2 : 3))
 const onResize = () => {
     isMobile.value = window.innerWidth < 768
+    isCompact.value = window.innerWidth < 1024
     store.maxVisible = window.innerWidth < 1280 ? 2 : 3
     const visible = store.openWindows.filter((w) => !w.minimised)
     while (visible.length > store.maxVisible) {
@@ -46,7 +50,7 @@ const syncSheetToViewport = () => {
         ? { top: `${vv.offsetTop}px`, height: `${vv.height}px` }
         : { top: "0px", height: `${window.innerHeight}px` }
 }
-const hasMobileOverlay = computed(() => isMobile.value && (mobilePanelOpen.value || store.openWindowsVisible.length > 0))
+const hasMobileOverlay = computed(() => (isMobile.value && mobilePanelOpen.value) || (isCompact.value && store.openWindowsVisible.length > 0))
 watch(hasMobileOverlay, (open) => {
     document.documentElement.style.overflow = open ? "hidden" : ""
     document.body.style.overflow = open ? "hidden" : ""
@@ -210,8 +214,8 @@ onUnmounted(() => {
         </template>
 
         <Teleport to="body">
-        <!-- Mobile: single full-screen sheet -->
-        <template v-if="isMobile">
+        <!-- Mobile + tablet: single full-screen sheet -->
+        <template v-if="isCompact">
             <div v-if="store.openWindowsVisible[0]" class="fixed left-0 right-0 z-[60] bg-white" :style="sheetStyle">
                 <MessagingConversation
                     :conversation="store.conversationByUlid(store.openWindowsVisible[0].ulid)!"
