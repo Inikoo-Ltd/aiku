@@ -9,6 +9,50 @@ use Illuminate\Support\Facades\DB;
 
 trait WithReorderWebpages
 {
+    public function ensureDepartmentPageHasRequiredBlocks(Webpage $webpage, string $code): void
+    {
+        if (in_array($code, ['department-description-1', 'department-description-2'])) {
+            if (count($this->getWebpageBlocksByType($webpage, 'top-families')) == 0) {
+                $this->createWebBlock($webpage, 'top-families');
+            }
+
+            if (count($this->getWebpageBlocksByType($webpage, 'luigi-trends-1')) == 0) {
+                $this->createWebBlock($webpage, 'luigi-trends-1');
+            }
+            
+            if (count($this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master')) == 0) {
+                $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
+            }
+        } else {
+            $this->deleteWebBlocksByCode($webpage, 'top-families');
+            $this->deleteWebBlocksByCode($webpage, 'luigi-trends-1');
+            $this->deleteWebBlocksByCode($webpage, 'recommendation-product-category-from-master');
+        }
+
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes(), WebBlockTemplateEnum::SUB_DEPARTMENTS);
+
+        if ($code == 'department-description-1') {
+            $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
+        } else {
+            $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS);
+        }
+        
+        if ($code == 'department-description-3') {
+            $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES);
+            
+            if (count($this->getWebpageBlocksByType($webpage, 'see-also-1')) == 0) {
+                $this->createWebBlock($webpage, 'see-also-1');
+            }
+        } else {
+            $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::FAMILIES);
+            $this->deleteWebBlocksByCode($webpage, 'see-also-1');
+        }
+
+        if (count($this->getWebpageBlocksByType($webpage, 'faq-department')) == 0) {
+            $this->createWebBlock($webpage, 'faq-department');
+        }
+    }
+
     public function reorderDepartmentPageBlocks(Webpage $webpage, $departmentWebBlockCode = 'department-description-1'): void
     {
         $departmentWebBlock = $this->getWebpageBlocksByType($webpage, $departmentWebBlockCode)->first()?->model_has_web_blocks_id;
@@ -19,9 +63,11 @@ trait WithReorderWebpages
         }
 
         $subDepartmentBlock             = $this->getWebpageBlocksByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes())->first()?->model_has_web_blocks_id;
+        $seeAlsoBlock                   = $this->getWebpageBlocksByType($webpage, 'see-also-1')->first()?->model_has_web_blocks_id;
         $listProductBlock               = $this->getWebpageBlocksByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes())->first()?->model_has_web_blocks_id;
 
-        $familiesBlock                  = $this->getWebpageBlocksByType($webpage, 'top-families')->first()?->model_has_web_blocks_id;
+        $topFamiliesBlock               = $this->getWebpageBlocksByType($webpage, 'top-families')->first()?->model_has_web_blocks_id;
+        $familiesBlock                  = $this->getWebpageBlocksByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes())->first()?->model_has_web_blocks_id;
 
         $relatedProductCategoryBlock    = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master')->first()?->model_has_web_blocks_id;
         $luigiTrends                    = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()?->model_has_web_blocks_id;
@@ -33,20 +79,24 @@ trait WithReorderWebpages
         $relatedProductCategoryPosition     = $count + 101;
         $faqPosition                        = $count + 102;
 
-        $runningPosition = 7;
+        $runningPosition = 8;
         foreach ($webBlocks as $key => $position) {
             if ($key == $departmentWebBlock) {
                 $webBlocks[$key] = 1;
-            } elseif ($key == $familiesBlock) {
+            } elseif ($key == $topFamiliesBlock) {
                 $webBlocks[$key] = 2;
             } elseif ($key == $luigiTrends) {
                 $webBlocks[$key] = 3;
             } elseif ($key == $subDepartmentBlock) {
                 $webBlocks[$key] = 4;
-            } elseif ($key == $listProductBlock) {
+            } elseif ($key == $seeAlsoBlock) {
                 $webBlocks[$key] = 5;
-            } elseif ($key == $departmentExtraDesc) {
+            } elseif ($key == $listProductBlock) {
                 $webBlocks[$key] = 6;
+            } elseif ($key == $familiesBlock) {
+                $webBlocks[$key] = 7;
+            } elseif ($key == $departmentExtraDesc) {
+                $webBlocks[$key] = 8;
             } elseif ($key == $relatedProductCategoryBlock) {
                 $webBlocks[$key] = $relatedProductCategoryPosition;
             } elseif ($key == $faqBlock) {

@@ -67,43 +67,18 @@ class UpdateDescriptionBlockToWebsiteAndChild
             foreach ($layouts as $code => $layout) {
                 Log::info("Code: [$code]", $layout);
                 $this->createWebBlock($webpage, $code, $layout);
-
-                // Only for department description change, redo layout entirely
-                if ($marginal == 'department_description') {
-                    if (count($this->getWebpageBlocksByType($webpage, 'top-families')) == 0) {
-                        $this->createWebBlock($webpage, 'top-families');
-                    }
-
-                    if (count($this->getWebpageBlocksByType($webpage, 'luigi-trends-1')) == 0) {
-                        $this->createWebBlock($webpage, 'luigi-trends-1');
-                    }
-
-                    $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes(), WebBlockTemplateEnum::SUB_DEPARTMENTS);
-
-                    if ($code == 'department-description-1') {
-                        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
-                    } else {
-                        $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS);
-                    }
-                    $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::FAMILIES);
-
-                    if (count($this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master')) == 0) {
-                        $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
-                    }
-
-                    if (count($this->getWebpageBlocksByType($webpage, 'faq-department')) == 0) {
-                        $this->createWebBlock($webpage, 'faq-department');
-                    }
-                }
             }
 
             $webpage->refresh();
             if ($webpage->sub_type === WebpageSubTypeEnum::FAMILY) {
                 $this->ensureFamilyPageHasRequiredBlocks($webpage);
+                $webpage->refresh();
                 $this->reorderFamilyPageBlocks($webpage, collect(array_keys($layouts))->first(fn ($key) => !str_ends_with($key, '-extra-description')));
             }
 
             if ($webpage->sub_type === WebpageSubTypeEnum::DEPARTMENT) {
+                $this->ensureDepartmentPageHasRequiredBlocks($webpage, collect(array_keys($layouts))->first(fn ($key) => !str_ends_with($key, '-extra-description')));
+                $webpage->refresh();
                 $this->reorderDepartmentPageBlocks($webpage, collect(array_keys($layouts))->first(fn ($key) => !str_ends_with($key, '-extra-description')));
             }
 
