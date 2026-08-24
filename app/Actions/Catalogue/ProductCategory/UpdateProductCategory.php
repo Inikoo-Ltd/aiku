@@ -367,6 +367,11 @@ class UpdateProductCategory extends OrgAction
             'storage_guidelines.*.text'     => ['sometimes', 'nullable', 'string', 'max:250'],
             // labeling_guide_file
             'labeling_guide_file'           => ['sometimes', 'nullable', File::types(['pdf'])->max(64000)], // 64mb max, following server max (prod on php.ini max file size upload)
+            // category_comparison
+            'category_comparison'           => ['sometimes', 'array'],
+            'category_comparison.*.show'    => ['sometimes', 'boolean', 'nullable'],
+            'category_comparison.*.label'   => ['sometimes', 'string', 'nullable'],
+            'category_comparison.*.key'     => ['sometimes', 'string'],
         ];
 
         if (!$this->strict) {
