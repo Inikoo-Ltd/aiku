@@ -1,5 +1,5 @@
 ---
-title: Eighteen years of commit messages
+title: Eighteen years of commit messages, thank god for the typos
 summary: 14,880 commits from 2008 to today, read not as a changelog but as a diary. The ticket prefixes that name the eras (KAKTUS, CSER, PIKA), the hour histogram with its 3am tail, a New Year's Day spent chasing a search bug with the typos getting worse by the hour, "brexit nightmare", "leap year hack", and the honest admission a commit message almost never makes: "Stock Levels don't add up..we think".
 date: 2026-08-24
 tags: history, aurora, origins
