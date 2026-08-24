@@ -244,7 +244,7 @@ const tabs = computed(() => [
     { key: "all" as SideBarTab, icon: "fal fa-gopuram", color: "text-[var(--chat-green)]", label: trans('Everyone online'), count: allOnlineCount.value },
     { key: "org" as SideBarTab, icon: "fal fa-home-alt", color: "text-[var(--chat-cyan)]", label: trans('Online in my organisation'), count: orgOnlineCount.value },
     { key: "team" as SideBarTab, icon: "fal fa-heart", color: "text-[var(--chat-accent)]", label: trans('My team'), count: teamOnlineCount.value },
-    { key: "messages" as SideBarTab, icon: "fal fa-comments", color: store.totalUnread > 0 ? "text-[var(--chat-red)]" : "text-[var(--chat-label)]", label: trans('Messages'), count: store.totalUnread || conversationsSummary.value.total },
+    { key: "messages" as SideBarTab, icon: "fal fa-comments", color: "text-[var(--chat-label)]", label: trans('Messages'), count: conversationsSummary.value.total, badge: store.totalUnread },
 ])
 
 const conversationUserIds = computed(() => new Set(
@@ -386,7 +386,10 @@ onUnmounted(() => {
                 :class="activeTab === tab.key ? 'border-[var(--chat-accent)] bg-[var(--chat-line)]' : 'border-transparent'"
                 v-tooltip="tab.key === 'org' ? orgTooltip : tab.label"
                 @click="selectTab(tab.key)">
-                <FontAwesomeIcon :icon="tab.icon" :class="tab.color" class="text-xs" fixed-width aria-hidden="true" />
+                <span class="relative">
+                    <FontAwesomeIcon :icon="tab.icon" :class="tab.color" class="text-xs" fixed-width aria-hidden="true" />
+                    <span v-if="tab.badge" class="absolute -top-1.5 -right-1.5 bg-[var(--chat-red)] text-white rounded-full h-3 min-w-[0.75rem] px-0.5 flex items-center justify-center text-[8px] leading-none tabular-nums">{{ tab.badge > 99 ? 99 : tab.badge }}</span>
+                </span>
                 <span class="text-xxs tabular-nums text-[var(--chat-text)]">{{ tab.count }}</span>
             </div>
         </div>
@@ -397,10 +400,13 @@ onUnmounted(() => {
                 v-for="tab in tabs"
                 :key="'tab-' + tab.key"
                 class="flex-1 flex items-center justify-center gap-x-1 py-2 cursor-pointer border-b-2 -mb-px"
-                :class="activeTab === tab.key ? 'border-[var(--chat-accent)] bg-[var(--chat-line)]' : 'border-transparent hover:bg-[var(--chat-line)]/50'"
+                :class="activeTab === tab.key ? 'border-[var(--chat-accent)] bg-[var(--chat-line)]' : 'border-[var(--chat-line)] hover:bg-[var(--chat-line)]/50'"
                 v-tooltip="tab.key === 'org' ? orgTooltip : tab.label"
                 @click="selectTab(tab.key)">
-                <FontAwesomeIcon :icon="tab.icon" :class="tab.color" class="text-xs" fixed-width aria-hidden="true" />
+                <span class="relative">
+                    <FontAwesomeIcon :icon="tab.icon" :class="tab.color" class="text-xs" fixed-width aria-hidden="true" />
+                    <span v-if="tab.badge" class="absolute -top-1.5 -right-1.5 bg-[var(--chat-red)] text-white rounded-full h-3 min-w-[0.75rem] px-0.5 flex items-center justify-center text-[8px] leading-none tabular-nums">{{ tab.badge > 99 ? 99 : tab.badge }}</span>
+                </span>
                 <span class="tabular-nums" :class="activeTab === tab.key ? 'text-[var(--chat-text)]' : 'text-[var(--chat-label)]'">{{ tab.count }}</span>
             </div>
 
@@ -423,7 +429,7 @@ onUnmounted(() => {
                 <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
             </button>
         </div>
-        <div v-else class="pt-2 pb-1 px-3 flex items-center justify-between">
+        <div v-else-if="activeTab === 'messages'" class="pt-2 pb-1 px-3 flex items-center justify-between">
             <button class="flex items-center gap-x-3 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="openFullMessaging">
                 <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
                 <span class="text-xs text-[var(--chat-text)]">{{ trans('Messaging') }}</span>
@@ -515,11 +521,8 @@ onUnmounted(() => {
 
             <!-- MESSAGES view -->
             <template v-else-if="activeTab === 'messages'">
-                <div class="px-3 pt-2 pb-1 flex items-center justify-between text-xs text-[var(--chat-muted)]">
+                <div class="px-3 pt-2 pb-1 flex items-center text-xs text-[var(--chat-muted)]">
                     <span>{{ tabHeader }}</span>
-                    <button v-if="!plusOpened" class="shrink-0 text-[var(--chat-accent)] hover:text-[var(--chat-text)]" @click="openPlusSearch" v-tooltip="trans('New message')">
-                        <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
-                    </button>
                 </div>
                 <button
                     v-for="conversation in sortedConversations"
