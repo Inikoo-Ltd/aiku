@@ -1018,7 +1018,7 @@ onUnmounted(() => {
                         :style="activeTab === 'waiting' ? { color: 'var(--theme-color-4)' } : {}"
                         @click="activeTab = 'waiting'">
                         {{ trans("Waiting") }}
-                        <span v-if="viewMode === 'my' && !highlightView && tabUnread.waiting"
+                        <span v-if="viewMode === 'my' && !highlightView && selectedChannel !== 'whatsapp' && tabUnread.waiting"
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
                             :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.waiting }}</span>
                     </button>
@@ -1028,7 +1028,7 @@ onUnmounted(() => {
                         :style="activeTab === 'active' ? { color: 'var(--theme-color-4)' } : {}"
                         @click="activeTab = 'active'">
                         {{ trans("Active") }}
-                        <span v-if="viewMode === 'my' && !highlightView && tabUnread.active"
+                        <span v-if="viewMode === 'my' && !highlightView && selectedChannel !== 'whatsapp' && tabUnread.active"
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
                             :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.active }}</span>
                     </button>
@@ -1038,7 +1038,7 @@ onUnmounted(() => {
                         :style="activeTab === 'closed' ? { color: 'var(--theme-color-4)' } : {}"
                         @click="activeTab = 'closed'">
                         {{ trans("Closed") }}
-                        <span v-if="viewMode === 'my' && !highlightView && tabUnread.closed"
+                        <span v-if="viewMode === 'my' && !highlightView && selectedChannel !== 'whatsapp' && tabUnread.closed"
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
                             :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.closed }}</span>
                     </button>
