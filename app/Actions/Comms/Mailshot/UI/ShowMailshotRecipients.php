@@ -52,9 +52,24 @@ class ShowMailshotRecipients extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'exit',
+                            'icon'  => false,
                             'label' => __('Exit'),
                             'route' => [
                                 'name'       => 'grp.org.shops.show.marketing.mailshots.show',
+                                'parameters' => [
+                                    $this->organisation->slug,
+                                    $this->shop->slug,
+                                    $mailshot->slug
+                                ]
+                            ]
+                        ],
+                        [
+                            'type'  => 'button',
+                            'style' => 'primary',
+                            'icon'  => 'fal fa-drafting-compass',
+                            'label' => __('Compose email'),
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.marketing.mailshots.workshop',
                                 'parameters' => [
                                     $this->organisation->slug,
                                     $this->shop->slug,
