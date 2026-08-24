@@ -79,7 +79,7 @@ const richTextClass = "text-[13px] md:text-[14px] 2xl:text-[16px] leading-[1.8] 
 					class="h-full w-full object-cover" />
 			</div>
 
-			<div v-if="hasSideColumn">
+			<div >
 				<div v-if="hasDescriptionExtra" :class="richTextClass" v-html="descriptionExtra" />
 
 				<LinkIris
