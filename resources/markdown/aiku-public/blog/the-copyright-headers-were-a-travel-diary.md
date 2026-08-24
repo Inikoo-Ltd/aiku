@@ -25,10 +25,10 @@ Read chronologically, roughly nine hundred dated, placed headers draw a map:
 
 - **Mijas Costa, Spain** — the first placed header, October 2015, and the recurring home base for years after.
 - **Sheffield, UK** — from November 2015 (`Created: 21 November 2015 at 14:41:00 GMT, Sheffield UK` on the API entry point) through 2017. The business ran from Yorkshire; a lot of Aurora was written there.
+- **Bangkok and Phuket, Thailand** — around same time.
 - **Macau, December 2015** and **Penang, January 2016** — short stops, each leaving a file or two behind. The Macau files are tax-region billing tables; wherever I was, the work was the work.
 - **Yiwu, China** — March to November 2016. Yiwu is the wholesale-market city where the products came from; the image-handling tables were written there, between supplier visits.
 - **Bali** — Lovina, Ubud, Kuta, Sanur, Legian, from April 2016 with return trips for years. The agent and warehouse-location classes carry Balinese datelines.
-- **Bangkok and Phuket, Thailand** — 2016 and 2017.
 - **Mexico City, May 2017** — two headers on the same day, 09:21 and 22:06, a full working day in CdMx. One of them is the public storefront's 404 page.
 - **Tokyo, September 2018** — one file, created at 23:17. Some cities you only get one evening in.
 - **Kuala Lumpur and Cyberjaya, Malaysia** — the biggest cluster by far, 2016 through 2022. If Aurora has a second home town after Sheffield, it's KL.

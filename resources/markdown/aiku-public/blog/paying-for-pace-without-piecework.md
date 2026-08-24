@@ -1,7 +1,7 @@
 ---
 title: Paying for pace, without piecework — Part I
 summary: Coming soon in the manufacture module — a production reward scheme that pays people by the hour at a band earned by their pace, never below the legal wage, with targets derived so that faster work costs the business the same per unit. Why we did not build piecework, how the spreadsheet became rows with dates, and the live ladder on the shop‑floor screen.
-date: 2026-08-25
+date: 2026-08-18
 tags: manufacture, payroll, hr, design
 ---
 
