@@ -155,27 +155,29 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
-        'data'              => 'array',
-        'faq'               => 'array',
-        'web_images'        => 'array',
-        'type'              => MasterProductCategoryTypeEnum::class,
-        'health_rank'       => HealthRankEnum::class,
-        'status'            => 'boolean',
-        'fetched_at'        => 'datetime',
-        'last_fetched_at'   => 'datetime',
-        'discontinued_at'   => 'datetime',
-        'offers_data'       => 'array',
-        'customize_option'  => 'array',
-        'storage_option'    => 'array',
+        'data'                      => 'array',
+        'faq'                       => 'array',
+        'web_images'                => 'array',
+        'type'                      => MasterProductCategoryTypeEnum::class,
+        'health_rank'               => HealthRankEnum::class,
+        'status'                    => 'boolean',
+        'fetched_at'                => 'datetime',
+        'last_fetched_at'           => 'datetime',
+        'discontinued_at'           => 'datetime',
+        'offers_data'               => 'array',
+        'customize_option'          => 'array',
+        'storage_option'            => 'array',
+        'category_comparison'       => 'array',
     ];
 
     protected $attributes = [
-        'data'              => '{}',
-        'faq'               => '{}',
-        'offers_data'       => '{}',
-        'web_images'        => '{}',
-        'customize_option'  => '{}',
-        'storage_option'    => '{}',
+        'data'                  => '{}',
+        'faq'                   => '{}',
+        'offers_data'           => '{}',
+        'web_images'            => '{}',
+        'customize_option'      => '{}',
+        'storage_option'        => '{}',
+        'category_comparison'   => '{}',
     ];
 
     public function generateTags(): array

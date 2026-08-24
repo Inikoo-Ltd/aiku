@@ -404,6 +404,17 @@ class EditFamily extends OrgAction
                                     ],
                                 ],
                             ] : [],
+                            $family->shop->masterShop->slug == 'aroma' ? [
+                                'label'  => __('Category Comparison'),
+                                'icon'   => 'fa-light fa-temperature-low',
+                                'fields' => [
+                                    'category_comparison'  => [
+                                        'type'  => 'faq-shop',
+                                        'label' => __('Category Comparison'),
+                                        'value' => $family->faq,
+                                    ],
+                                ],
+                            ] : [],
                             [
                                 'label'  => __('Parent').' ('.__('Department/Sub-Department').')',
                                 'icon'   => 'fa-light fa-folder-tree',

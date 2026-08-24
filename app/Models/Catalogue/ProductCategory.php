@@ -209,15 +209,17 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'not_follow_master_prices'      => 'boolean',
         'customize_option'              => 'array',
         'storage_option'                => 'array',
+        'category_comparison'           => 'array',
     ];
 
     protected $attributes = [
-        'data'              => '{}',
-        'faq'               => '{}',
-        'web_images'        => '{}',
-        'offers_data'       => '{}',
-        'customize_option'  => '{}',
-        'storage_option'    => '{}',
+        'data'                  => '{}',
+        'faq'                   => '{}',
+        'web_images'            => '{}',
+        'offers_data'           => '{}',
+        'customize_option'      => '{}',
+        'storage_option'        => '{}',
+        'category_comparison'   => '{}',
     ];
 
     public function toSearchableArray(): array
