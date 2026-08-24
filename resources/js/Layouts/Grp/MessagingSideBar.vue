@@ -324,10 +324,13 @@ onUnmounted(() => {
                 <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
             </button>
         </div>
-        <div v-else class="pt-2 pb-1 px-3">
-            <button class="w-full flex items-center gap-x-3 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="openFullMessaging">
+        <div v-else class="pt-2 pb-1 px-3 flex items-center justify-between">
+            <button class="flex items-center gap-x-3 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="openFullMessaging">
                 <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
                 <span class="text-xs text-[var(--chat-text)]">{{ trans('Messaging') }}</span>
+            </button>
+            <button v-if="!plusOpened" class="shrink-0 text-[var(--chat-accent)] hover:text-[var(--chat-text)]" @click="openPlusSearch" v-tooltip="trans('New message')">
+                <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
             </button>
         </div>
 
