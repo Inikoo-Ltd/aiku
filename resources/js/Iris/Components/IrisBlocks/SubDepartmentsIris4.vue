@@ -136,7 +136,6 @@ console.log('SubDepartmentsIris4.vue mounted with props:', props)
 </script>
 
 <template>
- {{ mergedItems.length }}
   <div
     v-if="mergedItems.length"
     :id="'sub-department-iris-4-' + (props.indexBlock ?? '')"
