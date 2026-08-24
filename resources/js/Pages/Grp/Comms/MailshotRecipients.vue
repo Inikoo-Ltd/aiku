@@ -2,6 +2,7 @@
 import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import MailshotJourney from '@/Components/Navigation/MailshotJourney.vue'
+import MailshotSubjectEdit from '@/Components/Workshop/Mailshot/MailshotSubjectEdit.vue'
 import { ref, watch, computed } from 'vue'
 import { faChevronDown, faFilter, faTimes, faPlus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -18,6 +19,9 @@ const props = defineProps<{
     pageHead: any
     mailshot: any
     journey: any
+    mailshot_copy: { subject: string, name: string | null, preview_text: string | null }
+    updateMailshotRoute: routeType
+    suggestCopyRoute: routeType
     filtersStructure: Record<string, any>
     filters: any
     recipientFilterRoute: routeType
@@ -26,14 +30,19 @@ const props = defineProps<{
     shop_id: number
     estimatedRecipients: number
 }>()
+
+const savedSubject = ref<string | null>(null)
+const pageHeadData = computed(() => savedSubject.value ? { ...props.pageHead, title: savedSubject.value } : props.pageHead)
 </script>
 
 <template>
 
     <Head :title="title" />
 
-    <PageHeading :data="pageHead">
+    <PageHeading :data="pageHeadData">
         <template #afterTitle2>
+            <MailshotSubjectEdit :mailshot="mailshot_copy" :updateMailshotRoute="updateMailshotRoute"
+                :suggestCopyRoute="suggestCopyRoute" @saved="subject => savedSubject = subject" />
             <MailshotJourney :steps="journey" class="ml-4" />
         </template>
     </PageHeading>

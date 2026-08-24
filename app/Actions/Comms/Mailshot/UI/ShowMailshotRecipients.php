@@ -48,7 +48,11 @@ class ShowMailshotRecipients extends OrgAction
                 'mailshot' => $mailshot,
                 'title'    => __('Setup Recipients'),
                 'pageHead' => [
-                    'title' => __('Setup Recipients'),
+                    'title'      => $mailshot->subject,
+                    'model'      => __('Subject:'),
+                    'modelStyle' => 'text-sm',
+                    'titleStyle' => 'font-normal text-lg',
+                    'icon'       => 'fal fa-mail-bulk',
                     'actions'   => [
                         [
                             'type'      => 'button',
@@ -68,6 +72,25 @@ class ShowMailshotRecipients extends OrgAction
                     ]
                 ],
                 'journey'          => $this->getMailshotJourney($mailshot, 'recipients'),
+                'mailshot_copy'    => [
+                    'subject'      => $mailshot->subject,
+                    'name'         => $mailshot->name,
+                    'preview_text' => $mailshot->preview_text,
+                ],
+                'updateMailshotRoute' => [
+                    'name'       => 'grp.models.shop.mailshot.update',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'patch'
+                ],
+                'suggestCopyRoute' => [
+                    'name'       => 'grp.json.mailshot.copy_suggestion',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'post'
+                ],
                 'filtersStructure' => $filtersStructure,
                 'filters'          => $currentFilters,
                 'recipientFilterRoute' => [
