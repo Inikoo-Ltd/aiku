@@ -267,6 +267,17 @@ class EditMasterFamily extends OrgAction
                                 ],
                             ],
                         ] : [],
+                        $masterProductCategory->masterShop->masterShop->slug == 'aroma' ? [
+                            'label'  => __('Category Comparison'),
+                            'icon'   => 'fa-light fa-temperature-low',
+                            'fields' => [
+                                'category_comparison'  => [
+                                    'type'  => 'faq-shop',
+                                    'label' => __('Category Comparison'),
+                                    'value' => $masterProductCategory->category_comparison,
+                                ],
+                            ],
+                        ] : [],
                         [
                             'label'  => __('FAQ'),
                             'icon'   => 'fa-light fa-question-circle',

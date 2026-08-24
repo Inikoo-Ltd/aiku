@@ -411,7 +411,7 @@ class EditFamily extends OrgAction
                                     'category_comparison'  => [
                                         'type'  => 'faq-shop',
                                         'label' => __('Category Comparison'),
-                                        'value' => $family->faq,
+                                        'value' => $family->category_comparison,
                                     ],
                                 ],
                             ] : [],
