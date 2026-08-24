@@ -85,6 +85,7 @@ class ShowMailshotWorkshop extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'exit',
+                            'icon'  => false,
                             'label' => __('Exit workshop'),
                             'route' => [
                                 'name'       => preg_replace('/workshop$/', 'show', $request->route()->getName()),
@@ -174,6 +175,26 @@ class ShowMailshotWorkshop extends OrgAction
                     'name' => 'grp.models.shop.mailshot.send-test',
                     'parameters' => [
                         'shop' => $this->shop->id,
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'post'
+                ],
+                'openTemplateSelector' => !$hasPublishedVersion && !$templateLayout && $email->unpublishedSnapshot->created_at->eq($email->unpublishedSnapshot->updated_at),
+                'mailshot' => [
+                    'subject'      => $mailshot->subject,
+                    'name'         => $mailshot->name,
+                    'preview_text' => $mailshot->preview_text,
+                ],
+                'updateMailshotRoute' => [
+                    'name'       => 'grp.models.shop.mailshot.update',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'patch'
+                ],
+                'suggestCopyRoute' => [
+                    'name'       => 'grp.json.mailshot.copy_suggestion',
+                    'parameters' => [
                         'mailshot' => $mailshot->id
                     ],
                     'method' => 'post'

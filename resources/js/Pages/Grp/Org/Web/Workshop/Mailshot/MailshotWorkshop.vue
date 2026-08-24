@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, inject , onMounted} from 'vue'
+import { ref, computed, reactive, watch, inject , onMounted} from 'vue'
 import type { Component } from "vue";
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
@@ -18,8 +18,9 @@ import "@vueform/multiselect/themes/default.css"
 import Tag from '@/Components/Tag.vue'
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faExclamationTriangle } from '@fal'
-import { faUserCog } from '@fas'
+import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faExclamationTriangle, faPencil, faSyncAlt } from '@fal'
+import { faUserCog, faSparkles } from '@fas'
+import Popover from '@/Components/Popover.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import Modal from '@/Components/Utils/Modal.vue'
 import { routeType } from '@/types/route'
@@ -52,7 +53,52 @@ const props = defineProps<{
     shopSlug: string
     shopId: number
     storeNewTemplateRoute: routeType
+    mailshot: { subject: string, name: string | null, preview_text: string | null }
+    openTemplateSelector?: boolean
+    updateMailshotRoute: routeType
+    suggestCopyRoute: routeType
 }>()
+
+const mailshotForm = reactive({ ...props.mailshot })
+const isSavingMailshot = ref(false)
+const isSuggestingCopy = ref(false)
+const mailshotSavedSubject = ref(props.mailshot.subject)
+const pageHeadData = computed(() => ({ ...props.pageHead, title: mailshotSavedSubject.value }))
+
+const saveMailshot = async (close: () => void) => {
+    isSavingMailshot.value = true
+    try {
+        await axios.patch(route(props.updateMailshotRoute.name, props.updateMailshotRoute.parameters), mailshotForm)
+        mailshotSavedSubject.value = mailshotForm.subject
+        close()
+    } catch (error) {
+        notify({
+            title: trans('Something went wrong'),
+            text: trans('Failed to save the subject'),
+            type: 'error'
+        })
+    } finally {
+        isSavingMailshot.value = false
+    }
+}
+
+const suggestMailshotCopy = async () => {
+    isSuggestingCopy.value = true
+    try {
+        const { data } = await axios.post(route(props.suggestCopyRoute.name, props.suggestCopyRoute.parameters))
+        mailshotForm.subject = data.subject
+        if (data.preview_text) mailshotForm.preview_text = data.preview_text
+        if (data.name) mailshotForm.name = data.name
+    } catch (error) {
+        notify({
+            title: trans('Something went wrong'),
+            text: trans('Could not generate a suggestion, add some content first'),
+            type: 'error'
+        })
+    } finally {
+        isSuggestingCopy.value = false
+    }
+}
 
 const comment = ref('')
 const isLoading = ref(false)
@@ -321,6 +367,10 @@ onMounted(() => {
   window.addEventListener('popstate', () => {
     router.reload()
   });
+
+  if (props.openTemplateSelector) {
+    isModalCloneTemplateEmail.value = true
+  }
 })
 </script>
 
@@ -328,10 +378,40 @@ onMounted(() => {
 <template>
 
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead">
+    <PageHeading :data="pageHeadData">
+        <template #afterTitle>
+            <Popover position="left-0" width="w-96">
+                <template #button>
+                    <FontAwesomeIcon :icon="faPencil" v-tooltip="trans('Edit subject')"
+                        class="text-gray-400 hover:text-gray-600 text-sm cursor-pointer" fixed-width />
+                </template>
+                <template #content="{ close }">
+                    <div class="space-y-2 text-left font-normal text-base">
+                        <div>
+                            <label class="text-xs text-gray-500">{{ trans('Subject') }}</label>
+                            <PureInput v-model="mailshotForm.subject" :placeholder="trans('Email subject')" />
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500">{{ trans('Preview text') }}</label>
+                            <PureInput v-model="mailshotForm.preview_text" :placeholder="trans('Email preview text')" />
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500">{{ trans('Name') }}</label>
+                            <PureInput v-model="mailshotForm.name" :placeholder="trans('Internal name')" />
+                        </div>
+                        <div class="flex justify-between gap-x-2 pt-1">
+                            <Button type="tertiary" size="xs" :icon="faSparkles" :label="trans('Suggest with AI')"
+                                :loading="isSuggestingCopy" @click="suggestMailshotCopy" />
+                            <Button size="xs" :label="trans('Save')" :loading="isSavingMailshot"
+                                :disabled="!mailshotForm.subject" @click="() => saveMailshot(close)" />
+                        </div>
+                    </div>
+                </template>
+            </Popover>
+        </template>
         <template #otherBefore>
             <div>
-                <div class="text-sm text-gray-600 mr-2 flex items-center gap-2">
+                <div class="text-xs text-gray-500 mr-2 flex items-center gap-2">
                     Estimated email size: approximately <span class="font-semibold">{{ compiledLayoutSize }} KB</span>
                     <FontAwesomeIcon v-if="compiledLayoutSize > 102" :icon="faExclamationTriangle"
                         class="text-yellow-500 text-lg" v-tooltip="emailSizeWarningTooltip" fixed-width />
@@ -340,7 +420,7 @@ onMounted(() => {
 
             <Button @click="() => isModalCloneTemplateEmail = true" :label="trans('Choose Template')"
                 class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
-                :icon="faPlus" :disabled="!isBeefreeReady" />
+                :icon="faSyncAlt" :disabled="!isBeefreeReady" />
         </template>
     </PageHeading>
 

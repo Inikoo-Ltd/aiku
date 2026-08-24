@@ -14,9 +14,7 @@ use App\Stubs\UIDummies\IndexDummies;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Comms\Mailshot\UI\EditMailshot;
 use App\Actions\Comms\Mailshot\UI\ShowMailshot;
-use App\Actions\Comms\Mailshot\UI\CreateMailshot;
 use App\Actions\Comms\Mailshot\UI\CreateMailshotTemplate;
-use App\Actions\Comms\Mailshot\UI\CreateNewsletter;
 use App\Actions\Comms\Mailshot\UI\ShowMailshotWorkshop;
 use App\Actions\Comms\Mailshot\UI\ShowMailshotRecipients;
 use App\Actions\Comms\Mailshot\UI\EditMailshotTemplate;
@@ -34,7 +32,6 @@ Route::patch('settings', UpdateMailshotSettings::class)->name('mailshot_settings
 Route::name("newsletters.")->prefix('newsletters')
     ->group(function () {
         Route::get('', IndexNewsletterMailshots::class)->name('index');
-        Route::get('create', CreateNewsletter::class)->name('create');
         Route::get('{mailshot}', ShowMailshot::class)->name('show');
         Route::get('{mailshot}/edit', EditMailshot::class)->name('edit');
         Route::get('{mailshot}/workshop', ShowMailshotWorkshop::class)->name('workshop');
@@ -42,7 +39,6 @@ Route::name("newsletters.")->prefix('newsletters')
 Route::name("mailshots.")->prefix('mailshots')
     ->group(function () {
         Route::get('', [IndexMarketingMailshots::class, 'inShop'])->name('index');
-        Route::get('create', CreateMailshot::class)->name('create');
         Route::get('{mailshot}', ShowMailshot::class)->name('show');
         Route::get('{mailshot}/workshop', ShowMailshotWorkshop::class)->name('workshop');
         Route::get('{mailshot}/edit', EditMailshot::class)->name('edit');
