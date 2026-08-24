@@ -145,7 +145,9 @@ class TranslateChatMessage
 
 
         if ($message->isFromAgent()) {
-            return $session->active_user_language_id ?? $session->user_language_id;
+            return $session->active_user_language_id
+                ?? $session->user_language_id
+                ?? $session->shop?->language_id;
         }
 
         return null;
