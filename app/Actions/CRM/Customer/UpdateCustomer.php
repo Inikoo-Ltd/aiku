@@ -301,7 +301,7 @@ class UpdateCustomer extends OrgAction
         }
 
         if ($recalculateOrder) {
-            RecalculateCustomerTotalsOrdersInBasket::dispatch($customer->id);
+            RecalculateCustomerTotalsOrdersInBasket::run($customer->id);
         }
 
         return $customer;

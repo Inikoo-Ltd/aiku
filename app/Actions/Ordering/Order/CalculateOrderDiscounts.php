@@ -42,6 +42,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
     private int|null $grAmnestyOfferId = null;
     private \Illuminate\Support\Carbon|null $honorOffersAt = null;
 
+    private bool $optOutGift = false;
+
     public function __construct()
     {
         $this->transactions              = collect(); // handle accessed before initialized
@@ -90,7 +92,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         $this->amountOff    = 0.0;
 
         $this->honorOffersAt = $order->state == OrderStateEnum::CREATING ? null : $order->submitted_at;
-
+        $this->optOutGift    = $this->isGiftOptedOut($order);
 
         $this->transactions = DB::table('transactions as t')
             ->select([
@@ -153,6 +155,16 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     'offers_data'             => [],
                     'current_discount_factor' => 1,
                 ]);
+
+            if ($order->state == OrderStateEnum::CREATING && $this->optOutGift) {
+                DB::table('transactions_has_offer_allowances')
+                    ->where('is_gift', true)
+                    ->where('order_id', $order->id)->delete();
+
+                DB::table('transactions')
+                    ->where('is_gift', true)
+                    ->where('order_id', $order->id)->delete();
+            }
 
             $offerAllowancePivots = [];
 
@@ -226,7 +238,6 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         $this->getGiftsMeters($order);
         $this->getVoucherMeterNonPercentage($order);
 
-
         $order->update(
             [
                 'offer_meters' => $this->offerMeters
@@ -277,10 +288,6 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
     public function getGiftsMeters(Order $order): void
     {
-        if ($this->isGiftOptedOut($order)) {
-            return;
-        }
-
         foreach (
             DB::table('offers')
                 ->select(['id', 'trigger_data', 'allowance_signature', 'name'])
@@ -290,16 +297,20 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         ) {
             $triggerData = json_decode($giftOfferData->trigger_data, true);
 
-            $this->offerMeters[$giftOfferData->allowance_signature] = [
-                'offer_id' => $giftOfferData->id,
-                'label'    => $giftOfferData->name,
-                'is_gift'  => true,
-                'metadata' => [
-                    'current' => $order->gross_amount,
-                    'target'  => Arr::get($triggerData, 'min_order_amount', 0),
-
-                ]
-            ];
+            if ($this->optOutGift) {
+                unset($this->offerMeters[$giftOfferData->allowance_signature]);
+            } else {
+                $this->offerMeters[$giftOfferData->allowance_signature] = [
+                    'offer_id' => $giftOfferData->id,
+                    'label'    => $giftOfferData->name,
+                    'is_gift'  => true,
+                    'metadata' => [
+                        'current' => $order->gross_amount,
+                        'target'  => Arr::get($triggerData, 'min_order_amount', 0),
+    
+                    ]
+                ];
+            }
         }
     }
 
@@ -322,22 +333,21 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         }
 
         $isGift = $voucherData->allowance_type === 'gift';
-
-        if ($isGift && $this->isGiftOptedOut($order)) {
-            return;
-        }
-
         $triggerData = json_decode($voucherData->trigger_data, true);
 
-        $this->offerMeters[$voucherData->allowance_signature] = [
-            'offer_id' => $voucherData->id,
-            'label'    => $voucherData->name,
-            'is_gift'  => $isGift,
-            'metadata' => [
-                'current' => $order->gross_amount,
-                'target'  => Arr::get($triggerData, 'item_amount', 0),
-            ]
-        ];
+        if ($isGift && $this->optOutGift) {
+            unset($this->offerMeters[$voucherData->allowance_signature]);
+        } else {
+            $this->offerMeters[$voucherData->allowance_signature] = [
+                'offer_id' => $voucherData->id,
+                'label'    => $voucherData->name,
+                'is_gift'  => $isGift,
+                'metadata' => [
+                    'current' => $order->gross_amount,
+                    'target'  => Arr::get($triggerData, 'item_amount', 0),
+                ]
+            ];
+        }
     }
 
     private function setEnabledOffers(Order $order): void
@@ -814,6 +824,10 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
     public function processAllowanceFreeItems(array $offerData, object $allowanceData): void
     {
+        if ($this->optOutGift) {
+            return;
+        }
+
         $allowanceOpsData = json_decode($allowanceData->data, true) ?? [];
         $itemQuantity     = (int)Arr::get($allowanceOpsData, 'item_quantity', 0);
         $freeQuantity     = (int)Arr::get($allowanceOpsData, 'free_quantity', 0);
