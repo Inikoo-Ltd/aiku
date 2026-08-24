@@ -58,6 +58,7 @@ export interface StaffCoworker {
     name: string
     avatar: any
     is_close: boolean
+    organisation_ids?: number[]
     in_team: boolean
     last_active_at?: number | null
 }

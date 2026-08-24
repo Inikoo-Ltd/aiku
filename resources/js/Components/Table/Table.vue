@@ -1315,9 +1315,10 @@ const getSeverity = (type?: string) => {
 
                     <slot name="table">
                         <div ref="virtualContainerRef"
+                            class="overflow-x-auto"
                             @scroll="virtualScroll ? onVirtualScroll() : undefined"
                             :style="virtualScroll ? { overflowY: 'auto', maxHeight: virtualScrollHeight } : undefined">
-                        <table class="divide-y divide-gray-200 bg-white w-full">
+                        <table class="divide-y divide-gray-200 bg-white min-w-full">
                             <thead class="bg-gray-50" :class="{ 'sticky top-0 z-10': virtualScroll }">
                                 <tr
                                     class="border-t border-gray-200 divide-x divide-gray-200"
