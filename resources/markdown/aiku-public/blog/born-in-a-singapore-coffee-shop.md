@@ -54,7 +54,7 @@ Created: Fri, 16 Oct 2020 15:03:29 Malaysia Time, Kuala Lumpur, Malaysia
 
 Before aiku was a product, `Aiku` was a trait mixed into Aurora's base ORM class — the mechanism that made every customer, order and delivery note hydrate outward into something new. The successor didn't get a made‑up name. It got the name of the escape hatch.
 
-Aurora is still alive — 14,880 commits and counting, roughly 85% of them mine, the most recent one from this month. But it stopped being the future in a coffee shop in Singapore, at 12:49 in the afternoon, GMT+8. [How we walked out of it, one company at a time](/blog/four-years-of-walking-out-of-the-old-house), is its own story; this one is about the day it began.
+Aurora is still alive — 14,880 commits and counting, roughly 85% of them mine, the most recent one from this month. It began in that coffee shop in Singapore, at 12:49 in the afternoon, GMT+8 — the moment the old system stopped being the future. [How we eventually walked out of Aurora too, one company at a time](/blog/four-years-of-walking-out-of-the-old-house), is its own story; this one is about the day it began.
 
 <aside class="technical"><strong>Technical box</strong>
 <ul>
