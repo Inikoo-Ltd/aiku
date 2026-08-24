@@ -77,7 +77,8 @@ class ShowMailshotWorkshop extends OrgAction
                 ),
                 'title'       => $mailshot->subject,
                 'pageHead'    => [
-                    'title'     => $mailshot->subject,
+                    'title'      => $mailshot->subject,
+                    'titleStyle' => 'font-normal text-lg',
                     'icon'      => [
                         'tooltip' => __('snapshot'),
                         'icon'    => 'fal fa-mail-bulk'

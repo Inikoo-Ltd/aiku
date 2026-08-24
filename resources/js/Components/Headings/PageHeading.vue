@@ -159,7 +159,8 @@ const setError = (e) => {
 
 				<!-- Section: Main title group -->
 				<div
-					class="flex leading-none py-1.5 items-center gap-x-2 font-bold text-gray-700 text-2xl tracking-tight">
+					class="flex leading-none py-1.5 items-center gap-x-2 text-gray-700 tracking-tight"
+					:class="data.titleStyle ?? 'font-bold text-2xl'">
 					<div v-if="data.container" class="text-slate-500 text-lg">
 						<Link
 							v-if="data.container.href"

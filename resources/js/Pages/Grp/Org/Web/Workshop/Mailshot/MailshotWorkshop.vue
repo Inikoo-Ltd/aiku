@@ -415,14 +415,6 @@ onMounted(() => {
             <MailshotJourney :steps="journey" class="ml-4" />
         </template>
         <template #otherBefore>
-            <div>
-                <div class="text-xs text-gray-500 mr-2 flex items-center gap-2">
-                    Estimated email size: approximately <span class="font-semibold">{{ compiledLayoutSize }} KB</span>
-                    <FontAwesomeIcon v-if="compiledLayoutSize > 102" :icon="faExclamationTriangle"
-                        class="text-yellow-500 text-lg" v-tooltip="emailSizeWarningTooltip" fixed-width />
-                </div>
-            </div>
-
             <Button @click="() => isModalCloneTemplateEmail = true" :label="trans('Choose Template')"
                 class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
                 :icon="faSyncAlt" :disabled="!isBeefreeReady" />
@@ -449,6 +441,12 @@ onMounted(() => {
     <!-- unlayer -->
     <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
         :snapshot="snapshot" ref="_unlayer" />
+
+    <div v-if="builder == 'beefree'" class="flex justify-end items-center gap-2 px-4 py-1 text-xs text-gray-500">
+        Estimated email size: approximately <span class="font-semibold">{{ compiledLayoutSize }} KB</span>
+        <FontAwesomeIcon v-if="compiledLayoutSize > 102" :icon="faExclamationTriangle"
+            class="text-yellow-500" v-tooltip="emailSizeWarningTooltip" fixed-width />
+    </div>
 
     <div v-else>
         <EmptyState :data="{
