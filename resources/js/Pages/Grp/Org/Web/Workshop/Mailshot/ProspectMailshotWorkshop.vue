@@ -61,6 +61,23 @@ const props = defineProps<{
 const mailshotSavedSubject = ref(props.mailshot.subject)
 const pageHeadData = computed(() => ({ ...props.pageHead, title: mailshotSavedSubject.value }))
 
+const isPublished = ref(!!props.compiledLayout)
+const showUnpublishedWarning = ref(false)
+const pendingReviewRoute = ref<any>(null)
+// ponytail: warns only when never published; edits after a publish slip through silently
+const onReviewClick = (action: any) => {
+    if (isPublished.value) {
+        router.visit(route(action.route.name, action.route.parameters))
+    } else {
+        pendingReviewRoute.value = action.route
+        showUnpublishedWarning.value = true
+    }
+}
+const goToReviewAnyway = () => {
+    showUnpublishedWarning.value = false
+    router.visit(route(pendingReviewRoute.value.name, pendingReviewRoute.value.parameters))
+}
+
 const comment = ref('')
 const isLoading = ref(false)
 const isLoadingTemplate = ref(false)
@@ -101,6 +118,7 @@ const onSendPublish = async (data) => {
         });
 
         if (response && response.status === 200) {
+            isPublished.value = true
             // if (response.data.has_unsubscribelink === false) {
             //     visibleUnsubscribeWarningModal.value = true
 
@@ -352,7 +370,25 @@ onMounted(() => {
                 class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
                 :icon="faSyncAlt" :disabled="!isBeefreeReady" />
         </template>
+        <template #button-index-0="{ action }">
+            <Button :label="action.label" type="primary" iconRight="fal fa-arrow-right"
+                @click="() => onReviewClick(action)" />
+        </template>
     </PageHeading>
+
+    <Modal :isOpen="showUnpublishedWarning" @onClose="showUnpublishedWarning = false" width="w-full max-w-md">
+        <div class="p-2 text-center">
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 text-3xl mb-3" fixed-width />
+            <h2 class="text-lg font-semibold mb-2">{{ trans('Your email is not saved yet') }}</h2>
+            <p class="text-gray-600 mb-4">
+                {{ trans('Press the SAVE button in the editor to publish your email, otherwise it cannot be sent.') }}
+            </p>
+            <div class="flex justify-center gap-x-2">
+                <Button type="tertiary" :label="trans('Review & send anyway')" @click="goToReviewAnyway" />
+                <Button :label="trans('Keep editing')" @click="showUnpublishedWarning = false" />
+            </div>
+        </div>
+    </Modal>
 
     <Modal :isOpen="isModalCloneTemplateEmail" @onClose="isModalCloneTemplateEmail = false" width="w-full max-w-6xl">
 
