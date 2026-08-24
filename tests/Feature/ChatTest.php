@@ -2522,6 +2522,20 @@ describe('staff messaging chat theme', function () {
         expect(Arr::get($this->user->fresh()->settings, 'chat_theme'))->toBe('nord');
     });
 
+    test('changing chat theme busts the cached layout props', function () {
+        config()->set('ui.cache.layout', true);
+
+        $props = new App\Actions\UI\Grp\GetFirstLoadProps()->handle($this->user);
+        expect(Arr::get($props, 'layout.chat_theme'))->not->toBe('gruvbox');
+
+        actingAs($this->user)
+            ->patchJson(route('grp.models.profile.update'), ['chat_theme' => 'gruvbox'])
+            ->assertOk();
+
+        $props = new App\Actions\UI\Grp\GetFirstLoadProps()->handle($this->user->fresh());
+        expect(Arr::get($props, 'layout.chat_theme'))->toBe('gruvbox');
+    });
+
     test('invalid chat theme is rejected', function () {
         actingAs($this->user)
             ->patchJson(route('grp.models.profile.update'), ['chat_theme' => 'not-a-theme'])

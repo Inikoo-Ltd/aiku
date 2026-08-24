@@ -178,7 +178,9 @@ export const initialiseApp = () => {
         }
 
         // Set Chat theme
-        applyChatTheme(usePage().props.layout?.chat_theme as string | undefined)
+        if (usePage().props.layout?.chat_theme) {
+            applyChatTheme(usePage().props.layout.chat_theme as string)
+        }
 
         // Set App Environment
         if (usePage().props?.environment) {
