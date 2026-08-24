@@ -2424,7 +2424,9 @@ describe('staff messaging team', function () {
             ->and($this->user->teamMembers()->count())->toBe(1);
 
         $coworkers = actingAs($this->user)->getJson(route('grp.chat.staff.coworkers.index'))->assertOk()->json('data');
-        expect(collect($coworkers)->firstWhere('id', $other->id)['in_team'])->toBeTrue();
+        $row = collect($coworkers)->firstWhere('id', $other->id);
+        expect($row['in_team'])->toBeTrue()
+            ->and($row['organisation_ids'])->toBeArray();
 
         expect(\App\Actions\Chat\Staff\ToggleStaffTeamMember::run($this->user, $other))->toBeFalse()
             ->and($this->user->teamMembers()->count())->toBe(0);
