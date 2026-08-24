@@ -12,6 +12,7 @@ use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Models\Comms\Mailshot;
+use Illuminate\Support\Number;
 
 trait WithMailshotJourney
 {
@@ -38,7 +39,7 @@ trait WithMailshotJourney
 
             $steps[] = [
                 'key'   => 'recipients',
-                'label' => __('Recipients').' ('.$estimatedRecipients.')',
+                'label' => __('Recipients').' ('.Number::abbreviate($estimatedRecipients).')',
                 'route' => [
                     'name'       => 'grp.org.shops.show.marketing.mailshots.recipients',
                     'parameters' => $parameters
