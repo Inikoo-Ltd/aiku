@@ -18,6 +18,7 @@ import Tag from "@/Components/Tag.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExternalLink } from "@far";
 import { GridProducts } from "@/Components/Product"
+import CatalogueDownloadLink from "./CatalogueDownloadLink.vue"
 
 
 
@@ -103,6 +104,17 @@ const parentInfo = computed(() => {
                 </a>
             </div>
         </template>
+        <template #cell(download_csv)="{ item }">
+            <div class="flex justify-center">
+                <CatalogueDownloadLink scope="family" :slug="item.slug" type="csv" />
+            </div>
+        </template>
+
+        <template #cell(download_images)="{ item }">
+            <div class="flex justify-center">
+                <CatalogueDownloadLink scope="family" :slug="item.slug" type="images" />
+            </div>
+        </template>
     </Table>
 
     <GridProducts :resource="data" :preserve-scroll="true" class="mt-5 md:hidden" :name="tab"
@@ -140,6 +152,11 @@ const parentInfo = computed(() => {
                     title="Open public page">
                     <FontAwesomeIcon :icon="faExternalLink" />
                 </a>
+
+                <div class="flex flex-shrink-0 items-center gap-1">
+                    <CatalogueDownloadLink scope="family" :slug="item.slug" type="csv" variant="card" />
+                    <CatalogueDownloadLink scope="family" :slug="item.slug" type="images" variant="card" />
+                </div>
             </div>
         </template>
     </GridProducts>
