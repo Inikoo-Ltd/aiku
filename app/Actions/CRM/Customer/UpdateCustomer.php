@@ -21,6 +21,7 @@ use App\Actions\Helpers\TaxNumber\DeleteTaxNumber;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
 use App\Actions\Helpers\TaxNumber\UpdateTaxNumber;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\RecalculateCustomerTotalsOrdersInBasket;
 use App\Actions\Ordering\Order\ResetOrderTaxCategory;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
@@ -68,6 +69,7 @@ class UpdateCustomer extends OrgAction
     {
         $staleData = clone $customer;
         $staleData = $staleData->toArray();
+        $recalculateOrder = false;
 
         if (Arr::has($modelData, 'contact_address')) {
             $contactAddressData = Arr::get($modelData, 'contact_address');
@@ -224,6 +226,8 @@ class UpdateCustomer extends OrgAction
             $settings = $customer->settings ?? [];
             data_set($settings, 'is_gift_opted_out', Arr::pull($modelData, 'is_gift_opted_out'));
             $customer->update(['settings' => $settings]);
+
+            $recalculateOrder = true;
         }
 
         $oldRegisteredAt = $customer->registered_at;
@@ -294,6 +298,10 @@ class UpdateCustomer extends OrgAction
             foreach ($customer->customerSalesChannels as $customerSalesChannel) {
                 RedoPlatformTimeSeries::dispatch(platformId: $customerSalesChannel->platform_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
             }
+        }
+
+        if ($recalculateOrder) {
+            RecalculateCustomerTotalsOrdersInBasket::dispatch($customer->id);
         }
 
         return $customer;
