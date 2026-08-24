@@ -59,6 +59,15 @@ trait WithMailshotJourney
             ]
         ];
 
-        return array_map(fn (array $step) => $step + ['current' => $step['key'] === $current], $steps);
+        $currentIndex = array_search($current, array_column($steps, 'key'));
+
+        return array_map(
+            fn (array $step, int $index) => $step + [
+                'current' => $index === $currentIndex,
+                'done'    => $currentIndex !== false && $index < $currentIndex
+            ],
+            $steps,
+            array_keys($steps)
+        );
     }
 }
