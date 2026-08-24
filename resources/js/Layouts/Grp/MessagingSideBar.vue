@@ -527,7 +527,7 @@ onUnmounted(() => {
                 <button
                     v-for="conversation in sortedConversations"
                     :key="'conv-' + conversation.ulid"
-                    class="w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left"
+                    class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left"
                     @click="store.openConversation(conversation.ulid)">
                     <div v-if="conversation.type === 'group'" class="h-6 w-6 rounded-full bg-[var(--chat-line)] flex items-center justify-center shrink-0">
                         <FontAwesomeIcon icon="fal fa-comments" class="text-[var(--chat-accent)]" fixed-width aria-hidden="true" />
@@ -542,6 +542,13 @@ onUnmounted(() => {
                         <div class="text-xxs text-[var(--chat-muted)] truncate">{{ useTruncate(conversation.last_message ?? '', 26) }}</div>
                     </div>
                     <span v-if="conversation.unread_count > 0" class="text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0" :class="conversation.has_mention ? 'bg-[var(--chat-accent)]' : 'bg-[var(--chat-red)]'">{{ conversation.unread_count }}</span>
+                    <span
+                        role="button" tabindex="0"
+                        class="shrink-0 opacity-0 group-hover:opacity-100 text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
+                        v-tooltip="trans('Archive chat')"
+                        @click.stop="store.closeConversation(conversation.ulid)">
+                        <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+                    </span>
                 </button>
                 <div v-if="!sortedConversations.length" class="px-3 py-2 text-xxs text-[var(--chat-muted)]">{{ trans('No conversations yet') }}</div>
             </template>
