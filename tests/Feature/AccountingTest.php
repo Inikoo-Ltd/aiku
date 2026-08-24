@@ -2920,3 +2920,71 @@ describe('payment method from checkout.com source', function () {
             ->and(Payment::methodLabel(null))->toBe('');
     });
 });
+
+describe('invoice pdf tax number display', function () {
+    $renderInvoiceTemplate = function ($invoice) {
+        return view('invoices.templates.pdf.invoice', [
+            'shop'                 => $invoice->shop,
+            'invoice'              => $invoice,
+            'deliveryNote'         => null,
+            'deliveryAddress'      => null,
+            'recipientName'        => null,
+            'invoiceNumberLabel'   => 'Invoice number',
+            'dateLabel'            => 'Invoice date',
+            'typeLabel'            => 'Invoice',
+            'transactions'         => collect(),
+            'totalNet'             => '0.00',
+            'refunds'              => [],
+            'pro_mode'             => false,
+            'country_of_origin'    => false,
+            'rrp'                  => false,
+            'parts'                => false,
+            'commodity_codes'      => false,
+            'weight'               => false,
+            'barcode'              => false,
+            'cpnp'                 => false,
+            'hide_payment_status'  => true,
+            'group_by_tariff_code' => false,
+            'show_dispatch_totals' => false,
+            'show_batch_code'      => false,
+            'dispatch_total_skos'  => null,
+            'dispatch_total_units' => null,
+        ])->render();
+    };
+
+    test('spanish customer tax number shows even when VIES-invalid', function () use ($renderInvoiceTemplate) {
+        $customer = createCustomer($this->shop);
+        $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+        $spain   = \App\Models\Helpers\Country::where('code', 'ES')->firstOrFail();
+        $address = \App\Models\Helpers\Address::create(
+            array_merge(\App\Models\Helpers\Address::factory()->definition(), ['country_id' => $spain->id, 'country_code' => 'ES', 'group_id' => $invoice->group_id])
+        );
+        $invoice->update([
+            'address_id'       => $address->id,
+            'tax_number'       => 'ES42232363Q',
+            'tax_number_valid' => false,
+        ]);
+        $invoice->refresh();
+
+        expect($renderInvoiceTemplate($invoice))->toContain('ES42232363Q');
+    });
+
+    test('non-spanish invalid tax number stays hidden', function () use ($renderInvoiceTemplate) {
+        $customer = createCustomer($this->shop);
+        $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+        $france  = \App\Models\Helpers\Country::where('code', 'FR')->firstOrFail();
+        $address = \App\Models\Helpers\Address::create(
+            array_merge(\App\Models\Helpers\Address::factory()->definition(), ['country_id' => $france->id, 'country_code' => 'FR', 'group_id' => $invoice->group_id])
+        );
+        $invoice->update([
+            'address_id'       => $address->id,
+            'tax_number'       => 'FR123INVALID',
+            'tax_number_valid' => false,
+        ]);
+        $invoice->refresh();
+
+        expect($renderInvoiceTemplate($invoice))->not->toContain('FR123INVALID');
+    });
+});

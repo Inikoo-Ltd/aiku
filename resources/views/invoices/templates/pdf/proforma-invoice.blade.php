@@ -183,7 +183,7 @@
                     <span class="address_label">{{ __('Phone') }}:</span> <span
                             class="address_value">{{ $order->customer['phone'] }}</span>
                 </div>
-                @if($order->tax_number  && $order->tax_number_valid)
+                @if($order->tax_number && ($order->tax_number_valid || $order->billingAddress?->country?->code === 'ES'))
                     <div>
                         <span class="address_label">{{ __('Tax Number') }}:</span> <span
                                 class="address_value">{{ $order->tax_number }}</span>
