@@ -9,9 +9,11 @@
 namespace App\Actions\DevOps\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\UI\AikuPublic\BlogPosts;
 use App\Actions\UI\WithInertia;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Process;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -48,12 +50,13 @@ class ShowAikuPublicAnalytics extends OrgAction
         );
     }
 
-    /** @return array{daily: array<int, object>, pages: array<int, object>, searches: array<int, object>, referrers: array<int, object>, page_referrers: array<int, object>, countries: array<int, object>} */
+    /** @return array{daily: array<int, object>, pages: array<int, object>, searches: array<int, object>, referrers: array<int, object>, page_referrers: array<int, object>, countries: array<int, object>, articles: array<int, array<string, mixed>>} */
     public function handle(int $days = 30): array
     {
         $visits = fn () => DB::table('aiku_public_visits')->where('created_at', '>', now()->subDays($days));
 
         return [
+            'articles' => $this->getArticleStats(),
             'daily' => $visits()
                 ->selectRaw('created_at::date as day, count(*) as views, count(distinct visitor_hash) as visitors')
                 ->groupBy('day')->orderBy('day')->get()->all(),
@@ -73,6 +76,50 @@ class ShowAikuPublicAnalytics extends OrgAction
                 ->selectRaw('country, count(*) as views, count(distinct visitor_hash) as visitors, max(created_at) as last_visited_at')
                 ->groupBy('country')->orderByDesc(DB::raw('count(distinct visitor_hash)'))->limit(25)->get()->all(),
         ];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function getArticleStats(): array
+    {
+        $stats = DB::table('aiku_public_visits')->where('path', 'like', '/blog/%')
+            ->selectRaw('substr(path, 7) as slug, count(*) as views, count(distinct visitor_hash) as visitors, max(created_at) as last_visited_at')
+            ->groupBy('slug')->get()->keyBy('slug');
+
+        $committedDates = $this->getArticleCommitDates();
+
+        return BlogPosts::all()->map(fn (array $post) => [
+            'slug'            => $post['slug'],
+            'title'           => $post['title'],
+            'url'             => 'https://aiku.io/blog/'.$post['slug'],
+            'date'            => $post['date']->toDateString(),
+            'committed_at'    => $committedDates[$post['slug']] ?? null,
+            'visitors'        => (int) ($stats[$post['slug']]->visitors ?? 0),
+            'views'           => (int) ($stats[$post['slug']]->views ?? 0),
+            'last_visited_at' => $stats[$post['slug']]->last_visited_at ?? null,
+        ])->all();
+    }
+
+    /** @return array<string, string> */
+    private function getArticleCommitDates(): array
+    {
+        return cache()->remember('aiku_public_article_commit_dates', 3600, function () {
+            $result = Process::path(base_path())
+                ->run('git log --diff-filter=A --format="C %aI" --name-only -- resources/markdown/aiku-public/blog');
+            if (! $result->successful()) {
+                return [];
+            }
+            $dates = [];
+            $current = null;
+            foreach (explode("\n", $result->output()) as $line) {
+                if (str_starts_with($line, 'C ')) {
+                    $current = substr($line, 2);
+                } elseif ($current && str_ends_with($line, '.md')) {
+                    $dates[basename($line, '.md')] ??= $current;
+                }
+            }
+
+            return $dates;
+        });
     }
 
     public function getBreadcrumbs(array $routeParameters): array

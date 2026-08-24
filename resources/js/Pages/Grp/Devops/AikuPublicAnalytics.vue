@@ -13,7 +13,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { faChartLine } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed } from "vue"
+import { computed, ref } from "vue"
 
 library.add(faChartLine)
 
@@ -30,10 +30,22 @@ interface StatRow {
 
 const lastVisited = (value?: string) => value ? new Date(value).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""
 
+interface ArticleRow {
+    slug: string
+    title: string
+    url: string
+    date: string
+    committed_at?: string
+    visitors: number
+    views: number
+    last_visited_at?: string
+}
+
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     stats: {
+        articles: ArticleRow[]
         daily: StatRow[]
         pages: StatRow[]
         searches: StatRow[]
@@ -42,6 +54,9 @@ const props = defineProps<{
         countries: StatRow[]
     }
 }>()
+
+const currentTab = ref<"overview" | "articles">("overview")
+const shortDate = (value?: string) => value ? new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "—"
 
 const maxDailyViews = computed(() => Math.max(...props.stats.daily.map(d => Number(d.views)), 1))
 
@@ -58,6 +73,44 @@ const sections = computed(() => [
     <PageHeading :data="pageHead" />
 
     <div class="space-y-8 p-4">
+        <div class="flex gap-1 border-b border-gray-200 text-sm">
+            <button v-for="tab in [{ key: 'overview', label: trans('Overview') }, { key: 'articles', label: trans('Articles') }]"
+                :key="tab.key"
+                class="-mb-px rounded-t px-4 py-2"
+                :class="currentTab === tab.key ? 'border border-b-0 border-gray-200 font-medium' : 'text-gray-500 hover:text-gray-700'"
+                @click="currentTab = tab.key as 'overview' | 'articles'">
+                {{ tab.label }}
+            </button>
+        </div>
+
+        <section v-if="currentTab === 'articles'">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-200 text-left text-xs text-gray-500">
+                        <th class="py-1 font-normal">{{ trans("Article") }}</th>
+                        <th class="py-1 text-right font-normal">{{ trans("Dated") }}</th>
+                        <th class="py-1 text-right font-normal">{{ trans("Committed") }}</th>
+                        <th class="py-1 text-right font-normal">{{ trans("Visitors") }}</th>
+                        <th class="py-1 text-right font-normal">{{ trans("Views") }}</th>
+                        <th class="py-1 text-right font-normal">{{ trans("Last visit") }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="row in stats.articles" :key="row.slug" class="border-b border-gray-100">
+                        <td class="max-w-md py-1">
+                            <a :href="row.url" target="_blank" class="text-indigo-600 hover:underline">{{ row.title }}</a>
+                        </td>
+                        <td class="whitespace-nowrap py-1 text-right text-gray-500">{{ shortDate(row.date) }}</td>
+                        <td class="whitespace-nowrap py-1 text-right text-gray-500">{{ shortDate(row.committed_at) }}</td>
+                        <td class="py-1 text-right">{{ row.visitors }}</td>
+                        <td class="py-1 text-right text-gray-500">{{ row.views }}</td>
+                        <td class="whitespace-nowrap py-1 text-right text-xs text-gray-500">{{ lastVisited(row.last_visited_at) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <template v-if="currentTab === 'overview'">
         <section>
             <h2 class="text-sm font-medium">{{ trans("Daily visits (last 30 days)") }}</h2>
             <div class="mt-2 flex h-32 items-end gap-1">
@@ -124,5 +177,6 @@ const sections = computed(() => [
                 </tbody>
             </table>
         </section>
+        </template>
     </div>
 </template>

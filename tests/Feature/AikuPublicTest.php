@@ -210,3 +210,16 @@ test('future-dated posts stay hidden until their date', function () {
         unlink($path);
     }
 });
+
+test('analytics articles tab lists every note with real commit date and visit stats', function () {
+    get($this->host.'/visit.json?p=/blog/anatomy-of-a-deploy')->assertNoContent();
+
+    $articles = collect(\App\Actions\DevOps\UI\ShowAikuPublicAnalytics::make()->handle()['articles']);
+    expect($articles)->toHaveCount(BlogPosts::all()->count());
+
+    $row = $articles->firstWhere('slug', 'anatomy-of-a-deploy');
+    expect($row['views'])->toBeGreaterThanOrEqual(1)
+        ->and($row['url'])->toBe('https://aiku.io/blog/anatomy-of-a-deploy')
+        ->and($row['date'])->toBe('2026-08-19')
+        ->and($row['committed_at'])->toStartWith('2026-08-');
+});
