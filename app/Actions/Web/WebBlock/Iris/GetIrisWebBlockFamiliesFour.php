@@ -23,17 +23,23 @@ class GetIrisWebBlockFamiliesFour
 
     public function handle(Webpage $webpage, array $webBlock): ?array
     {
-        /** @var ProductCategory $department */
-        $department = $webpage->model;
+        /** @var ProductCategory $productCategory */
+        $productCategory = $webpage->model;
 
-        if (!$department instanceof ProductCategory || $department->type != ProductCategoryTypeEnum::DEPARTMENT) {
+        $supportedTypes = [ProductCategoryTypeEnum::DEPARTMENT, ProductCategoryTypeEnum::SUB_DEPARTMENT];
+
+        if (!$productCategory instanceof ProductCategory || !in_array($productCategory->type, $supportedTypes)) {
             return null;
         }
 
         $webBlock = $this->getSubDepartmentsThree($webpage, $webBlock, 'family');
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue.department', ['slug' => $department->slug, 'name' => $department->name]);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', $department->name);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.product_category', [
+            'slug' => $productCategory->slug,
+            'name' => $productCategory->name,
+            'type' => $productCategory->type,
+        ]);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', $productCategory->name);
 
         return [
             'type' => $webBlock['type'],

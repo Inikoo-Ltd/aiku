@@ -29,7 +29,7 @@ const props = defineProps<{
   modelValue: {
     id?: string
     product_category_title?: string
-    department?: { slug?: string; name?: string }
+    product_category?: { slug?: string; name?: string; type?: string }
     families?: Family[] | { data: Family[]; meta?: Record<string, any> }
     filter_options?: FilterOption[]
     sub_department_list?: FilterOption[]
@@ -65,6 +65,8 @@ const filterOptions = computed<FilterOption[]>(
     ?? [...(props.modelValue?.sub_department_list ?? []), ...(props.modelValue?.collections_list ?? [])]
 )
 
+const productCategorySlug = computed<string | undefined>(() => props.modelValue?.product_category?.slug)
+
 const sortOptions = computed(() => [
   { label: ctrans("New arrivals"), value: "created_at" },
   { label: ctrans("Name"), value: "name" },
@@ -84,7 +86,7 @@ const meta = ref(
 )
 
 const loadFamilies = async (page = 1, append = false) => {
-  if (!props.modelValue?.department?.slug) {
+  if (!productCategorySlug.value) {
     return
   }
 
@@ -104,7 +106,7 @@ const loadFamilies = async (page = 1, append = false) => {
 
     const response = await axios.get(
       route("grp.json.website.category.family_under_department", {
-        productCategory: props.modelValue.department.slug,
+        productCategory: productCategorySlug.value,
       }),
       {
         params: {
@@ -179,7 +181,7 @@ const perRow = computed(() => {
     <div class="mb-8">
       <h2 class="text-2xl font-bold text-[#1d2d44] sm:text-[2rem] sm:leading-tight">
         {{ ctrans('All') }}
-        {{ modelValue?.product_category_title || modelValue?.department?.name || ctrans('Families') }}:
+        {{ modelValue?.product_category_title || modelValue?.product_category?.name || ctrans('Families') }}:
       </h2>
 
       <div class="mt-4 flex flex-wrap items-center gap-x-10 gap-y-4">
@@ -188,7 +190,7 @@ const perRow = computed(() => {
           {{ ctrans('Products Found') }}
         </div>
 
-        <div class="flex items-center gap-3">
+        <div v-if="filterOptions.length" class="flex items-center gap-3">
           <span class="text-base text-slate-600 sm:text-lg">
             {{ ctrans('Filter By Category') }}:
           </span>

@@ -62,11 +62,15 @@ const meta = ref(
   }
 )
 
+const productCategorySlug = computed(() => props.fieldValue?.product_category?.slug)
+
+const filterOptions = computed(() => props.fieldValue?.filter_options ?? [])
+
 const loadFamilies = async (
   page = 1,
   append = false,
 ) => {
-  if (!props.fieldValue.department?.slug) {
+  if (!productCategorySlug.value) {
     return
   }
 
@@ -84,7 +88,7 @@ const loadFamilies = async (
       route(
         'iris.json.website.category.family_under_department',
         {
-          productCategory: props.fieldValue.department?.slug,
+          productCategory: productCategorySlug.value,
         }
       ),
       {
@@ -220,7 +224,7 @@ onBeforeUnmount(() => {
           {{ ctrans('Products Found') }}
         </div>
 
-        <div class="flex items-center gap-3">
+        <div v-if="filterOptions.length" class="flex items-center gap-3">
           <span class="text-base text-slate-600 sm:text-lg">
             {{ ctrans('Filter By Category') }}:
           </span>
@@ -231,7 +235,7 @@ onBeforeUnmount(() => {
               {{ ctrans('All') }}
             </option>
 
-            <option v-for="option in fieldValue.filter_options" :key="option.code" :value="option.code">
+            <option v-for="option in filterOptions" :key="option.code" :value="option.code">
               {{ option.name }}
             </option>
           </select>
@@ -278,7 +282,7 @@ onBeforeUnmount(() => {
             :class="!family.image ? 'opacity-0' : ''" />
         </div>
 
-        <div class="family-label flex min-h-[54px] items-center rounded-sm px-3 py-2">
+        <div class="family-label mt-3  flex min-h-[54px] items-center rounded-sm px-3 py-2">
           <span class="line-clamp-2 text-sm font-medium leading-snug text-white">
             {{ family.name }}
           </span>
