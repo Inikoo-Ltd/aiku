@@ -7,15 +7,18 @@ import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import MessageAreaAgent from "@/Components/Chat/Agent/MessageAreaAgent.vue"
+import WhatsappMessageAreaAgent from "@/Components/Chat/Agent/WhatsappMessageAreaAgent.vue"
 import ChatConversationSidePanel from "@/Components/Chat/ChatConversationSidePanel.vue"
 import SettingChat from "@/Components/Chat/SettingChat.vue"
+import NewWhatsappChatDialog from "@/Components/Chat/NewWhatsappChatDialog.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Image from "@common/Components/Image.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUser, faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faFilter, faStoreAlt } from "@fal"
-import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faAngleDown, faChevronRight, faStar as faStarSolid } from "@fortawesome/free-solid-svg-icons"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus } from "@fal"
+import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid } from "@fortawesome/free-solid-svg-icons"
+import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import {
     Contact,
     SessionAPI,
@@ -27,7 +30,13 @@ const props = defineProps<{
     pageHead: any
     breadcrumbs: any
     organisation: { id: number; slug: string; name: string }
-    inboxes: Array<{ id: number; name: string; slug: string; type: string | null }>
+    inboxes: Array<{
+        id: number
+        name: string
+        slug: string
+        type: string | null
+        channels: Array<{ key: string; name: string; unread: number }>
+    }>
     selectedSessionUlid?: string | null
     initialSession?: any | null
     preselectShopId?: number | null
@@ -96,6 +105,8 @@ const sidePanelVisible = ref(false)
 
 const chatSettingVisible = ref(false)
 const settingInitialTab = ref<"general" | "jira" | "slack">("general")
+
+const newChatVisible = ref(false)
 const openChatSettings = () => {
     settingInitialTab.value = "general"
     chatSettingVisible.value = true
@@ -137,6 +148,8 @@ const mapSession = (s: SessionAPI): Contact => ({
 })
 
 const selectedShopId = ref<number | null>(props.inboxes?.[0]?.id ?? null)
+const selectedChannel = ref<string | null>(props.inboxes?.[0]?.channels?.[0]?.key ?? null)
+const expandedInboxIds = ref<number[]>(props.inboxes?.[0] ? [props.inboxes[0].id] : [])
 
 const buildParams = (page: number) => ({
     ...(trashView.value
@@ -150,15 +163,23 @@ const buildParams = (page: number) => ({
     organisation_id: props.organisation.id,
     page,
     ...(selectedShopId.value && !highlightView.value ? { shop_id: selectedShopId.value } : {}),
+    // ponytail: the API ignores `channel` until chat sessions carry one; sent so the intent is visible.
+    ...(selectedChannel.value ? { channel: selectedChannel.value } : {}),
     ...(viewMode.value === "team" ? { view_team: 1 } : {}),
     ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
 })
+
+const sessionsUrl = computed(() =>
+    selectedChannel.value === "whatsapp"
+        ? `${baseUrl}/app/api/chats/meta/sessions`
+        : `${baseUrl}/app/api/chats/sessions`
+)
 
 const reloadContacts = async () => {
     currentPage.value = 1
     hasMore.value = false
     try {
-        const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params: buildParams(1) })
+        const res = await axios.get(sessionsUrl.value, { params: buildParams(1) })
         contacts.value = res.data.data.sessions.map(mapSession)
         hasMore.value = res.data.data.pagination?.has_more ?? false
     } catch (e) {
@@ -170,7 +191,7 @@ const loadMore = async () => {
     if (isLoadingMore.value || !hasMore.value) return
     isLoadingMore.value = true
     try {
-        const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params: buildParams(currentPage.value + 1) })
+        const res = await axios.get(sessionsUrl.value, { params: buildParams(currentPage.value + 1) })
         contacts.value = [...contacts.value, ...res.data.data.sessions.map(mapSession)]
         currentPage.value += 1
         hasMore.value = res.data.data.pagination?.has_more ?? false
@@ -189,6 +210,8 @@ const closeRowMenu = () => {
 }
 
 const toggleRowMenu = (ulid: string, ev?: MouseEvent) => {
+    // WhatsApp (meta) sessions don't support the ChatSession row actions (spam/priority/trash/highlight).
+    if (selectedChannel.value === "whatsapp") return
     confirmDeleteUlid.value = null
     if (openMenuUlid.value === ulid) {
         openMenuUlid.value = null
@@ -293,14 +316,38 @@ const shopAvatarStyle = (inbox: { id: number }) => {
     return { backgroundColor: color + "1A", color }
 }
 
-const selectShop = (shopId: number) => {
-    if (selectedShopId.value === shopId && !spamView.value && !trashView.value && !highlightView.value) return
+const toggleInbox = (shopId: number) => {
+    if (inboxRailCollapsed.value) {
+        inboxRailCollapsed.value = false
+    }
+    const idx = expandedInboxIds.value.indexOf(shopId)
+    if (idx >= 0) {
+        expandedInboxIds.value.splice(idx, 1)
+    } else {
+        expandedInboxIds.value.push(shopId)
+    }
+}
+
+// Select + expand an inbox without reloading — callers on mount reload once afterwards.
+const revealInbox = (shopId: number) => {
+    selectedShopId.value = shopId
+    const inbox = props.inboxes?.find((i) => i.id === shopId)
+    selectedChannel.value = inbox?.channels?.[0]?.key ?? null
+    if (!expandedInboxIds.value.includes(shopId)) {
+        expandedInboxIds.value.push(shopId)
+    }
+}
+
+const selectChannel = (shopId: number, channelKey: string) => {
+    if (selectedShopId.value === shopId && selectedChannel.value === channelKey && !spamView.value && !trashView.value && !highlightView.value) return
     spamView.value = false
     trashView.value = false
     highlightView.value = false
     selectedShopId.value = shopId
+    selectedChannel.value = channelKey
     selectedSession.value = null
     messages.value = []
+    newChatVisible.value = false
     clearAgentFilter()
     reloadContacts()
 }
@@ -311,8 +358,10 @@ const selectSpam = () => {
     trashView.value = false
     highlightView.value = false
     selectedShopId.value = null
+    selectedChannel.value = null
     selectedSession.value = null
     messages.value = []
+    newChatVisible.value = false
     clearAgentFilter()
     reloadContacts()
 }
@@ -323,8 +372,10 @@ const selectTrash = () => {
     spamView.value = false
     highlightView.value = false
     selectedShopId.value = null
+    selectedChannel.value = null
     selectedSession.value = null
     messages.value = []
+    newChatVisible.value = false
     clearAgentFilter()
     reloadContacts()
 }
@@ -335,8 +386,10 @@ const selectHighlight = () => {
     spamView.value = false
     trashView.value = false
     selectedShopId.value = null
+    selectedChannel.value = null
     selectedSession.value = null
     messages.value = []
+    newChatVisible.value = false
     if (viewMode.value === "team" && activeTab.value === "waiting") {
         activeTab.value = "active"
     }
@@ -438,16 +491,8 @@ const fetchInboxNotifications = async () => {
     }
 }
 
-const tabUnread = computed(() => {
-    const sid = selectedShopId.value
-    const inShop = (arr: any[]) => (sid ? arr.filter((s) => s?.shop?.id === sid) : arr)
-    return {
-        waiting: inShop(notifWaiting.value).length,
-        active: inShop(notifActive.value).length,
-        closed: inShop(notifReopen.value).length,
-    }
-})
-
+// Real per-shop unread, derived from the live notification feed. All current chat sessions are
+// website ones, so this is the website channel's count.
 const shopUnread = computed<Record<number, number>>(() => {
     const map: Record<number, number> = {}
     for (const s of [...notifWaiting.value, ...notifActive.value, ...notifReopen.value]) {
@@ -456,6 +501,32 @@ const shopUnread = computed<Record<number, number>>(() => {
         map[sid] = (map[sid] ?? 0) + 1
     }
     return map
+})
+
+const channelUnread = (inbox: { id: number }, channel: { key: string; unread: number }) =>
+    // ponytail: WhatsApp count is the backend stub; website uses the real feed.
+    channel.key === "website" ? (shopUnread.value[inbox.id] ?? 0) : (channel.unread ?? 0)
+
+const inboxUnread = computed<Record<number, number>>(() => {
+    const map: Record<number, number> = {}
+    for (const inbox of props.inboxes ?? []) {
+        let total = 0
+        for (const channel of inbox.channels ?? []) {
+            total += channelUnread(inbox, channel)
+        }
+        map[inbox.id] = total
+    }
+    return map
+})
+
+const tabUnread = computed(() => {
+    const sid = selectedShopId.value
+    const inShop = (arr: any[]) => (sid ? arr.filter((s) => s?.shop?.id === sid) : arr)
+    return {
+        waiting: inShop(notifWaiting.value).length,
+        active: inShop(notifActive.value).length,
+        closed: inShop(notifReopen.value).length,
+    }
 })
 
 const openChat = (c: Contact) => {
@@ -484,6 +555,20 @@ const onRestoreFromThread = () => {
     selectedSession.value = null
     messages.value = []
     fetchInboxNotifications()
+}
+
+const onWhatsappChatCreated = (session: any) => {
+    selectedSession.value = {
+        ulid: String(session.ulid),
+        contact_name: session.contact_name,
+        guest_identifier: session.guest_identifier ?? session.contact_name,
+        status: session.status,
+        priority: session.priority,
+        shop: session.shop,
+        organisation: props.organisation,
+    } as SessionAPI
+    messages.value = []
+    updateUrl(String(session.ulid))
 }
 
 const handleClickContact = (c: Contact) => {
@@ -520,6 +605,8 @@ const onAssignSelfSuccess = async () => {
 }
 
 const updateUrl = (ulid: string) => {
+    // ponytail: the conversation route binds website ChatSession ulids only; no deep-link for meta sessions yet.
+    if (selectedChannel.value === "whatsapp") return
     const url = route("grp.org.chat.inbox.conversation", [props.organisation.slug, ulid])
     window.history.replaceState(window.history.state, "", url)
 }
@@ -655,14 +742,14 @@ onMounted(async () => {
 
     // Preselect the shop when opened from the shop-level nav entry.
     if (props.preselectShopId && props.inboxes?.some((i) => i.id === props.preselectShopId)) {
-        selectedShopId.value = props.preselectShopId
+        revealInbox(props.preselectShopId)
     }
 
     const init = props.initialSession
 
     // Jump to the shop (inbox) the opened chat belongs to.
     if (init?.shop?.id) {
-        selectedShopId.value = init.shop.id
+        revealInbox(init.shop.id)
     }
 
     if (init && ["waiting", "active", "closed"].includes(init.status) && activeTab.value !== init.status) {
@@ -726,6 +813,9 @@ onUnmounted(() => {
         <SettingChat :initial-tab="settingInitialTab" :session-ulid="selectedSession?.ulid" @close="chatSettingVisible = false" />
     </Dialog>
 
+    <NewWhatsappChatDialog v-model:visible="newChatVisible" :shop-id="selectedShopId"
+        @created="onWhatsappChatCreated" />
+
     <div class="flex border-t border-gray-200 h-[calc(100vh-10rem)] bg-white">
         <!-- PANEL 1: Inboxes (shops the agent handles) -->
         <div class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200"
@@ -746,26 +836,49 @@ onUnmounted(() => {
 
             <!-- Shop list -->
             <div class="flex-1 overflow-y-auto py-1">
-                <button v-for="inbox in inboxes" :key="inbox.id" type="button" @click="selectShop(inbox.id)"
-                    v-tooltip="inboxRailCollapsed ? inbox.name : undefined"
-                    class="w-full flex items-center transition-colors relative"
-                    :class="[
-                        inboxRailCollapsed ? 'justify-center py-2' : 'gap-2.5 px-3 py-2.5',
-                        selectedShopId === inbox.id ? 'font-medium text-gray-800' : 'text-gray-700 hover:bg-gray-100',
-                    ]"
-                    :style="selectedShopId === inbox.id ? selectedItemStyle : {}">
-                    <div class="relative shrink-0">
-                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold"
-                            :style="shopAvatarStyle(inbox)">
-                            {{ shopInitials(inbox.name) }}
+                <div v-for="inbox in inboxes" :key="inbox.id">
+                    <button type="button" @click="toggleInbox(inbox.id)"
+                        v-tooltip="inboxRailCollapsed ? inbox.name : undefined"
+                        class="w-full flex items-center transition-colors relative"
+                        :class="[
+                            inboxRailCollapsed ? 'justify-center py-2' : 'gap-2.5 px-3 py-2.5',
+                            selectedShopId === inbox.id ? 'font-medium text-gray-800' : 'text-gray-700 hover:bg-gray-100',
+                        ]">
+                        <div class="relative shrink-0">
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold"
+                                :style="shopAvatarStyle(inbox)">
+                                {{ shopInitials(inbox.name) }}
+                            </div>
+                            <span v-if="inboxUnread[inbox.id]"
+                                class="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500 ring-2 ring-gray-50">
+                                {{ inboxUnread[inbox.id] }}
+                            </span>
                         </div>
-                        <span v-if="shopUnread[inbox.id]"
-                            class="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500 ring-2 ring-gray-50">
-                            {{ shopUnread[inbox.id] }}
-                        </span>
+                        <span v-if="!inboxRailCollapsed" class="truncate text-sm flex-1 text-left">{{ inbox.name }}</span>
+                        <FontAwesomeIcon v-if="!inboxRailCollapsed"
+                            :icon="expandedInboxIds.includes(inbox.id) ? faAngleDown : faAngleRight"
+                            class="text-[10px] text-gray-400 shrink-0" />
+                    </button>
+
+                    <div v-if="!inboxRailCollapsed && expandedInboxIds.includes(inbox.id)" class="pb-1">
+                        <button v-for="channel in inbox.channels" :key="channel.key" type="button"
+                            @click="selectChannel(inbox.id, channel.key)"
+                            class="w-full flex items-center gap-2 py-1.5 pr-3 pl-[38px] text-sm transition-colors"
+                            :class="selectedShopId === inbox.id && selectedChannel === channel.key
+                                ? 'font-medium text-gray-800'
+                                : 'text-gray-600 hover:bg-gray-100'"
+                            :style="selectedShopId === inbox.id && selectedChannel === channel.key ? selectedItemStyle : {}">
+                            <FontAwesomeIcon :icon="channel.key === 'whatsapp' ? faWhatsapp : faGlobe"
+                                class="text-xs shrink-0"
+                                :class="channel.key === 'whatsapp' ? 'text-green-600' : 'text-gray-400'" />
+                            <span class="truncate flex-1 text-left">{{ channel.name }}</span>
+                            <span v-if="channelUnread(inbox, channel)"
+                                class="min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500">
+                                {{ channelUnread(inbox, channel) }}
+                            </span>
+                        </button>
                     </div>
-                    <span v-if="!inboxRailCollapsed" class="truncate text-sm">{{ inbox.name }}</span>
-                </button>
+                </div>
                 <div v-if="!inboxes.length && !inboxRailCollapsed" class="px-3 py-6 text-xs text-gray-400 text-center">
                     {{ trans("No inboxes assigned") }}
                 </div>
@@ -835,6 +948,14 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <div class="flex items-center gap-0.5 shrink-0 self-start">
+                    <button v-if="selectedChannel === 'whatsapp'" type="button"
+                        v-tooltip="trans('New WhatsApp chat')"
+                        class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 text-green-600 text-[11px] font-medium"
+                        @click="newChatVisible = true">
+                        <FontAwesomeIcon :icon="faPlus" class="text-xs" />
+                        {{ trans("New chat") }}
+                    </button>
+
                     <!-- Filter by agent -->
                     <div class="relative">
                         <button type="button" v-tooltip="trans('Filter by agent')"
@@ -944,7 +1065,7 @@ onUnmounted(() => {
                                 <LoadingIcon class="w-8 h-8 text-white" />
                             </div>
 
-                            <button type="button"
+                            <button v-if="selectedChannel !== 'whatsapp'" type="button"
                                 class="absolute top-1/2 right-2 -translate-y-1/2 z-30 w-7 h-7 flex items-center justify-center rounded-full bg-white text-gray-500 shadow-md ring-1 ring-gray-200 hover:bg-gray-100 hover:text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"
                                 :class="{ '!opacity-100': openMenuUlid === c.ulid }"
                                 @click.stop="toggleRowMenu(c.ulid, $event)">
@@ -977,7 +1098,7 @@ onUnmounted(() => {
                                 </div>
                                 <div class="flex items-center gap-1.5">
                                     <span class="text-xs text-gray-500 truncate flex-1 leading-snug">{{ c.lastMessage }}</span>
-                                    <button v-if="!trashView" type="button"
+                                    <button v-if="!trashView && selectedChannel !== 'whatsapp'" type="button"
                                         v-tooltip="c.is_highlighted ? trans('Remove highlight') : trans('Highlight')"
                                         class="shrink-0 flex items-center justify-center transition-opacity"
                                         :class="c.is_highlighted ? 'text-amber-400 opacity-100' : 'text-gray-300 opacity-0 group-hover:opacity-100 hover:text-amber-400'"
@@ -1014,7 +1135,13 @@ onUnmounted(() => {
             </div>
 
             <div v-else class="h-full">
-                <MessageAreaAgent :messages="messages" :session="selectedSession"
+                <WhatsappMessageAreaAgent v-if="selectedChannel === 'whatsapp'"
+                    :messages="messages" :session="selectedSession"
+                    :organisation-slug="organisation.slug"
+                    @back="selectedSession = null" @messages-read="onMessagesRead"
+                    @assign-self-success="onAssignSelfSuccess"
+                    @close-session="closeSession" />
+                <MessageAreaAgent v-else :messages="messages" :session="selectedSession"
                     @back="selectedSession = null" @send-message="handleSendMessage"
                     @close-session="closeSession" @view-history="showHistoryPanel"
                     @view-user-profile="showProfilePanel" @view-message-details="showMessageDetailsPanel"

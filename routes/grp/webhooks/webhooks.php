@@ -7,6 +7,8 @@
  */
 
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
+use App\Actions\Chat\Whatsapp\HandleWhatsappWebhook;
+use App\Actions\Chat\Whatsapp\VerifyWhatsappWebhook;
 use App\Actions\Comms\Notifications\GetSnsNotification;
 use App\Actions\CRM\Customer\GoogleAds\CallbackShopGoogleAds;
 use App\Actions\CRM\TrafficSource\ReceiveTrafficSourceCostWebhook;
@@ -31,6 +33,11 @@ Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns')->middleware(Sample::never());
     Route::any('checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
     Route::post('traffic-source-costs', ReceiveTrafficSourceCostWebhook::class)->name('traffic_source_costs');
+
+    Route::prefix('whatsapp')->name('whatsapp.')->group(function () {
+        Route::get('/', VerifyWhatsappWebhook::class)->name('verify');
+        Route::post('/', HandleWhatsappWebhook::class)->name('handle');
+    });
 });
 
 Route::get('google-ads/callback', CallbackShopGoogleAds::class)->name('google_ads.callback');

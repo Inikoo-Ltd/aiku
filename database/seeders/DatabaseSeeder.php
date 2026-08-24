@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             TimezoneSeeder::class,
             LanguageSeeder::class,
             TaxCategorySeeder::class,
+            MetaChannelSeeder::class,
         ]);
         Artisan::call('import:tariff_codes harmonized-system.csv');
     }

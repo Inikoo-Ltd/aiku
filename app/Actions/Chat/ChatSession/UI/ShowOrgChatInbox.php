@@ -108,6 +108,12 @@ class ShowOrgChatInbox extends OrgAction
         return (new ChatSessionListResource($this->selectedSession))->resolve();
     }
 
+    /**
+     * The website channel comes from the agent's real shop assignments; the WhatsApp channel is a
+     * ponytail: static stub until chat sessions carry a channel and WhatsApp inboxes are modelled.
+     *
+     * @return array<int, array{id: int, name: string, slug: string, type: string|null, channels: array<int, array{key: string, name: string, unread: int}>}>
+     */
     private function getAgentInboxes(Organisation $organisation, ActionRequest $request): array
     {
         $agent = $request->user()?->chatAgent;
@@ -135,10 +141,14 @@ class ShowOrgChatInbox extends OrgAction
         }
 
         return $shopsQuery->get()->map(fn ($shop) => [
-            'id'   => $shop->id,
-            'name' => $shop->name,
-            'slug' => $shop->slug,
-            'type' => $shop->type?->value,
+            'id'       => $shop->id,
+            'name'     => $shop->name,
+            'slug'     => $shop->slug,
+            'type'     => $shop->type?->value,
+            'channels' => [
+                ['key' => 'website', 'name' => __('Website'), 'unread' => 0],
+                ['key' => 'whatsapp', 'name' => __('WhatsApp'), 'unread' => 0],
+            ],
         ])->values()->all();
     }
 
