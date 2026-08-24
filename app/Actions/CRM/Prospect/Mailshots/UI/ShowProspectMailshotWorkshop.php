@@ -25,6 +25,7 @@ use App\Actions\Comms\Mailshot\GetProspectMailshotMergeTags;
 use App\Http\Resources\Comms\MailshotTemplatesResource;
 use App\Http\Resources\Mail\EmailTemplateResource;
 use App\Actions\Comms\Mailshot\UI\IndexPreviousMailshotTemplates;
+use App\Actions\Comms\Mailshot\UI\WithMailshotJourney;
 use App\Actions\Comms\Mailshot\UI\IndexMailshotFromOtherStoreTemplates;
 use App\Actions\Traits\WithProspectsSubNavigation;
 use App\Models\Comms\EmailTemplate;
@@ -32,6 +33,7 @@ use App\Models\Comms\EmailTemplate;
 class ShowProspectMailshotWorkshop extends OrgAction
 {
     use WithActionButtons;
+    use WithMailshotJourney;
     use WithOutboxBuilder;
     use WithProspectsSubNavigation;
 
@@ -78,7 +80,10 @@ class ShowProspectMailshotWorkshop extends OrgAction
                 ),
                 'title'       => $mailshot->subject,
                 'pageHead'    => [
-                    'title'     => $mailshot->subject,
+                    'title'      => $mailshot->subject,
+                    'model'      => __('Subject:'),
+                    'modelStyle' => 'text-sm',
+                    'titleStyle' => 'font-normal text-lg',
                     'subNavigation' => $this->getSubNavigation($this->shop, $request),
                     'icon'      => [
                         'tooltip' => __('snapshot'),
@@ -86,16 +91,39 @@ class ShowProspectMailshotWorkshop extends OrgAction
                     ],
                     'actions'   => [
                         [
-                            'type'  => 'button',
-                            'style' => 'exit',
-                            'label' => __('Exit workshop'),
-                            'route' => [
+                            'type'      => 'button',
+                            'style'     => 'primary',
+                            'icon'      => false,
+                            'iconRight' => 'fal fa-arrow-right',
+                            'label'     => __('Review & send'),
+                            'route'     => [
                                 'name'       => preg_replace('/workshop$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ]
                         ],
                     ]
 
+                ],
+                'journey' => $this->getMailshotJourney($mailshot, 'compose'),
+                'openTemplateSelector' => !$hasPublishedVersion && !$templateLayout && $email->unpublishedSnapshot->created_at->eq($email->unpublishedSnapshot->updated_at),
+                'mailshot' => [
+                    'subject'      => $mailshot->subject,
+                    'name'         => $mailshot->name,
+                    'preview_text' => $mailshot->preview_text,
+                ],
+                'updateMailshotRoute' => [
+                    'name'       => 'grp.models.shop.prospect.mailshot.update',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'patch'
+                ],
+                'suggestCopyRoute' => [
+                    'name'       => 'grp.json.mailshot.copy_suggestion',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'post'
                 ],
                 EmailTemplateTabsEnum::TEMPLATES->value => $this->tab == EmailTemplateTabsEnum::TEMPLATES->value ?
                     fn () => EmailTemplateResource::collection(

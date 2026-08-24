@@ -727,6 +727,23 @@ test('one-click create mailshot redirects to recipients', function () {
     ]));
 });
 
+test('one-click create prospect mailshot redirects to recipients', function () {
+    $response = $this->post(route('grp.models.shop.prospect.mailshot.store', [$this->shop->id]));
+
+    $outbox   = $this->shop->outboxes()->where('outboxes.code', OutboxCodeEnum::INVITE)->first();
+    $mailshot = Mailshot::where('outbox_id', $outbox->id)->latest('id')->first();
+    expect($mailshot)->not->toBeNull()
+        ->and($mailshot->type)->toBe(MailshotTypeEnum::INVITE)
+        ->and($mailshot->subject)->not->toBeEmpty()
+        ->and($mailshot->recipients_recipe)->toBe(['all_prospects' => ['value' => true]]);
+
+    $response->assertRedirect(route('grp.org.shops.show.crm.prospects.mailshots.recipients', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $mailshot->slug
+    ]));
+});
+
 test('UI edit mailshot', function (Mailshot $mailShot) {
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.org.shops.show.marketing.mailshots.edit', [

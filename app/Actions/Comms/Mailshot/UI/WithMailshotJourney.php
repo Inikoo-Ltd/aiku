@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
+use App\Actions\CRM\Prospect\Mailshots\GetProspectMailshotRecipientsQueryBuilder;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Models\Comms\Mailshot;
@@ -25,9 +26,13 @@ trait WithMailshotJourney
             return [];
         }
 
-        $isMarketing = $mailshot->type === MailshotTypeEnum::MARKETING;
-        $prefix      = $isMarketing ? 'mailshots' : 'newsletters';
-        $parameters  = [
+        $routeBase = match ($mailshot->type) {
+            MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshots',
+            MailshotTypeEnum::INVITE => 'grp.org.shops.show.crm.prospects.mailshots',
+            default => 'grp.org.shops.show.marketing.newsletters',
+        };
+        $hasRecipientsStep = in_array($mailshot->type, [MailshotTypeEnum::MARKETING, MailshotTypeEnum::INVITE]);
+        $parameters        = [
             $mailshot->organisation->slug,
             $mailshot->shop->slug,
             $mailshot->slug
@@ -39,15 +44,17 @@ trait WithMailshotJourney
             || ($snapshot && !$snapshot->updated_at->eq($snapshot->created_at));
 
         $steps = [];
-        if ($isMarketing) {
-            $estimatedRecipients = GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count('customers.id') ?? 0;
+        if ($hasRecipientsStep) {
+            $estimatedRecipients = $mailshot->type === MailshotTypeEnum::INVITE
+                ? GetProspectMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count('prospects.id') ?? 0
+                : GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count('customers.id') ?? 0;
 
             $steps[] = [
                 'key'   => 'recipients',
                 'done'  => (bool) $mailshot->recipients_recipe,
                 'label' => __('Recipients').' ('.Number::abbreviate($estimatedRecipients).')',
                 'route' => [
-                    'name'       => 'grp.org.shops.show.marketing.mailshots.recipients',
+                    'name'       => "$routeBase.recipients",
                     'parameters' => $parameters
                 ]
             ];
@@ -57,7 +64,7 @@ trait WithMailshotJourney
             'done'  => $isComposed,
             'label' => __('Compose'),
             'route' => [
-                'name'       => "grp.org.shops.show.marketing.$prefix.workshop",
+                'name'       => "$routeBase.workshop",
                 'parameters' => $parameters
             ]
         ];
@@ -67,7 +74,7 @@ trait WithMailshotJourney
             'disabled' => !$isComposed,
             'label'    => __('Review & send'),
             'route' => [
-                'name'       => "grp.org.shops.show.marketing.$prefix.show",
+                'name'       => "$routeBase.show",
                 'parameters' => $parameters
             ]
         ];

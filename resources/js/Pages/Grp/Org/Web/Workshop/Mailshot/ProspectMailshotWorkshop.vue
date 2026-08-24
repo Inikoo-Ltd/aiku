@@ -18,8 +18,10 @@ import "@vueform/multiselect/themes/default.css"
 import Tag from '@/Components/Tag.vue'
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faExclamationTriangle } from '@fal'
+import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faExclamationTriangle, faSyncAlt } from '@fal'
 import { faUserCog } from '@fas'
+import MailshotJourney from '@/Components/Navigation/MailshotJourney.vue'
+import MailshotSubjectEdit from '@/Components/Workshop/Mailshot/MailshotSubjectEdit.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import Modal from '@/Components/Utils/Modal.vue'
 import { routeType } from '@/types/route'
@@ -49,7 +51,15 @@ const props = defineProps<{
     storeNewTemplateRoute: routeType
     unpublished_layout: any
     compiledLayout: string | null
+    journey?: any
+    openTemplateSelector?: boolean
+    mailshot: { subject: string, name: string | null, preview_text: string | null }
+    updateMailshotRoute: routeType
+    suggestCopyRoute: routeType
 }>()
+
+const mailshotSavedSubject = ref(props.mailshot.subject)
+const pageHeadData = computed(() => ({ ...props.pageHead, title: mailshotSavedSubject.value }))
 
 const comment = ref('')
 const isLoading = ref(false)
@@ -318,6 +328,10 @@ onMounted(() => {
   window.addEventListener('popstate', () => {
     router.reload()
   });
+
+  if (props.openTemplateSelector) {
+    isModalCloneTemplateEmail.value = true
+  }
 })
 </script>
 
@@ -325,19 +339,18 @@ onMounted(() => {
 <template>
 
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead">
+    <PageHeading :data="pageHeadData">
+        <template #afterTitle>
+            <MailshotSubjectEdit :mailshot="mailshot" :updateMailshotRoute="updateMailshotRoute"
+                :suggestCopyRoute="suggestCopyRoute" @saved="subject => mailshotSavedSubject = subject" />
+        </template>
+        <template #afterTitle2>
+            <MailshotJourney :steps="journey" class="ml-4" />
+        </template>
         <template #otherBefore>
-            <div>
-                <div class="text-sm text-gray-600 mr-2 flex items-center gap-2">
-                    Estimated email size: approximately <span class="font-semibold">{{ compiledLayoutSize }} KB</span>
-                    <FontAwesomeIcon v-if="compiledLayoutSize > 102" :icon="faExclamationTriangle"
-                        class="text-yellow-500 text-lg" v-tooltip="emailSizeWarningTooltip" fixed-width />
-                </div>
-            </div>
-
             <Button @click="() => isModalCloneTemplateEmail = true" :label="trans('Choose Template')"
                 class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
-                :icon="faPlus" :disabled="!isBeefreeReady" />
+                :icon="faSyncAlt" :disabled="!isBeefreeReady" />
         </template>
     </PageHeading>
 
@@ -360,6 +373,12 @@ onMounted(() => {
     <!-- unlayer -->
     <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
         :snapshot="snapshot" ref="_unlayer" />
+
+    <div v-if="builder == 'beefree' && compiledLayoutSize > 102"
+        class="flex justify-end items-center gap-2 px-4 py-2 border-t border-gray-200 text-xs text-yellow-600">
+        <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" v-tooltip="emailSizeWarningTooltip" fixed-width />
+        Estimated email size <span class="font-semibold">{{ compiledLayoutSize }} KB</span> exceeds Gmail's 102 KB limit
+    </div>
 
     <div v-else>
         <EmptyState :data="{
