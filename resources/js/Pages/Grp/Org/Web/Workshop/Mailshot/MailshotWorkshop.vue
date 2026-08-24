@@ -21,6 +21,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faExclamationTriangle, faPencil, faSyncAlt } from '@fal'
 import { faUserCog, faSparkles } from '@fas'
 import Popover from '@/Components/Popover.vue'
+import MailshotJourney from '@/Components/Navigation/MailshotJourney.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import Modal from '@/Components/Utils/Modal.vue'
 import { routeType } from '@/types/route'
@@ -55,6 +56,7 @@ const props = defineProps<{
     storeNewTemplateRoute: routeType
     mailshot: { subject: string, name: string | null, preview_text: string | null }
     openTemplateSelector?: boolean
+    journey?: any
     updateMailshotRoute: routeType
     suggestCopyRoute: routeType
 }>()
@@ -408,6 +410,9 @@ onMounted(() => {
                     </div>
                 </template>
             </Popover>
+        </template>
+        <template #afterTitle2>
+            <MailshotJourney :steps="journey" class="ml-4" />
         </template>
         <template #otherBefore>
             <div>

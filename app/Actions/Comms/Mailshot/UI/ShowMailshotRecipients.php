@@ -16,6 +16,7 @@ use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 class ShowMailshotRecipients extends OrgAction
 {
     use WithMarketingAuthorisation;
+    use WithMailshotJourney;
 
     public function handle(Mailshot $mailshot, ActionRequest $request): Response
     {
@@ -50,25 +51,12 @@ class ShowMailshotRecipients extends OrgAction
                     'title' => __('Setup Recipients'),
                     'actions'   => [
                         [
-                            'type'  => 'button',
-                            'style' => 'exit',
-                            'icon'  => false,
-                            'label' => __('View mailshot'),
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.marketing.mailshots.show',
-                                'parameters' => [
-                                    $this->organisation->slug,
-                                    $this->shop->slug,
-                                    $mailshot->slug
-                                ]
-                            ]
-                        ],
-                        [
-                            'type'  => 'button',
-                            'style' => 'primary',
-                            'icon'  => 'fal fa-drafting-compass',
-                            'label' => __('Compose email'),
-                            'route' => [
+                            'type'      => 'button',
+                            'style'     => 'primary',
+                            'icon'      => false,
+                            'iconRight' => 'fal fa-arrow-right',
+                            'label'     => __('Compose email'),
+                            'route'     => [
                                 'name'       => 'grp.org.shops.show.marketing.mailshots.workshop',
                                 'parameters' => [
                                     $this->organisation->slug,
@@ -79,6 +67,7 @@ class ShowMailshotRecipients extends OrgAction
                         ],
                     ]
                 ],
+                'journey'          => $this->getMailshotJourney($mailshot, 'recipients'),
                 'filtersStructure' => $filtersStructure,
                 'filters'          => $currentFilters,
                 'recipientFilterRoute' => [

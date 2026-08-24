@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
+import MailshotJourney from "@/Components/Navigation/MailshotJourney.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import { capitalize } from "@/Composables/capitalize";
@@ -35,6 +36,7 @@ library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane, faBull
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
+    journey?: any
     tabs: TSTabs
     showcase?: string
     email_preview?: Object
@@ -644,6 +646,9 @@ watch(
             ['in_process', 'ready', 'scheduled'].includes(props.status ?? '') && !props.isSecondWave
         ">
             <span>| Estimated Recipients : {{ formatNumber(props.estimatedRecipients) ?? 0 }}</span>
+        </template>
+        <template #afterTitle2>
+            <MailshotJourney :steps="journey" class="ml-4" />
         </template>
         <template #otherBefore>
             <div class="flex" v-if="shouldShowButtons">

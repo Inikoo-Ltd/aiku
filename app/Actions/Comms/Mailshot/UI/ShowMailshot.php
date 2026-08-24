@@ -37,6 +37,7 @@ use App\Models\Web\Website;
  */
 class ShowMailshot extends OrgAction
 {
+    use WithMailshotJourney;
     use WithMarketingAuthorisation;
 
     public function handle(Mailshot $mailshot): Mailshot
@@ -95,6 +96,7 @@ class ShowMailshot extends OrgAction
             'Comms/Mailshot',
             [
                 'title'                           => $mailshot->id,
+                'journey'                         => $this->getMailshotJourney($mailshot, 'review'),
                 'breadcrumbs'                     => $this->getBreadcrumbs(
                     $mailshot,
                     $request->route()->getName(),

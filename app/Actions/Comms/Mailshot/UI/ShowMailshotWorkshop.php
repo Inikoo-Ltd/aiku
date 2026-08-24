@@ -31,6 +31,7 @@ use App\Http\Resources\Mail\EmailTemplateResource;
 class ShowMailshotWorkshop extends OrgAction
 {
     use WithActionButtons;
+    use WithMailshotJourney;
     use WithOutboxBuilder;
 
     public function handle(Mailshot $mailshot): Mailshot
@@ -179,6 +180,7 @@ class ShowMailshotWorkshop extends OrgAction
                     ],
                     'method' => 'post'
                 ],
+                'journey' => $this->getMailshotJourney($mailshot, 'compose'),
                 'openTemplateSelector' => !$hasPublishedVersion && !$templateLayout && $email->unpublishedSnapshot->created_at->eq($email->unpublishedSnapshot->updated_at),
                 'mailshot' => [
                     'subject'      => $mailshot->subject,
