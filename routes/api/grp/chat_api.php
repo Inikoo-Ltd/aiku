@@ -23,6 +23,7 @@ use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreGuestProfile;
 use App\Actions\Chat\ChatSession\StoreOfflineMessage;
 use App\Actions\Chat\ChatSession\SyncChatSessionByEmail;
+use App\Actions\Chat\ChatSession\ToggleChatMessageReaction;
 use App\Actions\Chat\ChatSession\TranslateSessionMessages;
 use App\Actions\Chat\ChatSession\TranslateSingleMessage;
 use App\Actions\Chat\ChatSession\UpdateChatAgent;
@@ -49,6 +50,7 @@ Route::get('/status', GetChatStatus::class)->name('status');
 Route::get('chat/attachment/{ulid}', DownloadChatAttachment::class)->name('chat.attachment.download');
 Route::get('/languages', [GetLanguagesOptions::class, 'getLanguageJson'])->name('languages.index');
 Route::post('/messages/{chatMessage}/translate', TranslateSingleMessage::class)->name('messages.translate');
+Route::post('/messages/{chatMessage}/reactions', [ToggleChatMessageReaction::class, 'asController'])->name('messages.reactions.toggle');
 Route::post('/sessions/{chatSession:ulid}/translate', TranslateSessionMessages::class)->name('sessions.translate');
 
 

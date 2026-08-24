@@ -151,6 +151,12 @@ export interface ChatInboxGroup {
 	contacts: Contact[]
 }
 
+export interface ChatMessageReactionGroup {
+	emoji: string
+	count: number
+	reactors: { type: string; id: number | null }[]
+}
+
 export interface ChatMessage {
 	id: string
 	message?: string
@@ -159,4 +165,5 @@ export interface ChatMessage {
 	sender_type: "guest" | "user" | "agent" | "system"
 	created_at: string
 	is_read?: boolean
+	reactions?: ChatMessageReactionGroup[]
 }
