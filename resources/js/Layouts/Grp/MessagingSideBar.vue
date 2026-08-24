@@ -91,7 +91,7 @@ const closeSearch = () => {
     searchResults.value = []
 }
 
-const isOnline = (id: number) => !!useLiveUsers().liveUsers[id]
+const isOnline = (id: number) => useLiveUsers().liveUsers[id]?.action === 'navigate'
 
 const getCurrentPage = (coworkerId: number) => useLiveUsers().liveUsers[coworkerId]?.current_page
 
