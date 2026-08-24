@@ -11,6 +11,8 @@ namespace App\Actions\CRM\Customer\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\GetCustomerFilterStructure;
 use App\Actions\CRM\Customer\GetCustomersQueryByRecipe;
+use App\Actions\CRM\TrafficSource\GetAttributionWindow;
+use App\Actions\CRM\TrafficSource\WithAttributionWindow;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
@@ -47,6 +49,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCustomers extends OrgAction
 {
+    use WithAttributionWindow;
     use WithCustomersSubNavigation;
     use WithCRMAuthorisation;
     use HasSearchableText;
@@ -193,7 +196,12 @@ class IndexCustomers extends OrgAction
 
         $query
             ->whereExists($attributions()->select(DB::raw(1)))
-            ->addSelect(['attribution_share' => $attributions()->selectRaw('SUM(model_has_traffic_sources.share)')]);
+            ->addSelect(['attribution_share' => $attributions()->selectRaw('SUM(model_has_traffic_sources.share)')])
+            ->addSelect(['attributed_revenue' => $this->attributedRevenuePerCustomer(
+                (int) config('marketing.attribution_window_days', 90),
+                null,
+                $channelType->value
+            )]);
     }
 
     protected function getStateOptions(Shop $shop): array
@@ -438,7 +446,11 @@ class IndexCustomers extends OrgAction
                         ->where('model_has_traffic_sources.model_type', '=', 'Customer')
                         ->where('model_has_traffic_sources.traffic_source_id', '=', $parent->id);
                 })
-                ->addSelect('model_has_traffic_sources.share as attribution_share');
+                ->addSelect('model_has_traffic_sources.share as attribution_share')
+                ->addSelect(['attributed_revenue' => $this->attributedRevenuePerCustomer(
+                    GetAttributionWindow::run($parent->shop),
+                    $parent->id
+                )]);
         } elseif (class_basename($parent) == 'Organisation') {
             $queryBuilder
                 ->where('customers.organisation_id', $parent->id)
@@ -454,6 +466,7 @@ class IndexCustomers extends OrgAction
 
         if ($parent instanceof TrafficSource || $channelType) {
             $allowedSort[] = 'attribution_share';
+            $allowedSort[] = 'attributed_revenue';
         }
 
         if ($parent instanceof TrafficSource) {
@@ -575,7 +588,7 @@ class IndexCustomers extends OrgAction
                 $table->column(key: 'location', label: __('Location'), canBeHidden: false, searchable: true);
             }
 
-            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true, className: 'w-[18%] min-w-[160px]');
 
             if ($this->upcomingFilter !== null) {
                 $table->column(
@@ -585,7 +598,7 @@ class IndexCustomers extends OrgAction
                 );
             }
 
-            $table->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
+            $table->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
 
             if ($isDropshipping) {
                 $table->column(
@@ -618,18 +631,24 @@ class IndexCustomers extends OrgAction
             $table
                 ->column(key: 'last_invoiced_at', label: __('Last Invoice'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
                 ->column(key: 'number_invoices_type_invoice', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'sales_all', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'sales_all', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
             /* A customer touched by several channels is only partly this source's, so show the share
                rather than implying the source earned the whole of the sales beside it. */
             if ($parent instanceof TrafficSource || $channelType) {
-                $table->column(key: 'attribution_share', label: __('Attribution'), canBeHidden: true, sortable: true);
+                /* Sales beside it is everything the customer has ever spent with us, most of it placed
+                   long before this channel ever touched them. This column is the only figure that
+                   answers what the channel earned, and it is the same rule the channel's own revenue
+                   is counted by, so the rows now add up to the total on the channel page. */
+                $table->column(key: 'attributed_revenue', label: __('Attributed Revenue'), canBeHidden: false, sortable: true, type: 'currency')
+                    ->column(key: 'attribution_share', label: __('Attribution'), canBeHidden: true, sortable: true);
             }
 
             $table->column(
                 key: 'tags',
                 label: __('Tags'),
-                canBeHidden: false
+                canBeHidden: false,
+                className: 'w-72 !px-3'
             );
 
             $table->defaultSort('-created_at');

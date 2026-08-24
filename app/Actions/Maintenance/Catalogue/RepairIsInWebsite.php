@@ -8,6 +8,7 @@
 
 namespace App\Actions\Maintenance\Catalogue;
 
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -40,10 +41,14 @@ class RepairIsInWebsite
         $command->info("products updated: {$productsUpdated}");
 
         foreach (['product_categories', 'collections'] as $tableName) {
+            $stateRule = $tableName === 'product_categories'
+                ? " and t.state in ('".ProductCategoryStateEnum::ACTIVE->value."', '".ProductCategoryStateEnum::DISCONTINUING->value."')"
+                : '';
+
             $updated = DB::update("
                 update {$tableName} set is_in_website = computed.value
                 from (
-                    select t.id, (w.id is not null) as value
+                    select t.id, (w.id is not null{$stateRule}) as value
                     from {$tableName} t
                     left join webpages w on w.id = t.webpage_id and w.state = ? and w.deleted_at is null
                 ) computed

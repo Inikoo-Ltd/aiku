@@ -31,7 +31,7 @@ trait WithMcpSqlAccess
         }
 
         if (!$request->user()?->can_use_mcp_sql) {
-            return Response::error('SQL access is not enabled for this user.');
+            return Response::error('SQL access is not enabled for this user. Do not retry: ask a sysadmin to enable it, and meanwhile answer with the purpose-built tools (call my-access-tool to see what you can reach).');
         }
 
         return null;

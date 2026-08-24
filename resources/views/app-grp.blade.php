@@ -2,7 +2,7 @@
 <html class="h-full text-[12px] lg:text-[16px]" lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title inertia>{{ config('app.name', 'Aiku') }}</title>
 
     <!-- Fonts -->
@@ -14,11 +14,13 @@
 
 
     @if (config('app.env') === 'local')
-        <link rel="icon" type="image/png" href="{{ url('favicon_local.png') }}">
         <link rel="icon" href="{{ url('favicon_local.svg') }}" type="image/svg+xml">
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ url('favicon_local-32.png') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ url('favicon_local-180.png') }}">
     @else
-        <link rel="icon" type="image/png" href="{{ url('favicon.png') }}">
         <link rel="icon" href="{{ url('favicon.svg') }}" type="image/svg+xml">
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ url('favicon-32.png') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ url('favicon-180.png') }}">
     @endif
 
     @if (config('app.env') === 'staging')

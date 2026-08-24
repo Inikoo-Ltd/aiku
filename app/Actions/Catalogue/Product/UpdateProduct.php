@@ -292,7 +292,7 @@ class UpdateProduct extends OrgAction
             UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
         }
 
-        if (Arr::hasAny($changed, ['state', 'status', 'exclusive_for_customer_id'])) {
+        if (Arr::hasAny($changed, ['state', 'status', 'is_for_sale', 'exclusive_for_customer_id'])) {
             $this->productHydrators($product);
         }
 

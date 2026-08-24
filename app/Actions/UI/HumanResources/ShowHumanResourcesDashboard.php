@@ -10,6 +10,7 @@ namespace App\Actions\UI\HumanResources;
 
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\GetStaffChatAnalytics;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Leave\LeaveCategoryEnum;
@@ -59,6 +60,7 @@ class ShowHumanResourcesDashboard extends OrgAction
         $lateCount       = $attendance->where('is_late', true)->count();
         $workingCount    = $this->organisation->humanResourcesStats->number_employees_state_working;
         $absentCount     = max(0, $workingCount - $presentCount - $onLeaveCount);
+        $staffChatInsights = GetStaffChatAnalytics::run($this->organisation->group, 30, $this->organisation);
 
         return Inertia::render(
             'Org/HumanResources/HumanResourcesDashboard',
@@ -138,6 +140,16 @@ class ShowHumanResourcesDashboard extends OrgAction
                             'parameters' => $routeParameters
                         ]
                     ],
+                    [
+                        'name'  => __('Staff chat'),
+                        'stat'  => $staffChatInsights['messages'],
+                        'color' => 'sky',
+                        'icon'  => ['fal', 'fa-comments-alt'],
+                        'route' => [
+                            'name'       => 'grp.org.hr.staff_chat.index',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
                 ],
                 'attendanceStats' => [
                     [
@@ -181,18 +193,26 @@ class ShowHumanResourcesDashboard extends OrgAction
                         ],
                     ],
                     [
-                        'label' => __('Create clocking machine'),
-                        'icon'  => ['fal', 'fa-chess-clock'],
+                        'label' => __('Record leave (sick, annual...)'),
+                        'icon'  => ['fal', 'fa-notes-medical'],
                         'route' => [
-                            'name'       => 'grp.org.hr.clocking_machines.index',
+                            'name'       => 'grp.org.hr.leaves.index',
+                            'parameters' => array_merge($routeParameters, ['record' => 1]),
+                        ],
+                    ],
+                    [
+                        'label' => __('Leave requests'),
+                        'icon'  => ['fal', 'fa-calendar-minus'],
+                        'route' => [
+                            'name'       => 'grp.org.hr.leaves.index',
                             'parameters' => $routeParameters,
                         ],
                     ],
                     [
-                        'label' => __('Create working place'),
-                        'icon'  => ['fal', 'fa-building'],
+                        'label' => __('Leave calendar'),
+                        'icon'  => ['fal', 'fa-calendar-alt'],
                         'route' => [
-                            'name'       => 'grp.org.hr.workplaces.create',
+                            'name'       => 'grp.org.hr.leaves.dashboard',
                             'parameters' => $routeParameters,
                         ],
                     ],

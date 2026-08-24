@@ -138,8 +138,6 @@ class DeliveryNoteItem extends Model
         'is_packed'                  => 'boolean',
         'is_done'                    => 'boolean',
         'need_packing'               => 'boolean',
-        'has_waiting_warehouse'      => 'boolean',
-        'has_waiting_crm'            => 'boolean',
         'quantity_waiting_warehouse' => 'decimal:6',
         'quantity_waiting_crm'       => 'decimal:6',
     ];
@@ -149,6 +147,21 @@ class DeliveryNoteItem extends Model
     ];
 
     protected $guarded = [];
+
+    /**
+     * Both flags are generated columns in the database, so the row can never disagree with its
+     * quantity. A model in hand that has just been updated has not read the row back, so the same
+     * derivation is applied here: the flag is the quantity, in memory as on disk.
+     */
+    public function getHasWaitingWarehouseAttribute(): bool
+    {
+        return (float)$this->quantity_waiting_warehouse > 0;
+    }
+
+    public function getHasWaitingCrmAttribute(): bool
+    {
+        return (float)$this->quantity_waiting_crm > 0;
+    }
 
     protected static function booted(): void
     {

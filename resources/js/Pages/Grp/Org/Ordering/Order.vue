@@ -17,6 +17,7 @@ import Timeline from "@/Components/Utils/Timeline.vue"
 import Popover from "@/Components/Popover.vue"
 import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable, Dialog } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { trans } from "laravel-vue-i18n"
@@ -149,6 +150,7 @@ const props = defineProps<{
     }
 
     pageHead: PageHeadingTypes
+    staff_chat?: { context_type: string; context_id: number; audiences: { key: string; label: string }[] }
     alert?: {
         status: string
         title?: string
@@ -1562,6 +1564,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
 
         <template #other>
+            <StaffChatContextButtons v-if="staff_chat" :context="staff_chat" class="mr-2" />
             <div v-if="(!props.readonly || isShowProforma) && !is_shop_external" class="flex">
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />

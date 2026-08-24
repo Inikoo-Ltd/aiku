@@ -41,6 +41,7 @@ const emits = defineEmits<{
             :disabled="disabled" 
             :name="inputName"
             :id="inputName"
+            :aria-label="placeholder || undefined"
             :rows
             :placeholder="placeholder || trans('Enter text here')"
             class="pr-6 block w-full rounded-md placeholder:text-gray-400 placeholder:italic placeholder:text-xs 

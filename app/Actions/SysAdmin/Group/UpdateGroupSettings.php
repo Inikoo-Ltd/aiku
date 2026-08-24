@@ -56,6 +56,15 @@ class UpdateGroupSettings extends OrgAction
         if (Arr::has($modelData, 'page_builder_client_secret')) {
             data_set($modelData, 'settings.beefree.page_builder.client_secret', Arr::pull($modelData, 'page_builder_client_secret'));
         }
+        if (Arr::has($modelData, 'staff_chat_quick_replies')) {
+            $quickReplies = collect(explode("\n", (string) Arr::pull($modelData, 'staff_chat_quick_replies')))
+                ->map(fn ($line) => trim($line))
+                ->filter()
+                ->take(12)
+                ->values()
+                ->all();
+            data_set($modelData, 'settings.staff_chat.quick_replies', $quickReplies);
+        }
         if (Arr::has($modelData, 'grant_type')) {
             data_set($modelData, 'settings.beefree.grant_type', Arr::pull($modelData, 'grant_type'));
         }
@@ -136,6 +145,7 @@ class UpdateGroupSettings extends OrgAction
             'page_builder_client_id'            => ['sometimes', 'string', 'nullable'],
             'page_builder_client_secret'        => ['sometimes', 'string', 'nullable'],
             'grant_type'                        => ['sometimes', 'string', 'nullable'],
+            'staff_chat_quick_replies'          => ['sometimes', 'nullable', 'string', 'max:1000'],
             'extra_languages'                   => ['sometimes', 'array', 'nullable'],
             'printnode_api_key' => ['sometimes', 'string', 'nullable'],
             'print_by_printnode' => ['sometimes', 'boolean', 'nullable'],

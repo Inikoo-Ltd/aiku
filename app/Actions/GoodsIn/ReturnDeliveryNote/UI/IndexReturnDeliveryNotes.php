@@ -181,7 +181,7 @@ class IndexReturnDeliveryNotes extends OrgAction
                 'type'    => 'button',
                 'style'   => 'create',
                 'key'     => 'create-return',
-                'label'   => __('Create Return'),
+                'label'   => __('Receive Return'),
                 'icon'    => 'fal fa-plus',
             ];
         }

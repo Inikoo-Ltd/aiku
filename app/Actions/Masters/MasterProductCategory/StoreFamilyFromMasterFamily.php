@@ -66,7 +66,7 @@ class StoreFamilyFromMasterFamily extends OrgAction
                     'description'                => $masterFamily->description,
                     'description_title'          => $masterFamily->description_title,
                     'description_extra'          => $masterFamily->description_extra,
-                    'state'                      => $createWebpage ? ProductCategoryStateEnum::ACTIVE : ProductCategoryStateEnum::IN_PROCESS,
+                    'state'                      => ProductCategoryStateEnum::IN_PROCESS,
                     'type'                       => ProductCategoryTypeEnum::FAMILY,
                     'master_product_category_id' => $masterFamily->id,
                     'trade_unit_family_id'       => $masterFamily->trade_unit_family_id,
@@ -87,7 +87,7 @@ class StoreFamilyFromMasterFamily extends OrgAction
                         $data['department_id']     = $department->id;
                         $data['sub_department_id'] = null;
                     }
-                    $this->updateFoundFamily($family, $data, $createWebpage);
+                    $this->updateFoundFamily($family, Arr::except($data, 'state'), $createWebpage);
                     continue;
                 }
 

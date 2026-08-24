@@ -768,7 +768,7 @@ const handleClickOutside = (e: MouseEvent) => {
     <div class="flex flex-col h-full bg-white overflow-hidden">
         <!-- Header -->
         <header class="flex items-center gap-3 px-3 py-2 border-b">
-            <button @click="$emit('back')">
+            <button @click="$emit('back')" :aria-label="trans('Back')">
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" />
             </button>
 
@@ -824,7 +824,7 @@ const handleClickOutside = (e: MouseEvent) => {
             <FontAwesomeIcon v-if="isTranslating" :icon="faSpinner" class="text-gray-400 text-xs animate-spin" />
 
             <div class="relative" ref="menuRef">
-                <button @click.stop="isMenuOpen = !isMenuOpen">
+                <button @click.stop="isMenuOpen = !isMenuOpen" :aria-label="trans('Toggle menu')">
                     <FontAwesomeIcon :icon="faEllipsisVertical" class="text-gray-400" />
                 </button>
 
@@ -902,7 +902,7 @@ const handleClickOutside = (e: MouseEvent) => {
         <div v-if="previewType === 'image' && previewUrl" class="px-3 pb-2">
             <div class="relative inline-block">
                 <img :src="previewUrl" class="h-24 rounded-lg border object-cover" />
-                <button @click="removeFile" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1">
+                <button @click="removeFile" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1" :aria-label="trans('Remove image')">
                     <FontAwesomeIcon :icon="faXmark" />
                 </button>
             </div>
@@ -921,7 +921,7 @@ const handleClickOutside = (e: MouseEvent) => {
                         {{ (selectedFile.size / 1024).toFixed(1) }} KB
                     </div>
                 </div>
-                <button @click="removeFile" class="text-gray-400 hover:text-red-500 shrink-0 ml-2">
+                <button @click="removeFile" class="text-gray-400 hover:text-red-500 shrink-0 ml-2" :aria-label="trans('Remove file')">
                     <FontAwesomeIcon :icon="faXmark" />
                 </button>
             </div>
@@ -1019,11 +1019,11 @@ const handleClickOutside = (e: MouseEvent) => {
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">
                         <button @click="imageInput?.click()"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload image">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload image" :aria-label="trans('Upload image')">
                             <FontAwesomeIcon :icon="faImage" class="text-sm" />
                         </button>
                         <button @click="fileInput?.click()"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload file">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload file" :aria-label="trans('Upload file')">
                             <FontAwesomeIcon :icon="faPaperclip" class="text-sm" />
                         </button>
                         <Button
@@ -1042,11 +1042,11 @@ const handleClickOutside = (e: MouseEvent) => {
                             </template>
                         </Button>
                         <button @click="openJiraModal"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="trans('Create Jira ticket')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="trans('Create Jira ticket')" :aria-label="trans('Create Jira ticket')">
                             <FontAwesomeIcon :icon="faJira" class="text-sm" />
                         </button>
                     </div>
-                    <Button @click="sendMessage" :icon="faPaperPlane"></Button>
+                    <Button @click="sendMessage" :icon="faPaperPlane" :tooltip="trans('Send message')"></Button>
                 </div>
             </div>
         </footer>

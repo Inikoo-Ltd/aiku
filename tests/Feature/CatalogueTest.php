@@ -18,6 +18,7 @@ use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Product\HydrateProducts;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\StoreProductVariant;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
@@ -38,6 +39,7 @@ use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
@@ -410,6 +412,21 @@ test('update product', function (Product $product) {
 
     return $product;
 })->depends('create product');
+
+test('hydrate available quantity recovers stale not-for-sale status', function (Product $product) {
+    $product->updateQuietly(['status' => ProductStatusEnum::NOT_FOR_SALE, 'is_for_sale' => true]);
+
+    $product = ProductHydrateAvailableQuantity::run($product->refresh());
+    expect($product->status)->not->toBe(ProductStatusEnum::NOT_FOR_SALE);
+
+    $product->updateQuietly(['is_for_sale' => false]);
+    $product = ProductHydrateAvailableQuantity::run($product->refresh());
+    expect($product->status)->toBe(ProductStatusEnum::NOT_FOR_SALE);
+
+    $product->updateQuietly(['is_for_sale' => true]);
+    $product = ProductHydrateAvailableQuantity::run($product->refresh());
+    expect($product->status)->not->toBe(ProductStatusEnum::NOT_FOR_SALE);
+})->depends('update product');
 
 test('update product trade units recalculates units', function (Product $product) {
     expect((float) $product->units)->toBe(1.0);

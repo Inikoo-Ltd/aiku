@@ -128,4 +128,11 @@ return [
         'token' => env('GITHUB_TOKEN'),
         'repo' => env('GITHUB_REPO', 'Inikoo-Ltd/aiku'),
     ],
+    'klipy' => [
+        'key' => env('KLIPY_API_KEY'),
+    ],
+    'indexnow' => [
+        'key' => env('INDEXNOW_KEY'),
+    ],
+
 ];

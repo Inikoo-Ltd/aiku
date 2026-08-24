@@ -55,7 +55,6 @@ class StoreNotPickPickingFromWaitingWarehouse extends OrgAction
 
             $deliveryNoteItem->update([
                 'quantity_waiting_warehouse' => $newQuantityWaitingWarehouse,
-                'has_waiting_warehouse'      => $newQuantityWaitingWarehouse > 0,
             ]);
             DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 

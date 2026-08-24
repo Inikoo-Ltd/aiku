@@ -59,6 +59,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
+use App\Models\Accounting\Payment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\SysAdmin\Organisation;
@@ -335,6 +336,8 @@ class ShowOrder extends OrgAction
                 'id'              => $payment->id,
                 'amount'          => $payment->amount,
                 'created_at'      => $payment->created_at,
+                'method'          => $payment->method,
+                'method_label'    => Payment::methodLabel($payment->method, $payment->sub_method),
                 'payment_account' => [
                     'type' => $payment->paymentAccount->type,
                     'code' => $payment->paymentAccount->code,
@@ -357,6 +360,11 @@ class ShowOrder extends OrgAction
                 'navigation'  => [
                     'previous' => $this->getPrevious($order, $request),
                     'next'     => $this->getNext($order, $request),
+                ],
+                'staff_chat'  => [
+                    'context_type' => 'Order',
+                    'context_id'   => $order->id,
+                    'audiences'    => [['key' => 'warehouse', 'label' => __('Ask warehouse')], ['key' => 'crm', 'label' => __('Ask CRM')]],
                 ],
                 'pageHead'    => [
                     'title'           => $order->reference,
@@ -716,10 +724,9 @@ class ShowOrder extends OrgAction
         }
 
         $symbol = $order->currency->symbol ?? $order->currency->code;
-        $tilde  = $summary['is_estimated'] ? '~' : '';
 
         $marginRow = [
-            'margin_label'  => __('Margin').": {$tilde}{$summary['margin_pct']}%",
+            'margin_label'  => __('Margin').": {$summary['margin_pct']}%",
             'status'        => $summary['margin_status'],
             'thin'          => $summary['margin_status'] === 'warning' ? __('thin margin, careful with further discounts') : null,
             'profit_label'  => $symbol.number_format($summary['profit_amount'], 2),

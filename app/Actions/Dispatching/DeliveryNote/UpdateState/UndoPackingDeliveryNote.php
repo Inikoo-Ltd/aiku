@@ -54,7 +54,7 @@ class UndoPackingDeliveryNote extends OrgAction
             CalculateDeliveryNoteItemTotalPicked::run($item);
         }
 
-        $hasWaiting = $deliveryNote->deliveryNoteItems->contains(fn ($item) => $this->isWaiting($item));
+        $hasWaiting = $deliveryNote->hasBlockingItems();
 
         if ($hasWaiting) {
             data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value);

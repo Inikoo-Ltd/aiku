@@ -65,6 +65,14 @@ class EditProfile
                                 "rows"        => 5,
                                 "placeholder" => __('Enter up to 50 characters')
                             ],
+                            "nickname" => [
+                                "type"        => "input",
+                                "label"       => __("Chat nickname"),
+                                "value"       => $user->nickname,
+                                "maxLength"   => 24,
+                                "counter"     => true,
+                                "placeholder" => __("Short name shown in staff chat, e.g. Raul")
+                            ],
                             "image"    => [
                                 "type"  => "image_crop_square",
                                 "label" => __("Logo"),

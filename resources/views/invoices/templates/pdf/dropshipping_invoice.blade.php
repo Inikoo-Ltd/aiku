@@ -316,7 +316,7 @@
 
                 <td style="text-align:left" colspan="2">
                     @if($transaction->historicAsset)
-                        @php($packUnits = $transaction->historicAsset?->units > 1 ? $transaction->historicAsset->units : $transaction->model?->units)
+                        @php($packUnits = soldPackUnits($transaction->historicAsset?->units, $transaction->model?->units))
                         @if(!$pro_mode && $packUnits > 1)
                             {{ trimDecimalZeros($packUnits) }}x
                         @endif

@@ -86,7 +86,7 @@ const isUserMac = navigator.platform.includes('Mac')
                 <AskBot v-model="showAskBot" />
             </button> -->
 
-            <div class="pl-2 sm:pl-4 flex items-center gap-x-2">
+            <div class="pl-2 sm:pl-4 flex items-center gap-x-2 md:hidden">
 
                 <!-- Badge: Warehouse Waiting Items -->
                 <div v-if="layout?.dispatching_waiting_count > 0" class="relative flex items-center">

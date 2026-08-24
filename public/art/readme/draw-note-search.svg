@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive">
+  <defs>
+    <filter id="pen" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="bleed" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.014" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="22" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="1.6" result="b"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="4" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 -0.2" result="ga"/>
+      <feComposite in="b" in2="ga" operator="in" result="mottled"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="mottled"/></feMerge>
+    </filter>
+    <filter id="marker" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="21" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" seed="2" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.90  0 0 0 0 0.87  0 0 0 0 0.80  0 0 0 0.28 0" result="c"/>
+      <feComposite in="c" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <style>
+      .pen { fill: none; stroke: #23222e; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: url(#pen); }
+      .soft { stroke-width: 1.4; opacity: .6; }
+      .w { mix-blend-mode: multiply; filter: url(#bleed); stroke: none; opacity: .8; }
+      .m { fill: none; stroke-linecap: round; stroke-width: 26; opacity: .55; mix-blend-mode: multiply; filter: url(#marker); }
+      .h { fill: #23222e; filter: url(#pen); }
+      .hl { fill: #8a4b9e; filter: url(#pen); }
+    </style>
+  </defs>
+  <rect width="1200" height="750" fill="#fbf7ee"/>
+  <rect width="1200" height="750" fill="#fbf7ee" filter="url(#paper)"/>
+  <g class="w">
+    <path d="M100 140 C400 100 800 120 1000 150 C1020 220 1000 270 960 290 C700 320 300 300 120 280 C80 240 80 180 100 140 Z" fill="#6d63d6" opacity=".3"/>
+    <path d="M120 380 C400 350 700 370 900 400 C920 460 900 500 860 510 C600 530 300 520 140 500 C110 470 110 410 120 380 Z" fill="#9dcab0" opacity=".32"/>
+    <path d="M860 480 C960 450 1060 480 1050 540 C1040 590 950 610 890 580 C850 560 840 510 860 480 Z" fill="#f3c04a" opacity=".4"/>
+  </g>
+  <g class="m"><path d="M180 230 L520 226" stroke="#e88a73"/></g>
+  <g class="pen">
+    <path d="M120 170 c400 -16 700 -8 880 6 c8 40 6 76 0 96 c-260 16 -600 12 -880 4 c-8 -34 -8 -70 0 -106 z" stroke-width="3"/>
+    <path d="M960 210 c30 -6 56 8 56 34 c0 26 -26 40 -56 34 c-24 -6 -34 -30 -20 -50 c8 -10 14 -14 20 -18 z"/>
+    <path d="M1000 262 l30 30" stroke-width="4"/>
+  </g>
+  <g class="h" font-size="28"><text x="150" y="220">varnsih</text></g>
+  <g class="pen">
+    <path d="M140 330 C400 316 680 326 860 340" class="soft"/>
+    <path d="M150 340 l16 16 l30 -34" stroke-width="3"/>
+  </g>
+  <g class="h" font-size="26"><text x="200" y="360">Varnish (cache) tuning notes</text></g>
+  <g class="hl" font-size="22"><text x="200" y="420">typos forgiven</text></g>
+  <g class="pen">
+    <path d="M900 500 l100 -8 l4 20 l-100 8 z M896 528 l100 -8 l4 20 l-100 8 z M892 556 l100 -8 l4 20 l-100 8 z"/>
+  </g>
+  <g class="h" font-size="22"><text x="900" y="600">42 collections</text></g>
+  <g class="h" font-size="19" opacity=".7"><text x="70" y="732">— search: forgiving the fingers, not just the spelling</text></g>
+</svg>

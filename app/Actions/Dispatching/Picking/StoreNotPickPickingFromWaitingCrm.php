@@ -43,7 +43,6 @@ class StoreNotPickPickingFromWaitingCrm extends OrgAction
 
         $deliveryNoteItem->update([
             'quantity_waiting_crm' => $newQuantityWaitingCrm,
-            'has_waiting_crm'      => $newQuantityWaitingCrm > 0,
         ]);
         DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 

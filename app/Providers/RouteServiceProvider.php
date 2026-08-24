@@ -98,7 +98,7 @@ class RouteServiceProvider extends ServiceProvider
 
         foreach ([config('app.domain'), 'app.'.config('app.domain'), 'pupil.'.config('app.domain')] as $aikuDomain) {
             Route::domain($aikuDomain)->get('favicon.ico', function () {
-                return response()->file(public_path('favicons/aiku-favicon.ico'));
+                return response()->file(public_path('favicon.png'));
             });
         }
 
@@ -109,6 +109,12 @@ class RouteServiceProvider extends ServiceProvider
 
     protected function configureRateLimiting(): void
     {
+        RateLimiter::for('retina-api', function (Request $request) {
+            $token = $request->user()?->currentAccessToken();
+
+            return Limit::perMinute(120)->by($token ? 'token:'.$token->id : 'ip:'.$request->ip());
+        });
+
         RateLimiter::for('han', function (Request $request) {
             return Limit::perMinute(600)->by($request->user()?->id ?: $request->ip());
         });

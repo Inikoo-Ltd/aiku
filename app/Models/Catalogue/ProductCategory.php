@@ -182,7 +182,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
     protected static function booted(): void
     {
         static::saved(function (ProductCategory $productCategory) {
-            if ($productCategory->wasChanged('webpage_id')) {
+            if ($productCategory->wasChanged(['webpage_id', 'state'])) {
                 \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($productCategory);
             }
         });

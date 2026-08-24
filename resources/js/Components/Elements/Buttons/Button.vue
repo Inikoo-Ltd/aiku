@@ -192,6 +192,7 @@ const getActionIcon = (icon: any) => {
 	        ]"
 
         :disabled="loading || disabled || style == 'disabled' || type == 'disabled'"
+        :aria-label="!getActionLabel(label) || hide_label ? (tooltip || getActionLabel(label) || label || undefined) : undefined"
         v-tooltip="tooltip ?? undefined"
     >
         <slot :loading>

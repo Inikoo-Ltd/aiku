@@ -13,14 +13,14 @@ import { useLayoutStore } from "@/Stores/layout"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faMessage } from '@fortawesome/free-solid-svg-icons'
-import { faUser, faEdit, faChevronDown, faSearch, faSlidersH, faPaperclip, faStoreAlt } from '@fal'
+import { faUser, faEdit, faChevronDown, faSearch, faSlidersH, faPaperclip, faStoreAlt, faCommentAltLines } from '@fal'
 import Image from '@common/Components/Image.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import MiniChatWindow from '@/Components/Chat/MiniChatWindow.vue'
 import { playNotificationSoundFile, buildStorageUrl, fetchUnreadCount, totalUnread } from "@/Composables/useNotificationSound"
 import { useMiniChats } from "@/Composables/useMiniChats"
 
-library.add(faMessage, faUser, faEdit, faChevronDown, faSearch, faSlidersH, faPaperclip, faStoreAlt)
+library.add(faMessage, faUser, faEdit, faChevronDown, faSearch, faSlidersH, faPaperclip, faStoreAlt, faCommentAltLines)
 
 interface ChatSessionItem {
     ulid: string
@@ -43,6 +43,8 @@ const TABS = [
     { key: 'waiting', label: 'Waiting', statuses: ['waiting'] },
 ]
 
+const props = withDefaults(defineProps<{ inRail?: boolean }>(), { inRail: false })
+
 const layout: any = useLayoutStore()
 const baseUrl = layout?.appUrl ?? ""
 const myAgentId = layout?.user?.id
@@ -50,6 +52,8 @@ const agentShops: number[] = Array.isArray(layout?.user?.agent_shops) ? layout.u
 const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 
 const showPopover = ref(false)
+const railTrigger = ref<HTMLElement | null>(null)
+const railPopoverStyle = ref<Record<string, string>>({})
 const isLoading = ref(false)
 const isLoadingMore = ref(false)
 const sessions = ref<ChatSessionItem[]>([])
@@ -140,9 +144,26 @@ const onListScroll = (event: Event) => {
     }
 }
 
+const RAIL_PANEL_MAX_HEIGHT = 520
+
+const positionRailPopover = () => {
+    if (!props.inRail || !railTrigger.value) return
+    const rect = railTrigger.value.getBoundingClientRect()
+    const panelHeight = Math.min(RAIL_PANEL_MAX_HEIGHT, window.innerHeight * 0.8)
+    let bottom = Math.max(8, window.innerHeight - rect.bottom)
+    if (window.innerHeight - bottom - panelHeight < 8) {
+        bottom = window.innerHeight - 8 - panelHeight
+    }
+    railPopoverStyle.value = {
+        right: `${window.innerWidth - rect.left + 8}px`,
+        bottom: `${bottom}px`,
+    }
+}
+
 const togglePopover = async () => {
     showPopover.value = !showPopover.value
     if (showPopover.value) {
+        positionRailPopover()
         await Promise.all([fetchSessions(), fetchTabCounts()])
     }
 }
@@ -274,6 +295,7 @@ const subscribeChannels = () => {
 
 onMounted(() => {
     stopNavigationTracking = trackNavigation()
+    window.addEventListener('resize', positionRailPopover)
 
     if (!myAgentId) return
 
@@ -296,11 +318,156 @@ onUnmounted(() => {
     joinedChannels.forEach((channel) => window.Echo?.leave(channel))
     if (pollTimer) clearInterval(pollTimer)
     stopNavigationTracking?.()
+    window.removeEventListener('resize', positionRailPopover)
 })
 </script>
 
 <template>
-    <div class="relative h-full">
+    <div v-if="inRail" class="relative w-full mb-1">
+        <!-- Trigger: rail -->
+        <div ref="railTrigger" class="cursor-pointer" @click="togglePopover">
+            <div v-if="layout?.messagingSidebar?.show" class="w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left">
+                <FontAwesomeIcon icon="fal fa-comment-alt-lines" class="text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
+                <span class="flex-1 text-xs truncate text-[var(--chat-text)]">{{ trans('Customer chats') }}</span>
+                <span v-if="totalUnread > 0" class="bg-[var(--chat-red)] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ totalUnread > 99 ? '99+' : totalUnread }}</span>
+            </div>
+            <div v-else class="relative h-9 w-9 mx-auto rounded flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]">
+                <FontAwesomeIcon icon="fal fa-comment-alt-lines" fixed-width aria-hidden="true" />
+                <span v-if="totalUnread > 0" class="absolute -top-0.5 -right-0.5 bg-[var(--chat-red)] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ totalUnread > 99 ? '99+' : totalUnread }}</span>
+            </div>
+        </div>
+
+        <!-- Mini chats docked left of the rail -->
+        <div v-if="miniChats.length" class="fixed bottom-6 z-[9999] flex items-end gap-2"
+            :class="layout?.messagingSidebar?.show ? 'right-60' : 'right-16'">
+            <MiniChatWindow v-for="chat in miniChats" :key="chat.ulid" :chat="chat"
+                @close="closeMiniChat(chat.ulid)" @toggle="toggleMiniChat(chat.ulid)" @read="refreshUnread" />
+        </div>
+
+        <!-- Backdrop -->
+        <div v-if="showPopover" class="fixed inset-0 z-[9998]" @click="closePopover" />
+
+        <!-- Popover (opens to the left of the rail) -->
+        <div v-if="showPopover"
+            class="fixed z-[9999] w-[340px] max-w-[92vw] h-[520px] max-h-[80vh] bg-white text-gray-800 rounded-lg shadow-2xl border border-gray-200 flex flex-col overflow-hidden"
+            :style="railPopoverStyle"
+            @click.stop>
+            <!-- Header -->
+            <div class="flex items-center justify-between gap-2 px-3 py-2.5 shrink-0">
+                <div class="flex items-center gap-2 min-w-0">
+                    <div class="relative w-8 h-8 shrink-0">
+                        <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-gray-400">
+                            <Image v-if="layout?.avatar_thumbnail" :src="layout.avatar_thumbnail"
+                                class="w-full h-full object-cover" />
+                            <FontAwesomeIcon v-else :icon="faUser" class="text-xs" />
+                        </div>
+                    </div>
+                    <span class="text-base font-semibold text-gray-900 truncate">{{ trans('Messages') }}</span>
+                </div>
+
+                <div class="flex items-center gap-1 shrink-0 text-gray-500">
+                    <button class="w-8 h-8 rounded-full hover:bg-gray-100" v-tooltip="trans('Close')"
+                        @click="closePopover">
+                        <FontAwesomeIcon :icon="faChevronDown" class="text-sm" />
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div class="px-3 pb-2 shrink-0">
+                <div class="relative">
+                    <FontAwesomeIcon :icon="faSearch"
+                        class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" />
+                    <input v-model="searchQuery" type="text" :placeholder="trans('Search messages')"
+                        class="w-full pl-8 pr-9 py-1.5 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:border-gray-400 focus:ring-0" />
+                   <!--  <button class="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded hover:bg-gray-100 text-gray-500"
+                        v-tooltip="trans('Filter by shop')" @click="showSearch = !showSearch">
+                        <FontAwesomeIcon :icon="faSlidersH" class="text-xs" />
+                    </button> -->
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex border-b border-gray-200 text-sm shrink-0">
+                <button v-for="tab in TABS" :key="tab.key"
+                    class="flex-1 py-2 border-b-2 -mb-px transition-colors flex items-center justify-center gap-1.5"
+                    :class="activeTab === tab.key
+                        ? 'font-semibold'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    :style="activeTab === tab.key
+                        ? { color: 'var(--theme-color-4)', borderBottomColor: 'var(--theme-color-4)' }
+                        : {}"
+                    @click="activeTab = tab.key">
+                    {{ trans(tab.label) }}
+                    <span v-if="tabUnread[tab.key]"
+                        class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-none">
+                        {{ tabUnread[tab.key] > 99 ? '99+' : tabUnread[tab.key] }}
+                    </span>
+                </button>
+            </div>
+
+            <!-- Conversations -->
+            <div class="flex-1 min-h-0 overflow-y-auto" @scroll="onListScroll">
+                <div v-if="isLoading && sessions.length === 0" class="h-full flex items-center justify-center">
+                    <LoadingIcon class="w-6 h-6 text-gray-400" />
+                </div>
+
+                <div v-else-if="sessions.length === 0"
+                    class="h-full flex flex-col items-center justify-center px-3 text-center">
+                    <div class="text-2xl">💬</div>
+                    <div class="text-sm font-medium text-gray-700 mt-1">{{ trans('No conversations') }}</div>
+                    <div class="text-xs text-gray-500">{{ trans('You are all caught up') }}</div>
+                </div>
+
+                <template v-else>
+                    <button v-for="item in sessions" :key="item.ulid" type="button"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 text-left border-b border-gray-100 hover:bg-gray-50"
+                        @click="openConversation(item)">
+                        <div class="relative w-12 h-12 shrink-0">
+                            <div class="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-gray-400">
+                                <Image v-if="sessionAvatar(item)" :src="sessionAvatar(item)"
+                                    class="w-full h-full object-cover" />
+                                <FontAwesomeIcon v-else :icon="faUser" class="text-base" />
+                            </div>
+                            <span v-if="item.unread_count"
+                                class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-none ring-2 ring-white">
+                                {{ item.unread_count > 99 ? '99+' : item.unread_count }}
+                            </span>
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-baseline justify-between gap-2">
+                                <span class="text-sm truncate"
+                                    :class="item.unread_count ? 'font-semibold text-gray-900' : 'text-gray-800'">
+                                    {{ item.contact_name }}
+                                </span>
+                                <span class="text-[11px] text-gray-400 shrink-0">
+                                    {{ formatDate(item.last_message?.created_at) }}
+                                </span>
+                            </div>
+
+                            <div v-if="item.shop?.name" class="flex items-center gap-1 text-[11px] text-gray-400 truncate">
+                                <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" />
+                                <span class="truncate">{{ item.shop.name }}</span>
+                            </div>
+
+                            <div class="flex items-center gap-1 text-xs"
+                                :class="item.unread_count ? 'text-gray-900 font-medium' : 'text-gray-500'">
+                                <FontAwesomeIcon v-if="isAttachment(item)" :icon="faPaperclip"
+                                    class="text-[10px] shrink-0" />
+                                <span class="truncate">{{ messagePreview(item) }}</span>
+                            </div>
+                        </div>
+                    </button>
+
+                    <div v-if="isLoadingMore" class="flex justify-center py-3">
+                        <LoadingIcon class="w-5 h-5 text-gray-400" />
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+    <div v-else class="relative h-full">
         <!-- Trigger -->
         <div class="group inline-flex items-center px-3 h-full font-medium hover:bg-gray-800 text-gray-200 cursor-pointer"
             :class="showPopover ? 'bg-gray-800' : ''" @click="togglePopover">

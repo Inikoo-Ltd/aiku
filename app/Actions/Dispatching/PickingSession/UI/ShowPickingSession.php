@@ -159,6 +159,11 @@ class ShowPickingSession extends OrgAction
                 $request->route()->originalParameters()
             ),
             'navigation'  => null,
+            'staff_chat'  => [
+                'context_type' => 'PickingSession',
+                'context_id'   => $pickingSession->id,
+                'audiences'    => [['key' => 'crm', 'label' => __('Ask CRM')]],
+            ],
             'pageHead'    => [
                 'title'      => $pickingSession->reference,
                 'model'      => $title,

@@ -129,6 +129,7 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
 
             $paymentAlreadyStored = Payment::where('payment_account_shop_id', $paymentAccountShop->id)
                 ->where('reference', $paymentData['reference'])
+                ->where('status', '!=', PaymentStatusEnum::FAIL)
                 ->exists();
 
             if ($paymentAlreadyStored) {

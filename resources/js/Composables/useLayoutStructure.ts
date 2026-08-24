@@ -34,6 +34,9 @@ export const layoutStructure = {
     leftSidebar: {
         show: true,
     },
+    messagingSidebar: {
+        show: false,
+    },
     navigation: {
         grp: {} as grpNavigation,
         org: {} as { [key: string]: orgNavigation } | { [key: string]: Navigation } | Navigation

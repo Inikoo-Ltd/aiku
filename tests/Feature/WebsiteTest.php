@@ -1426,6 +1426,41 @@ test('robots txt is generated on demand with absolute sitemap urls', function (W
         ->not->toContain('Sitemap: /');
 })->depends('launch website');
 
+test('llms txt core is generated and an upload is only appended', function (Website $website) {
+    $website->update(['settings' => array_merge($website->settings ?? [], ['webpage' => ['show_price' => false]])]);
+
+    $core = App\Actions\Web\Website\LlmsTxt\GetLlmsTxt::run($website->refresh());
+
+    expect($core)
+        ->toContain('# '.$website->name)
+        ->toContain('register first at https://www.'.$website->domain.'/app/register')
+        ->toContain('There is no public ordering API')
+        ->not->toContain('## Additional information');
+
+    App\Models\Web\WebsiteLlmsTxt::create([
+        'group_id'        => $website->group_id,
+        'organisation_id' => $website->organisation_id,
+        'website_id'      => $website->id,
+        'path'            => '',
+        'file_size'       => 10,
+        'content'         => 'THIS IS A TEST UPLOAD',
+        'is_active'       => true,
+        'use_fallback'    => false,
+        'uploaded_at'     => now(),
+    ]);
+
+    $withUpload = App\Actions\Web\Website\LlmsTxt\GetLlmsTxt::run($website);
+
+    expect($withUpload)
+        ->toStartWith('# '.$website->name)
+        ->toContain('register first at')
+        ->toContain("## Additional information\n\nTHIS IS A TEST UPLOAD");
+
+    $website->update(['settings' => array_merge($website->settings, ['webpage' => ['show_price' => true]])]);
+
+    expect(App\Actions\Web\Website\LlmsTxt\GetLlmsTxt::run($website->refresh()))->toContain('Prices are public.');
+})->depends('launch website');
+
 test('update webpage canonical url', function (Webpage $webpage) {
     $canonicalUrl = UpdateWebpageCanonicalUrl::run($webpage);
 

@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Chat\Agent\AssignChatAgentToScope;
+use Illuminate\Support\Arr;
 use App\Actions\Chat\Agent\DeleteAgent;
 use App\Actions\Chat\Agent\StoreAgent;
 use App\Actions\Chat\Agent\UpdateAgent;
@@ -71,6 +72,7 @@ use App\Models\Chat\ChatEvent;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\ShopHasChatAgent;
+use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Media;
@@ -2195,5 +2197,332 @@ it('can render chat session detail', function () {
         $page->component('Org/Shop/CRM/ChatSession')
             ->has('chatSession')
             ->has('messages');
+    });
+});
+
+describe('staff messaging', function () {
+    beforeEach(function () {
+        $this->otherUser = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
+        if ($this->otherUser->group_id !== $this->user->group_id) {
+            $this->otherUser->update(['group_id' => $this->user->group_id]);
+        }
+    });
+
+    test('dm is created once and reused', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        $first  = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
+        $second = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->otherUser, ['user_ids' => [$this->user->id]]);
+
+        expect($first->id)->toBe($second->id)
+            ->and($first->type)->toBe('dm')
+            ->and($first->participants()->count())->toBe(2);
+    });
+
+    test('message is sent, counted unread for the other participant, then read', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
+        \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => '<b>hello</b> there']);
+
+        Event::assertDispatched(\App\Events\StaffMessageSent::class);
+        expect($conversation->messages()->first()->body)->toBe('hello there');
+
+        $mine   = \App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->user)->firstWhere('id', $conversation->id);
+        $theirs = \App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->otherUser)->firstWhere('id', $conversation->id);
+        expect((int) $mine->unread_count)->toBe(0)->and((int) $theirs->unread_count)->toBe(1);
+
+        \App\Actions\Chat\Staff\MarkStaffConversationRead::run($conversation, $this->otherUser);
+        $theirs = \App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->otherUser)->firstWhere('id', $conversation->id);
+        expect((int) $theirs->unread_count)->toBe(0);
+    });
+
+    test('reaction toggles on and off', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
+        $message      = \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'react']);
+
+        \App\Actions\Chat\Staff\ToggleStaffMessageReaction::run($message, $this->otherUser, '👍');
+        expect($message->reactions()->count())->toBe(1);
+        \App\Actions\Chat\Staff\ToggleStaffMessageReaction::run($message, $this->otherUser, '👍');
+        expect($message->reactions()->count())->toBe(0);
+    });
+
+    test('image only message stores media', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
+
+        $response = actingAs($this->user)
+            ->post(route('grp.chat.staff.conversations.messages.store', $conversation), [
+                'image' => \Illuminate\Http\UploadedFile::fake()->image('screenshot.png', 40, 40),
+            ]);
+        $response->assertSuccessful();
+        expect($response->json('data.image'))->not->toBeNull()
+            ->and($response->json('data.body'))->toBe('');
+    });
+
+    test('non participant is rejected by the message endpoint', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        $stranger     = User::factory()->create(['group_id' => $this->user->group_id]);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
+
+        actingAs($stranger)
+            ->postJson(route('grp.chat.staff.conversations.messages.store', $conversation), ['body' => 'intrude'])
+            ->assertForbidden();
+    });
+});
+
+describe('staff messaging mentions', function () {
+    test('mention resolves to participant and flags unread for them', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
+        $other->update(['nickname' => 'adamm']);
+
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$other->id]]);
+        $message      = \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'hey @adamm check this']);
+
+        expect($message->mentions)->toBe([$other->id]);
+
+        $theirs = \App\Actions\Chat\Staff\Json\GetStaffConversations::run($other)->firstWhere('id', $conversation->id);
+        $mine   = \App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->user)->firstWhere('id', $conversation->id);
+        expect($theirs->has_mention)->toBeTruthy()
+            ->and($mine->has_mention)->toBeFalsy();
+    });
+});
+
+describe('staff messaging page', function () {
+    beforeEach(function () {
+        $this->otherUser = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
+    });
+
+    test('index renders the messaging page', function () {
+        actingAs($this->user)->get(route('grp.chat.staff.index'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Chat/StaffMessaging'));
+    });
+
+    test('show renders the messaging page for a participant', function () {
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
+
+        actingAs($this->user)->get(route('grp.chat.staff.show', $conversation))
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Chat/StaffMessaging'));
+    });
+});
+
+describe('staff messaging context shortcuts', function () {
+    test('ask CRM on an order opens one group conversation with the shop CRM role holders', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        $product = Product::where("shop_id", $this->shop->id)->first() ?? createProduct($this->shop)[1];
+        $order   = createOrder($this->customer, $product);
+
+        $crmUser = User::factory()->create(['group_id' => $this->user->group_id]);
+        setPermissionsTeamId($this->user->group_id);
+        $crmUser->assignRole(\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+        expect(\App\Actions\Chat\Staff\GetStaffAudience::run('crm', $order)->pluck('id'))->toContain($crmUser->id);
+
+        $first  = \App\Actions\Chat\Staff\OpenStaffContextConversation::run($this->user, $order, 'crm');
+        $second = \App\Actions\Chat\Staff\OpenStaffContextConversation::run($this->user, $order, 'crm');
+
+        expect($first->id)->toBe($second->id)
+            ->and($first->type)->toBe('group')
+            ->and($first->context_type)->toBe('Order')
+            ->and($first->context_id)->toBe($order->id)
+            ->and($first->participants()->pluck('users.id'))->toContain($crmUser->id, $this->user->id);
+
+        $resource = (new \App\Http\Resources\Chat\StaffConversationResource($first->load('participants')))->resolve();
+        expect($resource['context_label'])->toBe($order->reference)
+            ->and($resource['context_url'])->toContain($order->slug);
+    });
+});
+
+describe('staff messaging audience mapping', function () {
+    test('configured recipients override role fallback', function () {
+        $product = Product::where('shop_id', $this->shop->id)->first() ?? createProduct($this->shop)[1];
+        $order   = createOrder($this->customer, $product);
+        $other   = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
+
+        $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['staff_chat' => ['crm_user_ids' => [$other->id]]])]);
+
+        expect(\App\Actions\Chat\Staff\GetStaffAudience::run('crm', $order)->pluck('id')->all())->toBe([$other->id]);
+
+        $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['staff_chat' => ['crm_user_ids' => []]])]);
+
+        expect(\App\Actions\Chat\Staff\GetStaffAudience::run('crm', $order)->pluck('id')->all())->not->toBe([$other->id]);
+    });
+});
+
+describe('staff messaging routing', function () {
+    test('shop primary wins over org', function () {
+        $product = Product::where('shop_id', $this->shop->id)->first() ?? createProduct($this->shop)[1];
+        $order   = createOrder($this->customer, $product);
+        $a       = User::factory()->create(['group_id' => $this->user->group_id]);
+
+        $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['staff_chat' => ['crm_user_ids' => [$a->id]]])]);
+        \Illuminate\Support\Facades\Cache::put('staff-last-active:'.$a->id, now()->timestamp);
+
+        expect(\App\Actions\Chat\Staff\GetStaffAudience::run('crm', $order)->pluck('id')->all())->toBe([$a->id]);
+    });
+
+    test('inactive primary falls back to active backup', function () {
+        $product = Product::where('shop_id', $this->shop->id)->first() ?? createProduct($this->shop)[1];
+        $order   = createOrder($this->customer, $product);
+        $a       = User::factory()->create(['group_id' => $this->user->group_id]);
+        $b       = User::factory()->create(['group_id' => $this->user->group_id]);
+
+        $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['staff_chat' => ['crm_user_ids' => [$a->id], 'crm_backup_user_ids' => [$b->id]]])]);
+        \Illuminate\Support\Facades\Cache::forget('staff-last-active:'.$a->id);
+        \Illuminate\Support\Facades\Cache::put('staff-last-active:'.$b->id, now()->timestamp);
+
+        expect(\App\Actions\Chat\Staff\GetStaffAudience::run('crm', $order)->pluck('id')->all())->toBe([$b->id]);
+    });
+
+    test('nobody active returns primary and backup together', function () {
+        $product = Product::where('shop_id', $this->shop->id)->first() ?? createProduct($this->shop)[1];
+        $order   = createOrder($this->customer, $product);
+        $a       = User::factory()->create(['group_id' => $this->user->group_id]);
+        $b       = User::factory()->create(['group_id' => $this->user->group_id]);
+
+        $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['staff_chat' => ['crm_user_ids' => [$a->id], 'crm_backup_user_ids' => [$b->id]]])]);
+        \Illuminate\Support\Facades\Cache::forget('staff-last-active:'.$a->id);
+        \Illuminate\Support\Facades\Cache::forget('staff-last-active:'.$b->id);
+
+        expect(\App\Actions\Chat\Staff\GetStaffAudience::run('crm', $order)->pluck('id')->sort()->values()->all())->toBe(collect([$a->id, $b->id])->sort()->values()->all());
+    });
+});
+
+describe('staff messaging picking session', function () {
+    test('ask CRM on a picking session opens one group conversation with the shop CRM role holders', function () {
+        $pickingSession = \App\Models\Inventory\PickingSession::first();
+        if (!$pickingSession) {
+            $this->markTestSkipped('no picking session available');
+        }
+
+        $first  = \App\Actions\Chat\Staff\OpenStaffContextConversation::run($this->user, $pickingSession, 'crm');
+        $second = \App\Actions\Chat\Staff\OpenStaffContextConversation::run($this->user, $pickingSession, 'crm');
+
+        expect($first->id)->toBe($second->id)
+            ->and($first->context_type)->toBe('PickingSession');
+
+        $resource = (new \App\Http\Resources\Chat\StaffConversationResource($first->load('participants')))->resolve();
+        expect($resource['context_url'])->toContain($pickingSession->slug);
+    });
+});
+
+describe('staff messaging team', function () {
+    test('team membership toggles and coworkers endpoint flags it', function () {
+        $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id]);
+
+        expect(\App\Actions\Chat\Staff\ToggleStaffTeamMember::run($this->user, $other))->toBeTrue()
+            ->and($this->user->teamMembers()->count())->toBe(1);
+
+        $coworkers = actingAs($this->user)->getJson(route('grp.chat.staff.coworkers.index'))->assertOk()->json('data');
+        expect(collect($coworkers)->firstWhere('id', $other->id)['in_team'])->toBeTrue();
+
+        expect(\App\Actions\Chat\Staff\ToggleStaffTeamMember::run($this->user, $other))->toBeFalse()
+            ->and($this->user->teamMembers()->count())->toBe(0);
+    });
+});
+
+describe('staff messaging archive', function () {
+    test('closing a conversation hides it until a new message arrives', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id]);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$other->id]]);
+        \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $other, ['body' => 'hi']);
+
+        \App\Actions\Chat\Staff\ArchiveStaffConversation::run($conversation, $this->user);
+        expect(\App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->user)->firstWhere('id', $conversation->id))->toBeNull();
+
+        \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $other, ['body' => 'are you there?']);
+        expect(\App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->user)->firstWhere('id', $conversation->id))->not->toBeNull();
+    });
+});
+
+describe('staff messaging gifs', function () {
+    test('search returns mapped klipy results', function () {
+        \Illuminate\Support\Facades\Http::fake([
+            'api.klipy.com/*' => \Illuminate\Support\Facades\Http::response([
+                'result' => true,
+                'data'   => [
+                    'data'     => [
+                        [
+                            'id'    => '1',
+                            'file'  => [
+                                'sm' => ['gif' => ['url' => 'https://static.klipy.com/a/sm.gif', 'width' => 100, 'height' => 80]],
+                                'md' => ['gif' => ['url' => 'https://static.klipy.com/a/md.gif', 'width' => 200, 'height' => 160]],
+                            ],
+                        ],
+                    ],
+                    'has_next'     => true,
+                    'current_page' => 1,
+                ],
+            ]),
+        ]);
+        config(['services.klipy.key' => 'k']);
+
+        actingAs($this->user)
+            ->getJson(route('grp.chat.staff.gifs.search', ['q' => 'cat', 'page' => 1]))
+            ->assertOk()
+            ->assertJsonPath('data.0.url', 'https://static.klipy.com/a/md.gif')
+            ->assertJsonPath('next', 2);
+    });
+});
+
+describe('staff messaging nickname', function () {
+    test('user sets a nickname and it appears in profile update and messages', function () {
+        actingAs($this->user)
+            ->patchJson(route('grp.models.profile.update'), ['nickname' => 'Raulito'])
+            ->assertOk();
+
+        expect($this->user->fresh()->nickname)->toBe('Raulito');
+
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        $other        = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id]);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$other->id]]);
+        $message      = \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'hi']);
+
+        $resource = (new \App\Http\Resources\Chat\StaffMessageResource($message->load(['user', 'translations', 'reactions', 'conversation'])))->resolve();
+        expect($resource['user_name'])->toBe('Raulito');
+    });
+
+    test('nickname must be unique', function () {
+        $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id]);
+
+        actingAs($this->user)
+            ->patchJson(route('grp.models.profile.update'), ['nickname' => 'SharedNick'])
+            ->assertOk();
+
+        actingAs($other)
+            ->patchJson(route('grp.models.profile.update'), ['nickname' => 'SharedNick'])
+            ->assertStatus(422);
+    });
+});
+
+describe('staff messaging chat theme', function () {
+    test('user can set chat theme', function () {
+        actingAs($this->user)
+            ->patchJson(route('grp.models.profile.update'), ['chat_theme' => 'nord'])
+            ->assertOk();
+
+        expect(Arr::get($this->user->fresh()->settings, 'chat_theme'))->toBe('nord');
+    });
+
+    test('invalid chat theme is rejected', function () {
+        actingAs($this->user)
+            ->patchJson(route('grp.models.profile.update'), ['chat_theme' => 'not-a-theme'])
+            ->assertStatus(422);
     });
 });

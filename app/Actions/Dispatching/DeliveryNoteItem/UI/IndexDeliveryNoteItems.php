@@ -41,6 +41,7 @@ class IndexDeliveryNoteItems extends OrgAction
 
         $this->applyDeliveryNoteItemBaseWiths($query);
         $this->applyDeliveryNoteItemBaseJoins($query);
+        $query->leftJoin('batch_codes as org_stock_batch_code', 'org_stocks.main_batch_code_id', '=', 'org_stock_batch_code.id');
 
         // An item can be packed in several goes, so the packings are aggregated per item. Joining
         // the table directly would return one row per packing and duplicate the item in the table.
@@ -80,7 +81,7 @@ class IndexDeliveryNoteItems extends OrgAction
                         'item_packings.packings_count as packings_count',
                         'org_stocks.main_batch_code_id as org_stocks_batch_code_id',
                         'org_stocks.current_batch_codes as org_stocks_batch_code_count',
-                        'batch_codes.code as org_stocks_batch_code',
+                        'org_stock_batch_code.code as org_stocks_batch_code',
                         DB::raw("'{$parent->warehouse->slug}' as warehouse_slug"),
                         DB::raw("'{$parent->warehouse->code}' as warehouse_code"),
                     ]
@@ -124,7 +125,9 @@ class IndexDeliveryNoteItems extends OrgAction
 
             $this->addDeliveryNoteItemQuantityTableColumns($table, $allowAction);
 
-            if ($this->hasPickingsWithBatchCodes($parent)) {
+            if ($allowAction) {
+                $table->column(key: 'picking_locations', label: __('Pickings'), canBeHidden: false);
+            } elseif ($this->hasPickingsWithBatchCodes($parent)) {
                 $table->column(key: 'batch_codes', label: __('Batch Codes'), canBeHidden: false);
             }
 

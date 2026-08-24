@@ -266,6 +266,15 @@ trait WithLayoutNavigation
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
+                        [
+                            'tooltip' => __('Staff chat'),
+                            'icon'    => ['fal', 'fa-comments-alt'],
+                            'root'    => 'grp.org.hr.staff_chat.',
+                            'route'   => [
+                                'name'       => 'grp.org.hr.staff_chat.index',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
                     ],
                 ],
             ];

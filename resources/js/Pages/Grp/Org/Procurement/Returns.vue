@@ -111,11 +111,11 @@ const onCreateReturn = () => {
             isOpenModalCreateReturn = false
         }" contentClass="!overflow-visible">
         <div class="pt-4 pb-2 text-lg font-semibold">
-            {{ trans("Create Return") }}
+            {{ trans("Receive Return") }}
         </div>
 
         <div class="text-sm text-gray-600 mb-4">
-            {{ trans("Select a dispatched delivery note to create a return for.") }}
+            {{ trans("Select the delivery note this box came from.") }}
         </div>
 
         <PureMultiselectInfiniteScroll v-model="selectedDeliveryNote" :fetch-route="{
@@ -133,7 +133,7 @@ const onCreateReturn = () => {
 
         <div class="flex justify-end gap-x-2 mt-8">
             <Button type="tertiary" :label="trans('Cancel')" @click="() => isOpenModalCreateReturn = false" />
-            <Button :label="trans('Create Return')" icon="fal fa-plus" :disabled="!selectedDeliveryNote || isSubmitting"
+            <Button :label="trans('Receive Return')" icon="fal fa-plus" :disabled="!selectedDeliveryNote || isSubmitting"
                 :loading="isSubmitting" full @click="onCreateReturn" />
         </div>
     </Dialog>

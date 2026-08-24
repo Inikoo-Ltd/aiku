@@ -132,6 +132,7 @@ const checkNumber = (event: KeyboardEvent) => {
                 @blur ="(event: Event) => emits('blur', event.target?.value)"
                 :id="inputName"
                 :name="inputName"
+                :aria-label="label || placeholder || undefined"
                 :readonly="isLoading || readonly"
                 :type="type == 'password' ? showPassword : type"
                 :placeholder="placeholder"

@@ -34,7 +34,6 @@ trait WithDeliveryNoteItemPickingCounts
 
         $done = (clone $all)
             ->where('is_handled', true)
-            ->where('is_dirty', false)
             ->count();
 
         $total = $all->count();

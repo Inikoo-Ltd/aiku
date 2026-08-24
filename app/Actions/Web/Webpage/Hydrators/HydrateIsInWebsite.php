@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Webpage\Hydrators;
 
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -21,7 +22,9 @@ class HydrateIsInWebsite
 
     /**
      * is_in_website: the model has a live webpage, and for products it also passes the
-     * storefront sellable rule (variant leader, or for-sale non-minion). Kept as a column
+     * storefront sellable rule (variant leader, or for-sale non-minion); departments and
+     * families are in only while active or discontinuing, the same states the storefront
+     * listings show, so empty and discontinued ones stay out. Kept as a column
      * so both SQL and the search index (via toSearchableArray) can filter on it.
      */
     public function handle(Product|ProductCategory|Collection $model): void
@@ -31,6 +34,9 @@ class HydrateIsInWebsite
         $isInWebsite = $hasLiveWebpage;
         if ($model instanceof Product) {
             $isInWebsite = $hasLiveWebpage && ($model->is_variant_leader || (!$model->is_minion_variant && $model->is_for_sale));
+        }
+        if ($model instanceof ProductCategory) {
+            $isInWebsite = $hasLiveWebpage && in_array($model->state, [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING], true);
         }
 
         $modelData = [];

@@ -233,9 +233,25 @@ const showLeftBlock = computed(() => {
     return showMemberPrice.value || showDiscount.value
 })
 
+const redOfferTypes = [
+    'Category Ordered',
+    'Category Quantity Ordered',
+    'Category Amount Ordered',
+    'Department Ordered',
+    'Department Quantity Ordered',
+    'Subdepartment Ordered',
+    'Subdepartment Quantity Ordered',
+]
+
+const isRedOffer = computed(() => redOfferTypes.includes(bestOffer?.value?.type))
+
 const isDiscountedPriceActive = computed(() => {
     if (displayStep.value) {
         return !!activeStep.value
+    }
+
+    if (isRedOffer.value) {
+        return !!props.product?.discounted_price
     }
 
     return showMemberPrice.value
@@ -244,7 +260,7 @@ const isDiscountedPriceActive = computed(() => {
 const bestOfferClass = computed(() => {
     const type = bestOffer?.value?.type
 
-    if (type === 'Category Ordered' || type === 'Category Amount Ordered' || type == 'Department Ordered' || type == 'Subdepartment Ordered' || type == 'Department Quantity Ordered' || type == 'Subdepartment Quantity Ordered') {
+    if (isRedOffer.value) {
         return 'text-red-700'
     }
 
@@ -253,6 +269,12 @@ const bestOfferClass = computed(() => {
     }
 
     return 'text-primary'
+})
+
+const offerAccentClass = computed(() => {
+    return isRedOffer.value
+        ? 'text-red-700 border-red-700'
+        : 'text-[#E87928] border-[#E87928]'
 })
 
 watch(basketQuantity, () => {
@@ -443,7 +465,7 @@ const onHideStepsPopover = () => {
 
                 <div v-else-if="bestOffer" class="font-medium text-right min-w-0" :class="bestOfferClass">
                     <div class="flex items-baseline justify-end gap-0.5 min-w-0">
-                        <div class="min-w-0 flex-1 truncate text-[#E87928] border-[#E87928]">
+                        <div class="min-w-0 flex-1 truncate" :class="offerAccentClass">
                             <span class="font-bold" v-if="product.units == 1">{{ locale.currencyFormat(currency?.code, product.discounted_price) }} /{{ product.unit }}</span>
                             <span v-else>
                                 <span class=" text-[8px] sm:text-[9px] md:text-[10px] mr-1 font-bold">
@@ -462,7 +484,7 @@ const onHideStepsPopover = () => {
 
                 <div v-if="isDiscountedPriceActive" class="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2">
                     <div class="flex text-xs items-center justify-center rounded-full"
-                        :class="displayStep ? 'step-discount-text' : 'text-[#E87928]'">
+                        :class="displayStep ? 'step-discount-text' : offerAccentClass">
                         <FontAwesomeIcon :icon="faCheck" />
                     </div>
                 </div>

@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -414,4 +415,53 @@ test('the typo tuning reaches every search sent to typesense', function () {
 
         return true;
     });
+});
+
+test('discontinued family drops out of the storefront search', function () {
+    [, $product] = createProduct($this->shop);
+    $family      = $product->family;
+    StoreProductCategoryWebpage::make()->action($family);
+    $family->webpage->update(['state' => WebpageStateEnum::LIVE]);
+    \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($family->refresh());
+    expect((bool) $family->refresh()->is_in_website)->toBeTrue();
+
+    Search::shouldRun()->andReturn([
+        'scope'   => 'catalogue',
+        'results' => [
+            'products'           => [],
+            'product_categories' => [['id' => $family->id, 'code' => $family->code, 'name' => $family->name, 'image' => null]],
+            'collections'        => [],
+        ],
+    ]);
+
+    $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q='.$family->code);
+    $response->assertOk();
+    expect($response->json('results.product_categories'))->toHaveCount(1);
+
+    $family->update(['state' => \App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::DISCONTINUED]);
+    expect((bool) $family->refresh()->is_in_website)->toBeFalse();
+
+    $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q='.$family->code.'&v=2');
+    $response->assertOk();
+    expect($response->json('results.product_categories'))->toBe([]);
+});
+
+test('a family created empty is out of the website until its first product arrives', function () {
+    [, $product] = createProduct($this->shop);
+
+    $familyData = \App\Models\Catalogue\ProductCategory::factory()->definition();
+    data_set($familyData, 'type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY->value);
+    data_set($familyData, 'state', \App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::IN_PROCESS->value);
+    $family = \App\Actions\Catalogue\ProductCategory\StoreProductCategory::make()->action($product->department, $familyData);
+
+    $webpage = StoreProductCategoryWebpage::make()->action($family);
+    $webpage->update(['state' => WebpageStateEnum::LIVE]);
+    \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($family->refresh());
+    expect((bool) $family->refresh()->is_in_website)->toBeFalse();
+
+    \App\Actions\Catalogue\Product\UpdateProductFamily::make()->action($product, ['family_id' => $family->id]);
+    \App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts::run($family->refresh());
+
+    expect($family->refresh()->state)->toBe(\App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::ACTIVE)
+        ->and((bool) $family->is_in_website)->toBeTrue();
 });

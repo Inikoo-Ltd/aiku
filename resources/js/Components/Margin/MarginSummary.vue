@@ -33,7 +33,7 @@ const locale = inject("locale", aikuLocaleStructure)
             class="font-medium tabular-nums"
             :class="{ 'text-red-600': summary.margin_status === 'danger', 'text-amber-600': summary.margin_status === 'warning' }"
             v-tooltip="summary.margin_status === 'danger' ? trans('Below the :pct% break-even margin set for this organisation, likely unprofitable after running costs', { pct: String(summary.break_even_pct) }) : summary.margin_status === 'warning' ? trans('Thin margin, careful with further discounts') : undefined">
-            <template v-if="summary.is_estimated">~</template>{{ summary.margin_pct }}%
+            {{ summary.margin_pct }}%
         </span>
         <span
             class="tabular-nums opacity-70 cursor-help"

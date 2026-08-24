@@ -5,8 +5,9 @@ import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationTriangle } from "@fas"
+import { faSackDollar } from "@fal"
 
-library.add(faExclamationTriangle)
+library.add(faExclamationTriangle, faSackDollar)
 
 defineProps<{
     margin: {
@@ -30,10 +31,12 @@ const locale = inject("locale", aikuLocaleStructure)
             <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
         </span>
         <template v-else-if="margin.margin_pct !== null">
-            <span :class="margin.margin_pct < 0 ? 'text-red-500' : ''">
-                <span v-if="margin.margin_is_estimated" v-tooltip="trans('Estimated from current cost, not yet picked')">~</span>{{ margin.margin_pct }}%
+            <span
+                :class="margin.margin_pct < 0 ? 'text-red-500' : ''"
+                v-tooltip="margin.margin_is_estimated ? trans('Estimated from current cost, not yet picked') : undefined">
+                {{ margin.margin_pct }}%
             </span>
-            <span class="text-xs opacity-60 ml-1">{{ locale.currencyFormat(currencyCode || "", margin.profit_amount || 0) }}</span>
+            <span class="text-xs opacity-60 ml-1"><FontAwesomeIcon icon="fal fa-sack-dollar" fixed-width aria-hidden="true" class="mr-0.5" />{{ locale.currencyFormat(currencyCode || "", margin.profit_amount || 0) }}</span>
         </template>
     </div>
 </template>
