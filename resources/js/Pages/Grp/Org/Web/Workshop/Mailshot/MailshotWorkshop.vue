@@ -442,7 +442,7 @@ onMounted(() => {
     <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
         :snapshot="snapshot" ref="_unlayer" />
 
-    <div v-if="builder == 'beefree'" class="flex justify-end items-center gap-2 px-4 py-1 text-xs text-gray-500">
+    <div v-if="builder == 'beefree'" class="flex justify-end items-center gap-2 px-4 py-2 border-t border-gray-200 text-xs text-gray-500">
         Estimated email size: approximately <span class="font-semibold">{{ compiledLayoutSize }} KB</span>
         <FontAwesomeIcon v-if="compiledLayoutSize > 102" :icon="faExclamationTriangle"
             class="text-yellow-500" v-tooltip="emailSizeWarningTooltip" fixed-width />

@@ -85,11 +85,12 @@ class ShowMailshotWorkshop extends OrgAction
                     ],
                     'actions'   => [
                         [
-                            'type'  => 'button',
-                            'style' => 'exit',
-                            'icon'  => false,
-                            'label' => __('Exit workshop'),
-                            'route' => [
+                            'type'      => 'button',
+                            'style'     => 'primary',
+                            'icon'      => false,
+                            'iconRight' => 'fal fa-arrow-right',
+                            'label'     => __('Review & send'),
+                            'route'     => [
                                 'name'       => preg_replace('/workshop$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ]
