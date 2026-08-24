@@ -649,7 +649,7 @@ watch(
 
     <PageHeading :data="pageHeadData">
         <template #afterTitle2>
-            <MailshotSubjectEdit v-if="journey?.length && mailshot_copy && updateMailshotRoute && suggestCopyRoute"
+            <MailshotSubjectEdit v-if="mailshot_copy && updateMailshotRoute && suggestCopyRoute"
                 :mailshot="mailshot_copy" :updateMailshotRoute="updateMailshotRoute" :suggestCopyRoute="suggestCopyRoute"
                 @saved="subject => savedSubject = subject" />
             <MailshotJourney :steps="journey" class="ml-4" />
