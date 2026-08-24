@@ -73,7 +73,7 @@
       </g>
 
       <g filter="url(#wash2)">
-        <circle cx="252" cy="222" r="16" fill="#8A5A3E" opacity=".8"/>
+        <circle cx="252" cy="222" r="16" fill="#C08A5E" opacity=".8"/>
         <path d="M236 218 q16 -13 32 0 l-2 -9 q-14 -9 -28 0 z" fill="#3A3550" opacity=".85"/>
         <path d="M230 240 q22 -14 44 0 l8 40 q-30 12 -60 2 z" fill="#3E6E72" opacity=".78"/>
         <path d="M234 250 q-14 8 -16 32 l10 4 q4 -18 12 -24 z" fill="#3E6E72" opacity=".7"/>
