@@ -53,7 +53,7 @@ class ShowMailshotRecipients extends OrgAction
                             'type'  => 'button',
                             'style' => 'exit',
                             'icon'  => false,
-                            'label' => __('Exit'),
+                            'label' => __('View mailshot'),
                             'route' => [
                                 'name'       => 'grp.org.shops.show.marketing.mailshots.show',
                                 'parameters' => [
