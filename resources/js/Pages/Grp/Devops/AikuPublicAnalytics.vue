@@ -10,6 +10,7 @@ import { Head } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
 import { trans } from "laravel-vue-i18n"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import Table from "@/Components/Table/Table.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { faChartLine } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -44,8 +45,8 @@ interface ArticleRow {
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
+    articles: { data: ArticleRow[] } | any
     stats: {
-        articles: ArticleRow[]
         daily: StatRow[]
         pages: StatRow[]
         searches: StatRow[]
@@ -73,42 +74,34 @@ const sections = computed(() => [
     <PageHeading :data="pageHead" />
 
     <div class="space-y-8 p-4">
-        <div class="flex gap-1 border-b border-gray-200 text-sm">
+        <div class="flex gap-2">
             <button v-for="tab in [{ key: 'overview', label: trans('Overview') }, { key: 'articles', label: trans('Articles') }]"
                 :key="tab.key"
-                class="-mb-px rounded-t px-4 py-2"
-                :class="currentTab === tab.key ? 'border border-b-0 border-gray-200 font-medium' : 'text-gray-500 hover:text-gray-700'"
+                type="button"
+                class="px-4 py-2 rounded-md text-sm font-medium transition"
+                :class="currentTab === tab.key ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
                 @click="currentTab = tab.key as 'overview' | 'articles'">
                 {{ tab.label }}
             </button>
         </div>
 
-        <section v-if="currentTab === 'articles'">
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="border-b border-gray-200 text-left text-xs text-gray-500">
-                        <th class="py-1 font-normal">{{ trans("Article") }}</th>
-                        <th class="py-1 text-right font-normal">{{ trans("Dated") }}</th>
-                        <th class="py-1 text-right font-normal">{{ trans("Committed") }}</th>
-                        <th class="py-1 text-right font-normal">{{ trans("Visitors") }}</th>
-                        <th class="py-1 text-right font-normal">{{ trans("Views") }}</th>
-                        <th class="py-1 text-right font-normal">{{ trans("Last visit") }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="row in stats.articles" :key="row.slug" class="border-b border-gray-100">
-                        <td class="max-w-md py-1">
-                            <a :href="row.url" target="_blank" class="text-indigo-600 hover:underline">{{ row.title }}</a>
-                        </td>
-                        <td class="whitespace-nowrap py-1 text-right text-gray-500">{{ shortDate(row.date) }}</td>
-                        <td class="whitespace-nowrap py-1 text-right text-gray-500">{{ shortDate(row.committed_at) }}</td>
-                        <td class="py-1 text-right">{{ row.visitors }}</td>
-                        <td class="py-1 text-right text-gray-500">{{ row.views }}</td>
-                        <td class="whitespace-nowrap py-1 text-right text-xs text-gray-500">{{ lastVisited(row.last_visited_at) }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </section>
+        <Table v-show="currentTab === 'articles'" :resource="articles" name="articles" class="mt-2">
+            <template #cell(title)="{ item }">
+                <a :href="item.url" target="_blank" class="hover:underline">{{ item.title }}</a>
+            </template>
+            <template #cell(committed_at)="{ item }">
+                <span class="whitespace-nowrap text-gray-500">{{ shortDate(item.committed_at) }}</span>
+            </template>
+            <template #cell(visitors)="{ item }">
+                <span class="tabular-nums">{{ item.visitors }}</span>
+            </template>
+            <template #cell(views)="{ item }">
+                <span class="tabular-nums text-gray-500">{{ item.views }}</span>
+            </template>
+            <template #cell(last_visited_at)="{ item }">
+                <span class="whitespace-nowrap text-xs text-gray-500">{{ lastVisited(item.last_visited_at) }}</span>
+            </template>
+        </Table>
 
         <template v-if="currentTab === 'overview'">
         <section>

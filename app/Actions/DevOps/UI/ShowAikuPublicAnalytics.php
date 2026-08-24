@@ -11,7 +11,10 @@ namespace App\Actions\DevOps\UI;
 use App\Actions\OrgAction;
 use App\Actions\UI\AikuPublic\BlogPosts;
 use App\Actions\UI\WithInertia;
+use App\InertiaTable\InertiaTable;
 use App\Models\SysAdmin\Group;
+use Closure;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
 use Inertia\Inertia;
@@ -46,8 +49,31 @@ class ShowAikuPublicAnalytics extends OrgAction
                     ],
                 ],
                 'stats'       => $this->handle(),
+                'articles'    => $this->getArticlesPaginator(),
             ]
-        );
+        )->table($this->articlesTableStructure());
+    }
+
+    private function getArticlesPaginator(): LengthAwarePaginator
+    {
+        $rows = collect($this->getArticleStats());
+
+        return new LengthAwarePaginator($rows, $rows->count(), max($rows->count(), 1), 1, ['path' => request()->url()]);
+    }
+
+    public function articlesTableStructure(): Closure
+    {
+        return function (InertiaTable $table) {
+            $table
+                ->name('articles')
+                ->pageName('articlesPage')
+                ->withLabelRecord([__('article'), __('articles')])
+                ->column(key: 'title', label: __('Article'), canBeHidden: false)
+                ->column(key: 'committed_at', label: __('Published'), canBeHidden: false, align: 'right')
+                ->column(key: 'visitors', label: __('Visitors'), canBeHidden: false, align: 'right')
+                ->column(key: 'views', label: __('Views'), canBeHidden: false, align: 'right')
+                ->column(key: 'last_visited_at', label: __('Last visit'), canBeHidden: false, align: 'right');
+        };
     }
 
     /** @return array{daily: array<int, object>, pages: array<int, object>, searches: array<int, object>, referrers: array<int, object>, page_referrers: array<int, object>, countries: array<int, object>, articles: array<int, array<string, mixed>>} */
@@ -56,7 +82,6 @@ class ShowAikuPublicAnalytics extends OrgAction
         $visits = fn () => DB::table('aiku_public_visits')->where('created_at', '>', now()->subDays($days));
 
         return [
-            'articles' => $this->getArticleStats(),
             'daily' => $visits()
                 ->selectRaw('created_at::date as day, count(*) as views, count(distinct visitor_hash) as visitors')
                 ->groupBy('day')->orderBy('day')->get()->all(),
@@ -79,7 +104,7 @@ class ShowAikuPublicAnalytics extends OrgAction
     }
 
     /** @return array<int, array<string, mixed>> */
-    private function getArticleStats(): array
+    public function getArticleStats(): array
     {
         $stats = DB::table('aiku_public_visits')->where('path', 'like', '/blog/%')
             ->selectRaw('substr(path, 7) as slug, count(*) as views, count(distinct visitor_hash) as visitors, max(created_at) as last_visited_at')
