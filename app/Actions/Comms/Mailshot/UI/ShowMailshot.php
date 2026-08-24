@@ -103,8 +103,10 @@ class ShowMailshot extends OrgAction
                     $request->route()->originalParameters(),
                 ),
                 'pageHead'                        => [
-                    'icon'    => 'fal fa-coins',
-                    'title'   => $mailshot->type->value . ' ' . $mailshot->id,
+                    'icon'       => 'fal fa-coins',
+                    'title'      => $mailshot->subject,
+                    'model'      => __('Subject:'),
+                    'titleStyle' => 'font-normal text-lg',
                     'edit'    => $this->canEdit ? [
                         'route' => [
                             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
@@ -112,34 +114,6 @@ class ShowMailshot extends OrgAction
                         ]
                     ] : false,
                     'actions' => [
-                        $isShowActions & $mailshot->type === MailshotTypeEnum::MARKETING ? [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => __('Set Up Recipients'),
-                            'icon'  => ["fal", "fa-sliders-h"],
-                            'route' => [
-                                'name'       => "grp.org.shops.show.marketing.mailshots.recipients",
-                                'parameters' => [
-                                    $this->organisation->slug,
-                                    $this->shop->slug,
-                                    $mailshot->slug
-                                ]
-                            ]
-                        ] : [],
-                        $isShowActions ? [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => __('Workshop'),
-                            'icon'  => ["fal", "fa-drafting-compass"],
-                            'route' => [
-                                'name'       => $mailshot->type === MailshotTypeEnum::MARKETING ? "grp.org.shops.show.marketing.mailshots.workshop" : "grp.org.shops.show.marketing.newsletters.workshop",
-                                'parameters' => [
-                                    $this->organisation->slug,
-                                    $this->shop->slug,
-                                    $mailshot->slug
-                                ]
-                            ]
-                        ] : [],
                         $isShowActions || $isShowEditName ? [
                             'type'  => 'button',
                             'style' => 'edit',

@@ -195,11 +195,6 @@ const effectiveOtherShopTemplates = computed(() =>
                 </div>
             </div>
             <div v-if="isReady" class="mb-4">
-                <div class="text-sm text-gray-600 mb-2">
-                    Estimated email size: approximately <span class="font-semibold">{{ data.compiled_layout_size }}
-                        KB</span>
-                </div>
-
                 <div v-if="data.compiled_layout_size > 102"
                     class="flex items-start gap-3 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded-md shadow-sm">
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 text-2xl mt-0.5 flex-shrink-0"

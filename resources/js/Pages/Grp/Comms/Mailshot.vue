@@ -641,12 +641,6 @@ watch(
     <Head :title="capitalize(pageHead.title)" />
 
     <PageHeading :data="pageHead">
-        <template #afterTitle v-if="
-            props.mailshotType === 'marketing' &&
-            ['in_process', 'ready', 'scheduled'].includes(props.status ?? '') && !props.isSecondWave
-        ">
-            <span>| Estimated Recipients : {{ formatNumber(props.estimatedRecipients) ?? 0 }}</span>
-        </template>
         <template #afterTitle2>
             <MailshotJourney :steps="journey" class="ml-4" />
         </template>
