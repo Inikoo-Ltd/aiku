@@ -196,3 +196,17 @@ test('indexnow key file is served and the ping submits every public url', functi
     config(['services.indexnow.key' => null]);
     expect((new PingIndexNow())->handle())->toBe(0);
 });
+
+test('future-dated posts stay hidden until their date', function () {
+    $slug = 'test-scheduled-post-'.uniqid();
+    $path = resource_path("markdown/aiku-public/blog/{$slug}.md");
+    file_put_contents($path, "---\ntitle: Scheduled\nsummary: Not yet\ndate: ".now()->addDays(3)->toDateString()."\ntags: test\n---\n\nSoon.\n");
+
+    try {
+        expect(BlogPosts::all()->pluck('slug'))->not->toContain($slug)
+            ->and(BlogPosts::find($slug))->toBeNull();
+        get($this->host.'/blog/'.$slug)->assertNotFound();
+    } finally {
+        unlink($path);
+    }
+});
