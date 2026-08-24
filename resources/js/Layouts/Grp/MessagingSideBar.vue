@@ -307,11 +307,11 @@ onUnmounted(() => {
         <!-- Toggle: collapse-expand MessagingSideBar -->
         <div
             @click="handleToggle"
-            class="absolute z-10 left-0 top-2/4 -translate-y-full -translate-x-1/2 w-8 lg:w-5 aspect-square border border-[var(--chat-muted)] rounded-full bg-[var(--chat-line)] flex justify-center items-center cursor-pointer"
+            class="absolute z-10 left-0 top-2/4 -translate-y-full lg:-translate-x-1/2 w-11 lg:w-5 aspect-square border border-[var(--chat-muted)] rounded-full bg-[var(--chat-line)] flex justify-center items-center cursor-pointer"
             :title="layout.messagingSidebar.show ? 'Collapse the bar' : 'Expand the bar'">
             <FontAwesomeIcon
                 icon="far fa-chevron-left"
-                class="h-[10px] leading-none transition-all duration-300 ease-in-out text-[var(--chat-text)]"
+                class="h-4 lg:h-[10px] leading-none transition-all duration-300 ease-in-out text-[var(--chat-text)]"
                 aria-hidden="true"
                 :class="layout.messagingSidebar.show ? 'rotate-180' : ''" />
         </div>
