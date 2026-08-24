@@ -897,7 +897,7 @@ onUnmounted(() => {
                         :style="activeTab === 'waiting' ? { color: 'var(--theme-color-4)' } : {}"
                         @click="activeTab = 'waiting'">
                         {{ trans("Waiting") }}
-                        <span v-if="viewMode === 'my' && tabUnread.waiting"
+                        <span v-if="viewMode === 'my' && !highlightView && tabUnread.waiting"
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
                             :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.waiting }}</span>
                     </button>
@@ -907,7 +907,7 @@ onUnmounted(() => {
                         :style="activeTab === 'active' ? { color: 'var(--theme-color-4)' } : {}"
                         @click="activeTab = 'active'">
                         {{ trans("Active") }}
-                        <span v-if="viewMode === 'my' && tabUnread.active"
+                        <span v-if="viewMode === 'my' && !highlightView && tabUnread.active"
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
                             :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.active }}</span>
                     </button>
@@ -917,7 +917,7 @@ onUnmounted(() => {
                         :style="activeTab === 'closed' ? { color: 'var(--theme-color-4)' } : {}"
                         @click="activeTab = 'closed'">
                         {{ trans("Closed") }}
-                        <span v-if="viewMode === 'my' && tabUnread.closed"
+                        <span v-if="viewMode === 'my' && !highlightView && tabUnread.closed"
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
                             :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.closed }}</span>
                     </button>
@@ -961,7 +961,7 @@ onUnmounted(() => {
                                     <span class="text-sm font-medium text-gray-800 truncate">{{ capitalize(c.name) }}</span>
                                     <span class="text-[10px] text-gray-400 shrink-0">{{ c.lastMessageTime }}</span>
                                 </div>
-                                <div v-if="(spamView || trashView) && c.shop?.name" class="flex items-center gap-1 text-[10px] text-gray-400 truncate">
+                                <div v-if="(spamView || trashView || highlightView) && c.shop?.name" class="flex items-center gap-1 text-[10px] text-gray-400 truncate">
                                     <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" />
                                     <span class="truncate">{{ c.shop.name }}</span>
                                 </div>
