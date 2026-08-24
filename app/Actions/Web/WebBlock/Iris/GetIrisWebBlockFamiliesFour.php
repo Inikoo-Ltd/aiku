@@ -16,7 +16,7 @@ use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetIrisWebBlockSubDepartmentsThree
+class GetIrisWebBlockFamiliesFour
 {
     use AsObject;
     use HasSubDepartmentsThree;
@@ -30,11 +30,10 @@ class GetIrisWebBlockSubDepartmentsThree
             return null;
         }
 
-        $webBlock = $this->getSubDepartmentsThree($webpage, $webBlock);
+        $webBlock = $this->getSubDepartmentsThree($webpage, $webBlock, 'family');
 
         data_set($webBlock, 'web_block.layout.data.fieldValue.department', ['slug' => $department->slug, 'name' => $department->name]);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', $department->name);
-
 
         return [
             'type' => $webBlock['type'],

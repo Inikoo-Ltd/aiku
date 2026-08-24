@@ -38,6 +38,7 @@ import Carousel1Blueprint from "@/Components/CMS/Webpage/Carousel-1/Blueprint"
 import SubDepartment1Blueprint from "@/Components/CMS/Webpage/SubDepartment1/Blueprint"
 import SubDepartment2Blueprint from "@/Components/CMS/Webpage/SubDepartment2/Blueprint"
 import SubDepartment3Blueprint from "@/Components/CMS/Webpage/SubDepartment3/Blueprint"
+import SubDepartment4Blueprint from "@/Components/CMS/Webpage/SubDepartment4/Blueprint"
 import Product1Blueprint from "@/Components/CMS/Webpage/Product1/Blueprint"
 import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint'
 import ProductsList2Blueprint from '@/Components/CMS/Webpage/Products2/Blueprint'
@@ -47,6 +48,7 @@ import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
 import Families1Blueprint from '@/Components/CMS/Webpage/Families1/Blueprint'
 import Families2Blueprint from '@/Components/CMS/Webpage/Families2/Blueprint'
 import Families3Blueprint from '@/Components/CMS/Webpage/Families3/Blueprint'
+import Families4Blueprint from '@/Components/CMS/Webpage/Families4/Blueprint'
 import CtaCarousel from '@/Components/CMS/Webpage/CarouselCta/Blueprint'
 import CarouselImageBackgroundIrisBlueprint from "@/Components/CMS/Webpage/CarouselImageBackground/Blueprint"
 import BluprintBestseller from "@/Components/CMS/Webpage/Products1/BluprintBestseller"
@@ -57,6 +59,7 @@ import Product3 from '@/Components/CMS/Webpage/Product3/Blueprint'
 import CollectionDescription from '@/Components/CMS/Webpage/CollectionDescription/Blueprint'
 import DepartmentDescription from "@/Components/CMS/Webpage/DepartmentDescription/Blueprint"
 import DepartmentDescription2 from "@/Components/CMS/Webpage/DepartmentDescription2/Blueprint"
+import DepartmentDescription3 from "@/Components/CMS/Webpage/DepartmentDescription3/Blueprint"
 import SubDepartmentDesciption from "../Components/CMS/Webpage/SubDepartmentDescription/Blueprint"
 import { Mainbluprint } from '@/Components/CMS/Webpage/Products1/BlueprintWebpages'
 import Product1EcomBlueprint from '@/Components/CMS/Webpage/Product1/Ecommerce/Blueprint'
@@ -98,17 +101,20 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		"sub-departments-1": SubDepartment1Blueprint.blueprint,
 		"sub-departments-2": SubDepartment2Blueprint.blueprint,
 		"sub-departments-3": SubDepartment3Blueprint.blueprint,
+		"sub-departments-4": SubDepartment4Blueprint.blueprint,
 
 		// family
 		'collection-description-1' : CollectionDescription.blueprint,
 		'department-description-1' : DepartmentDescription.blueprint,
 		'department-description-2' : DepartmentDescription2.blueprint,
+		'department-description-3' : DepartmentDescription3.blueprint,
 		'sub-department-description-1' : SubDepartmentDesciption.blueprint,
 
 		// families list
 		"families-1": Families1Blueprint.blueprint,
 		"families-2": Families2Blueprint.blueprint,
 		"families-3": Families3Blueprint.blueprint,
+		"families-4": Families4Blueprint.blueprint,
 
 		// family-description
 		'family-1': FamilyBluprint.blueprint,

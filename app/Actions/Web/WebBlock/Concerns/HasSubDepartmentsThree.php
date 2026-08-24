@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 
 trait HasSubDepartmentsThree
 {
-    protected function getSubDepartmentsThree(Webpage $webpage, array $webBlock): array
+    protected function getSubDepartmentsThree(Webpage $webpage, array $webBlock, string $publishedLayoutKey = 'sub_department'): array
     {
         $parent = $webpage->model;
 
@@ -73,7 +73,7 @@ trait HasSubDepartmentsThree
 
         $familiesList = GetFamiliesUnderDepartmentPage::run($parent);
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['sub_department']['data']['fieldValue'] ?? []);
+        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout[$publishedLayoutKey]['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_department_list', $subDepartmentList ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.collections_list', $collectionList ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.filter_options', array_merge($subDepartmentList ?? [], $collectionList ?? []));

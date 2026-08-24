@@ -64,11 +64,14 @@ const DEPARTMENT_WEBPAGE_BLOCKS = [
     'department',
     'department-description-1',
     'department-description-2',
+    'department-description-3',
     'faq-department',
     'top-families',
     'sub-departments-1',
     'sub-departments-2',
     'sub-departments-3',
+    'sub-departments-4',
+    'families-4',
 ];
 
 const SUB_DEPARTMENT_WEBPAGE_BLOCKS = [

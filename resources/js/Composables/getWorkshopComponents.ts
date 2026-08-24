@@ -45,17 +45,20 @@ const workshopLoaders: Record<string, AsyncComponentLoader> = {
     'collection-description-1': () => import('@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionWorkshop.vue'),
     'department-description-1': () => import('@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionWorkshop.vue'),
     'department-description-2': () => import('@/Components/CMS/Webpage/DepartmentDescription2/DepartmentDescription2Workshop.vue'),
+    'department-description-3': () => import('@/Components/CMS/Webpage/DepartmentDescription3/DepartmentDescription3Workshop.vue'),
     'sub-department-description-1': () => import('@/Components/CMS/Webpage/SubDepartmentDescription/SubDepartmentDescriptionWorkshop.vue'),
 
     //sub-department
     'sub-departments-1': () => import('@/Components/CMS/Webpage/SubDepartment1/SubDepartmentWorkshop.vue'),
     'sub-departments-2': () => import('@/Components/CMS/Webpage/SubDepartment2/SubDepartmentWorkshop.vue'),
     'sub-departments-3': () => import('@/Components/CMS/Webpage/SubDepartment3/SubDepartment3Workshop.vue'),
+    'sub-departments-4': () => import('@/Components/CMS/Webpage/SubDepartment4/SubDepartment4Workshop.vue'),
 
     //family
     'families-1': () => import('@/Components/CMS/Webpage/Families1/Families1Workshop.vue'),
     'families-2': () => import('@/Components/CMS/Webpage/Families2/Families2Workshop.vue'),
     'families-3': () => import('@/Components/CMS/Webpage/Families3/Families3Workshop.vue'),
+    'families-4': () => import('@/Components/CMS/Webpage/Families4/Families4Workshop.vue'),
 
     //family
     'families-1-overview': () => import('@/Components/CMS/Webpage/Families1Overview/Families1OverviewWorkshop.vue'),

@@ -1,9 +1,9 @@
 {
-	"slug": "department-description-3",
+	"slug": "families-4",
 	"scope": "webpage",
-	"code": "department-description-3",
-	"name": "department-description",
-	"category": "department_description",
+	"code": "families-4",
+	"name": "families",
+	"category": "family",
 	"fixed": true,
 	"icon": ["fal", "folder"],
 	"website_type" : ["b2b","b2c","dropshipping"],

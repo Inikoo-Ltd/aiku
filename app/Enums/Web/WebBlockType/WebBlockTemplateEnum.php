@@ -37,12 +37,14 @@ enum WebBlockTemplateEnum: string
                 'sub-departments-1',
                 'sub-departments-2',
                 'sub-departments-3',
+                'sub-departments-4',
             ],
 
             self::FAMILIES => [
                 'families-1',
                 'families-2',
                 'families-3',
+                'families-4',
             ],
 
             self::LIST_PRODUCTS => [
@@ -59,6 +61,7 @@ enum WebBlockTemplateEnum: string
             self::DEPARTMENT_DESCRIPTION => [
                 'department-description-1',
                 'department-description-2',
+                'department-description-3',
             ],
 
             self::FAMILY_DESCRIPTION => [

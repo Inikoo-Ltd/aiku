@@ -66,12 +66,17 @@ const SeeAlso1Iris = async(() => import("@/Iris/Components/IrisBlocks/SeeAlso1Ir
 const family1Iris = async(() => import("@/Iris/Components/IrisBlocks/family1Iris.vue"))
 const family2Iris = async(() => import("@/Iris/Components/IrisBlocks/family2Iris.vue"))
 const family3Iris = async(() => import("@/Iris/Components/IrisBlocks/family3Iris.vue"))
+
 const FamiliesIris1 = async(() => import("@/Iris/Components/IrisBlocks/FamiliesIris1.vue"))
 const FamiliesIris2 = async(() => import("@/Iris/Components/IrisBlocks/FamiliesIris2.vue"))
 const FamiliesIris3 = async(() => import("@/Iris/Components/IrisBlocks/FamiliesIris3.vue"))
+const FamiliesIris4 = async(() => import("@/Iris/Components/IrisBlocks/FamiliesIris4.vue"))
+
 const SubDepartment1Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris.vue"))
 const SubDepartment2Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris2.vue"))
 const SubDepartment3Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris3.vue"))
+const SubDepartment4Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris4.vue"))
+
 const WowsbarBannerIris = async(() => import("@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue"))
 const ImageIris = async(() => import("@/Iris/Components/IrisBlocks/ImageIris.vue"))
 const TextContentIris = async(() => import("@/Iris/Components/IrisBlocks/TextContentIris.vue"))
@@ -149,17 +154,20 @@ const components = (shop_type?: string, options: IrisComponentOptions = {}): Rec
 		'collection-description-1' : CollectionDescriptionIris,
 		'department-description-1' : DepartmentDescriptionIris,
 		'department-description-2' : DepartmentDescriptionIris2,
+		'department-description-3' : DepartmentDescriptionIris3,
 		'sub-department-description-1' : SubDepartmentDescriptionIris,
 
 		//sub-department
 		"sub-departments-1": SubDepartment1Iris,
 		"sub-departments-2": SubDepartment2Iris,
 		"sub-departments-3": SubDepartment3Iris,
+		"sub-departments-4": SubDepartment4Iris,
 
 		//family
 		"families-1": FamiliesIris1,
 		"families-2": FamiliesIris2,
 		"families-3": FamiliesIris3,
+		"families-4": FamiliesIris4,
 
 
 		//family

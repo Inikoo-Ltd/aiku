@@ -7,16 +7,15 @@
  * copyright 2026
 */
 
-namespace App\Actions\Web\WebBlock\Iris;
+namespace App\Actions\Web\WebBlock\Workshop;
 
 use App\Actions\Web\WebBlock\Concerns\HasSubDepartmentsThree;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetIrisWebBlockSubDepartmentsThree
+class GetWebBlockFamiliesFour
 {
     use AsObject;
     use HasSubDepartmentsThree;
@@ -30,19 +29,12 @@ class GetIrisWebBlockSubDepartmentsThree
             return null;
         }
 
-        $webBlock = $this->getSubDepartmentsThree($webpage, $webBlock);
+        $webBlock = $this->getSubDepartmentsThree($webpage, $webBlock, 'family');
 
+        data_set($webBlock, 'web_block.layout.data.permissions', ['']);
         data_set($webBlock, 'web_block.layout.data.fieldValue.department', ['slug' => $department->slug, 'name' => $department->name]);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', $department->name);
 
-
-        return [
-            'type' => $webBlock['type'],
-            'structure' => Arr::get(
-                $webBlock,
-                'web_block.layout.data.fieldValue',
-                []
-            ),
-        ];
+        return $webBlock;
     }
 }

@@ -24,6 +24,7 @@ use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsProductCategorie
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockProducts;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamiliesFour;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockSubDepartmentsThree;
 use App\Actions\Web\WebBlock\Workshop\GetFaqDepartment;
 use App\Actions\Web\WebBlock\Workshop\GetTopFamilies;
@@ -36,7 +37,7 @@ trait WithFillWorkshopWebBlocks
         $webBlockType = Arr::get($webBlock, 'type');
 
 
-        if (in_array($webBlockType, ['department-description-1', 'department-description-2'])) {
+        if (in_array($webBlockType, ['department-description-1', 'department-description-2', 'department-description-3'])) {
             $departmentData = GetWebBlockDepartmentDescription::run($webpage, $webBlock);
             if ($departmentData) {
                 $parsedWebBlocks[$key] = $departmentData;
@@ -58,6 +59,13 @@ trait WithFillWorkshopWebBlocks
             }
         } elseif (str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetWebBlockSubDepartments::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'families-4') {
+            $webBlockData = GetWebBlockFamiliesFour::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif (str_contains($webBlockType, 'families-')) {
             $parsedWebBlocks[$key] = GetWebBlockFamilies::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'products-')) {

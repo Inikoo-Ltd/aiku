@@ -83,6 +83,12 @@ const enableVideo = () => {
 const _sidebar = ref()
 const _content = ref()
 
+const fullDescription = computed(() =>
+	[props.fieldValue?.department?.description, props.fieldValue?.department?.description_extra]
+		.filter(Boolean)
+		.join("")
+)
+
 const embedUrl = computed(() => {
 	const v = props.fieldValue?.department?.showcase_video
 	if (!v) return null
@@ -118,10 +124,8 @@ const embedUrl = computed(() => {
 
 	return v
 })
-const desktopMediaRef = ref<HTMLElement | null>(null)
-const mobileMediaRef = ref<HTMLElement | null>(null)
-const desktopDescriptionRef = ref<HTMLElement | null>(null)
-const mobileDescriptionRef = ref<HTMLElement | null>(null)
+
+const descriptionRef = ref<HTMLElement | null>(null)
 
 const expanded = ref(false)
 const showReadMore = ref(false)
@@ -130,15 +134,12 @@ let resizeObserver: ResizeObserver | null = null
 const calculateDescriptionHeight = async () => {
 	await nextTick()
 
-	const media = props.screenType === "mobile" ? mobileMediaRef.value : desktopMediaRef.value
-	const description =
-		props.screenType === "mobile" ? mobileDescriptionRef.value : desktopDescriptionRef.value
+	const description = descriptionRef.value
 
-	if (!media || !description) return
+	if (!description || expanded.value) return
 
-	showReadMore.value = description.scrollHeight > media.offsetHeight
+	showReadMore.value = description.scrollHeight > description.clientHeight + 4
 }
-
 
 onMounted(async () => {
 	await nextTick()
@@ -156,16 +157,12 @@ onMounted(async () => {
 			calculateDescriptionHeight()
 		})
 
+		if (descriptionRef.value) {
+			resizeObserver.observe(descriptionRef.value)
+		}
+
 		if (_content.value) {
 			resizeObserver.observe(_content.value)
-		}
-
-		if (desktopMediaRef.value) {
-			resizeObserver.observe(desktopMediaRef.value)
-		}
-
-		if (mobileMediaRef.value) {
-			resizeObserver.observe(mobileMediaRef.value)
 		}
 	}
 })
@@ -180,17 +177,15 @@ onUnmounted(() => {
 
 watch(
 	() => [
+		props.fieldValue.department.description,
 		props.fieldValue.department.description_extra,
-		props.fieldValue.department.showcase_video,
-		props.fieldValue.department.showcase_image,
 		props.screenType,
 	],
-	()=>{
+	() => {
 		calculateDescriptionHeight()
 	},
 	{ immediate: true }
 )
-
 </script>
 
 <template>
@@ -204,27 +199,57 @@ watch(
 				width: 'auto',
 			}"
 			class="py-6 md:py-8 lg:py-10 2xl:py-14 px-4 md:px-8 2xl:px-12">
+			<div ref="_content" :style="{ ...getStyles(fieldValue?.description?.properties, screenType) }">
+				<h1
+					class="text-[28px] md:text-[36px] lg:text-[46px] 2xl:text-[60px] font-bold leading-tight text-slate-900">
+					{{
+						props.fieldValue.department.description_title ||
+						props.fieldValue.department.name
+					}}
+				</h1>
+
+				<div class="relative mt-4">
+					<div
+						ref="descriptionRef"
+						class="text-[14px] md:text-[15px] 2xl:text-[17px] leading-7 2xl:leading-8 text-slate-700 overflow-hidden transition-all duration-300"
+						:class="!expanded ? 'max-h-[84px] md:max-h-[112px] 2xl:max-h-[128px]' : ''"
+						v-html="fullDescription" />
+
+					<div
+						v-if="!expanded && showReadMore"
+						class="absolute bottom-0 left-0 right-0 h-10 pointer-events-none bg-gradient-to-t from-white via-white/90 to-transparent" />
+				</div>
+
+				<button
+					v-if="showReadMore"
+					type="button"
+					class="mt-2 underline italic text-xs text-slate-700"
+					@click="expanded = !expanded">
+					{{ expanded ? ctrans("Read Less") : ctrans("Read More") }}
+				</button>
+			</div>
+
 			<div
-				class="grid grid-cols-1 lg:grid-cols-[260px_1fr] 2xl:grid-cols-[320px_1fr] gap-6 lg:gap-10 2xl:gap-14">
-				<!-- Sidebar -->
-				<aside class="hidden lg:flex lg:flex-col border-r border-gray-300 pr-4 2xl:pr-8"
-				:style="{
+				class="mt-6 lg:mt-8 grid grid-cols-1 lg:grid-cols-[260px_1fr] 2xl:grid-cols-[320px_1fr] gap-6 lg:gap-10 2xl:gap-14"
+				:style="{ ...getStyles(fieldValue?.cta?.properties, screenType) }">
+				<!-- Sidebar Desktop -->
+				<aside
+					class="hidden lg:flex lg:flex-col border-r border-gray-300 pr-4 2xl:pr-8"
+					:style="{
 						...getStyles(fieldValue?.sidebar?.properties, screenType),
 					}">
-					<h3 class="font-bold text-lg 2xl:text-xl mb-6">
+					<h3 class="font-bold text-base 2xl:text-lg mb-5">
 						{{ ctrans("Browse By Category:") }}
 					</h3>
 
 					<div class="relative flex-1 min-h-0">
-						<div
-							ref="_sidebar"
-							class="absolute inset-0 overflow-y-auto pr-4 space-y-4">
+						<div ref="_sidebar" class="absolute inset-0 overflow-y-auto category-scroll pr-4 space-y-4">
 							<LinkIris
 								v-for="item of props.fieldValue.sub_departments"
 								:key="item.url"
 								:type="'internal'"
 								:href="item.url"
-								class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
+								class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 underline hover:no-underline">
 								{{ item.name }}
 							</LinkIris>
 							<LinkIris
@@ -232,252 +257,131 @@ watch(
 								:key="collection.url"
 								:type="'internal'"
 								:href="collection.url"
-								class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
+								class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 underline hover:no-underline">
 								{{ collection.name }}
 							</LinkIris>
 						</div>
 					</div>
 				</aside>
 
-				<!-- Main Content -->
-				<div ref="_content" :style="{...getStyles(fieldValue?.description?.properties, screenType)}" class="h-fit">
-					<h1
-						class="text-[28px] md:text-[36px] lg:text-[46px] 2xl:text-[60px] font-bold leading-tight text-slate-900">
-						{{
-							props.fieldValue.department.description_title ||
-							props.fieldValue.department.name
-						}}
-					</h1>
+				<!-- Sidebar Mobile -->
+				<details
+					class="lg:hidden border-y border-gray-300"
+					:style="{
+						...getStyles(fieldValue?.sidebar?.properties, screenType),
+					}">
+					<summary
+						class="flex items-center justify-between py-5 px-4 text-xl font-bold list-none cursor-pointer">
+						{{ ctrans("Browse By Category:") }}
 
-					<div
-						class="mt-4 text-[14px] md:text-[15px] 2xl:text-[17px] leading-7 text-slate-700"
-						v-html="fieldValue.department.description" />
+						<FontAwesomeIcon
+							:icon="faChevronDown"
+							class="w-8 h-8 transition-transform details-arrow" />
+					</summary>
 
-					<!-- Banner Desktop  -->
-					<div class="mt-6 overflow-hidden bg-[#E7E7E7] hidden lg:block" :style="{
-							...getStyles(fieldValue?.cta?.properties,screenType),
-						}">
-						<div class="grid grid-cols-1 lg:grid-cols-[46%_54%] items-start">
-							<!-- Content -->
-							<div
-								class="flex flex-col justify-center px-5 py-8 md:px-8 lg:px-10 lg:py-10 2xl:px-16 2xl:py-14">
-								<div class="relative">
-									<div
-										ref="desktopDescriptionRef"
-										class="text-[14px] md:text-[15px] 2xl:text-[17px] leading-7 2xl:leading-8 text-slate-700 max-w-[520px] 2xl:max-w-[650px] mx-auto overflow-hidden transition-all duration-300"
-										:class="!expanded ? 'lg:max-h-[170px] 2xl:max-h-[310px]' : ''"
-										v-html="fieldValue.department.description_extra" />
+					<div class="pb-4 px-4 space-y-3">
+						<LinkIris
+							v-for="item in props.fieldValue.sub_departments"
+							:key="item.url"
+							:href="item.url"
+							type="internal"
+							class="block text-[15px] text-slate-700 underline hover:no-underline">
+							{{ item.name }}
+						</LinkIris>
+						<LinkIris
+							v-for="(collection, idxCol) of props.fieldValue.collections"
+							:key="collection.url"
+							:type="'internal'"
+							:href="collection.url"
+							class="block text-[15px] text-slate-700 underline hover:no-underline">
+							{{ collection.name }}
+						</LinkIris>
+					</div>
+				</details>
 
-									<!-- Fade Overlay -->
-									<div
-										v-if="!expanded && showReadMore"
-										class="absolute bottom-0 left-0 right-0 h-12 pointer-events-none bg-gradient-to-t from-[#E7E7E7] via-[#E7E7E7]/90 to-transparent" />
-								</div>
-
-								<div v-if="showReadMore" class="flex justify-start">
-									<button
-										type="button"
-										class="underline italic text-xs"
-										@click="expanded = !expanded">
-										{{ expanded ? "Read Less" : "Read More" }}
-									</button>
-								</div>
-
-								<div class="flex justify-center mt-5">
-									<button
-										v-if="fieldValue.department.showcase_video" :style="getStyles(fieldValue?.button?.container?.properties, screenType)"
-										class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3 md:px-8 lg:px-10 2xl:px-12 2xl:py-4 rounded-md transition"
-										@click="videoDialogVisible = true">
-										{{ fieldValue?.button?.text ? fieldValue?.button?.text :ctrans("See a video") }}
-									</button>
-
-									<a v-else href="#sub-department">
-										<button :style="getStyles(fieldValue?.button?.container?.properties, screenType)"
-											class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3 md:px-8 lg:px-10 2xl:px-12 2xl:py-4 rounded-md transition">
-												{{ fieldValue?.button?.text ? fieldValue?.button?.text : ctrans("Browse All") }}
-										</button>
-									</a>
-								</div>
+				<!-- Media -->
+				<div>
+					<!-- Desktop -->
+					<div class="hidden lg:block overflow-hidden h-[360px] 2xl:h-[500px]">
+						<template v-if="fieldValue.department.showcase_video && embedUrl">
+							<div class="relative w-full h-full">
+								<iframe
+									v-if="screenType === 'desktop' && !videoDialogVisible && videoReady"
+									:src="embedUrl"
+									frameborder="0"
+									allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+									referrerpolicy="strict-origin-when-cross-origin"
+									allowfullscreen
+									class="absolute inset-0 w-full h-full"
+									:title="fieldValue.department.name || ctrans('Department video')" />
 							</div>
+						</template>
 
-							<!-- Image / Video / Placeholder -->
-							<div
-								class="overflow-hidden h-[220px] md:h-[280px] lg:h-[360px] 2xl:h-[500px]"
-								ref="desktopMediaRef">
-								<template v-if="fieldValue.department.showcase_video && embedUrl">
-									<div
-										class="relative w-full h-[220px] md:h-[280px] lg:h-[360px] 2xl:h-[500px]">
-										<iframe
-											v-if="screenType === 'desktop' && !videoDialogVisible && videoReady"
-											:src="embedUrl"
-											frameborder="0"
-											allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
-											referrerpolicy="strict-origin-when-cross-origin"
-											allowfullscreen
-											class="absolute inset-0 w-full h-full"
-											:title="fieldValue.department.name || ctrans('Department video')"
-											@load="calculateDescriptionHeight" />
-									</div>
-								</template>
+						<template v-else-if="fieldValue.department.showcase_image">
+							<Image
+								:src="fieldValue.department.showcase_image"
+								:alt="fieldValue.department.name || 'showcase image'"
+								class="w-full h-full object-cover" />
+						</template>
 
-								<template v-else-if="fieldValue.department.showcase_image">
-									<Image
-										:src="fieldValue.department.showcase_image"
-										:alt="fieldValue.department.name || 'showcase image'"
-										class="w-full h-[220px] md:h-[280px] lg:h-[360px] 2xl:h-[500px] object-cover"
-										@load="calculateDescriptionHeight" />
-								</template>
-
-								<template v-else>
-									<div
-										class="w-full h-[220px] md:h-[280px] lg:h-[360px] 2xl:h-[500px] flex items-center justify-center bg-gray-100">
-										<FontAwesomeIcon
-											:icon="faVideoSlash"
-											class="text-5xl md:text-6xl text-gray-400" />
-									</div>
-								</template>
+						<template v-else>
+							<div class="w-full h-full flex items-center justify-center bg-gray-100">
+								<FontAwesomeIcon :icon="faVideoSlash" class="text-5xl md:text-6xl text-gray-400" />
 							</div>
-						</div>
+						</template>
 					</div>
 
-					<!-- Banner Mobile  -->
-					<details class="lg:hidden border-y border-gray-300" :style="{
-						...getStyles(fieldValue?.sidebar?.properties,screenType),
-					}">
-						<summary
-							class="flex items-center justify-between py-5 px-4 text-xl font-bold list-none cursor-pointer">
-							{{ ctrans("Browse By Category:") }}
-
-							<FontAwesomeIcon
-								:icon="faChevronDown"
-								class="w-8 h-8 transition-transform details-arrow" />
-						</summary>
-
-						<div class="pb-4 px-4 space-y-3">
-							<LinkIris
-								v-for="item in props.fieldValue.sub_departments"
-								:key="item.url"
-								:href="item.url"
-								type="internal"
-								class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
-								{{ item.name }}
-							</LinkIris>
-							<LinkIris
-								v-for="(collection, idxCol) of props.fieldValue.collections"
-								:key="collection.url"
-								:type="'internal'"
-								:href="collection.url"
-								class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
-								{{ collection.name }}
-							</LinkIris>
-						</div>
-					</details>
-
-					<!-- Mobile Only -->
-					<div class="lg:hidden bg-[#E7E7E7] overflow-hidden" :style="{
-						...getStyles(fieldValue?.cta?.properties, screenType),
-					}">
-						<!-- Image -->
-						<div class="aspect-[4/3] overflow-hidden" ref="mobileMediaRef">
-							<template v-if="fieldValue.department.showcase_video">
-								<div class="relative w-full h-full">
-									<iframe
-										v-if="mobileVideoActivated"
-										:title="fieldValue.department.name || ctrans('Department video')"
-										:src="embedUrl"
-										class="absolute inset-0 w-full h-full"
-										frameborder="0"
-										allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
-										referrerpolicy="strict-origin-when-cross-origin"
-									/>
-									<button
-										v-else
-										type="button"
-										class="absolute inset-0 w-full h-full"
-										:aria-label="ctrans('Play video')"
-										@click="mobileVideoActivated = true">
-										<Image
-											v-if="fieldValue.department.showcase_video_thumbnail"
-											:src="{ original: fieldValue.department.showcase_video_thumbnail }"
-											:responsiveEnabled="false"
-											:alt="fieldValue.department.name || ctrans('Department video')"
-											:imageCover="true"
-											class="absolute inset-0 w-full h-full" />
-										<Image
-											v-else-if="fieldValue.department.showcase_image"
-											:src="fieldValue.department.showcase_image"
-											:alt="fieldValue.department.name || ctrans('Department video')"
-											:imageCover="true"
-											class="absolute inset-0 w-full h-full" />
-										<div v-else class="absolute inset-0 bg-gray-200"></div>
-										<span class="absolute inset-0 flex items-center justify-center">
-											<FontAwesomeIcon :icon="faPlayCircle" class="text-6xl text-white drop-shadow-lg" />
-										</span>
-									</button>
-								</div>
-							</template>
-
-							<template v-else-if="fieldValue.department.showcase_image">
-								<Image
-									:src="fieldValue.department.showcase_image"
-									:alt="fieldValue.department.name"
-									class="w-full h-full object-cover" />
-							</template>
-
-							
-
-							<template v-else>
-								<div
-									class="w-full h-full flex items-center justify-center bg-gray-200">
-									<FontAwesomeIcon
-										:icon="faVideoSlash"
-										class="text-5xl text-gray-400" />
-								</div>
-							</template>
-						</div>
-
-						<!-- Content -->
-						<div class="px-6 py-8 text-center">
-							<!-- <h2
-								v-if="fieldValue.department.name"
-								class="text-2xl font-bold text-slate-900 mb-4">
-								{{ fieldValue.department.name }}
-							</h2> -->
-
-							<div class="relative text-slate-700 text-sm leading-6">
-								<div
-									ref="mobileDescriptionRef"
-									class="overflow-hidden transition-all duration-300"
-									:class="!expanded ? 'max-h-[90px]' : ''"
-									v-html="fieldValue.department.description_extra" />
-
-								<div
-									v-if="!expanded && showReadMore"
-									class="absolute bottom-0 left-0 right-0 h-10 pointer-events-none bg-gradient-to-t from-[#E7E7E7] via-[#E7E7E7]/90 to-transparent" />
-							</div>
-
-							<button
-								v-if="showReadMore"
-								type="button"
-								class="mt-3 text-xs underline text-slate-700 flex jsutfy-start"
-								@click="expanded = !expanded">
-								{{ expanded ? "Read Less" : "Read More" }}
-							</button>
-							<div>
+					<!-- Mobile -->
+					<div class="lg:hidden aspect-[4/3] overflow-hidden">
+						<template v-if="fieldValue.department.showcase_video">
+							<div class="relative w-full h-full">
+								<iframe
+									v-if="mobileVideoActivated"
+									:title="fieldValue.department.name || ctrans('Department video')"
+									:src="embedUrl"
+									class="absolute inset-0 w-full h-full"
+									frameborder="0"
+									allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+									referrerpolicy="strict-origin-when-cross-origin" />
 								<button
-									v-if="fieldValue.department.showcase_video" :style="getStyles(fieldValue?.button?.container?.properties, screenType)"
-									class="mt-6 w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-md transition"
-									@click="videoDialogVisible = true">
-										{{ fieldValue?.button?.text ? fieldValue?.button?.text : ctrans("See a video") }}
+									v-else
+									type="button"
+									class="absolute inset-0 w-full h-full"
+									:aria-label="ctrans('Play video')"
+									@click="mobileVideoActivated = true">
+									<Image
+										v-if="fieldValue.department.showcase_video_thumbnail"
+										:src="{ original: fieldValue.department.showcase_video_thumbnail }"
+										:responsiveEnabled="false"
+										:alt="fieldValue.department.name || ctrans('Department video')"
+										:imageCover="true"
+										class="absolute inset-0 w-full h-full" />
+									<Image
+										v-else-if="fieldValue.department.showcase_image"
+										:src="fieldValue.department.showcase_image"
+										:alt="fieldValue.department.name || ctrans('Department video')"
+										:imageCover="true"
+										class="absolute inset-0 w-full h-full" />
+									<div v-else class="absolute inset-0 bg-gray-200"></div>
+									<span class="absolute inset-0 flex items-center justify-center">
+										<FontAwesomeIcon :icon="faPlayCircle" class="text-6xl text-white drop-shadow-lg" />
+									</span>
 								</button>
-								<a v-else href="#sub-department">
-									<button :style="getStyles(fieldValue?.button?.container?.properties, screenType)"
-										class="mt-6 bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3 md:px-8 lg:px-10 2xl:px-12 2xl:py-4 rounded-md transition">
-										{{ fieldValue?.button?.text ? fieldValue?.button?.text : ctrans("Browse All") }}
-									</button>
-								</a>
 							</div>
-						</div>
+						</template>
+
+						<template v-else-if="fieldValue.department.showcase_image">
+							<Image
+								:src="fieldValue.department.showcase_image"
+								:alt="fieldValue.department.name"
+								class="w-full h-full object-cover" />
+						</template>
+
+						<template v-else>
+							<div class="w-full h-full flex items-center justify-center bg-gray-200">
+								<FontAwesomeIcon :icon="faVideoSlash" class="text-5xl text-gray-400" />
+							</div>
+						</template>
 					</div>
 				</div>
 			</div>
@@ -508,7 +412,6 @@ watch(
 					allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
 					referrerpolicy="strict-origin-when-cross-origin"
 					allowfullscreen
-					@load="console.log('iframe loaded')"
 					class="w-full h-full" />
 			</div>
 		</div>
