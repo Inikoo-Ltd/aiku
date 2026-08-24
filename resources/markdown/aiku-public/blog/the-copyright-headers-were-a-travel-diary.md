@@ -15,7 +15,7 @@ For the first seven years the headers say only `Copyright (c) 2009, Inikoo` — 
 Created:  10 October 2015 at 18:27:24 CEST, Mijas Costa, Sain
 ```
 
-"Sain". I was writing a basket module for the e-commerce front end and misspelled my own country. That typo is my favourite line in the codebase, because it proves everything else: these headers were typed live, one at a time, by a person in a hurry — not generated from a template.
+"Sain". I was writing a basket module for the e-commerce front end and misspelled the country I was living in. That typo is my favourite line in the codebase, because it proves everything else: these headers were typed live, one at a time, by a person in a hurry — not generated from a template.
 
 <figure><img src="/art/readme/draw-note-travel-diary.svg" alt="Watercolor sketch of luggage tags with city names and dates — Mijas Costa, Sheffield, Yiwu, Bali, Mexico City, Tokyo, Kuala Lumpur — joined by a dotted pencil route and a paper plane" width="1200" height="700" loading="eager"><figcaption>Read end to end, the headers draw a route.</figcaption></figure>
 
