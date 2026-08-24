@@ -39,12 +39,12 @@ use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
-use Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\SalesChannel\GetSalesChannelOptions;
 use App\Actions\Traits\HasGrData;
+use Illuminate\Support\Arr;
 
 class ShowCustomer extends OrgAction
 {
