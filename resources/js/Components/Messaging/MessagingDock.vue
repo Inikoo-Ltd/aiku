@@ -23,7 +23,7 @@ library.add(faComments, faSearch, faUser, faChevronLeft)
 
 const layout = inject("layout", layoutStructure)
 const store = useStaffMessaging()
-const desktopAnchor = computed(() => (layout.messagingSidebar.show ? "right-60" : "right-16"))
+const desktopAnchor = computed(() => (layout.messagingSidebar.show ? "right-60" : (layout.messagingSidebar.micro ? "right-8" : "right-16")))
 // Two thresholds on purpose: the floating button only makes sense where the rail is hidden,
 // while a conversation is a full-screen sheet on anything tablet-sized or smaller.
 const isMobile = ref(window.innerWidth < 768)

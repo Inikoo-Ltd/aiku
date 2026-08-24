@@ -36,6 +36,7 @@ export const layoutStructure = {
     },
     messagingSidebar: {
         show: false,
+        micro: false,
     },
     navigation: {
         grp: {} as grpNavigation,

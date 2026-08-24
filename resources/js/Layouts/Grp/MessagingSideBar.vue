@@ -9,7 +9,7 @@ import { computed, inject, nextTick, onMounted, onUnmounted, ref } from "vue"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faChevronLeft, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil } from "@fal"
+import { faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil } from "@fal"
 import { faStar as faStarSolid } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router } from "@inertiajs/vue3"
@@ -20,20 +20,43 @@ import ManageTeamModal from "@/Components/Messaging/ManageTeamModal.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useLiveUsers } from "@/Stores/active-users"
 import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
+import { fetchUnreadCount, totalUnread as crmUnread } from "@/Composables/useNotificationSound"
 import { useTruncate } from "@/Composables/useTruncate"
 
-library.add(faChevronLeft, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil)
+library.add(faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil)
 
 const openFullMessaging = () => router.visit(route("grp.chat.staff.index"))
 
 const layout = inject("layout", layoutStructure)
 const store = useStaffMessaging()
 
-const handleToggle = () => {
+const persistSidebarState = () => {
     if (typeof window !== "undefined") {
-        localStorage.setItem("messagingSideBar", (!layout.messagingSidebar.show).toString())
+        localStorage.setItem("messagingSideBar", layout.messagingSidebar.show.toString())
+        localStorage.setItem("messagingSideBarMicro", (!!layout.messagingSidebar.micro).toString())
     }
-    layout.messagingSidebar.show = !layout.messagingSidebar.show
+}
+
+const handleToggle = () => {
+    const bar = layout.messagingSidebar
+    if (bar.micro) {
+        bar.micro = false
+    } else {
+        bar.show = !bar.show
+    }
+    persistSidebarState()
+}
+
+const enterMicro = () => {
+    layout.messagingSidebar.show = false
+    layout.messagingSidebar.micro = true
+    persistSidebarState()
+}
+
+const expandSidebar = () => {
+    layout.messagingSidebar.show = true
+    layout.messagingSidebar.micro = false
+    persistSidebarState()
 }
 
 const searchInput = ref<HTMLInputElement | null>(null)
@@ -79,7 +102,7 @@ const openPlusSearch = () => {
 
 const openNewMessageFromCollapsed = async () => {
     if (!layout.messagingSidebar.show) {
-        handleToggle()
+        expandSidebar()
         await nextTick()
     }
     setTimeout(() => openPlusSearch(), 50)
@@ -167,7 +190,7 @@ const inSelectedOrg = (c: StaffCoworker) => selectedOrg.value
 type SideBarTab = "all" | "org" | "team" | "messages"
 const activeTab = ref<SideBarTab>("messages")
 const selectTab = (tab: SideBarTab) => {
-    if (!layout.messagingSidebar.show) handleToggle()
+    if (!layout.messagingSidebar.show) expandSidebar()
     // Clicking the org tab while it is already open swaps which single org is shown
     if (tab === "org" && activeTab.value === "org" && myOrgs.value.length > 1) {
         orgPickerOpen.value = !orgPickerOpen.value
@@ -284,9 +307,15 @@ onMounted(() => {
     if (localStorage.getItem("messagingSideBar")) {
         layout.messagingSidebar.show = JSON.parse(localStorage.getItem("messagingSideBar") ?? "false")
     }
+    layout.messagingSidebar.micro = !layout.messagingSidebar.show && localStorage.getItem("messagingSideBarMicro") === "true"
     fetchCoworkers("")
     store.fetchConversations()
-    refreshInterval = setInterval(() => fetchCoworkers(search.value), 60000)
+    refreshInterval = setInterval(() => {
+        fetchCoworkers(search.value)
+        // FooterMessage owns this count but is unmounted in micro view; keep the strip's badge fresh
+        if (layout.messagingSidebar.micro && layout?.user?.is_agent) fetchUnreadCount()
+    }, 60000)
+    if (layout.messagingSidebar.micro && layout?.user?.is_agent) fetchUnreadCount()
     tickInterval = setInterval(() => { nowTick.value++ }, 60000)
 })
 
@@ -301,7 +330,7 @@ onUnmounted(() => {
     <div
         class="hidden md:flex md:flex-col fixed inset-y-0 right-0 h-full bg-[var(--chat-bg)] border-l border-[var(--chat-line)] z-[22] transition-all duration-300 ease-in-out"
         :class="[
-            layout.messagingSidebar.show ? 'md:w-56' : 'md:w-12',
+            layout.messagingSidebar.show ? 'md:w-56' : (layout.messagingSidebar.micro ? 'md:w-4' : 'md:w-12'),
         ]"
         id="messagingSidebar">
         <!-- Toggle: collapse-expand MessagingSideBar -->
@@ -316,6 +345,35 @@ onUnmounted(() => {
                 :class="layout.messagingSidebar.show ? 'rotate-180' : ''" />
         </div>
 
+        <!-- MICRO: super-thin strip with the counts; click to grow back to the rail -->
+        <div v-if="layout.messagingSidebar.micro" class="flex-1 flex flex-col items-center gap-y-2 pt-14 cursor-pointer text-xxs tabular-nums leading-none" v-tooltip="trans('Show messaging bar')" @click="handleToggle">
+            <span class="text-[var(--chat-green)]">{{ allOnlineCount > 99 ? 99 : allOnlineCount }}</span>
+            <span class="text-[var(--chat-cyan)]">{{ orgOnlineCount > 99 ? 99 : orgOnlineCount }}</span>
+            <span class="text-[var(--chat-accent)]">{{ teamOnlineCount > 99 ? 99 : teamOnlineCount }}</span>
+            <span :class="store.totalUnread > 0 ? 'text-white bg-[var(--chat-red)] rounded-full px-0.5 py-0.5 -mx-1' : 'text-[var(--chat-label)]'">{{ store.totalUnread > 99 ? 99 : store.totalUnread }}</span>
+
+            <div class="w-3 border-t border-[var(--chat-line)]" />
+
+            <!-- Mini avatars: same people the rail shows, at strip scale -->
+            <div
+                v-for="item in railVisible"
+                :key="'micro-' + item.coworker.id"
+                class="relative h-3 w-3 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0"
+                :class="[item.online ? '' : 'opacity-40', unreadForUser(item.coworker.id) > 0 ? 'ring-1 ring-[var(--chat-red)]' : '']"
+                :title="getTooltipName(item.coworker.name, item.coworker.id)">
+                <Image v-if="item.coworker.avatar" :src="item.coworker.avatar" :alt="item.coworker.name" image-cover />
+            </div>
+            <span v-if="railOverflowCount > 0" class="text-[var(--chat-label)]">+{{ railOverflowCount }}</span>
+
+            <!-- Pending customer (CRM) chats: pinned near the bottom, where the rail keeps them -->
+            <span
+                v-if="layout?.user?.is_agent"
+                v-tooltip="trans('Customer chats')"
+                class="mt-auto mb-9"
+                :class="crmUnread > 0 ? 'text-white bg-[var(--chat-red)] rounded-full px-0.5 py-0.5 -mx-1' : 'text-[var(--chat-label)]'">{{ crmUnread > 99 ? 99 : crmUnread }}</span>
+        </div>
+
+        <template v-else>
         <RailControls />
 
         <!-- Section tabs: each one swaps the view below -->
@@ -394,7 +452,7 @@ onUnmounted(() => {
                 v-if="railOverflowCount > 0"
                 class="relative h-7 w-7 rounded-full bg-[var(--chat-line)] shrink-0 flex items-center justify-center text-xxs text-[var(--chat-text)]"
                 v-tooltip="trans('Show all')"
-                @click="handleToggle">
+                @click="expandSidebar">
                 +{{ railOverflowCount }}
             </button>
             <button
@@ -538,10 +596,35 @@ onUnmounted(() => {
             </template>
         </div>
 
-        <!-- Bottom-pinned: customer chats trigger -->
-        <div v-if="layout?.user?.is_agent" class="mt-auto shrink-0 border-t border-[var(--chat-line)] pt-2 pb-7">
-            <FooterMessage in-rail />
+        <!-- Bottom-pinned: micro-view button + customer chats trigger -->
+        <div class="mt-auto shrink-0 flex flex-col pb-2">
+            <div v-if="layout?.user?.is_agent" class="w-full border-t border-[var(--chat-line)] pt-2 pb-1">
+                <FooterMessage in-rail />
+            </div>
+            <div class="w-full border-t border-[var(--chat-line)] pt-1 flex items-center gap-x-1" :class="layout.messagingSidebar.show ? 'flex-row justify-end pr-2' : 'flex-col gap-y-1'">
+                <button
+                    v-if="!layout.messagingSidebar.show"
+                    class="h-7 w-7 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
+                    v-tooltip="trans('Expand messaging bar')"
+                    @click="expandSidebar">
+                    <FontAwesomeIcon icon="fal fa-chevron-double-left" fixed-width aria-hidden="true" />
+                </button>
+                <button
+                    v-else
+                    class="h-7 w-7 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
+                    v-tooltip="trans('Collapse messaging bar')"
+                    @click="handleToggle">
+                    <FontAwesomeIcon icon="far fa-chevron-left" class="rotate-180" fixed-width aria-hidden="true" />
+                </button>
+                <button
+                    class="h-7 w-7 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
+                    v-tooltip="trans('Hide messaging bar')"
+                    @click="enterMicro">
+                    <FontAwesomeIcon icon="fal fa-chevron-double-right" fixed-width aria-hidden="true" />
+                </button>
+            </div>
         </div>
+        </template>
     </div>
 
     <Teleport to="body">
