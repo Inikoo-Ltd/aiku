@@ -339,7 +339,7 @@ class ShowCustomer extends OrgAction
                     $suffix
                 ),
             ),
-
+ 
             'grp.org.shops.show.crm.customers.show',
             'grp.org.shops.show.crm.customers.edit',
             'grp.org.shops.show.crm.customers.show.customer_sales_channels.index',
