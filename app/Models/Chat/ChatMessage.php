@@ -126,6 +126,11 @@ class ChatMessage extends Model implements HasMedia
     {
         return $this->hasMany(ChatMessageTranslation::class);
     }
+
+    public function reactions(): HasMany
+    {
+        return $this->hasMany(ChatMessageReaction::class);
+    }
     public function originalLanguage(): BelongsTo
     {
         return $this->belongsTo(Language::class, 'original_language_id');

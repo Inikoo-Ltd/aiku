@@ -38,6 +38,7 @@ export interface SessionAPI {
 	priority: string
 	is_spam?: boolean
 	is_trashed?: boolean
+	is_highlighted?: boolean
 	customer: boolean
 	image?: string
 	shop?: ChatInboxShop | null
@@ -110,6 +111,7 @@ export interface Contact {
 	unread: number
 	status: "waiting" | "active" | "closed" | string
 	is_spam?: boolean
+	is_highlighted?: boolean
 	messages?: ChatMessage[]
 	webUser?: {
 		id: string
@@ -151,6 +153,12 @@ export interface ChatInboxGroup {
 	contacts: Contact[]
 }
 
+export interface ChatMessageReactionGroup {
+	emoji: string
+	count: number
+	reactors: { type: string; id: number | null }[]
+}
+
 export interface ChatMessage {
 	id: string
 	message?: string
@@ -159,4 +167,5 @@ export interface ChatMessage {
 	sender_type: "guest" | "user" | "agent" | "system"
 	created_at: string
 	is_read?: boolean
+	reactions?: ChatMessageReactionGroup[]
 }

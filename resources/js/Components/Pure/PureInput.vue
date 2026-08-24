@@ -11,6 +11,7 @@ library.add(faCopy, faCheck, faEye, faEyeSlash,faTimesCircle,faSpinnerThird)
 
 const props = withDefaults(defineProps<{
     modelValue: string | number | null | any
+    label?: string
     placeholder?: string
     readonly?: boolean
     inputName?: string
