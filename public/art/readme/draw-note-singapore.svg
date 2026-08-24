@@ -1,0 +1,101 @@
+<svg viewBox="0 0 720 420" width="1200" height="700" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive" role="img" aria-label="Watercolor and pencil illustration: a man with a laptop at a night hawker stall in Southeast Asia" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="wash" x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/>
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="14"/>
+          <feGaussianBlur stdDeviation="0.7"/>
+        </filter>
+        <filter id="wash2" x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="21" result="n"/>
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="9"/>
+          <feGaussianBlur stdDeviation="0.5"/>
+        </filter>
+        <filter id="pencil" x="-10%" y="-10%" width="120%" height="120%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="n"/>
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/>
+        </filter>
+        <filter id="paper">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="11" result="n"/>
+          <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.55  0 0 0 0 0.5  0 0 0 0 0.42  0 0 0 0.05 0"/>
+          <feComposite operator="over" in2="SourceGraphic"/>
+        </filter>
+        <radialGradient id="lamp" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#E8A13C" stop-opacity=".5"/>
+          <stop offset="100%" stop-color="#E8A13C" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <rect width="720" height="420" rx="8" fill="#F2ECDD" filter="url(#paper)"/>
+
+      <g filter="url(#wash)">
+        <path d="M14 18 q350 -22 692 6 l4 190 q-180 30 -350 12 q-190 -22 -350 8 z" fill="#3D4468" opacity=".34"/>
+        <path d="M30 34 q320 -18 660 8 l0 90 q-330 24 -660 6 z" fill="#2E3350" opacity=".26"/>
+        <path d="M420 160 q160 -10 286 6 l2 120 q-150 16 -290 4 z" fill="#3D4468" opacity=".2"/>
+      </g>
+      <circle cx="560" cy="74" r="20" fill="#F2ECDD" opacity=".9" filter="url(#wash2)"/>
+      <circle cx="552" cy="68" r="17" fill="#3D4468" opacity=".55" filter="url(#wash2)"/>
+
+      <g filter="url(#wash2)" opacity=".45">
+        <rect x="600" y="120" width="42" height="150" fill="#565B7E"/>
+        <rect x="650" y="96" width="52" height="176" fill="#464B6E"/>
+        <g fill="#E8A13C" opacity=".9">
+          <rect x="658" y="112" width="7" height="9"/><rect x="676" y="140" width="7" height="9"/>
+          <rect x="608" y="150" width="7" height="9"/><rect x="662" y="182" width="7" height="9"/>
+        </g>
+      </g>
+
+      <g filter="url(#wash)">
+        <path d="M78 96 q180 -16 366 -4 l10 34 q-200 14 -384 2 z" fill="#B0483E" opacity=".62"/>
+        <path d="M84 128 q180 12 356 0 l-8 18 q-170 12 -340 0 z" fill="#8A3B37" opacity=".5"/>
+      </g>
+      <g filter="url(#pencil)" stroke="#4A4238" stroke-width="1.4" fill="none" opacity=".8">
+        <path d="M80 98 q186 -16 366 -4"/>
+        <path d="M92 146 l4 176 M436 142 l6 172"/>
+        <path d="M96 150 q86 24 170 2 q86 24 172 0"/>
+      </g>
+      <g>
+        <circle cx="150" cy="176" r="22" fill="url(#lamp)"/><circle cx="150" cy="172" r="5" fill="#E8A13C" opacity=".8" filter="url(#wash2)"/>
+        <circle cx="264" cy="182" r="22" fill="url(#lamp)"/><circle cx="264" cy="178" r="5" fill="#E8A13C" opacity=".8" filter="url(#wash2)"/>
+        <circle cx="380" cy="176" r="22" fill="url(#lamp)"/><circle cx="380" cy="172" r="5" fill="#E8A13C" opacity=".8" filter="url(#wash2)"/>
+      </g>
+
+      <g filter="url(#pencil)">
+        <rect x="104" y="168" width="112" height="56" rx="5" fill="none" stroke="#4A4238" stroke-width="1.3" opacity=".75"/>
+        <text x="118" y="192" font-family="'Caveat','Comic Sans MS',cursive" font-size="21" fill="#7A4A33">KOPI &#183; TEH</text>
+        <text x="118" y="212" font-family="'Caveat','Comic Sans MS',cursive" font-size="15" fill="#6B6355">open till late</text>
+      </g>
+
+      <ellipse cx="280" cy="330" rx="180" ry="52" fill="url(#lamp)"/>
+
+      <g filter="url(#wash)">
+        <path d="M172 300 l224 -4 4 12 -230 6 z" fill="#8A6B4A" opacity=".6"/>
+        <path d="M188 312 l8 76 8 0 -4 -76 z M352 308 l10 76 8 0 -6 -78 z" fill="#6B523A" opacity=".55"/>
+      </g>
+
+      <g filter="url(#wash2)">
+        <circle cx="252" cy="222" r="16" fill="#8A5A3E" opacity=".8"/>
+        <path d="M236 218 q16 -13 32 0 l-2 -9 q-14 -9 -28 0 z" fill="#3A3550" opacity=".85"/>
+        <path d="M230 240 q22 -14 44 0 l8 40 q-30 12 -60 2 z" fill="#3E6E72" opacity=".78"/>
+        <path d="M234 250 q-14 8 -16 32 l10 4 q4 -18 12 -24 z" fill="#3E6E72" opacity=".7"/>
+        <path d="M266 250 q14 8 18 30 l-10 5 q-6 -18 -14 -24 z" fill="#3E6E72" opacity=".7"/>
+      </g>
+
+      <g filter="url(#wash2)">
+        <path d="M296 278 l52 -8 v22 l-52 6 z" fill="#4A4560" opacity=".8"/>
+        <path d="M296 278 l52 -8 v4 l-52 8 z" fill="#7FD8C4" opacity=".9"/>
+        <path d="M298 294 l48 -6 v7 l-48 6 z" fill="#2E2A40" opacity=".8"/>
+        <ellipse cx="320" cy="278" rx="30" ry="12" fill="url(#lamp)"/>
+      </g>
+
+      <g filter="url(#wash2)">
+        <rect x="212" y="282" width="15" height="13" rx="3" fill="#F2ECDD" stroke="#4A4238" stroke-width="1"/>
+        <path d="M227 285 q7 2 0 7" stroke="#4A4238" stroke-width="1.6" fill="none"/>
+      </g>
+      <g filter="url(#pencil)" stroke="#6B6355" stroke-width="1.1" fill="none" opacity=".75">
+        <path d="M216 276 q3 -6 0 -10"/><path d="M222 278 q3 -7 0 -12"/>
+        <path d="M174 302 l222 -4"/>
+        <ellipse cx="280" cy="392" rx="150" ry="8"/>
+      </g>
+
+      <text x="428" y="402" font-family="'Caveat','Comic Sans MS',cursive" font-size="19" fill="#6B6355" filter="url(#pencil)">Singapore &#183; 27 Aug 2015 &#183; 12:49</text>
+    </svg>
