@@ -110,6 +110,7 @@ import IngredientsField from '@/Components/Forms/Fields/IngredientsField.vue'
 import TradeUnitsForStock from '@/Components/Forms/Fields/TradeUnitsForStock.vue'
 import FamilyCustomize from '@/Components/Forms/Fields/FamilyCustomize.vue'
 import FamilyStorageConditions from '@/Components/Forms/Fields/FamilyStorageConditions.vue'
+import CategoryComparison from '@/Components/Forms/Fields/CategoryComparison.vue'
 
 export const componentsList: { [key: string]: Component } = {
     'image_crop_square': ImageCropSquare,
@@ -220,7 +221,8 @@ export const componentsList: { [key: string]: Component } = {
 	field_group: FieldGroup,
     'multiple_price_currency' : MultiplePriceCurrency,
     'master_shop_price_exchanges' : MasterShopPriceExchanges,
-    'contact_options_panel' : ContactOptionsPanel
+    'contact_options_panel' : ContactOptionsPanel,
+    'category-comparison' : CategoryComparison
 }
 
 export const getComponent = (componentName: string) => {

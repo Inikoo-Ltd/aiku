@@ -279,6 +279,17 @@ class EditMasterFamily extends OrgAction
                                 ],
                             ]
                         ],
+                        [
+                            'label'  => __('Category Comparison'),
+                            'icon'   => 'fa-light fa-question-circle',
+                            'fields' => [
+                                'category_comparison' => [
+                                    'type'                       => 'category-comparison',
+                                    'label'                      => __('Category Comparison'),
+                                    'value'                      => null,
+                                ],
+                            ]
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [
