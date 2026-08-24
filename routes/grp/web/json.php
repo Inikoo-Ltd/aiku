@@ -82,6 +82,7 @@ use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
 use App\Actions\Dispatching\Trolley\Json\ListAvailableTrolleys;
 use App\Actions\Dispatching\Trolley\Json\ListUnavailableTrolleys;
+use App\Actions\Catalogue\Shop\External\Faire\Json\GetFaireSkippedBadge;
 use App\Actions\Dispatching\WaitingItems\Json\GetCrmReturnedBadge;
 use App\Actions\Dispatching\WaitingItems\Json\GetCrmWaitingBadge;
 use App\Actions\Dispatching\WaitingItems\Json\GetDispatchingWaitingBadge;
@@ -356,6 +357,7 @@ Route::get('dispatching/waiting-badge', GetDispatchingWaitingBadge::class)->name
 Route::get('dispatching/crm-waiting-badge', GetCrmWaitingBadge::class)->name('crm_waiting_badge');
 Route::get('shops/crm-return-badge', GetCrmReturnedBadge::class)->name('crm_return_badge');
 Route::get('shops/master-updated-badge', GetMasterUpdatedBadge::class)->name('master_updated_badge');
+Route::get('shops/faire-skipped-badge', GetFaireSkippedBadge::class)->name('faire_skipped_badge');
 
 Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelect::class)->name('webpages_for_workshop_select');
 

@@ -16,6 +16,7 @@ import { faCircle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import ReturnCrmList from './ReturnCrmList.vue';
 import MasterUpdatedList from './MasterUpdatedList.vue';
+import FaireSkippedList from './FaireSkippedList.vue';
 library.add(faCircle)
 
 const props = defineProps<{
@@ -150,6 +151,22 @@ const isUserMac = navigator.platform.includes('Mac')
                         </template>
                         <template #content="{ open, close }">
                             <MasterUpdatedList :open="open" :close="close" />
+                        </template>
+                    </Popover>
+                </div>
+
+                <!-- Badge: Faire orders that could not be imported -->
+                <div v-if="layout?.faire_skipped_count > 0" class="relative flex items-center">
+                    <Popover width="w-80" position="right-0">
+                        <template #button="{ open }">
+                            <div class="relative bg-sky-300 text-sky-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
+                                <Transition name="spin-to-right"><span :key="layout?.faire_skipped_count">{{ layout?.faire_skipped_count > 9 ? '9+' : layout?.faire_skipped_count }}</span></Transition>
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-sky-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-sky-500 text-[5px]" fixed-width aria-hidden="true" />
+                            </div>
+                        </template>
+                        <template #content="{ open, close }">
+                            <FaireSkippedList :open="open" :close="close" />
                         </template>
                     </Popover>
                 </div>

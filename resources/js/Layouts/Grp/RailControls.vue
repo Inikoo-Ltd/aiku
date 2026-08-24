@@ -14,6 +14,7 @@ import { faCircle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import ReturnCrmList from './ReturnCrmList.vue';
 import MasterUpdatedList from './MasterUpdatedList.vue';
+import FaireSkippedList from './FaireSkippedList.vue';
 library.add(faCircle)
 
 const layout = inject('layout', layoutStructure)
@@ -93,6 +94,22 @@ const layout = inject('layout', layoutStructure)
                 </template>
                 <template #content="{ open, close }">
                     <MasterUpdatedList :open="open" :close="close" />
+                </template>
+            </Popover>
+        </div>
+
+        <!-- Badge: Faire orders that could not be imported -->
+        <div v-if="layout?.faire_skipped_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
+            <Popover width="w-80" position="right-full mr-2 top-0">
+                <template #button="{ open }">
+                    <div class="relative bg-sky-300 text-sky-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
+                        <Transition name="spin-to-right"><span :key="layout?.faire_skipped_count"><span :class="layout?.faire_skipped_count > 99 ? 'text-xxs' : 'text-xs'">{{ layout?.faire_skipped_count > 99 ? '99+' : layout?.faire_skipped_count }}</span></span></Transition>
+                        <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-sky-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-sky-500 text-[5px]" fixed-width aria-hidden="true" />
+                    </div>
+                </template>
+                <template #content="{ open, close }">
+                    <FaireSkippedList :open="open" :close="close" />
                 </template>
             </Popover>
         </div>
