@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
+use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Models\Comms\Mailshot;
@@ -33,9 +34,11 @@ trait WithMailshotJourney
 
         $steps = [];
         if ($isMarketing) {
+            $estimatedRecipients = GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count('customers.id') ?? 0;
+
             $steps[] = [
                 'key'   => 'recipients',
-                'label' => __('Recipients'),
+                'label' => __('Recipients').' ('.$estimatedRecipients.')',
                 'route' => [
                     'name'       => 'grp.org.shops.show.marketing.mailshots.recipients',
                     'parameters' => $parameters
