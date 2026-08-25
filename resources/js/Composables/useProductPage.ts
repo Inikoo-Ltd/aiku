@@ -13,7 +13,7 @@ export const resolveProductImages = (product: any) => {
 
       return imgs.map((img: ImageTS) => ({
         source: img,
-        thumbnail: img,
+        thumbnail: item.thumbnail || img,
         alt: item.alt || product.name
       }))
     }

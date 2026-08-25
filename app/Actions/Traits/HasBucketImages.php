@@ -22,190 +22,58 @@ trait HasBucketImages
     {
         $captions = $withCaptions ? $this->getBucketImageCaptions($model) : new Collection();
 
-        $imagesData = [
-            [
-                'label'        => __('Main'),
+        $imageSlots = [
+            [__('Main'), 'image_id', 'image'],
+            [__('Front side'), 'front_image_id', 'frontImage'],
+            [__('Left side'), 'left_image_id', 'leftImage'],
+            [__('3/4 angle side'), '34_image_id', 'threeQuarterImage'],
+            [__('Right side'), 'right_image_id', 'rightImage'],
+            [__('Back side'), 'back_image_id', 'backImage'],
+            [__('Top side'), 'top_image_id', 'topImage'],
+            [__('Bottom side'), 'bottom_image_id', 'bottomImage'],
+            [__('Comparison image'), 'size_comparison_image_id', 'sizeComparisonImage'],
+            [__('Lifestyle image'), 'lifestyle_image_id', 'lifestyleImage'],
+            [__('Art 1'), 'art1_image_id', 'art1Image'],
+            [__('Art 2'), 'art2_image_id', 'art2Image'],
+            [__('Art 3'), 'art3_image_id', 'art3Image'],
+            [__('Art 4'), 'art4_image_id', 'art4Image'],
+            [__('Art 5'), 'art5_image_id', 'art5Image'],
+        ];
+
+        $imagesData = [];
+        foreach ($imageSlots as [$label, $column, $relation]) {
+            $imagesData[] = [
+                'label'        => $label,
                 'type'         => 'image',
-                'column_in_db' => 'image_id',
-                'id'           => $model->image_id,
-                'images'       => $model->imageSources(),
+                'column_in_db' => $column,
+                'id'           => $model->{$column},
+                'images'       => $model->imageSources($maxWidth, $maxWidth, $relation),
+                'thumbnail'    => $model->imageSources(0, 192, $relation),
                 'dimensions'   => [
-                    'width'  => $model->image->width ?? 0,
-                    'height' => $model->image->height ?? 0
+                    'width'  => $model->{$relation}->width ?? 0,
+                    'height' => $model->{$relation}->height ?? 0
                 ]
-            ],
-            [
-                'label'        => __('Video'),
-                'type'         => 'video',
-                'information'  => __('You can use YouTube or Vimeo links'),
-                'column_in_db' => 'video_url',
-                'url'          => $model->video_url,
-            ],
-            [
-                'label'        => __('Front side'),
-                'type'         => 'image',
-                'column_in_db' => 'front_image_id',
-                'id'           => $model->front_image_id,
-                'images'       => $model->imageSources($maxWidth, $maxWidth, 'frontImage'),
-                'dimensions'   => [
-                    'width'  => $model->frontImage->width ?? 0,
-                    'height' => $model->frontImage->height ?? 0
-                ]
-            ],
-            [
-                'label'        => __('Left side'),
-                'type'         => 'image',
-                'column_in_db' => 'left_image_id',
-                'id'           => $model->left_image_id,
-                'images'       => $model->imageSources($maxWidth, $maxWidth, 'leftImage'),
-                'dimensions'   => [
-                    'width'  => $model->leftImage->width ?? 0,
-                    'height' => $model->leftImage->height ?? 0
-                ]
-            ],
-            [
-                'label'        => __('3/4 angle side'),
-                'type'         => 'image',
-                'column_in_db' => '34_image_id',
-                'id'           => $model->{'34_image_id'},
-                'images'       => $model->imageSources($maxWidth, $maxWidth, 'threeQuarterImage'),
-                'dimensions'   => [
-                    'width'  => $model->threeQuarterImage->width ?? 0,
-                    'height' => $model->threeQuarterImage->height ?? 0
-                ]
-            ],
-            [
-                'label'        => __('Right side'),
-                'type'         => 'image',
-                'column_in_db' => 'right_image_id',
-                'id'           => $model->right_image_id,
-                'images'       => $model->imageSources($maxWidth, $maxWidth, 'rightImage'),
-                'dimensions'   => [
-                    'width'  => $model->rightImage->width ?? 0,
-                    'height' => $model->rightImage->height ?? 0
-                ]
-            ],
-            [
-                'label'        => __('Back side'),
-                'type'         => 'image',
-                'column_in_db' => 'back_image_id',
-                'id'           => $model->back_image_id,
-                'images'       => $model->imageSources($maxWidth, $maxWidth, 'backImage'),
-                'dimensions'   => [
-                    'width'  => $model->backImage->width ?? 0,
-                    'height' => $model->backImage->height ?? 0
-                ]
-            ],
-            [
-                'label'        => __('Top side'),
-                'type'         => 'image',
-                'column_in_db' => 'top_image_id',
-                'id'           => $model->top_image_id,
-                'images'       => $model->imageSources($maxWidth, $maxWidth, 'topImage'),
-                'dimensions'   => [
-                    'width'  => $model->topImage->width ?? 0,
-                    'height' => $model->topImage->height ?? 0
-                ]
-            ],
-            [
-                'label'        => __('Bottom side'),
-                'type'         => 'image',
-                'column_in_db' => 'bottom_image_id',
-                'id'           => $model->bottom_image_id,
-                'images'       => $model->imageSources($maxWidth, $maxWidth, 'bottomImage'),
-                'dimensions'   => [
-                    'width'  => $model->bottomImage->width ?? 0,
-                    'height' => $model->bottomImage->height ?? 0
-                ]
-            ],
-            [
-                'label'        => __('Comparison image'),
-                'type'         => 'image',
-                'column_in_db' => 'size_comparison_image_id',
-                'id'           => $model->size_comparison_image_id,
-                'images'       => $model->imageSources($maxWidth, $maxWidth, 'sizeComparisonImage'),
-                'dimensions'   => [
-                    'width'  => $model->sizeComparisonImage->width ?? 0,
-                    'height' => $model->sizeComparisonImage->height ?? 0
-                ]
-            ],
-            [
-                'label'        => __('Lifestyle image'),
-                'type'         => 'image',
-                'column_in_db' => 'lifestyle_image_id',
-                'id'           => $model->lifestyle_image_id,
-                'images'       => $model->imageSources($maxWidth, $maxWidth, 'lifestyleImage'),
-                'dimensions'   => [
-                    'width'  => $model->lifestyleImage->width ?? 0,
-                    'height' => $model->lifestyleImage->height ?? 0
-                ]
-            ],
-            [
-                'label'        => __('Art 1'),
-                'type'         => 'image',
-                'column_in_db' => 'art1_image_id',
-                'id'           => $model->art1_image_id,
-                'images'       => $model->imageSources($maxWidth, $maxWidth, 'art1Image'),
-                'dimensions'   => [
-                    'width'  => $model->art1Image->width ?? 0,
-                    'height' => $model->art1Image->height ?? 0
-                ]
-            ],
-            [
-                'label'        => __('Art 2'),
-                'type'         => 'image',
-                'column_in_db' => 'art2_image_id',
-                'id'           => $model->art2_image_id,
-                'images'       => $model->imageSources($maxWidth, $maxWidth, 'art2Image'),
-                'dimensions'   => [
-                    'width'  => $model->art2Image->width ?? 0,
-                    'height' => $model->art2Image->height ?? 0
-                ]
-            ],
-            [
-                'label'        => __('Art 3'),
-                'type'         => 'image',
-                'column_in_db' => 'art3_image_id',
-                'id'           => $model->art3_image_id,
-                'images'       => $model->imageSources($maxWidth, $maxWidth, 'art3Image'),
-                'dimensions'   => [
-                    'width'  => $model->art3Image->width ?? 0,
-                    'height' => $model->art3Image->height ?? 0
-                ]
-            ],
-            [
-                'label'        => __('Art 4'),
-                'type'         => 'image',
-                'column_in_db' => 'art4_image_id',
-                'id'           => $model->art4_image_id,
-                'images'       => $model->imageSources($maxWidth, $maxWidth, 'art4Image'),
-                'dimensions'   => [
-                    'width'  => $model->art4Image->width ?? 0,
-                    'height' => $model->art4Image->height ?? 0
-                ]
-            ],
-            [
-                'label'        => __('Art 5'),
-                'type'         => 'image',
-                'column_in_db' => 'art5_image_id',
-                'id'           => $model->art5_image_id,
-                'images'       => $model->imageSources($maxWidth, $maxWidth, 'art5Image'),
-                'dimensions'   => [
-                    'width'  => $model->art5Image->width ?? 0,
-                    'height' => $model->art5Image->height ?? 0
-                ]
-            ],
-            [
-                'label'        => __('Sound sample'),
-                'type'         => 'audio',
-                'information'  => __('Audio sample, e.g. for musical instruments or singing bowls'),
-                'column_in_db' => 'audio_id',
-                'id'           => $model->audio_id,
-                'audio'        => $model->audio ? [
-                    'url'  => route('grp.media.show', $model->audio->ulid),
-                    'name' => $model->audio->name,
-                ] : null,
-            ],
+            ];
+        }
+
+        array_splice($imagesData, 1, 0, [[
+            'label'        => __('Video'),
+            'type'         => 'video',
+            'information'  => __('You can use YouTube or Vimeo links'),
+            'column_in_db' => 'video_url',
+            'url'          => $model->video_url,
+        ]]);
+
+        $imagesData[] = [
+            'label'        => __('Sound sample'),
+            'type'         => 'audio',
+            'information'  => __('Audio sample, e.g. for musical instruments or singing bowls'),
+            'column_in_db' => 'audio_id',
+            'id'           => $model->audio_id,
+            'audio'        => $model->audio ? [
+                'url'  => route('grp.media.show', $model->audio->ulid),
+                'name' => $model->audio->name,
+            ] : null,
         ];
 
         if (!$withCaptions) {
@@ -252,7 +120,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'image_id',
                 'id'           => $model->image_id,
-                'images'       => $model->imageSources(),
+                'images'       => $model->imageSources(800, 800),
                 'dimensions'   => [
                     'width'  => $model->image->width ?? 0,
                     'height' => $model->image->height ?? 0

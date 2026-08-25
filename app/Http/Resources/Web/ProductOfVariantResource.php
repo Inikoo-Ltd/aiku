@@ -142,7 +142,7 @@ class ProductOfVariantResource extends JsonResource
         return $product->images->map(fn ($media) => [
             'id'        => $media->id,
             'source'    => GetPictureSources::run($media->getImage()->resize($maxWidth, $maxWidth)),
-            'thumbnail' => GetPictureSources::run($media->getImage()->resize(0, 48)),
+            'thumbnail' => GetPictureSources::run($media->getImage()->resize(0, 192)),
             'alt'       => $media->pivot?->caption,
         ])->all();
     }
