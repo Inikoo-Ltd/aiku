@@ -99,6 +99,14 @@ test('retina api get profile unauthenticated', function () {
     $response->assertUnauthorized();
 });
 
+test('retina api dropshipping images rejects non integer id with validation error', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read']);
+
+    getJson(route('retina.api.dropshipping.images.index', ['id' => 'not-a-number', 'type' => 'product']))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['id']);
+});
+
 // ---- Dropshipping: clients ----
 
 test('retina api dropshipping store client', function () {
