@@ -2813,6 +2813,38 @@ describe('order margin data', function () {
     });
 });
 
+test('submitting an order keeps the warehouse note typed in the basket', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+    $modelData       = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    UpdateOrder::make()->action($order, ['private_warehouse_note' => 'fragile, double box']);
+    $this->customer->update(['warehouse_internal_notes' => null]);
+
+    $order = SubmitOrder::make()->action($order->refresh());
+
+    expect($order->private_warehouse_note)->toBe('fragile, double box');
+});
+
+test('submitting an order merges the customer profile warehouse note', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+    $modelData       = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    UpdateOrder::make()->action($order, ['private_warehouse_note' => 'fragile']);
+    $this->customer->update(['warehouse_internal_notes' => 'always call before delivery']);
+
+    $order = SubmitOrder::make()->action($order->refresh());
+
+    expect($order->private_warehouse_note)->toBe('fragile — always call before delivery');
+});
+
 describe('order state element group', function () {
     test('every state label has a count so no chip renders NaN', function () {
         $elements = array_merge_recursive(
