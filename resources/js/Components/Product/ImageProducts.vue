@@ -200,7 +200,7 @@ const enableLoop = computed(() => totalSlides.value > 1)
 
     <!-- PrimeVue Dialog (Replaces Custom Modal) -->
     <Dialog v-model:visible="showModal" modal dismissable-mask :closable="false"
-      class="w-full max-w-3xl !bg-transparent !shadow-none !border-0 !border-transparent">
+      class="w-[calc(100vw-3rem)] max-w-6xl !bg-transparent !shadow-none !border-0 !border-transparent">
       <div class="relative w-full flex flex-col items-center justify-center">
         <!-- Close Button -->
         <!-- <button
@@ -212,7 +212,7 @@ const enableLoop = computed(() => totalSlides.value > 1)
         </button> -->
 
         <!-- Image Viewer -->
-        <div v-if="!showVideoModal" class="block w-full h-auto min-h-[400px] max-h-[80vh] mb-1 rounded">
+        <div v-if="!showVideoModal" class="block w-full h-auto min-h-[400px] max-h-[88vh] mb-1 rounded">
           <Image :src="props.images[selectedIndex]?.zoom || props.images[selectedIndex]?.source"
             :alt="props.images[selectedIndex]?.alt || `Image ${selectedIndex + 1}`"
             :style="{ objectFit: 'contain' }" :imageCover="true" />
