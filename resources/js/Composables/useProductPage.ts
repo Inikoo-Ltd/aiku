@@ -14,6 +14,7 @@ export const resolveProductImages = (product: any) => {
       return imgs.map((img: ImageTS) => ({
         source: img,
         thumbnail: item.thumbnail || img,
+        zoom: item.zoom || img,
         alt: item.alt || product.name
       }))
     }
@@ -24,6 +25,7 @@ export const resolveProductImages = (product: any) => {
         {
           source: item.source,
           thumbnail: item.thumbnail,
+          zoom: item.zoom || item.source,
           alt: item.alt || product.name
         },
       ]

@@ -18,7 +18,7 @@ import Dialog from 'primevue/dialog'
 const ProductSoundButton = defineAsyncComponent(() => import('@/Iris/Components/ProductSoundButton.vue'))
 
 const props = defineProps<{
-  images: { source: object; thumbnail?: object; alt: string }[]
+  images: { source: object; thumbnail?: object; zoom?: object; alt: string }[]
   video?: string
   audio?: string
   breakpoints?: {
@@ -213,7 +213,7 @@ const enableLoop = computed(() => totalSlides.value > 1)
 
         <!-- Image Viewer -->
         <div v-if="!showVideoModal" class="block w-full h-auto min-h-[400px] max-h-[80vh] mb-1 rounded">
-          <Image :src="props.images[selectedIndex]?.source"
+          <Image :src="props.images[selectedIndex]?.zoom || props.images[selectedIndex]?.source"
             :alt="props.images[selectedIndex]?.alt || `Image ${selectedIndex + 1}`"
             :style="{ objectFit: 'contain' }" :imageCover="true" />
         </div>

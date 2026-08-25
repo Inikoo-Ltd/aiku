@@ -49,6 +49,7 @@ trait HasBucketImages
                 'id'           => $model->{$column},
                 'images'       => $model->imageSources($maxWidth, $maxWidth, $relation),
                 'thumbnail'    => $model->imageSources(0, 192, $relation),
+                'zoom'         => $model->imageSources(1600, 1600, $relation),
                 'dimensions'   => [
                     'width'  => $model->{$relation}->width ?? 0,
                     'height' => $model->{$relation}->height ?? 0
