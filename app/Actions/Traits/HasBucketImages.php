@@ -28,7 +28,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'image_id',
                 'id'           => $model->image_id,
-                'images'       => $model->imageSources(),
+                'images'       => $model->imageSources(0, 0),
                 'dimensions'   => [
                     'width'  => $model->image->width ?? 0,
                     'height' => $model->image->height ?? 0
@@ -252,7 +252,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'image_id',
                 'id'           => $model->image_id,
-                'images'       => $model->imageSources(),
+                'images'       => $model->imageSources(0, 0),
                 'dimensions'   => [
                     'width'  => $model->image->width ?? 0,
                     'height' => $model->image->height ?? 0
