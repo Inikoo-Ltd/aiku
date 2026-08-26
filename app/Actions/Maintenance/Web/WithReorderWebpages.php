@@ -174,7 +174,7 @@ trait WithReorderWebpages
 
         $productList = $this->getWebpageBlocksByType($webpage, $usedWebBlockTemplateCodes)->first()->model_has_web_blocks_id;
 
-        $categoryComparison = $this->getWebpageBlocksByType($webpage, 'category-comparison')?->first()->model_has_web_blocks_id;
+        $categoryComparison = $this->getWebpageBlocksByType($webpage, 'category-comparison')->first()?->model_has_web_blocks_id;
 
         $recommendationFromMaster   = $this->getWebpageBlocksByType($webpage, 'recommendation-from-master')->first()->model_has_web_blocks_id;
         $relatedProductCategory     = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master')->first()->model_has_web_blocks_id;
