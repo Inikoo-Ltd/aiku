@@ -709,33 +709,39 @@ test('UI edit outbox in fulfilment', function () {
     });
 });
 
-test('UI create mailshot', function () {
-    $this->withoutExceptionHandling();
-    $response = $this->get(route('grp.org.shops.show.marketing.mailshots.create', [
-        $this->organisation,
-        $this->shop
-    ]));
-
-
+test('one-click create mailshot redirects to recipients', function () {
     $outbox = $this->shop->outboxes()->where('outboxes.code', OutboxCodeEnum::MARKETING)->first();
 
-    $response->assertInertia(function (AssertableInertia $page) use ($outbox) {
-        $page
-            ->component('CreateModel')
-            ->has('title')
-            ->has(
-                'formData',
-                fn (AssertableInertia $page) => $page
-                    ->where('route', [
-                        'name'       => 'grp.models.outbox.mailshot.store',
-                        'parameters' => [
-                            'outbox' => $outbox->id
-                        ]
-                    ])
-                    ->etc()
-            )
-            ->has('breadcrumbs');
-    });
+    $response = $this->post(route('grp.models.outbox.mailshot.store', [$outbox->id]));
+
+    $mailshot = Mailshot::where('outbox_id', $outbox->id)->latest('id')->first();
+    expect($mailshot)->not->toBeNull()
+        ->and($mailshot->type)->toBe(MailshotTypeEnum::MARKETING)
+        ->and($mailshot->subject)->not->toBeEmpty()
+        ->and($mailshot->recipients_recipe)->toBe(['all_customers' => ['value' => true]]);
+
+    $response->assertRedirect(route('grp.org.shops.show.marketing.mailshots.recipients', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $mailshot->slug
+    ]));
+});
+
+test('one-click create prospect mailshot redirects to recipients', function () {
+    $response = $this->post(route('grp.models.shop.prospect.mailshot.store', [$this->shop->id]));
+
+    $outbox   = $this->shop->outboxes()->where('outboxes.code', OutboxCodeEnum::INVITE)->first();
+    $mailshot = Mailshot::where('outbox_id', $outbox->id)->latest('id')->first();
+    expect($mailshot)->not->toBeNull()
+        ->and($mailshot->type)->toBe(MailshotTypeEnum::INVITE)
+        ->and($mailshot->subject)->not->toBeEmpty()
+        ->and($mailshot->recipients_recipe)->toBe(['all_prospects' => ['value' => true]]);
+
+    $response->assertRedirect(route('grp.org.shops.show.crm.prospects.mailshots.recipients', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $mailshot->slug
+    ]));
 });
 
 test('UI edit mailshot', function (Mailshot $mailShot) {
@@ -1856,19 +1862,21 @@ test('UI create mailshot template', function () {
     });
 });
 
-test('UI create newsletter', function () {
-    $response = $this->get(route('grp.org.shops.show.marketing.newsletters.create', [$this->organisation, $this->shop]));
+test('one-click create newsletter redirects to workshop', function () {
+    $outbox = $this->shop->outboxes()->where('type', OutboxCodeEnum::NEWSLETTER)->first();
 
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page->component('CreateModel')
-            ->has('title')
-            ->has(
-                'pageHead',
-                fn (AssertableInertia $page) => $page->where('title', 'New newsletter')->etc()
-            )
-            ->has('formData')
-            ->has('breadcrumbs');
-    });
+    $response = $this->post(route('grp.models.outbox.mailshot.store', [$outbox->id]));
+
+    $mailshot = Mailshot::where('outbox_id', $outbox->id)->latest('id')->first();
+    expect($mailshot)->not->toBeNull()
+        ->and($mailshot->type)->toBe(MailshotTypeEnum::NEWSLETTER)
+        ->and($mailshot->subject)->not->toBeEmpty();
+
+    $response->assertRedirect(route('grp.org.shops.show.marketing.newsletters.workshop', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $mailshot->slug
+    ]));
 });
 
 test('UI index mailshot templates', function () {

@@ -83,6 +83,7 @@ class GetStaffCoworkers
                     ? Cache::remember('staff-avatar:'.$user->id.':'.$user->image_id, now()->addDay(), fn () => $user->imageSources(0, 48))
                     : null,
                 'is_close' => count(array_intersect($orgIds[$user->id] ?? [], $myOrgIds)) > 0,
+                'organisation_ids' => $orgIds[$user->id] ?? [],
                 'in_team'  => in_array($user->id, $teamIds),
                 'last_active_at' => $lastActive['staff-last-active:'.$user->id] ?? null,
             ])

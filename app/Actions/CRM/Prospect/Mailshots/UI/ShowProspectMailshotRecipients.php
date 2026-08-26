@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Prospect\Mailshots\UI;
 
+use App\Actions\Comms\Mailshot\UI\WithMailshotJourney;
 use App\Actions\CRM\Prospect\Mailshots\GetProspectMailshotRecipientsQueryBuilder;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
@@ -19,6 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowProspectMailshotRecipients extends OrgAction
 {
+    use WithMailshotJourney;
+
     public function handle(Mailshot $mailshot, ActionRequest $request): Response
     {
         $requestFilters = $request->input('filters', []);
@@ -89,14 +92,20 @@ class ShowProspectMailshotRecipients extends OrgAction
                 'mailshot' => $mailshot,
                 'title'    => __('Setup Recipients'),
                 'pageHead' => [
-                    'title' => __('Setup Recipients'),
-                    'actions'   => [
+                    'title'      => $mailshot->subject,
+                    'model'      => __('Subject:'),
+                    'modelStyle' => 'text-sm',
+                    'titleStyle' => 'font-normal text-lg',
+                    'icon'       => 'fal fa-mail-bulk',
+                    'actions'    => [
                         [
-                            'type'  => 'button',
-                            'style' => 'exit',
-                            'label' => __('Exit'),
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.crm.prospects.mailshots.show',
+                            'type'      => 'button',
+                            'style'     => 'primary',
+                            'icon'      => false,
+                            'iconRight' => 'fal fa-arrow-right',
+                            'label'     => __('Compose email'),
+                            'route'     => [
+                                'name'       => 'grp.org.shops.show.crm.prospects.mailshots.workshop',
                                 'parameters' => [
                                     $this->organisation->slug,
                                     $this->shop->slug,
@@ -105,6 +114,26 @@ class ShowProspectMailshotRecipients extends OrgAction
                             ]
                         ],
                     ]
+                ],
+                'journey' => $this->getMailshotJourney($mailshot, 'recipients'),
+                'mailshot_copy' => [
+                    'subject'      => $mailshot->subject,
+                    'name'         => $mailshot->name,
+                    'preview_text' => $mailshot->preview_text,
+                ],
+                'updateMailshotRoute' => [
+                    'name'       => 'grp.models.shop.prospect.mailshot.update',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'patch'
+                ],
+                'suggestCopyRoute' => [
+                    'name'       => 'grp.json.mailshot.copy_suggestion',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'post'
                 ],
                 'filtersStructure' => $filtersStructure,
                 'filters'          => $currentFilters,

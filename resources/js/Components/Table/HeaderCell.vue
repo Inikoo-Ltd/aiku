@@ -54,7 +54,7 @@ const isDebug = false   //  True will show the column key in the header
     <!-- <pre>{{ cell?.icon }}</pre> -->
     <th v-show="!cell?.hidden" scope="col" class="font-normal"
         :class="[
-            cell?.type == 'avatar' || cell?.type == 'icon' ? 'thead-avatar px-3 w-1' : 'px-6 w-auto',
+            cell?.type == 'avatar' || cell?.type == 'icon' ? 'thead-avatar px-1.5 lg:px-3 w-1' : 'px-2 lg:px-2 w-auto',
             cell?.align === 'right' || isCellNumber() || cell?.type == 'number' || cell?.type == 'currency' || cell?.type === 'date' || cell?.type === 'date_hm' || cell?.type === 'date_hms' ? 'text-right' : 'text-left',
             cell?.className,
             highlight ? 'bg-amber-50 text-amber-800' : ''
@@ -86,22 +86,22 @@ const isDebug = false   //  True will show the column key in the header
                     </div>
                     
                     <!-- Label: simple and icon -->
-                    <div v-else class="text-xs md:text-[13px] w-full" v-tooltip="cell?.tooltip"
-                        :class="[cell?.type == 'number' || cell?.type == 'currency' ? 'text-right pr-3' : '']"
+                    <div v-else class="text-[11px] lg:text-[13px] w-full" v-tooltip="cell?.tooltip"
+                        :class="[cell?.type == 'number' || cell?.type == 'currency' ? 'text-right pr-0 lg:pr-3' : '']"
                     >
                         <FontAwesomeIcon
                             v-if="cell?.icon"
                             :icon="cell?.icon"
                             aria-hidden="true"
                             fixed-width
-                            class="text-gray-500 mr-2"
+                            class="text-gray-500 mr-1 lg:mr-2"
                         />
                         <FontAwesomeIcon
                             v-if="cell?.is_interval"
                             icon="fas fa-watch-calculator"
                             aria-hidden="true"
                             fixed-width
-                            class="text-gray-500 mr-2"/>
+                            class="text-gray-500 mr-1 lg:mr-2"/>
 
                         <span v-if="isDebug">
                             {{ cell.key }}
@@ -125,7 +125,7 @@ const isDebug = false   //  True will show the column key in the header
                     </div>
 
                     <!-- Icon: arrow for sort -->
-                    <svg v-if="cell?.sortable" aria-hidden="true" class="w-3 h-3 ml-2" :class="{
+                    <svg v-if="cell?.sortable" aria-hidden="true" class="w-3 h-3 ml-1 lg:ml-2" :class="{
                         'text-gray-400': !cell?.sorted,
                         'text-green-500': cell?.sorted,
                     }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" :sorted="cell?.sorted">

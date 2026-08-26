@@ -1,7 +1,7 @@
 ---
 title: Buying through an agent — Part I
 summary: Four sales hubs in Europe buy most of their stock from suppliers in Asia through agents — commission‑based intermediaries who consolidate everyone's purchase orders, pay deposits, and ship one container. The procurement module that models that is built and being migrated, not yet live. Part I is the design: suppliers as group master data, the agent's "mini kingdom", a purchase order that splits per supplier, a stock delivery that is a delivery note in reverse, a cross‑organisation shopping list with MOQ bars, deposits as "money in the air", and a command‑and‑control board built for the fights.
-date: 2026-08-26
+date: 2026-08-19
 tags: procurement, supply-chain, purchase-orders, design
 ---
 

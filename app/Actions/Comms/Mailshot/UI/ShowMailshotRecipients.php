@@ -16,6 +16,7 @@ use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 class ShowMailshotRecipients extends OrgAction
 {
     use WithMarketingAuthorisation;
+    use WithMailshotJourney;
 
     public function handle(Mailshot $mailshot, ActionRequest $request): Response
     {
@@ -47,14 +48,20 @@ class ShowMailshotRecipients extends OrgAction
                 'mailshot' => $mailshot,
                 'title'    => __('Setup Recipients'),
                 'pageHead' => [
-                    'title' => __('Setup Recipients'),
+                    'title'      => $mailshot->subject,
+                    'model'      => __('Subject:'),
+                    'modelStyle' => 'text-sm',
+                    'titleStyle' => 'font-normal text-lg',
+                    'icon'       => 'fal fa-mail-bulk',
                     'actions'   => [
                         [
-                            'type'  => 'button',
-                            'style' => 'exit',
-                            'label' => __('Exit'),
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.marketing.mailshots.show',
+                            'type'      => 'button',
+                            'style'     => 'primary',
+                            'icon'      => false,
+                            'iconRight' => 'fal fa-arrow-right',
+                            'label'     => __('Compose email'),
+                            'route'     => [
+                                'name'       => 'grp.org.shops.show.marketing.mailshots.workshop',
                                 'parameters' => [
                                     $this->organisation->slug,
                                     $this->shop->slug,
@@ -63,6 +70,26 @@ class ShowMailshotRecipients extends OrgAction
                             ]
                         ],
                     ]
+                ],
+                'journey'          => $this->getMailshotJourney($mailshot, 'recipients'),
+                'mailshot_copy'    => [
+                    'subject'      => $mailshot->subject,
+                    'name'         => $mailshot->name,
+                    'preview_text' => $mailshot->preview_text,
+                ],
+                'updateMailshotRoute' => [
+                    'name'       => 'grp.models.shop.mailshot.update',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'patch'
+                ],
+                'suggestCopyRoute' => [
+                    'name'       => 'grp.json.mailshot.copy_suggestion',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'post'
                 ],
                 'filtersStructure' => $filtersStructure,
                 'filters'          => $currentFilters,

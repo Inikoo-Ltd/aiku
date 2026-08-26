@@ -10,10 +10,11 @@ import { Head } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
 import { trans } from "laravel-vue-i18n"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import Table from "@/Components/Table/Table.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { faChartLine } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed } from "vue"
+import { computed, ref } from "vue"
 
 library.add(faChartLine)
 
@@ -30,9 +31,21 @@ interface StatRow {
 
 const lastVisited = (value?: string) => value ? new Date(value).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""
 
+interface ArticleRow {
+    slug: string
+    title: string
+    url: string
+    date: string
+    committed_at?: string
+    visitors: number
+    views: number
+    last_visited_at?: string
+}
+
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
+    articles: { data: ArticleRow[] } | any
     stats: {
         daily: StatRow[]
         pages: StatRow[]
@@ -42,6 +55,9 @@ const props = defineProps<{
         countries: StatRow[]
     }
 }>()
+
+const currentTab = ref<"overview" | "articles">("overview")
+const shortDate = (value?: string) => value ? new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "—"
 
 const maxDailyViews = computed(() => Math.max(...props.stats.daily.map(d => Number(d.views)), 1))
 
@@ -58,6 +74,36 @@ const sections = computed(() => [
     <PageHeading :data="pageHead" />
 
     <div class="space-y-8 p-4">
+        <div class="flex gap-2">
+            <button v-for="tab in [{ key: 'overview', label: trans('Overview') }, { key: 'articles', label: trans('Articles') }]"
+                :key="tab.key"
+                type="button"
+                class="px-4 py-2 rounded-md text-sm font-medium transition"
+                :class="currentTab === tab.key ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                @click="currentTab = tab.key as 'overview' | 'articles'">
+                {{ tab.label }}
+            </button>
+        </div>
+
+        <Table v-show="currentTab === 'articles'" :resource="articles" name="articles" class="mt-2">
+            <template #cell(title)="{ item }">
+                <a :href="item.url" target="_blank" class="hover:underline">{{ item.title }}</a>
+            </template>
+            <template #cell(committed_at)="{ item }">
+                <span class="whitespace-nowrap text-gray-500">{{ shortDate(item.committed_at) }}</span>
+            </template>
+            <template #cell(visitors)="{ item }">
+                <span class="tabular-nums">{{ item.visitors }}</span>
+            </template>
+            <template #cell(views)="{ item }">
+                <span class="tabular-nums text-gray-500">{{ item.views }}</span>
+            </template>
+            <template #cell(last_visited_at)="{ item }">
+                <span class="whitespace-nowrap text-xs text-gray-500">{{ lastVisited(item.last_visited_at) }}</span>
+            </template>
+        </Table>
+
+        <template v-if="currentTab === 'overview'">
         <section>
             <h2 class="text-sm font-medium">{{ trans("Daily visits (last 30 days)") }}</h2>
             <div class="mt-2 flex h-32 items-end gap-1">
@@ -124,5 +170,6 @@ const sections = computed(() => [
                 </tbody>
             </table>
         </section>
+        </template>
     </div>
 </template>

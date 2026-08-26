@@ -146,7 +146,9 @@ const getActionLabel = (label: string | undefined) => {
 
 // Auto-add icon for several conditions
 const getActionIcon = (icon: any) => {
-    if (icon) {
+    if (icon === false) {
+        return null
+    } else if (icon) {
         return icon
     } else {
         switch (props.style || props.type) {

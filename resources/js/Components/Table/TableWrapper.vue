@@ -7,7 +7,7 @@ defineProps<{
 <template>
     <div class="flex flex-col">
         <div class="">
-            <div class="inline-block min-w-full"
+            <div class="min-w-full"
                 :class="[result ? 'align-middle' : 'align-top']">
                 <div class="border-b border-gray-200 relative">
                     <slot />

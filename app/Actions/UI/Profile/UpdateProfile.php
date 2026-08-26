@@ -76,7 +76,7 @@ class UpdateProfile extends OrgAction
         $user = $this->update($user, $modelData, ['settings']);
 
         $changes = $user->getChanges();
-        if (Arr::has($changes, 'timezone_id')) {
+        if (Arr::hasAny($changes, ['timezone_id', 'settings'])) {
             BreakUserUiProps::run($user);
         }
 

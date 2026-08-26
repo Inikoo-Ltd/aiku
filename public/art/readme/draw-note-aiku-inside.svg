@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" width="1200" height="700" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive">
+  <defs>
+    <filter id="wash" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="12"/>
+      <feGaussianBlur stdDeviation="0.6"/>
+    </filter>
+    <filter id="pencil" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/>
+    </filter>
+    <filter id="paper">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="11" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.55  0 0 0 0 0.5  0 0 0 0 0.42  0 0 0 0.05 0"/>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+    <radialGradient id="lamp" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#E8A13C" stop-opacity=".5"/>
+      <stop offset="100%" stop-color="#E8A13C" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="720" height="420" rx="8" fill="#F2ECDD" filter="url(#paper)"/>
+
+  <!-- old house: Aurora -->
+  <g filter="url(#wash)">
+    <path d="M60 130 l190 -6 6 216 -198 4 z" fill="#8A8062" opacity=".55"/>
+    <path d="M46 134 l110 -62 112 56 -12 14 -100 -48 -98 54 z" fill="#8A3B37" opacity=".6"/>
+    <g fill="#3D4468" opacity=".5">
+      <rect x="86" y="160" width="28" height="34"/><rect x="146" y="158" width="28" height="34"/>
+      <rect x="206" y="158" width="28" height="34"/>
+      <rect x="86" y="216" width="28" height="34"/><rect x="206" y="216" width="28" height="34"/>
+      <rect x="86" y="272" width="28" height="34"/><rect x="146" y="272" width="28" height="34"/>
+    </g>
+    <rect x="146" y="214" width="28" height="38" fill="#E8A13C" opacity=".75"/>
+  </g>
+  <g filter="url(#pencil)" stroke="#4A4238" fill="none" opacity=".8">
+    <path d="M60 130 l190 -6 6 216 -198 4 z" stroke-width="1.5"/>
+    <path d="M46 134 l110 -62 112 56" stroke-width="1.5"/>
+    <path d="M150 302 l22 0 0 40 -22 0 z" stroke-width="1.3"/>
+  </g>
+  <text x="98" y="130" font-size="30" fill="#7A4A33" filter="url(#pencil)">AURORA</text>
+  <text x="60" y="372" font-size="17" fill="#6B6355" filter="url(#pencil)">est. 2008 &#183; still open</text>
+
+  <!-- glowing side door: trait.Aiku -->
+  <ellipse cx="262" cy="316" rx="40" ry="26" fill="url(#lamp)"/>
+  <g filter="url(#pencil)">
+    <path d="M244 288 l30 -2 2 56 -32 2 z" fill="#E8A13C" opacity=".5"/>
+    <path d="M244 288 l30 -2 2 56 -32 2 z" fill="none" stroke="#4A4238" stroke-width="1.4"/>
+    <text x="216" y="278" font-size="18" fill="#7A4A33">trait.Aiku.php</text>
+  </g>
+
+  <!-- crates flowing right -->
+  <g>
+    <g transform="translate(316,300) rotate(-4)" filter="url(#pencil)">
+      <rect width="52" height="34" fill="#E9DEC4" stroke="#4A4238" stroke-width="1.3"/>
+      <text x="6" y="23" font-size="16" fill="#6B6355">orders</text>
+    </g>
+    <g transform="translate(384,290) rotate(3)" filter="url(#pencil)">
+      <rect width="70" height="34" fill="#DCE4E0" stroke="#4A4238" stroke-width="1.3"/>
+      <text x="6" y="23" font-size="16" fill="#3E6E72">customers</text>
+    </g>
+    <g transform="translate(470,298) rotate(-2)" filter="url(#pencil)">
+      <rect width="48" height="34" fill="#E7D6CF" stroke="#4A4238" stroke-width="1.3"/>
+      <text x="7" y="23" font-size="16" fill="#8A3B37">stock</text>
+    </g>
+  </g>
+  <path d="M310 330 q110 26 220 4" fill="none" stroke="#6B6355" stroke-width="1.5" stroke-dasharray="1 7" stroke-linecap="round" filter="url(#pencil)"/>
+  <path d="M524 332 l12 2 -9 8" fill="none" stroke="#6B6355" stroke-width="1.5" filter="url(#pencil)"/>
+
+  <!-- return arrow: from_aiku_id -->
+  <path d="M540 252 q-120 -40 -246 6" fill="none" stroke="#3E6E72" stroke-width="1.6" stroke-dasharray="1 7" stroke-linecap="round" filter="url(#pencil)"/>
+  <path d="M300 254 l-10 4 11 6" fill="none" stroke="#3E6E72" stroke-width="1.6" filter="url(#pencil)"/>
+  <text x="352" y="228" font-size="17" fill="#3E6E72" filter="url(#pencil)">from_aiku_id (2025, the other way)</text>
+
+  <!-- new building: aiku -->
+  <g filter="url(#wash)">
+    <path d="M552 176 l128 -4 4 172 -130 2 z" fill="#3E6E72" opacity=".45"/>
+    <g fill="#F2ECDD" opacity=".85">
+      <rect x="572" y="196" width="22" height="26"/><rect x="616" y="196" width="22" height="26"/>
+      <rect x="572" y="240" width="22" height="26"/><rect x="616" y="240" width="22" height="26"/>
+      <rect x="572" y="284" width="22" height="26"/><rect x="616" y="284" width="22" height="26"/>
+    </g>
+  </g>
+  <g filter="url(#pencil)" stroke="#4A4238" fill="none" opacity=".8">
+    <path d="M552 176 l128 -4 4 172 -130 2 z" stroke-width="1.5"/>
+    <path d="M600 346 l20 0 0 -34 -20 0 z" stroke-width="1.3"/>
+  </g>
+  <text x="586" y="164" font-size="30" fill="#3E6E72" filter="url(#pencil)">aiku</text>
+  <text x="536" y="372" font-size="17" fill="#6B6355" filter="url(#pencil)">named 2020, built later</text>
+</svg>

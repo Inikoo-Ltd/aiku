@@ -7,6 +7,8 @@
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
+    <link rel="preconnect" href="https://auth.getbee.io">
+    <link rel="preconnect" href="https://app-rsrc.getbee.io">
     <link href="https://fonts.bunny.net/css?family=fira-sans:100,200,300,400,500,600,700,800,900|inter:100,200,300,400,500,600,700,800,900&display=swap" rel="stylesheet" />
     <link rel="preload" as="style"
           href="https://fonts.googleapis.com/css2?family=Comfortaa&family=Laila&family=Lobster&family=Playfair+Display&family=Playfair&family=Port+Lligat+Slab&family=Quicksand&family=Yatra+One&family=Raleway:wght@200;400;500;700;900&display=swap"

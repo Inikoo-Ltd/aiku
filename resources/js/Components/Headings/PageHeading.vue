@@ -159,7 +159,8 @@ const setError = (e) => {
 
 				<!-- Section: Main title group -->
 				<div
-					class="flex leading-none py-1.5 items-center gap-x-2 font-bold text-gray-700 text-2xl tracking-tight">
+					class="flex leading-none py-1.5 items-center gap-x-2 text-gray-700 tracking-tight"
+					:class="data.titleStyle ?? 'font-bold text-2xl'">
 					<div v-if="data.container" class="text-slate-500 text-lg">
 						<Link
 							v-if="data.container.href"
@@ -200,10 +201,10 @@ const setError = (e) => {
 					<div class="flex flex-col sm:flex-row gap-y-1.5 gap-x-3 sm:items-center">
 						<div class="xspace-x-2">
 							<template v-if="data.model">
-								<span class="text-gray-400 font-medium">{{ data.model }}</span>
+								<span class="text-gray-400 font-medium" :class="data.modelStyle">{{ data.model }}</span>
 								<span>&nbsp;</span>
 							</template>
-							<span class="inline-block">{{ useTruncate(data.title, 30) }}</span>
+							<span class="inline-block" v-tooltip="data.title?.length > 30 ? data.title : undefined">{{ useTruncate(data.title, 30) }}</span>
 						</div>
 						<!-- Section: After Title -->
 						<slot name="afterTitle" :data="data">

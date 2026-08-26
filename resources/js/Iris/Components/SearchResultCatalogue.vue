@@ -234,7 +234,7 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                                 class="block text-sm text-[#484848] hover:text-[var(--theme-color-0)] hover:underline cursor-pointer truncate transition-colors"
                                 @click="() => recordClick(category.url)"
                                 @success="() => model = false"
-                                v-html="highlightMatch(category.name)"
+                                v-html="highlightMatch(`${category.name} (${category.code})`)"
                             />
                         </div>
                         <p v-else class="text-sm text-gray-400">{{ ctrans('No categories found') }}</p>

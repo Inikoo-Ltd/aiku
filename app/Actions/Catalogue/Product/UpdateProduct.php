@@ -293,7 +293,7 @@ class UpdateProduct extends OrgAction
         }
 
         if (Arr::hasAny($changed, ['state', 'status', 'is_for_sale', 'exclusive_for_customer_id'])) {
-            $this->productHydrators($product);
+            $this->productHydrators($product, hydrateForSale: !Arr::has($modelData, 'is_for_sale'));
         }
 
         if (Arr::has($changed, 'exclusive_for_customer_id')) {
