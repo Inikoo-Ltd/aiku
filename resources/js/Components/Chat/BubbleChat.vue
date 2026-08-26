@@ -3,7 +3,7 @@ import { inject, computed, ref, onMounted, onUnmounted, watch } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faCheckDouble, faExclamationCircle, faLanguage, faRobot, faShieldCheck } from "@far"
-import { faShare, faFaceSmile } from "@fortawesome/free-solid-svg-icons"
+import { faShare, faFaceSmile, faReply } from "@fortawesome/free-solid-svg-icons"
 import axios from "axios"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import Image from "primevue/image"
@@ -36,6 +36,13 @@ interface Message {
     } | null
     is_read?: boolean
     metadata?: Record<string, any> | null
+    replied_to?: {
+        id: number
+        message_text?: string | null
+        message_type?: string
+        sender_type?: string
+        file_name?: string | null
+    } | null
     id?: number
     sender_name?: string | null
     _status?: MessageStatus
@@ -84,11 +91,13 @@ const props = defineProps<{
     reactionUrlBase?: string
     apiBase?: string
     viewerReactorId?: number | null
+    canReply?: boolean
 }>()
 
 const emit = defineEmits<{
     (e: "edit-message", payload: { id: number; text: string }): void
     (e: "open-slack-settings"): void
+    (e: "reply", message: Message): void
 }>()
 
 const EDIT_WINDOW_MS = 30 * 60 * 1000
@@ -226,6 +235,25 @@ const senderLabel = computed(() => {
 // A status notice is a timeline marker, not something anyone replies to or reacts to,
 // so it renders as the same chip the event stream uses.
 const isSystemNotice = computed(() => props.message.sender_type === "system")
+
+// Quoting is opt-in: only channels that can carry a reply upstream ask for the button.
+const canReplyToMessage = computed(() => props.canReply === true && !!props.message.id)
+
+const quotedLabel = computed(() => {
+    const quoted = props.message.replied_to
+
+    if (!quoted) return ""
+
+    if (quoted.message_text) return quoted.message_text
+
+    return quoted.file_name || trans(quoted.message_type === "image" ? "Photo" : "Attachment")
+})
+
+const quotedAuthor = computed(() =>
+    props.message.replied_to?.sender_type === "agent"
+        ? props.agentName ?? trans("Agent")
+        : props.contactName ?? trans("Customer")
+)
 
 const isFile = computed(() => props.message.message_type === "file")
 
@@ -571,6 +599,12 @@ watch(selectedLanguage, async (val) => {
 
                 <span class="w-px h-5 bg-gray-200 mx-0.5"></span>
 
+                <button v-if="canReplyToMessage" type="button" v-tooltip.top="trans('Reply')"
+                    class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-full hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
+                    @click="emit('reply', message)">
+                    <FontAwesomeIcon :icon="faReply" class="text-sm" />
+                </button>
+
                 <div class="relative" ref="emojiPickerRef">
                     <button type="button" v-tooltip.top="trans('Add reaction')"
                         class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-full hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
@@ -606,6 +640,12 @@ watch(selectedLanguage, async (val) => {
 
             <div v-if="showSenderLabel" class="text-[11px] font-semibold mb-0.5 opacity-70">
                 {{ senderLabel }}
+            </div>
+
+            <div v-if="message.replied_to"
+                class="mb-1 rounded-md border-l-[3px] border-current bg-black/5 px-2 py-1 text-[11px] leading-snug opacity-90">
+                <div class="font-semibold opacity-70">{{ quotedAuthor }}</div>
+                <div class="opacity-70 line-clamp-2 break-words">{{ quotedLabel }}</div>
             </div>
 
             <p v-if="!isEditingMessage" class="whitespace-pre-wrap break-words">

@@ -63,6 +63,7 @@ class SendMetaChatMessage
             'template_language'     => ['required_with:template_name', 'string'],
             'template_parameters'   => ['sometimes', 'array'],
             'template_parameters.*' => ['string', 'max:1024'],
+            'replied_to_id'         => ['sometimes', 'nullable', 'integer'],
         ];
     }
 
@@ -132,6 +133,12 @@ class SendMetaChatMessage
             ];
         }
 
+        $repliedTo = $this->resolveRepliedTo($metaChatSession, $modelData['replied_to_id'] ?? null);
+
+        if ($repliedTo) {
+            $payload['context'] = ['message_id' => $repliedTo->meta_message_id];
+        }
+
         $response = Http::withToken($accessToken)->post(
             $this->whatsappEndpoint($phoneNumberId.'/messages'),
             $payload
@@ -157,6 +164,7 @@ class SendMetaChatMessage
             'sender_type'     => ChatSenderTypeEnum::AGENT,
             'sender_id'       => $agent->id,
             'message_text'    => $messageText ?: null,
+            'replied_to_id'   => $repliedTo?->id,
             'metadata'        => $metadata,
         ]);
 
@@ -222,6 +230,19 @@ class SendMetaChatMessage
                 'agent'       => $agent,
             ],
         ];
+    }
+
+
+    protected function resolveRepliedTo(MetaChatSession $metaChatSession, ?int $repliedToId): ?MetaChatMessage
+    {
+        if (!$repliedToId) {
+            return null;
+        }
+
+        return $metaChatSession->messages()
+            ->whereKey($repliedToId)
+            ->whereNotNull('meta_message_id')
+            ->first();
     }
 
     protected function templatePayload(string $to, string $name, string $language, array $parameters): array

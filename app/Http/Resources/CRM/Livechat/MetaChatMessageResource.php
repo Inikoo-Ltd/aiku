@@ -10,6 +10,7 @@ namespace App\Http\Resources\CRM\Livechat;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Str;
 
 class MetaChatMessageResource extends JsonResource
 {
@@ -18,9 +19,17 @@ class MetaChatMessageResource extends JsonResource
     public function toArray($request): array
     {
         $metaChatMessage = $this;
+        $repliedTo       = $metaChatMessage->repliedTo;
 
         return [
             'id'             => $metaChatMessage->id,
+            'replied_to'     => $repliedTo ? [
+                'id'           => $repliedTo->id,
+                'message_text' => Str::limit($repliedTo->message_text, 120),
+                'message_type' => $repliedTo->message_type->value,
+                'sender_type'  => $repliedTo->sender_type->value,
+                'file_name'    => $repliedTo->attachment?->file_name,
+            ] : null,
             'message_text'   => $metaChatMessage->message_text,
             'message_type'   => $metaChatMessage->message_type->value,
             'sender_type'    => $metaChatMessage->sender_type->value,

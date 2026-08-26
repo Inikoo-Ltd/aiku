@@ -121,15 +121,19 @@ class StoreIncomingWhatsappMessage
             return;
         }
 
+        $quotedWaMessageId = (string) Arr::get($message, 'context.id');
+
         $metaChatMessage = StoreMetaChatMessage::run($metaChatSession, [
             'meta_message_id' => $waMessageId,
             'message_type'    => $this->messageType($type),
             'sender_type'     => ChatSenderTypeEnum::GUEST,
             'message_text'    => $type === 'text' ? Arr::get($message, 'text.body') : Arr::get($waNode, 'caption'),
+            'replied_to_id'   => $this->resolveQuotedMessageId($metaChatSession, $quotedWaMessageId),
             'metadata'        => [
                 'wa_type'      => $type,
                 'profile_name' => $profileName,
                 'wa_payload'   => $type !== 'text' ? $waNode : null,
+                'wa_context'   => Arr::get($message, 'context'),
             ],
         ]);
 
@@ -145,10 +149,18 @@ class StoreIncomingWhatsappMessage
         BroadcastMetaChatListEvent::dispatch($metaChatMessage, $metaChatSession->fresh());
     }
 
-    /**
-     * Stickers ride along with images so the agent sees them inline; document, audio
-     * and video all land in the generic file bucket the enum offers.
-     */
+    protected function resolveQuotedMessageId(MetaChatSession $metaChatSession, string $quotedWaMessageId): ?int
+    {
+        if ($quotedWaMessageId === '') {
+            return null;
+        }
+
+        return $metaChatSession->messages()
+            ->where('meta_message_id', $quotedWaMessageId)
+            ->value('id');
+    }
+
+
     protected function messageType(string $type): ChatMessageTypeEnum
     {
         return match (true) {
@@ -159,10 +171,6 @@ class StoreIncomingWhatsappMessage
     }
 
     /**
-     * A reaction is an annotation on an existing message, not a message of its own, so
-     * it never enters the thread as a bubble. Meta sends an empty emoji when the customer
-     * removes theirs.
-     *
      * @param  array<string, mixed>  $reaction
      */
     protected function storeReaction(MetaChatSession $metaChatSession, string $waMessageId, array $reaction): void

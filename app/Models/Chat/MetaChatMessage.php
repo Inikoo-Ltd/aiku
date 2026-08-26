@@ -24,6 +24,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property int|null $sender_id
  * @property string|null $message_text
  * @property int|null $media_id
+ * @property int|null $replied_to_id
  * @property bool|null $is_ai_generated
  * @property bool|null $is_validated
  * @property bool $is_read
@@ -77,6 +78,11 @@ class MetaChatMessage extends Model implements HasMedia
     public function reactions(): HasMany
     {
         return $this->hasMany(MetaChatMessageReaction::class);
+    }
+
+    public function repliedTo(): BelongsTo
+    {
+        return $this->belongsTo(MetaChatMessage::class, 'replied_to_id');
     }
 
     public function attachment(): BelongsTo

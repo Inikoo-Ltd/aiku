@@ -34,6 +34,15 @@ type LocalChatMessage = ChatMessage & {
     _status?: LocalMessageStatus
     _tempId?: string
     metadata?: Record<string, any>
+    message_type?: string
+    file_name?: string | null
+    replied_to?: {
+        id: number
+        message_text?: string | null
+        message_type?: string
+        sender_type?: string
+        file_name?: string | null
+    } | null
 }
 
 interface WhatsappTemplate {
@@ -220,6 +229,22 @@ const autoResize = () => {
     messageInput.value.style.height = Math.min(messageInput.value.scrollHeight, 120) + "px"
 }
 
+const replyingTo = ref<LocalChatMessage | null>(null)
+
+const startReply = (message: LocalChatMessage) => {
+    replyingTo.value = message
+    nextTick(() => messageInput.value?.focus())
+}
+
+const cancelReply = () => {
+    replyingTo.value = null
+}
+
+const replyPreviewText = (message: LocalChatMessage) =>
+    message.message_text
+    || message.file_name
+    || trans(message.message_type === "image" ? "Photo" : "Attachment")
+
 const showEmojiPicker = ref(false)
 const emojiPickerContainer = ref<HTMLElement | null>(null)
 
@@ -396,6 +421,8 @@ const sendMessage = async () => {
         ? (IMAGE_TYPES.includes(selectedFile.value!.type) ? "image" : "file")
         : "text"
 
+    const quoted = replyingTo.value
+
     const optimisticMessage: LocalChatMessage = {
         id: tempId as any,
         _tempId: tempId,
@@ -405,6 +432,14 @@ const sendMessage = async () => {
         message_type: messageType,
         created_at: new Date().toISOString(),
         _status: "sending",
+        replied_to: quoted
+            ? {
+                id: quoted.id as any,
+                message_text: quoted.message_text,
+                message_type: quoted.message_type,
+                sender_type: quoted.sender_type,
+            }
+            : null,
     }
 
     const formData = new FormData()
@@ -412,9 +447,13 @@ const sendMessage = async () => {
     if (selectedFile.value) {
         formData.append(messageType === "image" ? "image" : "file", selectedFile.value)
     }
+    if (quoted?.id) {
+        formData.append("replied_to_id", String(quoted.id))
+    }
 
     newMessage.value = ""
     removeFile()
+    cancelReply()
     autoResize()
 
     await postMessage(formData, optimisticMessage)
@@ -731,7 +770,9 @@ onUnmounted(() => {
                             :contactName="session?.contact_name || session?.guest_identifier"
                             :canEdit="false"
                             reactionUrlBase="/app/api/chats/meta/messages"
-                            :viewerReactorId="layout?.user?.id" />
+                            :viewerReactorId="layout?.user?.id"
+                            :canReply="!isClosed && !templateOnly"
+                            @reply="startReply" />
                     </div>
                 </template>
             </template>
@@ -827,6 +868,21 @@ onUnmounted(() => {
                 class="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-[11px]">
                 <FontAwesomeIcon :icon="faFileLines" class="text-[10px]" />
                 <span>{{ trans('The customer has not messaged in the last 24 hours. Only template messages can be sent.') }}</span>
+            </div>
+
+            <div v-if="replyingTo"
+                class="flex items-start gap-2 mb-2 px-3 py-2 rounded-lg bg-gray-100">
+                <div class="flex-1 min-w-0">
+                    <div class="text-[11px] font-semibold text-gray-600">
+                        {{ trans('Replying to') }}
+                        {{ replyingTo.sender_type === 'agent' ? trans('yourself') : (session?.contact_name || session?.guest_identifier) }}
+                    </div>
+                    <div class="text-[11px] text-gray-500 truncate">{{ replyPreviewText(replyingTo) }}</div>
+                </div>
+                <button type="button" @click="cancelReply" :aria-label="trans('Cancel reply')"
+                    class="shrink-0 w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-400">
+                    <FontAwesomeIcon :icon="faXmark" class="text-xs" />
+                </button>
             </div>
 
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
