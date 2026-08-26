@@ -1034,3 +1034,36 @@ if (!function_exists('soldPackUnits')) {
         return $historicUnits ?? $productUnits;
     }
 }
+
+if (!function_exists('refundQuantityLabel')) {
+    /**
+     * Label for a refund line's quantity, or null when the quantity is an artifact.
+     *
+     * Refund quantities are derived from the refunded amount, so only two shapes carry meaning:
+     * whole packs, and whole loose units within a pack (1/3, 2/3 of a 3-pack). Anything else is
+     * an arbitrary money amount (a discretionary compensation) and null tells the caller to hide
+     * the quantity and unit price, leaving the amount as the only figure.
+     */
+    function refundQuantityLabel(int|float|string|null $quantity, int|float|string|null $unitsInPack): ?string
+    {
+        $quantity    = (float) $quantity;
+        $unitsInPack = (float) ($unitsInPack ?: 1);
+
+        if (fmod($quantity, 1) == 0.0) {
+            return trimDecimalZeros($quantity);
+        }
+
+        if ($unitsInPack > 1) {
+            $looseUnits = round($quantity * $unitsInPack);
+            if ($looseUnits != 0.0 && abs($quantity * $unitsInPack - $looseUnits) <= 0.01 * abs($looseUnits)) {
+                if (fmod($looseUnits, $unitsInPack) == 0.0) {
+                    return trimDecimalZeros($looseUnits / $unitsInPack);
+                }
+
+                return ($looseUnits < 0 ? '-' : '').abs($looseUnits).'/'.trimDecimalZeros($unitsInPack);
+            }
+        }
+
+        return null;
+    }
+}

@@ -410,11 +410,14 @@
                     </td>
                     @php($sameGrossNet = $transaction->gross_amount == $transaction->net_amount)
                     @php($taxOnlyRefundLine = $transaction->is_refund && $transaction->net_amount == 0 && $transaction->tax_amount != 0)
+                    @php($refundQtyDisplay = $transaction->is_refund && !$taxOnlyRefundLine ? refundQuantityLabel($transaction->quantity, soldPackUnits($transaction->historicAsset?->units, $transaction->model?->units)) : null)
+                    @php($discretionaryRefundLine = $transaction->is_refund && !$taxOnlyRefundLine && $refundQtyDisplay === null)
 
                     @if($pro_mode)
                         <td style="text-align:right">
                             @if($taxOnlyRefundLine)
                                 {{ __('VAT refund') }}
+                            @elseif($discretionaryRefundLine)
                             @elseif($transaction->quantity==0 || $transaction->quantity==null)
                                 {{ $invoice->currency->symbol . optional($transaction->historicAsset)->price }}
                             @elseif($transaction->historicAsset)
@@ -426,11 +429,12 @@
                                 @endif
                             @endif
                         </td>
-                        <td style="text-align:right">{{ $taxOnlyRefundLine || ($transaction->is_refund && fmod((float) $transaction->quantity, 1) != 0.0) ? '' : trimDecimalZeros($transaction->quantity) }}</td>
+                        <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : trimDecimalZeros($transaction->quantity) }}</td>
                     @else
                         <td style="text-align:left">
                             @if($taxOnlyRefundLine)
                                 {{ __('VAT refund') }}
+                            @elseif($discretionaryRefundLine)
                             @elseif($transaction->quantity==0 || $transaction->quantity==null)
                                 {{ $invoice->currency->symbol . optional($transaction->historicAsset)->price }}
                             @elseif($transaction->historicAsset)
@@ -442,7 +446,7 @@
                                 @endif
                             @endif
                         </td>
-                        <td style="text-align:right">{{ $taxOnlyRefundLine || ($transaction->is_refund && fmod((float) $transaction->quantity, 1) != 0.0) ? '' : trimDecimalZeros($transaction->quantity) }}</td>
+                        <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : trimDecimalZeros($transaction->quantity) }}</td>
                     @endif
                     @if($taxOnlyRefundLine)
                         <td style="text-align:right">{{ $invoice->currency->symbol . number_format(-$transaction->tax_amount, 2) }}</td>
