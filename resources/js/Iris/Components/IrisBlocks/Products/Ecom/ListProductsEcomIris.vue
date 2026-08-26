@@ -303,16 +303,11 @@ onMounted(() => {
     const urlParams = new URLSearchParams(window.location.search)
 	const sortParam = urlParams.get("order_by")
 
-   
-
 	if (sortParam) {
 		orderBy.value = sortParam
-		const key = sortParam.replace("-", "")
-		sortKey.value = key
+		sortKey.value = sortParam.replace("-", "")
 		isAscending.value = !sortParam.startsWith("-")
 	}
-
-     console.log('sortKey',sortKey)
 
     if (layout?.iris?.is_logged_in) {
         firstLoad.value = 1

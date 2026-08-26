@@ -116,26 +116,25 @@ function mailshotRoute(mailshot: Mailshot) {
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(subject)="{ item: mailshot }">
             <div class="flex items-center gap-2">
-                <Link v-if="mailshotRoute(mailshot)" :href="(mailshotRoute(mailshot) as string)" class="primaryLink">
-                    {{ mailshot["subject"] }}
+                <Link v-if="mailshotRoute(mailshot)" :href="(mailshotRoute(mailshot) as string)" class="primaryLink"
+                    v-tooltip="mailshot.subject?.length > 24 ? mailshot.subject : undefined">
+                    {{ mailshot.subject?.length > 24 ? mailshot.subject.slice(0, 24) + '…' : mailshot.subject }}
                 </Link>
                 <Link v-if="mailshot.state === 'sent' && mailshot.webpage_slug && !mailshot.has_source_reference && mailshot.type !== 'invite'" :href="webpageRoute(mailshot)"
-                    v-tooltip="trans('Go to the webpage created from this mailshot')"
-                    class="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 rounded hover:bg-slate-200 hover:text-slate-800 transition">
-                    <FontAwesomeIcon :icon="faExternalLink" class="mr-1" />
-                    {{ trans("Go to webpage") }}
+                    v-tooltip="trans('Go to webpage')"
+                    class="ml-2 inline-flex items-center px-2 py-0.5 text-xs bg-slate-100 text-slate-600 rounded hover:bg-slate-200 hover:text-slate-800 transition">
+                    <FontAwesomeIcon :icon="faExternalLink" />
                 </Link>
                 <span v-else-if="mailshot.state === 'sent' && !mailshot.has_source_reference && mailshot.type !== 'invite'"
-                    v-tooltip="trans('Convert this mailshot into a page')"
+                    v-tooltip="trans('Convert to Page')"
                     :class="[
-                        'ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 rounded transition',
+                        'ml-2 inline-flex items-center px-2 py-0.5 text-xs bg-slate-100 text-slate-600 rounded transition',
                         convertingMailshotId && convertingMailshotId !== mailshot.id
                             ? 'opacity-50 cursor-not-allowed pointer-events-none'
                             : 'hover:bg-slate-200 hover:text-slate-800 cursor-pointer'
                     ]"
                     @click="() => { convertToPage(mailshot); }">
-                    <FontAwesomeIcon :icon="convertingMailshotId === mailshot.id ? faSpinnerThird : faFileExport" :spin="convertingMailshotId === mailshot.id" class="mr-1" />
-                    {{ trans("Convert to Page") }}
+                    <FontAwesomeIcon :icon="convertingMailshotId === mailshot.id ? faSpinnerThird : faFileExport" :spin="convertingMailshotId === mailshot.id" />
                 </span>
             </div>
         </template>

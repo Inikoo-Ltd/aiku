@@ -178,7 +178,9 @@ export const initialiseApp = () => {
         }
 
         // Set Chat theme
-        applyChatTheme(usePage().props.layout?.chat_theme as string | undefined)
+        if (usePage().props.layout?.chat_theme) {
+            applyChatTheme(usePage().props.layout.chat_theme as string)
+        }
 
         // Set App Environment
         if (usePage().props?.environment) {
@@ -258,6 +260,10 @@ export const initialiseApp = () => {
 
         if (usePage().props.master_updated_count !== undefined) {
             layout.master_updated_count = usePage().props.master_updated_count as number
+        }
+
+        if (usePage().props.faire_skipped_count !== undefined) {
+            layout.faire_skipped_count = usePage().props.faire_skipped_count as number
         }
 
         layout.app.name = "Aiku"

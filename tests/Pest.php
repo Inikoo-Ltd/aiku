@@ -530,7 +530,7 @@ function createProduct(Shop $shop): array
  */
 function createOrder(Customer $customer, Product $product): Order
 {
-    $order = $customer->organisation->orders()->first();
+    $order = $customer->orders()->first();
     if (!$order) {
         $arrayData = [
             'reference'        => '123456',

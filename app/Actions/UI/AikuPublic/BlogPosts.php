@@ -21,6 +21,7 @@ class BlogPosts
     {
         return collect(glob(resource_path('markdown/aiku-public/blog/*.md')))
             ->map(fn (string $path) => self::parse($path))
+            ->reject(fn (array $post) => $post['date']->isFuture())
             ->sortByDesc('date')
             ->values();
     }
@@ -29,7 +30,9 @@ class BlogPosts
     {
         $path = resource_path("markdown/aiku-public/blog/{$slug}.md");
 
-        return preg_match('/^[a-z0-9-]+$/', $slug) && is_file($path) ? self::parse($path) : null;
+        $post = preg_match('/^[a-z0-9-]+$/', $slug) && is_file($path) ? self::parse($path) : null;
+
+        return $post && $post['date']->isFuture() ? null : $post;
     }
 
     private static function parse(string $path): array

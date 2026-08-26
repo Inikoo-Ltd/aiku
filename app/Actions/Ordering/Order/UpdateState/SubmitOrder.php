@@ -69,7 +69,10 @@ class SubmitOrder extends OrgAction
         $modelData = [
             'state'          => OrderStateEnum::SUBMITTED,
             'status'         => OrderStatusEnum::PROCESSING,
-            'private_warehouse_note' => $order->customer->warehouse_internal_notes,
+            'private_warehouse_note' => collect([$order->private_warehouse_note, $order->customer->warehouse_internal_notes])
+                ->filter()
+                ->unique()
+                ->implode(' — ') ?: null,
         ];
 
         $date = now();

@@ -39,6 +39,7 @@ class GetChatSessions
             'assigned_to_me' => ['sometimes', 'integer'],
             'view_team'       => ['sometimes', 'boolean'],
             'is_spam'         => ['sometimes', 'boolean'],
+            'highlighted'     => ['sometimes', 'boolean'],
             'trashed'         => ['sometimes', 'boolean'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
             'web_user_id'     => ['sometimes', 'integer', 'exists:web_users,id'],
@@ -56,7 +57,7 @@ class GetChatSessions
         if ($user instanceof WebUser) {
             $filters['web_user_id'] = $user->id;
             $filters['include_spam'] = true;
-            unset($filters['assigned_to_me'], $filters['view_team'], $filters['is_spam'], $filters['trashed']);
+            unset($filters['assigned_to_me'], $filters['view_team'], $filters['is_spam'], $filters['trashed'], $filters['highlighted']);
         } elseif ($user && !empty($filters['assigned_to_me'])) {
             $filters['assigned_to_me'] = $user->id;
         }
@@ -114,6 +115,12 @@ class GetChatSessions
                 : null;
 
             $query->whereIn('shop_id', $spamAgent ? $spamAgent->shops()->pluck('shops.id')->all() : []);
+        }
+
+        // Highlight view is additive: it keeps the normal status/assignment filters
+        // (waiting/active/closed + my/team) and just restricts to highlighted sessions.
+        if (!empty($filters['highlighted'])) {
+            $query->where('is_highlighted', true);
         }
 
         if (!$isSpamView && !$isTrashView && !empty($filters['assigned_to_me'])) {

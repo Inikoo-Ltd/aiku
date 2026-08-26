@@ -845,6 +845,8 @@ const labelToBePaid = (toBePaidValue: string) => {
 // Section: Order charges (priority dispatch, extra packing, insurance)
 const isChargeEditable = computed(() => !['finalised', 'dispatched', 'cancelled'].includes(props.data?.data?.state || ''))
 
+const isOrderAmountsProvisional = computed(() => ['in_warehouse', 'handling', 'handling_blocked'].includes(props.data?.data?.state || ''))
+
 const isLoadingPriorityDispatch = ref(false)
 const isLoadingExtraPacking = ref(false)
 const isLoadingInsurance = ref(false)
@@ -2004,7 +2006,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             class="w-full">
                             <!-- Section: pay with balance (if order Submit without paid) -->
                             <div class="w-full rounded-md shadow pxb-2 isolate border" :class="[
-                                Number(box_stats.products.payment.pay_amount) <= 0 ? 'border-green-300' : 'border-red-500',
+                                Number(box_stats.products.payment.pay_amount) <= 0 ? 'border-green-300' : isOrderAmountsProvisional ? 'border-gray-300' : 'border-red-500',
                             ]">
                                 <NeedToPayV2 :totalAmount="box_stats.products.payment.total_amount"
                                     :paidAmount="box_stats.products.payment.paid_amount"
@@ -2012,7 +2014,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     :writeOff="box_stats.products.payment.write_off"
                                     :balance="box_stats?.customer?.balance" :payments="payments_data"
                                     :currencyCode="currency.code" :toBePaidBy="data?.data?.to_be_paid_by"
-                                    :order="data?.data" :handleTabUpdate="handleTabUpdate">
+                                    :order="data?.data" :handleTabUpdate="handleTabUpdate"
+                                    :provisional="isOrderAmountsProvisional">
                                     <template #default>
                                     </template>
                                 </NeedToPayV2>
@@ -2046,7 +2049,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 </div>
 
 
-                                <div v-if="Number(box_stats.products.payment.pay_amount) > 0"
+                                <div v-if="Number(box_stats.products.payment.pay_amount) > 0 && !isOrderAmountsProvisional"
                                     class="my-2 xpt-2 xborder-t border-gray-300 text-xxs">
                                     <div v-if="data?.data?.to_be_paid_by?.value"
                                         class="mx-auto w-fit flex items-center">

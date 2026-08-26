@@ -18,7 +18,7 @@ import Dialog from 'primevue/dialog'
 const ProductSoundButton = defineAsyncComponent(() => import('@/Iris/Components/ProductSoundButton.vue'))
 
 const props = defineProps<{
-  images: { source: string; thumbnail: string; alt: string }[]
+  images: { source: object; thumbnail?: object; zoom?: object; alt: string }[]
   video?: string
   audio?: string
   breakpoints?: {
@@ -175,7 +175,7 @@ const enableLoop = computed(() => totalSlides.value > 1)
         <SwiperSlide v-for="(image, index) in props.images" :key="`thumb-${index}`"
           class="cursor-pointer rounded overflow-hidden border border-gray-300">
           <div class="aspect-square w-full">
-            <Image :src="image.source" :alt="image.alt || `Thumbnail ${index + 1}`"
+            <Image :src="image.thumbnail || image.source" :alt="image.alt || `Thumbnail ${index + 1}`"
               class="w-full h-full flex items-center justify-center"
               :style="{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />
           </div>
@@ -200,7 +200,7 @@ const enableLoop = computed(() => totalSlides.value > 1)
 
     <!-- PrimeVue Dialog (Replaces Custom Modal) -->
     <Dialog v-model:visible="showModal" modal dismissable-mask :closable="false"
-      class="w-full max-w-3xl !bg-transparent !shadow-none !border-0 !border-transparent">
+      class="w-[calc(100vw-3rem)] max-w-6xl !bg-transparent !shadow-none !border-0 !border-transparent">
       <div class="relative w-full flex flex-col items-center justify-center">
         <!-- Close Button -->
         <!-- <button
@@ -212,8 +212,8 @@ const enableLoop = computed(() => totalSlides.value > 1)
         </button> -->
 
         <!-- Image Viewer -->
-        <div v-if="!showVideoModal" class="block w-full h-auto min-h-[400px] max-h-[80vh] mb-1 rounded">
-          <Image :src="props.images[selectedIndex]?.source"
+        <div v-if="!showVideoModal" class="block w-full h-auto min-h-[400px] max-h-[88vh] mb-1 rounded">
+          <Image :src="props.images[selectedIndex]?.zoom || props.images[selectedIndex]?.source"
             :alt="props.images[selectedIndex]?.alt || `Image ${selectedIndex + 1}`"
             :style="{ objectFit: 'contain' }" :imageCover="true" />
         </div>

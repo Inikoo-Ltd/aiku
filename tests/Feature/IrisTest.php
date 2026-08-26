@@ -9,6 +9,7 @@
 use App\Actions\Web\Website\Cloudflare\FetchFirewallBlockedCountryEvents;
 use App\Actions\Web\Website\Cloudflare\PurgeCloudflareUrl;
 use App\Http\Middleware\DetectIrisWebsite;
+use App\Models\DevOps\AppDeployment;
 use App\Http\Middleware\DetectWebsite;
 use App\Models\Web\Website;
 use Illuminate\Http\Request;
@@ -67,6 +68,18 @@ test('it processes blocked country regions in DetectWebsite', function () {
 
         return response('OK');
     });
+});
+
+test('iris footer json includes app version', function () {
+    AppDeployment::create(['commit_hash' => 'abc123', 'semantic_version' => 'v2.369.0']);
+
+    DetectWebsiteFromDomain::mock()
+        ->shouldReceive('parseDomain')
+        ->andReturn($this->website->domain);
+
+    $response = $this->getJson('http://' . $this->website->domain . '/json/footer');
+    $response->assertOk()
+        ->assertJsonPath('version', 'v2.369.0');
 });
 
 test('it detects iris website', function () {

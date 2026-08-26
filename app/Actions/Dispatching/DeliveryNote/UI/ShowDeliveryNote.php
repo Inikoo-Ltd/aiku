@@ -682,10 +682,56 @@ class ShowDeliveryNote extends OrgAction
     }
 
 
+    /**
+     * SKOs and units the pickers have to walk, taken from what the order requires so the
+     * totals are already there while picking, unlike the dispatch totals on the delivery
+     * note and invoice PDFs which only land once the delivery note is dispatched.
+     *
+     * @return array{number_skos: int, number_units: int}
+     */
+    public function getPickingTotals(DeliveryNote $deliveryNote): array
+    {
+        $numberSkos  = 0;
+        $numberUnits = 0;
+
+        foreach ($deliveryNote->deliveryNoteItems()->with('orgStock')->get() as $deliveryNoteItem) {
+            $quantityRequired = (float)$deliveryNoteItem->quantity_required;
+
+            $numberSkos  += $quantityRequired;
+            $numberUnits += $quantityRequired * ($deliveryNoteItem->orgStock?->packed_in ?? 1);
+        }
+
+        return [
+            'number_skos'  => (int)$numberSkos,
+            'number_units' => (int)$numberUnits,
+        ];
+    }
+
+    /**
+     * How long the warehouse usually takes on an order this size, from its own median
+     * seconds per SKO. Null until the warehouse has enough finished orders to measure.
+     *
+     * @return array{estimated_picking_minutes: int|null, estimated_packing_minutes: int|null}
+     */
+    public function getEstimatedHandlingMinutes(DeliveryNote $deliveryNote, int $numberSkos): array
+    {
+        $warehouseStats = $deliveryNote->warehouse?->stats;
+
+        $estimate = fn (?string $secondsPerSko) => $secondsPerSko === null || $numberSkos <= 0
+            ? null
+            : max(1, (int)round($numberSkos * (float)$secondsPerSko / 60));
+
+        return [
+            'estimated_picking_minutes' => $estimate($warehouseStats?->picking_seconds_per_sko),
+            'estimated_packing_minutes' => $estimate($warehouseStats?->packing_seconds_per_sko),
+        ];
+    }
+
     public function getBoxStats(DeliveryNote $deliveryNote): array
     {
-        $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
-        $order     = $deliveryNote->orders->first();
+        $estWeight     = ($deliveryNote->estimated_weight ?? 0) / 1000;
+        $order         = $deliveryNote->orders->first();
+        $pickingTotals = $this->getPickingTotals($deliveryNote);
 
         $additionalShipmentRoutes = [];
         if ($deliveryNote->is_shipping_by_external) {
@@ -777,7 +823,9 @@ class ShowDeliveryNote extends OrgAction
             'products'                     => [
                 'estimated_weight' => $estWeight,
                 'number_items'     => $deliveryNote->number_items,
-                'number_skos'      => $deliveryNote->total_skos,
+                'number_skos'      => $pickingTotals['number_skos'],
+                'number_units'     => $pickingTotals['number_units'],
+                ...$this->getEstimatedHandlingMinutes($deliveryNote, $pickingTotals['number_skos']),
             ],
             'order'                        => [
                 'reference' => $order->reference,

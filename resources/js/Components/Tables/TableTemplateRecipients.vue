@@ -505,7 +505,7 @@ watch(
                     </div>
                 </template>
 
-                <Button v-if="showSave" :label="trans('Save')" type="positive" icon="save" @click="saveFilters"
+                <Button v-if="showSave" :label="trans('Save recipients')" type="positive" icon="save" @click="saveFilters"
                     class="h-10 px-4" :disabled="isByOrderValueInvalid" />
             </div>
         </div>

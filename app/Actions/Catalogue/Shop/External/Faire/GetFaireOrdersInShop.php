@@ -89,6 +89,7 @@ class GetFaireOrdersInShop extends OrgAction
             $orderExists = Order::where('shop_id', $shop->id)->where('external_id', $externalId)->exists();
 
             if ($orderExists) {
+                $this->clearSkippedFaireOrder($shop, $externalId);
                 continue;
             }
 
@@ -204,8 +205,14 @@ class GetFaireOrdersInShop extends OrgAction
 
                     UpdateFaireOrder::run($order);
 
+                    $this->clearSkippedFaireOrder($shop, $externalId);
+
                     $command?->info('Order '.$externalId.' created');
                 } else {
+                    $this->recordSkippedFaireOrder($shop, $faireOrder, array_map(
+                        fn (array $error) => trim(Arr::get($error, 'product_name', '').' ('.Arr::get($error, 'product_code', '').'): '.Arr::get($error, 'message', '')),
+                        $errors
+                    ));
                     \Sentry\withScope(function ($scope) use ($faireOrder, $errors, $shop) {
                         $scope->setContext('faire_order', [
                             'shop'       => $shop->slug,
@@ -220,8 +227,44 @@ class GetFaireOrdersInShop extends OrgAction
                     }
                 }
             } else {
+                $this->recordSkippedFaireOrder($shop, $faireOrder, ['Retailer not found on Faire']);
                 \Sentry\captureMessage('Faire order skipped, retailer not found: '.Arr::get($faireOrder, 'display_id').' ('.$shop->slug.')');
             }
+        }
+    }
+
+    public function recordSkippedFaireOrder(Shop $shop, array $faireOrder, array $reasons): void
+    {
+        $skipped    = Arr::get($shop->settings, 'faire.skipped_orders', []);
+        $externalId = Arr::get($faireOrder, 'id');
+
+        $skipped[$externalId] = [
+            'display_id' => Arr::get($faireOrder, 'display_id'),
+            'reasons'    => $reasons,
+            'first_seen' => Arr::get($skipped, "$externalId.first_seen", now()->toIso8601String()),
+            'last_seen'  => now()->toIso8601String(),
+        ];
+
+        $this->saveSkippedFaireOrders($shop, $skipped);
+    }
+
+    public function clearSkippedFaireOrder(Shop $shop, ?string $externalId): void
+    {
+        $skipped = Arr::get($shop->settings, 'faire.skipped_orders', []);
+        if ($externalId === null || !array_key_exists($externalId, $skipped)) {
+            return;
+        }
+        unset($skipped[$externalId]);
+        $this->saveSkippedFaireOrders($shop, $skipped);
+    }
+
+    private function saveSkippedFaireOrders(Shop $shop, array $skipped): void
+    {
+        $settings = $shop->settings;
+        data_set($settings, 'faire.skipped_orders', $skipped);
+        $shop->settings = $settings;
+        if ($shop->exists) {
+            $shop->save();
         }
     }
 

@@ -53,13 +53,37 @@ export const useLiveUsers = defineStore('useLiveUsers', {
         subscribe() {
 
             window.Echo.join(`grp.live.users`)
-                // .here((rawUsers) => {
-                //     console.log('Who is here: ', rawUsers);
+                // here() fires on every (re)connection, including waking from sleep, so it is
+                // what repopulates the list without a page refresh
+                .here((members: { id: number, alias: string, name: string }[]) => {
+                    members.forEach((member) => {
+                        if (!this.liveUsers[member.id]) {
+                            this.liveUsers[member.id] = {
+                                id: member.id,
+                                username: member.alias,
+                                contact_name: member.name,
+                                action: 'navigate',
+                                last_active: new Date(),
+                            } as LiveUser
+                        }
+                    })
 
-                // })
+                    const me = this.liveUsers[usePage().props?.auth?.user?.id]
+                    if (me) {
+                        window.Echo.join(`grp.live.users`).whisper('otherIsNavigating', me)
+                    }
+                })
 
-                .joining((user) => {
-                    console.log('Someone join')
+                .joining((user: { id: number, alias: string, name: string }) => {
+                    if (!this.liveUsers[user.id]) {
+                        this.liveUsers[user.id] = {
+                            id: user.id,
+                            username: user.alias,
+                            contact_name: user.name,
+                            action: 'navigate',
+                            last_active: new Date(),
+                        } as LiveUser
+                    }
                     // if UserA join, then others send their data to UserA
                     window.Echo.join(`grp.live.users`).whisper(`sendTo${user?.id}`, this.liveUsers[usePage().props?.auth?.user?.id])
                 })

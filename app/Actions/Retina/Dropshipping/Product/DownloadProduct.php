@@ -55,6 +55,16 @@ class DownloadProduct extends RetinaAction
                     'Cache-Control' => 'max-age=0',
                 ]);
             } else {
+                if (!Storage::disk('data-feeds')->exists($path)) {
+                    SaveDataFeeds::run($parent);
+                }
+
+                abort_unless(
+                    Storage::disk('data-feeds')->exists($path),
+                    404,
+                    __('The data feed for :name is not available yet, please try again later.', ['name' => $parent->name])
+                );
+
                 return Storage::disk('data-feeds')->download($path);
             }
         }

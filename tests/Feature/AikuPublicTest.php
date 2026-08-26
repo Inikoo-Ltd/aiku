@@ -196,3 +196,30 @@ test('indexnow key file is served and the ping submits every public url', functi
     config(['services.indexnow.key' => null]);
     expect((new PingIndexNow())->handle())->toBe(0);
 });
+
+test('future-dated posts stay hidden until their date', function () {
+    $slug = 'test-scheduled-post-'.uniqid();
+    $path = resource_path("markdown/aiku-public/blog/{$slug}.md");
+    file_put_contents($path, "---\ntitle: Scheduled\nsummary: Not yet\ndate: ".now()->addDays(3)->toDateString()."\ntags: test\n---\n\nSoon.\n");
+
+    try {
+        expect(BlogPosts::all()->pluck('slug'))->not->toContain($slug)
+            ->and(BlogPosts::find($slug))->toBeNull();
+        get($this->host.'/blog/'.$slug)->assertNotFound();
+    } finally {
+        unlink($path);
+    }
+});
+
+test('analytics articles tab lists every note with real commit date and visit stats', function () {
+    get($this->host.'/visit.json?p=/blog/anatomy-of-a-deploy')->assertNoContent();
+
+    $articles = collect(\App\Actions\DevOps\UI\ShowAikuPublicAnalytics::make()->getArticleStats());
+    expect($articles)->toHaveCount(BlogPosts::all()->count());
+
+    $row = $articles->firstWhere('slug', 'anatomy-of-a-deploy');
+    expect($row['views'])->toBeGreaterThanOrEqual(1)
+        ->and($row['url'])->toBe('https://aiku.io/blog/anatomy-of-a-deploy')
+        ->and($row['date'])->toBe('2026-08-19')
+        ->and($row['committed_at'])->toStartWith('2026-08-');
+});

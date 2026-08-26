@@ -126,8 +126,7 @@ trait WithIndexMailshots
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->column(key: 'state', label: '', type: 'icon')
-                ->column(key: 'subject', label: __('subject'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'subject', label: __('Subject'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);
             }
