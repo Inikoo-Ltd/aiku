@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, nextTick, onMounted } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/navigation'
@@ -7,14 +7,14 @@ import 'swiper/css/thumbs'
 import { Navigation, Thumbs } from 'swiper/modules'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faChevronCircleLeft, faChevronCircleRight } from '@fal'
+import { faChevronCircleLeft, faChevronCircleRight, faSearchPlus } from '@fal'
 import { faVideo } from '@fas'
 
 import Image from "@common/Components/Image.vue"
-import Dialog from 'primevue/dialog'
+import ProductImageViewerDialog from '@/Components/Product/ProductImageViewerDialog.vue'
 
 const props = defineProps<{
-  images: { source: string; thumbnail: string; alt: string }[]
+  images: { source: any; thumbnail?: any; zoom?: any; alt?: string }[]
   video?: string
 }>()
 
@@ -56,32 +56,7 @@ const openVideoModal = () => {
   showModal.value = true
 }
 
-const closeModal = () => {
-  showModal.value = false
-  showVideoModal.value = false
-}
-
-const onPrevNavigation = () => {
-  selectedIndex.value =
-    (selectedIndex.value - 1 + props.images.length) % props.images.length
-}
-
-const onNextNavigation = () => {
-  selectedIndex.value =
-    (selectedIndex.value + 1) % props.images.length
-}
-
 /* ---------------- LIFECYCLE ---------------- */
-const handleKeydown = (e: KeyboardEvent) => {
-  if (!showModal.value) return
-
-  if (e.key === 'Escape') closeModal()
-  if (!showVideoModal.value) {
-    if (e.key === 'ArrowLeft') onPrevNavigation()
-    if (e.key === 'ArrowRight') onNextNavigation()
-  }
-}
-
 onMounted(async () => {
   await nextTick()
 
@@ -90,12 +65,6 @@ onMounted(async () => {
 
   thumbNavigation.value.prevEl = thumbPrevEl.value
   thumbNavigation.value.nextEl = thumbNextEl.value
-
-  window.addEventListener('keydown', handleKeydown)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', handleKeydown)
 })
 </script>
 
@@ -136,7 +105,7 @@ onBeforeUnmount(() => {
         class="flex justify-center items-center"
       >
         <div
-          class="w-full aspect-square overflow-hidden rounded-lg cursor-pointer"
+          class="relative w-full aspect-square overflow-hidden rounded-lg cursor-zoom-in"
           @click="openImageModal(index)"
         >
           <Image
@@ -211,50 +180,8 @@ onBeforeUnmount(() => {
       </SwiperSlide>
     </Swiper>
 
-    <!-- ================= MODAL ================= -->
-    <Dialog
-      v-model:visible="showModal"
-      modal
-      dismissable-mask
-      :closable="false"
-      class="w-full max-w-4xl !bg-transparent !shadow-none"
-    >
-      <div class="relative w-full flex justify-center items-center">
-        <div v-if="!showVideoModal" class="w-full max-h-[80vh]">
-          <Image
-            :src="props.images[selectedIndex]?.source"
-            :alt="props.images[selectedIndex]?.alt || `Image ${selectedIndex + 1}`"
-            :imageCover="true"
-            :style="{ objectFit: 'contain' }"
-          />
-        </div>
-
-        <div v-else class="w-full aspect-video">
-          <iframe class="w-full h-full" :src="props.video" allowfullscreen />
-        </div>
-
-        <button
-          v-if="!showVideoModal"
-          class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl"
-          @click="onPrevNavigation"
-        >
-          <FontAwesomeIcon :icon="faChevronCircleLeft" />
-        </button>
-
-        <button
-          v-if="!showVideoModal"
-          class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl"
-          @click="onNextNavigation"
-        >
-          <FontAwesomeIcon :icon="faChevronCircleRight" />
-        </button>
-      </div>
-    </Dialog>
+    <ProductImageViewerDialog v-model:visible="showModal" v-model:index="selectedIndex" :images="props.images"
+      :video="props.video" :show-video="showVideoModal" />
   </div>
 </template>
 
-<style scoped>
-:deep(.p-dialog-mask) {
-  background: rgba(0, 0, 0, 0.9);
-}
-</style>
