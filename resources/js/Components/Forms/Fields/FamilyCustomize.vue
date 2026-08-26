@@ -131,7 +131,9 @@ const error = computed(() => get(props.form, ["errors", props.fieldName]))
 
 					<Editor
 						v-model="row.notes"
-						:placeholder="trans('Describe what can be customised')">
+						:placeholder="trans('Describe what can be customised')"
+						:toggle=" ['bold', 'italic','fontSize', 'underline', 'bulletList', 'undo', 'redo', 'highlight', 'color', 'clear']"
+						>
 						<template #editor-content="{ editor }">
 							<div
 								class="editor-wrapper rounded-lg border-2 border-gray-300 p-3 shadow-sm focus-within:border-[var(--theme-color-0)]">
