@@ -43,6 +43,14 @@ const props = defineProps<{
             image: ImgTS
             url?: string
         }[]
+        best_match?: {
+            type: string
+            id: number
+            code: string
+            name: string
+            image: ImgTS
+            url?: string
+        } | null
         orders?: {
             id: number
             code: string
@@ -89,7 +97,9 @@ const formatPrice = (price?: number | string | null) => {
     return locale.currencyFormat(currency?.code, Number(price))
 }
 
-const products = computed(() => props.results?.products?.slice(0, 11) ?? [])
+// A family sent as best_match leads the list as a spotlight card; products then all render small
+const bestFamily = computed(() => props.results?.best_match?.type === 'product_category' ? props.results.best_match : null)
+const products = computed(() => props.results?.products?.slice(0, bestFamily.value ? 10 : 11) ?? [])
 
 // Only sent by SearchIrisCatalogue when a customer is signed in, and only their own documents
 const orders = computed(() => props.results?.orders ?? [])
@@ -222,7 +232,23 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
             </div>
 
             <!-- Products: large tappable rows, best match leads -->
-            <div v-if="products.length" class="px-2 py-1">
+            <div v-if="bestFamily || products.length" class="px-2 py-1">
+                <LinkIris
+                    v-if="bestFamily"
+                    :href="bestFamily.url"
+                    class="group flex items-center gap-3 min-w-0 rounded-md px-2 py-2.5 active:bg-[color-mix(in_srgb,var(--theme-color-0)_10%,var(--theme-color-1))]"
+                    @click="() => recordClick(bestFamily.url)"
+                    @success="() => model = false"
+                >
+                    <div class="w-20 h-20 bg-gray-50 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        <Image v-if="bestFamily.image" :src="bestFamily.image" class="w-full h-full object-cover" />
+                        <span v-else class="text-[10px] text-gray-300 font-bold uppercase">{{ bestFamily.code?.slice(0, 3) }}</span>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-base font-semibold text-slate-800 leading-snug line-clamp-2" v-html="highlightMatch(bestFamily.name)" />
+                        <p class="text-sm mt-0.5"><span class="text-xs text-gray-400" v-html="highlightMatch(bestFamily.code)" /></p>
+                    </div>
+                </LinkIris>
                 <LinkIris
                     v-for="(product, index) in products"
                     :key="product.id"
@@ -233,7 +259,7 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                 >
                     <div
                         class="bg-gray-50 overflow-hidden flex-shrink-0 flex items-center justify-center"
-                        :class="index === 0 ? 'w-20 h-20' : 'w-14 h-14'"
+                        :class="index === 0 && !bestFamily ? 'w-20 h-20' : 'w-14 h-14'"
                     >
                         <Image v-if="product.image" :src="product.image" class="w-full h-full object-cover" :class="{ 'grayscale opacity-60': product.stock === 0 }" />
                         <span v-else class="text-[10px] text-gray-300 font-bold uppercase">{{ product.code?.slice(0, 3) }}</span>
@@ -242,7 +268,7 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                     <div class="min-w-0 flex-1">
                         <p
                             class="text-slate-800 leading-snug line-clamp-2"
-                            :class="index === 0 ? 'text-base font-semibold' : 'text-sm font-medium'"
+                            :class="index === 0 && !bestFamily ? 'text-base font-semibold' : 'text-sm font-medium'"
                             v-html="highlightMatch(getProductName(product))"
                         />
                         <p class="text-sm mt-0.5 truncate">

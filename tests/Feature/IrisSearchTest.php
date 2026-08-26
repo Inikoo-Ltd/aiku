@@ -491,6 +491,43 @@ test('a family that is the strongest hit becomes the best match, superseding pro
     expect($response->json('results.best_match'))->toBeNull();
 });
 
+test('full page search leads with the products of a best-matching category', function () {
+    [, $product] = createProduct($this->shop);
+    $product->update(['is_for_sale' => true]);
+    $webpage = $product->webpage ?: StoreProductWebpage::make()->action($product);
+    $webpage->update(['state' => WebpageStateEnum::LIVE]);
+    expect((bool) $product->refresh()->is_in_website)->toBeTrue();
+
+    $family = $product->family;
+
+    $action = \App\Actions\Search\SearchIrisCataloguePage::make();
+    $shop   = $this->shop;
+    (function () use ($shop) {
+        $this->shop = $shop;
+    })->call($action);
+
+    $familyHit = fn (int $score) => [
+        'document'   => ['id' => (string) $family->id, 'code' => $family->code, 'name' => $family->name, 'type' => 'family'],
+        'text_match' => $score,
+    ];
+    $productHits = [['document' => ['id' => '999'], 'text_match' => 50]];
+
+    // exact family code pulls its products to the front even when a product hit outscores it
+    expect($action->withBestMatchCategoryProducts($family->code, $familyHit(1), $productHits, [999]))
+        ->toBe([$product->id, 999]);
+
+    // a category outscoring every product hit leads too
+    expect($action->withBestMatchCategoryProducts('gongs', $familyHit(100), $productHits, [999]))
+        ->toBe([$product->id, 999]);
+
+    // otherwise the direct hits keep their order
+    expect($action->withBestMatchCategoryProducts('gongs', $familyHit(1), $productHits, [999]))
+        ->toBe([999]);
+
+    // no category hit at all leaves the ids untouched
+    expect($action->withBestMatchCategoryProducts('gongs', null, $productHits, [999]))->toBe([999]);
+});
+
 test('a family created empty is out of the website until its first product arrives', function () {
     [, $product] = createProduct($this->shop);
 
