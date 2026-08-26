@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick } from "vue"
+import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent } from "vue"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -13,6 +13,7 @@ import {
     faFileLines,
     faTimesCircle,
     faRotateRight,
+    faFaceSmile,
 } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
@@ -22,6 +23,8 @@ import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+
+const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
 import { notify } from "@kyvg/vue3-notification"
 import { Dialog } from "primevue"
 
@@ -215,6 +218,35 @@ const autoResize = () => {
     if (!messageInput.value) return
     messageInput.value.style.height = "auto"
     messageInput.value.style.height = Math.min(messageInput.value.scrollHeight, 120) + "px"
+}
+
+const showEmojiPicker = ref(false)
+const emojiPickerContainer = ref<HTMLElement | null>(null)
+
+const pickEmoji = (emoji: string) => {
+    const el = messageInput.value
+
+    if (!el) {
+        newMessage.value += emoji
+        return
+    }
+
+    const start = el.selectionStart ?? newMessage.value.length
+    const end = el.selectionEnd ?? newMessage.value.length
+    newMessage.value = newMessage.value.slice(0, start) + emoji + newMessage.value.slice(end)
+
+    nextTick(() => {
+        el.focus()
+        const pos = start + emoji.length
+        el.setSelectionRange(pos, pos)
+        autoResize()
+    })
+}
+
+const handleClickOutsideEmoji = (event: MouseEvent) => {
+    if (showEmojiPicker.value && emojiPickerContainer.value && !emojiPickerContainer.value.contains(event.target as Node)) {
+        showEmojiPicker.value = false
+    }
 }
 
 const getMessages = async (loadMore = false) => {
@@ -614,10 +646,12 @@ watch(
 onMounted(() => {
     initSocket()
     getMessages()
+    document.addEventListener("click", handleClickOutsideEmoji)
 })
 
 onUnmounted(() => {
     stopSocket()
+    document.removeEventListener("click", handleClickOutsideEmoji)
 })
 </script>
 
@@ -834,6 +868,19 @@ onUnmounted(() => {
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40 disabled:hover:bg-transparent" :title="trans('Upload file')">
                             <FontAwesomeIcon :icon="faPaperclip" class="text-sm" />
                         </button>
+                        <div ref="emojiPickerContainer" class="relative">
+                            <button type="button" @click.stop="showEmojiPicker = !showEmojiPicker"
+                                :disabled="hasTemplate || templateOnly"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
+                                :class="showEmojiPicker ? 'text-green-600 bg-gray-100' : 'text-gray-500'"
+                                :title="trans('Emoji')" :aria-label="trans('Emoji')">
+                                <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" />
+                            </button>
+
+                            <div v-if="showEmojiPicker" class="absolute bottom-full left-0 mb-1 z-30">
+                                <EmojiPicker @pick="pickEmoji" />
+                            </div>
+                        </div>
                         <button @click="openTemplateDialog"
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 text-gray-500 hover:text-green-600 transition-colors" :title="trans('Send template message')">
                             <FontAwesomeIcon :icon="faFileLines" class="text-sm" />
