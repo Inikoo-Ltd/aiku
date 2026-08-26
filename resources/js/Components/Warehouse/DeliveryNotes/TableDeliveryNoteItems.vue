@@ -777,12 +777,6 @@ const hasDirtyDeliveryNoteItem = computed(() => {
     return Object.values(props.data?.data ?? {}).some((item: any) => item.is_dirty);
 });
 
-const totalUnitsAll = computed(() => {
-  return props.data.data.reduce((accumulator, item) => {
-    return accumulator + item.total_units_count
-  }, 0)
-})
-
 </script>
 
 <template>
