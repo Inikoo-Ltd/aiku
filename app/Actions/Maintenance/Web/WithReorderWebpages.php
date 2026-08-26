@@ -116,7 +116,7 @@ trait WithReorderWebpages
         UpdateWebpageContent::run($webpage->refresh());
     }
 
-    public function ensureFamilyPageHasRequiredBlocks(Webpage $webpage): void
+    public function ensureFamilyPageHasRequiredBlocks(Webpage $webpage, string $code, bool $isAroma = false): void
     {
         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
 
@@ -138,6 +138,15 @@ trait WithReorderWebpages
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-from-master');
         if (count($countFamilyWebBlock) == 0) {
             $this->createWebBlock($webpage, 'recommendation-from-master');
+        }
+
+        if ($code == 'family-2' && $isAroma) {
+            $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'category-comparison');
+            if (count($countFamilyWebBlock) == 0) {
+                $this->createWebBlock($webpage, 'category-comparison');
+            }
+        } else {
+            $this->deleteWebBlocksByCode($webpage, 'category-comparison');
         }
 
         $countRelatedProductCategoryBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master');
@@ -165,6 +174,8 @@ trait WithReorderWebpages
 
         $productList = $this->getWebpageBlocksByType($webpage, $usedWebBlockTemplateCodes)->first()->model_has_web_blocks_id;
 
+        $categoryComparison = $this->getWebpageBlocksByType($webpage, 'category-comparison')?->first()->model_has_web_blocks_id;
+
         $recommendationFromMaster   = $this->getWebpageBlocksByType($webpage, 'recommendation-from-master')->first()->model_has_web_blocks_id;
         $relatedProductCategory     = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master')->first()->model_has_web_blocks_id;
 
@@ -183,7 +194,7 @@ trait WithReorderWebpages
         $lastBoughtWebBlockPosition         = $count + 104;
         $lastSeenWebBlockPosition           = $count + 105;
 
-        $runningPosition = 4;
+        $runningPosition = 5;
         foreach ($webBlocks as $key => $position) {
             if ($key == $familyWebBlock) {
                 $webBlocks[$key] = 1;
@@ -191,6 +202,8 @@ trait WithReorderWebpages
                 $webBlocks[$key] = 2;
             } elseif ($key == $familyExtraDesc) {
                 $webBlocks[$key] = 3;
+            } elseif ($key == $categoryComparison) {
+                $webBlocks[$key] = 4;
             } elseif ($key == $recommendationFromMaster) {
                 $webBlocks[$key] = $recommendationFromMasterPosition;
             } elseif ($key == $relatedProductCategory) {

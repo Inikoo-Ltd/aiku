@@ -42,6 +42,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
     protected function processFamilyWebpages(Webpage $webpage, Command $command): void
     {
         $shop = $webpage->shop;
+        $masterShop = $shop->masterShop;
 
         /** @var ProductCategory $family */
         $family = $webpage->model;
@@ -99,31 +100,12 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             };
         }
 
-        $countFamilyDescriptionBlock = null;
-        $familyDescriptionBlock = 'family-1';
-
-        if ($command->option('alternative-design')) {
-            $familyDescriptionBlock = 'family-2';
-
-            $countFamilyDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'family-2');
-            if (count($countFamilyDescriptionBlock) == 0) {
-                $this->deleteWebBlocksByCode($webpage, 'family-1');
-                $this->deleteWebBlocksByCode($webpage, 'family-3');
-                $this->deleteWebBlocksByCode($webpage, 'family-3-extra-description');
-                $this->createWebBlock($webpage, 'family-2');
-                $this->createWebBlock($webpage, 'family-2-extra-description');
-            }
-        } else {
-            $countFamilyDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'family-1');
-            if (count($countFamilyDescriptionBlock) == 0) {
-                $this->deleteWebBlocksByCode($webpage, 'family-2');
-                $this->deleteWebBlocksByCode($webpage, 'family-2-extra-description');
-                $this->deleteWebBlocksByCode($webpage, 'family-3');
-                $this->deleteWebBlocksByCode($webpage, 'family-3-extra-description');
-
-                $this->createWebBlock($webpage, 'family-1');
-            }
-        }
+        $scope = WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION;
+        $liveWebBlockSnapshot = $webpage->website->{"live{$scope->value}Snapshot"};
+        $usedWebBlockTemplateCodes = data_get($liveWebBlockSnapshot?->layout, 'code', array_first($scope->templateCodes())); // Get published WebBlock layout code
+        
+        // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILY_DESCRIPTION->templateCodes(), WebBlockTemplateEnum::FAMILY_DESCRIPTION);
 
         // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
@@ -153,9 +135,18 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
         }
 
+        if ($usedWebBlockTemplateCodes == 'family-2' && $masterShop->slug == 'aroma') {
+            $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'category-comparison');
+            if (count($countFamilyWebBlock) == 0) {
+                $this->createWebBlock($webpage, 'category-comparison');
+            }
+        } else {
+            $this->deleteWebBlocksByCode($webpage, 'category-comparison');
+        }
+
         $webpage->refresh();
 
-        $this->reorderFamilyPageBlocks($webpage, $familyDescriptionBlock);
+        $this->reorderFamilyPageBlocks($webpage, $usedWebBlockTemplateCodes);
 
         if ($command->option('hide-description')) {
             $this->setDescriptionWebBlockHidden($webpage);

@@ -203,6 +203,11 @@ class StoreWebpage extends OrgAction
                         foreach ($usedFamilyDescriptionTemplateCode as $code) {
                             $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILY_DESCRIPTION, $code);
                         }
+
+                        if (in_array('family-2', $usedFamilyDescriptionTemplateCode) && $parent->shop->masterShop->slug == 'aroma') {
+                            $this->createWebBlock($webpage, 'category-comparison');
+                        }
+
                         $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
 
                         $this->createWebBlock($webpage, 'recommendation-from-master');

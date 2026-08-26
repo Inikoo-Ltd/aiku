@@ -47,6 +47,9 @@ class UpdateDescriptionBlockToWebsiteAndChild
             return;
         }
 
+        $shop = $website->shop;
+        $masterShop = $shop->masterShop;
+
         $webpages = $website->webpages()
             ->where('model_type', data_get($marginalData, 'model_type'))
             ->where('sub_type', data_get($marginalData, 'subType'))
@@ -71,7 +74,7 @@ class UpdateDescriptionBlockToWebsiteAndChild
 
             $webpage->refresh();
             if ($webpage->sub_type === WebpageSubTypeEnum::FAMILY) {
-                $this->ensureFamilyPageHasRequiredBlocks($webpage);
+                $this->ensureFamilyPageHasRequiredBlocks($webpage, collect(array_keys($layouts))->first(fn ($key) => !str_ends_with($key, '-extra-description')), $masterShop?->slug == 'aroma');
                 $webpage->refresh();
                 $this->reorderFamilyPageBlocks($webpage, collect(array_keys($layouts))->first(fn ($key) => !str_ends_with($key, '-extra-description')));
             }
