@@ -38,6 +38,7 @@ use App\Actions\Catalogue\ProductCategory\Json\GetDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamilies;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesForComparisonPage;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInDepartmentInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInProductCategory;
@@ -363,6 +364,8 @@ Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelec
 
 // Families list under department page
 Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
+// Families list for range comparison in Family Page Workshop
+Route::get('{productCategory}/range-for-comparison', GetFamiliesForComparisonPage::class)->name('website.category.range_for_comparison');
 
 Route::post('ingredients/parse', ParseIngredientsList::class)->name('ingredients.parse');
 

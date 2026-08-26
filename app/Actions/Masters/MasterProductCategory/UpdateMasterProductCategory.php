@@ -50,7 +50,7 @@ class UpdateMasterProductCategory extends OrgAction
             if (Arr::has($modelData, 'storage_temperature')) {
                 data_set($storageOption, 'storage_temperature', Arr::pull($modelData, 'storage_temperature'));
             }
-            
+
             if (Arr::has($modelData, 'storage_guidelines')) {
                 data_set($storageOption, 'storage_guidelines', Arr::pull($modelData, 'storage_guidelines'));
             }
@@ -186,7 +186,7 @@ class UpdateMasterProductCategory extends OrgAction
             CascadeMasterProductCategoryStorageOptionToChildren::run($masterProductCategory); // TODO: change to dispatch later
         }
 
-        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code'])) {
+        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code', 'category_comparison'])) {
 
             $english      = Language::where('code', 'en')->first();
 
@@ -226,6 +226,16 @@ class UpdateMasterProductCategory extends OrgAction
                         $dataToBeUpdated['description_extra'] = Translate::run($masterProductCategory->description_extra, $english, $shopLanguage, 'gpt-5-nano');
                     }
                     $dataToBeUpdated['is_description_extra_reviewed'] = false;
+                }
+
+                if (Arr::has($changed, 'category_comparison')) {
+                    if ($followMaster) {
+                        $translatedCategoryComparison = Translate::run(json_encode($masterProductCategory->category_comparison), $english, $shopLanguage, 'gpt-5-nano');
+                        if (is_string($translatedCategoryComparison)) {
+                            $translatedCategoryComparison = json_decode($translatedCategoryComparison, true);
+                        }
+                        $dataToBeUpdated['category_comparison'] = $translatedCategoryComparison;
+                    }
                 }
 
                 if (Arr::has($changed, 'code')) {
@@ -345,7 +355,7 @@ class UpdateMasterProductCategory extends OrgAction
             'customize_option.*.available'  => ['sometimes', 'boolean'],
             'customize_option.*.moq'        => ['sometimes', 'nullable', 'string'],
             'customize_option.*.notes'      => ['sometimes', 'nullable', 'string', 'max:250'],
-            // storage_option               
+            // storage_option
             'storage_conditions'            => ['sometimes', 'array'],
             'storage_conditions.*.key'      => ['sometimes', 'nullable', 'string'],
             'storage_conditions.*.label'    => ['sometimes', 'nullable', 'string'],
