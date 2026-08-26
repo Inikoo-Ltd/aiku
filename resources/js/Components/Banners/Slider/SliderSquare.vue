@@ -263,7 +263,7 @@ onMounted(() => {
                             <template v-if="card?.enabled">
 
                             <div
-                                class="absolute inset-0 flex"
+                                class="absolute inset-0 flex pointer-events-none"
                                 :class="[
                                 {
                                     'justify-start pl-10': card.horizontal === 'left',
@@ -279,7 +279,7 @@ onMounted(() => {
                             >
 
                                 <div
-                                class="relative"
+                                class="relative pointer-events-auto"
                                 :style="{
                                     width: (card.width || 60) + '%',
                                     height: (card.height || 300) + 'px',

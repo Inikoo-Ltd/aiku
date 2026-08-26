@@ -228,6 +228,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_locations_stock_slots_all_empty
  * @property int $number_locations_stock_slots_partial_empty
  * @property int $number_org_stock_movements_type_production
+ * @property string|null $picking_seconds_per_sko median seconds spent picking one SKO
+ * @property string|null $packing_seconds_per_sko median seconds spent packing one SKO
+ * @property int $picking_packing_speed_sample_size delivery notes behind the two medians
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static Builder<static>|WarehouseStats newModelQuery()
  * @method static Builder<static>|WarehouseStats newQuery()
