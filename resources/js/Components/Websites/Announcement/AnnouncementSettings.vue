@@ -572,7 +572,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     {{ announcementData.schedule_finish_at
                         ? ctrans("You can pause it and let it come back by itself on :date.", { date: useFormatTime(announcementData.schedule_finish_at, { formatTime: 'hm' }) })
                         : ctrans("You can pause it, but as your announcement has no finish date you will have to turn the other one back on yourself.") }}
-                    <span @click="onPublishAnyway" class="cursor-pointer underline font-medium opacity-80 hover:opacity-100">{{ ctrans("Pause it and publish mine") }}</span>
+                    <span @click="onPublishAnyway" class="cursor-pointer underline font-medium opacity-80 hover:opacity-100">{{ ctrans("Pause it temporary and publish mine") }}</span>
                     {{ ctrans("or change your dates and publish again.") }}
                 </div>
             </div>

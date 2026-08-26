@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
 use Spatie\MediaLibrary\HasMedia;
@@ -125,6 +126,11 @@ class Announcement extends Model implements HasMedia
     public function pausedBy(): BelongsTo
     {
         return $this->belongsTo(Announcement::class, 'paused_by_announcement_id');
+    }
+
+    public function pausedAnnouncements(): HasMany
+    {
+        return $this->hasMany(Announcement::class, 'paused_by_announcement_id');
     }
 
     public function extractSettings(array $data): array

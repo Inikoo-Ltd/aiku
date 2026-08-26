@@ -114,8 +114,22 @@ class HandleIrisInertiaRequests extends Middleware
         }
 
         $announcements = [];
+
+        $candidates = $website->announcements()
+            ->where(
+                fn ($query) => $query
+                    ->where('status', AnnouncementStatusEnum::ACTIVE)
+                    ->orWhere(
+                        fn ($query) => $query
+                            ->whereNotNull('paused_by_announcement_id')
+                            ->whereNotNull('paused_until')
+                    )
+            )
+            ->orderByRaw('coalesce(ready_at, live_at, created_at) desc')
+            ->get();
+
         /** @var Announcement $announcement */
-        foreach ($website->announcements()->where('status', AnnouncementStatusEnum::ACTIVE)->get() as $announcement) {
+        foreach ($candidates as $announcement) {
             $extractedSettings = $announcement->extractSettings($announcement->settings);
 
             $announcements[] = [
@@ -126,6 +140,9 @@ class HandleIrisInertiaRequests extends Middleware
                 'fields'               => $announcement->fields,
                 'schedule_at'          => $announcement->schedule_at,
                 'schedule_finish_at'   => $announcement->schedule_finish_at,
+                'resumes_at'           => $announcement->status === AnnouncementStatusEnum::ACTIVE
+                                            ? null
+                                            : $announcement->paused_until,
                 'settings'             => $announcement->settings,
                 'template_code'        => $announcement->template_code,
             ];

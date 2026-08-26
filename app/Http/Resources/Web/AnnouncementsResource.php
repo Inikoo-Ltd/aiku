@@ -32,7 +32,9 @@ class AnnouncementsResource extends JsonResource
             'hide_pages'     => $extractedSettings['hide_pages'],
             'publisher_name' => $announcement->liveSnapshot?->publisher?->contact_name,
             'position'       => $announcement->getPosition(),
-            'paused_note'    => $this->getPausedNote($announcement)
+            'paused_note'    => $this->getPausedNote($announcement),
+            'is_expired'     => $announcement->status === AnnouncementStatusEnum::ACTIVE
+                                && $announcement->schedule_finish_at?->isPast()
         ];
     }
 

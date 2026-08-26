@@ -129,30 +129,54 @@ class PublishAnnouncement extends OrgAction
             $updateData['closed_at'] = Carbon::parse($scheduleFinishAt);
         } else {
             $updateData['schedule_finish_at'] = null;
-        }
-
-        ToggleAnnouncement::dispatch($announcement, AnnouncementStatusEnum::ACTIVE->value)->delay($updateData['live_at']);
-
-        if (!blank($updateData['schedule_finish_at'])) {
-            ToggleAnnouncement::dispatch($announcement, AnnouncementStatusEnum::INACTIVE->value)->delay($updateData['schedule_finish_at']);
+            $updateData['closed_at']          = null;
         }
 
         $this->update($announcement, $updateData);
 
-        foreach ($clashes as $clash) {
-            $this->update($clash, [
-                'status'                    => AnnouncementStatusEnum::INACTIVE,
-                'paused_by_announcement_id' => $announcement->id,
-                'paused_until'              => $updateData['schedule_finish_at'],
-            ]);
+        ApplyAnnouncementSchedule::dispatch($announcement)->delay($updateData['live_at']);
 
-            if ($updateData['schedule_finish_at']) {
-                ResumeSupersededAnnouncement::dispatch($clash, $announcement->id)->delay($updateData['schedule_finish_at']);
-            }
+        if (!blank($updateData['schedule_finish_at'])) {
+            ApplyAnnouncementSchedule::dispatch($announcement)->delay($updateData['schedule_finish_at']);
         }
+
+        $this->supersedeClashes($announcement, $from, $updateData['schedule_finish_at']);
 
         BreakWebsiteIrisCache::run($announcement->website);
         WebsiteHydrateAnnouncements::dispatch($announcement->website_id)->delay(2);
+    }
+
+    /**
+     * Hands the spot over to the announcement being published: whatever it paused before is let go
+     * first, so the clashes are recomputed from scratch, and each one is then taken off the spot
+     * only when the new window actually starts, not the moment it is published.
+     */
+    private function supersedeClashes(Announcement $announcement, Carbon $from, ?Carbon $until): void
+    {
+        $this->releaseOwnPauses($announcement);
+
+        foreach ($this->getClashes($announcement, $from, $until) as $clash) {
+            if ($from->isFuture()) {
+                PauseSupersededAnnouncement::dispatch($clash, $announcement->id)->delay($from);
+            } else {
+                PauseSupersededAnnouncement::run($clash, $announcement->id);
+            }
+
+            if ($until) {
+                ResumeSupersededAnnouncement::dispatch($clash, $announcement->id)->delay($until);
+            }
+        }
+    }
+
+    private function releaseOwnPauses(Announcement $announcement): void
+    {
+        foreach ($announcement->pausedAnnouncements as $paused) {
+            $this->update($paused, [
+                'status'                    => AnnouncementStatusEnum::ACTIVE,
+                'paused_by_announcement_id' => null,
+                'paused_until'              => null,
+            ]);
+        }
     }
 
     /**

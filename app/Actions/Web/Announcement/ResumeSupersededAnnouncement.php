@@ -20,11 +20,16 @@ class ResumeSupersededAnnouncement
 
     /**
      * Brings back an announcement that was paused by another one, unless somebody has
-     * touched its status in the meantime, which clears the pause marks.
+     * touched its status in the meantime, which clears the pause marks, or the pause has
+     * since been extended, which leaves this job over from an earlier publish.
      */
     public function handle(Announcement $announcement, int $pausedByAnnouncementId): void
     {
         if ($announcement->paused_by_announcement_id !== $pausedByAnnouncementId) {
+            return;
+        }
+
+        if ($announcement->paused_until?->isFuture()) {
             return;
         }
 
