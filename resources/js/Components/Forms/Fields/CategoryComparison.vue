@@ -10,15 +10,19 @@ import {
     type ComparisonTemplate,
     type ComparisonTemplateName,
 } from "@/Composables/comparisonTemplates.ts"
+import {
+    isDynamicComparisonItem,
+    renameComparisonTemplateKey,
+} from "@/Composables/comparisonTemplateKeys.ts"
 
 import { ref, computed, watch } from "vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { cloneDeep, set } from "lodash-es"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInfoCircle } from "@fal"
+import { faInfoCircle, faLock } from "@fal"
 
-library.add(faInfoCircle)
+library.add(faInfoCircle, faLock)
 
 
 const props = defineProps<{
@@ -64,7 +68,10 @@ const keyRulesHint = [
     "Cannot be empty",
     "Saved when the input loses focus, an invalid key reverts to the previous one",
     "The key identifies the row, the label is the text shown to the customer",
+    "Dynamic rows are filled in automatically, so their key is locked",
 ].map((rule) => `&bull; ${rule}`).join("<br>")
+
+const dynamicKeyHint = "Dynamic row, its value is filled in automatically and the key cannot be changed"
 
 const templateOptions = computed(() =>
     Object.keys(COMPARISON_TEMPLATES).map((key) => ({
@@ -76,18 +83,14 @@ const templateOptions = computed(() =>
 )
 
 const renameKey = (currentKey: string, rawKey: string) => {
-    const newKey = rawKey.trim().replaceAll(/\s+/g, "_")
+    const renamedTemplate = renameComparisonTemplateKey(editableTemplate.value, currentKey, rawKey)
 
-    if (!newKey || newKey === currentKey || newKey in editableTemplate.value) {
+    if (!renamedTemplate) {
         keyInputRevision.value++
         return
     }
 
-    editableTemplate.value = Object.fromEntries(
-        Object.entries(editableTemplate.value).map(
-            ([key, item]) => key === currentKey ? [newKey, item] : [key, item]
-        )
-    )
+    editableTemplate.value = renamedTemplate
 }
 
 watch(selectedTemplate, (templateName) => {
@@ -165,7 +168,7 @@ watch([selectedTemplate, editableTemplate], () => {
                         <!-- Show -->
                         <td class="px-2 py-1 text-center">
                             <input
-                                v-if="'show' in item"
+                                v-if="isDynamicComparisonItem(item)"
                                 v-model="item.show"
                                 type="checkbox"
                                 class="h-3.5 w-3.5 rounded border-gray-300"
@@ -174,7 +177,23 @@ watch([selectedTemplate, editableTemplate], () => {
 
                         <!-- Key -->
                         <td class="px-2 py-1">
+                            <div
+                                v-if="isDynamicComparisonItem(item)"
+                                v-tooltip="dynamicKeyHint"
+                                class="flex w-full items-center gap-1.5 rounded-md bg-gray-100 px-3 py-2.5 text-gray-500"
+                            >
+                                <FontAwesomeIcon
+                                    icon="fal fa-lock"
+                                    class="text-xxs"
+                                    fixed-width
+                                    aria-hidden="true"
+                                />
+
+                                {{ key }}
+                            </div>
+
                             <PureInput
+                                v-else
                                 :key="`${key}-${keyInputRevision}`"
                                 :model-value="key"
                                 class="w-full"

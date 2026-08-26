@@ -174,103 +174,105 @@ const colorTokens = computed(() => ({
             </div>
         </div>
 
-        <div v-if="canPickFamilies && !loading" class="mb-4 flex justify-end">
-            <ComparisonFamilySelect
-                :options="familyOptions ?? []"
-                :selectedSlugs="selectedSlugs ?? []"
-                :max="maxComparedFamilies ?? 0"
-                :screenType="screenType"
-                @toggle="slug => emits('toggleFamily', slug)"
-            />
-        </div>
-
         <div v-if="loading" class="grid animate-pulse gap-3" :style="{ gridTemplateColumns: skeletonColumns }">
             <div v-for="skeletonCell in skeletonCells" :key="skeletonCell" class="h-10 rounded-lg bg-gray-200" />
         </div>
 
-        <div v-else-if="hasComparison" class="w-full overflow-x-auto">
-            <div class="grid w-full items-stretch" :style="{ gridTemplateColumns, ...colorTokens }">
-                <div
-                    v-if="highlightIndex >= 0"
-                    class="rounded-2xl"
-                    :style="{
-                        gridColumn: highlightIndex + 2,
-                        gridRow: `1 / span ${totalRows}`,
-                        backgroundColor: 'var(--comparison-highlight)',
-                    }"
+        <div v-else-if="hasComparison">
+            <div v-if="canPickFamilies" class="mb-4 flex justify-end">
+                <ComparisonFamilySelect
+                    :options="familyOptions ?? []"
+                    :selectedSlugs="selectedSlugs ?? []"
+                    :max="maxComparedFamilies ?? 0"
+                    :screenType="screenType"
+                    @toggle="slug => emits('toggleFamily', slug)"
                 />
+            </div>
 
-                <div :style="{ gridColumn: 1, gridRow: 1 }" />
+            <div class="w-full overflow-x-auto">
+                <div class="grid w-full items-stretch" :style="{ gridTemplateColumns, ...colorTokens }">
+                    <div
+                        v-if="highlightIndex >= 0"
+                        class="rounded-2xl"
+                        :style="{
+                            gridColumn: highlightIndex + 2,
+                            gridRow: `1 / span ${totalRows}`,
+                            backgroundColor: 'var(--comparison-highlight)',
+                        }"
+                    />
 
-                <div
-                    :style="{ gridColumn: 1, gridRow: 2 }"
-                    class="flex items-center font-bold uppercase tracking-wide"
-                    :class="responsive.label"
-                >
-                    <span :style="{ color: 'var(--comparison-label)' }">{{ ctrans("Family") }}</span>
-                </div>
-
-                <div
-                    v-for="(row, rowIndex) in rows"
-                    :key="`label-${row.key}`"
-                    :style="{ gridColumn: 1, gridRow: rowIndex + 3 }"
-                    class="flex items-center font-bold uppercase tracking-wide"
-                    :class="responsive.label"
-                >
-                    <span :style="{ color: 'var(--comparison-label)' }">{{ row.label }}</span>
-                </div>
-
-                <template v-for="(family, familyIndex) in comparedFamilies" :key="`family-${familyIndex}`">
-                    <div :style="{ gridColumn: familyIndex + 2, gridRow: 1 }" class="relative" :class="responsive.imageFrame">
-                        <div
-                            class="mx-auto aspect-square w-full overflow-hidden rounded-xl"
-                            :class="[responsive.image, family.is_current ? 'bg-white' : '']"
-                        >
-                            <Image
-                                :src="family.image"
-                                :alt="family.name"
-                                class="h-full w-full object-contain"
-                            />
-                        </div>
-                    </div>
+                    <div :style="{ gridColumn: 1, gridRow: 1 }" />
 
                     <div
-                        :style="{ gridColumn: familyIndex + 2, gridRow: 2 }"
-                        class="relative flex items-start justify-center text-center"
-                        :class="responsive.familyName"
+                        :style="{ gridColumn: 1, gridRow: 2 }"
+                        class="flex items-center font-bold uppercase tracking-wide"
+                        :class="responsive.label"
                     >
-                        <LinkIris
-                            v-if="family.url && !family.is_current"
-                            :href="family.url"
-                            class="underline underline-offset-4 hover:opacity-80"
-                            :style="{ color: 'var(--comparison-link)' }"
-                        >
-                            {{ family.name }}
-                        </LinkIris>
-
-                        <span v-else :style="{ color: 'var(--comparison-value)' }">
-                            {{ family.name }}
-                        </span>
+                        <span :style="{ color: 'var(--comparison-label)' }">{{ ctrans("Family") }}</span>
                     </div>
 
                     <div
                         v-for="(row, rowIndex) in rows"
-                        :key="`cell-${familyIndex}-${row.key}`"
-                        :style="{ gridColumn: familyIndex + 2, gridRow: rowIndex + 3 }"
-                        class="relative flex items-center justify-center text-center"
-                        :class="responsive.cell"
+                        :key="`label-${row.key}`"
+                        :style="{ gridColumn: 1, gridRow: rowIndex + 3 }"
+                        class="flex items-center font-bold uppercase tracking-wide"
+                        :class="responsive.label"
                     >
-                        <span
-                            :style="{
-                                color: valueOf(family, row.key)
-                                    ? (family.is_current ? 'var(--comparison-value)' : 'var(--comparison-link)')
-                                    : 'var(--comparison-value)',
-                            }"
-                        >
-                            {{ valueOf(family, row.key) ?? "-" }}
-                        </span>
+                        <span :style="{ color: 'var(--comparison-label)' }">{{ row.label }}</span>
                     </div>
-                </template>
+
+                    <template v-for="(family, familyIndex) in comparedFamilies" :key="`family-${familyIndex}`">
+                        <div :style="{ gridColumn: familyIndex + 2, gridRow: 1 }" class="relative" :class="responsive.imageFrame">
+                            <div
+                                class="mx-auto aspect-square w-full overflow-hidden rounded-xl"
+                                :class="[responsive.image, family.is_current ? 'bg-white' : '']"
+                            >
+                                <Image
+                                    :src="family.image"
+                                    :alt="family.name"
+                                    class="h-full w-full object-contain"
+                                />
+                            </div>
+                        </div>
+
+                        <div
+                            :style="{ gridColumn: familyIndex + 2, gridRow: 2 }"
+                            class="relative flex items-start justify-center text-center"
+                            :class="responsive.familyName"
+                        >
+                            <LinkIris
+                                v-if="family.url && !family.is_current"
+                                :href="family.url"
+                                class="underline underline-offset-4 hover:opacity-80"
+                                :style="{ color: 'var(--comparison-link)' }"
+                            >
+                                {{ family.name }}
+                            </LinkIris>
+
+                            <span v-else :style="{ color: 'var(--comparison-value)' }">
+                                {{ family.name }}
+                            </span>
+                        </div>
+
+                        <div
+                            v-for="(row, rowIndex) in rows"
+                            :key="`cell-${familyIndex}-${row.key}`"
+                            :style="{ gridColumn: familyIndex + 2, gridRow: rowIndex + 3 }"
+                            class="relative flex items-center justify-center text-center"
+                            :class="responsive.cell"
+                        >
+                            <span
+                                :style="{
+                                    color: valueOf(family, row.key)
+                                        ? (family.is_current ? 'var(--comparison-value)' : 'var(--comparison-link)')
+                                        : 'var(--comparison-value)',
+                                }"
+                            >
+                                {{ valueOf(family, row.key) ?? "-" }}
+                            </span>
+                        </div>
+                    </template>
+                </div>
             </div>
         </div>
 
