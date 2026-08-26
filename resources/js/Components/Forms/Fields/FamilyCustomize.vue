@@ -132,7 +132,7 @@ const error = computed(() => get(props.form, ["errors", props.fieldName]))
 					<Editor
 						v-model="row.notes"
 						:placeholder="trans('Describe what can be customised')"
-						:toggle=" ['bold', 'italic','fontSize', 'underline', 'bulletList', 'undo', 'redo', 'highlight', 'color', 'clear']"
+						:toggle=" ['bold', 'italic','fontSize', 'underline', 'bulletList', 'link', 'undo', 'redo', 'highlight', 'color', 'clear']"
 						>
 						<template #editor-content="{ editor }">
 							<div
