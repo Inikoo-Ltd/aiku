@@ -290,9 +290,32 @@ const savePackedIn = async () => {
         for (const [index, edit] of packedInEdits.value.entries()) {
             const original = item.packed_in_by_org[index]
             if (Number(edit.packed_in) === Number(original.packed_in)) continue
-            await axios.patch(route('grp.models.org_stock.trade_units.update', { orgStock: edit.org_stock_id }), {
-                trade_units: [{ id: item.id, quantity: Number(edit.packed_in) }],
-            })
+            const payload = { trade_units: [{ id: item.id, quantity: Number(edit.packed_in) }] }
+            try {
+                await axios.patch(route('grp.models.org_stock.trade_units.update', { orgStock: edit.org_stock_id }), payload)
+            } catch (error: any) {
+                // The backend blocks re-meaning stocked locations; the human decides what the counts now mean.
+                const recountWarning = error.response?.data?.errors?.stock_recount_required?.[0]
+                if (!recountWarning) {
+                    throw error
+                }
+                if (!window.confirm(recountWarning + '\n\n' + trans('Change the packing anyway?'))) {
+                    notify({ title: trans('Skipped'), text: trans('Packing of :org left unchanged', { org: edit.org_code }), type: 'info' })
+                    continue
+                }
+                const conversionPreview = error.response?.data?.errors?.stock_conversion_preview
+                let stockStrategy = 'keep'
+                if (conversionPreview?.length && window.confirm(
+                    trans('Convert the stored counts to the new packing?') + '\n\n' + conversionPreview.join('\n')
+                    + '\n\n' + trans('OK converts them; Cancel keeps the numbers and flags the locations for recount.')
+                )) {
+                    stockStrategy = 'convert'
+                }
+                await axios.patch(route('grp.models.org_stock.trade_units.update', { orgStock: edit.org_stock_id }), {
+                    ...payload,
+                    stock_strategy: stockStrategy,
+                })
+            }
             original.packed_in = Number(edit.packed_in)
         }
         notify({ title: trans('Success'), text: trans('Warehouse packing updated'), type: 'success' })
