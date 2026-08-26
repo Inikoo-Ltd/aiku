@@ -18,6 +18,7 @@ const emits = defineEmits<{
 }>()
 
 const root = ref<HTMLElement | null>(null)
+const trigger = ref<HTMLButtonElement | null>(null)
 const panel = ref<HTMLElement | null>(null)
 const searchInput = ref<HTMLInputElement | null>(null)
 const isOpen = ref(false)
@@ -33,7 +34,7 @@ const PANEL_MARGIN = 8
 const panelWidthInPixels = computed(() => (props.screenType === "mobile" ? 256 : 320))
 
 const updatePanelPosition = () => {
-    const anchor = root.value?.getBoundingClientRect()
+    const anchor = trigger.value?.getBoundingClientRect()
 
     if (!anchor) {
         return
@@ -81,6 +82,7 @@ const panelWidth = computed(() => (props.screenType === "mobile" ? "w-64" : "w-8
 <template>
     <div ref="root" class="relative inline-block text-left">
         <button
+            ref="trigger"
             type="button"
             class="flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-gray-700 hover:border-gray-400"
             :class="sizeClasses"
