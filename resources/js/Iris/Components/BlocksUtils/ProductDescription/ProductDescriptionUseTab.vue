@@ -74,6 +74,10 @@ const tabsContainerProperties = computed(
 const containerStyle = computed(() => ({
 	...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
 	...getStyles(tabsContainerProperties.value),
+	paddingTop: "0px",
+	paddingBottom: "0px",
+	paddingLeft: "0px",
+	paddingRight: "0px",
 	width: "auto",
 }))
 
@@ -113,14 +117,14 @@ const isMobile = computed(() => props.screenType === "mobile")
 <template>
 	<section
 		v-if="tabs.length"
-		class="w-full"
+		class="w-full "
 		:id="'product-description-' + indexBlock"
 		:style="sectionStyle">
 		<div
-			class="mx-auto mw-full"
+			class="mx-auto mw-full px-4 md:px-6  lg:px-8  2xl:px-10 "
 			:style="containerStyle">
 			<!-- TOP NAV -->
-			<div class="border-b border-[#9a9a9a] bg-[#fbfaf9]">
+			<div class="border-b border-[#9a9a9a] bg-[#fbfaf9] mx-3 ">
 				<!-- Mobile -->
 				<div v-if="isMobile" class="py-3">
 					<select
@@ -135,7 +139,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 				<!-- Tablet & Desktop -->
 				<div
 					v-else
-					class="flex flex-wrap items-center justify-center lg:justify-end gap-3 md:gap-6 lg:gap-10 2xl:gap-14">
+					class="flex flex-wrap items-center px-4  justify-center lg:justify-end gap-3 md:gap-6 lg:gap-10 2xl:gap-14">
 					<button
 						v-for="tab in tabs"
 						:key="tab.key"
@@ -152,11 +156,15 @@ const isMobile = computed(() => props.screenType === "mobile")
 			</div>
 
 			<!-- CONTENT -->
-			<component
+			 <div class="px-4 md:px-6  lg:px-8  2xl:px-10 ">
+				<component
 				:is="component(activeTab)"
 				:field-value="childFieldValue"
 				:screen-type="screenType"
 				:faqs="tabsData?.faq" />
+
+			 </div>
+			
 		</div>
 	</section>
 </template>

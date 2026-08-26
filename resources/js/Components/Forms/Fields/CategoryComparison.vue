@@ -14,6 +14,11 @@ import {
 import { ref, computed, watch } from "vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { cloneDeep, set } from "lodash-es"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faInfoCircle } from "@fal"
+
+library.add(faInfoCircle)
 
 
 const props = defineProps<{
@@ -52,6 +57,14 @@ const editableTemplate = ref<ComparisonTemplate>(
 )
 
 const keyInputRevision = ref(0)
+
+const keyRulesHint = [
+    "Spaces are turned into underscores: <i>bath bomb</i> becomes <i>bath_bomb</i>",
+    "Must be unique inside the template",
+    "Cannot be empty",
+    "Saved when the input loses focus, an invalid key reverts to the previous one",
+    "The key identifies the row, the label is the text shown to the customer",
+].map((rule) => `&bull; ${rule}`).join("<br>")
 
 const templateOptions = computed(() =>
     Object.keys(COMPARISON_TEMPLATES).map((key) => ({
@@ -113,7 +126,7 @@ watch([selectedTemplate, editableTemplate], () => {
         </div>
 
         <!-- Table -->
-        <div class="overflow-hidden rounded border border-gray-200">
+        <div class="overflow-hidden rounded">
             <table class="w-full text-xs">
                 <thead class="bg-gray-50">
                     <tr class="border-b border-gray-200">
@@ -123,6 +136,14 @@ watch([selectedTemplate, editableTemplate], () => {
 
                         <th class="px-2 py-1.5 text-left font-medium text-gray-500">
                             Key
+
+                            <FontAwesomeIcon
+                                v-tooltip="{ content: keyRulesHint, html: true }"
+                                icon="fal fa-info-circle"
+                                class="cursor-pointer text-gray-400 hover:text-gray-700"
+                                fixed-width
+                                aria-hidden="true"
+                            />
                         </th>
 
                         <th class="px-2 py-1.5 text-left font-medium text-gray-500">

@@ -77,7 +77,8 @@ import {
     faChessClock,
     faCameraRetro,
     faTemperatureLow,
-    faBalanceScale
+    faBalanceScale,
+    faNotEqual
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -89,6 +90,7 @@ import Message from 'primevue/message';
 
 library.add(
     faTemperatureLow,
+    faNotEqual,
     faMusic,
     faShapes,
     faTags,
