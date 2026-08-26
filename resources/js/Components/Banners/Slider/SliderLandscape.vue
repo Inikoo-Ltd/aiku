@@ -316,7 +316,7 @@ onBeforeUnmount(() => {
                             <template v-for="(card, key) in getCard(component)" :key="key">
                                 <template v-if="card?.enabled">
 
-                                    <div class="absolute inset-0 flex" :class="[
+                                    <div class="absolute inset-0 flex pointer-events-none" :class="[
                                         {
                                             'justify-start pl-10': card.horizontal === 'left',
                                             'justify-center': card.horizontal === 'center',
@@ -329,7 +329,7 @@ onBeforeUnmount(() => {
                                         }
                                     ]">
 
-                                        <div class="relative  editor-class" :style="{
+                                        <div class="relative editor-class pointer-events-auto" :style="{
                                             width: (card.width || 60) + '%',
                                             height: (card.height || 300) + 'px',
                                             background: card.hideCard ? 'transparent' : (card.background || '#ffffff'),

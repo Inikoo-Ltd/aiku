@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
-import { ref, watch, computed, inject } from "vue"
+import { computed, inject } from "vue"
 import { get, set, cloneDeep } from "lodash-es"
 import { faLock } from "@fas"
 import { faTimes } from "@fal"
@@ -20,8 +20,19 @@ const props = defineProps<{
   fieldData: any
 }>()
 
+const toPlainObject = (value: any) =>
+  value && typeof value === "object" && !Array.isArray(value) ? value : {}
+
 const section = computed({
-  get: () => props.modelValue,
+  get: () => {
+    const corner = toPlainObject(props.modelValue)
+
+    return {
+      ...corner,
+      data: toPlainObject(corner.data),
+      temporaryData: toPlainObject(corner.temporaryData),
+    }
+  },
   set: (val) => {
     emits("update:modelValue", cloneDeep(val))
   },
@@ -92,94 +103,57 @@ const filterType = () => {
   return FinalData
 }
 
-const Type = ref(filterType())
+const Type = computed(() => filterType())
 
-const findDefaultActive = () => {
-  return Type.value.find(
-    (item) => item.value === get(section.value, "type")
-  )
-}
+const activeType = computed(
+  () => Type.value.find((item) => item.value === section.value.type) ?? null
+)
 
-const activeType = ref(findDefaultActive())
+const clickTypeCorner = (value: any) => {
+  const current = cloneDeep(section.value)
+  const tempStore = current.temporaryData
 
-const clickTypeCorner = (index: number, value: any) => {
-  const current = cloneDeep(section.value || {})
-
-  const prevType = current?.type
-  const tempStore = current?.temporaryData || {}
-
-  // simpan hanya data dari type sebelumnya
-  if (prevType) {
-    tempStore[prevType] = cloneDeep(current?.data || {})
+  if (current.type) {
+    tempStore[current.type] = current.data
   }
 
-  // ambil data dari type baru jika ada
-  const nextData = tempStore[value.value]
-    ? cloneDeep(tempStore[value.value])
-    : {}
-
-  const nextSection = {
+  section.value = {
     ...current,
     type: value.value,
-    data: nextData,
+    data: toPlainObject(cloneDeep(tempStore[value.value])),
     temporaryData: tempStore,
   }
-
-  activeType.value = value
-  section.value = nextSection
 }
-
 
 const onClear = () => {
   emits("clear", section.value)
 }
 
+const isResponsive = (fieldData: any) =>
+  Boolean(screenView?.value) && Array.isArray(fieldData.useIn) && fieldData.useIn.length > 0
+
 const getValue = (fieldData: any) => {
-  const rawVal = get(props.modelValue, fieldData.name)
-  const view = screenView?.value
+  const rawVal = get(section.value, fieldData.name)
 
-  if (!rawVal) return null
-  if (!view) return rawVal
+  if (!isResponsive(fieldData)) return rawVal ?? null
 
-  return rawVal?.[view] ?? rawVal?.desktop ?? rawVal ?? null
+  return rawVal?.[screenView.value] ?? rawVal?.desktop ?? null
 }
 
 const setValue = (fieldData: any, value: any) => {
-  console.log(fieldData, value)
-  const cloned = cloneDeep(props.modelValue || {})
-  const fieldName = fieldData.name
+  const cloned = cloneDeep(section.value)
 
-  if (Array.isArray(fieldData.useIn) && fieldData.useIn.length > 0) {
-    const responsiveValue = get(cloned, fieldName) || {}
-
-    set(cloned, fieldName, {
-      ...responsiveValue,
-      [screenView?.value]: value,
+  if (isResponsive(fieldData)) {
+    set(cloned, fieldData.name, {
+      ...toPlainObject(get(cloned, fieldData.name)),
+      [screenView.value]: value,
     })
-
-    emits("update:modelValue", cloned)
-    return
-  }
-
-  if (Array.isArray(fieldName)) {
-    set(cloned, fieldName, value)
   } else {
-    cloned[fieldName] = value
+    set(cloned, fieldData.name, value)
   }
 
-  emits("update:modelValue", cloned)
+  section.value = cloned
 }
-
-watch(
-  () => props.modelValue,
-  (newValue) => {
-    Type.value = filterType()
-    activeType.value = Type.value.find(
-      (item) => item.value === get(newValue, "type")
-    )
-  },
-  { deep: true, immediate: true }
-)
 </script>
 
 <template>
@@ -191,10 +165,10 @@ watch(
 
         <div class="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
           <button
-            v-for="(item, index) in Type"
-            :key="item.value + modelValue?.id + index"
+            v-for="item in Type"
+            :key="item.value"
             type="button"
-            @click="clickTypeCorner(index, item)"
+            @click="clickTypeCorner(item)"
             :class="[
               'px-4 py-2 text-sm rounded-md transition-all duration-150',
               get(activeType, 'value') === item.value
@@ -223,8 +197,8 @@ watch(
     <div v-if="activeType" class="mt-6 space-y-5">
 
       <div
-        v-for="(field, index) in activeType.fields"
-        :key="field.name + index"
+        v-for="field in activeType.fields"
+        :key="activeType.value + '.' + field.name.join('.')"
         class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow transition"
       >
         <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -237,7 +211,7 @@ watch(
             :model-value="getValue(field)"
             @update:modelValue="setValue(field, $event)"
             :fieldData="field"
-            :key="field.type + index + field.label"
+            :key="field.type + field.label"
           />
         </div>
       </div>
