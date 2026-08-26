@@ -28,7 +28,7 @@ const {
     toggleFamily,
     loading,
 } = useComparisonFamilies(
-    "iris.json.website.category.range_for_comparison",
+    "iris.json.website.category.comparison_detail",
     fetchParameters,
     toRef(props, "fieldValue"),
     toRef(props, "screenType")

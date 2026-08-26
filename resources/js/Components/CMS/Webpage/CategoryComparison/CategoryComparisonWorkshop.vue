@@ -28,7 +28,7 @@ const {
     toggleFamily,
     loading,
 } = useComparisonFamilies(
-    "grp.json.website.category.range_for_comparison",
+    "grp.json.website.category.comparison_detail",
     fetchParameters,
     toRef(props, "modelValue"),
     toRef(props, "screenType")

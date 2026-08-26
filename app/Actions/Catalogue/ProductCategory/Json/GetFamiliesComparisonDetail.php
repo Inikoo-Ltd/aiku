@@ -23,20 +23,13 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\QueryBuilder\AllowedFilter;
 
-class GetFamiliesForComparisonPage extends IrisAction
+class GetFamiliesComparisonDetail extends IrisAction
 {
     public function handle(ProductCategory $family, Website $website): LengthAwarePaginator
     {
         $template = request()->input('template') ?: Arr::get($family->category_comparison, 'template');
-
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('product_categories.name', $value)
-                    ->orWhereStartWith('product_categories.code', $value);
-            });
-        });
+        $productCategories = request()->input('product_category');
 
         $eligibleProducts = DB::table('products as p')
             ->select([
@@ -150,7 +143,8 @@ class GetFamiliesForComparisonPage extends IrisAction
             ->whereNull('product_categories.deleted_at')
             ->whereNotNull('webpages.id')
             ->where('webpages.website_id', $website->id)
-            ->where('webpages.state', WebpageStateEnum::LIVE->value);
+            ->where('webpages.state', WebpageStateEnum::LIVE->value)
+            ->orderBy('is_current');
 
         if ($template) {
             $query->where(
@@ -160,11 +154,31 @@ class GetFamiliesForComparisonPage extends IrisAction
             );
         }
 
+        if ($productCategories) {
+            if (!is_string($productCategories)) {
+                $productCategories = json_decode($productCategories, true) ?? [];
+            }
+
+            $query->whereIn('product_categories.id', $productCategories);
+        } else {
+            $limitedIds = (clone $query)
+                ->select([
+                    'product_categories.id',
+                    DB::raw("(product_categories.id = $family->id) as is_current")
+                ])
+                ->orderBy('is_current')
+                ->limit(4)
+                ->get()
+                ->pluck('id');
+
+            $query->whereIn('product_categories.id', $limitedIds);
+        }
+        
         return $query
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([])
             ->defaultSort('-category_comparison')
             ->allowedSorts(['code', 'name', 'created_at'])
-            ->withIrisPaginator(500)
+            ->withIrisPaginator(25)
             ->withQueryString();
     }
 
