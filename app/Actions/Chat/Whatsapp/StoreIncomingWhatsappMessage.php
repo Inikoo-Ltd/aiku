@@ -8,6 +8,7 @@
 namespace App\Actions\Chat\Whatsapp;
 
 use App\Actions\Chat\MetaChatSession\ReopenMetaChatSession;
+use App\Actions\Chat\MetaChatSession\SetMetaChatMessageReaction;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatMessage;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
@@ -113,6 +114,13 @@ class StoreIncomingWhatsappMessage
         $waNode   = Arr::get($message, $type);
         $isMedia  = in_array($type, DownloadWhatsappMedia::MEDIA_TYPES, true);
 
+        if ($type === 'reaction') {
+            $this->storeReaction($metaChatSession, $waMessageId, (array) $waNode);
+            $metaChatSession->update(['last_visitor_message_at' => now()]);
+
+            return;
+        }
+
         $metaChatMessage = StoreMetaChatMessage::run($metaChatSession, [
             'meta_message_id' => $waMessageId,
             'message_type'    => $this->messageType($type),
@@ -148,6 +156,39 @@ class StoreIncomingWhatsappMessage
             in_array($type, DownloadWhatsappMedia::IMAGE_TYPES, true) => ChatMessageTypeEnum::IMAGE,
             default                                                => ChatMessageTypeEnum::FILE,
         };
+    }
+
+    /**
+     * A reaction is an annotation on an existing message, not a message of its own, so
+     * it never enters the thread as a bubble. Meta sends an empty emoji when the customer
+     * removes theirs.
+     *
+     * @param  array<string, mixed>  $reaction
+     */
+    protected function storeReaction(MetaChatSession $metaChatSession, string $waMessageId, array $reaction): void
+    {
+        $targetId = (string) Arr::get($reaction, 'message_id');
+
+        $target = $metaChatSession->messages()
+            ->where('meta_message_id', $targetId)
+            ->first();
+
+        if (!$target) {
+            Log::info('WhatsApp reaction for unknown message', [
+                'meta_chat_session_id' => $metaChatSession->id,
+                'target_message_id'    => $targetId,
+            ]);
+
+            return;
+        }
+
+        SetMetaChatMessageReaction::run(
+            $target,
+            ChatSenderTypeEnum::GUEST->value,
+            null,
+            (string) Arr::get($reaction, 'emoji', ''),
+            $waMessageId
+        );
     }
 
     protected function findCustomer(Shop $shop, string $digits): ?Customer

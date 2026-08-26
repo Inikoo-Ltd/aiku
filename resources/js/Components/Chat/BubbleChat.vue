@@ -81,6 +81,7 @@ const props = defineProps<{
     contactName?: string | null
     canEdit?: boolean
     sessionUlid?: string | null
+    reactionUrlBase?: string
     apiBase?: string
     viewerReactorId?: number | null
 }>()
@@ -450,7 +451,7 @@ const toggleReaction = async (emoji: string) => {
 
     try {
         const { data } = await axios.post(
-            `${props.apiBase ?? ""}/app/api/chats/messages/${props.message.id}/reactions`,
+            `${props.apiBase ?? ""}${props.reactionUrlBase ?? "/app/api/chats/messages"}/${props.message.id}/reactions`,
             {
                 emoji,
                 reactor: props.viewerType === "agent" ? "agent" : "customer",

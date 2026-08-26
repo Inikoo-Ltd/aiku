@@ -512,6 +512,7 @@ let chatChannel: any = null
 
 const stopSocket = () => {
     chatChannel?.stopListening(".message")
+    chatChannel?.stopListening(".reaction")
     chatChannel?.stopListening(".status")
     chatChannel = null
 }
@@ -565,6 +566,19 @@ const initSocket = () => {
         }
 
         scrollBottom()
+    })
+
+    chatChannel.listen(".reaction", ({ message }: any) => {
+        if (!message?.id) return
+
+        const index = messagesLocal.value.findIndex((m) => m.id === message.id)
+
+        if (index !== -1) {
+            messagesLocal.value[index] = {
+                ...messagesLocal.value[index],
+                reactions: message.reactions ?? [],
+            }
+        }
     })
 
     chatChannel.listen(".status", (payload: any) => {
@@ -681,7 +695,9 @@ onUnmounted(() => {
                         :class="entry.message.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
                         <BubbleChat :message="entry.message" viewerType="agent"
                             :contactName="session?.contact_name || session?.guest_identifier"
-                            :canEdit="false" />
+                            :canEdit="false"
+                            reactionUrlBase="/app/api/chats/meta/messages"
+                            :viewerReactorId="layout?.user?.id" />
                     </div>
                 </template>
             </template>

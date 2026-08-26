@@ -39,6 +39,16 @@ class MetaChatMessageResource extends JsonResource
                 'method'     => 'get',
                 'url'        => route('grp.api.chats.chat.attachment.download', ['ulid' => $metaChatMessage->attachment->ulid])
             ] : null,
+            'reactions'      => $metaChatMessage->reactions
+                ->groupBy('emoji')
+                ->map(fn ($group, $emoji) => [
+                    'emoji'    => $emoji,
+                    'count'    => $group->count(),
+                    'reactors' => $group->map(fn ($reaction) => [
+                        'type' => $reaction->reactor_type,
+                        'id'   => $reaction->reactor_id,
+                    ])->values(),
+                ])->values(),
             'metadata'       => $metaChatMessage->metadata,
             'created_at'     => $metaChatMessage->created_at,
             'timestamp'      => $metaChatMessage->created_at->timestamp,
