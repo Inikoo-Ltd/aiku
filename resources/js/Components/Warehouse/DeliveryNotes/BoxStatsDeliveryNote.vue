@@ -62,6 +62,7 @@ const props = withDefaults(defineProps<{
             estimated_weight: number
             number_items?: number
             number_skos?: number
+            number_units?: number
         }
         packer: {
             id: number
@@ -685,7 +686,7 @@ function returnNoteRoute(returnDeliveryNote) {
                                 aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500">
-                            {{ locale.number(boxStats.products?.number_items || 0) }} items <span v-if="Number(boxStats.products?.number_skos ?? 0) > 0">({{ locale.number(boxStats.products?.number_skos || 0) }} SKOs)</span>
+                            {{ locale.number(boxStats.products?.number_items || 0) }} items <span v-if="Number(boxStats.products?.number_skos ?? 0) > 0">({{ locale.number(boxStats.products?.number_skos || 0) }} SKOs<span v-if="Number(boxStats.products?.number_units ?? 0) > 0">, {{ locale.number(boxStats.products?.number_units || 0) }} units</span>)</span>
                         </dd>
                     </dl>
 

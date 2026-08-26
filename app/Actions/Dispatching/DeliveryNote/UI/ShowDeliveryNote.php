@@ -682,10 +682,36 @@ class ShowDeliveryNote extends OrgAction
     }
 
 
+    /**
+     * SKOs and units the pickers have to walk, taken from what the order requires so the
+     * totals are already there while picking, unlike the dispatch totals on the delivery
+     * note and invoice PDFs which only land once the delivery note is dispatched.
+     *
+     * @return array{number_skos: int, number_units: int}
+     */
+    public function getPickingTotals(DeliveryNote $deliveryNote): array
+    {
+        $numberSkos  = 0;
+        $numberUnits = 0;
+
+        foreach ($deliveryNote->deliveryNoteItems()->with('orgStock')->get() as $deliveryNoteItem) {
+            $quantityRequired = (float)$deliveryNoteItem->quantity_required;
+
+            $numberSkos  += $quantityRequired;
+            $numberUnits += $quantityRequired * ($deliveryNoteItem->orgStock?->packed_in ?? 1);
+        }
+
+        return [
+            'number_skos'  => (int)$numberSkos,
+            'number_units' => (int)$numberUnits,
+        ];
+    }
+
     public function getBoxStats(DeliveryNote $deliveryNote): array
     {
-        $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
-        $order     = $deliveryNote->orders->first();
+        $estWeight     = ($deliveryNote->estimated_weight ?? 0) / 1000;
+        $order         = $deliveryNote->orders->first();
+        $pickingTotals = $this->getPickingTotals($deliveryNote);
 
         $additionalShipmentRoutes = [];
         if ($deliveryNote->is_shipping_by_external) {
@@ -777,7 +803,8 @@ class ShowDeliveryNote extends OrgAction
             'products'                     => [
                 'estimated_weight' => $estWeight,
                 'number_items'     => $deliveryNote->number_items,
-                'number_skos'      => $deliveryNote->total_skos,
+                'number_skos'      => $pickingTotals['number_skos'],
+                'number_units'     => $pickingTotals['number_units'],
             ],
             'order'                        => [
                 'reference' => $order->reference,
