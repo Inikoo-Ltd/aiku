@@ -27,6 +27,7 @@ class ShowAnnouncement extends OrgAction
 {
     use WithActionButtons;
     use WithWebAuthorisation;
+    use WithAnnouncementNavigation;
 
     private Website $parent;
 
@@ -61,6 +62,10 @@ class ShowAnnouncement extends OrgAction
             'Websites/Announcement',
             [
                 'title'       => $announcement->name,
+                'navigation'  => [
+                    'previous' => $this->getPreviousModel($announcement, $request),
+                    'next'     => $this->getNextModel($announcement, $request),
+                ],
                 'pageHead'    => [
                     'breadcrumbs' => $this->getBreadcrumbs(
                         $request->route()->getName(),
