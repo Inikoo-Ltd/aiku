@@ -28,6 +28,7 @@ const {
     toggleFamily,
     loading,
 } = useComparisonFamilies(
+    "iris.json.website.category.comparison_option",
     "iris.json.website.category.comparison_detail",
     fetchParameters,
     toRef(props, "fieldValue"),

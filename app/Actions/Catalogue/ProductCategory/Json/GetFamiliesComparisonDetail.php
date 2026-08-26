@@ -155,11 +155,11 @@ class GetFamiliesComparisonDetail extends IrisAction
         }
 
         if ($productCategories) {
-            if (!is_string($productCategories)) {
-                $productCategories = json_decode($productCategories, true) ?? [];
+            if (is_string($productCategories)) {
+                $productCategories = json_decode($productCategories, true) ?? $productCategories;
             }
 
-            $query->whereIn('product_categories.id', $productCategories);
+            $query->whereIn('product_categories.id', Arr::wrap($productCategories));
         } else {
             $limitedIds = (clone $query)
                 ->select([
@@ -173,7 +173,7 @@ class GetFamiliesComparisonDetail extends IrisAction
 
             $query->whereIn('product_categories.id', $limitedIds);
         }
-        
+
         return $query
             ->allowedFilters([])
             ->defaultSort('-category_comparison')

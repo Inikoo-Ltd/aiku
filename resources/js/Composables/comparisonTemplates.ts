@@ -1,7 +1,11 @@
+export type ComparisonPackagingValue = { unit?: string; units?: number | string; count?: number }[]
+
+export type ComparisonWeightAndSizeValue = { average_weight?: string | number | null; dimensions?: unknown }
+
 export interface ComparisonTemplateItem {
     label: string
     show?: boolean
-    value?: string | null
+    value?: string | number | boolean | ComparisonPackagingValue | ComparisonWeightAndSizeValue | null
 }
 
 export type ComparisonTemplate = Record<string, ComparisonTemplateItem>

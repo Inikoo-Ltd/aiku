@@ -13,31 +13,79 @@ export const DEFAULT_NUMBER_OF_FAMILIES: Record<ScreenType, number> = {
 }
 
 export const useComparisonFamilies = (
-    fetchRouteName: string,
+    optionRouteName: string,
+    detailRouteName: string,
     fetchParameters: Ref<Record<string, string> | undefined>,
     fieldValue: Ref<CategoryComparisonValue | undefined>,
     screenType: Ref<ScreenType>
 ) => {
-    const loading = ref(false)
+    const loadingOptions = ref(false)
+    const loadingDetails = ref(false)
     const fetchedFamilies = ref<ComparisonFamily[]>([])
+    const details = ref<Record<string, ComparisonFamily>>({})
+    const requestedSlugs = new Set<string>()
 
     const loadFamilies = async () => {
+        details.value = {}
+        requestedSlugs.clear()
+
         if (!fetchParameters.value) {
             fetchedFamilies.value = []
             return
         }
 
-        loading.value = true
+        loadingOptions.value = true
 
         try {
-            const response = await axios.get(route(fetchRouteName, fetchParameters.value))
+            const response = await axios.get(route(optionRouteName, fetchParameters.value))
 
             fetchedFamilies.value = response.data?.data ?? []
         } catch (error) {
             console.error("Failed loading families for comparison:", error)
             fetchedFamilies.value = []
         } finally {
-            loading.value = false
+            loadingOptions.value = false
+        }
+    }
+
+    const loadDetails = async (slugs: string[]) => {
+        const missingSlugs = slugs.filter(slug => !requestedSlugs.has(slug))
+
+        if (!fetchParameters.value || !missingSlugs.length) {
+            return
+        }
+
+        const productCategories = missingSlugs
+            .map(slug => fetchedFamilies.value.find(family => family.slug === slug)?.id)
+            .filter(Boolean)
+
+        if (!productCategories.length) {
+            return
+        }
+
+        missingSlugs.forEach(slug => requestedSlugs.add(slug))
+        loadingDetails.value = true
+
+        try {
+            const response = await axios.get(route(detailRouteName, fetchParameters.value), {
+                params: { product_category: productCategories },
+            })
+
+            const loaded: ComparisonFamily[] = response.data?.data ?? []
+            const merged = { ...details.value }
+
+            loaded.forEach(family => {
+                if (family.slug) {
+                    merged[family.slug] = family
+                }
+            })
+
+            details.value = merged
+        } catch (error) {
+            console.error("Failed loading comparison details:", error)
+            missingSlugs.forEach(slug => requestedSlugs.delete(slug))
+        } finally {
+            loadingDetails.value = false
         }
     }
 
@@ -64,15 +112,24 @@ export const useComparisonFamilies = (
 
     const selectedSlugs = ref<string[]>([])
 
-    const familyOf = (slug: string) => familyOptions.value.find(family => family.slug === slug)
+    const familyOf = (slug: string) =>
+        details.value[slug] ?? fetchedFamilies.value.find(family => family.slug === slug)
 
-    const families = computed<ComparisonFamily[]>(() => {
-        const compared = selectedSlugs.value
+    const comparedSlugs = computed<string[]>(() => {
+        const slugs = currentFamily.value?.slug ? [currentFamily.value.slug] : []
+
+        return [...slugs, ...selectedSlugs.value]
+    })
+
+    const families = computed<ComparisonFamily[]>(
+        () => comparedSlugs.value
             .map(familyOf)
             .filter((family): family is ComparisonFamily => Boolean(family))
+    )
 
-        return currentFamily.value ? [currentFamily.value, ...compared] : compared
-    })
+    const loading = computed(
+        () => loadingOptions.value || (loadingDetails.value && !Object.keys(details.value).length)
+    )
 
     const toggleFamily = (slug: string) => {
         if (selectedSlugs.value.includes(slug)) {
@@ -95,6 +152,8 @@ export const useComparisonFamilies = (
         selectedSlugs.value = [...kept, ...filler].slice(0, numberOfComparedFamilies.value)
     }, { immediate: true })
 
+    watch(comparedSlugs, loadDetails, { immediate: true })
+
     watch(fetchParameters, loadFamilies, { immediate: true })
 
     return {
@@ -105,5 +164,6 @@ export const useComparisonFamilies = (
         toggleFamily,
         loading,
         loadFamilies,
+        loadDetails,
     }
 }

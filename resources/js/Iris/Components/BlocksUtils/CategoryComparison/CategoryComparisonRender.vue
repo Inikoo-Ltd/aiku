@@ -10,6 +10,8 @@ import {
     type ComparisonTemplateItem,
 } from "@/Composables/comparisonTemplates"
 import ComparisonFamilySelect from "@/Iris/Components/BlocksUtils/CategoryComparison/ComparisonFamilySelect.vue"
+import ComparisonValueCell from "@/Iris/Components/BlocksUtils/CategoryComparison/ComparisonValueCell.vue"
+import { formatComparisonValue } from "@/Iris/Components/BlocksUtils/CategoryComparison/formatComparisonValue"
 import { DEFAULT_NUMBER_OF_FAMILIES } from "@/Iris/Components/BlocksUtils/CategoryComparison/useComparisonFamilies"
 import type {
     CategoryComparisonValue,
@@ -55,7 +57,7 @@ const baseTemplate = computed<ComparisonTemplate>(() => {
         : {}
 })
 
-const isFilled = (value?: string | null) => typeof value === "string" && value.trim() !== ""
+const isFilled = (value?: unknown): value is string => typeof value === "string" && value.trim() !== ""
 
 const cellOf = (family: ComparisonFamily | undefined, key: string): ComparisonTemplateItem | null => {
     const item = itemsOf(family)[key]
@@ -67,11 +69,8 @@ const cellOf = (family: ComparisonFamily | undefined, key: string): ComparisonTe
     return item
 }
 
-const valueOf = (family: ComparisonFamily, key: string) => {
-    const value = cellOf(family, key)?.value
-
-    return isFilled(value) ? (value as string) : null
-}
+const valueOf = (family: ComparisonFamily, key: string) =>
+    formatComparisonValue(cellOf(family, key)?.value)
 
 const rows = computed(() => {
     const orderedKeys = [
@@ -269,15 +268,10 @@ const colorTokens = computed(() => ({
                             class="relative flex items-center justify-center text-center"
                             :class="responsive.cell"
                         >
-                            <span
-                                :style="{
-                                    color: valueOf(family, row.key)
-                                        ? (family.is_current ? 'var(--comparison-value)' : 'var(--comparison-link)')
-                                        : 'var(--comparison-value)',
-                                }"
-                            >
-                                {{ valueOf(family, row.key) ?? "-" }}
-                            </span>
+                            <ComparisonValueCell
+                                :value="valueOf(family, row.key)"
+                                :isCurrent="family.is_current"
+                            />
                         </div>
                     </template>
                 </div>
