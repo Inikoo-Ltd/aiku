@@ -707,6 +707,26 @@ class ShowDeliveryNote extends OrgAction
         ];
     }
 
+    /**
+     * How long the warehouse usually takes on an order this size, from its own median
+     * seconds per SKO. Null until the warehouse has enough finished orders to measure.
+     *
+     * @return array{estimated_picking_minutes: int|null, estimated_packing_minutes: int|null}
+     */
+    public function getEstimatedHandlingMinutes(DeliveryNote $deliveryNote, int $numberSkos): array
+    {
+        $warehouseStats = $deliveryNote->warehouse?->stats;
+
+        $estimate = fn (?string $secondsPerSko) => $secondsPerSko === null || $numberSkos <= 0
+            ? null
+            : max(1, (int)round($numberSkos * (float)$secondsPerSko / 60));
+
+        return [
+            'estimated_picking_minutes' => $estimate($warehouseStats?->picking_seconds_per_sko),
+            'estimated_packing_minutes' => $estimate($warehouseStats?->packing_seconds_per_sko),
+        ];
+    }
+
     public function getBoxStats(DeliveryNote $deliveryNote): array
     {
         $estWeight     = ($deliveryNote->estimated_weight ?? 0) / 1000;
@@ -805,6 +825,7 @@ class ShowDeliveryNote extends OrgAction
                 'number_items'     => $deliveryNote->number_items,
                 'number_skos'      => $pickingTotals['number_skos'],
                 'number_units'     => $pickingTotals['number_units'],
+                ...$this->getEstimatedHandlingMinutes($deliveryNote, $pickingTotals['number_skos']),
             ],
             'order'                        => [
                 'reference' => $order->reference,
