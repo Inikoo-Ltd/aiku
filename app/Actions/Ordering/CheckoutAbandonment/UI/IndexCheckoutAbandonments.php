@@ -303,7 +303,7 @@ class IndexCheckoutAbandonments extends OrgAction
         };
 
         $outboxStateActive = (bool) $shop?->outboxes()
-            ->where('code', OutboxCodeEnum::ABANDONED_CART_REMINDER_1)
+            ->where('code', OutboxCodeEnum::ABANDONED_CHECKOUT)
             ->where('state', OutboxStateEnum::ACTIVE)
             ->where('is_applicable', true)
             ->exists();

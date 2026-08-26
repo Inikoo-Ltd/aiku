@@ -141,6 +141,7 @@ class ShowOutbox extends OrgAction
             OutboxCodeEnum::ABANDONED_CART_REMINDER_1,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_2,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_3,
+            OutboxCodeEnum::ABANDONED_CHECKOUT,
         ])) {
             unset($navigation[OutboxTabsEnum::EMAIL_RUNS->value]);
         }

@@ -30,6 +30,7 @@ enum OutboxCodeEnum: string
     case ABANDONED_CART_REMINDER_1 = 'abandoned_cart_reminder_1';
     case ABANDONED_CART_REMINDER_2 = 'abandoned_cart_reminder_2';
     case ABANDONED_CART_REMINDER_3 = 'abandoned_cart_reminder_3';
+    case ABANDONED_CHECKOUT = 'abandoned_checkout';
 
     case DELIVERY_CONFIRMATION = 'delivery_confirmation';
     case SEND_INVOICE_TO_CUSTOMER = 'send_invoice_to_customer';
@@ -142,7 +143,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PROSPECT_CONVERTION_3,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_1,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_2,
-            OutboxCodeEnum::ABANDONED_CART_REMINDER_3
+            OutboxCodeEnum::ABANDONED_CART_REMINDER_3,
+            OutboxCodeEnum::ABANDONED_CHECKOUT
             => OutboxTypeEnum::PUSH,
         };
     }
@@ -164,6 +166,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::ABANDONED_CART_REMINDER_1 => '1st Abandoned cart reminder',
             OutboxCodeEnum::ABANDONED_CART_REMINDER_2 => '2nd Abandoned cart reminder',
             OutboxCodeEnum::ABANDONED_CART_REMINDER_3 => '3rd Abandoned cart reminder',
+            OutboxCodeEnum::ABANDONED_CHECKOUT => 'Abandoned checkout',
             OutboxCodeEnum::DELIVERY_CONFIRMATION => 'Delivery confirmation',
             OutboxCodeEnum::REORDER_REMINDER => '1st Reorder reminder',
             OutboxCodeEnum::REORDER_REMINDER_2ND => '2nd Reorder reminder',
@@ -225,6 +228,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::ABANDONED_CART_REMINDER_1 => '1st Abandoned cart reminder',
             OutboxCodeEnum::ABANDONED_CART_REMINDER_2 => '2nd Abandoned cart reminder',
             OutboxCodeEnum::ABANDONED_CART_REMINDER_3 => '3rd Abandoned cart reminder',
+            OutboxCodeEnum::ABANDONED_CHECKOUT => 'Abandoned checkout',
             OutboxCodeEnum::DELIVERY_CONFIRMATION => 'Delivery conformation',
             OutboxCodeEnum::REORDER_REMINDER => 'Reorder reminder',
             OutboxCodeEnum::REORDER_REMINDER_2ND => '2nd Reorder reminder',
@@ -280,6 +284,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::ABANDONED_CART_REMINDER_1,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_2,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_3,
+            OutboxCodeEnum::ABANDONED_CHECKOUT,
             OutboxCodeEnum::REORDER_REMINDER,
             OutboxCodeEnum::REORDER_REMINDER_2ND,
             OutboxCodeEnum::REORDER_REMINDER_3RD,
@@ -356,6 +361,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::ABANDONED_CART_REMINDER_1,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_2,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_3,
+            OutboxCodeEnum::ABANDONED_CHECKOUT,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
@@ -460,6 +466,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::ABANDONED_CART_REMINDER_1,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_2,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_3,
+            OutboxCodeEnum::ABANDONED_CHECKOUT,
             OutboxCodeEnum::PRICE_CHANGE,
             OutboxCodeEnum::PROSPECT_CONVERTION_1,
             OutboxCodeEnum::PROSPECT_CONVERTION_2,
@@ -519,6 +526,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::ABANDONED_CART_REMINDER_1,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_2,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_3,
+            OutboxCodeEnum::ABANDONED_CHECKOUT,
             OutboxCodeEnum::PROSPECT_CONVERTION_1,
             OutboxCodeEnum::PROSPECT_CONVERTION_2,
             OutboxCodeEnum::PROSPECT_CONVERTION_3,
@@ -589,6 +597,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::ABANDONED_CART_REMINDER_1,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_2,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_3,
+            OutboxCodeEnum::ABANDONED_CHECKOUT,
             OutboxCodeEnum::REORDER_REMINDER,
             OutboxCodeEnum::REORDER_REMINDER_2ND,
             OutboxCodeEnum::REORDER_REMINDER_3RD,
@@ -621,6 +630,7 @@ enum OutboxCodeEnum: string
             self::ABANDONED_CART_REMINDER_1,
             self::ABANDONED_CART_REMINDER_2,
             self::ABANDONED_CART_REMINDER_3,
+            self::ABANDONED_CHECKOUT,
             self::PRICE_CHANGE_NOTIFICATION => true,
             default => false,
         };
