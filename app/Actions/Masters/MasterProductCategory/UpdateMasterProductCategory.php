@@ -362,7 +362,7 @@ class UpdateMasterProductCategory extends OrgAction
             'storage_conditions.*.value'    => ['sometimes', 'nullable', 'string'],
             'storage_temperature'           => ['sometimes', 'nullable', 'string'],
             'storage_guidelines'            => ['sometimes', 'array'],
-            'storage_guidelines.*.text'     => ['sometimes', 'nullable', 'string', 'max:250'],
+            'storage_guidelines.*.text'     => ['sometimes', 'string', 'max:250'],
             // category_comparison
             'category_comparison'                   => ['sometimes', 'array'],
             'category_comparison.template'          => ['sometimes', 'string'],
