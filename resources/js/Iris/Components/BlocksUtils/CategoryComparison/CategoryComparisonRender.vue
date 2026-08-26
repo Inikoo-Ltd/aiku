@@ -95,6 +95,10 @@ const hasComparison = computed(() => comparedFamilies.value.length > 0 && rows.v
 
 const canPickFamilies = computed(() => (props.familyOptions?.length ?? 0) > 1)
 
+const hasSomethingToShow = computed(
+    () => props.loading || hasComparison.value || Boolean(props.emptyStateMessage)
+)
+
 const RESPONSIVE_CLASSES = {
     mobile: {
         block: "px-[10px] py-4",
@@ -162,6 +166,7 @@ const colorTokens = computed(() => ({
 
 <template>
     <div
+        v-if="hasSomethingToShow"
         :id="fieldValue?.id ? fieldValue.id : 'category-comparison-' + indexBlock"
         component="category-comparison"
         :style="containerStyle"

@@ -152,7 +152,7 @@ export const customisationSection = () => ({
 				{
 					key: ["url"],
 					label: "Url",
-					type: "text",
+					type: "link",
 				},
 			],
 		},

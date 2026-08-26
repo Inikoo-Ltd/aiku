@@ -5,6 +5,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBox, faSmoke, faTint, faFlask, faTags, faBoxOpen } from "@fal"
 import { faCheckCircle } from "@fas"
 import Image from "@common/Components/Image.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { getStyles } from "@/Composables/styles"
 
 const props = defineProps<{
@@ -28,12 +29,20 @@ const description = computed(() => customisation.value?.description ?? "")
 
 const hasDescription = computed(() => hasText(description.value))
 
-const linkUrl = computed(() => String(customisation.value?.link?.url ?? "").trim())
+const link = computed(() => {
+	const value = customisation.value?.link?.url
+
+	return typeof value === "string"
+		? { type: "external", href: value, canonical_url: null, id: null, target: "_self" }
+		: (value ?? null)
+})
+
+const linkHref = computed(() => String(link.value?.href ?? "").trim())
 
 const linkLabel = computed(() => customisation.value?.link?.text ?? "")
 
 const hasLink = computed(
-	() => hasText(linkUrl.value) && linkUrl.value !== "#" && hasText(linkLabel.value)
+	() => hasText(linkHref.value) && linkHref.value !== "#" && hasText(linkLabel.value)
 )
 
 const image = computed(() => {
@@ -119,12 +128,16 @@ const isMobile = computed(() => props.screenType === "mobile")
 					class="mt-3 max-w-2xl text-[13px] leading-[1.75] md:text-[14px]"
 					v-html="description" />
 
-				<a
+				<LinkIris
 					v-if="hasLink"
-					:href="linkUrl"
+					:href="link?.href"
+					:type="link?.type"
+					:canonical_url="link?.canonical_url"
+					:id="link?.id"
+					:target="link?.target ?? '_self'"
 					class="mt-4 inline-block text-[13px] font-medium underline underline-offset-4 transition hover:text-[#C0899B] md:text-[14px]">
 					{{ linkLabel }}
-				</a>
+				</LinkIris>
 			</div>
 
 			<div
