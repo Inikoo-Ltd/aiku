@@ -15,16 +15,26 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Web\FamiliesForCategoryComparison;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Web\Website;
 use App\Services\QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class GetFamiliesForComparisonPage extends IrisAction
 {
-    public function handle(ProductCategory $family): LengthAwarePaginator
+    public function handle(ProductCategory $family, Website $website): LengthAwarePaginator
     {
-        $templateFilter = request()->input('template');
+        $template = request()->input('template') ?: Arr::get($family->category_comparison, 'template');
+
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereAnyWordStartWith('product_categories.name', $value)
+                    ->orWhereStartWith('product_categories.code', $value);
+            });
+        });
 
         $query = QueryBuilder::for(ProductCategory::class)
             ->leftJoin('webpages', function ($join) {
@@ -40,29 +50,32 @@ class GetFamiliesForComparisonPage extends IrisAction
                     'product_categories.category_comparison',
                     'product_categories.created_at',
                     'product_categories.web_images',
+                    'webpages.canonical_url',
                 ]
             )
+            ->selectRaw('(product_categories.id = ?) as is_current', [$family->id])
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
             ->whereIn('product_categories.state', [
                 ProductCategoryStateEnum::ACTIVE,
                 ProductCategoryStateEnum::DISCONTINUING
             ])
-            ->whereNot('product_categories.id', $family->id)
             ->where('product_categories.show_in_website', true)
             ->where('product_categories.shop_id', $family->shop_id)
+            ->whereNull('product_categories.deleted_at')
             ->whereNotNull('webpages.id')
+            ->where('webpages.website_id', $website->id)
             ->where('webpages.state', WebpageStateEnum::LIVE->value);
 
-        if ($templateFilter) {
+        if ($template) {
             $query->where(
                 'product_categories.category_comparison->template',
                 '=',
-                "{$templateFilter}"
+                "$template"
             );
         }
 
         return $query
-            ->allowedFilters([$templateFilter])
+            ->allowedFilters([$globalSearch])
             ->defaultSort('-category_comparison')
             ->allowedSorts(['code', 'name', 'created_at'])
             ->withIrisPaginator(500)
@@ -73,7 +86,15 @@ class GetFamiliesForComparisonPage extends IrisAction
     {
         $this->initialisation($request);
 
-        return $this->handle($productCategory);
+        return $this->handle($productCategory, $this->website);
+    }
+
+    public function inWebsite(Website $website, ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator
+    {
+        $request->merge(['website' => $website]);
+        $this->initialisation($request);
+
+        return $this->handle($productCategory, $website);
     }
 
     public function jsonResponse(LengthAwarePaginator $familyList): AnonymousResourceCollection

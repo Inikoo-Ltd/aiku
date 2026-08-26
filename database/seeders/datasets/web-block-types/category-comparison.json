@@ -12,12 +12,16 @@
 	"data": {
 		"fieldValue": {
 			"title": "Range Comparison",
-			"families": [],
+			"number_of_families": {
+				"desktop": 4,
+				"tablet": 3,
+				"mobile": 2
+			},
 			"settings": {
-				"highlight_color": "#f1efe3",
+				"highlight_color": "black",
 				"label_color": "#8a7b3d",
-				"link_color": "#4b7f6b",
-				"value_color": "#6b7280"
+				"link_color": "#black",
+				"value_color": "#black"
 			},
 			"container": {
 				"properties": null
