@@ -193,9 +193,9 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
 <template>
     <!-- Section: Page -->
     <fieldset class="mb-6 bg-white px-7 pt-4 pb-7 border border-gray-200 rounded-xl">
-        <div class="text-xl font-semibold">{{ trans("Page") }}</div>
+        <div class="text-xl font-semibold">{{ ctrans("Page") }}</div>
         <p class="text-sm/6 text-gray-600">
-            {{ trans("Select where the Announcement will be displayed") }}
+            {{ ctrans("Select where the Announcement will be displayed") }}
         </p>
         <div class="mt-2">
             <div class="flex items-center gap-x-3">
@@ -209,7 +209,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
                 />
                 <label for="pages-all" class="cursor-pointer block font-medium ">
-                    {{ trans("All pages") }}
+                    {{ ctrans("All pages") }}
                 </label>
             </div>
 
@@ -224,7 +224,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
                 />
                 <label for="pages-specific" class="cursor-pointer block font-medium ">
-                    {{ trans("Specific page") }}
+                    {{ ctrans("Specific page") }}
                 </label>
 
             </div>
@@ -232,7 +232,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
             <!-- Section: Target specific -->
             <div v-if="true && announcementDataSettings?.target_pages?.type == 'specific'" class="mt-2 space-y-4">
                 <div class="flex gap-x-4 items-center">
-                    <div>{{ trans("The announcement should") }}</div>
+                    <div>{{ ctrans("The announcement should") }}</div>
                     <div class="w-24">
                         <Select
                             v-model="specificNew.will"
@@ -285,7 +285,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
 
                 <!-- Section: Show URL list -->
                 <div>
-                    <div>{{ trans("Show") }} ({{ announcementDataSettings.target_pages.specific.filter(item => item.will === 'show').length || 0 }}):</div>
+                    <div>{{ ctrans("Show") }} ({{ announcementDataSettings.target_pages.specific.filter(item => item.will === 'show').length || 0 }}):</div>
                     <TransitionGroup v-if="announcementDataSettings.target_pages.specific.length" name="list" tag="ul" class="bg-slate-200 px-2 py-2 rounded">
                         <template v-for="(spec, specIndex) in announcementDataSettings.target_pages.specific" :key="`${spec.will}${spec.when}${spec.url}`">
                             <li v-if="true || spec.will === 'show'" class="list-disc list-inside">
@@ -305,7 +305,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                             <div @click="() => onDeleteSpecific(specIndex)" class="px-1 py-px inline cursor-pointer text-red-300 hover:text-red-500">
                                 <FontAwesomeIcon icon='fal fa-times' class='' fixed-width aria-hidden='true' />
                             </div> -->
-                            {{ trans("No selected page yet") }}
+                            {{ ctrans("No selected page yet") }}
                         </li>
                     </div>
 
@@ -313,7 +313,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
 
                 <!-- Section: Hide URL list -->
                 <div v-if="announcementDataSettings?.target_pages?.specific?.filter(item => item.will === 'hide').length">
-                    <div>{{ trans("Hide") }} ({{ announcementDataSettings.target_pages.specific.filter(item => item.will === 'hide').length }}):</div>
+                    <div>{{ ctrans("Hide") }} ({{ announcementDataSettings.target_pages.specific.filter(item => item.will === 'hide').length }}):</div>
                     <TransitionGroup name="list" tag="ul" class="bg-slate-200 px-2 py-2 rounded">
                         <template v-for="(spec, specIndex) in announcementDataSettings.target_pages.specific" :key="`${spec.will}${spec.when}${spec.url}`">
                             <li v-if="spec.will === 'hide'" class="list-disc list-inside">
@@ -333,9 +333,9 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
 
 
     <fieldset class="mb-6 bg-white px-7 pt-4 pb-7 border border-gray-200 rounded-xl">
-        <div class="text-xl font-semibold">{{ trans("Position") }}</div>
+        <div class="text-xl font-semibold">{{ ctrans("Position") }}</div>
         <p class="text-sm/6 text-gray-600">
-            {{ trans("Select position where the Announcement will be displayed") }}
+            {{ ctrans("Select position where the Announcement will be displayed") }}
         </p>
        <div class="mt-2">
             <div class="flex items-center gap-x-3">
@@ -349,7 +349,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     class="h-4 w-4 border-gray-300 focus:ring-indigo-600"
                 />
                 <label for="top-bar" class="cursor-pointer block font-medium">
-                    {{ trans('Top bar') }}
+                    {{ ctrans('Top bar') }}
                 </label>
             </div>
 
@@ -364,7 +364,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     class="h-4 w-4 border-gray-300 focus:ring-indigo-600"
                 />
                 <label for="bottom-menu" class="cursor-pointer block font-medium">
-                    {{ trans('Bottom Menu') }}
+                    {{ ctrans('Bottom Menu') }}
                 </label>
             </div>
 
@@ -379,7 +379,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     class="h-4 w-4 border-gray-300 focus:ring-indigo-600"
                 />
                 <label for="top-footer" class="cursor-pointer block font-medium">
-                    {{ trans('Top footer') }}
+                    {{ ctrans('Top footer') }}
                 </label>
             </div>
         </div>
@@ -389,7 +389,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
     <fieldset class="mb-6 bg-white px-7 pt-4 pb-7 border border-gray-200 rounded-xl">
         <div class="text-xl font-semibold">User</div>
         <p class="text-sm/6 text-gray-600">
-            {{ trans("Select who will receive the Announcement") }}
+            {{ ctrans("Select who will receive the Announcement") }}
         </p>
         <div class="mt-2">
             <div class="flex items-center gap-x-3">
@@ -403,7 +403,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
                 />
                 <label for="auth-both" class="cursor-pointer block font-medium ">
-                    {{ trans("Both") }}
+                    {{ ctrans("Both") }}
                 </label>
             </div>
             
@@ -418,7 +418,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
                 />
                 <label for="auth-logged_in" class="cursor-pointer block font-medium ">
-                    {{ trans("Visitor logged in") }}
+                    {{ ctrans("Visitor logged in") }}
                 </label>
             </div>
 
@@ -433,7 +433,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
                 />
                 <label for="auth-logged_out" class="cursor-pointer block font-medium ">
-                    {{ trans("Visitor logged out") }}
+                    {{ ctrans("Visitor logged out") }}
                 </label>
 
             </div>
@@ -442,9 +442,9 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
 
     <!-- Section: Published -->
     <fieldset class="mb-6 bg-white px-7 pt-4 pb-7 border border-gray-200 rounded-xl">
-        <div class="text-xl font-semibold">{{ trans("Published") }}</div>
+        <div class="text-xl font-semibold">{{ ctrans("Published") }}</div>
         <p class="text-sm/6 text-gray-600">
-            {{ trans("Select how announcement will published") }}
+            {{ ctrans("Select how announcement will published") }}
         </p>
         <div class="grid grid-cols-1 h-fit gap-y-4 ">
             <!-- Section: Start date -->
@@ -496,7 +496,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
 
             <!-- Section: Finish date -->
             <fieldset class="">
-                <div class="text-sm/6 font-semibold ">{{ trans("Finish date") }}</div>
+                <div class="text-sm/6 font-semibold ">{{ ctrans("Finish date") }}</div>
                 <div class="bg-gray-50 rounded p-4 border border-gray-200 space-y-6">
                     <div class="flex items-center gap-x-3">
                         <input
@@ -508,7 +508,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                             type="radio"
                             class="cursor-pointer h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
                         />
-                        <label for="inp-finish-unlimited" class="block text-sm/6 font-medium cursor-pointer ">{{ trans("Until deactivated") }}</label>
+                        <label for="inp-finish-unlimited" class="block text-sm/6 font-medium cursor-pointer ">{{ ctrans("Until deactivated") }}</label>
                     </div>
                     
                     <div class="flex items-center gap-x-3">
@@ -543,20 +543,20 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
 
             
             <fieldset class="">
-                <div class="text-sm/6 font-semibold "><span class="text-red-500 text-base leading-none mr-0.5">*</span>{{ trans("Description") }}</div>
+                <div class="text-sm/6 font-semibold "><span class="text-red-500 text-base leading-none mr-0.5">*</span>{{ ctrans("Description") }}</div>
                 <PureTextarea
                     v-model="publishMessage"
-                    :placeholder="trans('My first publish')"
+                    :placeholder="ctrans('My first publish')"
                     inputClass=""
                 />
             </fieldset>
 
             <!-- Section: List active announcements -->
             <div v-if="canPublish" class="relative text-sm text-amber-700 bg-amber-50 border border-amber-300 rounded px-3 py-2">
-                <FontAwesomeIcon v-tooltip="trans('Warning')" icon="fas fa-exclamation-triangle" class="text-amber-700/50 absolute top-3 right-3 text-lg" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-tooltip="ctrans('Warning')" icon="fas fa-exclamation-triangle" class="text-amber-700/50 absolute top-3 right-3 text-lg" fixed-width aria-hidden="true" />
 
                 <div class="font-medium">
-                    {{ trans("This spot is already taken during those dates by:") }}
+                    {{ ctrans("This spot is already taken during those dates by:") }}
                 </div>
 
                 <ul class="list-disc list-inside">
@@ -570,22 +570,22 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
 
                 <div class="mt-2 italic opacity-80 text-xs">
                     {{ announcementData.schedule_finish_at
-                        ? trans("You can pause it and let it come back by itself on :date.", { date: useFormatTime(announcementData.schedule_finish_at, { formatTime: 'hm' }) })
-                        : trans("You can pause it, but as your announcement has no finish date you will have to turn the other one back on yourself.") }}
-                    <span @click="onPublishAnyway" class="cursor-pointer underline font-medium opacity-80 hover:opacity-100">{{ trans("Pause it and publish mine") }}</span>
-                    {{ trans("or change your dates and publish again.") }}
+                        ? ctrans("You can pause it and let it come back by itself on :date.", { date: useFormatTime(announcementData.schedule_finish_at, { formatTime: 'hm' }) })
+                        : ctrans("You can pause it, but as your announcement has no finish date you will have to turn the other one back on yourself.") }}
+                    <span @click="onPublishAnyway" class="cursor-pointer underline font-medium opacity-80 hover:opacity-100">{{ ctrans("Pause it and publish mine") }}</span>
+                    {{ ctrans("or change your dates and publish again.") }}
                 </div>
             </div>
 
             <Button
                 @click="() => onCheckActiveAnnouncements()"
-                :label="trans('Publish')"
+                :label="ctrans('Publish')"
                 icon="fal fa-rocket-launch"
                 full
                 :loading="isLoadingCheckingActiveAnnouncements"
                 size="xl"
                 :disabled="!publishMessage || isLoadingPublish || !get(announcementData, 'template_code', false)"
-                v-tooltip="!get(announcementData, 'template_code', false) ? trans('Select template to publish') : !publishMessage ? trans('Enter the description') : ''"
+                v-tooltip="!get(announcementData, 'template_code', false) ? ctrans('Select template to publish') : !publishMessage ? ctrans('Enter the description') : ''"
             />
             
         </div>
