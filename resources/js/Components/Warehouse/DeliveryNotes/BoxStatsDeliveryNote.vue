@@ -62,6 +62,9 @@ const props = withDefaults(defineProps<{
             estimated_weight: number
             number_items?: number
             number_skos?: number
+            number_units?: number
+            estimated_picking_minutes?: number | null
+            estimated_packing_minutes?: number | null
         }
         packer: {
             id: number
@@ -685,7 +688,19 @@ function returnNoteRoute(returnDeliveryNote) {
                                 aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500">
-                            {{ locale.number(boxStats.products?.number_items || 0) }} items <span v-if="Number(boxStats.products?.number_skos ?? 0) > 0">({{ locale.number(boxStats.products?.number_skos || 0) }} SKOs)</span>
+                            {{ locale.number(boxStats.products?.number_items || 0) }} items <span v-if="Number(boxStats.products?.number_skos ?? 0) > 0">({{ locale.number(boxStats.products?.number_skos || 0) }} SKOs<span v-if="Number(boxStats.products?.number_units ?? 0) > 0">, {{ locale.number(boxStats.products?.number_units || 0) }} units</span>)</span>
+                        </dd>
+                    </dl>
+
+                    <!-- Estimated handling time -->
+                    <dl v-if="boxStats.products?.estimated_picking_minutes || boxStats.products?.estimated_packing_minutes"
+                        class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                        <dt class="flex-none">
+                            <FontAwesomeIcon v-tooltip="trans('Typical time for an order this size in this warehouse, from its own recent history')"
+                                icon="fal fa-stopwatch" fixed-width aria-hidden="true" class="text-gray-500" />
+                        </dt>
+                        <dd class="text-gray-500">
+                            <span v-if="boxStats.products?.estimated_picking_minutes">~{{ boxStats.products.estimated_picking_minutes }} min {{ trans('picking') }}</span><span v-if="boxStats.products?.estimated_picking_minutes && boxStats.products?.estimated_packing_minutes">, </span><span v-if="boxStats.products?.estimated_packing_minutes">~{{ boxStats.products.estimated_packing_minutes }} min {{ trans('packing') }}</span>
                         </dd>
                     </dl>
 

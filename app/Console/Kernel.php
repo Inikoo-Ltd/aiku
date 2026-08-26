@@ -234,6 +234,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('warehouse:hydrate_picking_packing_speed')->dailyAt('02:45')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'WarehouseHydratePickingPackingSpeed',
+                ),
+                name: 'WarehouseHydratePickingPackingSpeed',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->job(FulfilmentCustomersHydrateStatus::makeJob())->dailyAt('00:00')->onOneServer()->timezone('UTC')->sentryMonitor(
                     monitorSlug: 'FulfilmentCustomersHydrateStatus'
                 ),
