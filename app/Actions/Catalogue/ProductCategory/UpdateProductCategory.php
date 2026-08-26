@@ -37,6 +37,7 @@ use App\Models\SysAdmin\User;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use App\Rules\MaxPlainTextLength;
 use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
@@ -267,6 +268,8 @@ class UpdateProductCategory extends OrgAction
 
     public function prepareForValidation(): void
     {
+        $this->discardBlankStorageGuidelines();
+
         if ($this->has('department_or_sub_department_id')) {
             $parent = ProductCategory::find($this->get('department_or_sub_department_id'));
             if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
@@ -279,6 +282,22 @@ class UpdateProductCategory extends OrgAction
         }
     }
 
+
+    /**
+     * Rows added but left blank arrive as null once empty strings are converted, drop them
+     * instead of failing validation on guidelines the user never wrote.
+     */
+    private function discardBlankStorageGuidelines(): void
+    {
+        if (!$this->has('storage_guidelines') || !is_array($this->get('storage_guidelines'))) {
+            return;
+        }
+
+        $this->set('storage_guidelines', array_values(array_filter(
+            $this->get('storage_guidelines'),
+            fn ($guideline) => !is_array($guideline) || !Arr::exists($guideline, 'text') || filled($guideline['text'])
+        )));
+    }
 
     public function rules(): array
     {
@@ -356,7 +375,7 @@ class UpdateProductCategory extends OrgAction
             'customize_option.*.icon'       => ['sometimes', 'nullable', 'string'],
             'customize_option.*.available'  => ['sometimes', 'boolean'],
             'customize_option.*.moq'        => ['sometimes', 'nullable', 'string'],
-            'customize_option.*.notes'      => ['sometimes', 'nullable', 'string', 'max:250'],
+            'customize_option.*.notes'      => ['sometimes', 'nullable', 'string', new MaxPlainTextLength(255)],
             // storage_option
             'storage_conditions'            => ['sometimes', 'array'],
             'storage_conditions.*.key'      => ['sometimes', 'nullable', 'string'],

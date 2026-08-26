@@ -26,6 +26,7 @@ use App\Models\Helpers\Language;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use App\Rules\MaxPlainTextLength;
 use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -279,6 +280,27 @@ class UpdateMasterProductCategory extends OrgAction
         return $masterProductCategory;
     }
 
+    public function prepareForValidation(): void
+    {
+        $this->discardBlankStorageGuidelines();
+    }
+
+    /**
+     * Rows added but left blank arrive as null once empty strings are converted, drop them
+     * instead of failing validation on guidelines the user never wrote.
+     */
+    private function discardBlankStorageGuidelines(): void
+    {
+        if (!$this->has('storage_guidelines') || !is_array($this->get('storage_guidelines'))) {
+            return;
+        }
+
+        $this->set('storage_guidelines', array_values(array_filter(
+            $this->get('storage_guidelines'),
+            fn ($guideline) => !is_array($guideline) || !Arr::exists($guideline, 'text') || filled($guideline['text'])
+        )));
+    }
+
     public function afterValidator(Validator $validator): void
     {
         $currErrBag = $validator->errors();
@@ -354,7 +376,7 @@ class UpdateMasterProductCategory extends OrgAction
             'customize_option.*.icon'       => ['sometimes', 'nullable', 'string'],
             'customize_option.*.available'  => ['sometimes', 'boolean'],
             'customize_option.*.moq'        => ['sometimes', 'nullable', 'string'],
-            'customize_option.*.notes'      => ['sometimes', 'nullable', 'string', 'max:250'],
+            'customize_option.*.notes'      => ['sometimes', 'nullable', 'string', new MaxPlainTextLength(255)],
             // storage_option
             'storage_conditions'            => ['sometimes', 'array'],
             'storage_conditions.*.key'      => ['sometimes', 'nullable', 'string'],

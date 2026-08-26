@@ -93,10 +93,15 @@ const renameKey = (currentKey: string, rawKey: string) => {
     editableTemplate.value = renamedTemplate
 }
 
-watch(selectedTemplate, (templateName) => {
-    editableTemplate.value = cloneDeep(
-        COMPARISON_TEMPLATES[templateName]
-    )
+const editsByTemplate: Partial<Record<ComparisonTemplateName, ComparisonTemplate>> = {
+    [selectedTemplate.value]: editableTemplate.value,
+}
+
+watch(selectedTemplate, (templateName, previousTemplateName) => {
+    editsByTemplate[previousTemplateName] = editableTemplate.value
+
+    editableTemplate.value = editsByTemplate[templateName]
+        ?? cloneDeep(COMPARISON_TEMPLATES[templateName])
 })
 
 watch([selectedTemplate, editableTemplate], () => {
