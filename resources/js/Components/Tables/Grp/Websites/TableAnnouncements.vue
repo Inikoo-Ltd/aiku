@@ -60,6 +60,21 @@ function announcementRoute(announcement) {
             {{ positionLabel(announcement.position) }}
         </template>
 
+        <template #cell(closed_at)="{ item: announcement }">
+            <div class="flex items-center justify-end gap-x-2">
+                <!-- <Tag :label="" :theme="7" noHoverColor /> -->
+                <span v-if="announcement.closed_at" class="whitespace-nowrap">
+                    {{ useFormatTime(announcement.closed_at, {formatTime: 'hm'}) }}
+                </span>
+                <span v-else>
+                    -
+                </span>
+            </div>
+            <div v-if="announcement.is_expired" class="inline-flex text-xxs items-center gap-x-1 rounded select-none px-1 py-0.5 w-fit font-medium bg-red-100 border border-red-200 text-red-500">
+                {{ ctrans('Expired') }}
+            </div>
+        </template>
+
         <template #cell(show_pages)="{ item: announcement }">
             <div class="flex flex-wrap gap-x-1 gap-y-1">
                 <template v-for="page in announcement.show_pages">
