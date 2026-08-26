@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { trans } from "laravel-vue-i18n"
 import EmptyState from '@/Components/Utils/EmptyState.vue'
+import Tag from '@/Components/Tag.vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSign, faGlobe, faCopy, faCheck, faDraftingCompass } from '@fal'
@@ -93,6 +94,31 @@ const onCopyUlid = async (text: string) => {
                             <dt class="text-sm font-medium text-gray-600">{{ ctrans('Created at') }}</dt>
                             <dd v-tooltip="useFormatTime(data.created_at, {formatTime: 'hms'} )" class="text-sm">
                                 {{ useFormatTime(data.created_at, {formatTime: 'hm'} ) }}
+                            </dd>
+                        </div>
+
+                        <div class="flex items-center justify-between border-t border-gray-200 pt-4">
+                            <dt class="text-sm font-medium text-gray-600">{{ ctrans('Start') }}</dt>
+                            <dd class="text-sm flex items-center gap-x-2">
+                                <Tag
+                                    :label="data.schedule_at ? ctrans('Scheduled publish') : ctrans('Instant publish')"
+                                    :theme="data.schedule_at ? 1 : 3"
+                                    noHoverColor
+                                />
+                                <span v-if="data.live_at" v-tooltip="useFormatTime(data.live_at, {formatTime: 'hms'} )">
+                                    {{ useFormatTime(data.live_at, {formatTime: 'hm'} ) }}
+                                </span>
+                                <span v-else class="italic text-gray-400">{{ ctrans('Not published yet') }}</span>
+                            </dd>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <dt class="text-sm font-medium text-gray-600">{{ ctrans('Finish') }}</dt>
+                            <dd class="text-sm">
+                                <span v-if="data.schedule_finish_at" v-tooltip="useFormatTime(data.schedule_finish_at, {formatTime: 'hms'} )">
+                                    {{ useFormatTime(data.schedule_finish_at, {formatTime: 'hm'} ) }}
+                                </span>
+                                <span v-else class="italic text-gray-400">{{ ctrans('No date specified') }}</span>
                             </dd>
                         </div>
 
