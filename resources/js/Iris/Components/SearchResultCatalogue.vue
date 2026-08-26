@@ -47,6 +47,14 @@ const props = defineProps<{
             image: ImgTS
             url?: string
         }[]
+        best_match?: {
+            type: string
+            id: number
+            code: string
+            name: string
+            image: ImgTS
+            url?: string
+        } | null
         orders?: {
             id: number
             code: string
@@ -93,9 +101,11 @@ const formatPrice = (price?: number | string | null) => {
     return locale.currencyFormat(currency?.code, Number(price))
 }
 
-// First product is the spotlight, the rest fill the grid (10 items -> 11 total)
-const bestProduct = computed(() => props.results?.products?.[0] ?? null)
-const gridProducts = computed(() => props.results?.products?.slice(1, 11) ?? [])
+// A family sent as best_match takes the spotlight; otherwise the first product does
+// and the rest fill the grid (10 items -> 11 total)
+const bestFamily = computed(() => props.results?.best_match?.type === 'product_category' ? props.results.best_match : null)
+const bestProduct = computed(() => bestFamily.value ? null : props.results?.products?.[0] ?? null)
+const gridProducts = computed(() => props.results?.products?.slice(bestFamily.value ? 0 : 1, bestFamily.value ? 10 : 11) ?? [])
 
 // Categories and collections are capped at 10 each
 const productCategories = computed(() => props.results?.product_categories?.slice(0, 10) ?? [])
@@ -234,8 +244,10 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                                 class="block text-sm text-[#484848] hover:text-[var(--theme-color-0)] hover:underline cursor-pointer truncate transition-colors"
                                 @click="() => recordClick(category.url)"
                                 @success="() => model = false"
-                                v-html="highlightMatch(category.name)"
-                            />
+                            >
+                                <span class="mr-1" v-html="highlightMatch(category.name)" />
+                                <span class="text-xs text-gray-400" v-html="highlightMatch(category.code)" />
+                            </LinkIris>
                         </div>
                         <p v-else class="text-sm text-gray-400">{{ ctrans('No categories found') }}</p>
                     </div>
@@ -269,6 +281,24 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
             </template>
             
             <LinkIris
+                v-else-if="bestFamily"
+                :href="bestFamily.url"
+                class="p-5 group flex-1 flex flex-col items-center text-center cursor-pointer min-h-0 rounded transition-colors hover:bg-[color-mix(in_srgb,var(--theme-color-0)_8%,var(--theme-color-1))]"
+                @click="() => recordClick(bestFamily.url)"
+                @success="() => model = false"
+            >
+                <div class="w-40 h-40 bg-gray-50 overflow-hidden flex items-center justify-center mb-4">
+                    <Image v-if="bestFamily.image" :src="bestFamily.image" class="w-full h-full object-contain transition-transform duration-200" />
+                    <span v-else class="text-sm text-gray-300 font-bold uppercase">{{ bestFamily.code?.slice(0, 3) }}</span>
+                </div>
+                <p class="text-sm font-semibold text-slate-800 leading-snug line-clamp-2" v-html="highlightMatch(bestFamily.name)" />
+                <p class="text-xs text-gray-400 mt-0.5" v-html="highlightMatch(bestFamily.code)" />
+                <span class="mt-auto inline-block bg-[var(--theme-color-0)] hover:bg-[color-mix(in_srgb,var(--theme-color-0)_75%,var(--theme-color-1))] text-[var(--theme-color-1)] text-xs font-semibold uppercase tracking-wider px-8 py-2.5 rounded-[5px] transition">
+                    {{ ctrans('See more') }}
+                </span>
+            </LinkIris>
+
+            <LinkIris
                 v-else-if="bestProduct"
                 :href="bestProduct.url"
                 class="p-5 group flex-1 flex flex-col items-center text-center cursor-pointer min-h-0 rounded transition-colors hover:bg-[color-mix(in_srgb,var(--theme-color-0)_8%,var(--theme-color-1))]"
@@ -280,6 +310,7 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                     <span v-else class="text-sm text-gray-300 font-bold uppercase">{{ bestProduct.code?.slice(0, 3) }}</span>
                 </div>
                 <p class="text-sm font-semibold text-slate-800 leading-snug line-clamp-2" v-html="highlightMatch(getProductName(bestProduct))" />
+                <p class="text-xs text-gray-400 mt-0.5" v-html="highlightMatch(bestProduct.code)" />
                 <p v-if="getProductPrice(bestProduct)" class="xtext-lg font-bold text-[var(--theme-color-0)] mt-1">
                     <span class="">{{ formatPrice(Number(bestProduct.price)) }}</span> <span v-if="Number(bestProduct.units) !== 1" class="font-normal opacity-80">({{ getProductPrice(bestProduct) }})</span>
                 </p>
@@ -324,8 +355,11 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
 
                         <div class="min-w-0">
                             <p class="text-sm font-medium text-slate-800 truncate leading-tight group-hover:underline" v-html="highlightMatch(getProductName(product))" />
-                            <p v-if="getProductPrice(product)" class="text-sm font-bold mt-0.5 text-[var(--theme-color-0)]">
-                                <span class="">{{ formatPrice(Number(product.price)) }}</span> <span v-if="Number(product.units) !== 1" class="font-normal opacity-80">({{ getProductPrice(product) }})</span>
+                            <p class="text-sm mt-0.5 truncate">
+                                <span class="text-xs text-gray-400 mr-1" v-html="highlightMatch(product.code)" />
+                                <span v-if="getProductPrice(product)" class="font-bold text-[var(--theme-color-0)]">
+                                    {{ formatPrice(Number(product.price)) }} <span v-if="Number(product.units) !== 1" class="font-normal opacity-80">({{ getProductPrice(product) }})</span>
+                                </span>
                             </p>
                         </div>
                     </LinkIris>

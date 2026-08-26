@@ -215,8 +215,10 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                     class="shrink-0 max-w-[60vw] truncate rounded-full border border-[var(--theme-color-0)] text-[var(--theme-color-0)] text-sm px-4 py-1.5 active:bg-[color-mix(in_srgb,var(--theme-color-0)_15%,transparent)]"
                     @click="() => recordClick(chip.url)"
                     @success="() => model = false"
-                    v-html="highlightMatch(chip.name)"
-                />
+                >
+                    <span class="mr-1" v-html="highlightMatch(chip.name)" />
+                    <span class="text-xs opacity-60" v-html="highlightMatch(chip.code)" />
+                </LinkIris>
             </div>
 
             <!-- Products: large tappable rows, best match leads -->
@@ -243,8 +245,11 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                             :class="index === 0 ? 'text-base font-semibold' : 'text-sm font-medium'"
                             v-html="highlightMatch(getProductName(product))"
                         />
-                        <p v-if="getProductPrice(product)" class="text-sm font-bold mt-0.5 text-[var(--theme-color-0)]">
-                            <span>{{ formatPrice(Number(product.price)) }}</span> <span v-if="Number(product.units) !== 1" class="font-normal opacity-80">({{ getProductPrice(product) }})</span>
+                        <p class="text-sm mt-0.5 truncate">
+                            <span class="text-xs text-gray-400 mr-1" v-html="highlightMatch(product.code)" />
+                            <span v-if="getProductPrice(product)" class="font-bold text-[var(--theme-color-0)]">
+                                {{ formatPrice(Number(product.price)) }} <span v-if="Number(product.units) !== 1" class="font-normal opacity-80">({{ getProductPrice(product) }})</span>
+                            </span>
                         </p>
                     </div>
                 </LinkIris>
