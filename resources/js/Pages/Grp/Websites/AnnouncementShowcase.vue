@@ -4,14 +4,14 @@ import { trans } from "laravel-vue-i18n"
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faSign, faGlobe, faCopy, faCheck } from '@fal'
+import { faSign, faGlobe, faCopy, faCheck, faDraftingCompass } from '@fal'
 import { faLink } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { useCopyText } from '@/Composables/useCopyText'
 import { getAnnouncementComponent } from '@/Composables/useAnnouncement'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
-library.add(faSign, faGlobe, faCopy, faCheck, faLink)
+library.add(faSign, faGlobe, faCopy, faCheck, faLink, faDraftingCompass)
 
 defineProps<{
     data: {
@@ -21,6 +21,10 @@ defineProps<{
             contact_name: string
             username: string
         }
+        workshop_route?: {
+            name: string
+            parameters: string[]
+        } | null
     }
     tab?: string
 }>()
@@ -52,8 +56,15 @@ const onCopyUlid = async (text: string) => {
             </div>
 
             <EmptyState v-else :data="{
-                title: data.state != 'switch_off' ? trans('You do not have slides to show') : trans('You turn off the banner'),
-                description: data.state != 'switch_off' ? trans('Create new slides in the workshop to get started') : trans('need re-publish the banner at workshop'),
+                title: data.state != 'switch_off' ? ctrans('You do not have slides to show') : ctrans('You turn off the banner'),
+                description: data.state != 'switch_off' ? ctrans('Create new slides in the workshop to get started') : ctrans('need re-publish the banner at workshop'),
+                action: data.workshop_route ? {
+                    label: ctrans('Workshop'),
+                    tooltip: ctrans('Workshop'),
+                    style: 'tertiary',
+                    icon: ['fal', 'fa-drafting-compass'],
+                    route: data.workshop_route
+                } : undefined
             }" />
         </div>
 
@@ -64,7 +75,7 @@ const onCopyUlid = async (text: string) => {
                 <div class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
                     <div class="px-6 py-4 border-b border-gray-200">
                         <h3 class="text-lg font-medium flex items-center gap-2">
-                            {{ trans('Detail information') }}:
+                            {{ ctrans('Detail information') }}:
                         </h3>
                     </div>
 
@@ -72,14 +83,14 @@ const onCopyUlid = async (text: string) => {
                     <div class="px-6 py-4 space-y-4">
                         <!-- Order Reference -->
                         <div class="flex items-center justify-between rounded-lg">
-                            <dt class="text-sm font-medium">{{ trans('Name') }}</dt>
+                            <dt class="text-sm font-medium">{{ ctrans('Name') }}</dt>
                             <dd class="text-lg font-semibold">
                                 {{ data.name }}
                             </dd>
                         </div>
 
                         <div class="flex items-center justify-between ">
-                            <dt class="text-sm font-medium text-gray-600">{{ trans('Created at') }}</dt>
+                            <dt class="text-sm font-medium text-gray-600">{{ ctrans('Created at') }}</dt>
                             <dd v-tooltip="useFormatTime(data.created_at, {formatTime: 'hms'} )" class="text-sm">
                                 {{ useFormatTime(data.created_at, {formatTime: 'hm'} ) }}
                             </dd>
@@ -87,7 +98,7 @@ const onCopyUlid = async (text: string) => {
 
                         <!-- Last Publisher -->
                         <div v-if="data.publisher?.contact_name" class="flex items-center justify-between border-t border-gray-200 pt-4">
-                            <dt class="text-sm font-medium text-gray-600">{{ trans('Last Publisher') }}</dt>
+                            <dt class="text-sm font-medium text-gray-600">{{ ctrans('Last Publisher') }}</dt>
                             <dd class="text-sm">
                                 <span class="font-bold">{{ data.publisher.contact_name }}</span> ({{ data.publisher.username  }})
                             </dd>
@@ -95,7 +106,7 @@ const onCopyUlid = async (text: string) => {
 
                         <!-- Last Published Time -->
                         <div v-if="data.ready_at" class="flex items-center justify-between ">
-                            <dt class="text-sm font-medium text-gray-600">{{ trans('Last Published time') }}</dt>
+                            <dt class="text-sm font-medium text-gray-600">{{ ctrans('Last Published time') }}</dt>
                             <dd v-tooltip="useFormatTime(data.ready_at, {formatTime: 'hms'} )" class="text-sm">
                                 {{ useFormatTime(data.ready_at, {formatTime: 'hm'} ) }}
                             </dd>
@@ -103,7 +114,7 @@ const onCopyUlid = async (text: string) => {
 
                         <!-- Last Published message -->
                         <div v-if="data.published_message" class="flex flex-col items-start justify-between">
-                            <dt class="text-sm font-medium text-gray-600">{{ trans('Last Published message') }}</dt>
+                            <dt class="text-sm font-medium text-gray-600">{{ ctrans('Last Published message') }}</dt>
                             <dd class="text-sm border border-gray-300 bg-gray-700/5 italic text-gray-500 px-3 py-2 mt-1 w-full rounded">
                                 {{ data.published_message ?? '-'}}
                             </dd>
