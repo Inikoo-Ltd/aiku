@@ -96,6 +96,7 @@ enum WebBlockTemplateEnum: string
                 'collections-1',
                 'collection-description-1',
                 'collection-1',
+                'category-comparison',
             ],
         };
     }
