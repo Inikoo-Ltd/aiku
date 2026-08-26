@@ -30,11 +30,18 @@ class SweepGoldRewardWindowBaskets
         $grInterval = Arr::get($shop->offers_data, 'gr.interval', 30);
 
         $customersIds = Customer::where('shop_id', $shop->id)
-            ->whereNotNull('last_invoiced_at')
-            ->whereBetween(DB::raw('last_invoiced_at::date'), [
-                now()->subDays($grInterval + $lookbackDays - 1)->toDateString(),
-                now()->subDays($grInterval)->toDateString(),
-            ])
+            ->where(function ($query) use ($grInterval, $lookbackDays) {
+                $query->where(function ($lastInvoicedQuery) use ($grInterval, $lookbackDays) {
+                    $lastInvoicedQuery->whereNotNull('last_invoiced_at')
+                        ->whereBetween(DB::raw('last_invoiced_at::date'), [
+                            now()->subDays($grInterval + $lookbackDays - 1)->toDateString(),
+                            now()->subDays($grInterval)->toDateString(),
+                        ]);
+                })->orWhereBetween(DB::raw('gr_extended_until::date'), [
+                    now()->subDays($lookbackDays)->toDateString(),
+                    now()->subDay()->toDateString(),
+                ]);
+            })
             ->select('id');
 
         $count = 0;

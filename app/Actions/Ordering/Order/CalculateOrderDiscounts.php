@@ -678,6 +678,10 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             return 10000;
         }
 
+        if ($customer->hasActiveGrExtension()) {
+            return 0;
+        }
+
         if ($this->isLastInvoicedSet) {
             return $this->daysSinceLastInvoiced ?? 10000;
         }

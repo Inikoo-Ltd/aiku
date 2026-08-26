@@ -11,6 +11,7 @@
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireOrder;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
+use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Discounts\Offer\ActivateOffer;
 use App\Actions\Discounts\Offer\ActivateScheduledOffers;
@@ -3138,6 +3139,35 @@ describe('gold reward window sweep', function () {
 
         $shop->update(['offers_data' => ['gr' => ['active' => true, 'interval' => 30, 'amnesty_offer_id' => 99]]]);
         expect(SweepGoldRewardWindowBaskets::run($shop))->toBe(0);
+    });
+
+    test('manual gr_extended_until grants gold reward and its expiry is swept', function () {
+        Queue::fake();
+
+        $shop = $this->shop;
+        $shop->update([
+            'is_aiku'     => true,
+            'type'        => ShopTypeEnum::B2B,
+            'offers_data' => ['gr' => ['active' => true, 'interval' => 30]],
+        ]);
+
+        $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+        $order    = StoreOrder::make()->action($customer, []);
+
+        expect($customer->hasActiveGrExtension())->toBeFalse()
+            ->and(CalculateOrderDiscounts::make()->getDaysSinceLastInvoiced($order))->toBe(10000);
+
+        UpdateCustomer::make()->action($customer, ['gr_extended_until' => now()->addDays(7)->toDateString()]);
+        $customer->refresh();
+
+        expect($customer->hasActiveGrExtension())->toBeTrue()
+            ->and(CalculateOrderDiscounts::make()->getDaysSinceLastInvoiced($order->refresh()))->toBe(0);
+
+        $customer->update(['gr_extended_until' => now()->subDay()]);
+        $customer->refresh();
+
+        expect($customer->hasActiveGrExtension())->toBeFalse()
+            ->and(SweepGoldRewardWindowBaskets::run($shop))->toBeGreaterThanOrEqual(1);
     });
 
     test('sweep command runs for a single shop', function () {
