@@ -81,6 +81,7 @@ import Tabs from "@/Components/CMS/Webpage/Tabs/Blueprint"
 import FaqDepartmentBlueprint from '@/Components/CMS/Webpage/FaqDepartment/Blueprint'
 import TopFamiliesWorkshop from '@/Components/CMS/Webpage/TopFamilies/Blueprint';
 import { blueprint as BlogListBlueprint } from '@/Components/CMS/Webpage/BlogList/Blueprint';
+import CategoryComparisonBlueprint from '@/Components/CMS/Webpage/CategoryComparison/Blueprint';
 
 export const getBlueprint = (componentName: string, data?: object, id? : number) => {
 	const components: Record<string, any> = {
@@ -189,7 +190,8 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		'tabs' : Tabs.blueprint,
 		'faq-department' : FaqDepartmentBlueprint.blueprint,
 		'top-families' : TopFamiliesWorkshop.blueprint,
-		'blog-list' : () => BlogListBlueprint(data, id).blueprint
+		'blog-list' : () => BlogListBlueprint(data, id).blueprint,
+		'category-comparison' : CategoryComparisonBlueprint.blueprint
 	}
 
 	const blueprint = components[componentName]

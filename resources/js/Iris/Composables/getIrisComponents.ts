@@ -122,6 +122,7 @@ const TabsIris = async(() => import("@/Iris/Components/IrisBlocks/TabsIris.vue")
 const FaqDepartment = async(() => import("@/Iris/Components/IrisBlocks/FaqDepartment.vue"))
 const TopFamiliesIris = async(() => import("@/Iris/Components/IrisBlocks/TopFamiliesIris.vue"))
 const BlogListIris = async(() => import("@/Iris/Components/IrisBlocks/BlogListIris.vue"))
+const CategoryComparisonIris = async(() => import("@/Iris/Components/IrisBlocks/CategoryComparisonIris.vue"))
 
 interface IrisComponentOptions {
 	search_model?: string // 'luigi' | 'internal'
@@ -243,7 +244,8 @@ const components = (shop_type?: string, options: IrisComponentOptions = {}): Rec
 		'tabs' : TabsIris,
 		'faq-department' : FaqDepartment,
 		'top-families' : TopFamiliesIris,
-		'blog-list' : BlogListIris
+		'blog-list' : BlogListIris,
+		'category-comparison' : CategoryComparisonIris
 	}
 }
 
