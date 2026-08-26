@@ -39,7 +39,7 @@ class ProcessAbandonedCartReminderPerOutbox
 
         $currentDateTime = Carbon::now()->utc();
 
-        $lastOutBoxSent = $outbox->last_sent_at ?? null;
+        $lastOutBoxSent = $outbox->last_sent_at ?? Carbon::now()->utc()->subHours($outbox->interval + 1);
 
         // Check if enough time has passed since last outbox was sent
         if ($lastOutBoxSent && Carbon::parse($lastOutBoxSent)->diffInHours($currentDateTime) < $outbox->interval) {
@@ -77,9 +77,10 @@ class ProcessAbandonedCartReminderPerOutbox
             ->whereNull('deleted_at')
             ->groupBy('order_id');
 
-        $baseQuery->joinSub($firstItemQuery, 'first_items', function ($join) use ($compareDate) {
+        $baseQuery->joinSub($firstItemQuery, 'first_items', function ($join) use ($compareDate, $lastOutBoxSent) {
             $join->on('first_items.order_id', '=', 'orders.id');
             $join->where('first_items.first_item_at', '<=', $compareDate);
+            $join->where('first_items.first_item_at', '>', $lastOutBoxSent);
         });
 
         $baseQuery->select(
