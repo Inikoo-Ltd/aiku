@@ -44,6 +44,16 @@ class FamiliesForCategoryComparison extends JsonResource
             $srcset = $this->getWidthSrcSets($media, self::SRCSET_WIDTHS);
         }
 
+        $categoryComparison = $this->category_comparison;
+
+        data_set($categoryComparison, 'items.product_count.value', $this->product_count ?? 0);
+        data_set($categoryComparison, 'items.packaging.value', json_decode($this->packaging));
+        data_set($categoryComparison, 'items.dimensions.value', [
+            'average_weight'    => trimDecimalZeros($this->average_marketing_weight),
+            'dimensions'        => $this->dimensions
+        ]);
+        data_set($categoryComparison, 'items.customization.value', count($this->customize_option ?? []) > 0);
+
         return [
             'id'                  => $this->id,
             'slug'                => $this->slug,
@@ -53,7 +63,7 @@ class FamiliesForCategoryComparison extends JsonResource
             'image'               => Arr::get($this->web_images, 'main.gallery', Arr::get($this->web_images, 'main.original')),
             'srcset'              => $srcset,
             'is_current'          => (bool)$this->is_current,
-            'category_comparison' => $this->category_comparison,
+            'category_comparison' => $categoryComparison,
         ];
     }
 }

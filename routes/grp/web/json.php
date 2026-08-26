@@ -365,7 +365,7 @@ Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelec
 // Families list under department page
 Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
 // Families list for range comparison in Family Page Workshop
-Route::get('{website:id}/{productCategory}/range-for-comparison', GetFamiliesForComparisonPage::class)->name('website.category.range_for_comparison');
+Route::get('{website}/{productCategory}/range-for-comparison', [GetFamiliesForComparisonPage::class, 'inWebsite'])->name('website.category.range_for_comparison');
 
 Route::post('ingredients/parse', ParseIngredientsList::class)->name('ingredients.parse');
 
