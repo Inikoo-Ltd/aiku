@@ -8,9 +8,12 @@
 namespace App\Actions\Chat\MetaChatSession;
 
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Events\BroadcastMetaChatListEvent;
+use App\Events\BroadcastRealtimeMetaChat;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatSession;
 use Exception;
@@ -28,7 +31,9 @@ class ReopenMetaChatSession
      */
     public function handle(MetaChatSession $metaChatSession, ChatAgent $agent): MetaChatSession
     {
-        return DB::transaction(function () use ($metaChatSession, $agent) {
+        $systemMessage = null;
+
+        $metaChatSession = DB::transaction(function () use ($metaChatSession, $agent, &$systemMessage) {
             $previousStatus = $metaChatSession->status?->value;
 
             $metaChatSession->update([
@@ -39,8 +44,7 @@ class ReopenMetaChatSession
 
             $assignment = AssignMetaChatToAgent::run($metaChatSession, $agent, 'Reopened by agent');
 
-            // ponytail: no meta broadcast exists yet; dispatch here when one lands
-            StoreMetaChatMessage::run($metaChatSession, [
+            $systemMessage = StoreMetaChatMessage::run($metaChatSession, [
                 'message_text' => 'Chat session has been reopened by '.($agent->user?->contact_name ?? 'agent'),
                 'message_type' => ChatMessageTypeEnum::TEXT->value,
                 'sender_type'  => ChatSenderTypeEnum::SYSTEM->value,
@@ -65,6 +69,62 @@ class ReopenMetaChatSession
 
             return $metaChatSession->fresh();
         });
+
+        if ($systemMessage) {
+            BroadcastRealtimeMetaChat::dispatch($systemMessage->fresh('metaChatSession'));
+        }
+
+        BroadcastMetaChatListEvent::dispatch(null, $metaChatSession);
+
+        return $metaChatSession;
+    }
+
+    /**
+     * A WhatsApp thread belongs to a phone number and never really ends: closing it only
+     * clears it from the inbox. When the customer writes again the same thread comes back
+     * unassigned, which is what the derived "waiting" state means, instead of starting a
+     * second session and splitting the history.
+     *
+     * @throws \Throwable
+     */
+    public function reopenToWaiting(
+        MetaChatSession $metaChatSession,
+        ChatActorTypeEnum $actorType = ChatActorTypeEnum::GUEST,
+        ?int $actorId = null
+    ): MetaChatSession {
+        $metaChatSession = DB::transaction(function () use ($metaChatSession, $actorType, $actorId) {
+            $previousStatus = $metaChatSession->status?->value;
+
+            $metaChatSession->update([
+                'status'    => ChatSessionStatusEnum::ACTIVE->value,
+                'closed_by' => null,
+                'closed_at' => null,
+            ]);
+
+            $metaChatSession->assignments()
+                ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+                ->update([
+                    'status'      => ChatAssignmentStatusEnum::RESOLVED->value,
+                    'resolved_at' => now(),
+                ]);
+
+            StoreMetaChatEvent::make()->reopenSession(
+                $metaChatSession,
+                $actorType,
+                $actorId,
+                [
+                    'action_type'             => 'reopen_to_waiting',
+                    'session_previous_status' => $previousStatus,
+                    'session_new_status'      => ChatSessionStatusEnum::ACTIVE->value,
+                ]
+            );
+
+            return $metaChatSession->fresh();
+        });
+
+        BroadcastMetaChatListEvent::dispatch(null, $metaChatSession);
+
+        return $metaChatSession;
     }
 
     /** @noinspection PhpUnusedParameterInspection */

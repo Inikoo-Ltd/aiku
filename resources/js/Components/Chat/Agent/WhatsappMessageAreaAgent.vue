@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, inject, computed, nextTick } from "vue"
+import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick } from "vue"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -29,6 +29,7 @@ type LocalMessageStatus = "sending" | "sent" | "failed"
 type LocalChatMessage = ChatMessage & {
     _status?: LocalMessageStatus
     _tempId?: string
+    metadata?: Record<string, any>
 }
 
 interface WhatsappTemplate {
@@ -482,6 +483,83 @@ watch(
     { immediate: true }
 )
 
+let chatChannel: any = null
+
+const stopSocket = () => {
+    chatChannel?.stopListening(".message")
+    chatChannel?.stopListening(".status")
+    chatChannel = null
+}
+
+// Marks the thread read on our side and sends the receipt that lights up the
+// customer's blue ticks; opening the thread does the same through the messages endpoint.
+const markIncomingAsRead = async () => {
+    if (!chatSession.value?.ulid) return
+
+    try {
+        await axios.post(
+            `${baseUrl}/app/api/chats/meta/sessions/${chatSession.value.ulid}/read`,
+            {},
+            { withCredentials: true }
+        )
+        emit("messages-read")
+    } catch (e) {
+        console.error("Failed to mark WhatsApp messages as read", e)
+    }
+}
+
+const initSocket = () => {
+    if (!chatSession.value?.ulid || !window.Echo) return
+
+    stopSocket()
+
+    chatChannel = window.Echo.private(`meta-chat-session.${chatSession.value.ulid}`)
+
+    chatChannel.listen(".message", ({ message, can_send_non_template_message }: any) => {
+        if (!message?.id) return
+
+        if (can_send_non_template_message !== undefined) {
+            canSendNonTemplate.value = can_send_non_template_message
+        }
+
+        // Our own optimistic bubble is superseded by the broadcast that follows the send.
+        messagesLocal.value = messagesLocal.value.filter(
+            (m) => !(m._status === "sending" && m.sender_type === "agent")
+        )
+
+        const index = messagesLocal.value.findIndex((m) => m.id === message.id)
+
+        if (index !== -1) {
+            messagesLocal.value[index] = { ...messagesLocal.value[index], ...message, _status: "sent" }
+        } else {
+            messagesLocal.value.push({ ...message, _status: "sent" })
+        }
+
+        if (message.sender_type !== "agent" && message.sender_type !== "system") {
+            markIncomingAsRead()
+        }
+
+        scrollBottom()
+    })
+
+    chatChannel.listen(".status", (payload: any) => {
+        const index = messagesLocal.value.findIndex((m) => m.id === payload?.message_id)
+
+        if (index === -1) return
+
+        messagesLocal.value[index] = {
+            ...messagesLocal.value[index],
+            is_read: payload.is_read ?? messagesLocal.value[index].is_read,
+            metadata: {
+                ...(messagesLocal.value[index].metadata ?? {}),
+                wa_status: payload.status,
+                wa_error: payload.error,
+            },
+            _status: payload.status === "failed" ? "failed" : "sent",
+        }
+    })
+}
+
 watch(
     () => chatSession.value?.ulid,
     async () => {
@@ -489,12 +567,18 @@ watch(
         nextCursor.value = null
         canLoadMore.value = false
         clearTemplate()
+        initSocket()
         await getMessages()
     }
 )
 
 onMounted(() => {
+    initSocket()
     getMessages()
+})
+
+onUnmounted(() => {
+    stopSocket()
 })
 </script>
 

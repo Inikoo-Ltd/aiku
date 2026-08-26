@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\Whatsapp;
 
+use App\Events\BroadcastMetaChatMessageStatus;
 use App\Models\Chat\MetaChatMessage;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -39,6 +40,17 @@ class UpdateWhatsappMessageStatus
     }
 
     /**
+     * Meta can deliver the lifecycle out of order (a `delivered` callback arriving
+     * after `read` is normal), so a status never walks backwards.
+     */
+    protected const STATUS_RANK = [
+        'sent'      => 1,
+        'delivered' => 2,
+        'read'      => 3,
+        'failed'    => 4,
+    ];
+
+    /**
      * @param  array<string, mixed>  $status
      */
     protected function updateStatus(array $status): void
@@ -64,7 +76,18 @@ class UpdateWhatsappMessageStatus
         $timestamp  = Arr::get($status, 'timestamp');
         $happenedAt = $timestamp ? Carbon::createFromTimestamp((int) $timestamp) : now();
 
-        $metadata = array_merge($metaChatMessage->metadata ?? [], ['wa_status' => $statusName]);
+        $metadata     = $metaChatMessage->metadata ?? [];
+        $currentRank  = self::STATUS_RANK[Arr::get($metadata, 'wa_status')] ?? 0;
+        $incomingRank = self::STATUS_RANK[$statusName] ?? 0;
+
+        if ($incomingRank >= $currentRank) {
+            $metadata['wa_status'] = $statusName;
+        }
+
+        $metadata['wa_status_at'] = array_merge(
+            (array) (Arr::get($metadata, 'wa_status_at') ?? []),
+            [$statusName => $happenedAt->toISOString()]
+        );
 
         if ($statusName === 'failed') {
             $metadata['wa_error'] = Arr::get($status, 'errors.0');
@@ -83,5 +106,7 @@ class UpdateWhatsappMessageStatus
         }
 
         $metaChatMessage->update($modelData);
+
+        BroadcastMetaChatMessageStatus::dispatch($metaChatMessage->fresh('metaChatSession'));
     }
 }

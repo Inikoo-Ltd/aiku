@@ -7,11 +7,14 @@
 
 namespace App\Actions\Chat\Whatsapp;
 
+use App\Actions\Chat\MetaChatSession\ReopenMetaChatSession;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatMessage;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Events\BroadcastMetaChatListEvent;
+use App\Events\BroadcastRealtimeMetaChat;
 use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\MetaChannel;
@@ -90,7 +93,7 @@ class StoreIncomingWhatsappMessage
         $metaChatSession = MetaChatSession::where('meta_channel_id', $metaChannel->id)
             ->where('shop_id', $shop->id)
             ->whereIn('phone_number', ['+'.$digits, $digits])
-            ->where('status', '!=', ChatSessionStatusEnum::CLOSED)
+            ->latest('id')
             ->first();
 
         if (!$metaChatSession) {
@@ -102,28 +105,49 @@ class StoreIncomingWhatsappMessage
                 'phone_number' => '+'.$digits,
                 'name'         => $profileName,
             ]);
+        } elseif ($metaChatSession->status === ChatSessionStatusEnum::CLOSED) {
+            $metaChatSession = ReopenMetaChatSession::make()->reopenToWaiting($metaChatSession);
         }
 
-        $type = (string) Arr::get($message, 'type');
+        $type     = (string) Arr::get($message, 'type');
+        $waNode   = Arr::get($message, $type);
+        $isMedia  = in_array($type, DownloadWhatsappMedia::MEDIA_TYPES, true);
 
-        StoreMetaChatMessage::run($metaChatSession, [
+        $metaChatMessage = StoreMetaChatMessage::run($metaChatSession, [
             'meta_message_id' => $waMessageId,
-            'message_type'    => match ($type) {
-                'text'  => ChatMessageTypeEnum::TEXT,
-                'image' => ChatMessageTypeEnum::IMAGE,
-                default => ChatMessageTypeEnum::FILE,
-            },
+            'message_type'    => $this->messageType($type),
             'sender_type'     => ChatSenderTypeEnum::GUEST,
-            'message_text'    => Arr::get($message, 'text.body'),
+            'message_text'    => $type === 'text' ? Arr::get($message, 'text.body') : Arr::get($waNode, 'caption'),
             'metadata'        => [
                 'wa_type'      => $type,
                 'profile_name' => $profileName,
-                // ponytail: raw node kept as-is; media (image/document/audio) is not downloaded yet
-                'wa_payload'   => $type !== 'text' ? Arr::get($message, $type) : null,
+                'wa_payload'   => $type !== 'text' ? $waNode : null,
             ],
         ]);
 
+        if ($isMedia) {
+            DownloadWhatsappMedia::run($metaChatMessage, $shop);
+        }
+
         $metaChatSession->update(['last_visitor_message_at' => now()]);
+
+        $metaChatMessage = $metaChatMessage->fresh(['attachment', 'metaChatSession']);
+
+        BroadcastRealtimeMetaChat::dispatch($metaChatMessage);
+        BroadcastMetaChatListEvent::dispatch($metaChatMessage, $metaChatSession->fresh());
+    }
+
+    /**
+     * Stickers ride along with images so the agent sees them inline; document, audio
+     * and video all land in the generic file bucket the enum offers.
+     */
+    protected function messageType(string $type): ChatMessageTypeEnum
+    {
+        return match (true) {
+            $type === 'text'                                       => ChatMessageTypeEnum::TEXT,
+            in_array($type, DownloadWhatsappMedia::IMAGE_TYPES, true) => ChatMessageTypeEnum::IMAGE,
+            default                                                => ChatMessageTypeEnum::FILE,
+        };
     }
 
     protected function findCustomer(Shop $shop, string $digits): ?Customer

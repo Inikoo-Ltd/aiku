@@ -10,6 +10,7 @@ namespace App\Actions\Chat\MetaChatSession;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Events\BroadcastMetaChatListEvent;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatAssignment;
 use App\Models\Chat\MetaChatSession;
@@ -61,6 +62,8 @@ class AssignMetaChatToAgent
         }
 
         $metaChatSession->update(['status' => ChatSessionStatusEnum::ACTIVE->value]);
+
+        BroadcastMetaChatListEvent::dispatch(null, $metaChatSession->fresh());
 
         return $activeAssignment;
     }

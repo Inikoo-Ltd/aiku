@@ -7,7 +7,6 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
-use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Http\Resources\CRM\Livechat\MetaChatMessageResource;
 use App\Models\Chat\MetaChatSession;
 use Illuminate\Http\JsonResponse;
@@ -46,10 +45,7 @@ class GetMetaChatMessages
     {
         $validated = $request->validated();
 
-        $metaChatSession->messages()
-            ->where('is_read', false)
-            ->whereIn('sender_type', [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value])
-            ->update(['is_read' => true, 'read_at' => now()]);
+        MarkMetaChatMessagesAsRead::run($metaChatSession);
 
         $messages = $this->handle($metaChatSession, $validated);
 

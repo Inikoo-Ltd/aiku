@@ -13,6 +13,8 @@ use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Events\BroadcastMetaChatListEvent;
+use App\Events\BroadcastRealtimeMetaChat;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatSession;
 use Exception;
@@ -36,7 +38,9 @@ class CloseMetaChatSession
         ChatActorTypeEnum $actorType = ChatActorTypeEnum::AGENT,
         array $additionalData = []
     ): MetaChatSession {
-        return DB::transaction(function () use ($metaChatSession, $actorId, $actorType, $additionalData) {
+        $systemMessage = null;
+
+        $metaChatSession = DB::transaction(function () use ($metaChatSession, $actorId, $actorType, $additionalData, &$systemMessage) {
 
             $closedBy = match ($actorType) {
                 ChatActorTypeEnum::AGENT => ChatSessionClosedByTypeEnum::AGENT,
@@ -69,8 +73,7 @@ class CloseMetaChatSession
                 default                  => 'system',
             };
 
-            // ponytail: no meta broadcast exists yet; dispatch here when one lands
-            StoreMetaChatMessage::run($metaChatSession, [
+            $systemMessage = StoreMetaChatMessage::run($metaChatSession, [
                 'message_text' => "Chat session has been closed by $closedByLabel",
                 'message_type' => ChatMessageTypeEnum::TEXT->value,
                 'sender_type'  => ChatSenderTypeEnum::SYSTEM->value,
@@ -83,6 +86,14 @@ class CloseMetaChatSession
 
             return $metaChatSession->fresh();
         });
+
+        if ($systemMessage) {
+            BroadcastRealtimeMetaChat::dispatch($systemMessage->fresh('metaChatSession'));
+        }
+
+        BroadcastMetaChatListEvent::dispatch(null, $metaChatSession);
+
+        return $metaChatSession;
     }
 
     /**

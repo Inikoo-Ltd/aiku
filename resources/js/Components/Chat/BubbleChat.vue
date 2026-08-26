@@ -2,7 +2,7 @@
 import { inject, computed, ref, onMounted, onUnmounted, watch } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faCheckDouble, faLanguage, faRobot, faShieldCheck } from "@far"
+import { faCheck, faCheckDouble, faExclamationCircle, faLanguage, faRobot, faShieldCheck } from "@far"
 import { faShare, faFaceSmile } from "@fortawesome/free-solid-svg-icons"
 import axios from "axios"
 import { useChatLanguages } from "@/Composables/useLanguages"
@@ -10,6 +10,7 @@ import Image from "primevue/image"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
+import AudioPlayer from "@/Components/Chat/AudioPlayer.vue"
 
 type SenderType = "guest" | "user" | "agent" | "system"
 type MessageStatus = "sending" | "sent" | "failed"
@@ -28,10 +29,12 @@ interface Message {
     } | null
     message_type?: "text" | "image" | "file"
     file_name?: string | null
+    file_mime?: string | null
     download_route?: {
         url: string
     } | null
     is_read?: boolean
+    metadata?: Record<string, any> | null
     id?: number
     sender_name?: string | null
     _status?: MessageStatus
@@ -166,9 +169,39 @@ const time = computed(() =>
     })
 )
 
-const readIcon = computed(() =>
-    props.message.is_read ? faCheckDouble : faCheck
-)
+// WhatsApp reports a full delivery lifecycle (sent → delivered → read); website
+// chat only knows read/unread, so it keeps the original two-state tick.
+const waStatus = computed<string | null>(() => props.message.metadata?.wa_status ?? null)
+
+const isFailed = computed(() => waStatus.value === "failed" || props.message._status === "failed")
+
+const readIcon = computed(() => {
+    if (isFailed.value) {
+        return faExclamationCircle
+    }
+
+    if (waStatus.value) {
+        return ["delivered", "read"].includes(waStatus.value) ? faCheckDouble : faCheck
+    }
+
+    return props.message.is_read ? faCheckDouble : faCheck
+})
+
+const readIconClass = computed(() => {
+    if (isFailed.value) {
+        return "text-red-500"
+    }
+
+    return waStatus.value === "read" ? "text-sky-400" : ""
+})
+
+const readIconLabel = computed(() => {
+    if (isFailed.value) {
+        return props.message.metadata?.wa_error?.message ?? trans("Failed to send")
+    }
+
+    return waStatus.value ? trans(waStatus.value) : ""
+})
 
 const agentDisplayName = computed(() => {
     return props.agentName ?? "Agent"
@@ -191,11 +224,38 @@ const senderLabel = computed(() => {
 
 const isFile = computed(() => props.message.message_type === "file")
 
+const fileMime = computed(() => props.message.file_mime ?? props.message.media_url?.mime ?? "")
+
+// Ogg/Opus voice notes are sometimes sniffed as `application/ogg`, so the WhatsApp
+// message type is trusted alongside the stored mime.
+const isAudio = computed(() =>
+    isFile.value &&
+    (fileMime.value.startsWith("audio/") || props.message.metadata?.wa_type === "audio")
+)
+
+// WhatsApp voice notes arrive as ordinary audio with a `voice` flag; naming them
+// as such reads better than "whatsapp-<media id>.ogg".
+const audioLabel = computed(() =>
+    props.message.metadata?.wa_payload?.voice
+        ? trans("Voice message")
+        : props.message.file_name ?? trans("Audio")
+)
+
+const audioUrl = computed(() => {
+    const url = props.message.download_route?.url
+
+    if (!url) return null
+
+    return url + (url.includes("?") ? "&" : "?") + "inline=1"
+})
+
 const fileIcon = computed(() => {
-    const mime = props.message.media_url?.mime ?? ""
+    const mime = fileMime.value
 
     if (mime.includes("pdf")) return "📕"
     if (mime.includes("excel") || mime.includes("spreadsheet")) return "📊"
+    if (mime.startsWith("audio/")) return "🎧"
+    if (mime.startsWith("video/")) return "🎬"
     return "📄"
 })
 
@@ -592,7 +652,11 @@ watch(selectedLanguage, async (val) => {
                 </button>
             </div>
 
-            <div v-if="isFile && message.media_url" @click="openFile"
+            <AudioPlayer v-if="isAudio && audioUrl" :src="audioUrl"
+                :is-voice="!!message.metadata?.wa_payload?.voice" :label="audioLabel"
+                :download-url="message.download_route?.url" />
+
+            <div v-if="isFile && !isAudio && message.media_url" @click="openFile"
                 class="mt-1 flex items-center gap-3 p-3 rounded-lg border bg-white max-w-xs transition" :class="isOpening
                     ? 'opacity-60 cursor-not-allowed'
                     : 'cursor-pointer hover:bg-gray-50'">
@@ -675,8 +739,8 @@ watch(selectedLanguage, async (val) => {
                     <LoadingIcon />
                 </span>
 
-                <span v-if="isFromViewer && !isSending" class="leading-none">
-                    <FontAwesomeIcon :icon="readIcon" />
+                <span v-if="isFromViewer && !isSending" class="leading-none" :title="readIconLabel">
+                    <FontAwesomeIcon :icon="readIcon" :class="readIconClass" />
                 </span>
             </div>
         </div>

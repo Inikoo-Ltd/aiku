@@ -737,6 +737,33 @@ const onChatListEvent = (e: any) => {
     }
 }
 
+const onMetaChatListEvent = (e: any) => {
+    // WhatsApp sessions only surface in the meta list; ignore the event while the
+    // agent is looking at the website channel.
+    if (selectedChannel.value !== "whatsapp") return
+
+    reloadContacts()
+
+    const s = e?.session
+    const open = selectedSession.value
+    if (!s || !open || String(s.ulid) !== String(open.ulid)) return
+
+    selectedSession.value = {
+        ...open,
+        status: s.status ?? open.status,
+        can_send_non_template_message: s.can_send_non_template_message,
+        ...(s.assigned_user_id
+            ? {
+                assigned_agent: {
+                    id: (open as any)?.assigned_agent?.id,
+                    user_id: s.assigned_user_id,
+                    name: s.assigned_agent_name ?? "Agent",
+                },
+            }
+            : {}),
+    } as SessionAPI
+}
+
 onMounted(async () => {
     fetchInboxNotifications()
 
@@ -772,7 +799,9 @@ onMounted(async () => {
         shopIds.forEach((shopId) => {
             const channel = `chat-list.${shopId}`
             joinedChatListChannels.push(channel)
-            window.Echo.join(channel).listen(".chatlist", onChatListEvent)
+            window.Echo.join(channel)
+                .listen(".chatlist", onChatListEvent)
+                .listen(".meta-chatlist", onMetaChatListEvent)
         })
     }
 
@@ -790,7 +819,9 @@ onUnmounted(() => {
     // Only detach this page's listener; do NOT Echo.leave() the shared
     // chat-list channel — the footer notification hub relies on it.
     joinedChatListChannels.forEach((channel) =>
-        window.Echo?.join(channel).stopListening(".chatlist", onChatListEvent)
+        window.Echo?.join(channel)
+            .stopListening(".chatlist", onChatListEvent)
+            .stopListening(".meta-chatlist", onMetaChatListEvent)
     )
     scrollObserver?.disconnect()
 })

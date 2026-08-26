@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\Whatsapp\Templates;
 
+use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappCredentials;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetWhatsappMessageTemplate
 {
     use AsAction;
+    use WithWhatsappCredentials;
 
     /**
      * @return array<int, array<string, mixed>>
@@ -32,12 +34,7 @@ class GetWhatsappMessageTemplate
             return [];
         }
 
-        $url = sprintf(
-            '%s/%s/%s/message_templates',
-            config('meta.base_endpoint'),
-            config('meta.whatsapp.api_version'),
-            $wabaId
-        );
+        $url = $this->whatsappEndpoint($wabaId.'/message_templates');
 
         $templates = [];
         while ($url) {

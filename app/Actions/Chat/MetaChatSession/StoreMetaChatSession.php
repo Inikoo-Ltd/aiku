@@ -2,6 +2,7 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\CRM\Customer;
 use App\Models\Chat\MetaChannel;
@@ -73,11 +74,11 @@ class StoreMetaChatSession
 
         $name = $customer?->contact_name ?? $customer?->name ?? Arr::get($modelData, 'name');
 
-        return DB::transaction(function () use ($metaChannel, $customer, $modelData, $phoneNumber, $name) {
+        $metaChatSession = DB::transaction(function () use ($metaChannel, $customer, $modelData, $phoneNumber, $name) {
             $existing = MetaChatSession::where('meta_channel_id', $metaChannel->id)
                 ->where('shop_id', $modelData['shop_id'])
                 ->where('phone_number', $phoneNumber)
-                ->where('status', '!=', ChatSessionStatusEnum::CLOSED)
+                ->latest('id')
                 ->first();
 
             if ($existing) {
@@ -100,6 +101,12 @@ class StoreMetaChatSession
                 ],
             ]);
         });
+
+        if ($metaChatSession->status === ChatSessionStatusEnum::CLOSED) {
+            $metaChatSession = ReopenMetaChatSession::make()->reopenToWaiting($metaChatSession, ChatActorTypeEnum::AGENT);
+        }
+
+        return $metaChatSession;
     }
 
     /**

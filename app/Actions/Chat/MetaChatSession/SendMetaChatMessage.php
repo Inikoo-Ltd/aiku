@@ -8,10 +8,13 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappCredentials;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Http\Resources\CRM\Livechat\MetaChatMessageResource;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Events\BroadcastMetaChatListEvent;
+use App\Events\BroadcastRealtimeMetaChat;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatMessage;
 use App\Models\Chat\MetaChatSession;
@@ -29,6 +32,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class SendMetaChatMessage
 {
     use AsAction;
+    use WithWhatsappCredentials;
 
     public function rules(): array
     {
@@ -67,9 +71,12 @@ class SendMetaChatMessage
      */
     public function handle(MetaChatSession $metaChatSession, ChatAgent $agent, array $modelData): array
     {
-        $shop          = $metaChatSession->shop;
-        $phoneNumberId = (string) (Arr::get($shop?->settings, 'whatsapp.phone_number_id') ?: config('meta.whatsapp.phone_number_id'));
-        $accessToken   = (string) (Arr::get($shop?->organisation?->settings, 'meta.access_key') ?: config('meta.whatsapp.access_token'));
+        $shop = $metaChatSession->shop;
+
+        [
+            'phone_number_id' => $phoneNumberId,
+            'access_token'    => $accessToken,
+        ] = $this->whatsappCredentials($shop);
 
         if ($phoneNumberId === '' || $accessToken === '') {
             return [
@@ -126,7 +133,7 @@ class SendMetaChatMessage
         }
 
         $response = Http::withToken($accessToken)->post(
-            sprintf('%s/%s/%s/messages', config('meta.base_endpoint'), config('meta.whatsapp.api_version'), $phoneNumberId),
+            $this->whatsappEndpoint($phoneNumberId.'/messages'),
             $payload
         );
 
@@ -139,6 +146,10 @@ class SendMetaChatMessage
         }
 
         $metaMessageId = Arr::get($response->json(), 'messages.0.id');
+
+        // Meta's `sent` callback can beat this insert, and an unknown message id is
+        // dropped by the status handler, so the accepted send is recorded here.
+        $metadata['wa_status'] = 'sent';
 
         $metaChatMessage = StoreMetaChatMessage::run($metaChatSession, [
             'meta_message_id' => $metaMessageId,
@@ -155,9 +166,14 @@ class SendMetaChatMessage
 
         $metaChatSession->update(['last_agent_message_at' => now()]);
 
+        $metaChatMessage = $metaChatMessage->fresh(['attachment', 'metaChatSession']);
+
+        BroadcastRealtimeMetaChat::dispatch($metaChatMessage);
+        BroadcastMetaChatListEvent::dispatch($metaChatMessage, $metaChatSession->fresh());
+
         return [
             'ok'   => true,
-            'data' => $metaChatMessage->fresh('attachment'),
+            'data' => $metaChatMessage,
             'code' => 201,
         ];
     }
@@ -255,7 +271,7 @@ class SendMetaChatMessage
         $response = Http::withToken($accessToken)
             ->attach('file', file_get_contents($file->getPathName()), $file->getClientOriginalName(), ['Content-Type' => $file->getMimeType()])
             ->post(
-                sprintf('%s/%s/%s/media', config('meta.base_endpoint'), config('meta.whatsapp.api_version'), $phoneNumberId),
+                $this->whatsappEndpoint($phoneNumberId.'/media'),
                 ['messaging_product' => 'whatsapp']
             );
 
