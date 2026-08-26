@@ -108,6 +108,7 @@ class IndexAnnouncements extends OrgAction
                 ->withExportLinks($exportLinks)
                 ->column(key: 'status', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'name', label: __('Name'), sortable: true)
+                ->column(key: 'position', label: __('Position'))
                 ->column(key: 'publisher_name', label: __('Publisher name'), sortable: true)
                 ->column(key: 'live_at', label: __('From'), sortable: true, type: 'date_hm')
                 ->column(key: 'closed_at', label: __('Until'), sortable: true, type: 'date_hm')
