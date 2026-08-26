@@ -408,10 +408,13 @@
                         @endif
                     </td>
                     @php($sameGrossNet = $transaction->gross_amount == $transaction->net_amount)
+                    @php($taxOnlyRefundLine = $transaction->is_refund && $transaction->net_amount == 0 && $transaction->tax_amount != 0)
 
                     @if($pro_mode)
                         <td style="text-align:right">
-                            @if($transaction->quantity==0 || $transaction->quantity==null)
+                            @if($taxOnlyRefundLine)
+                                {{ __('VAT refund') }}
+                            @elseif($transaction->quantity==0 || $transaction->quantity==null)
                                 {{ $invoice->currency->symbol . optional($transaction->historicAsset)->price }}
                             @elseif($transaction->historicAsset)
                                 @if($sameGrossNet)
@@ -425,7 +428,9 @@
                         <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity) }}</td>
                     @else
                         <td style="text-align:left">
-                            @if($transaction->quantity==0 || $transaction->quantity==null)
+                            @if($taxOnlyRefundLine)
+                                {{ __('VAT refund') }}
+                            @elseif($transaction->quantity==0 || $transaction->quantity==null)
                                 {{ $invoice->currency->symbol . optional($transaction->historicAsset)->price }}
                             @elseif($transaction->historicAsset)
                                 @if($sameGrossNet)
@@ -438,7 +443,9 @@
                         </td>
                         <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity) }}</td>
                     @endif
-                    @if ($sameGrossNet)
+                    @if($taxOnlyRefundLine)
+                        <td style="text-align:right">{{ $invoice->currency->symbol . number_format(-$transaction->tax_amount, 2) }}</td>
+                    @elseif ($sameGrossNet)
                         <td style="text-align:right">{{ $invoice->currency->symbol . $transaction->net_amount }}</td>
                     @else
                         <td style="text-align:right">
