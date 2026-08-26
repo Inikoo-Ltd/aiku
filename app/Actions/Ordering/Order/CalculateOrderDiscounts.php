@@ -248,6 +248,10 @@ class CalculateOrderDiscounts implements ShouldBeUnique
      * voucher. It only ever improves the price - a voucher below the submitted discount still
      * reverts - and GB586186 stays guarded because drifted tiers are never the attached voucher.
      * GB586798 had STOCKUP15 added by CS after submission and every 10% line stayed at 10%.
+     *
+     * Discretionary discounts are exempt entirely, in both directions: they are CS setting a
+     * price per line on purpose, which is why the main pass forces them over whatever offer
+     * won. Reverting them here undid that, so GB587181's hand-added 15% snapped back to 10%.
      */
     public function regenerateSubmittedTransactionDiscounts(Order $order): void
     {
@@ -261,6 +265,10 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 ->whereRaw('submitted_discount_factor <> current_discount_factor')
                 ->get() as $transactionWithSubmittedDiscount
         ) {
+            if (array_key_exists((string)$transactionWithSubmittedDiscount->id, $order->discretionary_offers_data ?? [])) {
+                continue;
+            }
+
             if (
                 $order->offer_voucher_id
                 && Arr::get($transactionWithSubmittedDiscount->offers_data, 'o.o') == $order->offer_voucher_id
