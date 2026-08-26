@@ -15,6 +15,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -22,7 +23,7 @@ class UpdateInventoryInEbayPortfolio
 {
     use AsAction;
 
-    public string $commandSignature = 'ebay:update-inventory';
+    public string $commandSignature = 'ebay:update-inventory {customerSalesChannel?}';
 
 
     public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
@@ -128,8 +129,14 @@ class UpdateInventoryInEbayPortfolio
     }
 
 
-    public function asCommand(): void
+    public function asCommand(Command $command): void
     {
-        $this->handle();
+        $customerSalesChannel = null;
+
+        if ($command->argument('customerSalesChannel')) {
+            $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
+        }
+
+        $this->handle($customerSalesChannel);
     }
 }

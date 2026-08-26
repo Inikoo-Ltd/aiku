@@ -178,19 +178,24 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                                 "label" => __("Manage Stock"),
                                 'icon' => 'fa-light fa-box',
                                 'fields' => [
-                                    'max_quantity_advertise' => [
-                                        'type' => 'input',
-                                        'label' => __('Max Quantity To Advertise'),
-                                        'value' => $customerSalesChannel->max_quantity_advertise
-                                    ],
                                     'stock_update' => [
                                         'type' => 'toggle',
                                         'label' => __('Stock Update'),
+                                        'information' => __('When enabled, we automatically sync your stock levels to this channel. Max Quantity To Advertise caps the stock figure shown on the channel, and Stock Threshold hides a product once its stock falls to that level.'),
                                         'value' => (bool)$customerSalesChannel->stock_update
+                                    ],
+                                    'max_quantity_advertise' => [
+                                        'type' => 'input',
+                                        'label' => __('Max Quantity To Advertise'),
+                                        'information' => __('The maximum stock quantity advertised on the channel, even if more is available.'),
+                                        'hidden' => !$customerSalesChannel->stock_update,
+                                        'value' => $customerSalesChannel->max_quantity_advertise
                                     ],
                                     'stock_threshold' => [
                                         'type' => 'input',
                                         'label' => __('Stock Threshold'),
+                                        'information' => __('When stock falls to this level, the product is advertised as out of stock on the channel.'),
+                                        'hidden' => !$customerSalesChannel->stock_update,
                                         'value' => $customerSalesChannel->stock_threshold
                                     ],
                                 ]

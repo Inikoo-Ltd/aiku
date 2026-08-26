@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import CountUp from "vue-countup-v3"
-import {faArrowRight, faCube, faLink} from "@fal"
+import {faArrowRight, faCube, faInfoCircle, faLink} from "@fal"
 import {faArrowRight as farArrowRight} from "@far"
 import {library} from "@fortawesome/fontawesome-svg-core"
 import {Link} from "@inertiajs/vue3"
@@ -23,7 +23,7 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { sub } from "date-fns"
 
-library.add(faArrowRight, faCube, faLink, farArrowRight)
+library.add(faArrowRight, faCube, faInfoCircle, faLink, farArrowRight)
 
 
 const props = defineProps<{
@@ -46,6 +46,13 @@ const props = defineProps<{
         customer_country: string
     }
     customer_sales_channel: CustomerSalesChannel
+    stock_update_notice: {
+        enabled: boolean
+        edit_route: {
+            name: string
+            parameters: {}
+        }
+    }
     error_captcha: any
     timeline: {
         current_state: string
@@ -246,6 +253,39 @@ const layout = inject('layout', layoutStructure)
             </template>
 
             <div v-else>
+                <!-- Notice: Stock update status -->
+                <div v-if="stock_update_notice" class="flex justify-between mt-5">
+                    <div class="w-full border-2 rounded-lg p-4"
+                        :class="stock_update_notice.enabled ? 'border-blue-500 bg-blue-50' : 'border-yellow-500 bg-yellow-50'"
+                    >
+                        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                            <div class="flex items-start">
+                                <FontAwesomeIcon icon="fal fa-info-circle" class="h-5 w-5 mt-0.5 flex-shrink-0"
+                                    :class="stock_update_notice.enabled ? 'text-blue-500' : 'text-yellow-500'"
+                                    fixed-width aria-hidden="true" />
+                                <p class="ml-3 text-sm" :class="stock_update_notice.enabled ? 'text-blue-700' : 'text-yellow-700'">
+                                    <template v-if="stock_update_notice.enabled">
+                                        <strong>{{ trans('Stock Update is enabled:') }}</strong>
+                                        {{ trans('We automatically sync your stock levels to this channel. You can set the maximum quantity advertised and the stock threshold at which products show as out of stock, or disable stock updates entirely.') }}
+                                    </template>
+                                    <template v-else>
+                                        <strong>{{ trans('Stock Update is disabled:') }}</strong>
+                                        {{ trans('Your stock levels are not synced to this channel, so quantities shown on the channel may not match your available stock. You can enable automatic stock updates in the channel settings.') }}
+                                    </template>
+                                </p>
+                            </div>
+                            <div class="flex-shrink-0 sm:ml-3">
+                                <ButtonWithLink
+                                    :url="route(stock_update_notice.edit_route.name, stock_update_notice.edit_route.parameters)"
+                                    type="tertiary"
+                                    :icon="['fal', 'fa-pencil']"
+                                    :label="trans('Manage stock settings')"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Warning: Ebay seller registered under Countries that got affected by eBay OWBP -->
                 <div v-if="ebay_warehouse_policy_msg?.show_msg" class="flex justify-between mt-5">
                     <div class="w-full border-2 border-red-500 rounded-lg p-4 bg-red-50">
