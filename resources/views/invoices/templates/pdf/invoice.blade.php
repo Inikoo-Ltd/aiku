@@ -508,7 +508,24 @@
 
     </tbody>
     <tbody class="totals">
-        @if ($order && ($order?->goods_amount != $order->gross_amount))
+        @php($isRefund = $invoice->type == \App\Enums\Accounting\Invoice\InvoiceTypeEnum::REFUND)
+        @if ($isRefund)
+
+            <tr class="total_net">
+                <td style="border:none" colspan="4"></td>
+                <td>{{ __('Total Net') }}</td>
+                <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
+            </tr>
+
+            @include('invoices.templates.pdf.tax-rows', ['document' => $invoice])
+
+            <tr class="total">
+                <td style="border:none" colspan="4"></td>
+                <td><b>{{ __('Total') }}</b></td>
+                <td>{{ $invoice->currency->symbol . $invoice->total_amount }}</td>
+            </tr>
+
+        @elseif ($order && ($order?->goods_amount != $order->gross_amount))
 
             <tr>
                 <td style="border:none" colspan="4"></td>
