@@ -242,6 +242,12 @@ class CalculateOrderDiscounts implements ShouldBeUnique
      * the lines that had lost discount let an improved tier through, so an order already paid in
      * full was invoiced for less and the customer left in credit for the difference - GB586186
      * was billed 12% off two lines it had bought at 5%.
+     *
+     * The one exception is the order's own voucher: attaching a voucher is a deliberate act, not
+     * offer drift, so a line the voucher just discounted deeper than its submitted price keeps the
+     * voucher. It only ever improves the price - a voucher below the submitted discount still
+     * reverts - and GB586186 stays guarded because drifted tiers are never the attached voucher.
+     * GB586798 had STOCKUP15 added by CS after submission and every 10% line stayed at 10%.
      */
     public function regenerateSubmittedTransactionDiscounts(Order $order): void
     {
@@ -255,6 +261,14 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 ->whereRaw('submitted_discount_factor <> current_discount_factor')
                 ->get() as $transactionWithSubmittedDiscount
         ) {
+            if (
+                $order->offer_voucher_id
+                && Arr::get($transactionWithSubmittedDiscount->offers_data, 'o.o') == $order->offer_voucher_id
+                && $transactionWithSubmittedDiscount->current_discount_factor < $transactionWithSubmittedDiscount->submitted_discount_factor
+            ) {
+                continue;
+            }
+
             DB::table('transaction_has_offer_allowances')->where('is_gift', false)->where('transaction_id', $transactionWithSubmittedDiscount->id)->delete();
 
             $percentageOff    = round(1 - $transactionWithSubmittedDiscount->submitted_discount_factor, 4);
