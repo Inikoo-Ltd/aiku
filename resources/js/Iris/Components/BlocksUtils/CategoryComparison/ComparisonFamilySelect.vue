@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue"
-import { onClickOutside } from "@vueuse/core"
+import { defaultWindow, onClickOutside, useEventListener } from "@vueuse/core"
 import { ctrans } from "@/Composables/useTrans"
 import Image from "@/Common/Components/Image.vue"
 import { filterComparisonFamilies } from "@/Iris/Components/BlocksUtils/CategoryComparison/filterComparisonFamilies"
@@ -18,13 +18,37 @@ const emits = defineEmits<{
 }>()
 
 const root = ref<HTMLElement | null>(null)
+const panel = ref<HTMLElement | null>(null)
 const searchInput = ref<HTMLInputElement | null>(null)
 const isOpen = ref(false)
 const search = ref("")
+const panelPosition = ref({ top: 0, left: 0 })
 
 onClickOutside(root, () => {
     isOpen.value = false
-})
+}, { ignore: [panel] })
+
+const PANEL_MARGIN = 8
+
+const panelWidthInPixels = computed(() => (props.screenType === "mobile" ? 256 : 320))
+
+const updatePanelPosition = () => {
+    const anchor = root.value?.getBoundingClientRect()
+
+    if (!anchor) {
+        return
+    }
+
+    const maxLeft = window.innerWidth - panelWidthInPixels.value - PANEL_MARGIN
+
+    panelPosition.value = {
+        top: anchor.bottom + 4,
+        left: Math.max(PANEL_MARGIN, Math.min(anchor.left, maxLeft)),
+    }
+}
+
+useEventListener(defaultWindow, "scroll", () => isOpen.value && updatePanelPosition(), true)
+useEventListener(defaultWindow, "resize", () => isOpen.value && updatePanelPosition())
 
 watch(isOpen, async open => {
     if (!open) {
@@ -33,6 +57,7 @@ watch(isOpen, async open => {
     }
 
     await nextTick()
+    updatePanelPosition()
     searchInput.value?.focus()
 })
 
@@ -67,58 +92,62 @@ const panelWidth = computed(() => (props.screenType === "mobile" ? "w-64" : "w-8
             <span class="text-[10px] leading-none" aria-hidden="true">{{ isOpen ? "▲" : "▼" }}</span>
         </button>
 
-        <div
-            v-if="isOpen"
-            class="absolute right-0 z-20 mt-1 rounded-md border border-gray-200 bg-white text-left shadow-lg"
-            :class="panelWidth"
-        >
-            <div class="border-b border-gray-100 p-2">
-                <input
-                    ref="searchInput"
-                    v-model="search"
-                    type="search"
-                    class="h-8 w-full rounded border border-gray-300 px-2 text-sm text-gray-700 placeholder-gray-400 focus:border-gray-400 focus:outline-none"
-                    :placeholder="ctrans('Search by code or name')"
-                />
-            </div>
-
-            <div role="listbox" class="max-h-72 overflow-y-auto py-1">
-                <label
-                    v-for="option in visibleOptions"
-                    :key="option.slug"
-                    class="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50"
-                    :class="!isSelected(option.slug as string) && isFull ? 'cursor-not-allowed opacity-40' : ''"
-                >
+        <Teleport to="body">
+            <div
+                v-if="isOpen"
+                ref="panel"
+                class="fixed z-50 rounded-md border border-gray-200 bg-white text-left shadow-lg"
+                :class="panelWidth"
+                :style="{ top: `${panelPosition.top}px`, left: `${panelPosition.left}px` }"
+            >
+                <div class="border-b border-gray-100 p-2">
                     <input
-                        type="checkbox"
-                        class="h-4 w-4 shrink-0 rounded border-gray-300"
-                        :checked="isSelected(option.slug as string)"
-                        :disabled="!isSelected(option.slug as string) && isFull"
-                        @change="emits('toggle', option.slug as string)"
+                        ref="searchInput"
+                        v-model="search"
+                        type="search"
+                        class="h-8 w-full rounded border border-gray-300 px-2 text-sm text-gray-700 placeholder-gray-400 focus:border-gray-400 focus:outline-none"
+                        :placeholder="ctrans('Search by code or name')"
                     />
-
-                    <div class="h-9 w-9 shrink-0 overflow-hidden rounded border border-gray-100 bg-white">
-                        <Image
-                            :src="option.image"
-                            :alt="option.name"
-                            class="h-full w-full object-contain"
-                        />
-                    </div>
-
-                    <div class="min-w-0 flex-1">
-                        <div class="truncate text-gray-700">{{ option.name }}</div>
-                        <div v-if="option.code" class="truncate text-xs text-gray-400">{{ option.code }}</div>
-                    </div>
-                </label>
-
-                <div v-if="!options.length" class="px-3 py-2 text-sm text-gray-400">
-                    {{ ctrans("No other range to compare") }}
                 </div>
 
-                <div v-else-if="!visibleOptions.length" class="px-3 py-2 text-sm text-gray-400">
-                    {{ ctrans("No range matches your search") }}
+                <div role="listbox" class="max-h-72 overflow-y-auto py-1">
+                    <label
+                        v-for="option in visibleOptions"
+                        :key="option.slug"
+                        class="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50"
+                        :class="!isSelected(option.slug as string) && isFull ? 'cursor-not-allowed opacity-40' : ''"
+                    >
+                        <input
+                            type="checkbox"
+                            class="h-4 w-4 shrink-0 rounded border-gray-300"
+                            :checked="isSelected(option.slug as string)"
+                            :disabled="!isSelected(option.slug as string) && isFull"
+                            @change="emits('toggle', option.slug as string)"
+                        />
+
+                        <div class="h-9 w-9 shrink-0 overflow-hidden rounded border border-gray-100 bg-white">
+                            <Image
+                                :src="option.image"
+                                :alt="option.name"
+                                class="h-full w-full object-contain"
+                            />
+                        </div>
+
+                        <div class="min-w-0 flex-1">
+                            <div class="truncate text-gray-700">{{ option.name }}</div>
+                            <div v-if="option.code" class="truncate text-xs text-gray-400">{{ option.code }}</div>
+                        </div>
+                    </label>
+
+                    <div v-if="!options.length" class="px-3 py-2 text-sm text-gray-400">
+                        {{ ctrans("No other range to compare") }}
+                    </div>
+
+                    <div v-else-if="!visibleOptions.length" class="px-3 py-2 text-sm text-gray-400">
+                        {{ ctrans("No range matches your search") }}
+                    </div>
                 </div>
             </div>
-        </div>
+        </Teleport>
     </div>
 </template>

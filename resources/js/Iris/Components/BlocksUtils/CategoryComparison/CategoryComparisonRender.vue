@@ -179,16 +179,6 @@ const colorTokens = computed(() => ({
         </div>
 
         <div v-else-if="hasComparison">
-            <div v-if="canPickFamilies" class="mb-4 flex justify-end">
-                <ComparisonFamilySelect
-                    :options="familyOptions ?? []"
-                    :selectedSlugs="selectedSlugs ?? []"
-                    :max="maxComparedFamilies ?? 0"
-                    :screenType="screenType"
-                    @toggle="slug => emits('toggleFamily', slug)"
-                />
-            </div>
-
             <div class="w-full overflow-x-auto">
                 <div class="grid w-full items-stretch" :style="{ gridTemplateColumns, ...colorTokens }">
                     <div
@@ -201,7 +191,20 @@ const colorTokens = computed(() => ({
                         }"
                     />
 
-                    <div :style="{ gridColumn: 1, gridRow: 1 }" />
+                    <div
+                        :style="{ gridColumn: 1, gridRow: 1 }"
+                        class="flex items-bottom"
+                        :class="responsive.imageFrame"
+                    >
+                        <ComparisonFamilySelect
+                            v-if="canPickFamilies"
+                            :options="familyOptions ?? []"
+                            :selectedSlugs="selectedSlugs ?? []"
+                            :max="maxComparedFamilies ?? 0"
+                            :screenType="screenType"
+                            @toggle="slug => emits('toggleFamily', slug)"
+                        />
+                    </div>
 
                     <div
                         :style="{ gridColumn: 1, gridRow: 2 }"
