@@ -3636,6 +3636,22 @@ describe('email retention', function () {
         );
     });
 
+    test('archiver exits cleanly when nothing is older than the retention window', function () {
+        config()->set(
+            'database.connections.archive',
+            array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'archive'])
+        );
+        DB::purge('archive');
+        DB::statement('create schema if not exists archive');
+        DB::table('dispatched_emails')->where('created_at', '<', now()->subDays(config('archive.email_retention_days')))->delete();
+
+        $this->artisan('comms:archive_dispatched_emails')
+            ->expectsOutputToContain('Nothing older than')
+            ->assertSuccessful();
+
+        expect(DB::selectOne('select count(*) as n from pg_locks where locktype = ?', ['advisory'])->n)->toBe(0);
+    });
+
     test('archiver reconciles archive tables when the live schema has moved on', function () {
         config()->set(
             'database.connections.archive',
