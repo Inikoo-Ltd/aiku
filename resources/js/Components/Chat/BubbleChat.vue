@@ -10,6 +10,7 @@ import Image from "primevue/image"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
+import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import AudioPlayer from "@/Components/Chat/AudioPlayer.vue"
 
 type SenderType = "guest" | "user" | "agent" | "system"
@@ -159,7 +160,6 @@ const canShowTranslation = computed(() => {
 const bubbleClass = computed(() => ({
     "bubble-primary": isFromViewer.value,
     "bubble-secondary": !isFromViewer.value,
-    "bubble-system": props.message.sender_type === "system",
 }))
 
 const time = computed(() =>
@@ -221,6 +221,10 @@ const senderLabel = computed(() => {
     }
     return props.contactName ?? "Customer"
 })
+
+// A status notice is a timeline marker, not something anyone replies to or reacts to,
+// so it renders as the same chip the event stream uses.
+const isSystemNotice = computed(() => props.message.sender_type === "system")
 
 const isFile = computed(() => props.message.message_type === "file")
 
@@ -539,7 +543,11 @@ watch(selectedLanguage, async (val) => {
 </script>
 
 <template>
-    <div class="flex flex-col w-full group/msg" :class="isFromViewer ? 'items-end' : 'items-start'">
+    <div v-if="isSystemNotice" class="w-full flex justify-center">
+        <ChatTimelineEvent :event="{ description: displayText, created_at: message.created_at }" />
+    </div>
+
+    <div v-else class="flex flex-col w-full group/msg" :class="isFromViewer ? 'items-end' : 'items-start'">
         <div class="mb-0.5 text-[11px] text-gray-500 px-1 max-w-[78%]"
             v-if="props.message.sender_type === 'agent' && props.viewerType === 'user'">
             {{ agentDisplayName }} (Agent)
@@ -787,7 +795,4 @@ watch(selectedLanguage, async (val) => {
     border-bottom-left-radius: 4px;
 }
 
-.bubble-system {
-    @apply bg-amber-100 text-amber-800 italic text-xs;
-}
 </style>

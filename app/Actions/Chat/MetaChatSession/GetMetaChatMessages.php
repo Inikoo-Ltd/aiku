@@ -7,6 +7,8 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Enums\CRM\Livechat\ChatEventTypeEnum;
+use App\Http\Resources\CRM\Livechat\ChatTimelineEventResource;
 use App\Http\Resources\CRM\Livechat\MetaChatMessageResource;
 use App\Models\Chat\MetaChatSession;
 use Illuminate\Http\JsonResponse;
@@ -61,6 +63,7 @@ class GetMetaChatMessages
         return [
             'metaChatSession' => $metaChatSession,
             'messages'        => $messages,
+            'events'          => $this->timelineEvents($metaChatSession, $messages, $validated),
             'pagination'      => [
                 'has_more'    => $hasMore,
                 'next_cursor' => $hasMore ? $nextCursor : null,
@@ -68,6 +71,27 @@ class GetMetaChatMessages
                 'limit'       => $validated['limit'] ?? 20,
             ]
         ];
+    }
+
+    /**
+     * Windowed to the messages on this page, so older events arrive as the agent scrolls
+     * back instead of needing a cursor of their own.
+     */
+    protected function timelineEvents(MetaChatSession $metaChatSession, Collection $messages, array $filters): Collection
+    {
+        if ($messages->isEmpty()) {
+            return collect();
+        }
+
+        $query = $metaChatSession->events()
+            ->whereIn('event_type', ChatEventTypeEnum::timelineTypes())
+            ->where('created_at', '>=', $messages->first()->created_at);
+
+        if (!empty($filters['cursor'])) {
+            $query->where('created_at', '<', $filters['cursor']);
+        }
+
+        return $query->orderBy('created_at')->get();
     }
 
     public function jsonResponse(array $result): JsonResponse
@@ -80,6 +104,7 @@ class GetMetaChatMessages
                 'session_status' => $result['metaChatSession']->status->value,
                 'can_send_non_template_message' => $result['metaChatSession']->can_send_non_template_message,
                 'messages'       => MetaChatMessageResource::collection($result['messages']),
+                'events'         => ChatTimelineEventResource::collection($result['events']),
                 'pagination'     => $result['pagination'],
             ]
         ]);
