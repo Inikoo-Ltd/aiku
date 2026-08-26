@@ -2,6 +2,7 @@
 
 namespace App\Models\Web;
 
+use App\Enums\Announcement\AnnouncementPositionEnum;
 use App\Enums\Announcement\AnnouncementStateEnum;
 use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Models\Helpers\Deployment;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Spatie\MediaLibrary\HasMedia;
 
@@ -97,7 +99,7 @@ class Announcement extends Model implements HasMedia
 
     public function getPosition(): string
     {
-        return $this->settings['position'] ?? 'top-bar';
+        return $this->settings['position'] ?? AnnouncementPositionEnum::TOP_BAR->value;
     }
 
     /**
@@ -138,17 +140,12 @@ class Announcement extends Model implements HasMedia
         $showPages = [];
         $hidePages = [];
 
-        if (blank($data)) {
-            return [
-                'show_pages' => [],
-                'hide_pages' => [],
-            ];
-        }
+        $targetType = Arr::get($data, 'target_pages.type');
 
-        if ($data['target_pages']['type'] === 'all') {
+        if ($targetType === 'all') {
             $showPages = ['all'];
-        } elseif ($data['target_pages']['type'] === 'specific') {
-            foreach ($data['target_pages']['specific'] as $page) {
+        } elseif ($targetType === 'specific') {
+            foreach (Arr::get($data, 'target_pages.specific', []) as $page) {
                 if ($page['will'] === 'show') {
                     $showPages[] = $page['url'];
                 } elseif ($page['will'] === 'hide') {

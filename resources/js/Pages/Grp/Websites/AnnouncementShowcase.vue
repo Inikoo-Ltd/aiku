@@ -101,6 +101,7 @@ const onCopyUlid = async (text: string) => {
                             <dt class="text-sm font-medium text-gray-600">{{ ctrans('Start') }}</dt>
                             <dd class="text-sm flex items-center gap-x-2">
                                 <Tag
+                                    v-if="data.live_at"
                                     :label="data.schedule_at ? ctrans('Scheduled publish') : ctrans('Instant publish')"
                                     :theme="data.schedule_at ? 1 : 3"
                                     noHoverColor

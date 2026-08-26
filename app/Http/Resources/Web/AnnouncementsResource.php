@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Enums\Announcement\AnnouncementPositionEnum;
 use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Models\Web\Announcement;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -31,7 +32,8 @@ class AnnouncementsResource extends JsonResource
             'show_pages'     => $extractedSettings['show_pages'],
             'hide_pages'     => $extractedSettings['hide_pages'],
             'publisher_name' => $announcement->liveSnapshot?->publisher?->contact_name,
-            'position'       => $announcement->getPosition(),
+            'position'       => AnnouncementPositionEnum::labels()[$announcement->getPosition()]
+                                ?? $announcement->getPosition(),
             'paused_note'    => $this->getPausedNote($announcement),
             'is_expired'     => $announcement->status === AnnouncementStatusEnum::ACTIVE
                                 && $announcement->schedule_finish_at?->isPast()

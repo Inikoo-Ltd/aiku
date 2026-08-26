@@ -24,12 +24,6 @@ const props = defineProps<{
     tab?: string
 }>()
 
-const positionLabel = (position: string) => ({
-    'top-bar': ctrans('Top bar'),
-    'bottom-menu': ctrans('Below the Menu'),
-    'top-footer': ctrans('Top footer'),
-}[position] ?? position)
-
 function announcementRoute(announcement) {
     return route(
         'grp.org.shops.show.web.announcements.show',
@@ -54,10 +48,6 @@ function announcementRoute(announcement) {
             <Link :href="announcementRoute(announcement)" :id="announcement['ulid']" class="primaryLink py-1 px-2 whitespace-nowrap">
                 {{announcement['name']}}
             </Link>
-        </template>
-
-        <template #cell(position)="{ item: announcement }">
-            {{ positionLabel(announcement.position) }}
         </template>
 
         <template #cell(closed_at)="{ item: announcement }">
