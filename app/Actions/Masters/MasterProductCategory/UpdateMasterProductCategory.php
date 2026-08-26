@@ -354,10 +354,12 @@ class UpdateMasterProductCategory extends OrgAction
             'storage_guidelines'            => ['sometimes', 'array'],
             'storage_guidelines.*.text'     => ['sometimes', 'nullable', 'string', 'max:250'],
             // category_comparison
-            'category_comparison'           => ['sometimes', 'array'],
-            'category_comparison.*.show'    => ['sometimes', 'boolean', 'nullable'],
-            'category_comparison.*.label'   => ['sometimes', 'string', 'nullable'],
-            'category_comparison.*.key'     => ['sometimes', 'string'],
+            'category_comparison'                   => ['sometimes', 'array'],
+            'category_comparison.template'          => ['sometimes', 'string'],
+            'category_comparison.items'             => ['sometimes', 'array'],
+            'category_comparison.items.*.show'      => ['sometimes', 'boolean', 'nullable'],
+            'category_comparison.items.*.label'     => ['sometimes', 'string', 'nullable'],
+            'category_comparison.items.*.value'     => ['sometimes', 'string'],
         ];
 
         if (!$this->strict) {

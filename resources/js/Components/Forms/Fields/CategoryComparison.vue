@@ -51,6 +51,8 @@ const editableTemplate = ref<ComparisonTemplate>(
     cloneDeep(savedValue?.items ?? COMPARISON_TEMPLATES[selectedTemplate.value])
 )
 
+const keyInputRevision = ref(0)
+
 const templateOptions = computed(() =>
     Object.keys(COMPARISON_TEMPLATES).map((key) => ({
         value: key,
@@ -59,6 +61,21 @@ const templateOptions = computed(() =>
             .replace(/\b\w/g, char => char.toUpperCase()),
     }))
 )
+
+const renameKey = (currentKey: string, rawKey: string) => {
+    const newKey = rawKey.trim().replaceAll(/\s+/g, "_")
+
+    if (!newKey || newKey === currentKey || newKey in editableTemplate.value) {
+        keyInputRevision.value++
+        return
+    }
+
+    editableTemplate.value = Object.fromEntries(
+        Object.entries(editableTemplate.value).map(
+            ([key, item]) => key === currentKey ? [newKey, item] : [key, item]
+        )
+    )
+}
 
 watch(selectedTemplate, (templateName) => {
     editableTemplate.value = cloneDeep(
@@ -105,6 +122,10 @@ watch([selectedTemplate, editableTemplate], () => {
                         </th>
 
                         <th class="px-2 py-1.5 text-left font-medium text-gray-500">
+                            Key
+                        </th>
+
+                        <th class="px-2 py-1.5 text-left font-medium text-gray-500">
                             Label
                         </th>
 
@@ -127,6 +148,17 @@ watch([selectedTemplate, editableTemplate], () => {
                                 v-model="item.show"
                                 type="checkbox"
                                 class="h-3.5 w-3.5 rounded border-gray-300"
+                            />
+                        </td>
+
+                        <!-- Key -->
+                        <td class="px-2 py-1">
+                            <PureInput
+                                :key="`${key}-${keyInputRevision}`"
+                                :model-value="key"
+                                class="w-full"
+                                placeholder="Key"
+                                @blur="(newKey: string) => renameKey(key, newKey)"
                             />
                         </td>
 

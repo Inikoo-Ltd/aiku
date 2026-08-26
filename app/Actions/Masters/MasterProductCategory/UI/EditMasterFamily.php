@@ -267,14 +267,15 @@ class EditMasterFamily extends OrgAction
                                 ],
                             ],
                         ] : [],
-                        $masterProductCategory->masterShop->masterShop->slug == 'aroma' ? [
+                        $masterProductCategory->masterShop->slug == 'aroma' ? [
                             'label'  => __('Category Comparison'),
                             'icon'   => 'fa-light fa-temperature-low',
                             'fields' => [
-                                'category_comparison'  => [
-                                    'type'  => 'faq-shop',
-                                    'label' => __('Category Comparison'),
-                                    'value' => $masterProductCategory->category_comparison,
+                                'category_comparison' => [
+                                    'full'                      => true,
+                                    'type'                      => 'category-comparison',
+                                    'label'                     => __('Category Comparison'),
+                                    'value'                     => $masterProductCategory->category_comparison,
                                 ],
                             ],
                         ] : [],
@@ -287,17 +288,6 @@ class EditMasterFamily extends OrgAction
                                     'label'                      => __('FAQ'),
                                     'value'                      => $masterProductCategory->faq,
                                     'master_product_category_id' => $masterProductCategory->id,
-                                ],
-                            ]
-                        ],
-                        [
-                            'label'  => __('Category Comparison'),
-                            'icon'   => 'fa-light fa-question-circle',
-                            'fields' => [
-                                'category_comparison' => [
-                                    'type'                       => 'category-comparison',
-                                    'label'                      => __('Category Comparison'),
-                                    'value'                      => null,
                                 ],
                             ]
                         ],
