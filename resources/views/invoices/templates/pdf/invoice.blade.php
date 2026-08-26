@@ -244,13 +244,14 @@
             </div>
         </td>
         <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;text-align: right">
-            @if($deliveryNote && $deliveryNote->getNumberParcels())
+            @php($isRefund = $invoice->type == \App\Enums\Accounting\Invoice\InvoiceTypeEnum::REFUND)
+            @if(!$isRefund && $deliveryNote && $deliveryNote->getNumberParcels())
                 <div style="text-align: right">{{__('Boxes')}}: <b>{{ $deliveryNote->getNumberParcels() }}</b></div>
             @endif
-            @if($deliveryNote)
+            @if(!$isRefund && $deliveryNote)
                 <div style="text-align: right">{{__('Weight')}}: <b>{{ $deliveryNote->getBestWeight() }}</b></div>
             @endif
-            @if($show_dispatch_totals && $dispatch_total_skos !== null)
+            @if(!$isRefund && $show_dispatch_totals && $dispatch_total_skos !== null)
                 <div style="text-align: right">{{__('Total SKO')}}: <b>{{ number_format($dispatch_total_skos, 0) }}</b></div>
                 <div style="text-align: right">{{__('Total Units')}}: <b>{{ number_format($dispatch_total_units, 0) }}</b></div>
             @endif
@@ -425,7 +426,7 @@
                                 @endif
                             @endif
                         </td>
-                        <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity) }}</td>
+                        <td style="text-align:right">{{ $taxOnlyRefundLine || ($transaction->is_refund && fmod((float) $transaction->quantity, 1) != 0.0) ? '' : trimDecimalZeros($transaction->quantity) }}</td>
                     @else
                         <td style="text-align:left">
                             @if($taxOnlyRefundLine)
@@ -441,7 +442,7 @@
                                 @endif
                             @endif
                         </td>
-                        <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity) }}</td>
+                        <td style="text-align:right">{{ $taxOnlyRefundLine || ($transaction->is_refund && fmod((float) $transaction->quantity, 1) != 0.0) ? '' : trimDecimalZeros($transaction->quantity) }}</td>
                     @endif
                     @if($taxOnlyRefundLine)
                         <td style="text-align:right">{{ $invoice->currency->symbol . number_format(-$transaction->tax_amount, 2) }}</td>
@@ -508,7 +509,6 @@
 
     </tbody>
     <tbody class="totals">
-        @php($isRefund = $invoice->type == \App\Enums\Accounting\Invoice\InvoiceTypeEnum::REFUND)
         @if ($isRefund)
 
             <tr class="total_net">
