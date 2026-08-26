@@ -36,6 +36,10 @@ class GetMetaChatSessions
                 'in:' . implode(',', array_column(ChatSessionStatusEnum::cases(), 'value'))
             ],
             'assigned_to_me' => ['sometimes', 'integer'],
+            'is_spam'        => ['sometimes', 'boolean'],
+            'highlighted'    => ['sometimes', 'boolean'],
+            'trashed'        => ['sometimes', 'boolean'],
+            'include_spam'   => ['sometimes', 'boolean'],
             'view_team'       => ['sometimes', 'boolean'],
             'page'            => ['sometimes', 'integer', 'min:1'],
             'channel'         => ['sometimes', 'string', 'max:50'],
@@ -112,7 +116,32 @@ class GetMetaChatSessions
             $this->applyStatusFilter($query, $requestedStatuses);
         }
 
-        if (!empty($filters['assigned_to_me'])) {
+        $isTrashView = !empty($filters['trashed']);
+        $isSpamView  = !empty($filters['is_spam']) && !$isTrashView;
+
+        if ($isTrashView) {
+            $query->onlyTrashed();
+        }
+
+        if ($isTrashView || $isSpamView) {
+            $viewAgent = !empty($filters['assigned_to_me'])
+                ? ChatAgent::where('user_id', (int) $filters['assigned_to_me'])->first()
+                : null;
+
+            $query->whereIn('shop_id', $viewAgent ? $viewAgent->shops()->pluck('shops.id')->all() : []);
+        }
+
+        if (!$isTrashView && empty($filters['include_spam'])) {
+            $query->where('is_spam', $isSpamView);
+        }
+
+        // Additive: keeps the normal status and assignment filters, just narrows to
+        // the highlighted threads.
+        if (!empty($filters['highlighted'])) {
+            $query->where('is_highlighted', true);
+        }
+
+        if (!$isSpamView && !$isTrashView && !empty($filters['assigned_to_me'])) {
             $userId       = (int) $filters['assigned_to_me'];
             $currentAgent = ChatAgent::where('user_id', $userId)->first();
 

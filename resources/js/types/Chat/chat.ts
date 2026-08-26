@@ -28,9 +28,12 @@ export interface ChatInboxOrganisation {
 // --------------------------
 // Session data from API
 // --------------------------
+export type ChatChannel = "website" | "whatsapp"
+
 export interface SessionAPI {
 	id: string
 	ulid: string
+	channel?: ChatChannel
 	status: "waiting" | "active" | "closed"
 	guest_identifier: string | null
 	contact_name: string | null
@@ -105,6 +108,7 @@ export interface Contact {
 	id: string
 	name: string
 	ulid: string
+	channel?: ChatChannel
 	avatar: string
 	lastMessage: string
 	priority: string

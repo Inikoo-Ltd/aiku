@@ -153,6 +153,9 @@ class MetaChatSessionListResource extends JsonResource
                 'name'    => $activeAssignment->chatAgent?->user?->contact_name,
             ] : null,
 
+            'is_spam'        => (bool) $this->is_spam,
+            'is_highlighted' => (bool) $this->is_highlighted,
+
             'unread_count' => (int) ($this->unread_count ?? 0),
 
             'can_send_non_template_message' => $this->resource->can_send_non_template_message,

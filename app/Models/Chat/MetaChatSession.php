@@ -31,6 +31,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property ChatPriorityEnum $priority
  * @property int|null $rating
  * @property ChatSessionClosedByTypeEnum|null $closed_by
+ * @property bool $is_spam
+ * @property \Illuminate\Support\Carbon|null $spam_at
+ * @property int|null $spammed_by_agent_id
+ * @property bool $is_highlighted
+ * @property \Illuminate\Support\Carbon|null $highlighted_at
+ * @property int|null $highlighted_by_agent_id
  * @property array|null $metadata
  * @property string|null $geo_country_code
  * @property int|null $website_visitor_id
@@ -56,6 +62,10 @@ class MetaChatSession extends Model
         'priority' => ChatPriorityEnum::class,
         'closed_by' => ChatSessionClosedByTypeEnum::class,
         'metadata' => 'array',
+        'is_spam' => 'boolean',
+        'spam_at' => 'datetime',
+        'is_highlighted' => 'boolean',
+        'highlighted_at' => 'datetime',
         'last_visitor_message_at' => 'datetime',
         'last_agent_message_at' => 'datetime',
         'closed_at' => 'datetime',

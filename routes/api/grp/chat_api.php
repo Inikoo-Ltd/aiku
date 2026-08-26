@@ -28,6 +28,7 @@ use App\Actions\Chat\ChatSession\TranslateSessionMessages;
 use App\Actions\Chat\ChatSession\TranslateSingleMessage;
 use App\Actions\Chat\ChatSession\UpdateChatAgent;
 use App\Actions\Chat\ChatSession\UpdateChatSession;
+use App\Actions\Chat\GetCrossChannelSessions;
 use App\Actions\Chat\MetaChatSession\GetMetaChatMessages;
 use App\Actions\Chat\MetaChatSession\MarkMetaChatMessagesAsRead;
 use App\Actions\Chat\MetaChatSession\GetMetaMessageTemplates;
@@ -42,11 +43,6 @@ Route::get('/ping', function () {
 
 
 Route::post('/sessions', StoreChatSession::class)->name('sessions.store');
-Route::get('/meta/sessions', GetMetaChatSessions::class)->name('meta.sessions.index');
-Route::post('/meta/sessions', StoreMetaChatSession::class)->name('meta.sessions.store');
-Route::get('/meta/sessions/{metaChatSession:ulid}/messages', GetMetaChatMessages::class)->name('meta.sessions.messages');
-Route::post('/meta/sessions/{metaChatSession:ulid}/read', MarkMetaChatMessagesAsRead::class)->name('meta.sessions.read');
-Route::get('/meta/templates', GetMetaMessageTemplates::class)->name('meta.templates.index');
 Route::post('/offline-message', StoreOfflineMessage::class)->name('offline-message.store');
 Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
 Route::put('/sessions/{chatSession:ulid}/update', UpdateChatSession::class)->name('sessions.update');
@@ -66,6 +62,12 @@ Route::post('/sessions/{chatSession:ulid}/translate', TranslateSessionMessages::
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sessions', GetChatSessions::class)->name('sessions.index');
+    Route::get('/all/sessions', GetCrossChannelSessions::class)->name('all.sessions.index');
+    Route::get('/meta/sessions', GetMetaChatSessions::class)->name('meta.sessions.index');
+    Route::post('/meta/sessions', StoreMetaChatSession::class)->name('meta.sessions.store');
+    Route::get('/meta/sessions/{metaChatSession:ulid}/messages', GetMetaChatMessages::class)->name('meta.sessions.messages')->withTrashed();
+    Route::post('/meta/sessions/{metaChatSession:ulid}/read', MarkMetaChatMessagesAsRead::class)->name('meta.sessions.read');
+    Route::get('/meta/templates', GetMetaMessageTemplates::class)->name('meta.templates.index');
     Route::get('/sessions/{chatSession:ulid}/activity', GetChatActivity::class)->name('sessions.activity')->withTrashed();
     Route::get('/sessions/{chatSession:ulid}/customer-profile', GetChatCustomerProfile::class)->name('sessions.customer_profile')->withTrashed();
     Route::get('/sessions/{chatSession:ulid}/customer-timeline', GetChatCustomerTimeline::class)->name('sessions.customer_timeline')->withTrashed();
