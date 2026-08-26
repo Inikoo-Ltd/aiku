@@ -2,7 +2,7 @@
 
 @forelse($taxBreakdown as $tax)
     <tr>
-        <td style="border:none" colspan="4"></td>
+        <td style="border:none" colspan="{{ $fillerColspan ?? 4 }}"></td>
         <td class="totals">
             {{ __('Tax') }}
             <br><small>{{ $tax['name'] }}
@@ -16,7 +16,7 @@
     </tr>
 @empty
     <tr>
-        <td style="border:none" colspan="4"></td>
+        <td style="border:none" colspan="{{ $fillerColspan ?? 4 }}"></td>
         <td class="totals">
             {{ __('Tax') }}
             <br><small>{{$document->taxCategory->name}}

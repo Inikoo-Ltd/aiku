@@ -321,13 +321,19 @@
 </table>
 <br>
 
+@php($hidePriceQtyColumns = $isRefund && $transactions->every(fn ($t) => $t->is_refund && !($t->net_amount == 0 && $t->tax_amount != 0) && refundQuantityLabel($t->quantity, soldPackUnits($t->historicAsset?->units, $t->model?->units)) === null))
+@php($isTaxOnlyRefund = $isRefund && $invoice->is_tax_only)
+@php($totalsFillerColspan = $hidePriceQtyColumns ? 2 : ($isTaxOnlyRefund ? 3 : 4))
 <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
     <thead>
     <tr>
         <td style="width:14%;text-align:left">{{ __('Code') }}</td>
 
         <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
-        @if($pro_mode)
+        @if($hidePriceQtyColumns)
+        @elseif($isTaxOnlyRefund)
+            <td style="text-align:left;width:20%">{{ __('Notes') }}</td>
+        @elseif($pro_mode)
             <td style="text-align:right;width:20%">{{ __('Unit Price') }}</td>
             <td style="text-align:right">{{ __('Units') }}</td>
         @else
@@ -413,7 +419,8 @@
                     @php($refundQtyDisplay = $transaction->is_refund && !$taxOnlyRefundLine ? refundQuantityLabel($transaction->quantity, soldPackUnits($transaction->historicAsset?->units, $transaction->model?->units)) : null)
                     @php($discretionaryRefundLine = $transaction->is_refund && !$taxOnlyRefundLine && $refundQtyDisplay === null)
 
-                    @if($pro_mode)
+                    @if($hidePriceQtyColumns)
+                    @elseif($pro_mode)
                         <td style="text-align:right">
                             @if($taxOnlyRefundLine)
                                 {{ __('VAT refund') }}
@@ -429,7 +436,9 @@
                                 @endif
                             @endif
                         </td>
-                        <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : trimDecimalZeros($transaction->quantity) }}</td>
+                        @if(!$isTaxOnlyRefund)
+                            <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : trimDecimalZeros($transaction->quantity) }}</td>
+                        @endif
                     @else
                         <td style="text-align:left">
                             @if($taxOnlyRefundLine)
@@ -446,7 +455,9 @@
                                 @endif
                             @endif
                         </td>
-                        <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : trimDecimalZeros($transaction->quantity) }}</td>
+                        @if(!$isTaxOnlyRefund)
+                            <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : trimDecimalZeros($transaction->quantity) }}</td>
+                        @endif
                     @endif
                     @if($taxOnlyRefundLine)
                         <td style="text-align:right">{{ $invoice->currency->symbol . number_format(-$transaction->tax_amount, 2) }}</td>
@@ -516,15 +527,15 @@
         @if ($isRefund)
 
             <tr class="total_net">
-                <td style="border:none" colspan="4"></td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
                 <td>{{ __('Total Net') }}</td>
                 <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
             </tr>
 
-            @include('invoices.templates.pdf.tax-rows', ['document' => $invoice])
+            @include('invoices.templates.pdf.tax-rows', ['document' => $invoice, 'fillerColspan' => $totalsFillerColspan])
 
             <tr class="total">
-                <td style="border:none" colspan="4"></td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
                 <td><b>{{ __('Total') }}</b></td>
                 <td>{{ $invoice->currency->symbol . $invoice->total_amount }}</td>
             </tr>
