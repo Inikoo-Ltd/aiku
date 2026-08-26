@@ -117,7 +117,7 @@ const RESPONSIVE_CLASSES = {
         label: "px-3 py-2.5 text-[10px]",
         familyName: "px-3 py-2.5 text-[13px] leading-[18px]",
         cell: "px-3 py-2.5 text-xs leading-[18px]",
-        imageFrame: "px-3 pb-2 pt-3",
+        imageFrame: "pb-2 pt-3",
         image: "max-w-[120px]",
     },
     desktop: {
@@ -127,7 +127,7 @@ const RESPONSIVE_CLASSES = {
         label: "px-3 py-3 text-[11px]",
         familyName: "px-4 py-3 text-sm leading-5",
         cell: "px-4 py-3 text-xs leading-5",
-        imageFrame: "px-4 pb-2 pt-4",
+        imageFrame: "pb-2 pt-4",
         image: "max-w-[150px]",
     },
 }
@@ -198,7 +198,7 @@ const colorTokens = computed(() => ({
 
                     <div
                         :style="{ gridColumn: 1, gridRow: 1 }"
-                        class="flex items-bottom"
+                        class="flex items-end"
                         :class="responsive.imageFrame"
                     >
                         <ComparisonFamilySelect
