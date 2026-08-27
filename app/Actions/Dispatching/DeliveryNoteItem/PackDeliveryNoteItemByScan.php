@@ -45,6 +45,10 @@ class PackDeliveryNoteItemByScan extends OrgAction
             return false;
         }
 
+        if (!$this->isScannableDeliveryNote($this->deliveryNote)) {
+            return false;
+        }
+
         return $this->canHandleDeliveryNote($this->deliveryNote);
     }
 
@@ -164,19 +168,15 @@ class PackDeliveryNoteItemByScan extends OrgAction
         ?Collection $knownItems = null
     ): array {
         $row     = null;
-        $warning = null;
 
         if ($deliveryNoteItem && $status === 'packed') {
             $row = FetchDeliveryNoteItemRow::run($deliveryNoteItem, $tab);
             $row = $row?->toArray(request());
-
-            $warning = $this->scanKindWarning($deliveryNoteItem, $scanned);
         }
 
         return [
             'status'              => $status,
             'message'             => $message,
-            'warning'             => $warning,
             'scanned'             => $scanned,
             'item'                => $deliveryNoteItem ? [
                 'id'                     => $deliveryNoteItem->id,

@@ -78,6 +78,16 @@ class PickPickingSessionItemByScan extends OrgAction
         }
 
         if ($matchedItems->isEmpty()) {
+            if ($this->dropshippingMatches($sessionItems, $scanned)->isNotEmpty()) {
+                return $this->outcome(
+                    $pickingSession,
+                    'not_scannable',
+                    __('Dropshipping orders are picked by hand, not by scanner'),
+                    $scanned,
+                    knownItems: $sessionItems
+                );
+            }
+
             return $this->outcome(
                 $pickingSession,
                 'not_found',
@@ -230,7 +240,6 @@ class PickPickingSessionItemByScan extends OrgAction
     ): array {
         $deliveryNote = $deliveryNoteItem?->deliveryNote;
         $row          = null;
-        $warning      = null;
 
         if ($deliveryNoteItem && $status === 'picked') {
             $rowId = $tab == PickingSessionTabsEnum::GROUPED->value
@@ -238,14 +247,11 @@ class PickPickingSessionItemByScan extends OrgAction
                 : $deliveryNoteItem->id;
 
             $row = FetchPickingSessionItemRow::run($pickingSession, $tab, $rowId)?->toArray(request());
-
-            $warning = $this->scanKindWarning($deliveryNoteItem, $scanned);
         }
 
         return [
             'status'                => $status,
             'message'               => $message,
-            'warning'               => $warning,
             'scanned'               => $scanned,
             'item'                  => $deliveryNoteItem ? [
                 'id'                     => $deliveryNoteItem->id,

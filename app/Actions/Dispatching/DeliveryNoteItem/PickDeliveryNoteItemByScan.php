@@ -46,6 +46,10 @@ class PickDeliveryNoteItemByScan extends OrgAction
             return false;
         }
 
+        if (!$this->isScannableDeliveryNote($this->deliveryNote)) {
+            return false;
+        }
+
         return $this->canHandleDeliveryNote($this->deliveryNote);
     }
 
@@ -158,19 +162,15 @@ class PickDeliveryNoteItemByScan extends OrgAction
         ?object $location = null
     ): array {
         $row     = null;
-        $warning = null;
 
         if ($deliveryNoteItem && $status === 'picked') {
             $row = FetchDeliveryNoteItemRow::run($deliveryNoteItem, $tab);
             $row = $row?->toArray(request());
-
-            $warning = $this->scanKindWarning($deliveryNoteItem, $scanned);
         }
 
         return [
             'status'              => $status,
             'message'             => $message,
-            'warning'             => $warning,
             'scanned'             => $scanned,
             'item'                => $deliveryNoteItem ? [
                 'id'                    => $deliveryNoteItem->id,

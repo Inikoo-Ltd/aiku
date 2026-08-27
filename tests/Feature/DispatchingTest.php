@@ -3074,7 +3074,7 @@ test('a redefined pack does not change what an already sold box means', function
     expect($required())->toBe($beforeRedefinition);
 });
 
-test('scan matches only the sko barcode, never the unit ean', function () {
+test('scan matches only the sko barcode, never the unit ean, and never a dropshipping item', function () {
     $matcher = new class () {
         use \App\Actions\Dispatching\DeliveryNoteItem\WithScannedDeliveryNoteItemMatching;
 
@@ -3083,9 +3083,14 @@ test('scan matches only the sko barcode, never the unit ean', function () {
             return $this->matchItems($items, $scanned);
         }
 
-        public function warning($item, $scanned): ?string
+        public function dropshipping($items, $scanned)
         {
-            return $this->scanKindWarning($item, $scanned);
+            return $this->dropshippingMatches($items, $scanned);
+        }
+
+        public function scannableNote($deliveryNote): bool
+        {
+            return $this->isScannableDeliveryNote($deliveryNote);
         }
     };
 
@@ -3105,19 +3110,29 @@ test('scan matches only the sko barcode, never the unit ean', function () {
 
     $item = new \App\Models\Dispatching\DeliveryNoteItem();
     $item->setRelation('orgStock', $orgStock);
-    $item->setRelation('shop', $dropshippingShop);
+    $item->setRelation('shop', $b2cShop);
 
     $items = collect([$item]);
 
     expect($matcher->match($items, 'SKO123'))->toHaveCount(1)
         ->and($matcher->match($items, 'ABC-1'))->toHaveCount(1)
         ->and($matcher->match($items, '5055796528387'))->toBeEmpty()
-        ->and($matcher->warning($item, 'SKO123'))->toContain('outer packing')
-        ->and($matcher->warning($item, 'ABC-1'))->toBeNull();
+        ->and($matcher->dropshipping($items, 'SKO123'))->toBeEmpty();
 
-    $item->setRelation('shop', $b2cShop);
+    $item->setRelation('shop', $dropshippingShop);
 
-    expect($matcher->warning($item, 'SKO123'))->toBeNull();
+    expect($matcher->match($items, 'SKO123'))->toBeEmpty()
+        ->and($matcher->match($items, 'ABC-1'))->toBeEmpty()
+        ->and($matcher->dropshipping($items, 'SKO123'))->toHaveCount(1);
+
+    $dropshippingNote = new \App\Models\Dispatching\DeliveryNote();
+    $dropshippingNote->setRelation('shop', $dropshippingShop);
+
+    $wholesaleNote = new \App\Models\Dispatching\DeliveryNote();
+    $wholesaleNote->setRelation('shop', $b2cShop);
+
+    expect($matcher->scannableNote($dropshippingNote))->toBeFalse()
+        ->and($matcher->scannableNote($wholesaleNote))->toBeTrue();
 });
 
 test('tariff codes table surfaces items with no tariff code or origin', function () {

@@ -8,6 +8,7 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use Illuminate\Support\Collection;
 
@@ -26,6 +27,48 @@ trait WithScannedDeliveryNoteItemMatching
      * @return Collection<int, DeliveryNoteItem>
      */
     protected function matchItems(Collection $deliveryNoteItems, string $scanned): Collection
+    {
+        return $this->codeMatches($deliveryNoteItems, $scanned)
+            ->filter(fn (DeliveryNoteItem $item) => $this->isScannableItem($item))
+            ->values();
+    }
+
+    /**
+     * The dropshipping items a scan resolved to but is not allowed to touch, so a picker who scans
+     * one can be told why nothing happened instead of being shown a bare 'not on this order'.
+     *
+     * @param  Collection<int, DeliveryNoteItem>  $deliveryNoteItems
+     *
+     * @return Collection<int, DeliveryNoteItem>
+     */
+    protected function dropshippingMatches(Collection $deliveryNoteItems, string $scanned): Collection
+    {
+        return $this->codeMatches($deliveryNoteItems, $scanned)
+            ->reject(fn (DeliveryNoteItem $item) => $this->isScannableItem($item))
+            ->values();
+    }
+
+    /**
+     * Dropshipping ships loose units to the end customer, and the only barcode on the thing the
+     * picker holds is the unit EAN that scanning no longer follows. Until those items carry a
+     * scannable code of their own, dropshipping is picked and packed by hand.
+     */
+    protected function isScannableItem(DeliveryNoteItem $item): bool
+    {
+        return $item->shop?->type !== ShopTypeEnum::DROPSHIPPING;
+    }
+
+    protected function isScannableDeliveryNote(DeliveryNote $deliveryNote): bool
+    {
+        return $deliveryNote->shop?->type !== ShopTypeEnum::DROPSHIPPING;
+    }
+
+    /**
+     * @param  Collection<int, DeliveryNoteItem>  $deliveryNoteItems
+     *
+     * @return Collection<int, DeliveryNoteItem>
+     */
+    private function codeMatches(Collection $deliveryNoteItems, string $scanned): Collection
     {
         if ($scanned === '') {
             return collect();
@@ -86,26 +129,4 @@ trait WithScannedDeliveryNoteItemMatching
         return [intdiv($units, $packedIn), [$units % $packedIn, $packedIn]];
     }
 
-    /**
-     * Dropshipping ships loose units to the end customer while a scan now always means one whole
-     * outer/SKO, so a dropshipping picker who scanned the outer barcode is warned the order ships
-     * units. Never fires when the SKO holds a single unit: there the outer and the unit are the
-     * same thing in hand, nor when the org stock code was typed rather than a barcode scanned.
-     */
-    protected function scanKindWarning(DeliveryNoteItem $item, string $scanned): ?string
-    {
-        if ((int)($item->orgStock?->packed_in ?? 1) <= 1) {
-            return null;
-        }
-
-        if (strcasecmp(trim((string)$item->orgStock?->barcode), $scanned) !== 0) {
-            return null;
-        }
-
-        if ($item->shop?->type === ShopTypeEnum::DROPSHIPPING) {
-            return __('You scanned the outer packing barcode — this order ships individual units');
-        }
-
-        return null;
-    }
 }
