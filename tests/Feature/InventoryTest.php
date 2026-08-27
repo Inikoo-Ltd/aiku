@@ -1950,15 +1950,23 @@ test('changing a trade unit barcode refreshes the unit_barcode of its single-tra
     expect($orgStock->refresh()->unit_barcode)->toBeNull();
 });
 
-test('set org stock barcode by hand marks it independent and enforces uniqueness', function () {
+test('editing an org stock sko barcode writes through the stock to every sibling org stock', function () {
     $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
         'state' => StockStateEnum::ACTIVE
     ]));
     $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
 
+    $orgData = \App\Models\SysAdmin\Organisation::factory()->definition();
+    data_set($orgData, 'code', 'acm2');
+    data_set($orgData, 'type', \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP);
+    $organisation2 = \App\Models\SysAdmin\Organisation::where('code', 'acm2')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, $orgData);
+    $sibling = StoreOrgStock::make()->action($organisation2, $stock);
+
     $orgStock = UpdateOrgStock::make()->action($orgStock, ['barcode' => ' 5050000000055 ']);
     expect($orgStock->barcode)->toBe('5050000000055')
-        ->and($orgStock->independent_barcode)->toBeTrue();
+        ->and($stock->refresh()->barcode)->toBe('5050000000055')
+        ->and($sibling->refresh()->barcode)->toBe('5050000000055');
 
     $otherStock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
         'state' => StockStateEnum::ACTIVE
@@ -1968,9 +1976,94 @@ test('set org stock barcode by hand marks it independent and enforces uniqueness
     expect(fn () => UpdateOrgStock::make()->action($otherOrgStock, ['barcode' => '5050000000055']))
         ->toThrow(\Illuminate\Validation\ValidationException::class);
 
+    $siblingOfTheSameStockIsNotAConflict = UpdateOrgStock::make()->action($sibling, ['barcode' => '5050000000055']);
+    expect($siblingOfTheSameStockIsNotAConflict->barcode)->toBe('5050000000055');
+
     $orgStock = UpdateOrgStock::make()->action($orgStock, ['barcode' => null]);
     expect($orgStock->barcode)->toBeNull()
-        ->and($orgStock->independent_barcode)->toBeFalse();
+        ->and($orgStock->independent_barcode)->toBeFalse()
+        ->and($stock->refresh()->barcode)->toBeNull()
+        ->and($sibling->refresh()->barcode)->toBeNull()
+        ->and($sibling->refresh()->independent_barcode)->toBeFalse();
+});
+
+test('a new org stock is born holding the sko barcode its stock already carries', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+    UpdateOrgStock::make()->action($orgStock, ['barcode' => '5050000000123']);
+
+    $orgData = \App\Models\SysAdmin\Organisation::factory()->definition();
+    data_set($orgData, 'code', 'acm3');
+    data_set($orgData, 'type', \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP);
+    $organisation3 = \App\Models\SysAdmin\Organisation::where('code', 'acm3')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, $orgData);
+
+    $newcomer = StoreOrgStock::make()->action($organisation3, $stock->refresh());
+
+    expect($newcomer->barcode)->toBe('5050000000123')
+        ->and($newcomer->independent_barcode)->toBeTrue();
+});
+
+test('sko barcode repair pushes the majority barcode up to the stock and across all siblings', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $orgData = \App\Models\SysAdmin\Organisation::factory()->definition();
+    data_set($orgData, 'code', 'acm2');
+    data_set($orgData, 'type', \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP);
+    $organisation2 = \App\Models\SysAdmin\Organisation::where('code', 'acm2')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, $orgData);
+    $sibling = StoreOrgStock::make()->action($organisation2, $stock);
+
+    $orgStock->updateQuietly(['barcode' => '5050000000109']);
+    $sibling->updateQuietly(['barcode' => '5050000000109N']);
+
+    $repair                                = new \App\Actions\Goods\Stock\RepairStocksSkoBarcodes();
+    $onATieOnUsesTheOldestOrgStockWins     = $repair->canonicalBarcode($stock);
+
+    expect($onATieOnUsesTheOldestOrgStockWins)->toBe('5050000000109');
+
+    $repair->handle($stock, $onATieOnUsesTheOldestOrgStockWins, true);
+
+    expect($stock->refresh()->barcode)->toBe('5050000000109')
+        ->and($orgStock->refresh()->barcode)->toBe('5050000000109')
+        ->and($orgStock->independent_barcode)->toBeTrue()
+        ->and($sibling->refresh()->barcode)->toBe('5050000000109');
+
+    $eanStock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $eanOrgStock = StoreOrgStock::make()->action($this->organisation, $eanStock);
+    $eanOrgStock->updateQuietly(['unit_barcode' => '5050000000116', 'packed_in' => 1]);
+
+    expect($repair->unitBarcodeToCopy($eanStock->refresh()))->toBe('5050000000116');
+
+    $eanOrgStock->updateQuietly(['packed_in' => 6]);
+    expect($repair->unitBarcodeToCopy($eanStock->refresh()))->toBeNull();
+
+    $eanOrgStock->updateQuietly(['packed_in' => 1]);
+    $orgStock->updateQuietly(['barcode' => '5050000000116']);
+
+    expect($repair->conflictingHolder($eanStock, '5050000000116'))->toBe("stock id $stock->id");
+});
+
+test('sko barcode repair treats an orphan org stock holding the barcode as a conflict', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orphan = StoreOrgStock::make()->action($this->organisation, $stock);
+    $orphan->updateQuietly(['barcode' => '5050000000130', 'stock_id' => null]);
+
+    $otherStock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    expect((new \App\Actions\Goods\Stock\RepairStocksSkoBarcodes())->conflictingHolder($otherStock, '5050000000130'))
+        ->toBe("org stock id $orphan->id");
 });
 
 test('set org stock unit_barcode does not touch independent_barcode', function () {
@@ -1988,12 +2081,12 @@ test('set org stock unit_barcode does not touch independent_barcode', function (
     expect($orgStock->unit_barcode)->toBeNull();
 });
 
-test('scan matches an org stock by its unit_barcode', function () {
+test('scan ignores the unit_barcode and matches only the sko barcode', function () {
     $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
         'state' => StockStateEnum::ACTIVE
     ]));
     $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
-    $orgStock->update(['unit_barcode' => '5050000000079']);
+    $orgStock->update(['unit_barcode' => '5050000000079', 'barcode' => 'SKO-5050']);
 
     $deliveryNoteItem = new \App\Models\Dispatching\DeliveryNoteItem();
     $deliveryNoteItem->org_stock_id = $orgStock->id;
@@ -2008,10 +2101,8 @@ test('scan matches an org stock by its unit_barcode', function () {
         }
     };
 
-    $matched = $matcher->match(collect([$deliveryNoteItem]), '5050000000079');
-
-    expect($matched->count())->toBe(1)
-        ->and($matched->first())->toBe($deliveryNoteItem);
+    expect($matcher->match(collect([$deliveryNoteItem]), '5050000000079'))->toBeEmpty()
+        ->and($matcher->match(collect([$deliveryNoteItem]), 'SKO-5050')->first())->toBe($deliveryNoteItem);
 });
 
 /*

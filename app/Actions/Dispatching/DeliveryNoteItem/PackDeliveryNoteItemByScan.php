@@ -121,11 +121,9 @@ class PackDeliveryNoteItemByScan extends OrgAction
         // 'Pack all' passes null so the remainder is resolved inside the action's lock. Reading it
         // out here would let a second packer's scan land in between and turn this into an error
         // instead of simply packing whatever is genuinely left.
-        $quantityWanted = $this->scannedQuantityInStockUnits($itemToPack, $scanned, $requestedQuantity);
-
-        $quantityToPack = $quantityWanted === null
+        $quantityToPack = $requestedQuantity === null
             ? null
-            : min($quantityWanted, UpdateDeliveryNoteItemPacking::quantityLeftToPack($itemToPack));
+            : min($requestedQuantity, UpdateDeliveryNoteItemPacking::quantityLeftToPack($itemToPack));
 
         UpdateDeliveryNoteItemPacking::make()->action($itemToPack, $user, $quantityToPack);
 
@@ -172,7 +170,7 @@ class PackDeliveryNoteItemByScan extends OrgAction
             $row = FetchDeliveryNoteItemRow::run($deliveryNoteItem, $tab);
             $row = $row?->toArray(request());
 
-            $warning = $this->scanKindWarning($deliveryNoteItem, $this->matchedKind($deliveryNoteItem, $scanned));
+            $warning = $this->scanKindWarning($deliveryNoteItem, $scanned);
         }
 
         return [

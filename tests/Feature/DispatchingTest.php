@@ -3074,23 +3074,24 @@ test('a redefined pack does not change what an already sold box means', function
     expect($required())->toBe($beforeRedefinition);
 });
 
-test('scan matches sko vs unit barcode kind and warns only when it disagrees with the shop type', function () {
+test('scan matches only the sko barcode, never the unit ean', function () {
     $matcher = new class () {
         use \App\Actions\Dispatching\DeliveryNoteItem\WithScannedDeliveryNoteItemMatching;
 
-        public function kind($item, $scanned): string
+        public function match($items, $scanned)
         {
-            return $this->matchedKind($item, $scanned);
+            return $this->matchItems($items, $scanned);
         }
 
-        public function warning($item, $kind): ?string
+        public function warning($item, $scanned): ?string
         {
-            return $this->scanKindWarning($item, $kind);
+            return $this->scanKindWarning($item, $scanned);
         }
     };
 
     $orgStock = new \App\Models\Inventory\OrgStock();
     $orgStock->forceFill([
+        'code'         => 'ABC-1',
         'barcode'      => 'SKO123',
         'unit_barcode' => '5055796528387',
         'packed_in'    => 6,
@@ -3106,15 +3107,17 @@ test('scan matches sko vs unit barcode kind and warns only when it disagrees wit
     $item->setRelation('orgStock', $orgStock);
     $item->setRelation('shop', $dropshippingShop);
 
-    expect($matcher->kind($item, 'SKO123'))->toBe('sko')
-        ->and($matcher->kind($item, '5055796528387'))->toBe('unit')
-        ->and($matcher->warning($item, 'sko'))->toContain('outer packing')
-        ->and($matcher->warning($item, 'unit'))->toBeNull();
+    $items = collect([$item]);
+
+    expect($matcher->match($items, 'SKO123'))->toHaveCount(1)
+        ->and($matcher->match($items, 'ABC-1'))->toHaveCount(1)
+        ->and($matcher->match($items, '5055796528387'))->toBeEmpty()
+        ->and($matcher->warning($item, 'SKO123'))->toContain('outer packing')
+        ->and($matcher->warning($item, 'ABC-1'))->toBeNull();
 
     $item->setRelation('shop', $b2cShop);
 
-    expect($matcher->warning($item, 'sko'))->toBeNull()
-        ->and($matcher->warning($item, 'unit'))->toContain('1 SKO = 6 units');
+    expect($matcher->warning($item, 'SKO123'))->toBeNull();
 });
 
 test('tariff codes table surfaces items with no tariff code or origin', function () {

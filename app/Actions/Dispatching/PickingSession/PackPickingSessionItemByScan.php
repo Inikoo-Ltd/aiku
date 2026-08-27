@@ -302,7 +302,7 @@ class PackPickingSessionItemByScan extends OrgAction
 
             $row = FetchPickingSessionItemRow::run($pickingSession, $tab, $rowId)?->toArray(request());
 
-            $warning = $this->scanKindWarning($deliveryNoteItem, $this->matchedKind($deliveryNoteItem, $scanned));
+            $warning = $this->scanKindWarning($deliveryNoteItem, $scanned);
         }
 
         return [

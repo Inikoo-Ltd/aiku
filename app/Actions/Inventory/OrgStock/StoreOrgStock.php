@@ -52,6 +52,9 @@ class StoreOrgStock extends OrgAction
         data_set($modelData, 'name', $stock->name);
         data_set($modelData, 'state', OrgStockStateEnum::ACTIVE, false);
 
+        data_set($modelData, 'barcode', $stock->barcode);
+        data_set($modelData, 'independent_barcode', $stock->barcode !== null);
+
 
         $orgStock = DB::transaction(function () use ($stock, $modelData, $parent) {
             /** @var OrgStock $orgStock */

@@ -105,8 +105,7 @@ class PickDeliveryNoteItemByScan extends OrgAction
         }
 
         $location       = $this->pickingLocation($itemToPick, $requestedLocation);
-        $quantityWanted = $this->scannedQuantityInStockUnits($itemToPick, $scanned, $requestedQuantity);
-        $quantityToPick = $location ? $this->storeScannedPicking($itemToPick, $user, $location, $quantityWanted) : 0;
+        $quantityToPick = $location ? $this->storeScannedPicking($itemToPick, $user, $location, $requestedQuantity) : 0;
 
         if ($quantityToPick <= 0) {
             return $this->outcome(
@@ -165,7 +164,7 @@ class PickDeliveryNoteItemByScan extends OrgAction
             $row = FetchDeliveryNoteItemRow::run($deliveryNoteItem, $tab);
             $row = $row?->toArray(request());
 
-            $warning = $this->scanKindWarning($deliveryNoteItem, $this->matchedKind($deliveryNoteItem, $scanned));
+            $warning = $this->scanKindWarning($deliveryNoteItem, $scanned);
         }
 
         return [

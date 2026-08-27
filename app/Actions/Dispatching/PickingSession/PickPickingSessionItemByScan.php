@@ -94,8 +94,7 @@ class PickPickingSessionItemByScan extends OrgAction
         }
 
         $location       = $this->pickingLocation($itemToPick, $requestedLocation);
-        $quantityWanted = $this->scannedQuantityInStockUnits($itemToPick, $scanned, $requestedQuantity);
-        $quantityToPick = $location ? $this->storeScannedPicking($itemToPick, $user, $location, $quantityWanted) : 0;
+        $quantityToPick = $location ? $this->storeScannedPicking($itemToPick, $user, $location, $requestedQuantity) : 0;
 
         if ($quantityToPick <= 0) {
             return $this->outcome(
@@ -240,7 +239,7 @@ class PickPickingSessionItemByScan extends OrgAction
 
             $row = FetchPickingSessionItemRow::run($pickingSession, $tab, $rowId)?->toArray(request());
 
-            $warning = $this->scanKindWarning($deliveryNoteItem, $this->matchedKind($deliveryNoteItem, $scanned));
+            $warning = $this->scanKindWarning($deliveryNoteItem, $scanned);
         }
 
         return [

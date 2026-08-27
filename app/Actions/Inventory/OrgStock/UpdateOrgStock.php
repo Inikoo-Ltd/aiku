@@ -45,6 +45,11 @@ class UpdateOrgStock extends OrgAction
         if (Arr::exists($modelData, 'barcode')) {
             $modelData['barcode']             = blank($modelData['barcode']) ? null : trim($modelData['barcode']);
             $modelData['independent_barcode'] = $modelData['barcode'] !== null;
+
+            if ($stock = $orgStock->stock) {
+                $stock->update(['barcode' => $modelData['barcode']]);
+                $stock->orgStocks()->whereKeyNot($orgStock->id)->update(Arr::only($modelData, ['barcode', 'independent_barcode']));
+            }
         }
 
         if (Arr::exists($modelData, 'unit_barcode')) {
@@ -86,6 +91,27 @@ class UpdateOrgStock extends OrgAction
         return $orgStock;
     }
 
+    /**
+     * The SKO barcode lives on the stock and cascades to every org stock of that stock, so
+     * uniqueness runs group-wide: against other stocks, and against org stocks that do not follow
+     * this stock (orphan org stocks with no stock included). Siblings of the same stock are no
+     * conflict, they are about to receive the same barcode.
+     */
+    protected function orgStockBarcodeUniqueRule(): \Illuminate\Validation\Rules\Unique
+    {
+        $rule = Rule::unique('org_stocks', 'barcode')
+            ->where('group_id', $this->orgStock->group_id)
+            ->whereNull('deleted_at');
+
+        if ($this->orgStock->stock_id) {
+            return $rule->where(
+                fn ($query) => $query->whereNull('stock_id')->orWhere('stock_id', '!=', $this->orgStock->stock_id)
+            );
+        }
+
+        return $rule->ignore($this->orgStock->id);
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -99,10 +125,11 @@ class UpdateOrgStock extends OrgAction
                 'string',
                 'max:54',
                 'regex:/^[\x20-\x7E]+$/',
-                Rule::unique('org_stocks', 'barcode')
-                    ->where('organisation_id', $this->orgStock->organisation_id)
+                Rule::unique('stocks', 'barcode')
+                    ->where('group_id', $this->orgStock->group_id)
                     ->whereNull('deleted_at')
-                    ->ignore($this->orgStock->id),
+                    ->ignore($this->orgStock->stock_id),
+                $this->orgStockBarcodeUniqueRule(),
             ],
             'unit_barcode' => ['sometimes', 'nullable', 'string', 'max:64', 'regex:/^[\x20-\x7E]+$/'],
             'note_to_pickers' => ['sometimes', 'nullable', 'string', 'max:1000'],

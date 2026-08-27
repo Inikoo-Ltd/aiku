@@ -121,9 +121,9 @@ const pickAllLabelParts = computed(() => splitAroundRemaining("Pick all :remaini
 
 const { queuedCount, enqueueScan } = useScanQueue<PendingScan>((scan) => submitScan(scan))
 
-// One scan is one physical thing taken off the shelf, so a line needing three is scanned three times,
-// or finished in one go with the pick-the-rest button. What that thing is worth is the backend's
-// call: the outer barcode is a whole SKO, the unit EAN is one unit out of it.
+// One scan is one whole outer/SKO taken off the shelf, so a line needing three is scanned three
+// times, or finished in one go with the pick-the-rest button. Only the SKO barcode (or the typed
+// org stock code) matches; unit EANs are deliberately ignored by the backend.
 const { buffer, inputElement, isListening, registerKeystroke, clearBuffer, flushBuffer } = useBarcodeScanner(
     (code) => enqueueScan({ code, quantity: 1 })
 )
