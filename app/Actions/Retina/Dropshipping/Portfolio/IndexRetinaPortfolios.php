@@ -295,22 +295,41 @@ class IndexRetinaPortfolios extends RetinaAction
         }
 
         $actions = [];
+        if (in_array($this->customerSalesChannel->platform->type, [
+            PlatformTypeEnum::SHOPIFY,
+            PlatformTypeEnum::WOOCOMMERCE,
+            PlatformTypeEnum::EBAY,
+            PlatformTypeEnum::TIKTOK
+        ]) && $this->customerSalesChannel->user) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'tertiary',
+                'tooltip' => __('Push current stock levels of these products to this channel only'),
+                'label'   => __('Update Stock'),
+                'icon'    => ['fas', 'fa-sync-alt'],
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'retina.models.customer_sales_channel.sync_portfolios_manual',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
+            ];
+        }
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $actions = [
-                [
-                    'type'    => 'button',
-                    'style'   => 'tertiary',
-                    'tooltip' => __('This will automatically synced every day at 3:00 UTC'),
-                    'label'   => __('Re-Sync'),
-                    'icon'    => ['fal', 'fa-tachometer-alt'],
-                    'route'   => [
-                        'method'     => 'post',
-                        'name'       => 'retina.models.customer_sales_channel.portfolio_shopify_sync',
-                        'parameters' => [
-                            'customerSalesChannel' => $this->customerSalesChannel->id
-                        ]
-                    ],
-                ]
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'tertiary',
+                'tooltip' => __('This will automatically synced every day at 3:00 UTC'),
+                'label'   => __('Re-Sync'),
+                'icon'    => ['fal', 'fa-tachometer-alt'],
+                'route'   => [
+                    'method'     => 'post',
+                    'name'       => 'retina.models.customer_sales_channel.portfolio_shopify_sync',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
             ];
         }
 

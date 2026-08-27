@@ -78,6 +78,7 @@ const panelSession = computed(() => {
         ulid: String(s.ulid),
         contact_name: s.contact_name || s.guest_identifier || "Guest",
         is_guest: !s.web_user?.id,
+        web_user_id: s.web_user?.id ?? null,
         shop_name: s.shop?.name ?? null,
         status: s.status,
         priority: s.priority ?? null,

@@ -78,7 +78,8 @@ trait WithOutboxBuilder
                     if ($emailOngoingRun->email->liveSnapshot->layout != $emailTemplate->layout) {
                         $this->createSnapshot($emailOngoingRun, $emailTemplate);
                     }
-                    if (!($case->requiresDaysAfter() && $outbox->days_after === null)) {
+                    if (!($case->requiresDaysAfter() && $outbox->days_after === null)
+                        && !($case->requiresInterval() && $outbox->interval === null)) {
                         UpdateOutbox::make()->action(
                             $outbox,
                             [

@@ -369,6 +369,41 @@ const onToggleGiftOptOut = async (optOut: boolean) => {
     }
 }
 
+// Section: Gold reward manual extension
+const isLoadingGrExtension = ref(false)
+const localGrExtendedUntil = ref(props.gr_data?.gr_extended_until ?? '')
+
+const onSaveGrExtension = async (value: string) => {
+    if (!props.gr_data?.route_gift_opt_out) return
+
+    try {
+        isLoadingGrExtension.value = true
+
+        await axios.patch(
+            route(props.gr_data.route_gift_opt_out.name, props.gr_data.route_gift_opt_out.parameters),
+            { gr_extended_until: value || null }
+        )
+
+        localGrExtendedUntil.value = value
+
+        notify({
+            title: trans("Updated"),
+            text: value ? trans("Gold reward extended until") + " " + value : trans("Gold reward extension removed"),
+            type: 'success'
+        })
+
+        router.reload()
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Please try again or contact administrator"),
+            type: 'error'
+        })
+    } finally {
+        isLoadingGrExtension.value = false
+    }
+}
+
 // Section: Add History Note
 const isModalNote = ref(false)
 const noteText = ref("")
@@ -552,6 +587,45 @@ const submitNote = async () => {
                                         </div>
                                     </template>
                                 </GoldReward>
+                            </dd>
+                        </div>
+
+                        <!-- Field: Gold reward manual extension -->
+                        <div v-if="gr_data?.shop_has_gr" class="flex items-center w-full flex-none gap-x-4 px-6">
+                            <dt v-tooltip="trans('Manually extend gold reward membership until a given date')" class="flex-none">
+                                <FontAwesomeIcon icon="fas fa-medal" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="text-sm flex items-center gap-x-2">
+                                <span class="text-gray-500">{{ trans("GR extension") }}</span>
+                                <input
+                                    type="date"
+                                    v-model="localGrExtendedUntil"
+                                    class="text-xs border border-gray-300 rounded px-1 py-0.5"
+                                />
+                                <button
+                                    v-if="isLoadingGrExtension"
+                                    class="text-xs text-gray-400 cursor-not-allowed"
+                                    disabled
+                                >
+                                    <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
+                                </button>
+                                <template v-else>
+                                    <button
+                                        v-if="localGrExtendedUntil && localGrExtendedUntil !== (gr_data?.gr_extended_until ?? '')"
+                                        @click="onSaveGrExtension(localGrExtendedUntil)"
+                                        class="text-xs text-blue-500 underline hover:text-blue-700"
+                                    >
+                                        {{ trans("Save") }}
+                                    </button>
+                                    <button
+                                        v-if="gr_data?.gr_extended_until"
+                                        @click="onSaveGrExtension('')"
+                                        class="text-xs text-gray-400 underline hover:text-red-500"
+                                        v-tooltip="trans('Remove gold reward extension')"
+                                    >
+                                        {{ trans("Remove") }}
+                                    </button>
+                                </template>
                             </dd>
                         </div>
 

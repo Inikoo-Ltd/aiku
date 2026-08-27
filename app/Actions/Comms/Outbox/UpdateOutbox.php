@@ -111,6 +111,13 @@ class UpdateOutbox extends OrgAction
         ) {
             $validator->errors()->add('days_after', __('Set "days after" before activating this outbox, otherwise it will never send.'));
         }
+
+        if ($state === OutboxStateEnum::ACTIVE
+            && $this->outbox->code->requiresInterval()
+            && ($this->get('interval') ?? $this->outbox->interval) === null
+        ) {
+            $validator->errors()->add('interval', __('Set the reminder interval before activating this outbox, otherwise it will never send.'));
+        }
     }
 
     /** @noinspection PhpUnusedParameterInspection */
