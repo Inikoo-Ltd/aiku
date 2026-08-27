@@ -472,8 +472,9 @@ const submitUpdateAndUploadProduct = (sel, state: "draft" | "publish") => {
 		}),
 		{
 			title: sel.name,
-			pricing_type: sel.pricing_type,
-			pricing_value: sel.pricing_value,
+			...(props.customerSalesChannel?.do_not_update_prices
+				? {}
+				: { pricing_type: sel.pricing_type, pricing_value: sel.pricing_value }),
 			description: sel.description,
 		},
 		{
@@ -1191,7 +1192,7 @@ const compTableFilterForSale = computed(() => {
 		<template #cell(delete)="{ item }" v-if="!disabled">
 			<div class="flex gap-2">
 				<Button
-					v-if="isEbay && !disableButtons(item) && !customerSalesChannel?.do_not_update_prices"
+					v-if="isEbay && !disableButtons(item)"
 					v-tooltip="trans('Edit detail of the product')"
 					type="tertiary"
 					:style="'white-w-outline'"
@@ -1424,7 +1425,10 @@ const compTableFilterForSale = computed(() => {
 					:disabled="isLoadingSubmitErrorTitle" />
 			</div>
 
-			<div class="mb-3">
+			<div v-if="customerSalesChannel?.do_not_update_prices" class="mb-3 text-sm text-gray-500">
+				{{ trans("This channel does not follow our prices: you manage prices directly on eBay. Title and description are still updated there when you save.") }}
+			</div>
+			<div v-else class="mb-3">
 				<label class="block text-sm font-semibold">
 					{{ trans("Price Mapping") }}
 					<FontAwesomeIcon
