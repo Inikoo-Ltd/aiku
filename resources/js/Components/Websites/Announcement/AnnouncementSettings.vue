@@ -132,12 +132,7 @@ const publishMessage = ref('')
 const listActiveAnnouncements = ref([])
 const isLoadingCheckingActiveAnnouncements = ref(false)
 
-const canPublish = computed(() => {
-  const result = listActiveAnnouncements.value.find((item) => {
-    return item.position === announcementDataSettings.value.position
-  })
-  return result
-})
+const canPublish = computed(() => listActiveAnnouncements.value[0])
 
 const onCheckActiveAnnouncements = async () => {
     isLoadingCheckingActiveAnnouncements.value = true
