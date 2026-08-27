@@ -39,12 +39,13 @@ use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
-use Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\SalesChannel\GetSalesChannelOptions;
 use App\Actions\Traits\HasGrData;
+use App\Enums\UI\NotesEnum;
+use Illuminate\Support\Arr;
 
 class ShowCustomer extends OrgAction
 {
@@ -275,21 +276,35 @@ class ShowCustomer extends OrgAction
         return [
             "note_list" => [
                 [
-                    "label"       => __("Private"),
+                    "label"       => NotesEnum::INTERNAL->label(),
                     "note"        => $customer->internal_notes ?? '',
                     "information" => __("This note is only visible to staff members. Staff can communicate with each other about the customer."),
                     "editable"    => true,
-                    "bgColor"     => "#FF7DBD",
-                    "field"       => "internal_notes"
+                    "field"       => "internal_notes",
+                    ...NotesEnum::INTERNAL->boilerPlate()
                 ],
                 [
-                    "label"       => __("Sticky Note For Delivery Notes").' ('.__("Private").')',
+                    "label"       => __("Warehouse Note (Permanent)"),
                     "note"        => $customer->warehouse_internal_notes ?? '',
-                    "information" => __("Will be put as Order private note everytime the Order submitted. Visible only to customer service and warehouse's staff."),
+                    "information" => __("Will be put on every Order private note. Visible only to customer service and warehouse's staff."),
                     "editable"    => true,
-                    "bgColor"     => "#FCF4A3",
-                    "field"       => "warehouse_internal_notes"
+                    "field"       => "warehouse_internal_notes",
+                    ...NotesEnum::WAREHOUSE->boilerPlate()
                 ]
+            ],
+            "temporary_note"   => [
+                "label"         => NotesEnum::WAREHOUSE_TEMPORARY->label(),
+                "note"          => $customer->warehouse_temporary_notes ?? '',
+                "information"   => __("Will be put on the next Order private note"),
+                "editable"      => true,
+                "field"         => "warehouse_temporary_notes",
+                "updateRoute"   => [
+                    'name'       => 'grp.models.customer.update',
+                    'parameters' => [
+                        'customer' => $customer->id
+                    ]
+                ],
+                ...NotesEnum::WAREHOUSE_TEMPORARY->boilerPlate()
             ]
         ];
     }
@@ -339,7 +354,7 @@ class ShowCustomer extends OrgAction
                     $suffix
                 ),
             ),
-
+ 
             'grp.org.shops.show.crm.customers.show',
             'grp.org.shops.show.crm.customers.edit',
             'grp.org.shops.show.crm.customers.show.customer_sales_channels.index',

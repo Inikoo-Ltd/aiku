@@ -3,6 +3,8 @@ import { computed, onMounted, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faGift, faRepeat, faPencil, faTrash, faPlus, faCubes, faCalendarPlus } from "@fal"
+import { faFloppyDisk } from '@fortawesome/free-solid-svg-icons'
+import { faStickyNote } from "@fas"
 import { faSpinnerThird } from "@fad"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
@@ -13,18 +15,22 @@ import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import UpcomingTransactionForm from "./UpcomingTransactionForm.vue"
 import type { UpcomingTransaction, UpcomingTransactionRoutes } from "./upcomingTransaction"
 import { upcomingTransactionTypeMeta } from "./upcomingTransaction"
+import BoxNote from "@/Components/Pallet/BoxNote.vue"
+import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 
-library.add(faGift, faRepeat, faPencil, faTrash, faPlus, faCubes, faCalendarPlus, faSpinnerThird)
+library.add(faGift, faRepeat, faPencil, faTrash, faPlus, faCubes, faCalendarPlus, faSpinnerThird, faFloppyDisk)
 
 const props = defineProps<{
     routes: UpcomingTransactionRoutes
     shopSlug: string
     openFormSignal?: number
+    temporaryNote?: {}
 }>()
 
 const transactions = ref<UpcomingTransaction[]>([])
 const total = ref(0)
 const isLoading = ref(true)
+const isLoadingNoteSave = ref(false);
 const isModalOpen = ref(false)
 const modalView = ref<"list" | "form">("list")
 const editingTransaction = ref<UpcomingTransaction | null>(null)
@@ -129,26 +135,55 @@ const quantityFraction = (transaction: UpcomingTransaction): [number, [number, n
 
     return [Math.floor(units / perPack), [units % perPack, perPack]]
 }
+
+const submitNote =  () => {
+    isLoadingNoteSave.value = true
+    axios.patch(
+        route(props.temporaryNote.updateRoute?.name, props.temporaryNote.updateRoute?.parameters),
+        {
+            [props.temporaryNote.field]: props.temporaryNote.note
+        }
+    )
+    .then((res) => {
+        notify({
+            title: 'Success!',
+            text: 'Set up temporary Warehouse Note successfully.',
+            type: 'success',
+        });
+    })
+    .catch((res) => {
+        notify({
+            title: 'Error',
+            text: 'Failed to set up temporary Warehouse Note.',
+            type: 'error',
+        })
+    })
+    .finally((res) => {
+        isLoadingNoteSave.value = false
+    });
+}
 </script>
 
 <template>
     <div>
-        <button
-            type="button"
-            @click="openListModal"
-            class="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-        >
-            <FontAwesomeIcon icon="fal fa-calendar-plus" class="text-xs text-indigo-500" />
-            {{ trans("Upcoming Transactions") }}
-            <FontAwesomeIcon v-if="isLoading" icon="fad fa-spinner-third" class="animate-spin text-xs text-gray-400" />
-            <span
-                v-else-if="total"
-                class="rounded-full bg-indigo-50 px-1.5 py-0.5 text-xs font-semibold text-indigo-600 tabular-nums"
+        <slot name="buttonSlot" :openListModal="openListModal" >
+            <button
+                type="button"
+                @click="openListModal"
+                class="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
             >
-                {{ total }}
-            </span>
-            <span class="text-xs font-medium text-indigo-600">{{ trans("View list") }}</span>
-        </button>
+                <FontAwesomeIcon icon="fal fa-calendar-plus" class="text-xs text-indigo-500" />
+                {{ trans("Upcoming Transactions") }}
+                <FontAwesomeIcon v-if="isLoading" icon="fad fa-spinner-third" class="animate-spin text-xs text-gray-400" />
+                <span
+                    v-else-if="total"
+                    class="rounded-full bg-indigo-50 px-1.5 py-0.5 text-xs font-semibold text-indigo-600 tabular-nums"
+                >
+                    {{ total }}
+                </span>
+                <span class="text-xs font-medium text-indigo-600">{{ trans("View list") }}</span>
+            </button>
+        </slot>
 
         <Modal :isOpen="isModalOpen" @onClose="closeModal" width="w-full max-w-2xl">
             <UpcomingTransactionForm
@@ -293,6 +328,39 @@ const quantityFraction = (transaction: UpcomingTransaction): [number, [number, n
                     <span class="text-sm text-gray-500">{{ trans("No upcoming transactions yet") }}</span>
                     <span class="text-sm font-medium text-indigo-600">{{ trans("Add the first one") }}</span>
                 </button>
+
+                <div v-if="temporaryNote.field" class="pt-3 mt-3">
+                    <h2 class="flex flex-auto items-center gap-2 text-lg font-bold text-gray-900 mb-2">
+                        <span class="grow">
+                            {{ temporaryNote.label }}
+                            <FontAwesomeIcon 
+                                :icon="faStickyNote"
+                                :class="'ml-1'"
+                                :style="{
+                                    color: temporaryNote.bgColor
+                                }"
+                            />
+                        </span>
+                        <span>
+                            <Button 
+                                :label="ctrans('Save')" 
+                                :type="'secondary'"
+                                :icon="faFloppyDisk"
+                                class="ml-auto" 
+                                @click="submitNote()" 
+                                :loading="isLoadingNoteSave"
+                            />
+                        </span>
+                    </h2>
+                    <PureTextarea 
+                        v-model="temporaryNote.note"
+                        counter 
+                        :rows="6"
+                        :placeholder="temporaryNote.information"
+                        @keydown.ctrl.enter="submitNote()" 
+                        maxLength="5000" 
+                    />
+                </div>
 
                 <div class="mt-5 flex justify-end">
                     <Button :label="trans('Close')" :style="'tertiary'" @click="closeModal" />
