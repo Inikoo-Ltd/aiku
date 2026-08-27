@@ -109,17 +109,20 @@ class RepairStocksSkoBarcodes
     /**
      * Discontinued org stocks get no vote: nobody picks them, so a stale barcode one of them was
      * left holding must not win the ballot and be pushed onto the organisations still selling it.
+     * A stock already carrying a barcode of its own settles the question without a ballot - the
+     * case a crashed run leaves behind, the stock written and its org stocks not yet.
      */
     public function canonicalBarcode(Stock $stock): ?string
     {
-        return $stock->orgStocks()
-            ->whereNotNull('barcode')
-            ->where('state', '!=', OrgStockStateEnum::DISCONTINUED)
-            ->select('barcode', DB::raw('count(*) as uses'), DB::raw('min(id) as oldest_id'))
-            ->groupBy('barcode')
-            ->orderByDesc('uses')
-            ->orderBy('oldest_id')
-            ->value('barcode');
+        return $stock->barcode
+            ?? $stock->orgStocks()
+                ->whereNotNull('barcode')
+                ->where('state', '!=', OrgStockStateEnum::DISCONTINUED)
+                ->select('barcode', DB::raw('count(*) as uses'), DB::raw('min(id) as oldest_id'))
+                ->groupBy('barcode')
+                ->orderByDesc('uses')
+                ->orderBy('oldest_id')
+                ->value('barcode');
     }
 
     /**
@@ -173,7 +176,11 @@ class RepairStocksSkoBarcodes
         $repaired = 0;
         $filled   = 0;
 
-        Stock::whereHas('orgStocks', fn ($query) => $query->whereNotNull('barcode'))
+        Stock::where(
+            fn ($query) => $query
+                ->whereNotNull('barcode')
+                ->orWhereHas('orgStocks', fn ($subQuery) => $subQuery->whereNotNull('barcode'))
+        )
             ->chunkById(500, function ($stocks) use ($command, $apply, &$repaired) {
                 foreach ($stocks as $stock) {
                     $barcode = $this->canonicalBarcode($stock);
