@@ -11,6 +11,7 @@ import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import { setIframeView } from "@/Composables/Workshop";
+import { encodePayload } from "@/Composables/useEncodePayload";
 
 // Components
 import ScreenView from "@/Components/ScreenView.vue";
@@ -97,7 +98,7 @@ const debounceSaveWorkshop = (block) => {
       await axios.patch(
         url,
         {
-          layout: block.web_block.layout,
+          layout_encoded: encodePayload(block.web_block.layout),
           show_logged_in: block.visibility.in,
           show_logged_out: block.visibility.out,
           show: block.show,
