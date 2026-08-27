@@ -6,8 +6,9 @@
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Comms\Outbox\AbandonedCart;
+namespace App\Actions\Comms\Outbox\AbandonedCheckout;
 
+use App\Actions\Comms\Outbox\AbandonedCart\WithAbandonedCartRecoveryContent;
 use App\Actions\Comms\Traits\WithOrderingCustomerNotification;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\OrgAction;
@@ -20,7 +21,7 @@ use App\Models\Ordering\CheckoutAbandonment;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
-class SendAbandonedCartReminder extends OrgAction
+class SendAbandonedCheckoutReminder extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
