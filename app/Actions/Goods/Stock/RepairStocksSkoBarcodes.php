@@ -13,6 +13,7 @@ use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -45,7 +46,64 @@ class RepairStocksSkoBarcodes
     public function handle(Stock $stock, string $barcode, bool $isHandSet): void
     {
         $stock->update(['barcode' => $barcode]);
-        $stock->orgStocks()->update(['barcode' => $barcode, 'independent_barcode' => $isHandSet]);
+
+        $stock->orgStocks()
+            ->whereIn('id', static::orgStocksToCarryBarcode($stock, $barcode)->pluck('id'))
+            ->update(['barcode' => $barcode, 'independent_barcode' => $isHandSet]);
+    }
+
+    /**
+     * One org stock per organisation, because a scan has to name one thing on one warehouse floor
+     * and the database says so too: org_stocks is unique on (organisation_id, barcode).
+     *
+     * Where an organisation holds the stock once, that row carries the barcode. Where it holds it
+     * twice - the '-error' twins, the 'a' suffixed ones - the repair refuses to pick a winner: the
+     * suffixed twin is routinely not the one being picked, and sending scans to the wrong one is
+     * worse than sending none. The twin already carrying the barcode keeps it, since that is what
+     * the warehouse has been scanning; if neither has one, the organisation is left out and the
+     * stock reported, until somebody merges the duplicate.
+     *
+     * @return Collection<int, OrgStock>
+     */
+    public static function orgStocksToCarryBarcode(Stock $stock, ?string $barcode = null): Collection
+    {
+        return $stock->orgStocks()
+            ->orderBy('id')
+            ->get()
+            ->groupBy('organisation_id')
+            ->map(function (Collection $inOrganisation) use ($barcode) {
+                $live = $inOrganisation->filter(fn (OrgStock $orgStock) => $orgStock->state != OrgStockStateEnum::DISCONTINUED);
+                $candidates = $live->isNotEmpty() ? $live : $inOrganisation;
+
+                if ($candidates->count() === 1) {
+                    return $candidates->first();
+                }
+
+                return $barcode === null
+                    ? null
+                    : $candidates->first(fn (OrgStock $orgStock) => $orgStock->barcode === $barcode);
+            })
+            ->filter()
+            ->values();
+    }
+
+    /**
+     * The organisations holding this stock more than once, which is why they are sitting out of
+     * the cascade. Reported so the duplicates can be merged rather than quietly ignored.
+     *
+     * @return Collection<int, int>
+     */
+    public static function organisationsWithDuplicates(Stock $stock): Collection
+    {
+        return $stock->orgStocks()
+            ->get()
+            ->groupBy('organisation_id')
+            ->filter(function (Collection $inOrganisation) {
+                $live = $inOrganisation->filter(fn (OrgStock $orgStock) => $orgStock->state != OrgStockStateEnum::DISCONTINUED);
+
+                return ($live->isNotEmpty() ? $live : $inOrganisation)->count() > 1;
+            })
+            ->keys();
     }
 
     /**
@@ -129,9 +187,15 @@ class RepairStocksSkoBarcodes
                         continue;
                     }
 
-                    $siblings = $stock->orgStocks()->where(
-                        fn ($query) => $query->whereNull('barcode')->orWhere('barcode', '!=', $barcode)
-                    )->count();
+                    /*
+                     * Counted over the org stocks that will actually receive the barcode, not every
+                     * org stock of the stock: a duplicate inside an organisation is never going to
+                     * get one, so counting it here would leave the stock reported as needing repair
+                     * on every future run, however many times it has already been repaired.
+                     */
+                    $siblings = static::orgStocksToCarryBarcode($stock, $barcode)
+                        ->filter(fn (OrgStock $orgStock) => $orgStock->barcode !== $barcode)
+                        ->count();
 
                     if ($stock->barcode === $barcode && $siblings === 0) {
                         continue;
@@ -141,6 +205,10 @@ class RepairStocksSkoBarcodes
                         $this->handle($stock, $barcode, true);
                     } else {
                         $command->line("$stock->code -> $barcode ($siblings org stocks to align)");
+                    }
+
+                    foreach (static::organisationsWithDuplicates($stock) as $organisationId) {
+                        $command->warn("$stock->code: organisation $organisationId holds it twice, left without a barcode");
                     }
 
                     $repaired++;

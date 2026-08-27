@@ -2117,6 +2117,41 @@ test('two stocks in a group cannot answer to the same sko barcode', function () 
         ->toThrow(\Illuminate\Database\QueryException::class);
 });
 
+test('a stock duplicated inside one organisation gives its barcode to a single org stock', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    $original  = StoreOrgStock::make()->action($this->organisation, $stock);
+    $duplicate = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    expect($duplicate->organisation_id)->toBe($original->organisation_id);
+
+    $repair = new \App\Actions\Goods\Stock\RepairStocksSkoBarcodes();
+
+    $nobodyIsPickedAsTheWinner = $repair::orgStocksToCarryBarcode($stock->refresh(), '5050000000185');
+
+    expect($nobodyIsPickedAsTheWinner)->toBeEmpty()
+        ->and($repair::organisationsWithDuplicates($stock))->toContain($original->organisation_id);
+
+    $repair->handle($stock, '5050000000185', true);
+
+    expect($stock->refresh()->barcode)->toBe('5050000000185')
+        ->and($original->refresh()->barcode)->toBeNull()
+        ->and($duplicate->refresh()->barcode)->toBeNull();
+
+    $original->updateQuietly(['barcode' => '5050000000185']);
+
+    $theTwinAlreadyScannedKeepsIt = $repair::orgStocksToCarryBarcode($stock->refresh(), '5050000000185');
+
+    expect($theTwinAlreadyScannedKeepsIt->pluck('id')->all())->toBe([$original->id]);
+
+    UpdateOrgStock::make()->action($original->refresh(), ['barcode' => '5050000000192']);
+
+    expect($original->refresh()->barcode)->toBe('5050000000192')
+        ->and($duplicate->refresh()->barcode)->toBeNull();
+});
+
 test('sko barcode repair treats an orphan org stock holding the barcode as a conflict', function () {
     $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
         'state' => StockStateEnum::ACTIVE

@@ -10,6 +10,7 @@ namespace App\Actions\Inventory\OrgStock;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
+use App\Actions\Goods\Stock\RepairStocksSkoBarcodes;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
 use App\Actions\Goods\TradeUnit\SetTradeUnitStatus;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
@@ -54,8 +55,16 @@ class UpdateOrgStock extends OrgAction
                  * model events, so the organisations that had their scanning barcode changed for
                  * them would carry no history of it. There is one sibling per organisation, so
                  * the loop is a handful of rows.
+                 *
+                 * The organisation being edited is left out of the cascade: its own copy is the
+                 * row this action is already writing, and org_stocks is unique on (organisation,
+                 * barcode), so handing the same code to a duplicate org stock sitting in that
+                 * same organisation would be rejected by the database.
                  */
-                foreach ($stock->orgStocks()->whereKeyNot($orgStock->id)->get() as $sibling) {
+                $siblings = RepairStocksSkoBarcodes::orgStocksToCarryBarcode($stock, $modelData['barcode'])
+                    ->reject(fn (OrgStock $sibling) => $sibling->organisation_id == $orgStock->organisation_id);
+
+                foreach ($siblings as $sibling) {
                     $sibling->update(Arr::only($modelData, ['barcode', 'independent_barcode']));
                 }
             }
