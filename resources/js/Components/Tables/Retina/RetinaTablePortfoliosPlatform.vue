@@ -51,6 +51,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { notify } from "@kyvg/vue3-notification"
 import Modal from "@/Components/Utils/Modal.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
@@ -1197,19 +1198,25 @@ const compTableFilterForSale = computed(() => {
 					size="xs"
 					icon="fal fa-pencil"
 					@click="openEditModal(item)" />
-				<ButtonWithLink
-					v-tooltip="
-						trans('Unselect product. This will remove the product from :platform', {
-							platform: props.platform_data.name,
-						})
-					"
-					type="negative"
-					icon="fal fa-skull"
-					:routeTarget="item.delete_portfolio"
-					:method="'delete'"
-					size="xs"
-					:style="'white-r-outline'"
-					:bindToLink="{ preserveScroll: true }" />
+				<ModalConfirmationDelete
+					:routeDelete="item.delete_portfolio"
+					:title="trans('Remove :product from :platform?', { product: item.name, platform: props.platform_data.name })"
+					:description="trans('The product will be unselected from this channel.')"
+					isFullLoading>
+					<template #default="{ changeModel }">
+						<Button
+							v-tooltip="
+								trans('Unselect product. This will remove the product from :platform', {
+									platform: props.platform_data.name,
+								})
+							"
+							type="negative"
+							icon="fal fa-skull"
+							@click="changeModel"
+							size="xs"
+							:style="'white-r-outline'" />
+					</template>
+				</ModalConfirmationDelete>
 			</div>
 		</template>
 	</Table>
