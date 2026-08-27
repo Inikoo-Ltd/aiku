@@ -85,6 +85,10 @@ Route::prefix('{shop}')->name('show.')
                 Route::prefix("traffic-sources")
                     ->name("traffic_sources.")
                     ->group(__DIR__ . "/traffic_sources.php");
+
+                Route::prefix("whatsapp-campaigns")
+                    ->name("whatsapp_campaigns.")
+                    ->group(__DIR__ . "/whatsapp_campaigns.php");
             })
             ->group(__DIR__ . "/marketing.php");
 
