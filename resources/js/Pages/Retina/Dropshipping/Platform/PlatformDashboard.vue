@@ -227,7 +227,7 @@ const layout = inject('layout', layoutStructure)
                 </div>
 
 				<div class="flex flex-nowrap items-center gap-2">
-					<div v-if="['ebay', 'allegro'].includes(customer_sales_channel?.type)">
+					<div v-if="['ebay', 'allegro'].includes(customer_sales_channel?.type) && !platform_status">
 						<ButtonWithLink @click="onSubmitReconnect" type="tertiary"
 										:label="trans('Reconnect')"
 										:icon="['fas', 'fa-spinner']">
