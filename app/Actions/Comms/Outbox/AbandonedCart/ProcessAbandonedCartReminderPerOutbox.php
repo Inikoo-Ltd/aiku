@@ -39,7 +39,7 @@ class ProcessAbandonedCartReminderPerOutbox
 
         $currentDateTime = Carbon::now()->utc();
 
-        $lastOutBoxSent = $outbox->last_sent_at ?? Carbon::now()->utc()->subHours($outbox->interval + 1);
+        $lastOutBoxSent = $outbox->last_sent_at ??  $currentDateTime->copy()->subHours($outbox->interval + 1);
 
         // Check if enough time has passed since last outbox was sent
         if ($lastOutBoxSent && Carbon::parse($lastOutBoxSent)->diffInHours($currentDateTime) < $outbox->interval) {
@@ -62,8 +62,9 @@ class ProcessAbandonedCartReminderPerOutbox
         });
 
         // check Order still in basket
+        $baseQuery->whereNotNull('customers.current_order_in_basket_id');
         $baseQuery->join('orders', function ($join) {
-            $join->on('customers.id', '=', 'orders.customer_id');
+            $join->on('customers.current_order_in_basket_id', '=', 'orders.id');
             $join->where('orders.state', OrderStateEnum::CREATING->value);
             $join->where('orders.status', OrderStatusEnum::CREATING->value);
             $join->whereNull('orders.submitted_at');
