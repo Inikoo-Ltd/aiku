@@ -68,6 +68,15 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
 
         if ($user instanceof EbayUser) {
             $routeName = 'retina.models.customer_sales_channel.ebay_update';
+            $properties[0]['fields'] = [
+                'do_not_update_prices' => [
+                    'type' => 'toggle',
+                    'label' => __('Do not update prices'),
+                    'information' => __('When enabled, we will never upload or overwrite prices on eBay. You manage your prices directly on eBay.'),
+                    'value' => (bool)Arr::get($customerSalesChannel->settings, 'do_not_update_prices')
+                ],
+                ...$properties[0]['fields'],
+            ];
             $properties = [
                 ...$properties,
                 [

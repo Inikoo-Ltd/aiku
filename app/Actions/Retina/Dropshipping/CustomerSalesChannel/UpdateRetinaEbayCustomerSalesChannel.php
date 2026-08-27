@@ -16,6 +16,7 @@ use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Rules\IUnique;
 use App\Traits\SanitizeInputs;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -61,6 +62,7 @@ class UpdateRetinaEbayCustomerSalesChannel extends RetinaAction
                 ),
             ],
             'is_vat_adjustment' => ['sometimes', 'required', 'boolean'],
+            'do_not_update_prices' => ['sometimes', 'boolean'],
             'tax_category_id'   => ['sometimes', 'nullable', 'integer', Rule::exists('tax_categories', 'id')],
             'status'       => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'name' => ['sometimes', 'string', 'max:255'],
@@ -93,5 +95,13 @@ class UpdateRetinaEbayCustomerSalesChannel extends RetinaAction
         $this->initialisation($request);
 
         $this->handle($customerSalesChannel, $this->validatedData);
+
+        if (Arr::get($this->validatedData, 'do_not_update_prices')) {
+            $request->session()->flash('notification', [
+                'status'      => 'success',
+                'title'       => __('Prices are in your hands'),
+                'description' => __('You are now free to set your own prices on eBay, we will not upload or overwrite them.'),
+            ]);
+        }
     }
 }

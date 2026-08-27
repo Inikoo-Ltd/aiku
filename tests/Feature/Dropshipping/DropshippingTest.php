@@ -719,3 +719,20 @@ test('updating ebay channel stock settings queues inventory sync', function () {
 
     UpdateInventoryInEbayPortfolio::assertPushed(1);
 });
+
+test('ebay channel do not update prices setting is stored', function () {
+    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-user-prices']);
+    $customerSalesChannel = $ebayUser->customerSalesChannel;
+
+    CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
+
+    $customerSalesChannel = UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'do_not_update_prices' => true
+    ]);
+    expect(\Illuminate\Support\Arr::get($customerSalesChannel->settings, 'do_not_update_prices'))->toBeTrue();
+
+    $customerSalesChannel = UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'do_not_update_prices' => false
+    ]);
+    expect(\Illuminate\Support\Arr::get($customerSalesChannel->settings, 'do_not_update_prices'))->toBeFalse();
+});

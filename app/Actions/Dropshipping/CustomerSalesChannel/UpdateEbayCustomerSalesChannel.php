@@ -40,6 +40,10 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
         $shippingPrice = Arr::pull($modelData, 'shipping_price');
         $shippingDispatchTime = Arr::pull($modelData, 'shipping_max_dispatch_time');
 
+        if (Arr::has($modelData, 'do_not_update_prices')) {
+            data_set($modelData, 'settings.do_not_update_prices', (bool) Arr::pull($modelData, 'do_not_update_prices'));
+        }
+
         if (Arr::has($modelData, 'is_vat_adjustment')) {
             data_set($modelData, 'settings.tax_category.checked', Arr::get($modelData, 'is_vat_adjustment'));
         }
@@ -150,6 +154,7 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
                 ),
             ],
             'is_vat_adjustment' => ['sometimes', 'boolean'],
+            'do_not_update_prices' => ['sometimes', 'boolean'],
             'tax_category_id'   => ['sometimes', 'integer', Rule::exists('tax_categories', 'id')],
             'status'            => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'state'             => ['sometimes', Rule::enum(CustomerSalesChannelStateEnum::class)],

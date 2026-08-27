@@ -414,10 +414,21 @@ const calculateAdjustedPrice = (
 	type: "percent" | "fixed"
 ): number => {
 	if (type === "percent") {
-		return basePrice * (1 + adjustment / 100)
+		return Math.round(basePrice * (1 + adjustment / 100) * 100) / 100
 	}
 
-	return basePrice * 1 + adjustment
+	return Math.round((basePrice * 1 + adjustment) * 100) / 100
+}
+
+const priceAdjustLabel = (adjustment: number, type: "percent" | "fixed"): string => {
+	const result = calculateAdjustedPrice(
+		selectedEditProduct.value?.product_rrp || 0,
+		adjustment,
+		type
+	)
+	const sign = adjustment >= 0 ? "+" : ""
+	const prefix = type === "percent" ? `${sign}${adjustment}%` : `${sign}${adjustment}`
+	return `${prefix} → ${locale.currencyFormat(layout?.iris?.currency?.code, result)}`
 }
 
 const submitUpdateAndUploadProduct = (sel, state: "draft" | "publish") => {
@@ -1147,7 +1158,7 @@ const percentageIncrease = ref(0);
 		<template #cell(delete)="{ item }" v-if="!disabled">
 			<div class="flex gap-2">
 				<Button
-					v-if="isEbay && !disableButtons(item)"
+					v-if="isEbay && !disableButtons(item) && !customerSalesChannel?.do_not_update_prices"
 					v-tooltip="trans('Edit detail of the product')"
 					type="tertiary"
 					:style="'white-w-outline'"
@@ -1387,8 +1398,13 @@ const percentageIncrease = ref(0);
 					:currency="layout?.iris?.currency?.code"
 					:locale="layout.locale"
 					:allowEmpty="false"
-					:min="selectedEditProduct?.product_rrp" />
-				<div class="mt-2 flex flex-row gap-2">
+					:min="0" />
+				<div class="mt-2 text-xs text-gray-500">
+					{{ trans("Quick pricing: sets the selling price from the base price of :price", {
+						price: locale.currencyFormat(layout?.iris?.currency?.code, selectedEditProduct?.product_rrp || 0)
+					}) }}
+				</div>
+				<div class="mt-1 flex flex-row flex-wrap gap-2">
 					<Button
 						v-for="percent in [20, 40, 60]"
 						:key="'p' + percent"
@@ -1403,7 +1419,7 @@ const percentageIncrease = ref(0);
 								)
 							)
 						"
-						:label="`+${percent}%`"
+						:label="priceAdjustLabel(percent, 'percent')"
 						size="xs"
 						type="tertiary"
 						:style="'white-w-outline'" />
@@ -1419,12 +1435,13 @@ const percentageIncrease = ref(0);
 								}"
 								type="tertiary"
 								:style="'white-w-outline'"
-								:min="0"
-								:max="100"
+								:min="-99"
+								:max="900"
 								:allowEmpty="false"
 								:suffix="'%'"
 							/>
 							<Button
+								v-tooltip="priceAdjustLabel(percentageIncrease, 'percent')"
 								@click="
 									set(
 										selectedEditProduct,
@@ -1436,7 +1453,7 @@ const percentageIncrease = ref(0);
 										)
 									)
 								"
-								:label="`+`"
+								:label="`→ ${locale.currencyFormat(layout?.iris?.currency?.code, calculateAdjustedPrice(selectedEditProduct?.product_rrp || 0, percentageIncrease, 'percent'))}`"
 								size="xs"
 								type="tertiary"
 								:class="'rounded-l-none  ml-0 px-4'"
@@ -1457,7 +1474,7 @@ const percentageIncrease = ref(0);
 								)
 							)
 						"
-						:label="`+${amount}`"
+						:label="priceAdjustLabel(amount, 'fixed')"
 						size="xs"
 						type="tertiary"
 						:style="'white-w-outline'" />

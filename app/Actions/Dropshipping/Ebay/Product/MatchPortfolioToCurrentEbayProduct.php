@@ -61,12 +61,17 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
             $availableQuantity = 50; // Based on discuss with tomas we agree to limit 50 only
         }
 
-        $ebayUser->updateOffer($offerId, [
+        $offerData = [
             'category_id' => $categoryId,
             'quantity' => $availableQuantity,
-            'price' => $portfolio->customer_price,
-            'currency' => $portfolio->shop->currency->code
-        ]);
+        ];
+
+        if (!Arr::get($portfolio->customerSalesChannel->settings, 'do_not_update_prices')) {
+            $offerData['price'] = $portfolio->customer_price;
+            $offerData['currency'] = $portfolio->shop->currency->code;
+        }
+
+        $ebayUser->updateOffer($offerId, $offerData);
 
         if (! Arr::has($listing, 'offers.0.listing.listingId')) {
             $publishedOffer = $ebayUser->publishListing($offerId);
