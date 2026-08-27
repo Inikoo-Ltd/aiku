@@ -66,7 +66,17 @@ const formatKey = (key: string): string => {
     .join(' › ');
 };
 
+const stripAuroraMarkup = (value: string) => {
+  const el = document.createElement('div')
+  el.innerHTML = value
+  return (el.textContent || '').replace(/\s+/g, ' ').trim()
+}
+
 const formatValue = (value: any, key?: string) => {
+  if (typeof value === 'string' && /<[a-z/][^>]*>/i.test(value)) {
+    value = stripAuroraMarkup(value)
+  }
+
   if (typeof value === 'boolean') {
     return value ? 'Active' : 'Inactive';
   }

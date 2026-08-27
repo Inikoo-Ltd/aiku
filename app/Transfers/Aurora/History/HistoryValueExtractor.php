@@ -26,7 +26,8 @@ class HistoryValueExtractor
             return null;
         }
 
-        $trimmed = trim($value);
+        $trimmed = trim(html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5));
+        $trimmed = trim(preg_replace('/\s+/', ' ', $trimmed));
 
         return $trimmed === '' ? null : $trimmed;
     }

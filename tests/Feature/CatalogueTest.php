@@ -1024,3 +1024,45 @@ test('audit archiver moves closed shop and discontinued product audits, history 
         ->and(DB::connection('archive')->table('audits')->where('shop_id', $shop->id)->count())->toBeGreaterThanOrEqual($shopAuditsBefore)
         ->and(DB::table('audits')->where('auditable_type', 'Shop')->where('auditable_id', $liveShop->id)->exists())->toBeTrue();
 });
+
+test('audit archiver moves Aurora loop noise but keeps genuinely busy history', function () {
+    config()->set(
+        'database.connections.archive',
+        array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'archive'])
+    );
+    DB::purge('archive');
+    DB::statement('create schema if not exists archive');
+
+    $insert = function (int $auditableId, callable $values) {
+        $rows = [];
+        for ($i = 0; $i < 1200; $i++) {
+            [$old, $new] = $values($i);
+            $rows[]      = [
+                'auditable_type' => 'Product',
+                'auditable_id'   => $auditableId,
+                'event'          => 'updated',
+                'tags'           => '[]',
+                'old_values'     => json_encode(['duty_rate' => $old]),
+                'new_values'     => json_encode(['duty_rate' => $new]),
+                'url'            => 'artisan fetch:histories --organisations aw',
+                'source_id'      => 'loop-test-'.$auditableId.'-'.$i,
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ];
+        }
+        DB::table('audits')->insert($rows);
+    };
+
+    $loopingId = 987001;
+    $busyId    = 987002;
+    $insert($loopingId, fn (int $i) => $i % 2 ? ['0%', '650%'] : ['650%', '0%']);
+    $insert($busyId, fn (int $i) => [$i.'%', ($i + 1).'%']);
+
+    $archived = \App\Actions\Helpers\History\ArchiveAudits::make()
+        ->handle(closedShops: false, discontinued: false, auroraLoops: true);
+
+    expect($archived)->toBe(1200)
+        ->and(DB::table('audits')->where('auditable_id', $loopingId)->exists())->toBeFalse()
+        ->and(DB::connection('archive')->table('audits')->where('auditable_id', $loopingId)->count())->toBe(1200)
+        ->and(DB::table('audits')->where('auditable_id', $busyId)->count())->toBe(1200);
+});

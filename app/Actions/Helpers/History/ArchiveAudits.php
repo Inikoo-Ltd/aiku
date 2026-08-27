@@ -20,8 +20,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * Moves dead audit trails to the archive database: everything belonging to a closed shop
  * (audits.shop_id covers every audited model of that shop) and the audits of discontinued
- * products and org stocks in live shops. The History tab falls back to the archive when the
- * operational database has no rows for a record, so the trail stays readable.
+ * products and org stocks in live shops, and the Aurora loop noise (see auroraLoopObjects).
+ * The History tab falls back to the archive when the operational database has no rows for a
+ * record, so the trail stays readable.
  *
  * Unlike dispatched emails there are no child tables (nothing holds a FK onto audits) and no
  * stats baselines: the number_audits* sysadmin counters deliberately mean live audits only.
@@ -33,28 +34,40 @@ class ArchiveAudits
     use AsAction;
     use WithArchiveOperations;
 
-    public string $commandSignature = 'helpers:archive_audits {--c|chunk=5000} {--l|limit=} {--d|dry-run} {--closed-shops} {--discontinued}';
+    public string $commandSignature = 'helpers:archive_audits {--c|chunk=5000} {--l|limit=} {--d|dry-run} {--closed-shops} {--discontinued} {--aurora-loops}';
 
-    public string $commandDescription = 'Copy audits of closed shops and discontinued products/org stocks to the archive database and delete them';
+    public string $commandDescription = 'Copy audits of closed shops, discontinued products/org stocks and Aurora loop noise to the archive database and delete them';
 
     public string $archiveConnection = 'archive';
 
     private const ADVISORY_LOCK_KEY = 826_041_502;
+
+    private const AURORA_IMPORT_URL = 'artisan fetch:histories%';
+
+    private const AURORA_LOOP_MIN_AUDITS = 1000;
+
+    private const AURORA_LOOP_MAX_DISTINCT_RATIO = 0.05;
+
+    private const AURORA_LOOP_TYPES = ['Product', 'TradeUnit', 'OrgStock', 'Barcode', 'StockDelivery'];
+
+    /** @var array<string, array<int, int>>|null */
+    private ?array $auroraLoopObjects = null;
 
     public function handle(
         int $chunkSize = 5000,
         ?int $limit = null,
         bool $closedShops = true,
         bool $discontinued = true,
+        bool $auroraLoops = false,
         bool $dryRun = false,
         ?Command $command = null
     ): int {
-        if (!$closedShops && !$discontinued) {
-            throw new Exception('Nothing selected: enable at least one of closed shops or discontinued.');
+        if (!$closedShops && !$discontinued && !$auroraLoops) {
+            throw new Exception('Nothing selected: enable at least one of closed shops, discontinued or Aurora loops.');
         }
 
         if ($dryRun) {
-            $total = $this->eligibleAudits($closedShops, $discontinued)->count();
+            $total = $this->eligibleAudits($closedShops, $discontinued, $auroraLoops)->count();
             $command?->info("Dry run: $total audits would be archived");
 
             return $total;
@@ -73,7 +86,7 @@ class ArchiveAudits
 
         $progress = null;
         if ($command) {
-            $eligible = $this->eligibleAudits($closedShops, $discontinued)->count();
+            $eligible = $this->eligibleAudits($closedShops, $discontinued, $auroraLoops)->count();
 
             if ($eligible === 0) {
                 DB::selectOne('select pg_advisory_unlock(?)', [self::ADVISORY_LOCK_KEY]);
@@ -97,7 +110,7 @@ class ArchiveAudits
 
             $this->waitForReplication($command, $progress);
 
-            $auditIds = $this->eligibleAudits($closedShops, $discontinued)
+            $auditIds = $this->eligibleAudits($closedShops, $discontinued, $auroraLoops)
                 ->where('id', '>', $lastId)
                 ->orderBy('id')
                 ->limit($batchSize)
@@ -126,9 +139,9 @@ class ArchiveAudits
         return $archivedTotal;
     }
 
-    private function eligibleAudits(bool $closedShops, bool $discontinued): Builder
+    private function eligibleAudits(bool $closedShops, bool $discontinued, bool $auroraLoops = false): Builder
     {
-        return DB::table('audits')->where(function (Builder $query) use ($closedShops, $discontinued) {
+        return DB::table('audits')->where(function (Builder $query) use ($closedShops, $discontinued, $auroraLoops) {
             if ($closedShops) {
                 $query->orWhereIn(
                     'shop_id',
@@ -151,20 +164,66 @@ class ArchiveAudits
                         );
                 });
             }
+            if ($auroraLoops) {
+                foreach ($this->auroraLoopObjects() as $auditableType => $auditableIds) {
+                    $query->orWhere(function (Builder $subQuery) use ($auditableType, $auditableIds) {
+                        $subQuery->where('auditable_type', $auditableType)
+                            ->whereIn('auditable_id', $auditableIds)
+                            ->where('url', 'like', self::AURORA_IMPORT_URL);
+                    });
+                }
+            }
         });
+    }
+
+    /**
+     * Catalogue records whose Aurora-imported history is the artefact of the Aurora runaway loop:
+     * two processes rewrote the same handful of attributes at each other every twenty minutes for
+     * years. A looping object holds thousands of imported audits that repeat a couple of hundred
+     * distinct transitions; a genuinely busy record has almost as many transitions as audits, so
+     * the distinct ratio, not the row count alone, is what separates them.
+     *
+     * @return array<string, array<int, int>>
+     */
+    private function auroraLoopObjects(): array
+    {
+        if ($this->auroraLoopObjects !== null) {
+            return $this->auroraLoopObjects;
+        }
+
+        $rows = DB::table('audits')
+            ->select('auditable_type', 'auditable_id')
+            ->where('url', 'like', self::AURORA_IMPORT_URL)
+            ->whereIn('auditable_type', self::AURORA_LOOP_TYPES)
+            ->groupBy('auditable_type', 'auditable_id')
+            ->havingRaw('count(*) > ?', [self::AURORA_LOOP_MIN_AUDITS])
+            ->havingRaw(
+                'count(distinct (old_values::text || \'>\' || new_values::text))::numeric / count(*) < ?',
+                [self::AURORA_LOOP_MAX_DISTINCT_RATIO]
+            )
+            ->get();
+
+        $objects = [];
+        foreach ($rows as $row) {
+            $objects[$row->auditable_type][] = (int) $row->auditable_id;
+        }
+
+        return $this->auroraLoopObjects = $objects;
     }
 
     public function asCommand(Command $command): int
     {
         $onlyClosedShops  = (bool) $command->option('closed-shops');
         $onlyDiscontinued = (bool) $command->option('discontinued');
-        $both             = !$onlyClosedShops && !$onlyDiscontinued;
+        $onlyAuroraLoops  = (bool) $command->option('aurora-loops');
+        $all              = !$onlyClosedShops && !$onlyDiscontinued && !$onlyAuroraLoops;
 
         $archived = $this->handle(
             chunkSize: (int) $command->option('chunk'),
             limit: $command->option('limit') ? (int) $command->option('limit') : null,
-            closedShops: $both || $onlyClosedShops,
-            discontinued: $both || $onlyDiscontinued,
+            closedShops: $all || $onlyClosedShops,
+            discontinued: $all || $onlyDiscontinued,
+            auroraLoops: $all || $onlyAuroraLoops,
             dryRun: (bool) $command->option('dry-run'),
             command: $command
         );

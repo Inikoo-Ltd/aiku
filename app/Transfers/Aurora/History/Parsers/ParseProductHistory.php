@@ -277,10 +277,6 @@ class ParseProductHistory
             }
         }
 
-        if (preg_match('/class="[^"]*error[^"]*"/', $value)) {
-            $data['negative_margin'] = true;
-        }
-
         $numeric = preg_replace('/margin\s+-?[\d.]+%/', '', $value);
         $numeric = str_replace(',', '', $numeric);
         if (preg_match('/([\d]+(?:\.\d+)?)/', $numeric, $matches)) {
