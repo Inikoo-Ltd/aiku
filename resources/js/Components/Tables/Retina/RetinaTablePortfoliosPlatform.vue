@@ -42,6 +42,7 @@ import {
 	faBan,
 	faDollarSign,
 	faCube,
+	faInfoCircle,
 } from "@fal"
 import { faStar, faFilter } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
@@ -60,6 +61,7 @@ import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import RetinaMatchStoredItemPicker from "@/Components/Tables/Retina/RetinaMatchStoredItemPicker.vue"
 
 library.add(
+	faInfoCircle,
 	faHandshake,
 	faHandshakeSlash,
 	faHandPointer,
@@ -1385,9 +1387,13 @@ const percentageIncrease = ref(0);
 			</div>
 
 			<div class="mb-3">
-				<label for="edit-product-rrp" class="block text-sm font-semibold">{{
-					trans("Selling Price")
-				}}</label>
+				<label for="edit-product-rrp" class="block text-sm font-semibold">
+					{{ trans("Price Mapping") }}
+					<FontAwesomeIcon
+						:icon="['fal', 'info-circle']"
+						class="text-gray-400 cursor-help"
+						v-tooltip="trans('The price we will upload to eBay for this listing. Type it directly, or use the quick buttons below to set it from the base price (base + percentage, or base + fixed amount).')" />
+				</label>
 				<InputNumber
 					@update:modelValue="(value) => selectedEditProduct.customer_price = value"
 					:modelValue="selectedEditProduct?.customer_price"
