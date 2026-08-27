@@ -114,6 +114,12 @@ class SubmitOrder extends OrgAction
         }
 
         $this->update($order, $modelData);
+        
+        if ($order->customer->warehouse_temporary_notes) {
+            UpdateCustomer::make()->action($order->customer, [
+                'warehouse_temporary_notes' => null
+            ]);
+        }
 
         if ($order->shop->masterShop) {
             $order->shop->masterShop->orderingStats->update(
@@ -159,10 +165,6 @@ class SubmitOrder extends OrgAction
         /** Tells any other browser tab still showing this order's checkout to redirect away,
          * so a stale card widget cannot take a second payment */
         RetinaOrderSubmittedEvent::dispatch($order->customer_id, $order->id);
-
-        UpdateCustomer::make()->action($order->customer, [
-            'warehouse_temporary_notes' => null
-        ]);
 
         return $order;
     }
