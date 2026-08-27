@@ -323,7 +323,10 @@ function onDeleteFilesInList(categoryBox: any) {
             preserveState: true,
             only: ["images_category_box"],
             onStart: () => (loadingSubmit.value = categoryBox.column_in_db),
-            onSuccess: () => notifySuccess(trans("File deleted successfully")),
+            onSuccess: () => {
+                notifySuccess(trans("File deleted successfully"))
+                router.reload({ only: ["images"] })
+            },
             onError: () => notifyError(trans("Failed to delete file")),
             onFinish: () => (loadingSubmit.value = null),
         }
