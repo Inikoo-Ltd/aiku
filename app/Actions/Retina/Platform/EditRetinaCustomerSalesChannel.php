@@ -85,7 +85,7 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                     'value' => $pricingPolicy,
                     'currency_code' => $customerSalesChannel->shop->currency->code,
                     'currency_symbol' => $customerSalesChannel->shop->currency->symbol ?? $customerSalesChannel->shop->currency->code,
-                    'example_price' => 100,
+                    'example_price' => 10,
                     'value_field' => 'pricing_value',
                     'hasOther' => [
                         [
