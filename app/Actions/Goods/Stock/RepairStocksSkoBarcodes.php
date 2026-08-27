@@ -9,6 +9,7 @@
 namespace App\Actions\Goods\Stock;
 
 use App\Enums\Goods\Stock\StockStateEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Console\Command;
@@ -35,16 +36,27 @@ class RepairStocksSkoBarcodes
     public string $commandSignature = 'stocks:repair_sko_barcodes
         {--apply : Write the barcodes, without this the command only reports what it would do}';
 
+    /**
+     * Written as one mass update on purpose, unlike the cascade in UpdateOrgStock: this is a data
+     * migration carrying existing barcodes to where they now belong, not somebody changing them,
+     * so it stays out of the per org stock history rather than filling it with a repair nobody
+     * made a decision about.
+     */
     public function handle(Stock $stock, string $barcode, bool $isHandSet): void
     {
         $stock->update(['barcode' => $barcode]);
         $stock->orgStocks()->update(['barcode' => $barcode, 'independent_barcode' => $isHandSet]);
     }
 
+    /**
+     * Discontinued org stocks get no vote: nobody picks them, so a stale barcode one of them was
+     * left holding must not win the ballot and be pushed onto the organisations still selling it.
+     */
     public function canonicalBarcode(Stock $stock): ?string
     {
         return $stock->orgStocks()
             ->whereNotNull('barcode')
+            ->where('state', '!=', OrgStockStateEnum::DISCONTINUED)
             ->select('barcode', DB::raw('count(*) as uses'), DB::raw('min(id) as oldest_id'))
             ->groupBy('barcode')
             ->orderByDesc('uses')
@@ -78,11 +90,15 @@ class RepairStocksSkoBarcodes
 
     /**
      * The unit EAN is only safe as the SKO barcode when the outer holds exactly one unit in every
-     * organisation, and when all org stocks that carry an EAN agree on which one it is.
+     * organisation still selling it, and when all org stocks that carry an EAN agree on which one
+     * it is. Discontinued org stocks are left out of both tests, the same way they are left out of
+     * the ballot: a pack size nobody picks any more must not veto the copy.
      */
     public function unitBarcodeToCopy(Stock $stock): ?string
     {
-        $orgStocks = $stock->orgStocks()->get(['unit_barcode', 'packed_in']);
+        $orgStocks = $stock->orgStocks()
+            ->where('state', '!=', OrgStockStateEnum::DISCONTINUED)
+            ->get(['unit_barcode', 'packed_in']);
 
         if ($orgStocks->contains(fn (OrgStock $orgStock) => ($orgStock->packed_in ?? 1) > 1)) {
             return null;

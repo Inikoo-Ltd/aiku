@@ -48,7 +48,16 @@ class UpdateOrgStock extends OrgAction
 
             if ($stock = $orgStock->stock) {
                 $stock->update(['barcode' => $modelData['barcode']]);
-                $stock->orgStocks()->whereKeyNot($orgStock->id)->update(Arr::only($modelData, ['barcode', 'independent_barcode']));
+
+                /*
+                 * Saved one by one rather than in a single mass update: a mass update writes no
+                 * model events, so the organisations that had their scanning barcode changed for
+                 * them would carry no history of it. There is one sibling per organisation, so
+                 * the loop is a handful of rows.
+                 */
+                foreach ($stock->orgStocks()->whereKeyNot($orgStock->id)->get() as $sibling) {
+                    $sibling->update(Arr::only($modelData, ['barcode', 'independent_barcode']));
+                }
             }
         }
 
@@ -155,10 +164,16 @@ class UpdateOrgStock extends OrgAction
     }
 
 
+    /**
+     * disableAuditing() sets a static that nothing here ever cleared, and under Octane the worker
+     * outlives the request: one caller asking for no audit switched org stock history off for
+     * every request that worker went on to serve. withoutAuditing() puts back whatever the flag
+     * was, so a nested caller that had already turned it off still gets what it asked for.
+     */
     public function action(OrgStock $orgStock, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): OrgStock
     {
         if (!$audit) {
-            OrgStock::disableAuditing();
+            return OrgStock::withoutAuditing(fn () => $this->action($orgStock, $modelData, $hydratorsDelay, $strict));
         }
 
         $this->hydratorsDelay = $hydratorsDelay;

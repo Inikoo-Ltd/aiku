@@ -2051,6 +2051,72 @@ test('sko barcode repair pushes the majority barcode up to the stock and across 
     expect($repair->conflictingHolder($eanStock, '5050000000116'))->toBe("stock id $stock->id");
 });
 
+test('a discontinued org stock neither wins the barcode ballot nor vetoes the unit ean copy', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $live = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $orgData = \App\Models\SysAdmin\Organisation::factory()->definition();
+    data_set($orgData, 'code', 'acm2');
+    data_set($orgData, 'type', \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP);
+    $organisation2 = \App\Models\SysAdmin\Organisation::where('code', 'acm2')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, $orgData);
+    $dead = StoreOrgStock::make()->action($organisation2, $stock);
+
+    $repair = new \App\Actions\Goods\Stock\RepairStocksSkoBarcodes();
+
+    $dead->updateQuietly([
+        'barcode'    => 'DEAD-BARCODE',
+        'state'      => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED,
+        'packed_in'  => 12,
+    ]);
+    $live->updateQuietly(['barcode' => 'LIVE-BARCODE', 'packed_in' => 1]);
+
+    expect($repair->canonicalBarcode($stock->refresh()))->toBe('LIVE-BARCODE');
+
+    $live->updateQuietly(['barcode' => null, 'unit_barcode' => '5050000000147']);
+    $dead->updateQuietly(['barcode' => null, 'unit_barcode' => '5050000000154']);
+
+    expect($repair->unitBarcodeToCopy($stock->refresh()))->toBe('5050000000147');
+});
+
+test('cascading a sko barcode leaves a history entry on the siblings it changed', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $orgData = \App\Models\SysAdmin\Organisation::factory()->definition();
+    data_set($orgData, 'code', 'acm2');
+    data_set($orgData, 'type', \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP);
+    $organisation2 = \App\Models\SysAdmin\Organisation::where('code', 'acm2')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, $orgData);
+    $sibling = StoreOrgStock::make()->action($organisation2, $stock);
+
+    UpdateOrgStock::make()->action($orgStock, ['barcode' => '5050000000161']);
+
+    $siblingAudit = $sibling->audits()->get()->last();
+
+    expect($sibling->refresh()->barcode)->toBe('5050000000161')
+        ->and($siblingAudit)->not->toBeNull()
+        ->and(data_get($siblingAudit->new_values, 'barcode'))->toBe('5050000000161');
+});
+
+test('two stocks in a group cannot answer to the same sko barcode', function () {
+    $first = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $second = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    $first->update(['barcode' => '5050000000178']);
+
+    expect(fn () => $second->update(['barcode' => '5050000000178']))
+        ->toThrow(\Illuminate\Database\QueryException::class);
+});
+
 test('sko barcode repair treats an orphan org stock holding the barcode as a conflict', function () {
     $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
         'state' => StockStateEnum::ACTIVE
