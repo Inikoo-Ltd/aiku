@@ -75,15 +75,7 @@ class UpdateEbayPortfolio implements ShouldBeUnique
 
         $platformPortfolioLog = StorePlatformPortfolioLog::run($portfolio, []);
 
-        $availableQuantity = $product->available_quantity ?? 0;
-
-        if (!$product->is_for_sale && !$product->is_bundle) {
-            $availableQuantity = 0;
-        }
-
-        if ($customerSalesChannel->max_quantity_advertise > 0) {
-            $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
-        }
+        $availableQuantity = self::quantityToSend($product, $customerSalesChannel);
 
         $ebayUser->setTimeout(45);
         try {
@@ -156,6 +148,21 @@ class UpdateEbayPortfolio implements ShouldBeUnique
                 'ban_stock_update_util' => now()->addSeconds(10)
             ]);
         }
+    }
+
+    public static function quantityToSend(Product $product, CustomerSalesChannel $customerSalesChannel): int
+    {
+        $availableQuantity = $product->available_quantity ?? 0;
+
+        if (!$product->is_for_sale && !$product->is_bundle) {
+            $availableQuantity = 0;
+        }
+
+        if ($customerSalesChannel->max_quantity_advertise > 0) {
+            $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
+        }
+
+        return (int) $availableQuantity;
     }
 
     public function markUpdated(Portfolio $portfolio, CustomerSalesChannel $customerSalesChannel, $platformPortfolioLog, int $availableQuantity): void

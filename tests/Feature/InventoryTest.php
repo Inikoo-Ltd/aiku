@@ -732,6 +732,8 @@ test("UI show org stock", function (OrgStock $orgStock) {
     $warehouse = $this->organisation->warehouses->first();
     $this->withoutExceptionHandling();
 
+    $orgStock->update(['is_on_demand' => true]);
+
     $response = get(
         route("grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show", [
             $this->organisation->slug,
@@ -746,7 +748,8 @@ test("UI show org stock", function (OrgStock $orgStock) {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $orgStock->code)->etc()
+                fn (AssertableInertia $page) => $page->where("title", $orgStock->code)
+                    ->where("afterTitle.label", "On Demand")->etc()
             )
             ->has("showcase.latest_movements")
             ->has("tabs");

@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
 use App\Actions\Dropshipping\Ebay\UpdateEbayUser;
+use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInEbayPortfolio;
 use App\Actions\Dropshipping\Ebay\UpdateReturnPolicyEbayUser;
 use App\Actions\Dropshipping\Ebay\UpdateShippingPolicyEbayUser;
 use App\Actions\OrgAction;
@@ -85,7 +86,23 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
         data_forget($modelData, 'tax_category_id');
         data_forget($modelData, 'is_vat_adjustment');
 
+        $stockSettingsBefore = [
+            $customerSalesChannel->stock_update,
+            $customerSalesChannel->stock_threshold,
+            $customerSalesChannel->max_quantity_advertise
+        ];
+
         $customerSalesChannel = UpdateCustomerSalesChannel::run($customerSalesChannel, $modelData);
+
+        $stockSettingsAfter = [
+            $customerSalesChannel->stock_update,
+            $customerSalesChannel->stock_threshold,
+            $customerSalesChannel->max_quantity_advertise
+        ];
+
+        if ($customerSalesChannel->stock_update && $stockSettingsBefore !== $stockSettingsAfter) {
+            UpdateInventoryInEbayPortfolio::dispatch($customerSalesChannel);
+        }
 
         if ($fulfillmentPolicyId || filled($shippingService) || filled($shippingPrice) || filled($shippingDispatchTime)) {
             if ($fulfillmentPolicyId) {

@@ -129,6 +129,10 @@ class ShowOrgStock extends OrgAction
                     ],
                     'model'         => __('SKO'),
                     'title'         => $orgStock->code,
+                    'afterTitle'    => $orgStock->is_on_demand ? [
+                        'label'   => __('On Demand'),
+                        'tooltip' => __('Stock figure is not tracked, products advertise a fixed quantity')
+                    ] : null,
                     'iconRight'          => $orgStock->state->stateIcon()[$orgStock->state->value],
                     'actions'       => [
                         [

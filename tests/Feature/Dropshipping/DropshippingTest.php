@@ -14,7 +14,12 @@ use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBaske
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateEbayCustomerSalesChannel;
+use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
+use App\Actions\Dropshipping\Ebay\StoreEbayUser;
+use App\Actions\Dropshipping\Ebay\Product\UpdateEbayPortfolio;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInEbayPortfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Helpers\Media\SaveModelImages;
@@ -37,6 +42,7 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Helpers\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
@@ -537,4 +543,70 @@ test('Dropshipping hydrators', function () {
     $this->artisan('hydrate', [
         '--sections' => 'dropshipping',
     ])->assertExitCode(0);
+});
+
+test('ebay stock sync pushes when capped quantity differs from last push', function () {
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
+
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+        $this->customer,
+        $platform,
+        ['reference' => 'test_ebay_stock_sync']
+    );
+
+    $portfolio = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+    $portfolio->update(['platform_product_id' => 'ebay-offer-1', 'platform_status' => true]);
+
+    $this->product->update([
+        'available_quantity'            => 250,
+        'available_quantity_updated_at' => now()->subMonths(2)
+    ]);
+    $customerSalesChannel->update(['max_quantity_advertise' => 80]);
+    $product = $this->product->refresh();
+
+    expect(UpdateEbayPortfolio::quantityToSend($product, $customerSalesChannel))->toBe(80);
+
+    $customerSalesChannel->max_quantity_advertise = 0;
+    expect(UpdateEbayPortfolio::quantityToSend($product, $customerSalesChannel))->toBe(250);
+    $customerSalesChannel->max_quantity_advertise = 80;
+
+    $checker = UpdateInventoryInEbayPortfolio::make();
+
+    expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
+
+    $portfolio->update(['last_stock_value' => 50, 'stock_last_updated_at' => now()->subMonths(6)]);
+    expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
+
+    $portfolio->update(['last_stock_value' => 80]);
+    expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeFalse();
+
+    $portfolio->update(['last_stock_value' => 50, 'stock_last_fail_updated_at' => now()->subHour()]);
+    expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeFalse();
+
+    $portfolio->update(['stock_last_fail_updated_at' => now()->subDays(2)]);
+    expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
+
+    return $customerSalesChannel;
+});
+
+test('updating ebay channel stock settings queues inventory sync', function () {
+    Queue::fake();
+
+    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-user']);
+    $customerSalesChannel = $ebayUser->customerSalesChannel;
+
+    CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
+
+    $customerSalesChannel = UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'stock_update'           => true,
+        'max_quantity_advertise' => 90
+    ]);
+    UpdateInventoryInEbayPortfolio::assertPushed(1);
+
+    UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'stock_update'           => true,
+        'max_quantity_advertise' => 90
+    ]);
+
+    UpdateInventoryInEbayPortfolio::assertPushed(1);
 });
