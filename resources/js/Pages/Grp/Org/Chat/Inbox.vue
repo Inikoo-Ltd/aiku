@@ -510,9 +510,12 @@ const fetchInboxNotifications = async () => {
     }
 }
 
-// Team-unread badge for the currently selected inbox only, so it matches the shop in view.
+// Team-unread badge for the currently selected inbox + channel. team_unread is a website
+// ChatSession count, so it only applies to the website channel (WhatsApp has no count yet).
 const teamUnreadForShop = computed(() =>
-    selectedShopId.value ? (teamUnreadByShop.value[selectedShopId.value] ?? 0) : 0
+    selectedShopId.value && selectedChannel.value !== "whatsapp"
+        ? (teamUnreadByShop.value[selectedShopId.value] ?? 0)
+        : 0
 )
 
 const tabUnread = computed(() => {
@@ -997,12 +1000,12 @@ onUnmounted(() => {
                         {{ trashView ? trans("Trash") : spamView ? trans("Spam") : highlightView ? trans("Highlighted") : (selectedInbox?.name ?? trans("Inbox")) }}
                     </div>
                     <div v-if="!spamView && !trashView" class="inline-flex items-center bg-gray-100 rounded-lg p-0.5 text-[11px]">
-                        <button type="button" class="px-2.5 py-1 rounded-md transition-all"
+                        <button type="button" class="px-2.5 py-1 rounded-md transition-all whitespace-nowrap shrink-0"
                             :class="viewMode === 'my' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                             @click="viewMode = 'my'">
                             {{ trans("My Chats") }}
                         </button>
-                        <button type="button" class="px-2.5 py-1 rounded-md transition-all inline-flex items-center gap-1"
+                        <button type="button" class="px-2.5 py-1 rounded-md transition-all whitespace-nowrap shrink-0 inline-flex items-center gap-1"
                             :class="viewMode === 'team' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                             @click="viewMode = 'team'">
                             {{ trans("Team Chats") }}
