@@ -56,10 +56,11 @@ class EditStoredItem extends OrgAction
     {
         $fields = [
             'reference' => [
-                'type'    => 'input',
-                'label'   => __('Reference'),
-                'value'   => $storedItem->reference,
-                'required' => true
+                'type'        => 'input',
+                'label'       => __('Reference (barcode)'),
+                'information' => __('The reference is the barcode: it is what the printed label carries and what scan-to-pick reads. After changing it, reprint the label — labels printed with the old reference stop scanning.'),
+                'value'       => $storedItem->reference,
+                'required'    => true
             ],
             'name' => [
                 'type'    => 'input',
