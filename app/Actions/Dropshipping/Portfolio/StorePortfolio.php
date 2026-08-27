@@ -53,13 +53,13 @@ class StorePortfolio extends OrgAction
         $pricingType  = Arr::get($customerSalesChannel->settings, 'pricing.type');
         $pricingValue = Arr::get($customerSalesChannel->settings, 'pricing.value');
 
-        if ($pricingType && $pricingValue) {
+        if (in_array($pricingType, ['percent', 'fixed']) && $pricingValue) {
             $addedValue = $pricingValue;
             if ($pricingType === 'percent') {
-                $addedValue = $rrp * (1 + $pricingValue / 100);
+                $addedValue = $rrp * ($pricingValue / 100);
             }
 
-            $rrp = $rrp + $addedValue;
+            $rrp = round($rrp + $addedValue, 2);
         }
 
         $customerProductName = Arr::get($modelData, 'customer_product_name', $item->name);

@@ -66,7 +66,10 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
             'quantity' => $availableQuantity,
         ];
 
-        if (!Arr::get($portfolio->customerSalesChannel->settings, 'do_not_update_prices')) {
+        if (
+            !Arr::get($portfolio->customerSalesChannel->settings, 'do_not_update_prices')
+            && Arr::get($portfolio->settings, 'pricing.type') !== 'not_follow'
+        ) {
             $offerData['price'] = $portfolio->customer_price;
             $offerData['currency'] = $portfolio->shop->currency->code;
         }

@@ -47,7 +47,10 @@ class UpdateEbayOffer implements ShouldBeUnique
             'description' => $portfolio->customer_description,
         ];
 
-        if (!Arr::get($customerSalesChannel->settings, 'do_not_update_prices')) {
+        if (
+            !Arr::get($customerSalesChannel->settings, 'do_not_update_prices')
+            && Arr::get($portfolio->settings, 'pricing.type') !== 'not_follow'
+        ) {
             $offerData['price'] = (string) $portfolio->customer_price;
         }
 

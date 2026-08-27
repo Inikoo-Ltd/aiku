@@ -328,6 +328,8 @@ const openEditModal = (item) => {
 	selectedEditProduct.value = {
 		...item,
 		basePrice: item?.product_rrp,
+		pricing_type: item?.price_rule?.type ?? "percent",
+		pricing_value: item?.price_rule?.value ?? 0,
 	}
 }
 
@@ -422,15 +424,43 @@ const calculateAdjustedPrice = (
 	return Math.round((basePrice * 1 + adjustment) * 100) / 100
 }
 
-const priceAdjustLabel = (adjustment: number, type: "percent" | "fixed"): string => {
-	const result = calculateAdjustedPrice(
+
+const editProductComputedPrice = computed(() =>
+	calculateAdjustedPrice(
 		selectedEditProduct.value?.product_rrp || 0,
-		adjustment,
-		type
+		selectedEditProduct.value?.pricing_value || 0,
+		selectedEditProduct.value?.pricing_type || "percent"
 	)
-	const sign = adjustment >= 0 ? "+" : ""
-	const prefix = type === "percent" ? `${sign}${adjustment}%` : `${sign}${adjustment}`
-	return `${prefix} → ${locale.currencyFormat(layout?.iris?.currency?.code, result)}`
+)
+const isEditProductPriceInvalid = computed(() =>
+	selectedEditProduct.value?.pricing_type !== "not_follow" && editProductComputedPrice.value <= 0)
+const editProductPriceColor = computed(() => {
+	if (isEditProductPriceInvalid.value) return "text-red-600"
+	const rrp = selectedEditProduct.value?.product_rrp || 0
+	if (!rrp) return "text-emerald-700"
+	const diff = ((editProductComputedPrice.value - rrp) / rrp) * 100
+	if (diff > 20 || diff < -20) return "text-red-600"
+	if (diff > 15 || diff < -15) return "text-orange-500"
+	if (diff > 10 || diff < -10) return "text-yellow-600"
+	return "text-emerald-700"
+})
+
+const switchPricingMode = (mode: "percent" | "fixed" | "not_follow") => {
+	const sel = selectedEditProduct.value
+	if (!sel || sel.pricing_type === mode) return
+	if (mode === "not_follow" || sel.pricing_type === "not_follow") {
+		sel.pricing_value = 0
+		sel.pricing_type = mode
+		return
+	}
+	const rrp = sel.product_rrp || 0
+	const value = sel.pricing_value || 0
+	if (mode === "fixed") {
+		sel.pricing_value = Math.round(rrp * value) / 100
+	} else {
+		sel.pricing_value = rrp ? Math.round((value / rrp) * 10000) / 100 : 0
+	}
+	sel.pricing_type = mode
 }
 
 const submitUpdateAndUploadProduct = (sel, state: "draft" | "publish") => {
@@ -441,7 +471,8 @@ const submitUpdateAndUploadProduct = (sel, state: "draft" | "publish") => {
 		}),
 		{
 			title: sel.name,
-			price: sel.customer_price,
+			pricing_type: sel.pricing_type,
+			pricing_value: sel.pricing_value,
 			description: sel.description,
 		},
 		{
@@ -550,7 +581,6 @@ const compTableFilterForSale = computed(() => {
 	return layout.currentQuery?.[`${props.tab}_filter`]?.is_for_sale
 })
 
-const percentageIncrease = ref(0);
 
 </script>
 
@@ -1387,103 +1417,67 @@ const percentageIncrease = ref(0);
 			</div>
 
 			<div class="mb-3">
-				<label for="edit-product-rrp" class="block text-sm font-semibold">
+				<label class="block text-sm font-semibold">
 					{{ trans("Price Mapping") }}
 					<FontAwesomeIcon
 						:icon="['fal', 'info-circle']"
 						class="text-gray-400 cursor-help"
-						v-tooltip="trans('The price we will upload to eBay for this listing. Type it directly, or use the quick buttons below to set it from the base price (base + percentage, or base + fixed amount).')" />
+						v-tooltip="trans('Your eBay price is set relative to the base price (RRP): a percentage or an amount, up or down. When the base price changes, your eBay price follows this rule.')" />
 				</label>
-				<InputNumber
-					@update:modelValue="(value) => selectedEditProduct.customer_price = value"
-					:modelValue="selectedEditProduct?.customer_price"
-					inputId="edit-product-rrp"
-					mode="currency"
-					fluid
-					size="small"
-					:currency="layout?.iris?.currency?.code"
-					:locale="layout.locale"
-					:allowEmpty="false"
-					:min="0" />
-				<div class="mt-2 text-xs text-gray-500">
-					{{ trans("Quick pricing: sets the selling price from the base price of :price", {
-						price: locale.currencyFormat(layout?.iris?.currency?.code, selectedEditProduct?.product_rrp || 0)
-					}) }}
-				</div>
-				<div class="mt-1 flex flex-row flex-wrap gap-2">
+				<div class="flex flex-row flex-wrap items-center gap-2">
 					<Button
-						v-for="percent in [20, 40, 60]"
-						:key="'p' + percent"
-						@click="
-							set(
-								selectedEditProduct,
-								['customer_price'],
-								calculateAdjustedPrice(
-									selectedEditProduct?.product_rrp || 0,
-									percent,
-									'percent'
-								)
-							)
-						"
-						:label="priceAdjustLabel(percent, 'percent')"
+						:key="'mode-percent-' + selectedEditProduct.pricing_type"
+						:label="trans('± % over live RRP')"
 						size="xs"
-						type="tertiary"
-						:style="'white-w-outline'" />
-						<div class="flex flex-row">
-							<InputNumber
-								@update:modelValue="(value) => percentageIncrease = value"
-								:modelValue="percentageIncrease"
-								:inputClass="'xxs w-[65px]'"
-								:inputStyle="{
-									'border-top-right-radius':0,
-									'border-bottom-right-radius':0,
-									'font-size': '0.75rem'
-								}"
-								type="tertiary"
-								:style="'white-w-outline'"
-								:min="-99"
-								:max="900"
-								:allowEmpty="false"
-								:suffix="'%'"
-							/>
-							<Button
-								v-tooltip="priceAdjustLabel(percentageIncrease, 'percent')"
-								@click="
-									set(
-										selectedEditProduct,
-										['customer_price'],
-										calculateAdjustedPrice(
-											selectedEditProduct?.product_rrp || 0,
-											percentageIncrease,
-											'percent'
-										)
-									)
-								"
-								:label="`→ ${locale.currencyFormat(layout?.iris?.currency?.code, calculateAdjustedPrice(selectedEditProduct?.product_rrp || 0, percentageIncrease, 'percent'))}`"
-								size="xs"
-								type="tertiary"
-								:class="'rounded-l-none  ml-0 px-4'"
-								:style="'white-w-outline'"
-							/>
+						:type="selectedEditProduct.pricing_type === 'percent' ? 'primary' : 'tertiary'"
+						:style="selectedEditProduct.pricing_type === 'percent' ? undefined : 'white-w-outline'"
+						@click="switchPricingMode('percent')" />
+					<Button
+						:key="'mode-fixed-' + selectedEditProduct.pricing_type"
+						:label="trans('± :currency over live RRP', { currency: layout?.iris?.currency?.symbol || layout?.iris?.currency?.code || '£' })"
+						size="xs"
+						:type="selectedEditProduct.pricing_type === 'fixed' ? 'primary' : 'tertiary'"
+						:style="selectedEditProduct.pricing_type === 'fixed' ? undefined : 'white-w-outline'"
+						@click="switchPricingMode('fixed')" />
+					<Button
+						:key="'mode-notfollow-' + selectedEditProduct.pricing_type"
+						:label="trans('Not follow')"
+						size="xs"
+						:type="selectedEditProduct.pricing_type === 'not_follow' ? 'primary' : 'tertiary'"
+						:style="selectedEditProduct.pricing_type === 'not_follow' ? undefined : 'white-w-outline'"
+						@click="switchPricingMode('not_follow')" />
+				</div>
+				<div v-if="selectedEditProduct.pricing_type !== 'not_follow'" class="mt-3 min-h-[56px] flex flex-row items-center gap-4">
+					<InputNumber
+						@update:modelValue="(value) => selectedEditProduct.pricing_value = value"
+						@input="(event) => selectedEditProduct.pricing_value = event.value"
+						:modelValue="selectedEditProduct?.pricing_value"
+						:inputClass="'xxs w-[100px]'"
+						:min="-100"
+						:max="900"
+						:minFractionDigits="0"
+						:maxFractionDigits="2"
+						:allowEmpty="false"
+						:suffix="selectedEditProduct.pricing_type === 'percent' ? '%' : undefined"
+						:prefix="selectedEditProduct.pricing_type === 'fixed' ? (layout?.iris?.currency?.symbol || layout?.iris?.currency?.code || '£') : (selectedEditProduct.pricing_value > 0 ? '+' : undefined)"
+						size="small" />
+					<div class="flex flex-row items-center gap-3 whitespace-nowrap">
+						<div>
+							<div class="text-[10px] uppercase tracking-wide text-gray-400">{{ trans("Live RRP") }}</div>
+							<div class="text-base text-gray-500">{{ locale.currencyFormat(layout?.iris?.currency?.code, selectedEditProduct?.product_rrp || 0) }}</div>
 						</div>
-						<Button
-						v-for="amount in [2, 4, 6, 8, 10]"
-						:key="'a' + amount"
-						@click="
-							set(
-								selectedEditProduct,
-								['customer_price'],
-								calculateAdjustedPrice(
-									selectedEditProduct?.product_rrp || 0,
-									amount,
-									'fixed'
-								)
-							)
-						"
-						:label="priceAdjustLabel(amount, 'fixed')"
-						size="xs"
-						type="tertiary"
-						:style="'white-w-outline'" />
+						<div class="text-gray-400">→</div>
+						<div>
+							<div class="text-[10px] uppercase tracking-wide" :class="editProductPriceColor">{{ trans("Your eBay price") }}</div>
+							<div class="text-base font-semibold" :class="editProductPriceColor">{{ locale.currencyFormat(layout?.iris?.currency?.code, editProductComputedPrice) }}</div>
+						</div>
+					</div>
+				</div>
+				<div v-else class="mt-3 min-h-[56px] flex items-center text-sm text-gray-500">
+					{{ trans("This product's eBay price stays as it is. We will not update it, even when the RRP changes.") }}
+				</div>
+				<div v-if="isEditProductPriceInvalid" class="mt-1 text-sm text-red-600">
+					{{ trans("This adjustment takes the price to zero or below. Your eBay price must be greater than zero.") }}
 				</div>
 			</div>
 
@@ -1550,11 +1544,13 @@ const percentageIncrease = ref(0);
 					@click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'draft')"
 					:label="trans('Save as Draft')"
 					full
+					:disabled="isEditProductPriceInvalid"
 					:loading="isLoadingSubmitErrorTitle" />
 				<Button
 					@click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'publish')"
 					:label="trans('Save & Publish')"
 					full
+					:disabled="isEditProductPriceInvalid"
 					:loading="isLoadingSubmitErrorTitle" />
 			</div>
 		</div>

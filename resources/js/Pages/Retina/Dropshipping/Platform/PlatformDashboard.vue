@@ -4,7 +4,7 @@ import CountUp from "vue-countup-v3"
 import {faArrowRight, faCube, faInfoCircle, faLink} from "@fal"
 import {faArrowRight as farArrowRight} from "@far"
 import {library} from "@fortawesome/fontawesome-svg-core"
-import {Link} from "@inertiajs/vue3"
+import {Link, router} from "@inertiajs/vue3"
 import {inject} from "vue"
 import Timeline from '@/Components/Utils/Timeline.vue'
 
@@ -46,6 +46,16 @@ const props = defineProps<{
         customer_country: string
     }
     customer_sales_channel: CustomerSalesChannel
+    ebay_seller_notice: {
+        dismiss_route: routeType
+    }
+    pricing_notice: {
+        mode: string
+        pricing_type?: string
+        pricing_value?: number
+        number_not_following?: number
+        edit_route: routeType
+    }
     stock_update_notice: {
         enabled: boolean
         edit_route: {
@@ -65,6 +75,14 @@ const props = defineProps<{
     }
     portfolios_count: number
 }>()
+
+const dismissNotice = (notice: string) => {
+    router.patch(
+        route(props.ebay_seller_notice.dismiss_route.name, props.ebay_seller_notice.dismiss_route.parameters),
+        { notice },
+        { preserveScroll: true }
+    )
+}
 
 const onSubmitReconnect = async () => {
 	try {
@@ -286,6 +304,54 @@ const layout = inject('layout', layoutStructure)
                     </div>
                 </div>
 
+                <!-- Notice: Pricing rule status -->
+                <div v-if="pricing_notice" class="flex justify-between mt-5">
+                    <div class="w-full border-2 rounded-lg p-4"
+                        :class="pricing_notice.mode === 'none' ? 'border-yellow-500 bg-yellow-50' : 'border-blue-500 bg-blue-50'"
+                    >
+                        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                            <div class="flex items-start">
+                                <FontAwesomeIcon icon="fal fa-info-circle" class="h-5 w-5 mt-0.5 flex-shrink-0"
+                                    :class="pricing_notice.mode === 'none' ? 'text-yellow-500' : 'text-blue-500'"
+                                    fixed-width aria-hidden="true" />
+                                <p class="ml-3 text-sm" :class="pricing_notice.mode === 'none' ? 'text-yellow-700' : 'text-blue-700'">
+                                    <template v-if="pricing_notice.mode === 'manual'">
+                                        <strong>{{ trans('You manage prices yourself:') }}</strong>
+                                        {{ trans('We never upload or overwrite prices on eBay for this channel.') }}
+                                    </template>
+                                    <template v-else-if="pricing_notice.mode === 'all_products'">
+                                        <strong>{{ trans('All products follow the pricing rule:') }}</strong>
+                                        {{ pricing_notice.pricing_type === 'percent'
+                                            ? trans('prices are set at base price :value% and kept in sync. Products where you set your own price are not touched.', { value: (pricing_notice.pricing_value >= 0 ? '+' : '') + pricing_notice.pricing_value })
+                                            : trans('prices are set at base price + :value and kept in sync. Products where you set your own price are not touched.', { value: pricing_notice.pricing_value }) }}
+                                        <template v-if="pricing_notice.number_not_following">
+                                            {{ trans(':count products have their own price and do not follow the rule.', { count: locale.number(pricing_notice.number_not_following) }) }}
+                                        </template>
+                                    </template>
+                                    <template v-else-if="pricing_notice.mode === 'new_only'">
+                                        <strong>{{ trans('Pricing rule for new products:') }}</strong>
+                                        {{ pricing_notice.pricing_type === 'percent'
+                                            ? trans('products are priced at base price :value% when you add them. Existing products keep their own prices.', { value: (pricing_notice.pricing_value >= 0 ? '+' : '') + pricing_notice.pricing_value })
+                                            : trans('products are priced at base price + :value when you add them. Existing products keep their own prices.', { value: pricing_notice.pricing_value }) }}
+                                    </template>
+                                    <template v-else>
+                                        <strong>{{ trans('No pricing rule set:') }}</strong>
+                                        {{ trans('products are priced at their base price (RRP) when added. You can set a channel pricing rule, or manage each product individually.') }}
+                                    </template>
+                                </p>
+                            </div>
+                            <div class="flex-shrink-0 sm:ml-3">
+                                <ButtonWithLink
+                                    :url="route(pricing_notice.edit_route.name, pricing_notice.edit_route.parameters)"
+                                    type="tertiary"
+                                    :icon="['fal', 'fa-pencil']"
+                                    :label="trans('Manage pricing settings')"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Warning: Ebay seller registered under Countries that got affected by eBay OWBP -->
                 <div v-if="ebay_warehouse_policy_msg?.show_msg" class="flex justify-between mt-5">
                     <div class="w-full border-2 border-red-500 rounded-lg p-4 bg-red-50">
@@ -322,7 +388,7 @@ const layout = inject('layout', layoutStructure)
                     </div>
                 </div>
                 <!-- Warning: Ebay seller -->
-                <div v-if="platform.type == 'ebay'" class="flex justify-between mt-5">
+                <div v-if="platform.type == 'ebay' && ebay_seller_notice" class="flex justify-between mt-5">
                     <div class="w-full border-2 border-yellow-500 rounded-lg p-4 bg-yellow-50">
                         <div class="flex flex-col sm:flex-row sm:items-start">
                             <div class="flex items-center mb-2 sm:mb-0 sm:flex-shrink-0">
@@ -346,11 +412,19 @@ const layout = inject('layout', layoutStructure)
                                 </p>
                             </div>
                         </div>
+                        <div class="mt-2 text-right">
+                            <button type="button"
+                                class="text-xs text-yellow-700 underline hover:text-yellow-900"
+                                @click="dismissNotice('ebay_seller')">
+                                {{ trans("I understand, hide this message") }}
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl">
-                    <div v-for="platform in platformData" :key="platform.id"
-                         class="relative overflow-hidden rounded-lg ring-1 ring-gray-300 bg-white px-4 pt-5 pb-12 shadow-sm sm:px-6 sm:pt-6">
+                    <Link v-for="platform in platformData" :key="platform.id"
+                          :href="route(platform.route.name, platform.route.parameters)"
+                          class="relative overflow-hidden rounded-lg ring-1 ring-gray-300 bg-white px-4 pt-5 pb-12 shadow-sm sm:px-6 sm:pt-6 hover:ring-gray-400 hover:shadow cursor-pointer group">
                         <dt>
                             <div class="absolute rounded-md bg-slate-800 p-3 flex justify-center items-center">
                                 <FontAwesomeIcon :icon="platform.icon" class="size-6 text-white" fixed-width aria-hidden="true"/>
@@ -358,7 +432,7 @@ const layout = inject('layout', layoutStructure)
                             <p class="ml-16 truncate text-sm font-bold">{{ platform.label }}</p>
                         </dt>
                         <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
-                            <p class="text-2xl font-semibold ">
+                            <p class="text-2xl font-semibold">
                                 <CountUp
                                     :endVal="platform.count"
                                     :duration="1.5"
@@ -372,15 +446,14 @@ const layout = inject('layout', layoutStructure)
                                 {{ platform.description }}
                             </p>
                             <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6 text-sm">
-                                <Link :href="route(platform.route.name, platform.route.parameters)"
-                                      class="font-medium text-slate-600 hover:text-slate-500">
+                                <span class="font-medium text-slate-600 group-hover:text-slate-500">
                                     View all<span class="sr-only"> {{ platform.name }} stats</span>
                                     <FontAwesomeIcon icon="fal fa-arrow-right" class="ml-1 text-gray-500 text-xs"
                                                      fixed-width aria-hidden="true"/>
-                                </Link>
+                                </span>
                             </div>
                         </dd>
-                    </div>
+                    </Link>
                 </dl>
             </div>
         </div>

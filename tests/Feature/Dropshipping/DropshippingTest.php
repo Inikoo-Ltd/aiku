@@ -736,3 +736,105 @@ test('ebay channel do not update prices setting is stored', function () {
     ]);
     expect(\Illuminate\Support\Arr::get($customerSalesChannel->settings, 'do_not_update_prices'))->toBeFalse();
 });
+
+test('channel percent pricing rule prices new portfolios honestly', function () {
+    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-pricing-store']);
+    $customerSalesChannel = $ebayUser->customerSalesChannel;
+
+    CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
+
+    UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'pricing_type'  => 'percent',
+        'pricing_value' => 20
+    ]);
+
+    $this->product->update(['rrp' => 10]);
+
+    $portfolio = StorePortfolio::make()->action($customerSalesChannel->refresh(), $this->product, []);
+
+    expect((float) $portfolio->customer_price)->toBe(12.0);
+});
+
+test('saving a channel pricing policy queues a reprice of every product', function () {
+    Queue::fake();
+
+    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-pricing-all']);
+    $customerSalesChannel = $ebayUser->customerSalesChannel;
+
+    CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
+
+    $customerSalesChannel = UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'pricing_type'  => 'percent',
+        'pricing_value' => 20
+    ]);
+    \App\Actions\Dropshipping\Ebay\Product\ApplyPricingRuleToEbayPortfolios::assertPushed(1);
+    expect(\Illuminate\Support\Arr::get($customerSalesChannel->settings, 'pricing.value'))->toBe(20);
+
+    UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'pricing_type'  => 'percent',
+        'pricing_value' => 20
+    ]);
+    \App\Actions\Dropshipping\Ebay\Product\ApplyPricingRuleToEbayPortfolios::assertPushed(1);
+});
+
+test('portfolio relative price rule computes price from rrp', function () {
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'test_ebay_price_rule']);
+    $this->product->update(['rrp' => 10]);
+    $portfolio = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, [
+        'pricing_type'  => 'percent',
+        'pricing_value' => -10
+    ], true);
+
+    $portfolio->refresh();
+    expect((float) $portfolio->customer_price)->toBe(9.0)
+        ->and(\Illuminate\Support\Arr::get($portfolio->settings, 'pricing.value'))->toBe(-10);
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, [
+        'pricing_type'  => 'fixed',
+        'pricing_value' => 2.5
+    ], true);
+
+    $portfolio->refresh();
+    expect((float) $portfolio->customer_price)->toBe(12.5);
+});
+
+test('portfolio not follow rule freezes price and opts out', function () {
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'test_ebay_not_follow']);
+    $this->product->update(['rrp' => 10]);
+    $portfolio = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, [
+        'pricing_type' => 'not_follow'
+    ], true);
+
+    $portfolio->refresh();
+    expect((float) $portfolio->customer_price)->toBe(10.0)
+        ->and(\Illuminate\Support\Arr::get($portfolio->settings, 'pricing.type'))->toBe('not_follow')
+        ->and(\Illuminate\Support\Arr::get($portfolio->settings, 'pricing_opt_out'))->toBeTrue();
+});
+
+test('pricing reset all overrides product opt outs', function () {
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'test_ebay_nuclear']);
+    $this->product->update(['rrp' => 10]);
+    $portfolio = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, [
+        'pricing_type' => 'not_follow'
+    ], true);
+
+    $customerSalesChannel->update(['settings' => ['pricing' => ['type' => 'percent', 'value' => 50]]]);
+
+    \App\Actions\Dropshipping\Ebay\Product\ApplyPricingRuleToEbayPortfolios::run($customerSalesChannel->refresh());
+    expect((float) $portfolio->refresh()->customer_price)->toBe(10.0);
+
+    \App\Actions\Dropshipping\Ebay\Product\ApplyPricingRuleToEbayPortfolios::run($customerSalesChannel, true);
+    $portfolio->refresh();
+    expect((float) $portfolio->customer_price)->toBe(15.0)
+        ->and(\Illuminate\Support\Arr::get($portfolio->settings, 'pricing_opt_out'))->toBeNull()
+        ->and(\Illuminate\Support\Arr::get($portfolio->settings, 'pricing'))->toBeNull();
+});

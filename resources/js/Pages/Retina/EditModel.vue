@@ -89,15 +89,17 @@ onMounted(() => {
     window.addEventListener('resize', updateViewportWidth)
 
     // Animate the selected section
-    route().v().query?.section ? (
-        currentTab.value = getLodash(route().v().query, 'section'),
+    const querySection = new URLSearchParams(window.location.search).get('section')
+        ?? getLodash(route().v().query ?? {}, 'section')
+    if (querySection !== null && querySection !== undefined && querySection !== '') {
+        currentTab.value = isNaN(Number(querySection)) ? querySection : Number(querySection)
         setTimeout(() => {
             fieldGroupAnimateSection.value = ['bg-yellow-500/20']
             setTimeout(() => {
                 fieldGroupAnimateSection.value = []
             }, 600)
         }, 100)
-    ) : ''
+    }
 
     // To indicate active state that on viewport
     buttonRefs.value.forEach((element: any, index: number) => {

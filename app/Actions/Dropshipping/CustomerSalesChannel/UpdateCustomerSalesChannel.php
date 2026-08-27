@@ -30,6 +30,12 @@ class UpdateCustomerSalesChannel extends OrgAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerSalesChannel
     {
+        foreach (['stock_threshold', 'max_quantity_advertise'] as $stockQuantityField) {
+            if (Arr::has($modelData, $stockQuantityField) && Arr::get($modelData, $stockQuantityField) === null) {
+                data_set($modelData, $stockQuantityField, 0);
+            }
+        }
+
         if (Arr::has($modelData, 'is_vat_adjustment')) {
             data_set($modelData, 'settings.tax_category.checked', Arr::pull($modelData, 'is_vat_adjustment'));
         }
@@ -113,8 +119,8 @@ class UpdateCustomerSalesChannel extends OrgAction
             'return_description' => ['sometimes', 'string'],
 
             'stock_update' => ['sometimes', 'boolean'],
-            'stock_threshold' => ['sometimes', 'numeric'],
-            'max_quantity_advertise' => ['sometimes', 'numeric'],
+            'stock_threshold' => ['sometimes', 'nullable', 'numeric'],
+            'max_quantity_advertise' => ['sometimes', 'nullable', 'numeric'],
 
             'closed_at'         => ['sometimes', 'date']
         ];

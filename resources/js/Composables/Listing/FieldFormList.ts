@@ -58,6 +58,7 @@ const MailshotRecipient = defineAsyncComponent(() => import('@/Components/Forms/
 const SelectCreate = defineAsyncComponent(() => import('@/Components/Forms/Fields/SelectCreate.vue'))
 const DynamicList = defineAsyncComponent(() => import('@/Components/Forms/Fields/DynamicList.vue'))
 const TaxPreset = defineAsyncComponent(() => import('@/Components/Forms/Fields/TaxPreset.vue'))
+const PricingPolicy = defineAsyncComponent(() => import('@/Components/Forms/Fields/PricingPolicy.vue'))
 import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
 import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
@@ -133,6 +134,7 @@ export const componentsList: { [key: string]: Component } = {
     'customerRoles': CustomerRoles,
     'textarea': Textarea,
     'textEditor': TextEditor,
+    'pricing_policy': PricingPolicy,
     'toggle': Toggle,
     'toggle2fa': ToggleState2FA,
     'passkeys': PasskeysManager,

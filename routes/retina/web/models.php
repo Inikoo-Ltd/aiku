@@ -72,6 +72,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ImportBulkCustomerSales
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\SyncRetinaCustomerSalesChannelPortfolioManually;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UnSuspendRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaCustomerSalesChannel;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\DismissRetinaCustomerSalesChannelNotice;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaEbayCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
@@ -340,6 +341,7 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
 
     Route::patch('update', UpdateRetinaCustomerSalesChannel::class)->name('update');
     Route::patch('update-ebay', UpdateRetinaEbayCustomerSalesChannel::class)->name('ebay_update');
+    Route::patch('dismiss-notice', DismissRetinaCustomerSalesChannelNotice::class)->name('dismiss_notice');
     Route::post('client', StoreRetinaCustomerClient::class)->name('customer-client.store');
     Route::post('fulfilment', StoreRetinaFulfilmentCustomerClient::class)->name('fulfilment.customer-client.store');
     Route::post('fulfilment-client-with-order', StoreRetinaFulfilmentCustomerClientWithOrder::class)->name('fulfilment.customer-client-with-order.store');
