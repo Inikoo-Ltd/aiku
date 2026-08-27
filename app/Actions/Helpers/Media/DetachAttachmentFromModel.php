@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Product\CloneProductAttachmentsFromTradeUnits;
 use App\Actions\OrgAction;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\PalletReturn;
@@ -29,7 +30,7 @@ class DetachAttachmentFromModel extends OrgAction
 {
     use AsAction;
 
-    public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|TradeUnitFamily|Product $model, Media $attachment): Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|TradeUnitFamily|Product
+    public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|TradeUnitFamily|Product|ProductCategory $model, Media $attachment): Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|TradeUnitFamily|Product|ProductCategory
     {
         $model->attachments()->detach($attachment->id);
         $model->refresh();
@@ -42,12 +43,8 @@ class DetachAttachmentFromModel extends OrgAction
     }
 
 
-    public function action(
-        Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order $model,
-        Media $attachment,
-        int $hydratorsDelay = 0,
-        bool $strict = true
-    ): Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order {
+    public function action(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|ProductCategory $model, Media $attachment, int $hydratorsDelay = 0, bool $strict = true): Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|ProductCategory
+    {
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;

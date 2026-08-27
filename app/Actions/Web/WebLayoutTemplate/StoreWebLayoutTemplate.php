@@ -10,7 +10,6 @@
 namespace App\Actions\Web\WebLayoutTemplate;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithBase64EncodedAttribute;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Web\WebLayoutTemplate;
@@ -20,8 +19,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreWebLayoutTemplate extends OrgAction
 {
-    use WithBase64EncodedAttribute;
-
     private User $user;
 
     public function handle(Webpage $webpage, array $modelData): void
@@ -36,11 +33,6 @@ class StoreWebLayoutTemplate extends OrgAction
         data_set($modelData, 'author_id', $this->user->id);
 
         WebLayoutTemplate::create($modelData);
-    }
-
-    public function prepareForValidation(): void
-    {
-        $this->decodeBase64Attribute('blocks_encoded', 'blocks');
     }
 
     public function rules(): array

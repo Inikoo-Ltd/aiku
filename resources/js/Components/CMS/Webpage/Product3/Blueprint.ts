@@ -1,3 +1,12 @@
+import {
+	aboutSectionWithoutButton,
+	customisationSection,
+	faqSection,
+	labelingGuideSection,
+	marketingSection,
+	storageSection,
+} from "@/Components/CMS/Webpage/Family2ExtraDescription/tabSections"
+
 export default {
 	blueprint: [
 		{
@@ -20,6 +29,12 @@ export default {
 					key: ["bespoke"],
 					type: "switch",
 					label: "Bespoke Options",
+					props_data: {},
+				},
+				{
+					key: ["appointment"],
+					type: "switch",
+					label: "Showroom Appointment",
 					props_data: {},
 				},
 			],
@@ -53,13 +68,18 @@ export default {
 			],
 		},
 		{
-			key: ["delivery_info"],
-			name: "Delivery Info",
+			key: ["appointment_data"],
+			name: "Showroom Appointment",
 			replaceForm: [
 				{
 					key: ["text"],
 					type: "editorhtml",
-					label: "text",
+					label: "Text",
+				},
+				{
+					key: ["link"],
+					type: "link",
+					label: "Link",
 				},
 			],
 		},

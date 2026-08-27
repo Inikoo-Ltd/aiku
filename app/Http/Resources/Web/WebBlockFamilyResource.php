@@ -10,6 +10,8 @@ namespace App\Http\Resources\Web;
 
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
+use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
+use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -40,10 +42,34 @@ class WebBlockFamilyResource extends JsonResource
             'description_image'         => collect(Arr::get($family->web_images, 'description', []))->map(fn ($slot) => $this->getResizedSlot($slot))->filter()->all(),
             'description_video'         => $family->desc_video_url,
             'extra_description_image'   => collect(Arr::get($family->web_images, 'extraDescription', []))->map(fn ($slot) => $this->getResizedSlot($slot))->filter()->all(),
-            'url'                       => $family->webpage->url,
+            'url'                       => $family->webpage?->url,
             'offers_data'               => $family->offers_data,
             'tags'                      => $family->tradeUnitFamily?->tags()->limit(3)->get()->map(fn ($tag) => ['name' => $tag->name, 'web_image' => $this->getPictureFormats($tag->web_image)])->all(),
-            'faq'                       => $family->faq,
+            ...$this->getTabsData($family)
+        ];
+    }
+
+    public static function getTabsData(ProductCategory $family): array
+    {
+        $labelingGuide = $family->labelingGuide();
+
+        return [
+            'customize_option'          => FamilyCustomizeEnum::rows($family->customize_option),
+            'labeling_guide'            => $labelingGuide ? [
+                'label' => $labelingGuide->name,
+                'route' => [
+                    'name'          => 'iris.attach.download',
+                    'parameters'    => [
+                        'media'    => $labelingGuide->ulid
+                    ],
+                ]
+            ] : null,
+            'storage_option'            => [
+                'storage_conditions'    => FamilyStorageConditionEnum::rows(data_get($family->storage_option, 'storage_conditions', [])),
+                'storage_temperature'   => data_get($family->storage_option, 'storage_temperature', ''),
+                'storage_guidelines'    => data_get($family->storage_option, 'storage_guidelines', []),
+            ],
+            'is_aroma_organisation'     => $family->organisation?->slug === 'aroma',
             'marketing_material_route'  => [
                 'name'          => 'iris.catalogue.feeds.product_category.download_img',
                 'parameters'    => [
@@ -51,6 +77,7 @@ class WebBlockFamilyResource extends JsonResource
                     'type'              => 'products_images'
                 ]
             ],
+            'faq'                       => $family->faq,
         ];
     }
 

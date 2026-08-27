@@ -29,6 +29,7 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\Iris\GetIrisRelatedProductCategory;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamiliesFour;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSubDepartmentsThree;
 use App\Actions\Web\WebBlock\Iris\GetIrisFaqDepartment;
 use App\Actions\Web\WebBlock\Iris\GetIrisTopFamilies;
@@ -41,7 +42,7 @@ trait WithFillIrisWebBlocks
     {
         $webBlockType = Arr::get($webBlock, 'type');
 
-        if (in_array($webBlockType, ['department-description-1', 'department-description-2'])) {
+        if (in_array($webBlockType, ['department-description-1', 'department-description-2', 'department-description-3'])) {
             $departmentData = GetIrisWebBlockDepartmentDescription::run($webpage, $webBlock);
             if ($departmentData) {
                 $parsedWebBlocks[$key] = $departmentData;
@@ -63,6 +64,13 @@ trait WithFillIrisWebBlocks
             }
         } elseif (str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetIrisWebBlockSubDepartments::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'families-4') {
+            $webBlockData = GetIrisWebBlockFamiliesFour::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif (str_contains($webBlockType, 'families-')) {
             $parsedWebBlocks[$key] = GetIrisWebBlockFamilies::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'products-')) {

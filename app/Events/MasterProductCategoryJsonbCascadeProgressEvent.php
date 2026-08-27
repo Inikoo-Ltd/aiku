@@ -15,7 +15,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class MasterProductCategoryFaqCascadeProgressEvent implements ShouldBroadcastNow
+class MasterProductCategoryJsonbCascadeProgressEvent implements ShouldBroadcastNow
 {
     use Dispatchable;
     use InteractsWithSockets;
@@ -24,7 +24,8 @@ class MasterProductCategoryFaqCascadeProgressEvent implements ShouldBroadcastNow
     /** @param array{state: string, done: int, total: int} $progress */
     public function __construct(
         public MasterProductCategory $masterProductCategory,
-        public array $progress
+        public array $progress,
+        public string $broadcastAs,
     ) {
     }
 
@@ -42,6 +43,6 @@ class MasterProductCategoryFaqCascadeProgressEvent implements ShouldBroadcastNow
 
     public function broadcastAs(): string
     {
-        return 'faq-cascade-progress';
+        return $this->broadcastAs;
     }
 }

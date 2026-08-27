@@ -14,6 +14,8 @@ use App\Actions\Goods\TradeUnitFamily\GetTradeUnitFamilyForFamilies;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
+use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
@@ -146,7 +148,7 @@ class EditMasterFamily extends OrgAction
                                         'counter' => true,
                                     ],
                                     'toggle'  => [
-                                        'bold', 'italic','fontSize', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                        'bold', 'italic','fontSize', 'underline', 'bulletList', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value'   => $masterProductCategory->description
                                 ],
@@ -157,7 +159,7 @@ class EditMasterFamily extends OrgAction
                                         'counter' => true,
                                     ],
                                     'toggle'  => [
-                                        'bold', 'italic','fontSize', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                        'bold', 'italic','fontSize', 'underline', 'bulletList', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value'   => $masterProductCategory->description_extra
                                 ],
@@ -189,8 +191,6 @@ class EditMasterFamily extends OrgAction
                                     'labelProp'  => 'code',
                                     'value'      => $masterProductCategory->masterSubDepartment->id ?? $masterProductCategory->masterDepartment->id ?? null,
                                 ],
-
-
                             ],
 
                         ],
@@ -223,6 +223,59 @@ class EditMasterFamily extends OrgAction
                                         'item_quantity'  => $masterProductCategory->gr_vol_discount_quantity,
                                         'percentage_off' => trimDecimalZeros($masterProductCategory->gr_vol_discount_percentage),
                                     ],
+                                ],
+                            ],
+                        ] : [],
+                        $masterProductCategory->masterShop->slug == 'aroma' ? [
+                            'label'  => __('Customize'),
+                            'icon'   => 'fa-light fa-sliders-h',
+                            'fields' => [
+                                'customize_option' => [
+                                    'type'                       => 'family_customize',
+                                    'label'                      => __('Customize'),
+                                    'options'                    => FamilyCustomizeEnum::valuesWithLabelsAndIcons(),
+                                    'value'                      => FamilyCustomizeEnum::rows($masterProductCategory->customize_option),
+                                    'master_product_category_id' => $masterProductCategory->id,
+                                ],
+                            ],
+                        ] : [],
+                        $masterProductCategory->masterShop->slug == 'aroma' ? [
+                            'label'  => __('Storage & Shelf Life'),
+                            'icon'   => 'fa-light fa-temperature-low',
+                            'fields' => [
+                                'storage_conditions'  => [
+                                    'type'                       => 'family_storage_conditions',
+                                    'label'                      => __('Storage table'),
+                                    'options'                    => FamilyStorageConditionEnum::valuesWithLabelsAndPlaceholders(),
+                                    'value'                      => FamilyStorageConditionEnum::rows(data_get($masterProductCategory->storage_option, 'storage_conditions', [])),
+                                    'master_product_category_id' => $masterProductCategory->id,
+                                ],
+                                'storage_temperature' => [
+                                    'type'        => 'input',
+                                    'label'       => __('Storage temperature'),
+                                    'placeholder' => __('e.g. 15°C - 25°C'),
+                                    'value'   => data_get($masterProductCategory->storage_option, 'storage_temperature', ''),
+                                ],
+                                'storage_guidelines'  => [
+                                    'type'     => 'dynamic_list',
+                                    'label'    => __('Storage guidelines'),
+                                    'value'   => data_get($masterProductCategory->storage_option, 'storage_guidelines', []),
+                                    'fields'   => [
+                                        ['key' => 'text', 'placeholder' => __('e.g. Keep products in their original packaging.')],
+                                    ],
+                                    'addLabel' => __('Add guideline'),
+                                ],
+                            ],
+                        ] : [],
+                        $masterProductCategory->masterShop->slug == 'aroma' ? [
+                            'label'  => __('Category Comparison'),
+                            'icon'   => 'fa-light fa-balance-scale',
+                            'fields' => [
+                                'category_comparison' => [
+                                    'full'      => true,
+                                    'type'      => 'category-comparison',
+                                    'label'     => __('Category Comparison'),
+                                    'value'     => $masterProductCategory->category_comparison,
                                 ],
                             ],
                         ] : [],

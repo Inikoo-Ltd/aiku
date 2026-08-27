@@ -21,6 +21,7 @@ use App\Models\Reviews\ProductCategoryReviewStat;
 use App\Models\Reviews\Review;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\InShop;
@@ -176,6 +177,8 @@ class ProductCategory extends Model implements Auditable, HasMedia
     use HasImage;
     use HasTranslations;
     use HasSearch;
+    use HasAttachments;
+    
     protected static function booted(): void
     {
         static::saved(function (ProductCategory $productCategory) {
@@ -204,13 +207,19 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'offers_data'                   => 'array',
         'mismatch_with_master_detected' => 'boolean',
         'not_follow_master_prices'      => 'boolean',
+        'customize_option'              => 'array',
+        'storage_option'                => 'array',
+        'category_comparison'           => 'array',
     ];
 
     protected $attributes = [
-        'data'        => '{}',
-        'faq'         => '{}',
-        'web_images'  => '{}',
-        'offers_data' => '{}',
+        'data'                  => '{}',
+        'faq'                   => '{}',
+        'web_images'            => '{}',
+        'offers_data'           => '{}',
+        'customize_option'      => '{}',
+        'storage_option'        => '{}',
+        'category_comparison'   => '{}',
     ];
 
     public function toSearchableArray(): array
@@ -475,5 +484,10 @@ class ProductCategory extends Model implements Auditable, HasMedia
     public function tradeUnitFamily(): BelongsTo
     {
         return $this->belongsTo(TradeUnitFamily::class, 'trade_unit_family_id', 'id');
+    }
+
+    public function labelingGuide(): ?Media
+    {
+        return $this->attachments()->where('scope', 'labeling_guide')->first();
     }
 }

@@ -49,6 +49,7 @@ import {
     faFlagCheckered,
     faBracketsCurly,
     faFileInvoice,
+    faFilePdf,
     faTransporter,
     faCode,
     faExchange,
@@ -74,7 +75,10 @@ import {
     faPercent,
     faBusinessTime,
     faChessClock,
-    faCameraRetro
+    faCameraRetro,
+    faTemperatureLow,
+    faBalanceScale,
+    faNotEqual
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -85,6 +89,8 @@ import axios from "axios"
 import Message from 'primevue/message';
 
 library.add(
+    faTemperatureLow,
+    faNotEqual,
     faMusic,
     faShapes,
     faTags,
@@ -129,6 +135,7 @@ library.add(
     faFlagCheckered,
     faBracketsCurly,
     faFileInvoice,
+    faFilePdf,
     faTransporter,
     faCode,
     faDoorClosed,
@@ -151,7 +158,8 @@ library.add(
     faPercent,
     faBusinessTime,
     faChessClock,
-    faCameraRetro
+    faCameraRetro,
+    faBalanceScale
 )
 
 const props = defineProps<{

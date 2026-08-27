@@ -15,7 +15,6 @@ use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Traits\WithBase64EncodedAttribute;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
@@ -32,7 +31,6 @@ use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 class PublishWebpage extends OrgAction
 {
     use WithActionUpdate;
-    use WithBase64EncodedAttribute;
     use WithWebEditAuthorisation;
     use WebpageContentManagement;
 
@@ -116,11 +114,6 @@ class PublishWebpage extends OrgAction
         ReindexWebpageLuigiData::dispatch($webpage->id)->delay(30);
 
         return $webpage;
-    }
-
-    public function prepareForValidation(): void
-    {
-        $this->decodeBase64Attribute('layout_encoded', 'layout');
     }
 
     public function rules(): array
