@@ -102,6 +102,8 @@ class AppServiceProvider extends ServiceProvider
                 'fetch:stock_locations',
                 'fetch:email_tracking_events',
                 'clone:aurora_vol_gr_offers',
+                'comms:archive_dispatched_emails',
+                'helpers:archive_audits',
                 'inertia:start-ssr --runtime bun'
             ])) {
                 Nightwatch::dontSample();
