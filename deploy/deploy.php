@@ -429,7 +429,9 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
     }
 })->select('env=prod|staging');
 
-set('keep_releases', 20);
+set('keep_releases', function () {
+    return currentHost()->getAlias() === 'aiku_helio' ? 2 : 20;
+});
 
 set('shared_dirs', ['storage', 'private', 'local_storage']);
 set('shared_files', [
