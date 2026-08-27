@@ -16,7 +16,7 @@
 #
 # Install: see devops/cron/disk-alert.
 #
-# Usage: disk-alert.sh [--dry-run] [--self-test]
+# Usage: disk-alert.sh [--dry-run] [--self-test] [--test]
 
 set -uo pipefail
 
@@ -231,5 +231,15 @@ self_test() {
 
 case ${1:-} in
     --self-test) self_test ;;
+    --test)
+        # Posts a real message for every filesystem, to prove the webhook works end
+        # to end. Throwaway state dir on purpose: a forced run against the real state
+        # would leave every mount marked "in alert", and the next scheduled run would
+        # then announce three recoveries that never happened.
+        THRESHOLD=0
+        STATE_DIR=$(mktemp -d)
+        run_checks
+        rm -rf "$STATE_DIR"
+        ;;
     *) run_checks ;;
 esac
