@@ -20,7 +20,6 @@ import { useConfirm } from "primevue/useconfirm";
 import { useLiveUsers } from "@/Stores/active-users";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import { setIframeView } from "@/Composables/Workshop";
-import { encodePayload } from "@/Composables/useEncodePayload";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Publish from "@/Components/Publish.vue";
@@ -245,7 +244,7 @@ const debounceSaveWorkshop = (block, reload = false, reloadIframe = false) => {
       const response = await axios.patch(
         url,
         {
-          layout_encoded: encodePayload(block?.web_block?.layout),
+          layout: block?.web_block?.layout,
           show_logged_in: block?.visibility?.in,
           show_logged_out: block?.visibility?.out,
           show: block?.show,
@@ -421,7 +420,10 @@ const onPublish = async (action: routeType, popover) => {
 
     const response = await axios[action.method](
       route(action.name, action.parameters),
-      { comment: comment.value }
+      {
+        comment: comment.value,
+        publishLayout: { blocks: data.value.layout }
+      }
     );
 
     if (response.status === 200) {
@@ -542,7 +544,7 @@ const onCreateTemplate = (payload: {
 
   axios.post(
     route('grp.models.webpage.store_as_template', { webpage: data.value.id }),
-    { name: payload.name, blocks_encoded: encodePayload(payload.blocks) }
+    payload
   ).then(() => {
     isCreateTemplateDialogVisible.value = false;
     notify({
