@@ -11,6 +11,7 @@ namespace App\Actions\Web\ModelHasWebBlocks;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithBase64EncodedAttribute;
 use App\Actions\Web\WebBlockHistory\StoreWebBlockHistory;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Http\Resources\Web\WebpageResource;
@@ -22,6 +23,7 @@ class UpdateModelHasWebBlocks extends OrgAction
 {
     use WithWebEditAuthorisation;
     use WithActionUpdate;
+    use WithBase64EncodedAttribute;
 
 
     public function handle(ModelHasWebBlocks $modelHasWebBlocks, array $modelData): ModelHasWebBlocks
@@ -44,6 +46,11 @@ class UpdateModelHasWebBlocks extends OrgAction
     {
         $this->initialisationFromShop($modelHasWebBlocks->shop, $request);
         return $this->handle($modelHasWebBlocks, $this->validatedData);
+    }
+
+    public function prepareForValidation(): void
+    {
+        $this->decodeBase64Attribute('layout_encoded', 'layout');
     }
 
     public function rules(): array

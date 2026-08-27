@@ -71,6 +71,7 @@ const props = withDefaults(
 		isLoadingTemplates?: boolean
 		templatesErrorMessage?: string | null
 		applyingTemplateId?: number | null
+		deletingTemplateId?: number | null
 	}>(),
 	{
 		canUseTemplate: true,
@@ -78,6 +79,7 @@ const props = withDefaults(
 		isLoadingTemplates: false,
 		templatesErrorMessage: null,
 		applyingTemplateId: null,
+		deletingTemplateId: null,
 	}
 )
 
@@ -95,6 +97,7 @@ const emits = defineEmits<{
 	(e: 'searchTemplates', value: string): void
 	(e: 'navigateTemplates', value: string): void
 	(e: 'useTemplate', value: WebLayoutTemplate): void
+	(e: 'deleteTemplate', value: WebLayoutTemplate): void
 }>()
 
 const confirm = useConfirm()
@@ -155,6 +158,8 @@ const onSearchTemplates = (value: string) => emits('searchTemplates', value)
 const onNavigateTemplates = (url: string) => emits('navigateTemplates', url)
 
 const onUseTemplate = (template: WebLayoutTemplate) => emits('useTemplate', template)
+
+const onDeleteTemplate = (template: WebLayoutTemplate) => emits('deleteTemplate', template)
 
 const filterOptions = [
 	{ label: 'All', value: 'all' },
@@ -799,11 +804,13 @@ const blockNotEditableVisible = [
 						:isLoading="isLoadingTemplates"
 						:errorMessage="templatesErrorMessage"
 						:applyingTemplateId="applyingTemplateId"
+						:deletingTemplateId="deletingTemplateId"
 						:editable="editable"
 						@refresh="requestTemplates"
 						@search="onSearchTemplates"
 						@navigate="onNavigateTemplates"
-						@use="onUseTemplate" />
+						@use="onUseTemplate"
+						@delete="onDeleteTemplate" />
 				</TabPanel>
 			</TabPanels>
 		</TabGroup>

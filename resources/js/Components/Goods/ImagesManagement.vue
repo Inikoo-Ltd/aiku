@@ -53,6 +53,7 @@ const loadingSubmit = ref<null | number | string>(null)
 const isModalEditVideo = ref(false)
 const selectedVideoToUpdate = ref<any>(null)
 const activeCategory = ref<string | null>(null)
+const isDragOver = ref(false)
 const isModalEditAlt = ref(false)
 const selectedImageToEditAlt = ref<any>(null)
 const altInput = ref<string>("")
@@ -154,6 +155,14 @@ function onSubmitVideoUrl() {
    Drag & Drop Handlers
 ---------------------------- */
 function onDropImage(event: DragEvent, categoryBox: any) {
+    event.preventDefault();
+
+    if (event.dataTransfer?.files?.length) {
+        uploadFiles(event.dataTransfer.files);
+        activeCategory.value = null;
+        return;
+    }
+
     const dataRowImage = JSON.parse(event.dataTransfer?.getData("application/json") || "{}");
     console.log("dataRowImage", dataRowImage);
 
@@ -206,7 +215,7 @@ function onEndDrag(event: DragEvent) {
    File Upload / Delete
 ---------------------------- */
 async function uploadFiles(files: FileList) {
-    if (!files?.length) return
+    if (!files?.length || !editable.value) return
 
     const formData = new FormData()
     Array.from(files).forEach((file) => formData.append("images[]", file))
@@ -326,6 +335,9 @@ function onDeleteFilesInList(categoryBox: any) {
 
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 px-10 py-4">
+        <div v-if="!editable" class="lg:col-span-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {{ trans("Images are inherited from the trade unit, so they can't be edited here. Upload them on the trade unit, or turn off \"follow trade unit media\" on this product to manage them here.") }}
+        </div>
         <!-- Left: Drop Areas -->
         <div v-if="props.data.images_category_box?.length" class="rounded-xl bg-white p-5 lg:col-span-2">
             <h3 class="mb-4 text-base font-semibold text-gray-700">

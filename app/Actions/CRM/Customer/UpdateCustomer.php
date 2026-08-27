@@ -20,6 +20,7 @@ use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Helpers\TaxNumber\DeleteTaxNumber;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
 use App\Actions\Helpers\TaxNumber\UpdateTaxNumber;
+use App\Actions\Ordering\Order\CalculateOrderDiscounts;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\ResetOrderTaxCategory;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
@@ -34,6 +35,7 @@ use App\Actions\Traits\WithAddressAuditing;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Actions\Traits\WithPrepareTaxNumberValidation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -250,6 +252,12 @@ class UpdateCustomer extends OrgAction
         }
 
 
+        if (Arr::has($changes, 'gr_extended_until') && $customer->shop->is_aiku && $customer->shop->type == ShopTypeEnum::B2B) {
+            foreach ($customer->orders()->where('state', OrderStateEnum::CREATING)->get() as $order) {
+                CalculateOrderDiscounts::dispatch($order);
+            }
+        }
+
         if (Arr::hasAny($changes, ['is_re'])) {
             foreach ($customer->orders()->where('state', OrderStateEnum::CREATING)->whereNull('orders.source_id')->get() as $order) {
                 $order->update(['is_re' => $customer->is_re]);
@@ -360,6 +368,7 @@ class UpdateCustomer extends OrgAction
             'is_credit_customer'                                    => ['sometimes', 'boolean'],
             'accounting_reference'                                  => ['sometimes', 'nullable', 'string', 'max:255'],
             'is_gift_opted_out'                                     => ['sometimes', 'boolean'],
+            'gr_extended_until'                                     => ['sometimes', 'nullable', 'date'],
             'fiscal_name'                                           => ['sometimes', 'nullable', 'string', 'max:255'],
             'is_vip'                                                => ['sometimes', 'boolean'],
 

@@ -10,7 +10,9 @@ namespace App\Actions\Comms\Outbox\AbandonedCart;
 
 use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRunRecipientStoredAt;
 use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
-use App\Enums\Ordering\CheckoutAbandonment\CheckoutAbandonmentStateEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Order\OrderStatusEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Comms\Outbox;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -31,30 +33,63 @@ class ProcessAbandonedCartReminderPerOutbox
             return;
         }
 
-        $currentDateTime = Carbon::now()->utc();
-        $compareDate = $currentDateTime->copy()->subDays($outbox->days_after)->endOfDay();
+        if (!$outbox->interval) {
+            return;
+        }
 
-        $baseQuery = DB::table('checkout_abandonments');
-        $baseQuery->join('customers', 'customers.id', '=', 'checkout_abandonments.customer_id');
+        $currentDateTime = Carbon::now()->utc();
+
+        $lastOutBoxSent = $outbox->last_sent_at ??  $currentDateTime->copy()->subHours($outbox->interval + 1);
+
+        // Check if enough time has passed since last outbox was sent
+        if ($lastOutBoxSent && Carbon::parse($lastOutBoxSent)->diffInHours($currentDateTime) < $outbox->interval) {
+            return;
+        }
+
+        $productClass = class_basename(Product::class);
+
+        $compareDate = $currentDateTime->copy()->subHours($outbox->interval);
+
+        $baseQuery = DB::table('customers');
+        $baseQuery->where('customers.shop_id', $outbox->shop_id);
+        $baseQuery->whereNull('customers.deleted_at');
+        $baseQuery->whereNotNull('customers.email');
+
+        // check customer comms
         $baseQuery->join('customer_comms', function ($join) {
             $join->on('customers.id', '=', 'customer_comms.customer_id')
                 ->where('customer_comms.is_subscribed_to_abandoned_cart', true);
         });
-        $baseQuery->whereNull('customers.deleted_at');
-        $baseQuery->whereNotNull('customers.email');
 
-        $baseQuery->where('checkout_abandonments.shop_id', $outbox->shop_id);
-        $baseQuery->where('checkout_abandonments.state', CheckoutAbandonmentStateEnum::ABANDONED->value);
-        $baseQuery->whereDate('checkout_abandonments.checkout_visited_at', '=', $compareDate->toDateString());
-        $baseQuery->whereNull('checkout_abandonments.recovered_at');
+        // check Order still in basket
+        $baseQuery->whereNotNull('customers.current_order_in_basket_id');
+        $baseQuery->join('orders', function ($join) {
+            $join->on('customers.current_order_in_basket_id', '=', 'orders.id');
+            $join->where('orders.state', OrderStateEnum::CREATING->value);
+            $join->where('orders.status', OrderStatusEnum::CREATING->value);
+            $join->whereNull('orders.submitted_at');
+            $join->whereNull('orders.deleted_at');
+        });
+
+        // first product added to the basket must be older than the interval
+        $firstItemQuery = DB::table('transactions')
+            ->select('order_id', DB::raw('MIN(created_at) AS first_item_at'))
+            ->where('model_type', $productClass)
+            ->whereNull('deleted_at')
+            ->groupBy('order_id');
+
+        $baseQuery->joinSub($firstItemQuery, 'first_items', function ($join) use ($compareDate, $lastOutBoxSent) {
+            $join->on('first_items.order_id', '=', 'orders.id');
+            $join->where('first_items.first_item_at', '<=', $compareDate);
+            $join->where('first_items.first_item_at', '>', $lastOutBoxSent);
+        });
 
         $baseQuery->select(
-            'checkout_abandonments.id',
-            'checkout_abandonments.customer_id',
-            'checkout_abandonments.order_id',
+            'orders.id',
+            'orders.customer_id',
             'customers.email'
         );
-        $baseQuery->orderBy('checkout_abandonments.id');
+        $baseQuery->orderBy('orders.id');
 
         $totalItems = (clone $baseQuery)->count();
 
@@ -65,13 +100,12 @@ class ProcessAbandonedCartReminderPerOutbox
         }
 
         $chunkSize = 50;
-        $baseQuery->chunk($chunkSize, function ($abandonments) use ($emailBulkRun) {
-            $customerData = $abandonments
-                ->filter(fn ($abandonment) => filter_var($abandonment->email, FILTER_VALIDATE_EMAIL))
-                ->map(fn ($abandonment) => [
-                    'id'             => $abandonment->customer_id,
-                    'abandonment_id' => $abandonment->id,
-                    'order_id'       => $abandonment->order_id,
+        $baseQuery->chunk($chunkSize, function ($orders) use ($emailBulkRun) {
+            $customerData = $orders
+                ->filter(fn ($order) => filter_var($order->email, FILTER_VALIDATE_EMAIL))
+                ->map(fn ($order) => [
+                    'id'       => $order->customer_id,
+                    'order_id' => $order->id,
                 ])
                 ->values()
                 ->all();

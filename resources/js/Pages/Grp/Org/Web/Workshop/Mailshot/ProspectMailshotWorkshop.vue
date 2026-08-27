@@ -416,10 +416,10 @@ onMounted(() => {
         Estimated email size <span class="font-semibold">{{ compiledLayoutSize }} KB</span> exceeds Gmail's 102 KB limit
     </div>
 
-    <div v-else>
+    <div v-if="builder != 'beefree' && builder != 'unlayer'">
         <EmptyState :data="{
             title: 'Builder Not Set Up',
-            description: 'you neeed to set up the builder'
+            description: 'you need to set up the builder'
         }" />
     </div>
 

@@ -87,6 +87,7 @@ const props = defineProps<{
     agentName?: string | null
     contactName?: string | null
     canEdit?: boolean
+    readonly?: boolean
     sessionUlid?: string | null
     reactionUrlBase?: string
     apiBase?: string
@@ -402,7 +403,7 @@ const canForwardToSlack = computed(() => props.viewerType === "agent" && !!props
 const isForwardModalOpen = ref(false)
 
 // feature hover toolbar (quick reactions) — persisted per message reactor
-const showHoverToolbar = computed(() => !!props.message.id)
+const showHoverToolbar = computed(() => !props.readonly && !!props.message.id)
 const quickReactions = ["✅", "👀", "👏"] as const
 
 const reactionState = ref<ReactionGroup[]>([])
