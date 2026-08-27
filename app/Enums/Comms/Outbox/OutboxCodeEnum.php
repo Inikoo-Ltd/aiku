@@ -630,7 +630,6 @@ enum OutboxCodeEnum: string
             self::ABANDONED_CART_REMINDER_1,
             self::ABANDONED_CART_REMINDER_2,
             self::ABANDONED_CART_REMINDER_3,
-            self::ABANDONED_CHECKOUT,
             self::PRICE_CHANGE_NOTIFICATION => true,
             default => false,
         };
