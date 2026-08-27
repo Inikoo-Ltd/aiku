@@ -15,11 +15,12 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\TiktokUser;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class UpdateTiktokInventory
+class UpdateTiktokInventory implements ShouldBeUnique
 {
     use AsAction;
     use WithAttributes;
@@ -37,6 +38,10 @@ class UpdateTiktokInventory
 
         if (!$product->is_for_sale) {
             $availableQuantity = 0;
+        }
+
+        if ($customerSalesChannel->stock_threshold > 0 && $availableQuantity <= $customerSalesChannel->stock_threshold) {
+            return 0;
         }
 
         if ($customerSalesChannel->max_quantity_advertise > 0) {

@@ -575,6 +575,23 @@ test('ebay stock sync pushes when capped quantity differs from last push', funct
     expect(UpdateEbayPortfolio::quantityToSend($product, $customerSalesChannel))->toBe(250);
     $customerSalesChannel->max_quantity_advertise = 80;
 
+    $customerSalesChannel->stock_threshold = 5;
+    expect(UpdateEbayPortfolio::quantityToSend($product, $customerSalesChannel))->toBe(80);
+
+    $customerSalesChannel->max_quantity_advertise = 5;
+    expect(UpdateEbayPortfolio::quantityToSend($product, $customerSalesChannel))->toBe(5);
+    $customerSalesChannel->max_quantity_advertise = 80;
+
+    $this->product->update(['available_quantity' => 5]);
+    expect(UpdateEbayPortfolio::quantityToSend($this->product->refresh(), $customerSalesChannel))->toBe(0);
+
+    $this->product->update(['available_quantity' => 6]);
+    expect(UpdateEbayPortfolio::quantityToSend($this->product->refresh(), $customerSalesChannel))->toBe(6);
+
+    $customerSalesChannel->stock_threshold = 0;
+    $this->product->update(['available_quantity' => 250]);
+    $product = $this->product->refresh();
+
     $checker = UpdateInventoryInEbayPortfolio::make();
 
     expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
@@ -586,9 +603,13 @@ test('ebay stock sync pushes when capped quantity differs from last push', funct
     expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeFalse();
 
     $portfolio->update(['last_stock_value' => 50, 'stock_last_fail_updated_at' => now()->subHour()]);
-    expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeFalse();
+    expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeFalse()
+        ->and($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel, true))->toBeTrue();
 
     $portfolio->update(['stock_last_fail_updated_at' => now()->subDays(2)]);
+    expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
+
+    $portfolio->update(['last_stock_value' => null, 'stock_last_fail_updated_at' => null]);
     expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
 
     return $customerSalesChannel;
@@ -618,6 +639,17 @@ test('woo and tiktok stock sync push when capped quantity differs from last push
 
         expect($quantityToSend($this->product->refresh(), $customerSalesChannel))->toBe(80);
 
+        $customerSalesChannel->stock_threshold = 5;
+        $customerSalesChannel->max_quantity_advertise = 5;
+        expect($quantityToSend($this->product->refresh(), $customerSalesChannel))->toBe(5);
+
+        $this->product->update(['available_quantity' => 4]);
+        expect($quantityToSend($this->product->refresh(), $customerSalesChannel))->toBe(0);
+
+        $this->product->update(['available_quantity' => 250]);
+        $customerSalesChannel->stock_threshold = 0;
+        $customerSalesChannel->max_quantity_advertise = 80;
+
         expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
 
         $portfolio->update(['last_stock_value' => 50, 'stock_last_updated_at' => now()->subMonths(6)]);
@@ -627,7 +659,11 @@ test('woo and tiktok stock sync push when capped quantity differs from last push
         expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeFalse();
 
         $portfolio->update(['stock_last_fail_updated_at' => now()->subHour(), 'last_stock_value' => 50]);
-        expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeFalse();
+        expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeFalse()
+            ->and($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel, true))->toBeTrue();
+
+        $portfolio->update(['last_stock_value' => null, 'stock_last_fail_updated_at' => null]);
+        expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
     }
 });
 
@@ -655,7 +691,7 @@ test('updating woo and tiktok channel stock settings queues inventory sync', fun
 
         UpdateCustomerSalesChannel::make()->action($customerSalesChannel, [
             'stock_update'           => true,
-            'max_quantity_advertise' => 90
+            'max_quantity_advertise' => '90'
         ]);
 
         $syncClass::assertPushed(1);
@@ -678,7 +714,7 @@ test('updating ebay channel stock settings queues inventory sync', function () {
 
     UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
         'stock_update'           => true,
-        'max_quantity_advertise' => 90
+        'max_quantity_advertise' => '90'
     ]);
 
     UpdateInventoryInEbayPortfolio::assertPushed(1);

@@ -26,7 +26,7 @@ class UpdateInventoryInEbayPortfolio
     public string $commandSignature = 'ebay:update-inventory {customerSalesChannel?}';
 
 
-    public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
+    public function handle(?CustomerSalesChannel $customerSalesChannel = null, bool $force = false): void
     {
         $platform = Platform::where('type', PlatformTypeEnum::EBAY)->first();
 
@@ -87,10 +87,10 @@ class UpdateInventoryInEbayPortfolio
                 ->where('item_type', 'Product')
                 ->where('platform_status', true)
                 ->with('item:id,available_quantity,is_for_sale,is_bundle,available_quantity_updated_at')
-                ->chunkById(500, function ($portfolioChunk) use ($customerSalesChannel): void {
+                ->chunkById(500, function ($portfolioChunk) use ($customerSalesChannel, $force): void {
                     /** @var Portfolio $portfolio */
                     foreach ($portfolioChunk as $portfolio) {
-                        if ($this->checkIfApplicable($portfolio, $customerSalesChannel)) {
+                        if ($this->checkIfApplicable($portfolio, $customerSalesChannel, $force)) {
                             $delaySeconds = random_int(1, 120);
                             UpdateEbayPortfolio::dispatch($portfolio->id)->delay(now()->addSeconds($delaySeconds));
                         }
@@ -99,7 +99,7 @@ class UpdateInventoryInEbayPortfolio
         }
     }
 
-    public function checkIfApplicable(Portfolio $portfolio, CustomerSalesChannel $customerSalesChannel): bool
+    public function checkIfApplicable(Portfolio $portfolio, CustomerSalesChannel $customerSalesChannel, bool $force = false): bool
     {
         $product = $portfolio->item;
 
@@ -110,12 +110,12 @@ class UpdateInventoryInEbayPortfolio
         $lastSuccessAt = $portfolio->stock_last_updated_at;
         $lastFailAt = $portfolio->stock_last_fail_updated_at;
 
-        if ($lastFailAt && (!$lastSuccessAt || $lastFailAt->gt($lastSuccessAt))) {
+        if (!$force && $lastFailAt && (!$lastSuccessAt || $lastFailAt->gt($lastSuccessAt))) {
             return $lastFailAt->lt(now()->subDay())
                 || ($product->available_quantity_updated_at && $product->available_quantity_updated_at->gt($lastFailAt));
         }
 
-        if (!$lastSuccessAt) {
+        if (!$lastSuccessAt || $portfolio->last_stock_value === null) {
             return true;
         }
 

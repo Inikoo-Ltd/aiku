@@ -754,6 +754,8 @@ test("UI show org stock", function (OrgStock $orgStock) {
             ->has("showcase.latest_movements")
             ->has("tabs");
     });
+
+    $orgStock->update(['is_on_demand' => false]);
 })->depends('create org stock');
 
 test("UI show org stock navigation follows the bucket and sort", function () {

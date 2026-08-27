@@ -46,30 +46,32 @@ class UpdateCustomerSalesChannel extends OrgAction
             data_set($modelData, 'settings.pricing.value', Arr::pull($modelData, 'pricing_value'));
         }
 
-        $stockSettingsBefore = [
-            $customerSalesChannel->stock_update,
-            $customerSalesChannel->stock_threshold,
-            $customerSalesChannel->max_quantity_advertise
-        ];
+        $stockSettingsBefore = self::stockSettings($customerSalesChannel);
 
         $customerSalesChannel = $this->update($customerSalesChannel, $modelData, 'settings');
 
-        $stockSettingsAfter = [
-            $customerSalesChannel->stock_update,
-            $customerSalesChannel->stock_threshold,
-            $customerSalesChannel->max_quantity_advertise
-        ];
-
-        if ($customerSalesChannel->stock_update && $stockSettingsBefore !== $stockSettingsAfter) {
+        if ($customerSalesChannel->stock_update && $stockSettingsBefore !== self::stockSettings($customerSalesChannel)) {
             match ($customerSalesChannel->platform->type) {
-                PlatformTypeEnum::WOOCOMMERCE => UpdateInventoryInWooPortfolio::dispatch($customerSalesChannel),
-                PlatformTypeEnum::TIKTOK => UpdateInventoryTiktokProducts::dispatch($customerSalesChannel),
+                PlatformTypeEnum::WOOCOMMERCE => UpdateInventoryInWooPortfolio::dispatch($customerSalesChannel, true),
+                PlatformTypeEnum::TIKTOK => UpdateInventoryTiktokProducts::dispatch($customerSalesChannel, true),
                 default => null
             };
         }
 
         return $customerSalesChannel;
 
+    }
+
+    /**
+     * @return array{0: bool, 1: int, 2: int}
+     */
+    public static function stockSettings(CustomerSalesChannel $customerSalesChannel): array
+    {
+        return [
+            (bool) $customerSalesChannel->stock_update,
+            (int) $customerSalesChannel->stock_threshold,
+            (int) $customerSalesChannel->max_quantity_advertise
+        ];
     }
 
     public function rules(): array

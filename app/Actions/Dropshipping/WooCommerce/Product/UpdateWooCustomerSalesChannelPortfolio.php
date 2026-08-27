@@ -28,7 +28,7 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
         return $customerSalesChannel->id;
     }
 
-    public function handle(CustomerSalesChannel $customerSalesChannel): void
+    public function handle(CustomerSalesChannel $customerSalesChannel, bool $force = false): void
     {
         /** @var WooCommerceUser $wooCommerceUser */
         $wooCommerceUser = $customerSalesChannel->user;
@@ -69,11 +69,11 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
             ->where('item_type', 'Product')
             ->where('platform_status', true)
             ->with('item:id,available_quantity,is_for_sale,available_quantity_updated_at')
-            ->chunkById(500, function ($portfolioChunk) use ($customerSalesChannel, $wooCommerceUser): void {
+            ->chunkById(500, function ($portfolioChunk) use ($customerSalesChannel, $wooCommerceUser, $force): void {
                 $updates = [];
 
                 foreach ($portfolioChunk as $portfolio) {
-                    if (!$this->checkIfApplicable($portfolio, $customerSalesChannel)) {
+                    if (!$this->checkIfApplicable($portfolio, $customerSalesChannel, $force)) {
                         continue;
                     }
 
@@ -103,6 +103,10 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
             $availableQuantity = 0;
         }
 
+        if ($customerSalesChannel->stock_threshold > 0 && $availableQuantity <= $customerSalesChannel->stock_threshold) {
+            return 0;
+        }
+
         if ($customerSalesChannel->max_quantity_advertise > 0) {
             $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
         }
@@ -110,7 +114,7 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
         return (int) $availableQuantity;
     }
 
-    public function checkIfApplicable(Portfolio $portfolio, CustomerSalesChannel $customerSalesChannel): bool
+    public function checkIfApplicable(Portfolio $portfolio, CustomerSalesChannel $customerSalesChannel, bool $force = false): bool
     {
         $product = $portfolio->item;
 
@@ -121,12 +125,12 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
         $lastSuccessAt = $portfolio->stock_last_updated_at;
         $lastFailAt = $portfolio->stock_last_fail_updated_at;
 
-        if ($lastFailAt && (!$lastSuccessAt || $lastFailAt->gt($lastSuccessAt))) {
+        if (!$force && $lastFailAt && (!$lastSuccessAt || $lastFailAt->gt($lastSuccessAt))) {
             return $lastFailAt->lt(now()->subDay())
                 || ($product->available_quantity_updated_at && $product->available_quantity_updated_at->gt($lastFailAt));
         }
 
-        if (!$lastSuccessAt) {
+        if (!$lastSuccessAt || $portfolio->last_stock_value === null) {
             return true;
         }
 

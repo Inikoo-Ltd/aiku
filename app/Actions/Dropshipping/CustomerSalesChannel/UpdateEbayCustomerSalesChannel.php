@@ -86,22 +86,12 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
         data_forget($modelData, 'tax_category_id');
         data_forget($modelData, 'is_vat_adjustment');
 
-        $stockSettingsBefore = [
-            $customerSalesChannel->stock_update,
-            $customerSalesChannel->stock_threshold,
-            $customerSalesChannel->max_quantity_advertise
-        ];
+        $stockSettingsBefore = UpdateCustomerSalesChannel::stockSettings($customerSalesChannel);
 
         $customerSalesChannel = UpdateCustomerSalesChannel::run($customerSalesChannel, $modelData);
 
-        $stockSettingsAfter = [
-            $customerSalesChannel->stock_update,
-            $customerSalesChannel->stock_threshold,
-            $customerSalesChannel->max_quantity_advertise
-        ];
-
-        if ($customerSalesChannel->stock_update && $stockSettingsBefore !== $stockSettingsAfter) {
-            UpdateInventoryInEbayPortfolio::dispatch($customerSalesChannel);
+        if ($customerSalesChannel->stock_update && $stockSettingsBefore !== UpdateCustomerSalesChannel::stockSettings($customerSalesChannel)) {
+            UpdateInventoryInEbayPortfolio::dispatch($customerSalesChannel, true);
         }
 
         if ($fulfillmentPolicyId || filled($shippingService) || filled($shippingPrice) || filled($shippingDispatchTime)) {

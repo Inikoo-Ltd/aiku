@@ -158,6 +158,10 @@ class UpdateEbayPortfolio implements ShouldBeUnique
             $availableQuantity = 0;
         }
 
+        if ($customerSalesChannel->stock_threshold > 0 && $availableQuantity <= $customerSalesChannel->stock_threshold) {
+            return 0;
+        }
+
         if ($customerSalesChannel->max_quantity_advertise > 0) {
             $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
         }

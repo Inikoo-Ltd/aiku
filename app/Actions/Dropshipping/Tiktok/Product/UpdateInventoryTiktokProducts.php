@@ -27,7 +27,7 @@ class UpdateInventoryTiktokProducts
 
     public string $commandSignature = 'dropshipping:tiktok:product:inventory:update {customerSalesChannel?}';
 
-    public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
+    public function handle(?CustomerSalesChannel $customerSalesChannel = null, bool $force = false): void
     {
         $platform = Platform::where('type', PlatformTypeEnum::TIKTOK)->first();
 
@@ -94,14 +94,14 @@ class UpdateInventoryTiktokProducts
                 ->get();
 
             foreach ($portfolios as $portfolio) {
-                if ($this->checkIfApplicable($portfolio, $customerSalesChannel)) {
+                if ($this->checkIfApplicable($portfolio, $customerSalesChannel, $force)) {
                     UpdateTiktokInventory::dispatch($portfolio, $customerSalesChannel)->delay(5);
                 }
             }
         }
     }
 
-    public function checkIfApplicable(Portfolio $portfolio, CustomerSalesChannel $customerSalesChannel): bool
+    public function checkIfApplicable(Portfolio $portfolio, CustomerSalesChannel $customerSalesChannel, bool $force = false): bool
     {
         $product = $portfolio->item;
 
@@ -112,12 +112,12 @@ class UpdateInventoryTiktokProducts
         $lastSuccessAt = $portfolio->stock_last_updated_at;
         $lastFailAt = $portfolio->stock_last_fail_updated_at;
 
-        if ($lastFailAt && (!$lastSuccessAt || $lastFailAt->gt($lastSuccessAt))) {
+        if (!$force && $lastFailAt && (!$lastSuccessAt || $lastFailAt->gt($lastSuccessAt))) {
             return $lastFailAt->lt(now()->subDay())
                 || ($product->available_quantity_updated_at && $product->available_quantity_updated_at->gt($lastFailAt));
         }
 
-        if (!$lastSuccessAt) {
+        if (!$lastSuccessAt || $portfolio->last_stock_value === null) {
             return true;
         }
 
