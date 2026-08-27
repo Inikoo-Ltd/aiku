@@ -98,47 +98,26 @@ class IndexHistory
      * (see ArchiveAudits). When the operational database has no rows for this record but the
      * archive does, the whole listing is served from the archive — a dead record's trail moves
      * wholesale, so there is no mixed page. A record that came back to life (reopened shop,
-     * relaunched product) starts a clean live trail; its archived history stays reachable and the
-     * footer note says it exists, so the clean restart never reads as vanished history.
+     * relaunched product) starts a clean live trail; its archived history stays reachable, and
+     * passing the model to tableStructure adds a footer note naming it, so the clean restart
+     * never reads as vanished history.
      *
      * The archive lives on another server, so it is never allowed to break a page: any failure
-     * reaching it degrades to the operational database. The footer note is passed to
-     * tableStructure through request attributes because its many callers wire the two
-     * independently within the same request.
+     * reaching it degrades to the operational database.
      */
-    private function auditReadConnection($model): ?string
+    private function archivedAudits($model): ?object
     {
         if (!isset($model->id) || !config('database.connections.archive.database')) {
             return null;
         }
 
-        $where = ['auditable_type' => $this->model, 'auditable_id' => $model->id];
-
         try {
             $archived = DB::connection('archive')->table('audits')
-                ->where($where)
+                ->where(['auditable_type' => class_basename($model), 'auditable_id' => $model->id])
                 ->selectRaw('count(*) as total, max(created_at) as latest')
                 ->first();
 
-            if (!$archived || !$archived->total) {
-                return null;
-            }
-
-            if (!DB::table('audits')->where($where)->exists()) {
-                request()->attributes->set('history_archive_note', __('Showing archived history.'));
-
-                return 'archive';
-            }
-
-            request()->attributes->set(
-                'history_archive_note',
-                __(':count older entries up to :date are archived.', [
-                    'count' => number_format($archived->total),
-                    'date'  => Carbon::parse($archived->latest)->format('j M Y'),
-                ])
-            );
-
-            return null;
+            return ($archived && $archived->total) ? $archived : null;
         } catch (Throwable $exception) {
             if (app()->runningUnitTests()) {
                 throw $exception;
@@ -149,9 +128,22 @@ class IndexHistory
         }
     }
 
-    public function tableStructure($prefix = null, ?array $exportLinks = null): Closure
+    private function auditReadConnection($model): ?string
     {
-        return function (InertiaTable $table) use ($exportLinks, $prefix) {
+        if (!$this->archivedAudits($model)) {
+            return null;
+        }
+
+        $hasLiveAudits = DB::table('audits')
+            ->where(['auditable_type' => class_basename($model), 'auditable_id' => $model->id])
+            ->exists();
+
+        return $hasLiveAudits ? null : 'archive';
+    }
+
+    public function tableStructure($prefix = null, ?array $exportLinks = null, $model = null): Closure
+    {
+        return function (InertiaTable $table) use ($exportLinks, $prefix, $model) {
 
             if ($prefix) {
                 $table
@@ -159,8 +151,15 @@ class IndexHistory
                     ->pageName($prefix.'Page');
             }
 
-            if ($archiveNote = request()->attributes->get('history_archive_note')) {
-                $table->withFooterNote($archiveNote);
+            if ($model && $archived = $this->archivedAudits($model)) {
+                $table->withFooterNote(
+                    $this->auditReadConnection($model) === 'archive'
+                        ? __('Showing archived history.')
+                        : __(':count older entries up to :date are archived.', [
+                            'count' => number_format($archived->total),
+                            'date'  => Carbon::parse($archived->latest)->format('j M Y'),
+                        ])
+                );
             }
 
             $table

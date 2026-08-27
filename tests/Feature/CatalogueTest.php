@@ -995,15 +995,23 @@ test('audit archiver moves closed shop and discontinued product audits, history 
         ->and(DB::table('audits')->where('auditable_type', 'Shop')->where('auditable_id', $liveShop->id)->exists())->toBeTrue();
 
     request()->setRouteResolver(fn () => (new \Illuminate\Routing\Route('GET', 'test-history', []))->name('test.history'));
+
+    $footerNoteFor = function ($model): ?string {
+        $table = new \App\InertiaTable\InertiaTable(request());
+        (\App\Actions\Helpers\History\UI\IndexHistory::make()->tableStructure(model: $model))($table);
+        $property = new \ReflectionProperty($table, 'footerNote');
+
+        return $property->getValue($table);
+    };
+
     $history = \App\Actions\Helpers\History\UI\IndexHistory::run($discontinuedProduct);
     expect($history->total())->toBeGreaterThan(0)
-        ->and(request()->attributes->get('history_archive_note'))->toBe(__('Showing archived history.'));
+        ->and($footerNoteFor($discontinuedProduct))->toBe(__('Showing archived history.'));
 
     UpdateProduct::make()->action($discontinuedProduct->refresh(), ['name' => 'relaunched']);
-    request()->attributes->remove('history_archive_note');
     $mixedHistory = \App\Actions\Helpers\History\UI\IndexHistory::run($discontinuedProduct);
     expect($mixedHistory->total())->toBeGreaterThan(0)
-        ->and(request()->attributes->get('history_archive_note'))->toContain(__('are archived.'));
+        ->and($footerNoteFor($discontinuedProduct))->toContain(__('are archived.'));
 
     DB::table('shops')->where('id', $shop->id)->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::CLOSED->value]);
     $shopAuditsBefore = DB::table('audits')->where('shop_id', $shop->id)->count();

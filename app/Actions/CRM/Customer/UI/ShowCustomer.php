@@ -261,7 +261,7 @@ class ShowCustomer extends OrgAction
         ->table(IndexDispatchedEmails::make()->tableStructure($customer, $tabs::DISPATCHED_EMAILS->value))
         ->table(IndexCreditTransactions::make()->tableStructure($customer, $tabs::CREDIT_TRANSACTIONS->value))
         ->table(IndexOffers::make()->tableStructure(parent: $customer, prefix: $tabs::OFFERS->value))
-        ->table(IndexHistory::make()->tableStructure($tabs::HISTORY->value));
+        ->table(IndexHistory::make()->tableStructure($tabs::HISTORY->value, model: $customer));
     }
 
 
@@ -354,7 +354,7 @@ class ShowCustomer extends OrgAction
                     $suffix
                 ),
             ),
- 
+
             'grp.org.shops.show.crm.customers.show',
             'grp.org.shops.show.crm.customers.edit',
             'grp.org.shops.show.crm.customers.show.customer_sales_channels.index',
