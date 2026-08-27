@@ -3676,12 +3676,18 @@ test('the return delivery note dropdown label shows what the operator can check 
     ]));
     $response->assertOk();
 
-    $label = collect($response->json("data"))->firstWhere('id', $deliveryNote->id)['label'];
+    $row   = collect($response->json("data"))->firstWhere('id', $deliveryNote->id);
+    $label = $row['label'];
 
     expect($label)->toContain($deliveryNote->reference)
         ->and($label)->toContain('Woodhouse Stores')
         ->and($label)->toContain('r_labelcheck')
-        ->and($label)->toContain('TRACK-99001');
+        ->and($label)->toContain('TRACK-99001')
+        ->and($row['reference'])->toBe($deliveryNote->reference)
+        ->and($row['customer_name'])->toBe('Woodhouse Stores')
+        ->and($row['customer_reference'])->toBe('r_labelcheck')
+        ->and($row['tracking_number'])->toBe('TRACK-99001')
+        ->and($row['date'])->toBe($deliveryNote->date->format('Y-m-d'));
 });
 
 test('the return delivery note lookup leads with the search index hits and still falls back to sql', function () {
@@ -3709,4 +3715,48 @@ test('the return delivery note lookup leads with the search index hits and still
     ]));
     $response->assertOk();
     expect(collect($response->json('data'))->pluck('id'))->toContain($deliveryNote->id);
+});
+
+test('a box with no findable delivery note is logged to identify and later identified into a return', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'is_returned' => false]);
+    $this->shop->update(['is_aiku' => true]);
+
+    post(route('grp.models.warehouse.unidentified_return.store', [$this->warehouse->id]), [
+        'notes' => "handwritten: B. Winder, tracking starts XQ57",
+    ])->assertRedirect();
+
+    $unidentifiedReturn = \App\Models\GoodsIn\UnidentifiedReturn::latest('id')->first();
+    expect($unidentifiedReturn->warehouse_id)->toBe($this->warehouse->id)
+        ->and($unidentifiedReturn->notes)->toContain('B. Winder')
+        ->and($unidentifiedReturn->identified_at)->toBeNull();
+
+    post(route('grp.models.warehouse.unidentified_return.store', [$this->warehouse->id]), [])
+        ->assertSessionHasErrors(['notes', 'image']);
+
+    $indexResponse = get(route('grp.org.warehouses.show.incoming.return_delivery_notes.index', [
+        $this->organisation->slug,
+        $this->warehouse->slug,
+    ]));
+    $indexResponse->assertOk();
+    $indexResponse->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->where('warehouseId', $this->warehouse->id)
+            ->where('unidentifiedReturns.data.0.id', $unidentifiedReturn->id)
+            ->etc()
+    );
+
+    patch(route('grp.models.delivery_note.return.process', [$deliveryNote->id]), [
+        'unidentified_return_id' => $unidentifiedReturn->id,
+    ])->assertRedirect();
+
+    $unidentifiedReturn->refresh();
+    expect($unidentifiedReturn->identified_at)->not->toBeNull()
+        ->and($unidentifiedReturn->delivery_note_id)->toBe($deliveryNote->id)
+        ->and($unidentifiedReturn->returnDeliveryNote->delivery_note_id)->toBe($deliveryNote->id)
+        ->and($deliveryNote->refresh()->is_returned)->toBeTrue();
+
+    patch(route('grp.models.delivery_note.return.process', [$deliveryNote->id]), [
+        'unidentified_return_id' => $unidentifiedReturn->id,
+    ])->assertSessionHasErrors(['unidentified_return_id']);
 });
