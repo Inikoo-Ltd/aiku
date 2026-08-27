@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\Whatsapp\Templates\UI;
 
+use App\Actions\Chat\Whatsapp\Templates\GetWhatsappTemplateTags;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Http\Resources\Chat\MetaMessageTemplatesResource;
@@ -52,6 +53,7 @@ class IndexWhatsappMessageTemplates extends OrgAction
                 'meta_message_templates.status',
                 'meta_message_templates.category',
                 'meta_message_templates.synchronize_at',
+                'meta_message_templates.data',
             ])
             ->allowedSorts(['name', 'language', 'status', 'category', 'synchronize_at'])
             ->allowedFilters([$globalSearch])
@@ -80,6 +82,8 @@ class IndexWhatsappMessageTemplates extends OrgAction
                 ->column(key: 'language', label: __('Language'), canBeHidden: false, sortable: true)
                 ->column(key: 'category', label: __('Category'), canBeHidden: false, sortable: true)
                 ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true)
+                ->column(key: 'variables', label: __('Variables'), canBeHidden: false)
+                ->column(key: 'actions', label: '', canBeHidden: false)
                 ->column(key: 'synchronize_at', label: __('Synchronized at'), canBeHidden: false, sortable: true);
         };
     }
@@ -93,6 +97,20 @@ class IndexWhatsappMessageTemplates extends OrgAction
     {
         $actions = [];
         // if ($this->canEdit) {
+        $actions[] = [
+            'type'    => 'button',
+            'style'   => 'primary',
+            'icon'    => 'fal fa-plus',
+            'label'   => __('New template'),
+            'route'   => [
+                'method'     => 'get',
+                'name'       => 'grp.org.shops.show.chat.whatsapp_templates.create',
+                'parameters' => [
+                    'organisation' => $this->organisation->slug,
+                    'shop'         => $this->shop->slug,
+                ],
+            ],
+        ];
         $actions[] = [
             'type'        => 'button',
             'style'       => 'tertiary',
@@ -125,6 +143,20 @@ class IndexWhatsappMessageTemplates extends OrgAction
                     'actions' => $actions,
                 ],
                 'data'        => MetaMessageTemplatesResource::collection($templates),
+                'mergeTags'   => GetWhatsappTemplateTags::run($this->shop),
+                'editRouteName'  => 'grp.org.shops.show.chat.whatsapp_templates.edit',
+                'deleteRouteName' => 'grp.org.shops.show.chat.whatsapp_templates.delete',
+                'routeParameters' => [
+                    'organisation' => $this->organisation->slug,
+                    'shop'         => $this->shop->slug,
+                ],
+                'variablesRoute' => [
+                    'name'       => 'grp.org.shops.show.chat.whatsapp_templates.variables',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop'         => $this->shop->slug,
+                    ],
+                ],
             ]
         )->table($this->tableStructure());
     }

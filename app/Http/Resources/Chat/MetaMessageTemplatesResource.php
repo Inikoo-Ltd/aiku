@@ -8,6 +8,7 @@
 namespace App\Http\Resources\Chat;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property int $id
@@ -22,14 +23,26 @@ class MetaMessageTemplatesResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $body = Arr::get(
+            collect(Arr::get($this->data, 'components', []))->firstWhere('type', 'BODY') ?? [],
+            'text',
+            ''
+        );
+
+        preg_match_all('/\{\{(\d+)\}\}/', $body, $matches);
+
         return [
             'id'             => $this->id,
             'template_id'    => $this->template_id,
             'name'           => $this->name,
+            'label'          => Arr::get($this->data ?? [], 'label'),
             'language'       => $this->language,
             'status'         => $this->status,
             'category'       => $this->category,
             'synchronize_at' => $this->synchronize_at,
+            'body'           => $body,
+            'variable_count' => empty($matches[1]) ? 0 : max(array_map('intval', $matches[1])),
+            'merge_tags'     => Arr::get($this->data ?? [], 'merge_tags.body', []),
         ];
     }
 }

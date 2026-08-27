@@ -6,7 +6,7 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
-use App\Models\CRM\WebUser;
+use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Language;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $id
  * @property int $meta_channel_id
  * @property int|null $shop_id
- * @property int|null $web_user_id
+ * @property int|null $customer_id
  * @property string $ulid
  * @property ChatSessionStatusEnum $status
  * @property string|null $guest_identifier
@@ -84,9 +84,9 @@ class MetaChatSession extends Model
         return $this->belongsTo(Shop::class);
     }
 
-    public function webUser(): BelongsTo
+    public function customer(): BelongsTo
     {
-        return $this->belongsTo(WebUser::class);
+        return $this->belongsTo(Customer::class);
     }
 
     public function language(): BelongsTo

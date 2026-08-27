@@ -52,6 +52,10 @@ interface WhatsappTemplate {
     category: string | null
     body: string
     parameter_count: number
+    merge_tags?: string[]
+    auto_fill?: boolean
+    missing_tags?: string[]
+    preview?: string | null
 }
 
 const props = defineProps<{
@@ -470,12 +474,13 @@ const templateParameters = ref<string[]>([])
 const openTemplateDialog = async () => {
     isTemplateDialogOpen.value = true
 
-    if (templates.value.length || !chatSession.value?.shop?.id) return
+    if (!chatSession.value?.shop?.id) return
 
     isLoadingTemplates.value = true
     try {
+        // Values are resolved per conversation, so the list cannot be cached across chats.
         const { data } = await axios.get(`${baseUrl}/app/api/chats/meta/templates`, {
-            params: { shop_id: chatSession.value.shop.id },
+            params: { shop_id: chatSession.value.shop.id, session_ulid: chatSession.value.ulid },
         })
         templates.value = data?.data ?? []
     } catch (e) {
@@ -505,7 +510,8 @@ const hasTemplate = computed(() => !!selectedTemplate.value)
 
 const selectTemplate = (template: WhatsappTemplate) => {
     selectedTemplate.value = template
-    templateParameters.value = Array(template.parameter_count).fill("")
+    // A template built with merge tags fills itself from the conversation.
+    templateParameters.value = template.auto_fill ? [] : Array(template.parameter_count).fill("")
     hoveredTemplate.value = null
     isTemplateDialogOpen.value = false
     newMessage.value = ""
@@ -517,8 +523,14 @@ const clearTemplate = () => {
     templateParameters.value = []
 }
 
+const templateAutoFills = computed(() => !!selectedTemplate.value?.auto_fill)
+
+const templateMissingTags = computed(() => selectedTemplate.value?.missing_tags ?? [])
+
 const templatePreview = computed(() => {
     if (!selectedTemplate.value) return ""
+    if (selectedTemplate.value.auto_fill) return selectedTemplate.value.preview ?? selectedTemplate.value.body
+
     let body = selectedTemplate.value.body
     templateParameters.value.forEach((parameter, index) => {
         if (parameter) {
@@ -528,9 +540,15 @@ const templatePreview = computed(() => {
     return body
 })
 
-const canSendTemplate = computed(() =>
-    !!selectedTemplate.value && templateParameters.value.every((parameter) => parameter.trim() !== "")
-)
+const canSendTemplate = computed(() => {
+    if (!selectedTemplate.value) return false
+
+    if (selectedTemplate.value.auto_fill) {
+        return templateMissingTags.value.length === 0
+    }
+
+    return templateParameters.value.every((parameter) => parameter.trim() !== "")
+})
 
 const sendTemplateMessage = async () => {
     if (!selectedTemplate.value || !canSendTemplate.value) return
@@ -902,7 +920,18 @@ onUnmounted(() => {
                     {{ templatePreview }}
                 </div>
 
-                <div v-if="hasTemplate && templateParameters.length" class="px-3 pb-1 space-y-1.5">
+                <div v-if="hasTemplate && templateAutoFills && templateMissingTags.length"
+                    class="mx-3 mb-1 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-[11px]">
+                    {{ trans("Cannot send yet — no value for:") }} {{ templateMissingTags.join(", ") }}
+                </div>
+
+                <div v-else-if="hasTemplate && templateAutoFills"
+                    class="mx-3 mb-1 text-[11px] text-gray-400">
+                    {{ trans("Values filled automatically from this contact.") }}
+                </div>
+
+                <div v-if="hasTemplate && !templateAutoFills && templateParameters.length"
+                    class="px-3 pb-1 space-y-1.5">
                     <input v-for="(parameter, index) in templateParameters" :key="index"
                         v-model="templateParameters[index]" type="text"
                         :placeholder="trans('Value for :placeholder', { placeholder: `{{${index + 1}}}` })"

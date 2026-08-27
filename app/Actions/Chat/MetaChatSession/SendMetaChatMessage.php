@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\MetaChatSession;
 
 use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappCredentials;
+use App\Actions\Chat\Whatsapp\Templates\ResolveWhatsappTemplateTags;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Http\Resources\CRM\Livechat\MetaChatMessageResource;
@@ -103,10 +104,23 @@ class SendMetaChatMessage
         $metadata = [];
 
         if ($templateName) {
-            $parameters   = array_values($modelData['template_parameters'] ?? []);
+            $resolved = $this->resolveTemplateParameters(
+                $metaChatSession,
+                $agent,
+                $templateName,
+                $modelData['template_language'],
+                array_values($modelData['template_parameters'] ?? [])
+            );
+
+            if (!$resolved['ok']) {
+                return $resolved;
+            }
+
+            $parameters   = $resolved['parameters'];
             $payload      = $this->templatePayload($to, $templateName, $modelData['template_language'], $parameters);
             $messageText  = $this->renderTemplateBody($metaChatSession, $templateName, $modelData['template_language'], $parameters);
             $metadata['template'] = $templateName;
+            $metadata['template_parameters'] = $parameters;
         } elseif ($upload instanceof UploadedFile) {
             $mediaResult = $this->uploadMedia($phoneNumberId, $accessToken, $upload);
             if (!$mediaResult['ok']) {
@@ -243,6 +257,46 @@ class SendMetaChatMessage
             ->whereKey($repliedToId)
             ->whereNotNull('meta_message_id')
             ->first();
+    }
+
+    /**
+     * A template authored with merge tags carries its own parameter list, so the agent
+     * does not type anything: the values come from the conversation. Templates written
+     * before merge tags existed still take whatever the agent filled in.
+     *
+     * @return array{ok: bool, parameters?: array<int, string>, message?: string, code?: int}
+     */
+    protected function resolveTemplateParameters(
+        MetaChatSession $metaChatSession,
+        ChatAgent $agent,
+        string $templateName,
+        string $language,
+        array $manualParameters
+    ): array {
+        $template = MetaMessageTemplate::where('name', $templateName)
+            ->where('language', $language)
+            ->when($metaChatSession->shop_id, fn ($query) => $query->where('shop_id', $metaChatSession->shop_id))
+            ->first();
+
+        $tags = Arr::get($template?->data ?? [], 'merge_tags.body', []);
+
+        if (!$tags) {
+            return ['ok' => true, 'parameters' => $manualParameters];
+        }
+
+        $resolved = ResolveWhatsappTemplateTags::run($metaChatSession, $tags, $agent);
+
+        if ($resolved['missing']) {
+            return [
+                'ok'      => false,
+                'message' => __('This template needs :tags, which we do not have for this contact yet.', [
+                    'tags' => implode(', ', $resolved['missing']),
+                ]),
+                'code'    => 422,
+            ];
+        }
+
+        return ['ok' => true, 'parameters' => $resolved['values']];
     }
 
     protected function templatePayload(string $to, string $name, string $language, array $parameters): array

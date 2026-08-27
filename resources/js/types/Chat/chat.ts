@@ -60,6 +60,13 @@ export interface SessionAPI {
 		key_points: string
 		sentiment: string
 	} | null
+	customer?: {
+		id: string
+		name: string
+		slug?: string
+		email?: string
+		phone?: string
+	} | null
 	web_user?: {
 		id: string
 		name: string

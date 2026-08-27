@@ -44,7 +44,7 @@ class GetMetaChatSessions
             'page'            => ['sometimes', 'integer', 'min:1'],
             'channel'         => ['sometimes', 'string', 'max:50'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
-            'web_user_id'     => ['sometimes', 'integer', 'exists:web_users,id'],
+            'customer_id'     => ['sometimes', 'integer', 'exists:customers,id'],
             'search'          => ['sometimes', 'string', 'max:100'],
             'organisation_id' => ['sometimes', 'integer', 'exists:organisations,id'],
             'shop_id'         => ['sometimes', 'integer', 'exists:shops,id'],
@@ -95,7 +95,7 @@ class GetMetaChatSessions
             'events' => function ($q) {
                 $q->where('event_type', ChatEventTypeEnum::GUEST_PROFILE)->latest()->limit(1);
             },
-            'webUser',
+            'customer',
             'shop',
             'assignments.chatAgent.user'
         ])
@@ -187,8 +187,8 @@ class GetMetaChatSessions
             $query->where('shop_id', (int) $filters['shop_id']);
         }
 
-        if (isset($filters['web_user_id'])) {
-            $query->where('web_user_id', $filters['web_user_id']);
+        if (isset($filters['customer_id'])) {
+            $query->where('customer_id', $filters['customer_id']);
         }
 
         if (!empty($filters['search'])) {
@@ -196,11 +196,9 @@ class GetMetaChatSessions
             $query->where(function ($q) use ($term) {
                 $q->whereRaw('LOWER(meta_chat_sessions.guest_identifier COLLATE "C") LIKE ?', ["%{$term}%"])
                     ->orWhereRaw('LOWER(meta_chat_sessions.phone_number COLLATE "C") LIKE ?', ["%{$term}%"])
-                    ->orWhereHas('webUser', function ($q2) use ($term) {
-                        $q2->whereRaw('LOWER(username COLLATE "C") LIKE ?', ["%{$term}%"])
-                            ->orWhereHas('customer', function ($q3) use ($term) {
-                                $q3->whereRaw('LOWER(contact_name COLLATE "C") LIKE ?', ["%{$term}%"]);
-                            });
+                    ->orWhereHas('customer', function ($q2) use ($term) {
+                        $q2->whereRaw('LOWER(contact_name COLLATE "C") LIKE ?', ["%{$term}%"])
+                            ->orWhereRaw('LOWER(name COLLATE "C") LIKE ?', ["%{$term}%"]);
                     });
             });
         }

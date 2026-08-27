@@ -86,7 +86,7 @@ const panelSession = computed(() => {
     return {
         ulid: String(s.ulid),
         contact_name: s.contact_name || s.guest_identifier || "Guest",
-        is_guest: !s.web_user?.id,
+        is_guest: !(s.web_user?.id ?? s.customer?.id),
         web_user_id: s.web_user?.id ?? null,
         shop_name: s.shop?.name ?? null,
         status: s.status,
@@ -141,7 +141,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     status: s.status,
     is_spam: (s as any).is_spam ?? false,
     is_highlighted: (s as any).is_highlighted ?? false,
-    webUser: s.web_user,
+    webUser: s.web_user ?? (s as any).customer,
     priority: s.priority,
     guest_profile: s.guest_profile,
     agent: s.assigned_agent,

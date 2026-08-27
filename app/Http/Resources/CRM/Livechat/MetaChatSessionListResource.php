@@ -67,7 +67,7 @@ class MetaChatSessionListResource extends JsonResource
             ];
         }
 
-        $webUser = $this->web_user_id ? $this->webUser : null;
+        $customer = $this->customer_id ? $this->customer : null;
 
         $shop = $this->shop_id ? $this->shop : null;
 
@@ -89,9 +89,8 @@ class MetaChatSessionListResource extends JsonResource
             'phone_number' => $this->phone_number,
             'created_at' => $this->created_at,
             'priority' => $this->priority,
-            'contact_name' => Arr::get($this->metadata ?? [], 'name')
-                ?? $webUser?->customer?->contact_name
-                ?? $webUser?->username
+            'contact_name' => $customer?->contact_name
+                ?? Arr::get($this->metadata ?? [], 'name')
                 ?? $this->guest_identifier
                 ?? $this->phone_number
                 ?? 'Guest',
@@ -108,21 +107,19 @@ class MetaChatSessionListResource extends JsonResource
             ],
             'metadata' => $this->metadata ?? [],
 
-            'web_user' => $webUser ? [
-                'id' => $webUser->id,
-                'name' => $webUser->contact_name,
-                'slug' => $webUser->customer?->slug,
-                'email' => $webUser->customer?->email,
-                'phone' => $webUser->customer?->phone,
-                'organisation' => $webUser->customer?->organisation?->name,
-                'organisation_slug' => $webUser->customer?->organisation?->slug,
-                'shop' => $webUser->customer?->shop?->name,
-                'shop_slug' => $webUser->customer?->shop?->slug,
-                'image' => !blank($webUser->image_id)
-                    ? $webUser->imageSources(320, 320)
-                    : [
-                        'original' => '/retina-default-user.svg'
-                    ],
+            // A WhatsApp thread is keyed by phone number, so it links straight to the
+            // customer rather than to a web user account.
+            'customer' => $customer ? [
+                'id' => $customer->id,
+                'name' => $customer->contact_name ?? $customer->name,
+                'slug' => $customer->slug,
+                'email' => $customer->email,
+                'phone' => $customer->phone,
+                'organisation' => $customer->organisation?->name,
+                'organisation_slug' => $customer->organisation?->slug,
+                'shop' => $customer->shop?->name,
+                'shop_slug' => $customer->shop?->slug,
+                'image' => ['original' => '/retina-default-user.svg'],
             ] : null,
 
             'shop' => $shop ? [

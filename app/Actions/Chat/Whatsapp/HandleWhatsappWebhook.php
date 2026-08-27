@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\Whatsapp;
 
+use App\Actions\Chat\Whatsapp\Templates\UpdateWhatsappTemplateStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -23,6 +24,12 @@ class HandleWhatsappWebhook
     {
         foreach (Arr::get($payload, 'entry', []) as $entry) {
             foreach (Arr::get($entry, 'changes', []) as $change) {
+                if (Arr::get($change, 'field') === 'message_template_status_update') {
+                    UpdateWhatsappTemplateStatus::run($change['value']);
+
+                    continue;
+                }
+
                 if (Arr::get($change, 'field') !== 'messages') {
                     continue;
                 }
