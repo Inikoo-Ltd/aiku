@@ -19,6 +19,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMasterPricesRRPtoChild;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMissingChildDescription;
+use App\Actions\Masters\MasterAsset\PropagateMasterContentToProducts;
 use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
 use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
 use App\Models\Masters\MasterAsset;
@@ -75,6 +76,16 @@ class UpdateProduct extends OrgAction
         $webpageData = [];
         $newData     = [];
         $oldData     = $product->toArray();
+
+        /**
+         * Writing the text is what counts as reviewing it, so the flag the master raised comes
+         * back down in the same save. Without this the shop keeps the badge after fixing it.
+         */
+        foreach (PropagateMasterContentToProducts::REVIEW_FLAGS as $field => $reviewFlag) {
+            if (Arr::has($modelData, $field)) {
+                data_set($modelData, $reviewFlag, true, false);
+            }
+        }
 
         if (Arr::has($modelData, 'rrp_per_unit')) {
             $rrpPerUnit = Arr::pull($modelData, 'rrp_per_unit');
@@ -441,6 +452,10 @@ class UpdateProduct extends OrgAction
             'description'               => ['sometimes', 'required', 'max:1500'],
             'description_title'         => ['sometimes', 'nullable', 'max:255'],
             'description_extra'         => ['sometimes', 'nullable', 'max:65500'],
+            'is_name_reviewed'              => ['sometimes', 'boolean'],
+            'is_description_title_reviewed' => ['sometimes', 'boolean'],
+            'is_description_reviewed'       => ['sometimes', 'boolean'],
+            'is_description_extra_reviewed' => ['sometimes', 'boolean'],
             'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
             'rrp_per_unit'              => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
             'data'                      => ['sometimes', 'array'],

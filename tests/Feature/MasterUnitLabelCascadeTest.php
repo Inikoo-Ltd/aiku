@@ -7,6 +7,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
@@ -144,4 +145,47 @@ test('a shop that does not follow the master keeps its own unit label', function
     UpdateMasterAsset::make()->action($this->masterAsset, ['unit' => 'bottle']);
 
     expect($this->product->refresh()->unit)->toBe('piece');
+});
+
+test('a master name change is copied to a shop that speaks the master language', function () {
+    UpdateMasterAsset::make()->action($this->masterAsset, ['name' => 'lavender soap']);
+
+    expect($this->product->refresh()->name)->toBe('lavender soap')
+        ->and($this->product->is_name_reviewed)->toBeTrue();
+});
+
+test('a master name change never overwrites a shop that wrote its own translation', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'sk')->first()->id]);
+    $ownName = $this->product->name;
+
+    UpdateMasterAsset::make()->action($this->masterAsset, ['name' => 'lavender soap']);
+
+    expect($this->product->refresh()->name)->toBe($ownName)
+        ->and($this->product->is_name_reviewed)->toBeFalse();
+});
+
+test('the review flag is raised whatever the shop follow master setting says', function () {
+    $this->shop->updateQuietly([
+        'language_id' => Language::where('code', 'sk')->first()->id,
+        'settings'    => array_merge($this->shop->settings ?? [], [
+            'catalog' => ['product_follow_master' => true],
+        ]),
+    ]);
+    $ownName = $this->product->name;
+
+    UpdateMasterAsset::make()->action($this->masterAsset, ['name' => 'lavender soap']);
+
+    expect($this->product->refresh()->name)->toBe($ownName)
+        ->and($this->product->is_name_reviewed)->toBeFalse();
+});
+
+test('writing the shop text clears the review flag', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'sk')->first()->id]);
+    UpdateMasterAsset::make()->action($this->masterAsset, ['name' => 'lavender soap']);
+    expect($this->product->refresh()->is_name_reviewed)->toBeFalse();
+
+    UpdateProduct::make()->action($this->product, ['name' => 'levanduľové mydlo']);
+
+    expect($this->product->refresh()->name)->toBe('levanduľové mydlo')
+        ->and($this->product->is_name_reviewed)->toBeTrue();
 });

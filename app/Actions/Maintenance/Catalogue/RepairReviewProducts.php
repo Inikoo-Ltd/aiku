@@ -19,9 +19,9 @@ class RepairReviewProducts
     {
         if ($shop->language->code === 'en') {
             $shop->products()->update([
-                'is_extra_description_reviewed' => true,
+                'is_description_extra_reviewed' => true,
                 'is_description_reviewed' => true,
-                'is_title_reviewed' => true,
+                'is_description_title_reviewed' => true,
                 'is_name_reviewed' => true
             ]);
         }

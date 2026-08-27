@@ -3,7 +3,6 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\OrgAction;
-use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -46,74 +45,14 @@ class UpdateMasterProductTranslationsFromUpdate extends OrgAction
 
         $masterAsset->save();
 
-        if ($masterAsset->products) {
-            foreach ($masterAsset->products as $product) {
-                $this->updateChildren($product, $name_i8n, $description_i8n, $description_title_i8n, $description_extra_i8n);
-            }
-        }
-
+        PropagateMasterContentToProducts::run($masterAsset, array_keys(array_filter([
+            'name'              => $name_i8n,
+            'description_title' => $description_title_i8n,
+            'description'       => $description_i8n,
+            'description_extra' => $description_extra_i8n,
+        ])));
 
         return $masterAsset;
-
-
-    }
-
-    public function updateChildren(Product $product, array $name_i8n, array $description_i8n, array $description_title_i8n, array $description_extra_i8n)
-    {
-        $childNameI8n = $product->getTranslations('name_i8n');
-        $childDescriptionI8n = $product->getTranslations('description_i8n');
-        $childDescriptionTitleI8n = $product->getTranslations('description_title_i8n');
-        $childDescriptionExtraI8n =  $product->getTranslations('description_extra_i8n');
-        $childLanguage = $product->shop->language->code;
-
-        $updateChild = false;
-        if (!empty($name_i8n)) {
-            foreach ($name_i8n as $locale => $translation) {
-                $childNameI8n[$locale] = $translation;
-                if ($locale === $childLanguage) {
-                    $product->name = $translation;
-                }
-            }
-            $product->name_i8n = $childNameI8n;
-            $updateChild = true;
-        }
-
-        if (!empty($description_i8n)) {
-            foreach ($description_i8n as $locale => $translation) {
-                $childDescriptionI8n[$locale] = $translation;
-                if ($locale === $childLanguage) {
-                    $product->description = $translation;
-                }
-            }
-            $product->description_i8n = $childDescriptionI8n;
-            $updateChild = true;
-        }
-
-        if (!empty($description_title_i8n)) {
-            foreach ($description_title_i8n as $locale => $translation) {
-                $childDescriptionTitleI8n[$locale] = $translation;
-                if ($locale === $childLanguage) {
-                    $product->description_title = $translation;
-                }
-            }
-            $product->description_title_i8n = $childDescriptionTitleI8n;
-            $updateChild = true;
-        }
-
-        if (!empty($description_extra_i8n)) {
-            foreach ($description_extra_i8n as $locale => $translation) {
-                $childDescriptionExtraI8n[$locale] = $translation;
-                if ($locale === $childLanguage) {
-                    $product->description_extra = $translation;
-                }
-            }
-            $product->description_extra_i8n = $childDescriptionExtraI8n;
-            $updateChild = true;
-        }
-
-        if ($updateChild) {
-            $product->save();
-        }
     }
 
     public function rules(): array

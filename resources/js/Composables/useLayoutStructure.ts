@@ -80,7 +80,7 @@ export const layoutStructure = {
 
     dispatching_waiting_count: 0 as number,
     crm_waiting_count: 0 as number,
-    crm_return_count: 0 as number,
+    products_need_review_count: 0 as number,
     master_updated_count: 0 as number,
     faire_skipped_count: 0 as number,
     bookmarks: [] as Bookmark[],
