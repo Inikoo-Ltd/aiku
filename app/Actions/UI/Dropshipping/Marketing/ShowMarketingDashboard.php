@@ -134,6 +134,15 @@ class ShowMarketingDashboard extends OrgAction
                         ]
                     ],
                     [
+                        'name' => __('Whatsapp Campaigns'),
+                        'value' => 0,
+                        'icon'  => ['fab', 'fa-whatsapp'],
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.marketing.whatsapp_campaigns.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ]
+                    ],
+                    [
                         'name' => __('Traffic Sources'),
                         'value' => $this->shop->crmStats->number_traffic_sources ?? 0,
                         'icon'  => ['fal', 'fa-traffic-light'],

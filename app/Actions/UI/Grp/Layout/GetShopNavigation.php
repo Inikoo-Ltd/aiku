@@ -364,6 +364,16 @@ class GetShopNavigation
                             ],
                         ],
                         [
+                            "label"   => __("Whatsapp Campaigns"),
+                            "tooltip" => __("Whatsapp Campaigns"),
+                            "icon"    => ["fab", "fa-whatsapp"],
+                            'root'    => 'grp.org.shops.show.marketing.whatsapp_campaigns.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.marketing.whatsapp_campaigns.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
                             "label"   => __("Traffic sources"),
                             "tooltip" => __("Traffic sources"),
                             "icon"    => ["fal", "fa-chart-line"],
