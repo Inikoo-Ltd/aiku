@@ -22,6 +22,7 @@ import { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { BoxStats, PalletReturn, PDRNotes, UploadPallet } from "@/types/Pallet"
 import BoxStatsPalletReturn from "@/Pages/Grp/Org/Fulfilment/Return/BoxStatsPalletReturn.vue"
+import ScanToPickPalletReturn from "@/Components/Fulfilment/ScanToPickPalletReturn.vue"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { trans } from "laravel-vue-i18n"
@@ -157,6 +158,9 @@ const props = defineProps<{
 			reference: string
 			route: routeType
 		}[]
+	}
+	scan_to_pick?: {
+		scan_route: routeType
 	}
 	requireShipping?: boolean
 }>()
@@ -701,6 +705,12 @@ provide("listError", listError.value)
 	<BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :address_management :shipments :picker_packer_routes="picker_packer_routes" />
 
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+
+	<ScanToPickPalletReturn
+		v-if="scan_to_pick && (currentTab === 'pallets' || currentTab === 'stored_items')"
+		:scanRoute="scan_to_pick.scan_route"
+		:reloadProps="[currentTab, 'box_stats', 'pageHead', 'data']" />
+
 	<component
 		:is="component"
 		:data="props[currentTab]"

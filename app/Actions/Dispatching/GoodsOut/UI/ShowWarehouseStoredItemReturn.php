@@ -41,6 +41,7 @@ class ShowWarehouseStoredItemReturn extends OrgAction
 {
     use WithFulfilmentWarehouseAuthorisation;
     use WithPalletReturnBucketNavigation;
+    use WithPalletReturnScanToPick;
 
     private bool $requireShipping = true;
 
@@ -251,6 +252,7 @@ class ShowWarehouseStoredItemReturn extends OrgAction
             'Org/Fulfilment/PalletReturn',
             [
                 'title'       => __('pallet return'),
+                'scan_to_pick' => $this->getScanToPick($palletReturn),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()

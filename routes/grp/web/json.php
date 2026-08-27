@@ -68,6 +68,7 @@ use App\Actions\Dispatching\DeliveryNote\Json\GetDeliveryNoteValidForReturn;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments;
 use App\Actions\Dispatching\PickingSession\Json\GetDeliveryNotesForPickingSession;
+use App\Actions\Fulfilment\PalletReturnItem\PickPalletReturnItemByScan;
 use App\Actions\Fulfilment\PickingSession\Json\GetPalletReturnsForPickingSession;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchSingleDeliveryNoteItem;
 use App\Actions\Dispatching\DeliveryNote\SetScanToPickDeliveryNote;
@@ -286,6 +287,7 @@ Route::get('delivery-note-item/{deliveryNoteItem:id}/image', FetchDeliveryNoteIt
 Route::post('delivery-note/{deliveryNote:id}/pack-by-scan', PackDeliveryNoteItemByScan::class)->name('delivery_note.pack_by_scan');
 Route::post('delivery-note/{deliveryNote:id}/pick-by-scan', PickDeliveryNoteItemByScan::class)->name('delivery_note.pick_by_scan');
 Route::patch('delivery-note/{deliveryNote:id}/scan-to-pick', SetScanToPickDeliveryNote::class)->name('delivery_note.set_scan_to_pick');
+Route::post('pallet-return/{palletReturn:id}/pick-by-scan', PickPalletReturnItemByScan::class)->name('pallet_return.pick_by_scan');
 
 Route::get('customer/{customer}/tags', [IndexTags::class, 'inCustomer'])->name('customer.tags.index');
 Route::get('shop/{shop:id}/customers', GetCustomersInShop::class)->name('shop.customers');
