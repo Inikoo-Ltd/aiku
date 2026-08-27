@@ -83,6 +83,7 @@ class ArchiveAudits
             }
 
             $progress = $command->getOutput()->createProgressBar($limit ? min($limit, $eligible) : $eligible);
+            $progress->setFormat(' %current%/%max% [%bar%] %percent:3s%%  elapsed %elapsed:6s%  eta %estimated:-6s%');
             $progress->start();
         }
 
