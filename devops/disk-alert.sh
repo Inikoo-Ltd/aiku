@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Disk usage alert. Posts to Slack when a local filesystem crosses the threshold,
+# Disk usage alert. Posts to Discord when a local filesystem crosses the threshold,
 # and once more when it recovers.
 #
 # Exists because on 27 Aug 2026 helio's root disk reached 99% with nobody paged:
@@ -10,8 +10,9 @@
 #
 # Deliberately standalone — no PHP, no Redis, no Horizon, no Laravel scheduler.
 # This has to work in exactly the situation where those are broken. The only thing
-# it borrows from the app is the Slack webhook, read straight out of the .env file
-# so there is no second secret to rotate.
+# it borrows from the app is the Discord webhook, read straight out of the .env
+# file: the same one MonitorWebpageUptime posts site-down alerts to, so these land
+# where people are already looking and there is no second secret to rotate.
 #
 # Install: see devops/cron/disk-alert.
 #
@@ -22,6 +23,8 @@ set -uo pipefail
 THRESHOLD=${DISK_ALERT_THRESHOLD:-85}
 REALERT_HOURS=${DISK_ALERT_REALERT_HOURS:-6}
 REALERT_POINTS=${DISK_ALERT_REALERT_POINTS:-3}
+CRITICAL=${DISK_ALERT_CRITICAL:-95}
+ALERT_ROLE=${DISK_ALERT_ROLE:-<@&1164019425154969600>}
 STATE_DIR=${DISK_ALERT_STATE_DIR:-/var/tmp/aiku-disk-alert}
 ENV_FILE=${DISK_ALERT_ENV_FILE:-/home/aiku/aiku/current/.env}
 
@@ -49,8 +52,16 @@ env_value() {
     sed -n "s/^$1=//p" "$ENV_FILE" | head -1 | tr -d '\042\047\r'
 }
 
+# A raw newline inside a JSON string is invalid and the whole alert would be
+# rejected, so multi-line messages need theirs escaped alongside quotes and
+# backslashes. awk rather than sed: BSD sed rejects the multi-line join syntax, and
+# this runs on Linux but is developed and tested on a Mac.
 json_string() {
-    printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/^/"/; s/$/"/'
+    printf '%s' "$1" | awk '
+        BEGIN { ORS = ""; print "\"" }
+        { gsub(/\\/, "\\\\"); gsub(/"/, "\\\""); if (NR > 1) print "\\n"; print $0 }
+        END { print "\"" }
+    '
 }
 
 # Last resort so an alert is never lost: syslog, plus stderr so cron mails root.
@@ -60,35 +71,40 @@ fallback() {
 }
 
 notify() {
-    local text=$1 token channel response
+    local text=$1 critical=${2:-0} url payload code
 
     if [ "$DRY_RUN" = 1 ]; then
         printf 'WOULD SEND: %s\n' "$text"
         return 0
     fi
 
-    # Reuses the bot token the application already authenticates with, rather than
-    # introducing a second Slack credential with its own rotation to forget about.
-    token=${DISK_ALERT_SLACK_TOKEN:-$(env_value SLACK_BOT_USER_OAUTH_TOKEN)}
-    channel=${DISK_ALERT_SLACK_CHANNEL:-$(env_value SLACK_CHANNEL)}
-    channel=${channel:-#general}
+    # Reuses the webhook the uptime monitor already posts to (MonitorWebpageUptime),
+    # so these land in the channel people are already watching and there is no second
+    # credential to rotate.
+    url=${DISK_ALERT_WEBHOOK:-$(env_value DISCORD_WEBHOOK_URL)}
 
-    if [ -z "$token" ]; then
-        fallback "$text" 'no SLACK_BOT_USER_OAUTH_TOKEN available'
+    if [ -z "$url" ]; then
+        fallback "$text" 'no DISCORD_WEBHOOK_URL available'
         return 1
     fi
 
-    response=$(curl -sS -m 15 -X POST https://slack.com/api/chat.postMessage \
-        -H "Authorization: Bearer $token" \
-        -H 'Content-type: application/json; charset=utf-8' \
-        --data "$(printf '{"channel": %s, "text": %s}' "$(json_string "$channel")" "$(json_string "$text")")" 2>&1)
+    # The role is pinged only when it is genuinely urgent. A disk at 85% is a chore;
+    # at the critical mark it is minutes from taking Redis and the site down, which
+    # is the same severity the uptime monitor pings for.
+    if [ "$critical" = 1 ] && [ -n "$ALERT_ROLE" ]; then
+        text="$text $ALERT_ROLE"
+    fi
 
-    # chat.postMessage answers 200 with {"ok":false,...} for channel_not_found, an
-    # expired token and the rest. Treating that as success is how alerting rots
-    # silently, which is the exact failure this script exists to prevent.
-    case $response in
-        *'"ok":true'*) return 0 ;;
-        *) fallback "$text" "Slack rejected it: ${response:0:200}"; return 1 ;;
+    payload=$(printf '{"content": %s}' "$(json_string "$text")")
+    code=$(curl -sS -m 15 -o /dev/null -w '%{http_code}' -X POST \
+        -H 'Content-type: application/json' --data "$payload" "$url" 2>&1)
+
+    # Discord answers 204 on success. Anything else (bad webhook, deleted channel,
+    # rate limit) must be surfaced — alerting that fails quietly is the bug this
+    # whole script exists to prevent.
+    case $code in
+        2*) return 0 ;;
+        *) fallback "$text" "Discord returned HTTP $code"; return 1 ;;
     esac
 }
 
@@ -139,11 +155,15 @@ run_checks() {
 
         case $verdict in
             alert|realert)
-                notify "🔴 ${host}: ${mount} is ${pct}% full, $(human_kb "$avail") free. Free space before it reaches 100% — a full disk stops Redis writes and takes the site down."
+                if [ "$pct" -ge "$CRITICAL" ]; then
+                    notify "🚨 **Disk critical — ${host}** 🚨"$'\n'"**Mount:** ${mount}"$'\n'"**Used:** ${pct}%"$'\n'"**Free:** $(human_kb "$avail")"$'\n'"A full disk stops Redis writes and takes the site down. Free space now." 1
+                else
+                    notify "⚠️ **Disk filling — ${host}**"$'\n'"**Mount:** ${mount}"$'\n'"**Used:** ${pct}%"$'\n'"**Free:** $(human_kb "$avail")"
+                fi
                 printf '%s %s\n' "$pct" "$now" > "$state_file"
                 ;;
             recovered)
-                notify "🟢 ${host}: ${mount} is back to ${pct}%, $(human_kb "$avail") free."
+                notify "✅ **Disk recovered — ${host}**"$'\n'"**Mount:** ${mount}"$'\n'"**Used:** ${pct}%"$'\n'"**Free:** $(human_kb "$avail")"
                 rm -f "$state_file"
                 ;;
         esac
@@ -174,18 +194,20 @@ self_test() {
     check "$(decide 70 91 1000000 1000060)"     recovered 'recovery when back under'
     check "$(decide 70 '' 0 1000000)"           quiet     'no recovery without a prior alert'
 
-    # A mangled payload means Slack silently rejects the alert, so escaping is checked
+    # A mangled payload is rejected by Discord and the alert is lost, so the escaping
+    # of everything the real messages contain is checked here.
     check "$(json_string 'plain')"              '"plain"'          'json quotes a plain string'
     check "$(json_string 'a "quoted" word')"    '"a \"quoted\" word"' 'json escapes double quotes'
     check "$(json_string 'back\slash')"         '"back\\slash"'    'json escapes backslashes'
+    check "$(json_string "one"$'\n'"two")"      '"one\ntwo"'       'json escapes newlines (messages are multi-line)'
 
     local envfile
     envfile=$(mktemp)
-    printf 'OTHER=x\nSLACK_CHANNEL="#devops"\nSLACK_BOT_USER_OAUTH_TOKEN=xoxb-secret\n' > "$envfile"
-    check "$(ENV_FILE=$envfile env_value SLACK_CHANNEL)"             '#devops'     'reads a quoted env value'
-    check "$(ENV_FILE=$envfile env_value SLACK_BOT_USER_OAUTH_TOKEN)" 'xoxb-secret' 'reads an unquoted env value'
-    check "$(ENV_FILE=$envfile env_value NOT_THERE)"                 ''            'missing env var is empty'
-    check "$(ENV_FILE=/nonexistent env_value SLACK_CHANNEL)"         ''            'unreadable env file is empty'
+    printf 'OTHER=x\nDISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/1/abc"\nAPP_ENV=production\n' > "$envfile"
+    check "$(ENV_FILE=$envfile env_value DISCORD_WEBHOOK_URL)" 'https://discord.com/api/webhooks/1/abc' 'reads a quoted env value'
+    check "$(ENV_FILE=$envfile env_value APP_ENV)"             'production'  'reads an unquoted env value'
+    check "$(ENV_FILE=$envfile env_value NOT_THERE)"           ''            'missing env var is empty'
+    check "$(ENV_FILE=/nonexistent env_value DISCORD_WEBHOOK_URL)" ''        'unreadable env file is empty'
     rm -f "$envfile"
 
     # end to end through the df parser, with no webhook and no state
@@ -194,7 +216,7 @@ self_test() {
           DISK_ALERT_DF_OVERRIDE=$'Filesystem 1024-blocks Used Available Capacity Mounted\n/dev/md2 950000000 940000000 9231000 99% /\n/dev/md1 1000000 200000 800000 22% /boot' \
           DRY_RUN=1 bash "$0" --dry-run)
     case $out in
-        *'/ is 99% full'*) printf '  ok    end to end alerts on the full filesystem\n' ;;
+        *'**Used:** 99%'*) printf '  ok    end to end alerts on the full filesystem\n' ;;
         *) printf '  FAIL  end to end (got: %s)\n' "$out"; failures=$((failures + 1)) ;;
     esac
     case $out in

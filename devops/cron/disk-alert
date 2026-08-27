@@ -7,7 +7,7 @@
 # Verify before trusting it, in this order:
 #     /usr/local/bin/aiku-disk-alert --self-test          # logic, no side effects
 #     /usr/local/bin/aiku-disk-alert --dry-run            # prints what it would send
-#     DISK_ALERT_THRESHOLD=1 /usr/local/bin/aiku-disk-alert   # posts a REAL Slack message
+#     DISK_ALERT_THRESHOLD=1 /usr/local/bin/aiku-disk-alert   # posts a REAL Discord message
 #
 # Why: on 27 Aug 2026 helio's root disk reached 99% with nobody paged. Redis could
 # not write its RDB snapshot, refused every write (stop-writes-on-bgsave-error),
@@ -15,21 +15,25 @@
 # filling for weeks — 132 GB of stale Deployer releases and 575 GB of Postgres,
 # none of it watched. Alerting at 85% turns that outage into a Tuesday chore.
 #
-# Posts through Slack's chat.postMessage using SLACK_BOT_USER_OAUTH_TOKEN and
-# SLACK_CHANNEL out of the app's .env — the credential the application already
-# uses, so there is no second Slack secret to rotate or forget. Runs as root
+# Posts to DISCORD_WEBHOOK_URL out of the app's .env — the same webhook
+# MonitorWebpageUptime sends site-down alerts to, so these land in the channel
+# people already watch and there is no second secret to rotate. Runs as root
 # purely because that .env is not world-readable. Deliberately does not touch PHP,
 # Redis or the Laravel scheduler: it has to work in exactly the situation where
-# those are broken, and it falls back to syslog plus a cron mail to root if Slack
-# is unreachable or rejects the message.
+# those are broken, and falls back to syslog plus a cron mail to root if Discord
+# is unreachable or rejects the post.
 #
-# Override the destination per host if needed, as lines above the schedule:
-#     DISK_ALERT_SLACK_CHANNEL=#devops
-#     DISK_ALERT_THRESHOLD=85
+# Two tiers: at 85% a plain warning, at 95% a 🚨 that pings the same role the
+# uptime monitor pings, because by then the site is minutes away from going down.
 #
-# Alerts once at 85%, again only if it worsens by 3 points or 6 hours pass, and
-# once more when it recovers. Local filesystems only — NFS and backup mounts are
-# excluded so they cannot drown the real signal.
+# Override per host as lines above the schedule:
+#     DISK_ALERT_THRESHOLD=88
+#     DISK_ALERT_CRITICAL=95
+#     DISK_ALERT_ROLE=            # empty to never ping the role on this host
+#
+# Alerts once on crossing, again only if it worsens by 3 points or 6 hours pass,
+# and once more when it recovers. Local filesystems only — NFS and backup mounts
+# are excluded so they cannot drown the real signal.
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 */10 * * * * root /usr/local/bin/aiku-disk-alert
