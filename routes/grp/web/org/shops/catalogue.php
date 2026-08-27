@@ -38,6 +38,7 @@ use App\Actions\Catalogue\ProductCategory\UI\CreateSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\EditDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\EditFamily;
 use App\Actions\Catalogue\ProductCategory\UI\EditSubDepartment;
+use App\Actions\Catalogue\ProductCategory\UI\ExportWebsiteStructure;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartmentsSales;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
@@ -257,6 +258,7 @@ Route::prefix('products')->as('products.')
 Route::name("departments.")->prefix('departments')
     ->group(function () {
         Route::get('', IndexDepartments::class)->name('index');
+        Route::get('export', [ExportWebsiteStructure::class, 'inShop'])->name('export');
         Route::get('sales', IndexDepartmentsSales::class)->name('sales');
         Route::get('create', CreateDepartment::class)->name('create');
 
