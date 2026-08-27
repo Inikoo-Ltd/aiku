@@ -1399,10 +1399,11 @@ const compTableFilterForSale = computed(() => {
 		:isOpen="isOpenModalEditProduct"
 		width="w-full max-w-2xl h-full"
 		@close="isOpenModalEditProduct = false">
-		<div class="max-h-[570px] overflow-auto">
+		<div class="max-h-[570px] flex flex-col">
 			<div class="text-xl font-semibold text-center">
 				{{ trans("Edit Product") }}
 			</div>
+			<div class="flex-1 min-h-0 overflow-auto">
 
 			<div class="mb-3">
 				<label for="edit-product-title" class="block text-sm font-semibold">{{
@@ -1537,7 +1538,8 @@ const compTableFilterForSale = computed(() => {
 					</template>
 				</Editor2>
 			</div>
-			<div class="mt-3 flex gap-2">
+			</div>
+			<div class="mt-3 pt-3 border-t border-gray-200 flex gap-2 flex-shrink-0">
 				<Button
 					type="tertiary"
 					:style="'white-w-outline'"
