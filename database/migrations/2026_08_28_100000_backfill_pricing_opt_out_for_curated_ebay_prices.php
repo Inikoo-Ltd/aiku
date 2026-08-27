@@ -15,7 +15,6 @@ return new class () extends Migration {
               AND pl.type = 'ebay'
               AND pr.id = p.item_id
               AND p.item_type = 'Product'
-              AND p.status = true
               AND p.customer_price::numeric IS DISTINCT FROM pr.rrp::numeric
         SQL);
     }
