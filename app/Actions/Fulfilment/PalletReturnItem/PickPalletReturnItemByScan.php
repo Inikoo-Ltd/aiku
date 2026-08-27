@@ -108,9 +108,10 @@ class PickPalletReturnItemByScan extends OrgAction
     }
 
     /**
-     * A whole-pallet return answers to the pallet, a stored-item return to the stored item; both
-     * to the warehouse reference (what the label printer put on it) and to the customer's own
-     * reference (what came stuck on the goods).
+     * A whole-pallet return answers to the pallet reference or the customer's own reference; a
+     * stored-item return to the stored item reference (what the printed label carries) or its
+     * barcode, usually the manufacturer's EAN13 already on the goods. Matching stays inside the
+     * return, so two customers storing the same retail product never collide on the EAN.
      *
      * @param  Collection<int, PalletReturnItem>  $items
      *
@@ -122,14 +123,14 @@ class PickPalletReturnItemByScan extends OrgAction
             return collect();
         }
 
-        $matches = fn (?string $reference) => $reference !== null && strcasecmp(trim($reference), $scanned) === 0;
+        $matches = fn (?string $code) => $code !== null && strcasecmp(trim($code), $scanned) === 0;
 
         return $items->filter(function (PalletReturnItem $item) use ($matches) {
             if ($item->type == 'Pallet') {
                 return $matches($item->pallet?->reference) || $matches($item->pallet?->customer_reference);
             }
 
-            return $matches($item->storedItem?->reference);
+            return $matches($item->storedItem?->reference) || $matches($item->storedItem?->barcode);
         })->values();
     }
 

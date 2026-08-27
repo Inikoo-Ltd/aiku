@@ -2687,6 +2687,12 @@ test('pick stored item in return by scanning its reference', function (PalletRet
     expect($pickedAgain['status'])->toBe('picked')
         ->and((float) $palletReturnItem->refresh()->quantity_picked)->toBe(2.0);
 
+    $palletReturnItem->storedItem->update(['barcode' => '5051234567890']);
+
+    $pickedByEan = $scan('5051234567890');
+    expect($pickedByEan['status'])->toBe('picked')
+        ->and((float) $palletReturnItem->refresh()->quantity_picked)->toBe(3.0);
+
     return $palletReturn;
 })->depends('picking second pallet to return');
 
