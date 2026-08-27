@@ -363,6 +363,7 @@ const links = computed(() => {
                             </template>
                         </ModalConfirmationDelete>
 
+                        <!-- Luigi Search is discontinued, reindex button disabled
                         <ButtonWithLink v-if="luigi_data?.luigisbox_tracker_id && savedSearchModel !== 'internal'"
                             :routeTarget="{
                                 name: 'grp.models.website_luigi.reindex',
@@ -394,6 +395,7 @@ const links = computed(() => {
                                 </div>
                             </template>
                         </ButtonWithLink>
+                        -->
 
                         <!-- {{ useFormatTime(lastReindexed30Minutes, {
                             formatTime: 'hm'

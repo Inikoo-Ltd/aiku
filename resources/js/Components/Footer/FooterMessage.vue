@@ -339,7 +339,7 @@ onUnmounted(() => {
 
         <!-- Mini chats docked left of the rail -->
         <div v-if="miniChats.length" class="fixed bottom-6 z-[9999] flex items-end gap-2 transition-[margin] duration-200"
-            :class="layout?.messagingSidebar?.show ? 'right-60' : 'right-16'"
+            :class="layout?.messagingSidebar?.show ? 'right-60' : (layout?.messagingSidebar?.micro ? 'right-8' : 'right-16')"
             :style="{ marginRight: showPopover ? '348px' : '0px' }">
             <MiniChatWindow v-for="chat in miniChats" :key="chat.ulid" :chat="chat"
                 @close="closeMiniChat(chat.ulid)" @toggle="toggleMiniChat(chat.ulid)" @read="refreshUnread" />

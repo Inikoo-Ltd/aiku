@@ -57,6 +57,7 @@ use App\Actions\Comms\EmailCopy\GetEmailCopy;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\Comms\Mailshot\GetMailshotTemplate;
+use App\Actions\Comms\Mailshot\SuggestMailshotCopy;
 use App\Actions\Comms\OutboxHasSubscribers\Json\GetOutboxUsers;
 use App\Actions\CRM\Customer\UI\GetProductsForPortfolioSelect;
 use App\Actions\Dashboard\GetMasterShopsSalesCustomDates;
@@ -82,6 +83,7 @@ use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
 use App\Actions\Dispatching\Trolley\Json\ListAvailableTrolleys;
 use App\Actions\Dispatching\Trolley\Json\ListUnavailableTrolleys;
+use App\Actions\Catalogue\Shop\External\Faire\Json\GetFaireSkippedBadge;
 use App\Actions\Dispatching\WaitingItems\Json\GetCrmReturnedBadge;
 use App\Actions\Dispatching\WaitingItems\Json\GetCrmWaitingBadge;
 use App\Actions\Dispatching\WaitingItems\Json\GetDispatchingWaitingBadge;
@@ -339,6 +341,7 @@ Route::get('product/{product}/trade-units', GetExternalProductTradeUnits::class)
 Route::post('master-product/{masterAsset}/check-org-stocks-existence', CheckMasterAssetTradeUnitOrgStockExistence::class)->name('master_product.check_org_stock_existence');
 
 Route::get('mailshot/{mailshot:id}/template', GetMailshotTemplate::class)->name('mailshot.template');
+Route::post('mailshot/{mailshot:id}/copy-suggestion', SuggestMailshotCopy::class)->name('mailshot.copy_suggestion');
 Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::class)->name('email_templates.layout');
 
 Route::get('charges-in-order/{order:id}', GetChargesInOrder::class)->name('charges_in_order.index');
@@ -356,6 +359,7 @@ Route::get('dispatching/waiting-badge', GetDispatchingWaitingBadge::class)->name
 Route::get('dispatching/crm-waiting-badge', GetCrmWaitingBadge::class)->name('crm_waiting_badge');
 Route::get('shops/crm-return-badge', GetCrmReturnedBadge::class)->name('crm_return_badge');
 Route::get('shops/master-updated-badge', GetMasterUpdatedBadge::class)->name('master_updated_badge');
+Route::get('shops/faire-skipped-badge', GetFaireSkippedBadge::class)->name('faire_skipped_badge');
 
 Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelect::class)->name('webpages_for_workshop_select');
 

@@ -36,17 +36,24 @@ class IndexMarketingMailshots extends OrgAction
     public function htmlResponse(LengthAwarePaginator $mailshots, ActionRequest $request): Response
     {
 
-        $actions = [
-            [
-                'type'    => 'button',
-                'style'   => 'create',
-                'label'   => __('Mailshot'),
-                'route'   => [
-                    'name'       => 'grp.org.shops.show.marketing.mailshots.create',
-                    'parameters' => array_values($request->route()->originalParameters())
+        $actions = [];
+        if ($this->parent instanceof Shop) {
+            $outbox  = $this->parent->outboxes()->where('outboxes.code', OutboxCodeEnum::MARKETING)->first();
+            $actions = [
+                [
+                    'type'  => 'button',
+                    'style' => 'create',
+                    'label' => __('Mailshot'),
+                    'route' => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.outbox.mailshot.store',
+                        'parameters' => [
+                            'outbox' => $outbox->id
+                        ]
+                    ]
                 ]
-            ]
-        ];
+            ];
+        }
 
         $title = __('Mailshots');
         $model = __('Marketing');
@@ -92,7 +99,7 @@ class IndexMarketingMailshots extends OrgAction
 
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $organisation;
+        $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop);

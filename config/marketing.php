@@ -110,6 +110,7 @@ return [
         'abandoned_cart_reminder_1',
         'abandoned_cart_reminder_2',
         'abandoned_cart_reminder_3',
+        'abandoned_checkout',
         'reorder_reminder',
         'reorder_reminder_2nd',
         'reorder_reminder_3rd',

@@ -1,7 +1,7 @@
 ---
 title: Seven hours ahead of the warehouse
 summary: The engineers are in Southeast Asia — a big city and an island people go to on holiday; the warehouses, the sales floor and most of the staff are in Europe. That is six to seven hours of offset, every day, for four years. It shaped almost everything in how we work — the quiet morning deploys, the ticket that has to carry the whole conversation, the boring release, the hand-off note — and it is the honest reason some of our best habits exist. The advantages, the costs, and what we would tell a team considering it.
-date: 2026-08-29
+date: 2026-08-22
 tags: remote, workflow, deploy, communication, team
 ---
 

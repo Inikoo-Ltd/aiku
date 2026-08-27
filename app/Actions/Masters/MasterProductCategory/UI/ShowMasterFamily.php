@@ -200,13 +200,13 @@ class ShowMasterFamily extends OrgAction
                             'tooltip' => 'Master Department',
                             'icon'    => ['fal', 'folder-tree']
                         ] : [],
-                        $masterFamily->master_sub_department_id ? [
+                        $masterFamily->masterSubDepartment?->masterDepartment ? [
                             'label'   => $masterFamily->masterSubDepartment->code,
                             'to'      => [
                                 'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
                                 'parameters' => [
                                     'masterShop'          => $masterFamily->masterShop->slug,
-                                    'masterDepartment'    => $masterFamily->masterDepartment->slug,
+                                    'masterDepartment'    => $masterFamily->masterSubDepartment->masterDepartment->slug,
                                     'masterSubDepartment' => $masterFamily->masterSubDepartment->slug
                                 ]
                             ],

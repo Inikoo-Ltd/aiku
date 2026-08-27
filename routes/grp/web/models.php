@@ -94,7 +94,7 @@ use App\Actions\Comms\Mailshot\UpdateMailshotRecipientFilter;
 use App\Actions\Comms\Mailshot\UpdateMailshotSecondWave;
 use App\Actions\Comms\Mailshot\UpdateMailshotTemplate;
 use App\Actions\Comms\Mailshot\UpdateWorkshopMailShot;
-use App\Actions\Comms\Outbox\AbandonedCart\SendAbandonedCartReminder;
+use App\Actions\Comms\Outbox\AbandonedCheckout\SendAbandonedCheckoutReminder;
 use App\Actions\Comms\Outbox\PublishOutbox;
 use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
 use App\Actions\Comms\Outbox\UpdateOutbox;
@@ -490,6 +490,7 @@ use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\WebLayoutTemplate\ApplyWebLayoutTemplate;
+use App\Actions\Web\WebLayoutTemplate\DeleteWebLayoutTemplate;
 use App\Actions\Web\WebLayoutTemplate\StoreWebLayoutTemplate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\DeleteWebpage;
@@ -732,7 +733,7 @@ Route::prefix('sub-department/{subDepartment:id}')->name('sub-department.')->gro
 Route::delete('portfolio/{portfolio:id}', DeletePortfolio::class)->name('portfolio.delete');
 Route::patch('portfolio/{portfolio:id}', UpdatePortfolio::class)->name('portfolio.update')->withoutScopedBindings();
 
-Route::post('checkout-abandonment/{checkoutAbandonment:id}/send-reminder', SendAbandonedCartReminder::class)->name('checkout_abandonment.send_reminder');
+Route::post('checkout-abandonment/{checkoutAbandonment:id}/send-reminder', SendAbandonedCheckoutReminder::class)->name('checkout_abandonment.send_reminder');
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
 Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreNewProductToCurrentShopify::class)->name('portfolio.store_new_shopify_product');
@@ -1163,6 +1164,8 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('store-as-template', StoreWebLayoutTemplate::class)->name('store_as_template');
     Route::post('apply-template', ApplyWebLayoutTemplate::class)->name('apply_template');
 });
+
+Route::delete('{template:id}/delete-template', DeleteWebLayoutTemplate::class)->name('web_layout_template.delete');
 
 Route::patch('website/{website:id}/bulk-offline-webpages', SetWebpageOfflineBulk::class)->name('webpage.set_offline_bulk');
 

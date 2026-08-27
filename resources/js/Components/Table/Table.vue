@@ -1418,12 +1418,12 @@ const getSeverity = (type?: string) => {
                                                 <td v-for="(column, index) in queryBuilderProps.columns"
                                                     v-show="show(column.key)"
                                                     :key="`table-${name}-row-${key}-column-${column.key}`"
-                                                    class="text-[13px] py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                    class="text-xs lg:text-[13px] py-1 lg:py-2 text-gray-600 whitespace-normal h-full" :class="[
                                                         column.type === 'avatar' || column.type === 'icon'
-                                                            ? 'text-center min-w-fit px-3'
+                                                            ? 'text-center min-w-fit px-1.5 lg:px-3'
                                                             : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
-                                                                ? 'text-right pl-3 pr-9 tabular-nums'
-                                                                : 'px-6',
+                                                                ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-9 tabular-nums'
+                                                                : 'px-2 lg:px-3',
                                                         props.rowAlignTop ? 'align-top' : '',
                                                         queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                         { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
@@ -1494,12 +1494,12 @@ const getSeverity = (type?: string) => {
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`table-${name}-row-${key}-column-${column.key}`"
-                                                class="text-[13px] py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                class="text-xs lg:text-[13px] py-1 lg:py-2 text-gray-600 whitespace-normal h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
-                                                        ? 'text-center min-w-fit px-3'
+                                                        ? 'text-center min-w-fit px-1.5 lg:px-3'
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
-                                                            ? 'text-right pl-3 pr-9 tabular-nums'
-                                                            : 'px-6',
+                                                            ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-9 tabular-nums'
+                                                            : 'px-2 lg:px-6',
                                                     props.rowAlignTop ? 'align-top' : '',
                                                     queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
@@ -1565,12 +1565,12 @@ const getSeverity = (type?: string) => {
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`table-${name}-row-${key}-column-${column.key}`"
-                                                class="text-[13px] py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                class="text-xs lg:text-[13px] py-1 lg:py-2 text-gray-600 whitespace-normal h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
-                                                        ? 'text-center min-w-fit px-3'  // if type = icon
+                                                        ? 'text-center min-w-fit px-1.5 lg:px-3'  // if type = icon
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
-                                                            ? 'text-right pl-3 pr-9 tabular-nums'  // if the value is number
-                                                            : 'px-6',
+                                                            ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-9 tabular-nums'  // if the value is number
+                                                            : 'px-2 lg:px-6',
                                                     props.rowAlignTop ? 'align-top' : '',
                                                     queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
@@ -1613,12 +1613,12 @@ const getSeverity = (type?: string) => {
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`footerRows-rows-${key}-column-${column.key}`"
-                                                class="text-[13px] py-2 text-gray-500 whitespace-normal h-full" :class="[
+                                                class="text-xs lg:text-[13px] py-1 lg:py-2 text-gray-500 whitespace-normal h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
-                                                        ? 'text-center min-w-fit px-3'  // if type = icon
+                                                        ? 'text-center min-w-fit px-1.5 lg:px-3'  // if type = icon
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.align === 'right'
-                                                            ? 'text-right pl-3 pr-9 tabular-nums'  // if the value is number
-                                                            : 'px-6',
+                                                            ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-9 tabular-nums'  // if the value is number
+                                                            : 'px-2 lg:px-6',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                     column.className
                                                 ]">

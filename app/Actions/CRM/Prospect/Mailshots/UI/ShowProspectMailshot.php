@@ -9,6 +9,7 @@
 namespace App\Actions\CRM\Prospect\Mailshots\UI;
 
 use App\Actions\Comms\Mailshot\UI\GetMailshotShowcase;
+use App\Actions\Comms\Mailshot\UI\WithMailshotJourney;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplates;
 use App\Actions\CRM\Prospect\Mailshots\GetProspectMailshotRecipientsQueryBuilder;
@@ -36,6 +37,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowProspectMailshot extends OrgAction
 {
     use WithCatalogueAuthorisation;
+    use WithMailshotJourney;
     use WithProspectsSubNavigation;
 
     public function handle(Mailshot $mailshot): Mailshot
@@ -58,7 +60,6 @@ class ShowProspectMailshot extends OrgAction
 
         $isShowResume = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::STOPPED]);
 
-        $isShowEditName = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::SENT]);
 
         $isSecondWaveActive = $mailshot->secondWave()->exists() && $mailshot->is_second_wave_enabled;
         $mailshotSecondWave = null;
@@ -88,9 +89,32 @@ class ShowProspectMailshot extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
+                'journey'                         => $this->getMailshotJourney($mailshot, 'review'),
+                'mailshot_copy'                   => [
+                    'subject'      => $mailshot->subject,
+                    'name'         => $mailshot->name,
+                    'preview_text' => $mailshot->preview_text,
+                ],
+                'updateMailshotRoute'             => [
+                    'name'       => 'grp.models.shop.prospect.mailshot.update',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'patch'
+                ],
+                'suggestCopyRoute'                => [
+                    'name'       => 'grp.json.mailshot.copy_suggestion',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'post'
+                ],
                 'pageHead'                        => [
-                    'icon'    => 'fal fa-coins',
-                    'title'   => $mailshot->type->value . ' ' . $mailshot->id,
+                    'icon'       => 'fal fa-mail-bulk',
+                    'title'      => $mailshot->subject,
+                    'model'      => __('Subject:'),
+                    'modelStyle' => 'text-sm',
+                    'titleStyle' => 'font-normal text-lg',
                     'subNavigation' => $this->getSubNavigation($this->shop, $request),
                     'edit'    => $this->canEdit ? [
                         'route' => [
@@ -99,48 +123,6 @@ class ShowProspectMailshot extends OrgAction
                         ]
                     ] : false,
                     'actions' => [
-                        $isShowActions ? [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => __('Set Up Recipients'),
-                            'icon'  => ["fal", "fa-sliders-h"],
-                            'route' => [
-                                'name'       => "grp.org.shops.show.crm.prospects.mailshots.recipients",
-                                'parameters' => [
-                                    $this->organisation->slug,
-                                    $this->shop->slug,
-                                    $mailshot->slug
-                                ]
-                            ]
-                        ] : [],
-                        $isShowActions ? [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => __('Workshop'),
-                            'icon'  => ["fal", "fa-drafting-compass"],
-                            'route' => [
-                                'name'       => "grp.org.shops.show.crm.prospects.mailshots.workshop",
-                                'parameters' => [
-                                    $this->organisation->slug,
-                                    $this->shop->slug,
-                                    $mailshot->slug
-                                ]
-                            ]
-                        ] : [],
-                        $isShowActions || $isShowEditName ? [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => __('Edit'),
-                            'icon'  => ["fal", "fa-sliders-h"],
-                            'route' => [
-                                'name'       => "grp.org.shops.show.crm.prospects.mailshots.edit",
-                                'parameters' => [
-                                    $this->organisation->slug,
-                                    $this->shop->slug,
-                                    $mailshot->slug
-                                ]
-                            ]
-                        ] : [],
                         $isShowStop ? [
                             'type'  => 'button',
                             'style' => 'edit',

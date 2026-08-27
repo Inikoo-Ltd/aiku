@@ -103,7 +103,7 @@ const label = {
 </script>
 
 <template>
-    <Disclosure id="topbar_grp" as="nav" class="fixed top-0 z-[21] w-full bg-gray-50 text-gray-700 transition-all duration-300 ease-in-out" :class="layoutStore.messagingSidebar?.show ? 'md:pr-56' : 'md:pr-12'" v-slot="{ open }">
+    <Disclosure id="topbar_grp" as="nav" class="fixed top-0 z-[21] w-full bg-gray-50 text-gray-700 transition-all duration-300 ease-in-out" :class="layoutStore.messagingSidebar?.show ? 'md:pr-56' : (layoutStore.messagingSidebar?.micro ? 'md:pr-4' : 'md:pr-12')" v-slot="{ open }">
         <ScreenWarning v-if="layoutStore.hasTopBanner" class="relative top-0" />
 
         <div class="px-0">

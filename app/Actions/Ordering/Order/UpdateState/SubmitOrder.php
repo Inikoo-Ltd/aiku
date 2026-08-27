@@ -66,21 +66,13 @@ class SubmitOrder extends OrgAction
     {
         $oldState = $order->state;
 
-        $privateNote = '';
-        $oldPrivateWarehouseNote = $order->private_warehouse_note;
-        if ($oldPrivateWarehouseNote) {
-            $privateNote = "Order Warehouse Note: {$order->private_warehouse_note}.";
-            if ($order->customer->warehouse_internal_notes) {
-                $privateNote .= " CRM Warehouse Note: ";
-            }
-        }
-        
-        $privateNote .= $order->customer->warehouse_internal_notes;
-
         $modelData = [
-            'state'                     => OrderStateEnum::SUBMITTED,
-            'status'                    => OrderStatusEnum::PROCESSING,
-            'private_warehouse_note'    => $privateNote,
+            'state'          => OrderStateEnum::SUBMITTED,
+            'status'         => OrderStatusEnum::PROCESSING,
+            'private_warehouse_note' => collect([$order->private_warehouse_note, $order->customer->warehouse_internal_notes])
+                ->filter()
+                ->unique()
+                ->implode(' — ') ?: null,
         ];
 
         $date = now();
@@ -393,7 +385,7 @@ class SubmitOrder extends OrgAction
             $daysSinceLastInvoiced = $lastInvoiced ? (int)-now()->diffInDays($lastInvoiced) : null;
 
 
-            if ($order->gross_amount >= $minAmount && ($daysSinceLastInvoiced != null && $daysSinceLastInvoiced <= Arr::get($offersData, 'gr.interval', 30))) {
+            if ($order->gross_amount >= $minAmount && (($daysSinceLastInvoiced != null && $daysSinceLastInvoiced <= Arr::get($offersData, 'gr.interval', 30)) || $order->customer->hasActiveGrExtension())) {
                 $eligible = true;
             }
             $isGiftOptedOut = $this->isGiftOptedOut($order);

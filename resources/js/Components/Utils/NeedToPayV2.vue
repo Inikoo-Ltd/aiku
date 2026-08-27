@@ -36,6 +36,7 @@ const props = defineProps<{
 
     }
     handleTabUpdate: Function
+    provisional?: boolean
     payments: {
         id: number
         amount: number
@@ -124,7 +125,7 @@ const onPayWithBalance = () => {
 
         <!-- Section: background green/red -->
         <div class="px-2.5 pt-1 pb-2" :class="[
-            isPaidOff || Number(payAmount) <= 0 ? 'bg-green-50 border-green-300 rounded-md' : 'text-red-600',
+            isPaidOff || Number(payAmount) <= 0 ? 'bg-green-50 border-green-300 rounded-md' : provisional ? 'text-gray-500' : 'text-red-600',
         ]">
     
             <!-- Section: Progress bar -->
@@ -170,14 +171,18 @@ const onPayWithBalance = () => {
                 <!-- Section: Remaining -->
                 <div class="text-center relative">
                     <div class="text-lg font-bold">
-                        <span v-if="toBePaidBy?.value">{{ trans("Waiting :toBePaid", { toBePaid: toBePaidBy?.label }) }}</span>
+                        <span v-if="provisional">{{ trans("In warehouse") }}</span>
+                        <span v-else-if="toBePaidBy?.value">{{ trans("Waiting :toBePaid", { toBePaid: toBePaidBy?.label }) }}</span>
                         <span v-else>
                             {{ trans("Unpaid") }}
                         </span>
                         <!-- <FontAwesomeIcon v-tooltip="trans('Not fully paid yet')" icon="fas fa-times-circle" class="text-red-600" fixed-width aria-hidden="true" /> -->
                     </div>
-    
-                    <div class="opacity-70">
+
+                    <div v-if="provisional" class="opacity-70 text-xs">
+                        {{ trans("Amounts will be recalculated when picking is finished") }}
+                    </div>
+                    <div v-else class="opacity-70">
                         Need to pay {{ locale.currencyFormat(currencyCode, Number(payAmount)) }} of {{ locale.currencyFormat(currencyCode, Number(totalAmount)) }}
                     </div>
 

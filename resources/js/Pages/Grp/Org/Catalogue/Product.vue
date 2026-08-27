@@ -43,7 +43,7 @@ import Action from '@/Components/Forms/Fields/Action.vue'
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 import { faShapes, faStar } from '@fas'
 import { faHatCowboy } from "@far"
-import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
+// import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
 import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 import TableReviews from "@/Components/Shop/Reviews/TableReviews.vue"
 import Dialog from "primevue/dialog"
@@ -329,6 +329,7 @@ const saveProductReview = async () => {
                 }"
             />
 
+            <!-- Luigi Search is discontinued, reindex button disabled
             <div class="w-fit" v-if="currentTab === 'showcase'">
                 <ButtonReindexWebpage
                     :webpage="{
@@ -358,6 +359,7 @@ const saveProductReview = async () => {
                     </template>
                 </ButtonReindexWebpage>
             </div>
+            -->
 
             <template v-if="currentTab === 'offers'">
                 <ModalCreateGiftOffers

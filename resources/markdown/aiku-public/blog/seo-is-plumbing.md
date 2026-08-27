@@ -1,7 +1,7 @@
 ---
 title: SEO is plumbing
 summary: Nobody on the team is an SEO specialist, and dozens of storefronts on one codebase rank anyway. That is because almost everything that matters is plumbing that a storefront engine either does for every shop or does for none — a computed canonical URL nobody types by hand, a 301 that follows a discontinued product to its family, a sitemap index regenerated nightly with a real lastmod, structured data that obeys the same price rules as the page. What we built, what we skipped on purpose, and the three things that bit us anyway.
-date: 2026-08-30
+date: 2026-08-23
 tags: seo, storefront, iris, canonical, sitemaps
 ---
 

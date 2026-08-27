@@ -108,6 +108,16 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform,
             'platform_status'         => $platformStatus,
+            'stock_update_notice'     => $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL ? null : [
+                'enabled'    => (bool)$customerSalesChannel->stock_update,
+                'edit_route' => [
+                    'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.edit' : 'retina.dropshipping.customer_sales_channels.edit',
+                    'parameters' => [
+                        'customerSalesChannel' => $customerSalesChannel->slug,
+                        'section'              => '1'
+                    ]
+                ]
+            ],
             'ebay_warehouse_policy_msg'    => [
                 'show_msg' => $this->customerSalesChannel->platform->type == PlatformTypeEnum::EBAY ? EbayOverseasWarehousePolicy::isAffected($this->customer->deliveryAddress->country_code) : false,
                 'customer_country' => $this->customer->deliveryAddress->country->name

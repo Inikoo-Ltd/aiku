@@ -1,7 +1,7 @@
 ---
 title: From paper tallies to task sessions — Part I
 summary: The factory still runs on paper: a tally per worker per task, totted up on Friday. The manufacture module that replaces it is built, tested, imported from the old system locally, and not yet on the floor. Part I is the model — artefacts, recipes as ordered tasks with raw materials per step, job orders that expand into a work queue, and a "task session" that is the single payable fact, with the pay rate frozen at the moment it closes — and the decision to make every product a trade unit first so a candle made on Tuesday can be sold online on Wednesday.
-date: 2026-08-27
+date: 2026-08-20
 tags: manufacture, production, design, warehouse
 ---
 

@@ -111,6 +111,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property Carbon|null $last_submitted_order_at
  * @property Carbon|null $last_dispatched_delivery_at
  * @property Carbon|null $last_invoiced_at
+ * @property Carbon|null $gr_extended_until
  * @property array<array-key, mixed> $data
  * @property array<array-key, mixed> $settings
  * @property string|null $internal_notes
@@ -253,6 +254,7 @@ class Customer extends Model implements HasMedia, Auditable
         'last_submitted_order_at'     => 'datetime',
         'last_dispatched_delivery_at' => 'datetime',
         'last_invoiced_at'            => 'datetime',
+        'gr_extended_until'           => 'datetime',
         'fetched_at'                  => 'datetime',
         'rejected_at'                 => 'datetime',
         'last_fetched_at'             => 'datetime',
@@ -270,6 +272,11 @@ class Customer extends Model implements HasMedia, Auditable
     ];
 
     protected $guarded = [];
+
+    public function hasActiveGrExtension(): bool
+    {
+        return $this->gr_extended_until !== null && $this->gr_extended_until->endOfDay()->isFuture();
+    }
 
     public function searchIndexShouldBeUpdated(): bool
     {

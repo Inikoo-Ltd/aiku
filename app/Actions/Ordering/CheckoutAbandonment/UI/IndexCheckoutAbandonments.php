@@ -170,6 +170,13 @@ class IndexCheckoutAbandonments extends OrgAction
         $query->leftJoin('customers', 'checkout_abandonments.customer_id', '=', 'customers.id');
         $query->leftJoin('shops', 'checkout_abandonments.shop_id', '=', 'shops.id');
         $query->leftJoin('organisations', 'checkout_abandonments.organisation_id', '=', 'organisations.id');
+        $query->leftJoin('outboxes', function ($join) {
+            $join->on('shops.id', '=', 'outboxes.shop_id')
+                ->where('outboxes.code', OutboxCodeEnum::ABANDONED_CHECKOUT->value)
+                ->where('outboxes.state', OutboxStateEnum::ACTIVE->value)
+                ->where('outboxes.is_applicable', true)
+                ->whereNull('outboxes.deleted_at');
+        });
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('transactions', function ($join) {
             $join->on('orders.id', '=', 'transactions.order_id')
@@ -190,6 +197,7 @@ class IndexCheckoutAbandonments extends OrgAction
             'organisations.code',
             'organisations.slug',
             'currencies.code',
+            'outboxes.id',
         ]);
 
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
@@ -221,6 +229,7 @@ class IndexCheckoutAbandonments extends OrgAction
                 'organisations.code as organisation_code',
                 'organisations.slug as organisation_slug',
                 'currencies.code as currency_code',
+                'outboxes.id as outbox_id',
             ])
             ->selectRaw('count(transactions.id) as number_items')
             ->allowedSorts(['checkout_visited_at', 'total_amount', 'customer_name', 'shop_code', 'organisation_code', 'email_sent_at'])
@@ -269,7 +278,7 @@ class IndexCheckoutAbandonments extends OrgAction
             $table->column(key: 'number_items', label: __('Items'), canBeHidden: false);
             $table->column(key: 'total_amount', label: __('Value'), canBeHidden: false, sortable: true, type: 'currency');
             $table->column(key: 'email_sent_at', label: __('Reminded'), canBeHidden: false, sortable: true);
-            // $table->column(key: 'send_reminder', label: __('Action'), canBeHidden: false);
+            $table->column(key: 'send_reminder', label: __('Action'), canBeHidden: false);
         };
     }
 
@@ -296,18 +305,6 @@ class IndexCheckoutAbandonments extends OrgAction
         $title         = __('Abandoned checkouts');
         $subNavigation = null;
 
-        $shop = match (true) {
-            $this->parent instanceof Shop     => $this->parent,
-            $this->parent instanceof Customer => $this->parent->shop,
-            default                           => null,
-        };
-
-        $outboxStateActive = (bool) $shop?->outboxes()
-            ->where('code', OutboxCodeEnum::ABANDONED_CART_REMINDER_1)
-            ->where('state', OutboxStateEnum::ACTIVE)
-            ->where('is_applicable', true)
-            ->exists();
-
         if ($this->parent instanceof Customer) {
             if ($this->parent->is_dropshipping) {
                 $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
@@ -326,9 +323,8 @@ class IndexCheckoutAbandonments extends OrgAction
                     'title'         => $title,
                     'subNavigation' => $subNavigation,
                 ],
-                'stats'               => $this->getStats($this->parent),
-                'outbox_state_active' => $outboxStateActive,
-                'data'                => CheckoutAbandonmentsResource::collection($abandonments),
+                'stats' => $this->getStats($this->parent),
+                'data'  => CheckoutAbandonmentsResource::collection($abandonments),
             ]
         )->table($this->tableStructure($this->parent));
     }

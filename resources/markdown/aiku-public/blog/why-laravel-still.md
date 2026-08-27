@@ -1,7 +1,7 @@
 ---
 title: Why Laravel (still), from a codebase that cannot afford to be wrong about it
 summary: In 2022 we picked Laravel because it was the easiest way to find programmers for a system that would take years to build. In 2026 we would pick it again, for a reason that did not exist then — the models know it better than any hire ever would. What the choice bought us, what it cost, and what "is Laravel still worth it" actually asks.
-date: 2026-08-28
+date: 2026-08-21
 tags: laravel, architecture, hiring, ai, php
 ---
 

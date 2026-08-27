@@ -36,11 +36,19 @@ trait HasGrData
 
             $grInterval = Arr::get($this->shop->offers_data, 'gr.interval', 30);
 
-            if (($lastDaysSinceLastInvoiced ?? 10000) <= $grInterval) {
+            $grData['gr_extended_until'] = $customer->gr_extended_until?->toDateString();
+
+            if (($lastDaysSinceLastInvoiced ?? 10000) <= $grInterval || $customer->hasActiveGrExtension()) {
                 $grData['customer_is_gr'] = true;
                 $grData['gr_label']       = Arr::get($this->shop->offers_data, 'gr.label', 'Gold reward member');
-                $grData['meter']          = [
-                    $grInterval - $lastDaysSinceLastInvoiced,
+
+                $daysLeft = $grInterval - ($lastDaysSinceLastInvoiced ?? $grInterval);
+                if ($customer->hasActiveGrExtension()) {
+                    $daysLeft = max($daysLeft, (int) ceil(now()->diffInDays($customer->gr_extended_until->endOfDay())));
+                }
+
+                $grData['meter'] = [
+                    min($daysLeft, $grInterval),
                     $grInterval,
                 ];
             }
@@ -62,11 +70,17 @@ trait HasGrData
 
             $grInterval = Arr::get($this->shop->offers_data, 'gr.interval', 30);
 
-            if ($lastDaysSinceLastInvoiced !== null && $lastDaysSinceLastInvoiced <= $grInterval) {
+            if (($lastDaysSinceLastInvoiced !== null && $lastDaysSinceLastInvoiced <= $grInterval) || $customer->hasActiveGrExtension()) {
                 $offerData['type']  = 'gr';
                 $offerData['label'] = Arr::get($this->shop->offers_data, 'gr.label', 'Gold reward member');
+
+                $daysLeft = $grInterval - ($lastDaysSinceLastInvoiced ?? $grInterval);
+                if ($customer->hasActiveGrExtension()) {
+                    $daysLeft = max($daysLeft, (int) ceil(now()->diffInDays($customer->gr_extended_until->endOfDay())));
+                }
+
                 $offerData['meter'] = [
-                    $grInterval - $lastDaysSinceLastInvoiced,
+                    min($daysLeft, $grInterval),
                     $grInterval,
                 ];
             }

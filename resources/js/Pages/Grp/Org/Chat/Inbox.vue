@@ -78,6 +78,7 @@ const panelSession = computed(() => {
         ulid: String(s.ulid),
         contact_name: s.contact_name || s.guest_identifier || "Guest",
         is_guest: !s.web_user?.id,
+        web_user_id: s.web_user?.id ?? null,
         shop_name: s.shop?.name ?? null,
         status: s.status,
         priority: s.priority ?? null,
@@ -425,6 +426,7 @@ const forceDeleteChat = async (c: Contact) => {
 const notifWaiting = ref<any[]>([])
 const notifActive = ref<any[]>([])
 const notifReopen = ref<any[]>([])
+const teamUnreadByShop = ref<Record<number, number>>({})
 
 const fetchInboxNotifications = async () => {
     if (!myAgentId) return
@@ -433,10 +435,16 @@ const fetchInboxNotifications = async () => {
         notifWaiting.value = data?.data?.waiting ?? []
         notifActive.value = data?.data?.active ?? []
         notifReopen.value = data?.data?.reopen ?? []
+        teamUnreadByShop.value = data?.data?.team_unread ?? {}
     } catch (e) {
         // silent — badges are non-critical
     }
 }
+
+// Team-unread badge for the currently selected inbox only, so it matches the shop in view.
+const teamUnreadForShop = computed(() =>
+    selectedShopId.value ? (teamUnreadByShop.value[selectedShopId.value] ?? 0) : 0
+)
 
 const tabUnread = computed(() => {
     const sid = selectedShopId.value
@@ -827,10 +835,15 @@ onUnmounted(() => {
                             @click="viewMode = 'my'">
                             {{ trans("My Chats") }}
                         </button>
-                        <button type="button" class="px-2.5 py-1 rounded-md transition-all"
+                        <button type="button" class="px-2.5 py-1 rounded-md transition-all inline-flex items-center gap-1"
                             :class="viewMode === 'team' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                             @click="viewMode = 'team'">
                             {{ trans("Team Chats") }}
+                            <span v-if="teamUnreadForShop"
+                                v-tooltip="trans('Unread team chats in this inbox — take over to reply')"
+                                class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center bg-amber-500">
+                                {{ teamUnreadForShop }}
+                            </span>
                         </button>
                     </div>
                 </div>

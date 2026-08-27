@@ -764,6 +764,47 @@ test('detach family from master sub department', function (MasterProductCategory
         ->and($masterFamily->master_parent_id)->toBe($masterDepartment->id);
 })->depends('store master department');
 
+test('UI Show Master Family mismatch with null master department', function (MasterProductCategory $masterDepartment) {
+    $masterSubDepartment = StoreMasterSubDepartment::make()->action(
+        $masterDepartment,
+        [
+            'code' => 'MM_SUBDEPT1',
+            'name' => 'mismatch sub department',
+        ]
+    );
+
+    $masterFamily = StoreMasterFamily::make()->action(
+        $masterDepartment,
+        [
+            'code' => 'MM_FAM1',
+            'name' => 'mismatch family',
+        ]
+    );
+
+    AttachMasterFamiliesToMasterSubDepartment::make()->action(
+        $masterSubDepartment,
+        ['master_families' => [$masterFamily->id]]
+    );
+
+    $masterFamily->refresh();
+    $masterFamily->updateQuietly(['master_department_id' => null]);
+    $masterFamily->refresh();
+
+    $response = get(
+        route('grp.masters.master_shops.show.master_family.mismatch_detected.show', [
+            'masterShop'   => $masterFamily->masterShop->slug,
+            'masterFamily' => $masterFamily->slug,
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) use ($masterDepartment) {
+        $page
+            ->component('Masters/MasterFamily')
+            ->where('mini_breadcrumbs.1.to.parameters.masterDepartment', $masterDepartment->slug)
+            ->etc();
+    });
+})->depends('create master department');
+
 
 test('create master asset', function (MasterProductCategory $masterFamily) {
     $masterAsset = StoreMasterAsset::make()->action(

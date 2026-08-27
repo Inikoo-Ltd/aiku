@@ -20,6 +20,7 @@ import { useConfirm } from "primevue/useconfirm";
 import { useLiveUsers } from "@/Stores/active-users";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import { setIframeView } from "@/Composables/Workshop";
+import { encodePayload } from "@/Composables/useEncodePayload";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Publish from "@/Components/Publish.vue";
@@ -113,12 +114,14 @@ const isCreatingTemplate = ref(false);
 const TEMPLATES_INDEX_ROUTE = "grp.json.template_layouts.index";
 const TEMPLATE_DETAIL_ROUTE = "grp.json.template_layouts.detail";
 const TEMPLATE_APPLY_ROUTE = "grp.models.webpage.apply_template";
+const TEMPLATE_DELETE_ROUTE = "grp.models.web_layout_template.delete";
 const TEMPLATES_PER_PAGE = 10;
 const templates = ref<WebLayoutTemplateList>({ data: [] });
 const templatesSearch = ref("");
 const isLoadingTemplates = ref(false);
 const templatesErrorMessage = ref<string | null>(null);
 const applyingTemplateId = ref<number | null>(null);
+const deletingTemplateId = ref<number | null>(null);
 const isApplyTemplateDialogVisible = ref(false);
 const isApplyingTemplate = ref(false);
 const selectedTemplate = ref<WebLayoutTemplate | null>(null);
@@ -244,7 +247,7 @@ const debounceSaveWorkshop = (block, reload = false, reloadIframe = false) => {
       const response = await axios.patch(
         url,
         {
-          layout: block?.web_block?.layout,
+          layout_encoded: encodePayload(block?.web_block?.layout),
           show_logged_in: block?.visibility?.in,
           show_logged_out: block?.visibility?.out,
           show: block?.show,
@@ -420,10 +423,7 @@ const onPublish = async (action: routeType, popover) => {
 
     const response = await axios[action.method](
       route(action.name, action.parameters),
-      {
-        comment: comment.value,
-        publishLayout: { blocks: data.value.layout }
-      }
+      { comment: comment.value }
     );
 
     if (response.status === 200) {
@@ -544,7 +544,7 @@ const onCreateTemplate = (payload: {
 
   axios.post(
     route('grp.models.webpage.store_as_template', { webpage: data.value.id }),
-    payload
+    { name: payload.name, blocks_encoded: encodePayload(payload.blocks) }
   ).then(() => {
     isCreateTemplateDialogVisible.value = false;
     notify({
@@ -627,6 +627,30 @@ const applyTemplate = async (template: WebLayoutTemplate) => {
     });
   } finally {
     applyingTemplateId.value = null;
+  }
+};
+
+const deleteTemplate = async (template: WebLayoutTemplate) => {
+  deletingTemplateId.value = template.id;
+
+  try {
+    await axios.delete(route(TEMPLATE_DELETE_ROUTE, { template: template.id }));
+
+    notify({
+      title: trans("Success"),
+      text: trans("Template has been deleted"),
+      type: "success"
+    });
+
+    await fetchTemplates();
+  } catch (error: any) {
+    notify({
+      title: trans("Something went wrong"),
+      text: error?.response?.data?.message || error.message,
+      type: "error"
+    });
+  } finally {
+    deletingTemplateId.value = null;
   }
 };
 
@@ -897,10 +921,12 @@ console.log('props_workshop',props)
           :isLoadingTemplates="isLoadingTemplates"
           :templatesErrorMessage="templatesErrorMessage"
           :applyingTemplateId="applyingTemplateId"
+          :deletingTemplateId="deletingTemplateId"
           @fetchTemplates="fetchTemplates()"
           @searchTemplates="onSearchTemplates"
           @navigateTemplates="fetchTemplates"
           @useTemplate="applyTemplate"
+          @deleteTemplate="deleteTemplate"
           @update="onSaveWorkshop"
           @delete="sendDeleteBlock"
           @add="addNewBlock"

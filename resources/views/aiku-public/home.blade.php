@@ -1,4 +1,4 @@
-<x-aiku-public.layout title="aiku — the open source operating system for commerce" description="aiku runs a whole trading business from one codebase: ERP, warehouse and dispatch, 3PL fulfilment, storefronts, marketplaces, dropshipping, CRM, marketing and accounting. Open source, AGPL.">
+<x-aiku-public.layout title="aiku — the open source operating system for commerce" description="aiku runs a whole trading business from one codebase: ERP, warehouse, fulfilment, storefronts, marketplaces, CRM and accounting. Open source, AGPL.">
     <x-slot:head>
         <script type="application/ld+json">{!! json_encode([
             '@context' => 'https://schema.org',
@@ -91,7 +91,7 @@
             <p style="color:var(--muted);max-width:40em">Some of the other screens, small on purpose.</p>
             <div class="tease">
                 @foreach (['invoices','families','employees','marketing','delivery-notes','warehouse-inventory','departments','masters'] as $thumb)
-                    <img src="{{ url("art/readme/thumb-{$thumb}.jpg") }}" alt="" width="320" height="200" loading="lazy">
+                    <img src="{{ url("art/readme/thumb-{$thumb}.jpg") }}" alt="Screenshot of the {{ str_replace('-', ' ', $thumb) }} screen" width="320" height="200" loading="lazy">
                 @endforeach
             </div>
             <p style="font-size:13px;color:var(--muted);margin-top:10px">A demo group seeded with generated data; nothing here belongs to a real customer.</p>

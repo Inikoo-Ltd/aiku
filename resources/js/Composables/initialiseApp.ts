@@ -262,6 +262,10 @@ export const initialiseApp = () => {
             layout.master_updated_count = usePage().props.master_updated_count as number
         }
 
+        if (usePage().props.faire_skipped_count !== undefined) {
+            layout.faire_skipped_count = usePage().props.faire_skipped_count as number
+        }
+
         layout.app.name = "Aiku"
     })
 }

@@ -18,7 +18,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { trans } from "laravel-vue-i18n"
-import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
+// import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
 import { Message } from 'primevue'
 import { router } from "@inertiajs/vue3"
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
@@ -192,9 +192,11 @@ const visitRedirect = () => {
               </template>
             </ModalConfirmationDelete>
             
+            <!-- Luigi Search is discontinued, reindex button disabled
             <ButtonReindexWebpage
               :webpage="data"
             />
+            -->
 
             <!-- Availability Checklist -->
             <div v-if="data.luigi_data.availability_checklist" class="mt-3 border-t border-gray-200 pt-3">

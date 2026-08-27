@@ -58,19 +58,17 @@ class SearchCatalogue
             $hits = $this->scoutSearch($query, $options);
         }
 
-        $mapCatalogueItem = static fn (array $document) => [
-            'id'    => (int)$document['id'],
-            'code'  => $document['code'] ?? null,
-            'name'  => $document['name'] ?? null,
-            'state' => $document['state'] ?? null,
-            'image' => json_decode($document['image'] ?? 'null', true),
+        $mapCatalogueItem = static fn (array $hit) => [
+            'id'    => (int)$hit['document']['id'],
+            'code'  => $hit['document']['code'] ?? null,
+            'name'  => $hit['document']['name'] ?? null,
+            'state' => $hit['document']['state'] ?? null,
+            'image' => json_decode($hit['document']['image'] ?? 'null', true),
+            'score' => (int)($hit['text_match'] ?? 0),
         ];
 
         $results = array_map(
-            static fn (array $collectionHits) => array_map(
-                $mapCatalogueItem,
-                Arr::pluck($collectionHits, 'document')
-            ),
+            static fn (array $collectionHits) => array_map($mapCatalogueItem, $collectionHits),
             $hits
         );
 
