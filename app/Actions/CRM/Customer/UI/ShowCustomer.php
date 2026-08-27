@@ -286,11 +286,25 @@ class ShowCustomer extends OrgAction
                 [
                     "label"       => __("Warehouse Note (Permanent)"),
                     "note"        => $customer->warehouse_internal_notes ?? '',
-                    "information" => __("Will be put as Order private note everytime the Order submitted. Visible only to customer service and warehouse's staff."),
+                    "information" => __("Will be put on every Order private note. Visible only to customer service and warehouse's staff."),
                     "editable"    => true,
                     "field"       => "warehouse_internal_notes",
                     ...NotesEnum::WAREHOUSE->boilerPlate()
                 ]
+            ],
+            "temporary_note_list"   => [
+                "label"         => NotesEnum::WAREHOUSE_TEMPORARY->label(),
+                "note"          => $customer->warehouse_temporary_notes ?? '',
+                "information"   => __("Will be put on the next Order private note"),
+                "editable"      => true,
+                "field"         => "warehouse_temporary_notes",
+                "updateRoute"   => [
+                    'name'       => 'grp.models.customer.update',
+                    'parameters' => [
+                        'customer' => $customer->id
+                    ]
+                ],
+                ...NotesEnum::WAREHOUSE_TEMPORARY->boilerPlate()
             ]
         ];
     }

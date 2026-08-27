@@ -269,7 +269,7 @@ class UpdateCustomer extends OrgAction
             MatchCustomerProspects::run($customer);
         }
 
-        if (Arr::hasAny($changes, ['internal_notes', 'warehouse_internal_notes'])) {
+        if (Arr::hasAny($changes, ['internal_notes', 'warehouse_internal_notes', 'warehouse_temporary_notes'])) {
             $customer->auditEvent    = AuditEventEnum::CUSTOMER_NOTE->value;
             $customer->isCustomEvent = true;
 
@@ -352,6 +352,7 @@ class UpdateCustomer extends OrgAction
             'internal_notes'                                        => ['sometimes', 'nullable', 'string'],
             'warehouse_internal_notes'                              => ['sometimes', 'nullable', 'string'],
             'warehouse_public_notes'                                => ['sometimes', 'nullable', 'string'],
+            'warehouse_temporary_notes'                             => ['sometimes', 'nullable', 'string'],
             'tax_number'                                            => ['sometimes', 'nullable', 'array'],
             'tags'                                                  => ['sometimes', 'array'],
             'email_subscriptions'                                   => ['sometimes', 'array'],
@@ -370,7 +371,6 @@ class UpdateCustomer extends OrgAction
             'gr_extended_until'                                     => ['sometimes', 'nullable', 'date'],
             'fiscal_name'                                           => ['sometimes', 'nullable', 'string', 'max:255'],
             'is_vip'                                                => ['sometimes', 'boolean'],
-
         ];
 
         if ($this?->asAction) {

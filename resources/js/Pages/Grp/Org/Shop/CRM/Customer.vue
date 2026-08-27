@@ -42,6 +42,7 @@ import ModalCreateCustomerOffers from "@/Components/Offers/ModalCreateCustomerOf
 import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
 import { useForm } from "@inertiajs/vue3"
 import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
+import UpcomingTransactionsPanel from "@/Components/CRM/UpcomingTransactionsPanel.vue"
 
 library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute)
 
@@ -177,6 +178,24 @@ const layout = inject('layout')
                     :noteData="note"
                     :updateRoute="updateRoute"
                 />
+                <UpcomingTransactionsPanel
+                    v-if="props.showcase.upcoming_transaction_route"
+                    :routes="props.showcase.upcoming_transaction_route"
+                    :shopSlug="props.showcase.shop.slug"
+                    :temporaryNote="notes.temporary_note_list"
+                    :hideButton="true"
+                    :openModal="isModalOpen"
+                >
+                    <template #buttonSlot="{ openListModal}">
+                        <BoxNote
+                            :key="notes.temporary_note_list.label"
+                            :noteData="notes.temporary_note_list"
+                            :updateRoute="notes.temporary_note_list.updateRoute"
+                            :disableModal=true
+                            @click="openListModal()"
+                        />
+                    </template>
+                </UpcomingTransactionsPanel>
             </div>
         </Transition>
     </div>
@@ -191,6 +210,7 @@ const layout = inject('layout')
         :handleTabUpdate
         :timeline="props.timeline"
         :detachRoute="attachmentRoutes.detachRoute"        
+        :temporaryNote="notes.temporary_note_list"
     />
 
   <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{

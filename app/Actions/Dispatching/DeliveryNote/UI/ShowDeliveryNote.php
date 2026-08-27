@@ -1403,7 +1403,7 @@ class ShowDeliveryNote extends OrgAction
                     "label"       => NotesEnum::SHIPPING_LABEL->label(),
                     "note"        => $deliveryNote->shipping_notes ?? '',
                     "information" => __("Note from crm. First 34 char. Will be printed on the shipping label."),
-                    "editable"    => true,
+                    "editable"    => false,
                     "field"       => "shipping_notes",
                     ...NotesEnum::SHIPPING_LABEL->boilerPlate()
                 ],

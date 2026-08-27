@@ -13,22 +13,24 @@ use Illuminate\Support\Arr;
 
 enum NotesEnum: string
 {
-    case SHIPPING_LABEL     = 'shipping';
-    case CUSTOMER           = 'customer';
-    case PUBLIC             = 'public';
-    case INTERNAL           = 'internal';
-    case WAREHOUSE          = 'warehouse';
-    case CREDIT_TRANSACTION = 'credit_transaction';
+    case SHIPPING_LABEL         = 'shipping';
+    case CUSTOMER               = 'customer';
+    case PUBLIC                 = 'public';
+    case INTERNAL               = 'internal';
+    case WAREHOUSE              = 'warehouse';
+    case WAREHOUSE_TEMPORARY    = 'warehouse_temporary';
+    case CREDIT_TRANSACTION     = 'credit_transaction';
 
     
     public function label(): string
     {
         return match ($this) {
             self::SHIPPING_LABEL        => __("Shippings Label (From Customer)"),
-            self::CUSTOMER              => __("Customers Note"),
+            self::CUSTOMER              => __("Customer Instructions"),
             self::PUBLIC                => __("Public Note"),
             self::INTERNAL              => __("CRMs Note (Private)"),
             self::WAREHOUSE             => __("Warehouse Note (Private)"),
+            self::WAREHOUSE_TEMPORARY   => __("Warehouse Note (Temporary)"),
             self::CREDIT_TRANSACTION    => __("Credit Transaction Note"),
         };
     }
@@ -55,6 +57,10 @@ enum NotesEnum: string
             self::WAREHOUSE             => [
                 "bgColor"       => "#FCD34D",
                 "textColor"     => "#FCD34D",
+            ],
+            self::WAREHOUSE_TEMPORARY   => [
+                "bgColor"       => "#FF9C62",
+                "textColor"     => "#FF9C62",
             ],
             self::CREDIT_TRANSACTION    => [
                 "bgColor"       => "#B873F5",

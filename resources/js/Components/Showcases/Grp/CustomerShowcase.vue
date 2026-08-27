@@ -202,7 +202,8 @@ const props = defineProps<{
             color: string
             metadata: Record<string, unknown>
         }[]
-    }    
+    }
+    temporaryNote?: {}
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -481,7 +482,7 @@ const submitNote = async () => {
             <div class="flex flex-col items-center text-center gap-2">
                 <h3 class="text-lg font-semibold text-gray-800">Pending Application</h3>
                 <p class="text-sm text-gray-600">
-                    This application is currently awaiting approval.
+                    {{ ctrans("This application is currently awaiting approval.") }}
                 </p>
             </div>
 
@@ -490,14 +491,13 @@ const submitNote = async () => {
                       :data="{ status: 'approved' }">
                     <ButtonPrimeVue class="fixed-width-btn" severity="success" size="small" variant="outlined">
                         <FontAwesomeIcon :icon="faCheck" @click="visible = false" />
-                        <span> Approve </span>
+                        <span> {{ ctrans("Approve") }} </span>
                     </ButtonPrimeVue>
                 </Link>
 
-                <ButtonPrimeVue class="fixed-width-btn" severity="danger" size="small" variant="outlined"
-                                @click="() => openRejectedModal(data.customer)">
+                <ButtonPrimeVue class="fixed-width-btn" severity="danger" size="small" variant="outlined" @click="() => openRejectedModal(data.customer)">
                     <FontAwesomeIcon :icon="faTimes" @click="visible = false" />
-                    <span> Reject </span>
+                    <span> {{ ctrans("Reject") }} </span>
                 </ButtonPrimeVue>
             </div>
         </div>
@@ -548,7 +548,8 @@ const submitNote = async () => {
             <UpcomingTransactionsPanel
                 v-if="data.upcoming_transaction_route"
                 :routes="data.upcoming_transaction_route"
-                :shopSlug="data.shop.slug"                
+                :shopSlug="data.shop.slug"
+                :temporaryNote="temporaryNote"
             />
         </div>
     </div>
@@ -776,8 +777,6 @@ const submitNote = async () => {
                         </div>
                     </div>
 
-
-
                     <div class="w-full flex gap-y-2 py-2 border-t">
                         <div v-if="gr_data.route_gift_opt_out" class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="localGiftOptedOut ? ctrans('Customer has opted out of eligible gifts and will not receive any') + '.' : ctrans('Customers will receive a gift if they are eligible and select the item. Customer can opted-out by themself in the basket page') + '.'" class="flex-none">
@@ -932,7 +931,6 @@ const submitNote = async () => {
                     {{ data?.customer?.fiscal_name }}
                     <span class="text-xs text-gray-400">{{trans('Fiscal name')}}</span>
                 </dd>
-
             </div>
 
             <!-- Offers Section -->
