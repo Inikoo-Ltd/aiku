@@ -19,6 +19,7 @@ use App\Actions\Comms\Mailshot\RunMailshotTrackingUpdates;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Outbox\AbandonedCart\RunAbandonedCartReminderEmailBulkRuns;
 use App\Actions\Comms\Outbox\AbandonedCheckout\RunAbandonedCheckoutEmailBulkRuns;
+use App\Actions\Comms\Outbox\NewCustomerPush\RunNewCustomerPushEmailBulkRuns;
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\GoldRewardReminder\RunGoldRewardReminderEmailBulkRuns;
 use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
@@ -631,6 +632,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'RunAbandonedCheckoutEmailBulkRuns',
                 ),
                 name: 'RunAbandonedCheckoutEmailBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunNewCustomerPushEmailBulkRuns::makeJob())->hourly()->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RunNewCustomerPushEmailBulkRuns',
+                ),
+                name: 'RunNewCustomerPushEmailBulkRuns',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
