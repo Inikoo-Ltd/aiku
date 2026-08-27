@@ -29,7 +29,14 @@ STATE_DIR=${DISK_ALERT_STATE_DIR:-/var/tmp/aiku-disk-alert}
 ENV_FILE=${DISK_ALERT_ENV_FILE:-/home/aiku/aiku/current/.env}
 
 DRY_RUN=0
-[ "${1:-}" = '--dry-run' ] && DRY_RUN=1
+MODE=run
+for arg in "$@"; do
+    case $arg in
+        --dry-run)   DRY_RUN=1 ;;
+        --test)      MODE=test ;;
+        --self-test) MODE=self-test ;;
+    esac
+done
 
 raw_df() {
     if [ -n "${DISK_ALERT_DF_OVERRIDE:-}" ]; then
@@ -170,6 +177,24 @@ run_checks() {
     done < <(usage_report)
 }
 
+# Proves the webhook end to end without pretending anything is wrong. An earlier
+# version forced the threshold to 0 so every filesystem "alerted", which produced
+# messages identical to real ones for healthy mounts — unreadable as a test, and
+# alarming to anyone else in the channel.
+send_test() {
+    local host summary mount pct avail
+    host=$(hostname -s 2>/dev/null || hostname)
+    summary="🧪 **Disk alert test — ${host}**"
+
+    while read -r mount pct avail; do
+        [ -z "${mount:-}" ] && continue
+        summary="$summary"$'\n'"\`${mount}\` ${pct}% used, $(human_kb "$avail") free"
+    done < <(usage_report)
+
+    summary="$summary"$'\n'"Warns at ${THRESHOLD}%, 🚨 pings at ${CRITICAL}%. This is a test — nothing is wrong."
+    notify "$summary"
+}
+
 self_test() {
     local failures=0
     check() {
@@ -229,17 +254,8 @@ self_test() {
     return 1
 }
 
-case ${1:-} in
-    --self-test) self_test ;;
-    --test)
-        # Posts a real message for every filesystem, to prove the webhook works end
-        # to end. Throwaway state dir on purpose: a forced run against the real state
-        # would leave every mount marked "in alert", and the next scheduled run would
-        # then announce three recoveries that never happened.
-        THRESHOLD=0
-        STATE_DIR=$(mktemp -d)
-        run_checks
-        rm -rf "$STATE_DIR"
-        ;;
-    *) run_checks ;;
+case $MODE in
+    self-test) self_test ;;
+    test)      send_test ;;
+    *)         run_checks ;;
 esac

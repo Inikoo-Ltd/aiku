@@ -7,7 +7,7 @@
 # Verify before trusting it, in this order:
 #     /usr/local/bin/aiku-disk-alert --self-test          # logic, no side effects
 #     /usr/local/bin/aiku-disk-alert --dry-run            # prints what it would send
-#     /usr/local/bin/aiku-disk-alert --test               # posts REAL Discord messages
+#     /usr/local/bin/aiku-disk-alert --test               # posts ONE real Discord message
 #
 # Why: on 27 Aug 2026 helio's root disk reached 99% with nobody paged. Redis could
 # not write its RDB snapshot, refused every write (stop-writes-on-bgsave-error),
