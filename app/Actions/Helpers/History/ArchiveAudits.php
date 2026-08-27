@@ -67,7 +67,7 @@ class ArchiveAudits
         }
 
         if ($dryRun) {
-            $total = $this->eligibleAudits($closedShops, $discontinued, $auroraLoops)->count();
+            $total = $this->countEligible($this->selectors($closedShops, $discontinued, $auroraLoops));
             $command?->info("Dry run: $total audits would be archived");
 
             return $total;
@@ -84,9 +84,11 @@ class ArchiveAudits
             'create index if not exists audits_auditable_archive_idx on "audits" ("auditable_type", "auditable_id")'
         );
 
+        $selectors = $this->selectors($closedShops, $discontinued, $auroraLoops);
+
         $progress = null;
         if ($command) {
-            $eligible = $this->eligibleAudits($closedShops, $discontinued, $auroraLoops)->count();
+            $eligible = $this->countEligible($selectors);
 
             if ($eligible === 0) {
                 DB::selectOne('select pg_advisory_unlock(?)', [self::ADVISORY_LOCK_KEY]);
@@ -101,34 +103,30 @@ class ArchiveAudits
         }
 
         $archivedTotal = 0;
-        $lastId        = 0;
-        while (true) {
-            $batchSize = $limit ? min($chunkSize, $limit - $archivedTotal) : $chunkSize;
-            if ($batchSize <= 0) {
-                break;
+        foreach ($selectors as $selector) {
+            while (true) {
+                $batchSize = $limit ? min($chunkSize, $limit - $archivedTotal) : $chunkSize;
+                if ($batchSize <= 0) {
+                    break 2;
+                }
+
+                $this->waitForReplication($command, $progress);
+
+                $auditIds = $selector()->limit($batchSize)->pluck('id')->all();
+
+                if (!$auditIds) {
+                    break;
+                }
+
+                $this->copyToArchive('audits', 'id', $auditIds);
+
+                DB::transaction(function () use ($auditIds) {
+                    DB::table('audits')->whereIn('id', $auditIds)->delete();
+                });
+
+                $archivedTotal += count($auditIds);
+                $progress?->advance(count($auditIds));
             }
-
-            $this->waitForReplication($command, $progress);
-
-            $auditIds = $this->eligibleAudits($closedShops, $discontinued, $auroraLoops)
-                ->where('id', '>', $lastId)
-                ->orderBy('id')
-                ->limit($batchSize)
-                ->pluck('id')->all();
-
-            if (!$auditIds) {
-                break;
-            }
-            $lastId = end($auditIds);
-
-            $this->copyToArchive('audits', 'id', $auditIds);
-
-            DB::transaction(function () use ($auditIds) {
-                DB::table('audits')->whereIn('id', $auditIds)->delete();
-            });
-
-            $archivedTotal += count($auditIds);
-            $progress?->advance(count($auditIds));
         }
 
         $progress?->finish();
@@ -139,9 +137,48 @@ class ArchiveAudits
         return $archivedTotal;
     }
 
-    private function eligibleAudits(bool $closedShops, bool $discontinued, bool $auroraLoops = false): Builder
+    /**
+     * One builder factory per independent slice of work. The state-based selectors share a single
+     * builder, but every Aurora loop object gets its own: those objects hold hundreds of thousands
+     * of rows each, and a batch query that spans all of them can only be answered by walking the
+     * primary key and filtering, which costs more with every batch. Per object, the same batch
+     * rides the (auditable_type, auditable_id) index instead.
+     *
+     * @return array<int, callable(): Builder>
+     */
+    private function selectors(bool $closedShops, bool $discontinued, bool $auroraLoops): array
     {
-        return DB::table('audits')->where(function (Builder $query) use ($closedShops, $discontinued, $auroraLoops) {
+        $selectors = [];
+
+        if ($closedShops || $discontinued) {
+            $selectors[] = fn (): Builder => $this->eligibleAudits($closedShops, $discontinued);
+        }
+
+        if ($auroraLoops) {
+            foreach ($this->auroraLoopObjects() as $auditableType => $auditableIds) {
+                foreach ($auditableIds as $auditableId) {
+                    $selectors[] = fn (): Builder => DB::table('audits')
+                        ->where('auditable_type', $auditableType)
+                        ->where('auditable_id', $auditableId)
+                        ->where('url', 'like', self::AURORA_IMPORT_URL);
+                }
+            }
+        }
+
+        return $selectors;
+    }
+
+    /**
+     * @param array<int, callable(): Builder> $selectors
+     */
+    private function countEligible(array $selectors): int
+    {
+        return array_sum(array_map(fn (callable $selector): int => $selector()->count(), $selectors));
+    }
+
+    private function eligibleAudits(bool $closedShops, bool $discontinued): Builder
+    {
+        return DB::table('audits')->where(function (Builder $query) use ($closedShops, $discontinued) {
             if ($closedShops) {
                 $query->orWhereIn(
                     'shop_id',
@@ -163,15 +200,6 @@ class ArchiveAudits
                             DB::table('org_stocks')->select('id')->where('state', OrgStockStateEnum::DISCONTINUED->value)
                         );
                 });
-            }
-            if ($auroraLoops) {
-                foreach ($this->auroraLoopObjects() as $auditableType => $auditableIds) {
-                    $query->orWhere(function (Builder $subQuery) use ($auditableType, $auditableIds) {
-                        $subQuery->where('auditable_type', $auditableType)
-                            ->whereIn('auditable_id', $auditableIds)
-                            ->where('url', 'like', self::AURORA_IMPORT_URL);
-                    });
-                }
             }
         });
     }
