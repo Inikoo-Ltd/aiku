@@ -636,12 +636,19 @@ enum OutboxCodeEnum: string
             self::GOLD_REWARD_REMINDER_1,
             self::GOLD_REWARD_REMINDER_2,
             self::GOLD_REWARD_REMINDER_3,
-            self::ABANDONED_CART_REMINDER_1,
-            self::ABANDONED_CART_REMINDER_2,
-            self::ABANDONED_CART_REMINDER_3,
             self::PROSPECT_CONVERTION_1,
             self::PROSPECT_CONVERTION_2,
             self::PROSPECT_CONVERTION_3 => true,
+            default => false,
+        };
+    }
+
+    public function requiresInterval(): bool
+    {
+        return match ($this) {
+            self::ABANDONED_CART_REMINDER_1,
+            self::ABANDONED_CART_REMINDER_2,
+            self::ABANDONED_CART_REMINDER_3 => true,
             default => false,
         };
     }
