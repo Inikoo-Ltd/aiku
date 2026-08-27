@@ -16,6 +16,7 @@ const props = defineProps<{
   data: any
   webBlockTypes: { data: any[] }
   selectedBlock: any
+  organisation?: { id?: number; slug?: string } | null
 }>()
 
 const emits = defineEmits<{
@@ -163,7 +164,7 @@ function onUpdateFieldValue(e: any) {
 
           <!-- EDITOR -->
           <template v-else-if="tab.type === 'editor'">
-            <SideEditor :modelValue="selectedBlock?.fieldValue" :blueprint="getBlueprint(selectedBlock?.code)"
+            <SideEditor :modelValue="selectedBlock?.fieldValue" :blueprint="getBlueprint(selectedBlock?.code, { organisation })"
               @update:modelValue="onUpdateFieldValue" :uploadImageRoute="null" />
           </template>
         </TabPanel>

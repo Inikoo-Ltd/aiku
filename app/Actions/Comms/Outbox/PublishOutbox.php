@@ -36,6 +36,12 @@ class PublishOutbox extends OrgAction
             ]);
         }
 
+        if ($outbox->code->requiresInterval() && $outbox->interval === null) {
+            throw ValidationException::withMessages([
+                'interval' => __('Set the reminder interval before activating this outbox, otherwise it will never send.')
+            ]);
+        }
+
         $email               = $outbox->emailOngoingRun->email;
         $unpublishedSnapshot = $email->unpublishedSnapshot;
 

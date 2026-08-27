@@ -18,7 +18,6 @@ use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\Outbox;
 use App\Models\CRM\Customer;
-use App\Models\Ordering\CheckoutAbandonment;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessAbandonedCartReminderRecipients
@@ -53,8 +52,6 @@ class ProcessAbandonedCartReminderRecipients
             'state' => EmailDeliveryChannelStateEnum::IN_PROCESS->value,
         ]);
 
-        $sentAbandonmentIds = [];
-
         foreach ($customers as $customer) {
             $customerModel = Customer::find($customer['id']);
             if (!$customerModel) {
@@ -83,15 +80,9 @@ class ProcessAbandonedCartReminderRecipients
                     'recipient_name'      => $customerModel->name,
                 ]
             );
-
-            $sentAbandonmentIds[] = $customer['abandonment_id'];
         }
 
         app()->setLocale($previousLocale);
-
-        if (!empty($sentAbandonmentIds)) {
-            CheckoutAbandonment::whereIn('id', $sentAbandonmentIds)->update(['email_sent_at' => now()]);
-        }
 
         UpdateEmailDeliveryChannel::run(
             $emailDeliveryChannel,

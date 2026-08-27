@@ -38,11 +38,14 @@ use App\Actions\Catalogue\ProductCategory\Json\GetDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamilies;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesComparisonDetail;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesForComparisonOption;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInDepartmentInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamilyDescriptionDataInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategories;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryFamilies;
@@ -234,6 +237,7 @@ Route::get('brands', GetBrands::class)->name('brands.index');
 Route::get('workshop/department/{department}/sub-departments', GetSubDepartmentsInWorkshop::class)->name('workshop.sub_departments.index');
 Route::get('workshop/department/{department}/families', GetFamiliesInDepartmentInWorkshop::class)->name('workshop.families_under_department.index');
 Route::get('workshop/sub-department/{subDepartment}/families', GetFamiliesInWorkshop::class)->name('workshop.families.index');
+Route::get('workshop/family/{family}/description-data', GetFamilyDescriptionDataInWorkshop::class)->name('workshop.family_description_data');
 
 Route::get('workshop/product-category/{productCategory:id}/products', GetProductsInProductCategory::class)->name('product_category.products.index');
 Route::get('workshop/product-category/{productCategory:id}/see-also-products', GetProductsInProductCategory::class)->name('product_category.see_also_products.index');
@@ -365,6 +369,9 @@ Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelec
 
 // Families list under department page
 Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
+// Families list for range comparison in Family Page Workshop
+Route::get('{website}/{productCategory}/comparison-detail', [GetFamiliesComparisonDetail::class, 'inWebsite'])->name('website.category.comparison_detail');
+Route::get('{website}/{productCategory}/comparison-option', [GetFamiliesForComparisonOption::class, 'inWebsite'])->name('website.category.comparison_option');
 
 Route::post('ingredients/parse', ParseIngredientsList::class)->name('ingredients.parse');
 

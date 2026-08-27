@@ -1,10 +1,17 @@
 <script setup lang="ts">
-import { computed, inject, ref } from "vue"
+import { computed, inject, ref, watch } from "vue"
 import { getStyles } from "@/Composables/styles"
 import { ctrans } from "@/Composables/useTrans"
 import About from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/About.vue"
 import MarketingMaterials from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/MarketingMaterials.vue"
 import Faq from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Faq.vue"
+import Customisation from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Customisation.vue"
+import Storage from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Storage.vue"
+import LabelingGuide from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/LabelingGuide.vue"
+import {
+  isTabVisible,
+  type FamilyExtraDescriptionTabKey,
+} from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/tabVisibility"
 
 const props = defineProps<{
   fieldValue: any
@@ -13,42 +20,31 @@ const props = defineProps<{
 }>()
 
 const layout = inject("layout", {}) as any
-const hasContent = (html?: string | null) => {
-  if (!html) return false
-  
-  const text = html
-  .replace(/<[^>]*>/g, '') // remove html tags
-  .replace(/&nbsp;/g, ' ')
-  .trim()
-  
-  return text.length > 0
-}
 
-const activeTab = ref(hasContent(props.fieldValue?.family?.description_extra) ? "about" : "marketing")
+const family = computed(() => props.fieldValue?.family ?? {})
+
+const isLoggedIn = computed(() => Boolean(layout?.iris?.is_logged_in))
+
 const tabs = computed(() =>
   [
     { key: "about", label: ctrans("About the Range") },
     { key: "marketing", label: ctrans("Marketing Materials") },
     { key: "faq", label: ctrans("FAQ") },
-  ].filter(tab => {
-    if (tab.key === "about") {
-      return hasContent(props.fieldValue?.family?.description_extra)
-    }
-
-    if (tab.key === "marketing") {
-      return layout?.iris?.is_logged_in
-    }
-
-    if (tab.key === "faq") {
-      return (
-        Array.isArray(props.fieldValue?.family?.faq) &&
-        props.fieldValue.family.faq.length > 0
-      )
-    }
-
-    return true
-  })
+    { key: "customisation", label: ctrans("Customisation") },
+    { key: "labeling guide", label: ctrans("Labeling Guide") },
+    { key: "storage_and_shelf_life", label: ctrans("Storage & Shelf Life") },
+  ].filter(tab =>
+    isTabVisible(tab.key as FamilyExtraDescriptionTabKey, family.value, isLoggedIn.value)
+  )
 )
+console.log('ddd',tabs.value, props)
+const activeTab = ref(tabs.value[0]?.key ?? "")
+
+watch(tabs, (visibleTabs) => {
+  if (!visibleTabs.some(tab => tab.key === activeTab.value)) {
+    activeTab.value = visibleTabs[0]?.key ?? ""
+  }
+})
 
 
 const containerStyle = computed(() => ({
@@ -65,6 +61,12 @@ const component = (tab: string) => {
       return MarketingMaterials
     case "faq":
       return Faq
+    case "customisation":
+      return Customisation
+    case "labeling guide":
+      return LabelingGuide
+    case "storage_and_shelf_life":
+      return Storage
     default:
       return null
   }

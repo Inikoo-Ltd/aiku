@@ -9,8 +9,8 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
-use App\Actions\Helpers\Translations\Translate;
-use App\Events\MasterProductCategoryFaqCascadeProgressEvent;
+use App\Actions\Masters\MasterProductCategory\Traits\TranslateJsonbField;
+use App\Events\MasterProductCategoryJsonbCascadeProgressEvent;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Language;
 use App\Models\Masters\MasterProductCategory;
@@ -27,6 +27,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class CascadeMasterProductCategoryFaqToChildren
 {
     use AsAction;
+    use TranslateJsonbField;
 
     public string $jobQueue = 'translate';
 
@@ -44,48 +45,32 @@ class CascadeMasterProductCategoryFaqToChildren
 
         $total = $productCategories->count();
 
-        MasterProductCategoryFaqCascadeProgressEvent::dispatch($masterProductCategory, [
+        MasterProductCategoryJsonbCascadeProgressEvent::dispatch($masterProductCategory, [
             'state' => 'updating',
             'done'  => 0,
             'total' => $total,
-        ]);
+        ],
+        'faq-cascade-progress');
 
         /** @var ProductCategory $productCategory */
         foreach ($productCategories as $index => $productCategory) {
             UpdateProductCategory::make()->action($productCategory, [
-                'faq' => $this->getFaqForShopLanguage($masterProductCategory, $productCategory, $english),
+                'faq' => $this->getJsonbForShopLanguage($masterProductCategory, $productCategory, $english, 'faq'),
             ]);
 
-            MasterProductCategoryFaqCascadeProgressEvent::dispatch($masterProductCategory, [
+            MasterProductCategoryJsonbCascadeProgressEvent::dispatch($masterProductCategory, [
                 'state' => 'updating',
                 'done'  => $index + 1,
                 'total' => $total,
-            ]);
+            ],
+            'faq-cascade-progress');
         }
 
-        MasterProductCategoryFaqCascadeProgressEvent::dispatch($masterProductCategory, [
+        MasterProductCategoryJsonbCascadeProgressEvent::dispatch($masterProductCategory, [
             'state' => 'done',
             'done'  => $total,
             'total' => $total,
-        ]);
-    }
-
-    private function getFaqForShopLanguage(MasterProductCategory $masterProductCategory, ProductCategory $productCategory, ?Language $english): array
-    {
-        $faq = $masterProductCategory->faq ?? [];
-
-        $shopLanguage = $productCategory->shop->language;
-        if (!$english || !$shopLanguage || $shopLanguage->code == 'en') {
-            return $faq;
-        }
-
-        $translatedFaq = Translate::run(json_encode($faq), $english, $shopLanguage, 'gpt-5-nano');
-        if (!is_string($translatedFaq)) {
-            return $faq;
-        }
-
-        $decodedFaq = json_decode($translatedFaq, true);
-
-        return is_array($decodedFaq) ? $decodedFaq : $faq;
+        ],
+        'faq-cascade-progress');
     }
 }

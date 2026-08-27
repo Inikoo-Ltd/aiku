@@ -113,12 +113,14 @@ const isCreatingTemplate = ref(false);
 const TEMPLATES_INDEX_ROUTE = "grp.json.template_layouts.index";
 const TEMPLATE_DETAIL_ROUTE = "grp.json.template_layouts.detail";
 const TEMPLATE_APPLY_ROUTE = "grp.models.webpage.apply_template";
+const TEMPLATE_DELETE_ROUTE = "grp.models.web_layout_template.delete";
 const TEMPLATES_PER_PAGE = 10;
 const templates = ref<WebLayoutTemplateList>({ data: [] });
 const templatesSearch = ref("");
 const isLoadingTemplates = ref(false);
 const templatesErrorMessage = ref<string | null>(null);
 const applyingTemplateId = ref<number | null>(null);
+const deletingTemplateId = ref<number | null>(null);
 const isApplyTemplateDialogVisible = ref(false);
 const isApplyingTemplate = ref(false);
 const selectedTemplate = ref<WebLayoutTemplate | null>(null);
@@ -630,6 +632,30 @@ const applyTemplate = async (template: WebLayoutTemplate) => {
   }
 };
 
+const deleteTemplate = async (template: WebLayoutTemplate) => {
+  deletingTemplateId.value = template.id;
+
+  try {
+    await axios.delete(route(TEMPLATE_DELETE_ROUTE, { template: template.id }));
+
+    notify({
+      title: trans("Success"),
+      text: trans("Template has been deleted"),
+      type: "success"
+    });
+
+    await fetchTemplates();
+  } catch (error: any) {
+    notify({
+      title: trans("Something went wrong"),
+      text: error?.response?.data?.message || error.message,
+      type: "error"
+    });
+  } finally {
+    deletingTemplateId.value = null;
+  }
+};
+
 const onApplyTemplate = (payload: {
   template_id: number | null,
   blocks: Array<{
@@ -897,10 +923,12 @@ console.log('props_workshop',props)
           :isLoadingTemplates="isLoadingTemplates"
           :templatesErrorMessage="templatesErrorMessage"
           :applyingTemplateId="applyingTemplateId"
+          :deletingTemplateId="deletingTemplateId"
           @fetchTemplates="fetchTemplates()"
           @searchTemplates="onSearchTemplates"
           @navigateTemplates="fetchTemplates"
           @useTemplate="applyTemplate"
+          @deleteTemplate="deleteTemplate"
           @update="onSaveWorkshop"
           @delete="sendDeleteBlock"
           @add="addNewBlock"
