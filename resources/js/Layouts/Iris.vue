@@ -27,6 +27,7 @@ import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
 const IrisRightSideBasket = defineAsyncComponent(() => import('@iris/Components/IrisRightSideBasket.vue'))
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
+import { isAnnouncementVisible, useAnnouncementClock } from '@/Iris/Composables/useAnnouncementVisibility'
 const ChatButton = defineAsyncComponent(() => import('@/Components/Chat/Customer/ChatButton.vue'))
 import axios from 'axios'
 import { CustomerIdCollector } from '@/Composables/Unique/LuigiDataCollector'
@@ -63,15 +64,21 @@ const bundleToggleStyle = computed(() => {
     }
 })
 
-const announcementsByPosition = (position: string) =>
+const announcementNow = useAnnouncementClock()
+
+console.log('weweq', usePage().props?.announcements)
+const announcementAtPosition = (position: string) =>
     computed(() => {
         const list = (usePage().props?.announcements ?? []) as any[]
-        return list.filter(a => a?.settings?.position === position)
+        return list.find(a =>
+            a?.settings?.position === position
+            && isAnnouncementVisible(a, announcementNow.value, !!layout?.iris?.is_logged_in)
+        ) ?? null
     })
 
-const propsAnnouncementsTopbar = announcementsByPosition('top-bar')
-const propsAnnouncementsBottomMenu = announcementsByPosition('bottom-menu')
-const propsAnnouncementsTopFooter = announcementsByPosition('top-footer')
+const propsAnnouncementsTopbar = announcementAtPosition('top-bar')
+const propsAnnouncementsBottomMenu = announcementAtPosition('bottom-menu')
+const propsAnnouncementsTopFooter = announcementAtPosition('top-footer')
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
 const theme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
@@ -318,13 +325,10 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
         </Modal>
 
         <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']">
-            <template v-if="propsAnnouncementsTopbar?.length">
-                <template v-for="announcement in propsAnnouncementsTopbar">
-                    <IrisAnnouncement
-                        :data="announcement"
-                    />
-                </template>
-            </template>
+            <IrisAnnouncement
+                v-if="propsAnnouncementsTopbar"
+                :data="propsAnnouncementsTopbar"
+            />
 
             <!-- Section: Topbar, Header, Menu, Sidebar -->
             <IrisHeader
@@ -336,13 +340,10 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
                 :custom-sidebar="customSidebar"
             />
 
-            <template v-if="propsAnnouncementsBottomMenu?.length">
-                <template v-for="announcement in propsAnnouncementsBottomMenu">
-                    <IrisAnnouncement
-                        :data="announcement"
-                    />
-                </template>
-            </template>
+            <IrisAnnouncement
+                v-if="propsAnnouncementsBottomMenu"
+                :data="propsAnnouncementsBottomMenu"
+            />
 
             <div class="border-b border-gray-200 ">
                 <div
@@ -407,13 +408,10 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
                             aria-hidden='true' />
                 </div>
             </main>
-            <template v-if="propsAnnouncementsTopFooter?.length">
-                <template v-for="announcement in propsAnnouncementsTopFooter">
-                    <IrisAnnouncement
-                        :data="announcement"
-                    />
-                </template>
-            </template>
+            <IrisAnnouncement
+                v-if="propsAnnouncementsTopFooter"
+                :data="propsAnnouncementsTopFooter"
+            />
 
             <Footer :colorThemed="theme" />
         </div>

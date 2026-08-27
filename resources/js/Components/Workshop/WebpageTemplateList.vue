@@ -12,7 +12,10 @@ import {
 	faChevronLeft,
 	faChevronRight,
 	faUser,
+	faTrashAlt,
 } from '@fal'
+import { useConfirm } from 'primevue/useconfirm'
+import ConfirmDialog from 'primevue/confirmdialog'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { WebLayoutTemplate, WebLayoutTemplateList } from '@/types/WebLayoutTemplate'
@@ -23,6 +26,7 @@ const props = withDefaults(
 		isLoading?: boolean
 		errorMessage?: string | null
 		applyingTemplateId?: number | null
+		deletingTemplateId?: number | null
 		editable?: boolean
 	}>(),
 	{
@@ -30,6 +34,7 @@ const props = withDefaults(
 		isLoading: false,
 		errorMessage: null,
 		applyingTemplateId: null,
+		deletingTemplateId: null,
 		editable: true,
 	}
 )
@@ -39,7 +44,12 @@ const emits = defineEmits<{
 	(e: 'search', value: string): void
 	(e: 'navigate', value: string): void
 	(e: 'use', value: WebLayoutTemplate): void
+	(e: 'delete', value: WebLayoutTemplate): void
 }>()
+
+const confirm = useConfirm()
+
+const DELETE_CONFIRM_GROUP = 'delete-web-layout-template'
 
 const search = ref('')
 
@@ -68,12 +78,31 @@ const getBlockCount = (template: WebLayoutTemplate) =>
 
 const isApplying = (template: WebLayoutTemplate) => props.applyingTemplateId === template.id
 
+const isDeleting = (template: WebLayoutTemplate) => props.deletingTemplateId === template.id
+
+const isBusy = computed(() => props.applyingTemplateId !== null || props.deletingTemplateId !== null)
+
 const onUseTemplate = (template: WebLayoutTemplate) => {
-	if (!props.editable || props.applyingTemplateId !== null) {
+	if (!props.editable || isBusy.value) {
 		return
 	}
 
 	emits('use', template)
+}
+
+const onConfirmDeleteTemplate = (template: WebLayoutTemplate) => {
+	if (isBusy.value) {
+		return
+	}
+
+	confirm.require({
+		group: DELETE_CONFIRM_GROUP,
+		header: trans('Delete template'),
+		message: trans('Delete :name? This action can\'t be undone.', { name: template.name }),
+		rejectProps: { label: trans('Cancel'), severity: 'secondary', outlined: true },
+		acceptProps: { label: trans('Yes, delete'), severity: 'danger' },
+		accept: () => emits('delete', template),
+	})
 }
 
 const onGoToPage = (url: string | null) => {
@@ -92,6 +121,12 @@ const onClearSearch = () => {
 
 <template>
 	<div class="flex flex-col h-full min-h-0">
+		<ConfirmDialog :group="DELETE_CONFIRM_GROUP">
+			<template #icon>
+				<FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-500" />
+			</template>
+		</ConfirmDialog>
+
 		<div class="shrink-0 mb-1.5 flex items-center gap-1.5">
 			<div class="relative flex-1 min-w-0">
 				<FontAwesomeIcon
@@ -180,12 +215,23 @@ const onClearSearch = () => {
 
 					<button
 						type="button"
+						v-tooltip="trans('Delete this template')"
+						class="h-5 w-5 shrink-0 flex items-center justify-center rounded text-[11px] transition-colors text-slate-400 hover:bg-red-100 hover:text-red-600"
+						:class="isDeleting(template) ? '' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'"
+						:disabled="isBusy"
+						@click.stop="onConfirmDeleteTemplate(template)">
+						<LoadingIcon v-if="isDeleting(template)" />
+						<FontAwesomeIcon v-else :icon="faTrashAlt" fixed-width />
+					</button>
+
+					<button
+						type="button"
 						v-tooltip="editable
 							? trans('Replace the page blocks with this template')
 							: trans('This page is not editable')"
 						class="h-5 w-5 shrink-0 flex items-center justify-center rounded text-[11px] transition-colors text-slate-400 hover:bg-slate-200 hover:text-slate-700"
 						:class="isApplying(template) ? '' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'"
-						:disabled="!editable || applyingTemplateId !== null"
+						:disabled="!editable || isBusy"
 						@click.stop="onUseTemplate(template)">
 						<LoadingIcon v-if="isApplying(template)" />
 						<FontAwesomeIcon v-else :icon="faLayerPlus" fixed-width />

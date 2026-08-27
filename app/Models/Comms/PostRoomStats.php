@@ -107,6 +107,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_abandoned_cart_reminder_1
  * @property int $number_outboxes_type_abandoned_cart_reminder_2
  * @property int $number_outboxes_type_abandoned_cart_reminder_3
+ * @property int $number_outboxes_type_abandoned_checkout
  * @property-read \App\Models\Comms\PostRoom|null $postRoom
  * @method static Builder<static>|PostRoomStats newModelQuery()
  * @method static Builder<static>|PostRoomStats newQuery()
