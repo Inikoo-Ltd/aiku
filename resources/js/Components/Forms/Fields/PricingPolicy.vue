@@ -127,7 +127,7 @@ const switchMode = (newMode: "percent" | "fixed" | "not_follow") => {
 				:checked="!!form['pricing_reset_all']"
 				@change="(event) => (form['pricing_reset_all'] = (event.target as HTMLInputElement).checked)" />
 			<span class="text-xs" :class="form['pricing_reset_all'] ? 'text-red-600' : 'text-gray-500'">
-				{{ trans("Also reset products that have their own price, so every single product follows this policy. Their own prices will be lost.") }}
+				{{ trans("Also reset products that have their own price, so every single product follows this policy. Their prices will be overwritten by this rule.") }}
 			</span>
 		</label>
 	</div>
