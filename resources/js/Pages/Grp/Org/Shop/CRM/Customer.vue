@@ -182,15 +182,15 @@ const layout = inject('layout')
                     v-if="props.showcase.upcoming_transaction_route"
                     :routes="props.showcase.upcoming_transaction_route"
                     :shopSlug="props.showcase.shop.slug"
-                    :temporaryNote="notes.temporary_note_list"
+                    :temporaryNote="notes.temporary_note"
                     :hideButton="true"
                     :openModal="isModalOpen"
                 >
                     <template #buttonSlot="{ openListModal}">
                         <BoxNote
-                            :key="notes.temporary_note_list.label"
-                            :noteData="notes.temporary_note_list"
-                            :updateRoute="notes.temporary_note_list.updateRoute"
+                            :key="notes.temporary_note.label"
+                            :noteData="notes.temporary_note"
+                            :updateRoute="notes.temporary_note.updateRoute"
                             :disableModal=true
                             @click="openListModal()"
                         />
@@ -210,7 +210,7 @@ const layout = inject('layout')
         :handleTabUpdate
         :timeline="props.timeline"
         :detachRoute="attachmentRoutes.detachRoute"        
-        :temporaryNote="notes.temporary_note_list"
+        :temporaryNote="notes.temporary_note"
     />
 
   <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{

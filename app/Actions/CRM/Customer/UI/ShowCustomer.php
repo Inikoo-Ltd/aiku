@@ -292,7 +292,7 @@ class ShowCustomer extends OrgAction
                     ...NotesEnum::WAREHOUSE->boilerPlate()
                 ]
             ],
-            "temporary_note_list"   => [
+            "temporary_note"   => [
                 "label"         => NotesEnum::WAREHOUSE_TEMPORARY->label(),
                 "note"          => $customer->warehouse_temporary_notes ?? '',
                 "information"   => __("Will be put on the next Order private note"),
