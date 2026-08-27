@@ -963,3 +963,55 @@ test('bulk update product unit is scoped to shop', function () {
     ]);
     expect($product->refresh()->unit)->toBe('од.');
 });
+
+test('audit archiver moves closed shop and discontinued product audits, history falls back to archive', function () {
+    config()->set(
+        'database.connections.archive',
+        array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'archive'])
+    );
+    DB::purge('archive');
+    DB::statement('create schema if not exists archive');
+
+    $shop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $discontinuedProduct = $shop->products()->orderBy('id')->first();
+    UpdateProduct::make()->action($discontinuedProduct, ['name' => 'audited before discontinuation']);
+
+    $liveShop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+
+    expect(DB::table('audits')->where('auditable_type', 'Product')->where('auditable_id', $discontinuedProduct->id)->count())
+        ->toBeGreaterThan(0);
+
+    DB::table('products')->where('id', $discontinuedProduct->id)->update(['state' => ProductStateEnum::DISCONTINUED->value]);
+
+    $dryRun = \App\Actions\Helpers\History\ArchiveAudits::make()->handle(dryRun: true);
+    expect($dryRun)->toBeGreaterThan(0);
+
+    $archived = \App\Actions\Helpers\History\ArchiveAudits::make()->handle();
+
+    expect($archived)->toBeGreaterThan(0)
+        ->and(DB::table('audits')->where('auditable_type', 'Product')->where('auditable_id', $discontinuedProduct->id)->exists())->toBeFalse()
+        ->and(DB::connection('archive')->table('audits')->where('auditable_type', 'Product')->where('auditable_id', $discontinuedProduct->id)->count())->toBeGreaterThan(0)
+        ->and(DB::table('audits')->where('auditable_type', 'Shop')->where('auditable_id', $liveShop->id)->exists())->toBeTrue();
+
+    request()->setRouteResolver(fn () => (new \Illuminate\Routing\Route('GET', 'test-history', []))->name('test.history'));
+    $history = \App\Actions\Helpers\History\UI\IndexHistory::run($discontinuedProduct);
+    expect($history->total())->toBeGreaterThan(0)
+        ->and(request()->attributes->get('history_archive_note'))->toBe(__('Showing archived history.'));
+
+    UpdateProduct::make()->action($discontinuedProduct->refresh(), ['name' => 'relaunched']);
+    request()->attributes->remove('history_archive_note');
+    $mixedHistory = \App\Actions\Helpers\History\UI\IndexHistory::run($discontinuedProduct);
+    expect($mixedHistory->total())->toBeGreaterThan(0)
+        ->and(request()->attributes->get('history_archive_note'))->toContain(__('are archived.'));
+
+    DB::table('shops')->where('id', $shop->id)->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::CLOSED->value]);
+    $shopAuditsBefore = DB::table('audits')->where('shop_id', $shop->id)->count();
+    expect($shopAuditsBefore)->toBeGreaterThan(0);
+
+    \App\Actions\Helpers\History\ArchiveAudits::make()->handle(discontinued: false);
+
+    expect(DB::table('audits')->where('shop_id', $shop->id)->exists())->toBeFalse()
+        ->and(DB::connection('archive')->table('audits')->where('shop_id', $shop->id)->count())->toBeGreaterThanOrEqual($shopAuditsBefore)
+        ->and(DB::table('audits')->where('auditable_type', 'Shop')->where('auditable_id', $liveShop->id)->exists())->toBeTrue();
+});

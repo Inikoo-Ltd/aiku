@@ -19,9 +19,9 @@ return [
     'email_retention_days' => (int) env('EMAIL_RETENTION_DAYS', 90),
 
     /*
-     * The email archiver pauses between delete batches while any replica is further behind than this,
+     * Every archiver pauses between delete batches while any replica is further behind than this,
      * so archiving can never build up the WAL backlog that once filled boro's disk.
      */
-    'email_max_replication_lag_mb' => (int) env('EMAIL_ARCHIVE_MAX_REPLICATION_LAG_MB', 256),
+    'max_replication_lag_mb' => (int) env('EMAIL_ARCHIVE_MAX_REPLICATION_LAG_MB', 256),
 
 ];

@@ -47,6 +47,16 @@ use BadMethodCallException;
  */
 class Audit extends \OwenIt\Auditing\Models\Audit
 {
+    /**
+     * The package pins audits to the configured connection, which silently discards ::on();
+     * honouring an explicitly set connection is what lets archived audits be read from the
+     * archive database (see IndexHistory).
+     */
+    public function getConnectionName()
+    {
+        return $this->connection ?? parent::getConnectionName();
+    }
+
     protected function casts(): array
     {
         return [
