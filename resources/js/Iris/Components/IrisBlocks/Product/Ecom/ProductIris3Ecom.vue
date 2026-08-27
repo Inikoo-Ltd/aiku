@@ -890,9 +890,9 @@ onMounted(async () => {
                     <div v-for="item in documentations" :key="`${item.label}-${item.caption}`" class="spec-row">
                         <div class="spec-label">{{ item.label }}</div>
                         <div class="spec-value flex flex-wrap items-center justify-end gap-2">
-                            <a :href="item.url" target="_blank" class="text-xs text-gray-500 underline hover:text-gray-700">
+                           <!--  <a :href="item.url" target="_blank" class="text-xs text-gray-500 underline hover:text-gray-700">
                                 {{ trans("Link") }}
-                            </a>
+                            </a> -->
                             <a :href="item.url" target="_blank" download class="doc-download">
                                 {{ trans("Download File") }}
                                 <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))" />

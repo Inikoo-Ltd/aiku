@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, computed } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/navigation'
@@ -12,11 +12,15 @@ import { faVideo } from '@fas'
 
 import Image from "@common/Components/Image.vue"
 import ProductImageViewerDialog from '@/Components/Product/ProductImageViewerDialog.vue'
+import { buildProductMediaItems } from '@/Components/Product/buildProductMediaItems'
 
 const props = defineProps<{
   images: { source: any; thumbnail?: any; zoom?: any; alt?: string }[]
   video?: string
 }>()
+
+/* ---------------- MEDIA ORDER ---------------- */
+const mediaItems = computed(() => buildProductMediaItems(props.images, props.video))
 
 /* ---------------- SWIPER INSTANCE ---------------- */
 const mainSwiper = ref<any>(null)
@@ -72,10 +76,10 @@ onMounted(async () => {
   <div class="w-full flex flex-col items-center relative isolate">
     <!-- ================= MAIN SWIPER ================= -->
     <Swiper
-      v-if="props.images.length"
+      v-if="mediaItems.length"
       :modules="[Navigation, Thumbs]"
       :slides-per-view="1"
-      :loop="props.images.length > 1"
+      :loop="mediaItems.length > 1"
       :navigation="mainNavigation"
       :thumbs="{ swiper: thumbsSwiper }"
       class="aspect-square w-full rounded-lg mb-4"
@@ -98,29 +102,28 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- IMAGE SLIDES -->
+      <!-- MEDIA SLIDES -->
       <SwiperSlide
-        v-for="(image, index) in props.images"
-        :key="index"
+        v-for="item in mediaItems"
+        :key="item.type === 'video' ? 'video' : `image-${item.imageIndex}`"
         class="flex justify-center items-center"
       >
         <div
+          v-if="item.type === 'image'"
           class="relative w-full aspect-square overflow-hidden rounded-lg cursor-zoom-in"
-          @click="openImageModal(index)"
+          @click="openImageModal(item.imageIndex)"
         >
           <Image
-            :src="image.source"
-            :alt="image.alt"
+            :src="item.image.source"
+            :alt="item.image.alt"
             class="w-full h-full flex items-center justify-center"
             :style="{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }"
           />
         </div>
-      </SwiperSlide>
 
-      <!-- VIDEO -->
-      <SwiperSlide v-if="props.video">
         <div
-          class="w-full aspect-square flex items-center justify-center bg-black rounded-lg cursor-pointer"
+          v-else
+          class="relative w-full aspect-square flex items-center justify-center bg-black rounded-lg cursor-pointer"
           @click="openVideoModal"
         >
           <FontAwesomeIcon
@@ -138,10 +141,10 @@ onMounted(async () => {
 
     <!-- ================= THUMBS ================= -->
     <Swiper
-      v-if="props.images.length"
+      v-if="mediaItems.length"
       :modules="[Thumbs, Navigation]"
       watch-slides-progress
-      :loop="props.images.length > 1"
+      :loop="mediaItems.length > 1"
       :space-between="12"
       :navigation="thumbNavigation"
       :breakpoints="{ 0: { slidesPerView: 2.5 } }"
@@ -165,16 +168,34 @@ onMounted(async () => {
       </div>
 
       <SwiperSlide
-        v-for="(image, index) in props.images"
-        :key="index"
-        class="cursor-pointer border rounded"
+        v-for="item in mediaItems"
+        :key="item.type === 'video' ? 'thumb-video' : `thumb-${item.imageIndex}`"
+        class="cursor-pointer rounded overflow-hidden"
       >
-        <div class="aspect-square bg-gray-100">
+        <div v-if="item.type === 'image'" class="aspect-square w-full">
           <Image
-            :src="image.source"
-            :alt="image.alt || `Thumbnail ${index + 1}`"
+            :src="item.image.source"
+            :alt="item.image.alt || `Thumbnail ${item.imageIndex + 1}`"
+            image-cover
+            width="320"
+            height="320"
             class="w-full h-full flex items-center justify-center"
-            :style="{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }"
+          />
+        </div>
+
+        <div
+          v-else
+          class="relative aspect-square flex items-center justify-center bg-black"
+          @click="openVideoModal"
+        >
+          <FontAwesomeIcon
+            :icon="faVideo"
+            class="text-2xl text-white/80 absolute"
+          />
+          <iframe
+            class="w-full h-full opacity-50 pointer-events-none"
+            :src="props.video"
+            allowfullscreen
           />
         </div>
       </SwiperSlide>

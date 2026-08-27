@@ -14,6 +14,7 @@ import {
 import { ulid } from 'ulid'
 import Image from '../../Common/Components/Image.vue'
 import ProductImageViewerDialog from './ProductImageViewerDialog.vue'
+import { buildProductMediaItems } from './buildProductMediaItems'
 
 const ProductSoundButton = defineAsyncComponent(() => import('@/Iris/Components/ProductSoundButton.vue'))
 
@@ -80,11 +81,9 @@ onMounted(async () => {
   }
 })
 
-const totalSlides = computed(() => {
-  return props.images.length + (props.video ? 1 : 0)
-})
+const mediaItems = computed(() => buildProductMediaItems(props.images, props.video))
 
-const enableLoop = computed(() => totalSlides.value > 1)
+const enableLoop = computed(() => mediaItems.value.length > 1)
 </script>
 
 <template>
@@ -106,20 +105,18 @@ const enableLoop = computed(() => totalSlides.value > 1)
           </div>
         </div>
 
-        <!-- Image Slides -->
-        <SwiperSlide v-for="(image, index) in props.images" :key="`img-${index}`"
+        <!-- Media Slides -->
+        <SwiperSlide v-for="item in mediaItems" :key="item.type === 'video' ? 'video' : `img-${item.imageIndex}`"
           class="flex justify-center items-center">
-          <div
+          <div v-if="item.type === 'image'"
             class="relative w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-zoom-in"
-            @click="openImageModal(index)">
-            <Image :src="image.source" :alt="image.alt" class="w-full h-full flex items-center justify-center"
+            @click="openImageModal(item.imageIndex)">
+            <Image :src="item.image.source" :alt="item.image.alt" class="w-full h-full flex items-center justify-center"
               :style="{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />
           </div>
-        </SwiperSlide>
 
-        <!-- Video Slide -->
-        <SwiperSlide v-if="props.video" key="video">
-          <div class="w-full aspect-square flex items-center justify-center  rounded-lg overflow-hidden cursor-pointer"
+          <div v-else
+            class="w-full aspect-square flex items-center justify-center  rounded-lg overflow-hidden cursor-pointer"
             @click="openVideoModal">
             <div class="relative w-full h-full flex items-center justify-center">
               <iframe class="w-full h-full  pointer-events-none" :src="props.video" frameborder="0"
@@ -151,21 +148,18 @@ const enableLoop = computed(() => totalSlides.value > 1)
         @breakpoint="syncThumbNavigationState" @lock="syncThumbNavigationState" @unlock="syncThumbNavigationState"
         @observer-update="syncThumbNavigationState"
         :breakpoints="breakpoints ?? { 0: { slidesPerView: 3 }, 640: { slidesPerView: 6 } }" class="w-full">
-        <SwiperSlide v-for="(image, index) in props.images" :key="`thumb-${index}`"
+        <SwiperSlide v-for="item in mediaItems"
+          :key="item.type === 'video' ? 'thumb-video' : `thumb-${item.imageIndex}`"
           class="cursor-pointer rounded overflow-hidden border border-gray-300">
-          <div class="aspect-square w-full">
-            <Image :src="image.thumbnail || image.source" :alt="image.alt || `Thumbnail ${index + 1}`"
+          <div v-if="item.type === 'image'" class="aspect-square w-full">
+            <Image :src="item.image.thumbnail || item.image.source"
+              :alt="item.image.alt || `Thumbnail ${item.imageIndex + 1}`"
               class="w-full h-full flex items-center justify-center"
               :style="{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />
           </div>
-        </SwiperSlide>
 
-        <!-- Video thumbnail -->
-        <SwiperSlide v-if="props.video" key="thumb-video"
-          class="cursor-pointer rounded overflow-hidden border border-gray-300" @click="openVideoModal">
-          <div class="aspect-square w-full flex items-center justify-center bg-gray-200 relative">
-            <!--  <FontAwesomeIcon :icon="faVideo" class="text-3xl text-gray-600" />
-            <span class="absolute bottom-2 text-xs text-gray-700 bg-white/70 px-2 py-0.5 rounded">Video</span> -->
+          <div v-else class="aspect-square w-full flex items-center justify-center bg-gray-200 relative"
+            @click="openVideoModal">
             <div class="relative w-full h-full">
               <iframe class="w-full h-full rounded-lg" :src="props.video" frameborder="0" allow="autoplay; fullscreen"
                 allowfullscreen></iframe>

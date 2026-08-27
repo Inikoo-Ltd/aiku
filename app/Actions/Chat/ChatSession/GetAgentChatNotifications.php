@@ -37,17 +37,64 @@ class GetAgentChatNotifications
 
         if ($shopIds->isEmpty()) {
             return [
-                'waiting' => [],
-                'active'  => [],
-                'reopen'  => [],
+                'waiting'     => [],
+                'active'      => [],
+                'reopen'      => [],
+                'team_unread' => [],
             ];
         }
 
         return [
-            'waiting' => $this->waitingSessions($shopIds),
-            'active'  => $this->activeAssignedSessions($agent, $shopIds),
-            'reopen'  => $this->reopenableSessions($shopIds),
+            'waiting'     => $this->waitingSessions($shopIds),
+            'active'      => $this->activeAssignedSessions($agent, $shopIds),
+            'reopen'      => $this->reopenableSessions($shopIds),
+            'team_unread' => $this->teamUnreadByShop($agent, $shopIds),
         ];
+    }
+
+    /**
+     * Informational per-shop count of team chats (active or closed) that carry unread
+     * customer messages and are handled by a teammate — so others can spot and take them
+     * over. Keyed by shop_id so the UI can show the count for the selected inbox only.
+     *
+     * @return array<int, int>
+     */
+    private function teamUnreadByShop(ChatAgent $agent, $shopIds): array
+    {
+        $teamAgentIds = ChatAgent::whereHas('shops', function ($query) use ($shopIds) {
+            $query->whereIn('shops.id', $shopIds);
+        })->where('id', '!=', $agent->id)->pluck('id');
+
+        if ($teamAgentIds->isEmpty()) {
+            return [];
+        }
+
+        return ChatSession::query()
+            ->where('is_spam', false)
+            ->whereIn('shop_id', $shopIds)
+            ->whereIn('status', [
+                ChatSessionStatusEnum::ACTIVE->value,
+                ChatSessionStatusEnum::CLOSED->value,
+            ])
+            ->whereHas('assignments', function ($assignmentQuery) use ($teamAgentIds) {
+                $assignmentQuery->whereIn('chat_agent_id', $teamAgentIds)
+                    ->whereIn('status', [
+                        ChatAssignmentStatusEnum::ACTIVE->value,
+                        ChatAssignmentStatusEnum::RESOLVED->value,
+                    ]);
+            })
+            ->whereDoesntHave('assignments', function ($assignmentQuery) use ($agent) {
+                $assignmentQuery->where('chat_agent_id', $agent->id)
+                    ->where('status', ChatAssignmentStatusEnum::ACTIVE->value);
+            })
+            ->whereHas('messages', function ($messageQuery) {
+                $messageQuery->where('is_read', false)
+                    ->whereIn('sender_type', $this->visitorSenderTypes);
+            })
+            ->selectRaw('shop_id, count(*) as aggregate')
+            ->groupBy('shop_id')
+            ->pluck('aggregate', 'shop_id')
+            ->toArray();
     }
 
     private function baseQuery()
@@ -126,9 +173,10 @@ class GetAgentChatNotifications
                 'success' => true,
                 'message' => 'User is not a chat agent',
                 'data'    => [
-                    'waiting' => [],
-                    'active'  => [],
-                    'reopen'  => [],
+                    'waiting'     => [],
+                    'active'      => [],
+                    'reopen'      => [],
+                    'team_unread' => (object) [],
                 ],
             ]);
         }
