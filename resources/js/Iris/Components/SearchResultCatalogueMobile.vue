@@ -9,6 +9,7 @@ import { Image as ImgTS } from '@/types/Image'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { searchRoute } from '@/Iris/Composables/useSearchRoute'
 import { useFormatTime } from '@/Composables/useFormatTime'
+import GoldenProductBadge from '@/Components/CMS/Webpage/Products/GoldenProductBadge.vue'
 
 // Mobile twin of SearchResultCatalogue: one thumb-friendly scrolling list instead of
 // desktop's three columns. Chips for categories/collections, large tappable product rows.
@@ -26,6 +27,7 @@ const props = defineProps<{
             stock?: number | null
             units?: number | string | null
             unit?: string | null
+            is_golden_product?: boolean
             url?: string
         }[]
         product_categories: {
@@ -258,11 +260,12 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                     @success="() => model = false"
                 >
                     <div
-                        class="bg-gray-50 overflow-hidden flex-shrink-0 flex items-center justify-center"
+                        class="relative bg-gray-50 overflow-hidden flex-shrink-0 flex items-center justify-center"
                         :class="index === 0 && !bestFamily ? 'w-20 h-20' : 'w-14 h-14'"
                     >
                         <Image v-if="product.image" :src="product.image" class="w-full h-full object-cover" :class="{ 'grayscale opacity-60': product.stock === 0 }" />
                         <span v-else class="text-[10px] text-gray-300 font-bold uppercase">{{ product.code?.slice(0, 3) }}</span>
+                        <GoldenProductBadge v-if="product.is_golden_product" class="absolute left-0.5 top-0.5 z-10 origin-top-left scale-[0.62]" />
                     </div>
 
                     <div class="min-w-0 flex-1">

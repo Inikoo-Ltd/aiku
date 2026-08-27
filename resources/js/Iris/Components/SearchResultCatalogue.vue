@@ -12,6 +12,7 @@ import { Image as ImgTS } from '@/types/Image'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { searchRoute } from '@/Iris/Composables/useSearchRoute'
 import { useFormatTime } from '@/Composables/useFormatTime'
+import GoldenProductBadge from '@/Components/CMS/Webpage/Products/GoldenProductBadge.vue'
 
 library.add(faTimes)
 
@@ -30,6 +31,7 @@ const props = defineProps<{
             stock?: number | null
             units?: number | string | null
             unit?: string | null
+            is_golden_product?: boolean
             url?: string
         }[]
         product_categories: {
@@ -141,7 +143,7 @@ const highlightMatch = (text?: string): string => {
 }
 
 
-// Method: from 'Gemstone Obelisk Points approx 5cm - African Amethyst' to '[5x] Gemstone Obelisk Points approx 5cm - African Amethyst'
+// Method: from 'Gemstone Obelisk Points' to '[5x] Gemstone Obelisk Points'
 const getProductName = (product: { name: string; units?: number | string | null }): string => {
     const units = Number(product.units) || 1
     if (units === 1) {
@@ -309,6 +311,7 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                     <Image v-if="bestProduct.image" :src="bestProduct.image" class="w-full h-full object-contain transition-transform duration-200" :class="{ 'grayscale opacity-60': bestProduct.stock === 0 }" />
                     <span v-else class="text-sm text-gray-300 font-bold uppercase">{{ bestProduct.code?.slice(0, 3) }}</span>
                 </div>
+                <GoldenProductBadge v-if="bestProduct.is_golden_product" class="mb-2" />
                 <p class="text-sm font-semibold text-slate-800 leading-snug line-clamp-2" v-html="highlightMatch(getProductName(bestProduct))" />
                 <p class="text-xs text-gray-400 mt-0.5" v-html="highlightMatch(bestProduct.code)" />
                 <p v-if="getProductPrice(bestProduct)" class="xtext-lg font-bold text-[var(--theme-color-0)] mt-1">
@@ -348,9 +351,10 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                         @click="() => recordClick(product.url)"
                         @success="() => model = false"
                     >
-                        <div class="w-14 h-14 bg-gray-50 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        <div class="relative w-14 h-14 bg-gray-50 overflow-hidden flex-shrink-0 flex items-center justify-center">
                             <Image v-if="product.image" :src="product.image" class="w-full h-full object-cover transition-transform duration-200" :class="{ 'grayscale opacity-60': product.stock === 0 }" />
                             <span v-else class="text-[10px] text-gray-300 font-bold uppercase">{{ product.code?.slice(0, 3) }}</span>
+                            <GoldenProductBadge v-if="product.is_golden_product" class="absolute left-0.5 top-0.5 z-10 origin-top-left scale-[0.62]" />
                         </div>
 
                         <div class="min-w-0">
