@@ -29,6 +29,18 @@ trait WithOrgPartnerSubNavigation
                 "isAnchor" => true,
             ],
             [
+                "label"    => __("Shopping List"),
+                "route"    => [
+                    "name"       => "grp.org.procurement.org_partners.show.shopping_list.index",
+                    "parameters" => [$parent->organisation->slug, $parent->id],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-shopping-basket"],
+                    "tooltip" => __("Shopping List"),
+                ],
+                "number"   => $parent->stats->number_open_shopping_list_items,
+            ],
+            [
                 "label"    => __("Purchase Orders"),
                 "route"    => [
                     "name"       => "grp.org.procurement.org_partners.show.purchase-orders.index",
