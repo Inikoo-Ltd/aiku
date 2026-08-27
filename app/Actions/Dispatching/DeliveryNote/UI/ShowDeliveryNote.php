@@ -36,6 +36,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
+use App\Enums\UI\NotesEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResource;
@@ -1399,28 +1400,28 @@ class ShowDeliveryNote extends OrgAction
         return [
             "note_list" => [
                 [
-                    "label"       => __("Shipping label message").' ('.__("Customer").')',
+                    "label"       => NotesEnum::SHIPPING_LABEL->label(),
                     "note"        => $deliveryNote->shipping_notes ?? '',
                     "information" => __("Note from crm. First 34 char. Will be printed on the shipping label."),
                     "editable"    => true,
-                    "bgColor"     => "#38bdf8",
-                    "field"       => "shipping_notes"
+                    "field"       => "shipping_notes",
+                    ...NotesEnum::SHIPPING_LABEL->boilerPlate()
                 ],
                 [
-                    "label"       => __("Customer's note"),
+                    "label"       => NotesEnum::CUSTOMER->label(),
                     "note"        => $deliveryNote->customer_notes ?? '',
                     "information" => __("This note is from customer in the platform. Not editable."),
                     "editable"    => false,
-                    "bgColor"     => "#FF7DBD",
-                    "field"       => "customer_notes"
+                    "field"       => "customer_notes",
+                    ...NotesEnum::CUSTOMER->boilerPlate()
                 ],
                 [
-                    "label"       => __("Private warehouse note"),
+                    "label"       => NotesEnum::WAREHOUSE->label(),
                     "note"        => $deliveryNote->private_warehouse_note ?? '',
                     "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
                     "editable"    => true,
-                    "bgColor"     => "#FFD8A8",
-                    "field"       => "private_warehouse_note"
+                    "field"       => "private_warehouse_note",
+                    ...NotesEnum::WAREHOUSE->boilerPlate()
                 ]
             ]
         ];
