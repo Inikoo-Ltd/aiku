@@ -101,6 +101,15 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
+                        'label'   => __('Messaging'),
+                        'tooltip' => __('Messaging'),
+                        'icon'    => ['fal', 'fa-comments'],
+                        'root'    => 'grp.chat.staff.index',
+                        'route'   => [
+                            'name' => 'grp.chat.staff.index',
+                        ],
+                    ],
+                    [
                         'label'   => __('Dashboard'),
                         'tooltip' => __('Dashboard'),
                         'icon'    => ['fal', 'fa-comment-alt'],

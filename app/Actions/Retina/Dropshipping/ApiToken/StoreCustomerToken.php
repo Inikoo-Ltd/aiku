@@ -29,16 +29,18 @@ class StoreCustomerToken extends RetinaAction
      */
     private Customer $parent;
 
-    public function handle(CustomerSalesChannel $customerSalesChannel): string
+    public function handle(CustomerSalesChannel $customerSalesChannel, bool $readOnly = false): string
     {
-        $plainTextToken = $customerSalesChannel->createToken(Str::random(6), ['retina'])->plainTextToken;
+        $abilities = $readOnly ? ['retina', 'retina:read'] : ['retina', 'retina:read', 'retina:write'];
+
+        $plainTextToken = $customerSalesChannel->createToken(Str::random(6), $abilities)->plainTextToken;
 
         $tokenParts = explode('|', $plainTextToken);
         $tokenValue = $tokenParts[1] ?? '';
 
         $tokenPrefix = substr($tokenValue, 0, 3);
 
-        $tokenName = $tokenParts[0].'|'.$tokenPrefix.'...-'.$customerSalesChannel->slug;
+        $tokenName = $tokenParts[0].'|'.$tokenPrefix.'...-'.$customerSalesChannel->slug.($readOnly ? ' (read only)' : '');
 
         if (!empty($tokenPrefix)) {
             DB::table('personal_access_tokens')->where('id', $tokenParts[0])->update([
@@ -62,11 +64,18 @@ class StoreCustomerToken extends RetinaAction
 
 
 
+    public function rules(): array
+    {
+        return [
+            'read_only' => ['sometimes', 'boolean'],
+        ];
+    }
+
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): string
     {
         $this->initialisation($request);
 
-        return $this->handle($customerSalesChannel);
+        return $this->handle($customerSalesChannel, (bool) $this->get('read_only', false));
     }
 
     public function jsonResponse(string $token): array

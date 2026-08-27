@@ -156,6 +156,10 @@ const changeVisibility = (slide: SlideWorkshopData) => {
   }
 
   emitUpdate(list)
+
+  if (props.currentComponentBeenEdited?.ulid === slide.ulid) {
+    emits("updateCurrentComponentBeenEdited", list[index])
+  }
 }
 
 

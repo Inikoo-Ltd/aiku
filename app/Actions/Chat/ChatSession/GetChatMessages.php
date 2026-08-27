@@ -95,6 +95,7 @@ class GetChatMessages
                 },
                 'originalLanguage',
                 'attachment',
+                'reactions',
                 'chatSession.assignments.chatAgent.user'
             ])
             ->orderBy('created_at', 'desc');

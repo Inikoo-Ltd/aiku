@@ -130,17 +130,7 @@ class IndexInviteMailshots extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $mailshots, ActionRequest $request): Response
     {
-        $actions = [
-            [
-                'type'  => 'button',
-                'style' => 'create',
-                'label' => __('Mailshot'),
-                'route' => [
-                    'name'       => 'grp.org.shops.show.marketing.mailshots.create',
-                    'parameters' => array_values($request->route()->originalParameters())
-                ]
-            ]
-        ];
+        $actions = [];
 
         $title = __('Mailshots');
         if ($this->parent instanceof Group) {

@@ -9,6 +9,7 @@
 use App\Actions\DevOps\UI\IndexAppDeployments;
 use App\Actions\HumanResources\ClockingMachine\UI\RedirectClockingMachineQrScan;
 use App\Actions\SysAdmin\Group\Seeders\SeedWebBlockTypes;
+use App\Actions\SysAdmin\UI\ShowGrpLlmsTxt;
 use App\Actions\UI\Notification\IndexNotification;
 use App\Actions\Web\Webpage\BanVarnishWebpage;
 use App\Actions\Web\Website\BreakAllWebsitesVarnishCache;
@@ -30,6 +31,8 @@ Route::middleware(
     Route::get('/', function () {
         return redirect('/dashboard');
     });
+
+    Route::get('llms.txt', ShowGrpLlmsTxt::class)->name('llms_txt');
 
     if (!app()->isProduction()) {
         Route::get('routes', function () {

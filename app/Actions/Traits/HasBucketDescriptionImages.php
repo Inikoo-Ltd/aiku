@@ -22,7 +22,7 @@ trait HasBucketDescriptionImages
                 'type'         => 'image',
                 'column_in_db' => 'desc_art1',
                 'id'           => $model->desc_art1,
-                'images'       => $model->imageSources(getImage: 'descArt1Image'),
+                'images'       => $model->imageSources(0, 0, 'descArt1Image'),
                 'dimensions'   => [
                     'width'  => $model->descArt1Image->width ?? 0,
                     'height' => $model->descArt1Image->height ?? 0
@@ -33,7 +33,7 @@ trait HasBucketDescriptionImages
                 'type'         => 'image',
                 'column_in_db' => 'desc_art2',
                 'id'           => $model->desc_art2,
-                'images'       => $model->imageSources(getImage: 'descArt2Image'),
+                'images'       => $model->imageSources(0, 0, 'descArt2Image'),
                 'dimensions'   => [
                     'width'  => $model->descArt2Image->width ?? 0,
                     'height' => $model->descArt2Image->height ?? 0
@@ -44,7 +44,7 @@ trait HasBucketDescriptionImages
                 'type'         => 'image',
                 'column_in_db' => 'desc_art3',
                 'id'           => $model->desc_art3,
-                'images'       => $model->imageSources(getImage: 'descArt3Image'),
+                'images'       => $model->imageSources(0, 0, 'descArt3Image'),
                 'dimensions'   => [
                     'width'  => $model->descArt3Image->width ?? 0,
                     'height' => $model->descArt3Image->height ?? 0
@@ -55,7 +55,7 @@ trait HasBucketDescriptionImages
                 'type'         => 'image',
                 'column_in_db' => 'desc_art4',
                 'id'           => $model->desc_art4,
-                'images'       => $model->imageSources(getImage: 'descArt4Image'),
+                'images'       => $model->imageSources(0, 0, 'descArt4Image'),
                 'dimensions'   => [
                     'width'  => $model->descArt4Image->width ?? 0,
                     'height' => $model->descArt4Image->height ?? 0
@@ -66,7 +66,7 @@ trait HasBucketDescriptionImages
                 'type'         => 'image',
                 'column_in_db' => 'desc_art5',
                 'id'           => $model->desc_art5,
-                'images'       => $model->imageSources(getImage: 'descArt5Image'),
+                'images'       => $model->imageSources(0, 0, 'descArt5Image'),
                 'dimensions'   => [
                     'width'  => $model->descArt5Image->width ?? 0,
                     'height' => $model->descArt5Image->height ?? 0
@@ -84,7 +84,7 @@ trait HasBucketDescriptionImages
                 'type'         => 'image',
                 'column_in_db' => 'extra_desc_art1',
                 'id'           => $model->extra_desc_art1,
-                'images'       => $model->imageSources(getImage: 'extraDescArt1Image'),
+                'images'       => $model->imageSources(0, 0, 'extraDescArt1Image'),
                 'dimensions'   => [
                     'width'  => $model->extraDescArt1Image->width ?? 0,
                     'height' => $model->extraDescArt1Image->height ?? 0
@@ -95,7 +95,7 @@ trait HasBucketDescriptionImages
                 'type'         => 'image',
                 'column_in_db' => 'extra_desc_art2',
                 'id'           => $model->extra_desc_art2,
-                'images'       => $model->imageSources(getImage: 'extraDescArt2Image'),
+                'images'       => $model->imageSources(0, 0, 'extraDescArt2Image'),
                 'dimensions'   => [
                     'width'  => $model->extraDescArt2Image->width ?? 0,
                     'height' => $model->extraDescArt2Image->height ?? 0
@@ -106,7 +106,7 @@ trait HasBucketDescriptionImages
                 'type'         => 'image',
                 'column_in_db' => 'extra_desc_art3',
                 'id'           => $model->extra_desc_art3,
-                'images'       => $model->imageSources(getImage: 'extraDescArt3Image'),
+                'images'       => $model->imageSources(0, 0, 'extraDescArt3Image'),
                 'dimensions'   => [
                     'width'  => $model->extraDescArt3Image->width ?? 0,
                     'height' => $model->extraDescArt3Image->height ?? 0
@@ -117,7 +117,7 @@ trait HasBucketDescriptionImages
                 'type'         => 'image',
                 'column_in_db' => 'extra_desc_art4',
                 'id'           => $model->extra_desc_art4,
-                'images'       => $model->imageSources(getImage: 'extraDescArt4Image'),
+                'images'       => $model->imageSources(0, 0, 'extraDescArt4Image'),
                 'dimensions'   => [
                     'width'  => $model->extraDescArt4Image->width ?? 0,
                     'height' => $model->extraDescArt4Image->height ?? 0

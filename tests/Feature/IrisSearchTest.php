@@ -446,6 +446,88 @@ test('discontinued family drops out of the storefront search', function () {
     expect($response->json('results.product_categories'))->toBe([]);
 });
 
+test('a family that is the strongest hit becomes the best match, superseding products', function () {
+    [, $product] = createProduct($this->shop);
+    $product->update(['is_for_sale' => true]);
+    $productWebpage = $product->webpage ?: StoreProductWebpage::make()->action($product);
+    $productWebpage->update(['state' => WebpageStateEnum::LIVE]);
+    expect((bool) $product->refresh()->is_in_website)->toBeTrue();
+
+    $family = $product->family;
+    StoreProductCategoryWebpage::make()->action($family);
+    $family->webpage->update(['state' => WebpageStateEnum::LIVE]);
+    \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($family->refresh());
+    expect((bool) $family->refresh()->is_in_website)->toBeTrue();
+
+    $searchResults = fn (int $familyScore, int $productScore) => [
+        'scope'   => 'catalogue',
+        'results' => [
+            'products'           => [['id' => $product->id, 'code' => $product->code, 'name' => $product->name, 'image' => null, 'score' => $productScore]],
+            'product_categories' => [['id' => $family->id, 'code' => $family->code, 'name' => $family->name, 'image' => null, 'score' => $familyScore]],
+            'collections'        => [],
+        ],
+    ];
+
+    Search::shouldRun()->andReturn(
+        $searchResults(1, 100),
+        $searchResults(100, 1),
+        $searchResults(1, 100),
+    );
+
+    // exact family code wins the spotlight even when a product outscores it (HELP-3002: jcg -> JCG family, not a JCGB product)
+    $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q='.$family->code);
+    $response->assertOk();
+    expect($response->json('results.best_match.id'))->toBe($family->id)
+        ->and($response->json('results.best_match.type'))->toBe('product_category');
+
+    // a family outscoring every product also takes the spotlight on a non-exact query
+    $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q=bath+bombs');
+    $response->assertOk();
+    expect($response->json('results.best_match.id'))->toBe($family->id);
+
+    // otherwise there is no best_match and the top product keeps the spotlight
+    $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q=bath+bombs+again');
+    $response->assertOk();
+    expect($response->json('results.best_match'))->toBeNull();
+});
+
+test('full page search leads with the products of a best-matching category', function () {
+    [, $product] = createProduct($this->shop);
+    $product->update(['is_for_sale' => true]);
+    $webpage = $product->webpage ?: StoreProductWebpage::make()->action($product);
+    $webpage->update(['state' => WebpageStateEnum::LIVE]);
+    expect((bool) $product->refresh()->is_in_website)->toBeTrue();
+
+    $family = $product->family;
+
+    $action = \App\Actions\Search\SearchIrisCataloguePage::make();
+    $shop   = $this->shop;
+    (function () use ($shop) {
+        $this->shop = $shop;
+    })->call($action);
+
+    $familyHit = fn (int $score) => [
+        'document'   => ['id' => (string) $family->id, 'code' => $family->code, 'name' => $family->name, 'type' => 'family'],
+        'text_match' => $score,
+    ];
+    $productHits = [['document' => ['id' => '999'], 'text_match' => 50]];
+
+    // exact family code pulls its products to the front even when a product hit outscores it
+    expect($action->withBestMatchCategoryProducts($family->code, $familyHit(1), $productHits, [999]))
+        ->toBe([$product->id, 999]);
+
+    // a category outscoring every product hit leads too
+    expect($action->withBestMatchCategoryProducts('gongs', $familyHit(100), $productHits, [999]))
+        ->toBe([$product->id, 999]);
+
+    // otherwise the direct hits keep their order
+    expect($action->withBestMatchCategoryProducts('gongs', $familyHit(1), $productHits, [999]))
+        ->toBe([999]);
+
+    // no category hit at all leaves the ids untouched
+    expect($action->withBestMatchCategoryProducts('gongs', null, $productHits, [999]))->toBe([999]);
+});
+
 test('a family created empty is out of the website until its first product arrives', function () {
     [, $product] = createProduct($this->shop);
 

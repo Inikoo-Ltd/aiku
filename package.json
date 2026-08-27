@@ -20,6 +20,7 @@
         "bdev.iris": "bunx --bun vite --config vite.iris.config.mjs"
     },
     "devDependencies": {
+        "@codecov/vite-plugin": "^2.0.1",
         "@prettier/plugin-php": "^0.24.0",
         "@tailwindcss/forms": "^0.5.2",
         "@tailwindcss/line-clamp": "^0.4.4",

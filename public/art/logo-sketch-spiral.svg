@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <filter id="pen" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="2" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.4" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="bleed" x="-40%" y="-40%" width="180%" height="180%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="0.9" result="b"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.4" numOctaves="2" seed="4" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 -0.2" result="ga"/>
+      <feComposite in="b" in2="ga" operator="in" result="m"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="m"/></feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#bleed)" style="mix-blend-mode:multiply">
+    <path d="M28 40 C40 14 84 14 98 40 C112 66 92 104 60 106 C30 108 14 70 28 40 Z" fill="#8b5cf6" opacity=".55"/>
+    <path d="M44 52 C56 36 84 40 88 60 C92 80 70 94 54 86 C38 78 34 64 44 52 Z" fill="#c084c8" opacity=".6"/>
+    <path d="M70 30 C86 26 100 40 96 52 C90 60 78 52 74 44 C70 38 66 34 70 30 Z" fill="#f3c04a" opacity=".7"/>
+  </g>
+  <g fill="none" stroke="#23222e" stroke-width="3.2" stroke-linecap="round" filter="url(#pen)">
+    <path d="M60 60 C64 56 70 58 70 64 C70 72 60 76 52 72 C42 66 44 50 56 46 C70 41 84 50 84 64 C84 82 66 92 50 86 C30 78 28 50 46 38 C66 26 94 36 96 62"/>
+  </g>
+  <circle cx="60" cy="61" r="3.2" fill="#23222e" filter="url(#pen)"/>
+</svg>

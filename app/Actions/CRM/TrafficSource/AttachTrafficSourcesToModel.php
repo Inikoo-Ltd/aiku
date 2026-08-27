@@ -132,10 +132,7 @@ class AttachTrafficSourcesToModel
     {
         return array_values(array_filter(
             $touches,
-            fn (array $touch) => !in_array($touch['type'], [
-                TrafficSourcesTypeEnum::REFERRAL,
-                TrafficSourcesTypeEnum::ORGANIC_SEARCH,
-            ], true)
+            fn (array $touch) => !in_array($touch['type'], TrafficSourcesTypeEnum::hostReferenced(), true)
                 || GetTrafficSourceFromRefererHeader::normaliseHost($touch['campaign_ref']) === $touch['campaign_ref']
         ));
     }
@@ -178,7 +175,7 @@ class AttachTrafficSourcesToModel
         return $dates;
     }
 
-    private function resolveCampaignId(TrafficSource $trafficSource, string $reference): ?int
+    public function resolveCampaignId(TrafficSource $trafficSource, string $reference): ?int
     {
         try {
             $campaignId = TrafficSourceCampaign::where('traffic_source_id', $trafficSource->id)
@@ -197,10 +194,7 @@ class AttachTrafficSourcesToModel
             /* Referral campaigns are the referring host itself, so they cannot be numeric. They are
                still client-controlled, hence the hostname shape check and the per-source cap: worst
                case a spoofed Referer buys a bounded number of junk rows, not unlimited ones. */
-            if (in_array($trafficSource->type, [
-                TrafficSourcesTypeEnum::REFERRAL->value,
-                TrafficSourcesTypeEnum::ORGANIC_SEARCH->value,
-            ], true)) {
+            if (in_array($trafficSource->type, TrafficSourcesTypeEnum::hostReferencedValues(), true)) {
                 if (GetTrafficSourceFromRefererHeader::normaliseHost($reference) !== $reference) {
                     return null;
                 }
@@ -225,8 +219,8 @@ class AttachTrafficSourcesToModel
                 ]
             )->id;
         } catch (\Throwable) {
-            /* `reference` is globally unique: the same ad-platform campaign id appearing under a
-               different shop's source cannot create a second row. The touch keeps its source-level
+            /* An ad-platform campaign id is unique across the whole table: appearing under a
+               different shop's source it cannot create a second row. The touch keeps its source-level
                share; only the campaign breakdown is unavailable for it. */
             return null;
         }

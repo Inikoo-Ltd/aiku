@@ -146,7 +146,9 @@ const getActionLabel = (label: string | undefined) => {
 
 // Auto-add icon for several conditions
 const getActionIcon = (icon: any) => {
-    if (icon) {
+    if (icon === false) {
+        return null
+    } else if (icon) {
         return icon
     } else {
         switch (props.style || props.type) {
@@ -192,6 +194,7 @@ const getActionIcon = (icon: any) => {
 	        ]"
 
         :disabled="loading || disabled || style == 'disabled' || type == 'disabled'"
+        :aria-label="!getActionLabel(label) || hide_label ? (tooltip || getActionLabel(label) || label || undefined) : undefined"
         v-tooltip="tooltip ?? undefined"
     >
         <slot :loading>

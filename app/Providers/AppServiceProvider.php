@@ -192,6 +192,7 @@ class AppServiceProvider extends ServiceProvider
                 'DeliveryNoteItem'                 => 'App\Models\Dispatching\DeliveryNoteItem',
                 'PdfLabel'                         => 'App\Models\Dispatching\PdfLabel',
                 'Picking'                          => 'App\Models\Dispatching\Picking',
+                'PickingSession'                   => 'App\Models\Inventory\PickingSession',
                 'Shipment'                         => 'App\Models\Dispatching\Shipment',
                 'Shipper'                          => 'App\Models\Dispatching\Shipper',
                 'WaitingItem'                      => 'App\Models\Dispatching\WaitingItem',

@@ -77,6 +77,7 @@ use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\OrgPaymentServiceProvider;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
+use App\Transfers\Aurora\FetchAuroraPayment;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\Accounting\TopUp;
@@ -820,7 +821,8 @@ test('UI show accounting dashboard', function () {
                     ->where('title', 'Accounting')
                     ->etc()
             )
-            ->has('flatTreeMaps');
+            ->has('flatTreeMaps')
+            ->has('payment_methods.summary.methods');
     });
 });
 
@@ -1109,6 +1111,18 @@ test('UI edit payment account', function () {
                     ->etc()
             )
             ->has('formData.blueprint.0.fields', 2);
+    });
+});
+
+test('UI show shop payment methods', function () {
+    $response = get(route('grp.org.shops.show.dashboard.payments.accounting.payments.methods.index', [$this->organisation->slug, $this->shop->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Accounting/PaymentMethods')
+            ->has('title')
+            ->has('pageHead.subNavigation')
+            ->has('data.currency_code')
+            ->has('data.rows');
     });
 });
 
@@ -1563,7 +1577,9 @@ test('Store invoice refund transaction', function (Invoice $refund) {
     ]);
 
     $refund->refresh();
-    expect($refundTransaction)->toBeInstanceOf(InvoiceTransaction::class);
+    expect($refundTransaction)->toBeInstanceOf(InvoiceTransaction::class)
+        ->and((float) $refundTransaction->net_amount)->toBe(-1000.0)
+        ->and((float) $refundTransaction->gross_amount)->toBe((float) $refundTransaction->net_amount);
 
     return $refund;
 })->depends('Store invoice refund');
@@ -2845,4 +2861,132 @@ test('a payment already spoken for by one invoice is not offered to another on t
         ->and((float) $open->payment_amount)->toBe(120.00)
         ->and($open->payments()->count())->toBe(1)
         ->and((float) $settled->refresh()->payment_amount)->toBe(300.00);
+});
+
+describe('payment method from checkout.com source', function () {
+    test('method is the instrument family and the card scheme is the sub method', function () {
+        $checkout = new PaymentAccount(['type' => PaymentAccountTypeEnum::CHECKOUT]);
+
+        expect(StorePayment::methodFromSource(['type' => 'klarna'], $checkout))->toBe(['method' => 'klarna', 'sub_method' => null])
+            ->and(StorePayment::methodFromSource(['type' => 'paypal'], $checkout))->toBe(['method' => 'paypal', 'sub_method' => null])
+            ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => 'VISA'], $checkout))->toBe(['method' => 'card', 'sub_method' => 'visa'])
+            ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => 'American Express'], $checkout))->toBe(['method' => 'card', 'sub_method' => 'american express'])
+            ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => 'AMEX'], $checkout))->toBe(['method' => 'card', 'sub_method' => 'american express'])
+            ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => 'VISA', 'card_wallet_type' => 'applepay'], $checkout))->toBe(['method' => 'applepay', 'sub_method' => 'visa'])
+            ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => ''], $checkout))->toBe(['method' => 'card', 'sub_method' => null])
+            ->and(StorePayment::methodFromSource([], $checkout))->toBe(['method' => 'checkout', 'sub_method' => null])
+            ->and(StorePayment::methodFromSource(null, $checkout))->toBe(['method' => 'checkout', 'sub_method' => null]);
+    });
+
+    test('aurora payment metadata yields the checkout.com source', function () {
+        $metadata = json_encode(['id' => 'pay_x', 'source' => ['type' => 'card', 'scheme' => 'Mastercard', 'last4' => '4069']]);
+
+        expect(FetchAuroraPayment::sourceFromMetadata($metadata))->toMatchArray(['type' => 'card', 'scheme' => 'Mastercard'])
+            ->and(FetchAuroraPayment::sourceFromMetadata(json_encode(['source' => ['id' => 'src_only']])))->toBeNull()
+            ->and(FetchAuroraPayment::sourceFromMetadata('not json'))->toBeNull()
+            ->and(FetchAuroraPayment::sourceFromMetadata(null))->toBeNull();
+    });
+
+    test('stored payment keeps method and sub method and drops the raw source', function () {
+        GetCurrencyExchange::shouldRun()->andReturn(1);
+
+        $paymentAccount = $this->shop->paymentAccountShops()
+            ->where('type', PaymentAccountTypeEnum::ACCOUNT)
+            ->first()->paymentAccount;
+        $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+        $klarna = StorePayment::make()->action($customer, $paymentAccount, array_merge(Payment::factory()->definition(), [
+            'source' => ['type' => 'klarna', 'id' => 'src_x'],
+        ]));
+        $visa   = StorePayment::make()->action($customer, $paymentAccount, array_merge(Payment::factory()->definition(), [
+            'source' => ['type' => 'card', 'scheme' => 'VISA'],
+        ]));
+        $plain  = StorePayment::make()->action($customer, $paymentAccount, Payment::factory()->definition());
+
+        expect($klarna->method)->toBe('klarna')
+            ->and($klarna->sub_method)->toBeNull()
+            ->and($klarna->data)->not->toHaveKey('source')
+            ->and($visa->method)->toBe('card')
+            ->and($visa->sub_method)->toBe('visa')
+            ->and($plain->method)->toBe('account')
+            ->and($plain->sub_method)->toBeNull();
+    });
+
+    test('method labels read well for staff', function () {
+        expect(Payment::methodLabel('klarna'))->toBe('Klarna')
+            ->and(Payment::methodLabel('paypal'))->toBe('PayPal')
+            ->and(Payment::methodLabel('card', 'american express'))->toBe('Card · American Express')
+            ->and(Payment::methodLabel('applepay', 'visa'))->toBe('Apple Pay · Visa')
+            ->and(Payment::methodLabel('checkout'))->toBe('Checkout.com')
+            ->and(Payment::methodLabel('cash_on_delivery'))->toBe('Cash on delivery')
+            ->and(Payment::methodLabel(null))->toBe('');
+    });
+});
+
+describe('invoice pdf tax number display', function () {
+    $renderInvoiceTemplate = function ($invoice) {
+        return view('invoices.templates.pdf.invoice', [
+            'shop'                 => $invoice->shop,
+            'invoice'              => $invoice,
+            'deliveryNote'         => null,
+            'deliveryAddress'      => null,
+            'recipientName'        => null,
+            'invoiceNumberLabel'   => 'Invoice number',
+            'dateLabel'            => 'Invoice date',
+            'typeLabel'            => 'Invoice',
+            'transactions'         => collect(),
+            'totalNet'             => '0.00',
+            'refunds'              => [],
+            'pro_mode'             => false,
+            'country_of_origin'    => false,
+            'rrp'                  => false,
+            'parts'                => false,
+            'commodity_codes'      => false,
+            'weight'               => false,
+            'barcode'              => false,
+            'cpnp'                 => false,
+            'hide_payment_status'  => true,
+            'group_by_tariff_code' => false,
+            'show_dispatch_totals' => false,
+            'show_batch_code'      => false,
+            'dispatch_total_skos'  => null,
+            'dispatch_total_units' => null,
+        ])->render();
+    };
+
+    test('spanish customer tax number shows even when VIES-invalid', function () use ($renderInvoiceTemplate) {
+        $customer = createCustomer($this->shop);
+        $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+        $spain   = \App\Models\Helpers\Country::where('code', 'ES')->firstOrFail();
+        $address = \App\Models\Helpers\Address::create(
+            array_merge(\App\Models\Helpers\Address::factory()->definition(), ['country_id' => $spain->id, 'country_code' => 'ES', 'group_id' => $invoice->group_id])
+        );
+        $invoice->update([
+            'address_id'       => $address->id,
+            'tax_number'       => 'ES42232363Q',
+            'tax_number_valid' => false,
+        ]);
+        $invoice->refresh();
+
+        expect($renderInvoiceTemplate($invoice))->toContain('ES42232363Q');
+    });
+
+    test('non-spanish invalid tax number stays hidden', function () use ($renderInvoiceTemplate) {
+        $customer = createCustomer($this->shop);
+        $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+        $france  = \App\Models\Helpers\Country::where('code', 'FR')->firstOrFail();
+        $address = \App\Models\Helpers\Address::create(
+            array_merge(\App\Models\Helpers\Address::factory()->definition(), ['country_id' => $france->id, 'country_code' => 'FR', 'group_id' => $invoice->group_id])
+        );
+        $invoice->update([
+            'address_id'       => $address->id,
+            'tax_number'       => 'FR123INVALID',
+            'tax_number_valid' => false,
+        ]);
+        $invoice->refresh();
+
+        expect($renderInvoiceTemplate($invoice))->not->toContain('FR123INVALID');
+    });
 });

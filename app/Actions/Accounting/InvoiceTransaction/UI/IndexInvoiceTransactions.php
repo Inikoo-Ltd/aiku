@@ -107,7 +107,7 @@ class IndexInvoiceTransactions extends OrgAction
             $table->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             if ($withMargins) {
-                $table->column(key: 'margin', label: __('Margin'), canBeHidden: false);
+                $table->column(key: 'margin', label: __('Margin'), canBeHidden: false, align: 'right');
             }
             $table->defaultSort('code');
         };

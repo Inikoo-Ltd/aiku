@@ -15,7 +15,7 @@ use Illuminate\Support\MessageBag;
 if (!function_exists('group')) {
     function group(): ?Group
     {
-        return Group::first();
+        return Group::orderBy('id')->first();
     }
 }
 
@@ -1014,5 +1014,56 @@ if (!function_exists('discountAmountOffGross')) {
         $grossUnits = (int)round(abs($grossAmount) * 10000);
 
         return $sign * intdiv($grossUnits * $offBasisPoints + 500000, 1000000) / 100;
+    }
+}
+
+if (!function_exists('soldPackUnits')) {
+    /**
+     * The pack size a sold line was actually sold in.
+     *
+     * The historic asset records the composition at the moment of the sale and is therefore the
+     * answer whenever it has one, including when that answer is 1. The product is consulted only
+     * where no historic composition was ever recorded, which is 171 rows out of 5.26 million.
+     *
+     * Testing the historic value with `> 1` instead of for its absence is the bug this replaces:
+     * it reads "sold as a single" as "not set", so a line whose product later became a pack is
+     * relabelled with a pack size that was never part of that sale.
+     */
+    function soldPackUnits(int|float|string|null $historicUnits, int|float|string|null $productUnits): int|float|string|null
+    {
+        return $historicUnits ?? $productUnits;
+    }
+}
+
+if (!function_exists('refundQuantityLabel')) {
+    /**
+     * Label for a refund line's quantity, or null when the quantity is an artifact.
+     *
+     * Refund quantities are derived from the refunded amount, so only two shapes carry meaning:
+     * whole packs, and whole loose units within a pack (1/3, 2/3 of a 3-pack). Anything else is
+     * an arbitrary money amount (a discretionary compensation) and null tells the caller to hide
+     * the quantity and unit price, leaving the amount as the only figure.
+     */
+    function refundQuantityLabel(int|float|string|null $quantity, int|float|string|null $unitsInPack): ?string
+    {
+        $quantity    = (float) $quantity;
+        $unitsInPack = (float) ($unitsInPack ?: 1);
+
+        if (fmod($quantity, 1) == 0.0) {
+            return trimDecimalZeros($quantity);
+        }
+
+        if ($unitsInPack > 1) {
+            $looseUnits = round($quantity * $unitsInPack);
+            if ($looseUnits != 0.0 && abs($quantity * $unitsInPack - $looseUnits) <= 0.01 * abs($looseUnits)) {
+                if (fmod($looseUnits, $unitsInPack) == 0.0) {
+                    return trimDecimalZeros($looseUnits / $unitsInPack);
+                }
+
+                return ($looseUnits < 0 ? '-' : '').abs($looseUnits).'/'.trimDecimalZeros($unitsInPack);
+            }
+        }
+
+        return null;
     }
 }

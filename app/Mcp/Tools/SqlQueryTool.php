@@ -23,14 +23,6 @@ class SqlQueryTool extends Tool
 {
     use WithMcpSqlAccess;
 
-    /**
-     * Only offered to users with direct SQL access enabled.
-     */
-    public function shouldRegister(Request $request): bool
-    {
-        return (bool) $request->user()?->can_use_mcp_sql;
-    }
-
     public function handle(Request $request): Response
     {
         $request->validate([

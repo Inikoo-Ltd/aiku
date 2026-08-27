@@ -59,9 +59,9 @@ class UploadPdfInvoice
             'recipientName'      => $recipientName,
             'deliveryNote'       => $invoice->order?->deliveryNotes?->first(),
             'deliveryAddress'    => $invoice->order?->deliveryNotes?->first()?->deliveryAddress,
-            'invoiceNumberLabel' => $invoice->type == \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE ? __('Invoice number') : __('Refund Number'),
-            'dateLabel'          => $invoice->type == \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE ? __('Invoice date') : __('Refund Date'),
-            'typeLabel'          => $invoice->type == \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE ? __('Invoice') : __('Refund'),
+            'invoiceNumberLabel' => $invoice->type == \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE ? __('Invoice number') : __('Credit Note Number'),
+            'dateLabel'          => $invoice->type == \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE ? __('Invoice date') : __('Credit Note Date'),
+            'typeLabel'          => $invoice->type == \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE ? __('Invoice') : __('Credit Note'),
             'transactions'       => $invoice->invoiceTransactions()->with('historicAsset')->get()->sortBy(fn ($transaction) => strtolower($transaction->historicAsset?->code ?? '')),
             'totalNet'           => $totalNet
         ])->save($filename);

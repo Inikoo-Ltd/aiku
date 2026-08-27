@@ -9,6 +9,7 @@ import laravel from "laravel-vite-plugin";
 import vue from "@vitejs/plugin-vue";
 import i18n from "laravel-vue-i18n/vite";
 import { fileURLToPath, URL } from "node:url";
+import { codecov } from "./vite.codecov.mjs";
 import path from "node:path";
 
 export default defineConfig(
@@ -36,7 +37,8 @@ export default defineConfig(
               }
             }
           }),
-      i18n()
+      i18n(),
+      codecov("pupil")
     ],
     ssr    : {
       noExternal: ["@inertiajs/server"]

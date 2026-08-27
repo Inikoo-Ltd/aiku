@@ -91,7 +91,7 @@ class StoreLeave extends OrgAction
         return $leave;
     }
 
-    private function calculateDurationDays(Carbon $startDate, Carbon $endDate, Employee $employee): int
+    public function calculateDurationDays(Carbon $startDate, Carbon $endDate, Employee $employee): int
     {
         $days = 0;
         $current = $startDate->copy();

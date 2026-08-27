@@ -155,7 +155,6 @@ console.log(props)
 </script>
 
 <template>
-  sdfjklsdjf
   <div ref="containerRef" class="w-full overflow-hidden" :class="wrapperSpacingClass">
     <div class="px-3 py-6 pb-2">
       <div class="px-4 py-6 pb-2">

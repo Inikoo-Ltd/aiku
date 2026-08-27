@@ -27,6 +27,7 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ScanToPackDeliveryNote from "@/Components/DeliveryNote/ScanToPackDeliveryNote.vue"
 import { routeType } from "@/types/route"
 import { debounce } from "lodash-es"
+import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
 
 
 const props = defineProps<{
@@ -41,6 +42,7 @@ const props = defineProps<{
     allow_waiting: boolean
     allow_picker_set_not_picked: boolean
     picker?: { id: number, contact_name: string } | null
+    staff_chat?: { context_type: string; context_id: number; audiences: { key: string; label: string }[] }
     scan_to_pack?: {
         scan_route: routeType
     }
@@ -222,6 +224,7 @@ const handleModalSuccess = () => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #otherBefore>
+            <StaffChatContextButtons v-if="staff_chat" :context="staff_chat" />
             <div v-if="routes?.update && !isFulfilmentSession" class="flex items-center gap-x-2 mr-2">
                 <div v-if="picker?.contact_name" class="text-sm text-gray-500">
                     {{ trans('Picker') }}: <span class="text-gray-700">{{ picker.contact_name }}</span>

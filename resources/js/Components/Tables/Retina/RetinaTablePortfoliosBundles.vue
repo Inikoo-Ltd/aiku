@@ -360,7 +360,7 @@ watch(
 const listErrorProducts = ref({})
 
 // Section: Modal Error Product (i.e Ebay title too long)
-const selectedEditProduct = ref(null)
+const selectedEditProduct = ref<any>(null)
 const selectedErrorProduct = ref(null)
 const isOpenModalEditProduct = ref(false)
 const isLoadingSubmitErrorTitle = ref(false)
@@ -497,11 +497,12 @@ const compTableFilterForSale = computed(() => {
 // action bundle edit
 const openEditModal = (item: any) => {
 	isOpenModalEditProduct.value = true
-
 	selectedEditProduct.value = {
 		...item,
 		basePrice: item?.customer_price,
 	}
+	submitError.value = null
+	bundleSnapshotOnLoad.value = null
 	fetchEditMediaGallery()
 }
 
@@ -557,6 +558,8 @@ const fetchEditMediaGallery = async () => {
 				raw: i
 			}))
 		}
+
+		bundleSnapshotOnLoad.value = JSON.stringify(bundlePayload.value)
 	} catch (e) {
 		console.error(e)
 
@@ -796,66 +799,90 @@ const handleGenerateAIImages = () => {
 	})
 }
 
+const bundleSnapshotOnLoad = ref<string | null>(null)
+
+const hasBundleChanges = computed(
+	() => bundleSnapshotOnLoad.value !== null
+		&& JSON.stringify(bundlePayload.value) !== bundleSnapshotOnLoad.value
+)
+
+const isBundleFilled = computed(
+	() => !!bundlePayload.value.name
+		&& !!bundlePayload.value.description.length
+		&& !!bundlePayload.value.images.length
+)
+
+const canSubmitBundle = computed(
+	() => isBundleFilled.value
+		&& hasBundleChanges.value
+		&& !isLoadingMedia.value
+		&& !isSubmitBundle.value
+)
+
 const bundle = useBundle(props.bundle_routes)
 const submitError = ref<string | null>(null)
-const submitBundle = async () => {
-	
-		const payloadItems = bundleItems.value.map(i => ({
-			bundle_item_id: i.id,
-			quantity: i.quantity
-		}))
 
-		const payload = {
-			description: selectedEditProduct?.value.description,
-			images: selectedMedia.value.map(img => ({
-				id: img.image_id,
-				is_main: img.is_main
-			})),
-			payloadItems
+const bundlePayload = computed(() => ({
+	name: selectedEditProduct.value?.name?.trim() ?? '',
+	description: selectedEditProduct.value?.description ?? '',
+	images: selectedMedia.value
+		.map(img => ({ id: img.image_id, is_main: !!img.is_main }))
+		.sort((a, b) => a.id - b.id),
+	payloadItems: bundleItems.value
+		.map(item => ({ bundle_item_id: item.id, quantity: item.quantity }))
+		.sort((a, b) => a.bundle_item_id - b.bundle_item_id),
+}))
+
+const submitBundle = () => {
+	if (!canSubmitBundle.value) {
+		return
+	}
+
+	const payload = bundlePayload.value
+	const routeParams = {
+		...props.bundle_routes.update.parameters,
+		bundle: selectedEditProduct.value?.bundle_id
+	}
+
+	router.patch(
+		route(props.bundle_routes.update.name, routeParams),
+		payload,
+		{
+			preserveScroll: true,
+			preserveState: true,
+			onStart: () => {
+				isSubmitBundle.value = true
+				submitError.value = null
+			},
+			onSuccess: () => {
+				bundleSnapshotOnLoad.value = JSON.stringify(payload)
+				notify({
+					title: trans('Success'),
+					text: trans('Success edit bundle'),
+					type: 'success'
+				})
+				isOpenModalEditProduct.value = false
+				bundle.resetBundle()
+			},
+			onError: errors => {
+				submitError.value =
+					errors.name ||
+					errors.description ||
+					errors.images ||
+					Object.values(errors)[0] ||
+					trans("Failed to submit the data, please try again")
+
+				notify({
+					title: trans("Something went wrong"),
+					text: submitError.value,
+					type: "error"
+				})
+			},
+			onFinish: () => {
+				isSubmitBundle.value = false
+			},
 		}
-
-		const routeParams = {
-			...props.bundle_routes.update.parameters,
-			bundle: selectedEditProduct?.value.bundle_id
-		}
-		router.patch(
-			route(props.bundle_routes.update.name, routeParams),
-			payload,
-			{
-				preserveScroll: true,
-				preserveState: true,
-				onStart: () => {
-					isSubmitBundle.value = true
-					submitError.value = null
-				},
-				onSuccess: () => {
-					notify({
-						title: trans('Success'),
-						text: trans('Success edit bundle'),
-						type: 'success'
-					})
-					isSubmitBundle.value = false
-					isOpenModalEditProduct.value = false
-					bundle.resetBundle()
-				},
-				onError: errors => {
-					submitError.value =
-                    errors.description ||
-                    errors.images ||
-                    Object.values(errors)[0] ||
-                    trans("Failed to submit the data, please try again")
-
-					notify({
-						title: trans("Something went wrong"),
-						text: submitError.value,
-						type: "error"
-					})
-				},
-				 onFinish: () => {
-					isSubmitBundle.value = false
-				},
-			}
-		)
+	)
 }
 onBeforeUnmount(() => {
     stopEchoListener()
@@ -1403,7 +1430,7 @@ onBeforeUnmount(() => {
                     </div>
 				<Button icon="fal fa-sparkles" @click="generateAIDescription" :loading="isGeneratingAI" type="primary"
 				:label="trans('Generate with AI')"
-			:disabled="!selectedEditProduct?.description.length" />
+			:disabled="!selectedEditProduct?.description?.length" />
 			</div>
 
 			<div class="mb-5">
@@ -1484,7 +1511,15 @@ onBeforeUnmount(() => {
                 {{ submitError }}
             </div>
 			<div class="mt-3 flex gap-2">
-				<Button @click="submitBundle" :label="isSubmitBundle ? trans('Loading') : trans('Save')" full  icon="fad fa-save" :loading="isSubmitBundle" :disabled="!selectedEditProduct?.description.length || isSubmitBundle || !selectedMedia.length"/>
+				<Button
+					@click="submitBundle"
+					:label="isSubmitBundle ? trans('Loading') : trans('Save')"
+					full
+					icon="fad fa-save"
+					:loading="isSubmitBundle"
+					:disabled="!canSubmitBundle"
+					v-tooltip="isBundleFilled && !hasBundleChanges ? trans('No changes to save') : ''"
+				/>
 			</div>
 		</div>
 	</Modal>

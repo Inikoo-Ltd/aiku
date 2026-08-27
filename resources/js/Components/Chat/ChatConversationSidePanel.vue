@@ -7,15 +7,19 @@ import { faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAl
 import { faAnglesUp, faAngleUp, faEquals, faAngleDown, faChevronDown } from '@fortawesome/free-solid-svg-icons'
 import CustomerTimeline from '@/Components/Showcases/Grp/CustomerTimeline.vue'
 import ChatActivityTimeline from '@/Components/Chat/ChatActivityTimeline.vue'
+import HistoryChatList from '@/Components/Chat/HistoryChatList.vue'
+import MessageHistory from '@/Components/Chat/MessageHistory.vue'
+import { faArrowLeft } from '@fal'
 
-library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt)
+library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft)
 
-type SidePanelTab = 'profile' | 'statistics' | 'timeline' | 'log'
+type SidePanelTab = 'profile' | 'statistics' | 'timeline' | 'log' | 'history'
 
 interface PanelSession {
     ulid: string
     contact_name: string
     is_guest: boolean
+    web_user_id?: number | null
     shop_name?: string | null
     status: string
     priority?: string | null
@@ -108,6 +112,11 @@ const isLoadingTimeline = ref(false)
 const timelineLoaded = ref(false)
 const timelineError = ref<string | null>(null)
 
+const historySessions = ref<any[]>([])
+const isLoadingHistory = ref(false)
+const historyLoaded = ref(false)
+const selectedHistory = ref<any | null>(null)
+
 const statusColors: Record<string, string> = {
     active:      'bg-green-100 text-green-700',
     waiting:     'bg-yellow-100 text-yellow-700',
@@ -119,6 +128,7 @@ const statusColors: Record<string, string> = {
 const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
     { key: 'profile',    label: 'Profile' },
     { key: 'statistics', label: 'Statistics', onlyRegistered: true },
+    { key: 'history',    label: 'History',    onlyRegistered: true },
     { key: 'timeline',   label: 'Timeline',   onlyRegistered: true },
     { key: 'log',        label: 'Log' },
 ]
@@ -150,9 +160,26 @@ const loadTimeline = async () => {
     }
 }
 
+const loadHistory = async () => {
+    if (props.session.is_guest || historyLoaded.value || !props.session.web_user_id) return
+    try {
+        isLoadingHistory.value = true
+        const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, {
+            params: { web_user_id: props.session.web_user_id },
+        })
+        historySessions.value = res.data?.data?.sessions ?? []
+        historyLoaded.value = true
+    } finally {
+        isLoadingHistory.value = false
+    }
+}
+
 const resetAndLoad = () => {
     profileLoaded.value = false
     timelineLoaded.value = false
+    historyLoaded.value = false
+    historySessions.value = []
+    selectedHistory.value = null
     customerProfile.value = { tags: [], stats: null, email: null, profile_url: null }
     activeTab.value = 'profile'
     loadCustomerProfile()
@@ -163,6 +190,7 @@ watch(() => props.session.ulid, () => resetAndLoad())
 watch(activeTab, async (tab) => {
     if ((tab === 'profile' || tab === 'statistics') && !profileLoaded.value) await loadCustomerProfile()
     if (tab === 'timeline' && !timelineLoaded.value) await loadTimeline()
+    if (tab === 'history' && !historyLoaded.value) await loadHistory()
 })
 
 onMounted(() => loadCustomerProfile())
@@ -191,7 +219,7 @@ const copyChatId = async () => {
     <div class="w-96 shrink-0 flex flex-col border-l border-gray-200 bg-white overflow-hidden">
         <!-- Contact Header -->
         <div class="relative flex flex-col items-center px-4 py-4 border-b border-gray-100 text-center shrink-0">
-            <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" @click="emit('close')">
+            <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" @click="emit('close')" aria-label="Close">
                 <FontAwesomeIcon :icon="['fal', 'fa-times']" class="text-sm" />
             </button>
             <div class="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold mb-2" :style="avatarStyle">
@@ -251,7 +279,7 @@ const copyChatId = async () => {
                         <div class="text-gray-500 text-xs">Chat ID</div>
                         <div class="col-span-2 flex items-center gap-1">
                             <code class="text-[11px] font-mono text-gray-700 bg-gray-100 rounded px-1.5 py-0.5 truncate">{{ session.ulid }}</code>
-                            <button class="shrink-0 text-gray-400 hover:text-gray-600" @click="copyChatId">
+                            <button class="shrink-0 text-gray-400 hover:text-gray-600" @click="copyChatId" aria-label="Copy chat ID">
                                 <FontAwesomeIcon :icon="isCopied ? ['fal', 'fa-check'] : ['fal', 'fa-copy']" class="text-xs" />
                             </button>
                         </div>
@@ -392,6 +420,26 @@ const copyChatId = async () => {
             <!-- Log -->
             <div v-if="activeTab === 'log'" class="px-4">
                 <ChatActivityTimeline :sessionUlid="session.ulid" :baseUrl="baseUrl" />
+            </div>
+
+            <!-- History -->
+            <div v-if="activeTab === 'history'" class="h-full flex flex-col min-h-0">
+                <!-- List of past chat sessions -->
+                <template v-if="!selectedHistory">
+                    <div v-if="!isLoadingHistory && !historySessions.length"
+                        class="flex flex-col items-center justify-center py-10 text-gray-400">
+                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-2xl mb-2 opacity-30" />
+                        <p class="text-xs">No previous chats</p>
+                    </div>
+                    <HistoryChatList v-else :data="historySessions" :loading="isLoadingHistory"
+                        :show-ai-summary="true" @click-session="selectedHistory = $event" />
+                </template>
+
+                <!-- Detail: a past session's messages (MessageHistory has its own back + status header) -->
+                <template v-else>
+                    <MessageHistory class="flex-1 min-h-0" :sessionUlid="selectedHistory.ulid"
+                        :session="selectedHistory" viewerType="agent" @back="selectedHistory = null" />
+                </template>
             </div>
         </div>
     </div>

@@ -1,0 +1,3 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120"><defs><filter id="marker" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.12" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6" xChannelSelector="R" yChannelSelector="G"/></filter></defs>
+<g fill="none" stroke="#1f1e2a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" filter="url(#marker)"><path d="M64 46 C54 38 40 44 38 58 C36 72 46 80 56 76 C64 72 66 62 64 52 L64 74 C64 82 74 82 80 74 C92 58 84 30 60 24 C34 18 14 40 16 68 C18 96 44 112 70 106 C84 102 90 90 92 70"/></g>
+<circle cx="96" cy="40" r="7" fill="#1f1e2a" filter="url(#marker)"/></svg>

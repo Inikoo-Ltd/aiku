@@ -166,7 +166,7 @@ task('deploy:restart-owl', function () {
     // an unchanged process. Its own VersionDriftWatcher warns if this ever misses.
     $checksum = function (string $path): string {
         $cmd = 'find '.$path.'/vendor/nightowl/agent '.$path.'/config/nightowl.php'
-            .' -type f -exec sha1sum {} + 2>/dev/null | sort | sha1sum';
+            .' -type f -exec sha1sum {} + 2>/dev/null | cut -d" " -f1 | sort | sha1sum';
 
         try {
             return trim(run("bash -c '".$cmd."'"));
@@ -494,6 +494,25 @@ task('deploy:translations:setup-guess-language', function () {
 });
 
 
+desc('Index engineering notes into Typesense');
+task('deploy:aiku-public:index-notes', function () {
+    try {
+        artisan('aiku-public:index-notes', ['skipIfNoEnv', 'showOutput'])();
+    } catch (\Throwable $e) {
+        writeln('<comment>aiku-public:index-notes skipped: '.$e->getMessage().'</comment>');
+    }
+});
+
+desc('Submit public URLs to IndexNow');
+task('deploy:aiku-public:indexnow', function () {
+    try {
+        artisan('aiku-public:indexnow', ['skipIfNoEnv', 'showOutput'])();
+    } catch (\Throwable $e) {
+        writeln('<comment>aiku-public:indexnow skipped: '.$e->getMessage().'</comment>');
+    }
+});
+
+
 desc('Strip node_modules from all but the 5 newest releases');
 task('deploy:prune-node-modules', function () {
     run("ls -1t {{deploy_path}}/releases | tail -n +6 | while read r; do rm -rf \"{{deploy_path}}/releases/\$r/node_modules\"; done");
@@ -527,4 +546,6 @@ task('deploy', [
     'deploy:refresh-vue',
     'deploy:flush-varnish',
     'deploy:translations:setup-guess-language',
+    'deploy:aiku-public:index-notes',
+    'deploy:aiku-public:indexnow',
 ]);

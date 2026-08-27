@@ -151,6 +151,7 @@ use Illuminate\Support\Facades\Cache;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\getJson;
 use function Pest\Laravel\patch;
 use function Pest\Laravel\post;
 
@@ -3240,6 +3241,7 @@ test('picking from waiting keeps the line at its discounted price', function () 
 
     [$deliveryNote, $item, $los] = handlingItemWithLocation($this);
     $item->update(['quantity_required' => 15, 'quantity_waiting_warehouse' => 3, 'locked_at' => null]);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::PICKED]);
 
     $item = $item->refresh();
     $item->load('transaction');
@@ -3576,4 +3578,117 @@ test('repair cancel leaves the old pickings and their stock alone', function () 
         ->and($deliveryNote->cancelled_at->toDateTimeString())->toBe($cancelledAt)
         ->and($deliveryNote->pickings()->count())->toBe($pickings)
         ->and($deliveryNote->deliveryNoteItems()->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED->value)->count())->toBe(0);
+});
+
+test('a dispatched marketplace delivery note can be picked up for a return', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'is_returned' => false]);
+    $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL, 'is_aiku' => true]);
+
+    $response = get(route('grp.json.delivery_note_valid_for_return', [
+        'warehouse' => $this->warehouse->slug,
+    ]));
+
+    $response->assertOk();
+    expect(collect($response->json('data'))->pluck('id'))->toContain($deliveryNote->id);
+});
+
+test('a return delivery note lookup finds the note from what the box carries', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    $order = $deliveryNote->orders()->first();
+    $order->update([
+        'customer_reference' => 'PO-BOXSCRAP-9911',
+        'external_id'        => 'bo_zzq7tmarketplace',
+    ]);
+
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SH'.Str::random(4), 'name' => 'Sh', 'trade_as' => 'sh']);
+    StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'SHIPPERTRK7781234']);
+
+    $deliveryNote->address()->update(['address_line_1' => '14 Mill Lane', 'postal_code' => 'CB1 2AB']);
+
+    $deliveryNote->update([
+        'state'           => DeliveryNoteStateEnum::DISPATCHED,
+        'is_returned'     => false,
+        'tracking_number' => null,
+        'contact_name'    => null,
+        'company_name'    => null,
+    ]);
+    $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL, 'is_aiku' => true]);
+    $this->customer->update(['name' => 'Bluebell Would Emporium', 'reference' => 'r_boxlabel22']);
+
+    $findBy = function (string $term) use ($deliveryNote) {
+        $response = getJson(route('grp.json.delivery_note_valid_for_return', [
+            'warehouse' => $this->warehouse->slug,
+            'filter'    => ['global' => $term],
+        ]));
+        $response->assertOk();
+
+        return collect($response->json('data'))->pluck('id')->contains($deliveryNote->id);
+    };
+
+    expect($findBy($deliveryNote->reference))->toBeTrue()
+        ->and($findBy('TRK7781'))->toBeTrue()
+        ->and($findBy($order->reference))->toBeTrue()
+        ->and($findBy('BOXSCRAP'))->toBeTrue()
+        ->and($findBy('bo_zzq7tmarketplace'))->toBeTrue()
+        ->and($findBy('bluebell would'))->toBeTrue()
+        ->and($findBy('r_boxlabel22'))->toBeTrue()
+        ->and($findBy('CB1 2AB'))->toBeTrue()
+        ->and($findBy('Mill Lane'))->toBeTrue()
+        ->and($findBy('nothing on this box'))->toBeFalse();
+});
+
+test('the return delivery note dropdown label shows what the operator can check against the box', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    $deliveryNote->update([
+        'state'           => DeliveryNoteStateEnum::DISPATCHED,
+        'is_returned'     => false,
+        'tracking_number' => 'TRACK-99001',
+        'company_name'    => 'Woodhouse Stores',
+    ]);
+    $this->shop->update(['is_aiku' => true]);
+    $this->customer->update(['reference' => 'r_labelcheck']);
+
+    $response = getJson(route('grp.json.delivery_note_valid_for_return', [
+        'warehouse' => $this->warehouse->slug,
+        'filter'    => ['global' => $deliveryNote->reference],
+    ]));
+    $response->assertOk();
+
+    $label = collect($response->json("data"))->firstWhere('id', $deliveryNote->id)['label'];
+
+    expect($label)->toContain($deliveryNote->reference)
+        ->and($label)->toContain('Woodhouse Stores')
+        ->and($label)->toContain('r_labelcheck')
+        ->and($label)->toContain('TRACK-99001');
+});
+
+test('the return delivery note lookup leads with the search index hits and still falls back to sql', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'is_returned' => false]);
+    $this->shop->update(['is_aiku' => true]);
+
+    $action = new \App\Actions\Dispatching\DeliveryNote\Json\GetDeliveryNoteValidForReturn();
+
+    expect($action->indexHits($deliveryNote->reference, $this->organisation->id))->toBe([]);
+
+    $parameters = $action::searchParameters('GB58630', $this->organisation->id);
+    expect($parameters['filter_by'])->toBe('organisation_id:='.$this->organisation->id.' && state:=dispatched')
+        ->and($parameters['query_by'])->toContain('tracking', 'order_references', 'address')
+        ->and($parameters['num_typos'])->toBe(2);
+
+    $document = $deliveryNote->refresh()->toSearchableArray();
+    expect($document['order_references'])->toContain($deliveryNote->orders()->first()->reference)
+        ->and($document['customer_name'])->toBe($this->customer->name)
+        ->and($document)->toHaveKeys(['tracking', 'customer_reference', 'address']);
+
+    $response = getJson(route('grp.json.delivery_note_valid_for_return', [
+        'warehouse' => $this->warehouse->slug,
+        'filter'    => ['global' => $deliveryNote->reference],
+    ]));
+    $response->assertOk();
+    expect(collect($response->json('data'))->pluck('id'))->toContain($deliveryNote->id);
 });

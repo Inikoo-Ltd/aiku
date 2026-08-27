@@ -10,6 +10,8 @@
 
 namespace App\Actions\Accounting\UI;
 
+use App\Actions\Accounting\Payment\UI\GetPaymentMethodsSummary;
+use App\Actions\Traits\Dashboards\WithMarketingPeriod;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Traits\WithAccountingSubNavigation;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
@@ -23,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowAccountingShopDashboard extends OrgAction
 {
+    use WithMarketingPeriod;
     use WithAccountingSubNavigation;
 
 
@@ -50,6 +53,7 @@ class ShowAccountingShopDashboard extends OrgAction
 
     public function htmlResponse(Shop|Fulfilment $parent, ActionRequest $request): Response
     {
+        $this->setMarketingPeriod($request->user()->settings);
         if ($parent instanceof Shop) {
             $subNavigation = $this->getSubNavigationShop($parent);
             $shop = $parent;
@@ -75,6 +79,16 @@ class ShowAccountingShopDashboard extends OrgAction
                     'title'         => __('Accounting dashboard'),
                     'subNavigation' => $subNavigation,
                 ],
+                'payment_methods' => $parent instanceof Shop ? [
+                    'summary' => GetPaymentMethodsSummary::run($parent, $this->periodFrom, $this->periodTo),
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.dashboard.payments.accounting.payments.methods.index',
+                        'parameters' => $request->route()->originalParameters(),
+                    ],
+                    'period_label' => $this->periodFrom ? $this->periodLabels()['period_label'] : __('All time'),
+                ] : null,
+                'intervals' => $this->intervalsProp($request->user()->settings),
+                'settings'  => [],
                 'flatTreeMaps' => [
                     [
 

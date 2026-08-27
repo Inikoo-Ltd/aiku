@@ -131,6 +131,19 @@ class StoreMailshot extends OrgAction
             };
             $this->set('type', $type);
         }
+
+        if (!$this->has('subject') || blank($this->get('subject'))) {
+            $label = $this->get('type') === MailshotTypeEnum::NEWSLETTER->value ? __('Newsletter') : __('Mailshot');
+            $this->set('subject', $label.' '.now()->format('j M Y'));
+        }
+
+        if ($this->get('type') === MailshotTypeEnum::MARKETING->value && !$this->has('recipients_recipe')) {
+            $this->set('recipients_recipe', [
+                'all_customers' => [
+                    'value' => true
+                ]
+            ]);
+        }
     }
 
 
@@ -149,7 +162,7 @@ class StoreMailshot extends OrgAction
     {
 
         $routeName = match ($mailshot->type) {
-            MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.show',
+            MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.workshop',
             MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshots.recipients',
             MailshotTypeEnum::INVITE => 'grp.org.shops.show.marketing.mailshots.show',
             MailshotTypeEnum::ABANDONED_CART => 'grp.org.shops.show.marketing.mailshots.show',

@@ -47,7 +47,15 @@ jobs:
       - name: Retrieve db dumps
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
       - name: Run test without coverage
-        run: /usr/bin/php8.4 -dxdebug.mode=off -d newrelic.enabled=0 vendor/bin/pest --parallel --processes=10 --stop-on-defect
+        run: /usr/bin/php8.4 -dxdebug.mode=off -d newrelic.enabled=0 vendor/bin/pest --parallel --processes=10 --stop-on-defect --log-junit junit.xml
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: Inikoo-Ltd/aiku
+          files: junit.xml
+          flags: backend
       - name: Flake check, changed test files run twice 🎲
         run: |
           BEFORE="${{ github.event.before }}"

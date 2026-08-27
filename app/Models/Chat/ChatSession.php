@@ -76,6 +76,8 @@ class ChatSession extends Model
         'metadata' => 'array',
         'is_spam' => 'boolean',
         'spam_at' => 'datetime',
+        'is_highlighted' => 'boolean',
+        'highlighted_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
 

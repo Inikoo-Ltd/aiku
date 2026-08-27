@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive">
+<defs>
+    <filter id="pen" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="bleed" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.014" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="24" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="1.6" result="b"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="4" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 -0.2" result="ga"/>
+      <feComposite in="b" in2="ga" operator="in" result="mottled"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="mottled"/></feMerge>
+    </filter>
+    <filter id="marker" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="21" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" seed="2" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.90  0 0 0 0 0.87  0 0 0 0 0.80  0 0 0 0.28 0" result="c"/>
+      <feComposite in="c" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <style>
+      .pen { fill: none; stroke: #23222e; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: url(#pen); }
+      .soft { stroke-width: 1.4; opacity: .6; }
+      .w { mix-blend-mode: multiply; filter: url(#bleed); stroke: none; opacity: .8; }
+      .m { fill: none; stroke-linecap: round; stroke-width: 26; opacity: .55; mix-blend-mode: multiply; filter: url(#marker); }
+      .h { fill: #23222e; filter: url(#pen); }
+      .hl { fill: #8a4b9e; filter: url(#pen); }
+    </style>
+  </defs>
+  <rect width="1200" height="750" fill="#fbf7ee"/>
+  <rect width="1200" height="750" fill="#fbf7ee" filter="url(#paper)"/>
+
+  <g class="w">
+    <path d="M80 90 C260 60 460 80 520 100 C540 220 530 380 520 520 C380 540 200 540 90 520 C60 400 60 200 80 90 Z" fill="#76b7c2" opacity=".28"/>
+    <path d="M120 200 l110 -6 l4 100 l-112 6 z" fill="#e88a73" opacity=".6"/>
+    <path d="M260 196 l110 -6 l4 100 l-112 6 z" fill="#f3c04a" opacity=".6"/>
+    <path d="M400 190 l100 -6 l4 100 l-102 6 z" fill="#9dcab0" opacity=".7"/>
+    <path d="M120 340 l110 -6 l4 100 l-112 6 z" fill="#b4567a" opacity=".5"/>
+    <path d="M260 336 l110 -6 l4 100 l-112 6 z" fill="#6d63d6" opacity=".4"/>
+    <path d="M400 330 l100 -6 l4 100 l-102 6 z" fill="#e88a73" opacity=".5"/>
+    <path d="M820 80 C900 50 1000 70 1000 130 C1000 190 920 210 850 190 C800 170 790 110 820 80 Z" fill="#f3c04a" opacity=".5"/>
+    <path d="M1000 200 C1080 170 1160 200 1160 260 C1160 320 1090 340 1030 320 C990 300 970 240 1000 200 Z" fill="#e88a73" opacity=".5"/>
+    <path d="M800 240 C880 210 960 240 960 300 C960 360 880 380 820 360 C780 340 770 280 800 240 Z" fill="#9dcab0" opacity=".5"/>
+    <path d="M960 380 C1040 350 1120 380 1120 440 C1120 500 1040 520 980 500 C940 480 930 420 960 380 Z" fill="#76b7c2" opacity=".5"/>
+    <path d="M800 420 C880 390 950 420 950 480 C950 540 870 560 810 540 C770 520 770 460 800 420 Z" fill="#6d63d6" opacity=".4"/>
+    <path d="M640 560 C800 530 1080 560 1140 600 C1160 680 1100 720 1020 720 C880 730 720 720 650 690 C610 650 610 590 640 560 Z" fill="#9dcab0" opacity=".36"/>
+  </g>
+  <g class="pen">
+    <path d="M80 90 C260 82 460 94 520 88 C526 230 524 400 520 520 C380 528 200 524 84 526 C78 400 80 220 80 90 Z"/>
+    <path d="M80 130 C260 124 440 134 520 128" class="soft"/>
+    <circle cx="104" cy="110" r="5" class="soft"/><circle cx="122" cy="110" r="5" class="soft"/><circle cx="140" cy="110" r="5" class="soft"/>
+    <path d="M180 104 C300 100 420 106 480 102 C482 112 482 116 480 118 C420 120 300 118 180 118 Z" class="soft"/>
+    <path d="M120 200 l110 -6 l4 100 l-112 6 z M260 196 l110 -6 l4 100 l-112 6 z M400 190 l100 -6 l4 100 l-102 6 z"/>
+    <path d="M120 340 l110 -6 l4 100 l-112 6 z M260 336 l110 -6 l4 100 l-112 6 z M400 330 l100 -6 l4 100 l-102 6 z"/>
+    <path d="M124 318 l60 -2 M264 314 l70 -2 M404 308 l50 -2 M124 458 l60 -2 M264 454 l70 -2 M404 448 l50 -2" class="soft"/>
+    <path d="M210 212 c-4 -8 -14 -6 -12 2 c2 6 12 12 12 12 c0 0 10 -6 12 -12 c2 -8 -8 -10 -12 -2 z" class="soft"/>
+    <path d="M486 346 c-4 -8 -14 -6 -12 2 c2 6 12 12 12 12 c0 0 10 -6 12 -12 c2 -8 -8 -10 -12 -2 z" class="soft"/>
+    <ellipse cx="905" cy="130" rx="86" ry="52"/>
+    <ellipse cx="1075" cy="260" rx="80" ry="52"/>
+    <ellipse cx="870" cy="300" rx="82" ry="52"/>
+    <ellipse cx="1035" cy="440" rx="84" ry="52"/>
+    <ellipse cx="860" cy="480" rx="78" ry="50"/>
+    <path d="M540 200 C640 150 720 140 816 130 M800 122 l18 8 l-14 14" />
+    <path d="M540 280 C640 270 700 290 786 296 M772 286 l18 10 l-16 10" />
+    <path d="M540 380 C640 400 700 440 782 470 M770 458 l16 12 l-18 6" />
+    <path d="M905 184 C910 260 940 380 900 560 M1075 314 C1060 400 1000 500 960 570 M1035 494 C1010 530 990 560 970 580" class="soft" stroke-dasharray="7 9"/>
+    <path d="M660 590 C760 582 1000 592 1130 586 C1134 640 1134 680 1130 700 C1000 706 780 704 660 706 C656 660 656 620 660 590 Z"/>
+    <path d="M700 640 l24 -18 l24 18 l0 40 l-48 0 z M716 680 l0 -20 l16 0 l0 20" class="soft"/>
+  </g>
+  <g class="h" font-size="26">
+    <text x="120" y="178" font-size="28">your storefront</text>
+    <text x="858" y="138">Shopify</text>
+    <text x="1026" y="268">Amazon</text>
+    <text x="840" y="308">TikTok Shop</text>
+    <text x="1008" y="448">eBay</text>
+    <text x="826" y="488">Faire</text>
+    <text x="770" y="660" font-size="30">one warehouse, one queue</text>
+  </g>
+  <g class="hl" font-size="21">
+    <text x="560" y="120">listed once, sold everywhere →</text>
+    <text x="150" y="580">your customers can sell it too (dropshipping)</text>
+    <text x="960" y="540">↓ orders come back in</text>
+  </g>
+  <g class="h" font-size="19" opacity=".7"><text x="70" y="732">— channels: storefront, marketplaces, dropshipping</text></g>
+</svg>

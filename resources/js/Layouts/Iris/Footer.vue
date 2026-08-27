@@ -21,6 +21,8 @@ const layout = inject('layout', retinaLayoutStructure) as typeof retinaLayoutStr
 }
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const isFetching = ref(false)
+const appVersion = ref<string | null>(null)
+const shopName = ref<string | null>(null)
 
 const footerData = computed<Root | null>(() => {
     const f = layout.iris?.footer
@@ -37,6 +39,8 @@ const fetchFooterOnce = async () => {
         const url = `${window.location.origin}/json/footer`
         const { data } = await axios.get(url)
         layout.iris.footer = data.footer
+        appVersion.value = data.version ?? null
+        shopName.value = data.shop_name ?? null
         layout.iris.isFooterLoaded = true
     } catch (e) {
         console.error('[IrisFooter] fetch failed', e)
@@ -68,5 +72,11 @@ onMounted(() => {
             class="w-full h-64 md:h-80 animate-pulse bg-gray-200/40 dark:bg-gray-800/40"
             aria-hidden="true"
         />
+        <div v-if="appVersion" class="hidden lg:flex w-full bg-black justify-center items-center h-4">
+            <span class="text-slate-400 text-[10px] leading-none tabular-nums">
+                <template v-if="shopName">{{ shopName }} · </template>
+                <a href="https://aiku.io/" target="_blank" rel="noopener" aria-label="Made with love using aiku.io" class="hover:text-white">{{ appVersion }}</a>
+            </span>
+        </div>
     </div>
 </template>

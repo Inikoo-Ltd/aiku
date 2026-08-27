@@ -49,6 +49,7 @@ const isModalApiToken = ref(false);
 
 const newToken = ref("");
 const isLoadingGenerate = ref(false);
+const isReadOnlyToken = ref(false);
 // const isNewRegenerate = ref(false);
 const onGenerateApiToken = async () => {
     isLoadingGenerate.value = true;
@@ -61,7 +62,7 @@ const onGenerateApiToken = async () => {
         const data = await axios.post(
             route(props.routes.create_token.name, props.routes.create_token.parameters),
             {
-                data: "qqq"
+                read_only: isReadOnlyToken.value
             }
         );
 
@@ -199,14 +200,18 @@ const component = computed(() => {
                 </div>
             </div>
 
-            <Button
-                v-else
-
-                @click="onGenerateApiToken"
-                label="Click to Generate"
-                type="tertiary"
-                :loading="isLoadingGenerate"
-            />
+            <div v-else class="flex flex-col items-center gap-y-3">
+                <label class="flex items-center gap-x-2 text-sm text-gray-600 cursor-pointer">
+                    <input type="checkbox" v-model="isReadOnlyToken" class="rounded border-gray-300" />
+                    {{ trans("Read only (cannot create, change or submit orders)") }}
+                </label>
+                <Button
+                    @click="onGenerateApiToken"
+                    label="Click to Generate"
+                    type="tertiary"
+                    :loading="isLoadingGenerate"
+                />
+            </div>
         </div>
     </Modal>
 </template>
