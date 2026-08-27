@@ -8,10 +8,13 @@
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
+use App\Actions\Dropshipping\Tiktok\Product\UpdateInventoryTiktokProducts;
+use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -43,7 +46,29 @@ class UpdateCustomerSalesChannel extends OrgAction
             data_set($modelData, 'settings.pricing.value', Arr::pull($modelData, 'pricing_value'));
         }
 
-        return $this->update($customerSalesChannel, $modelData, 'settings');
+        $stockSettingsBefore = [
+            $customerSalesChannel->stock_update,
+            $customerSalesChannel->stock_threshold,
+            $customerSalesChannel->max_quantity_advertise
+        ];
+
+        $customerSalesChannel = $this->update($customerSalesChannel, $modelData, 'settings');
+
+        $stockSettingsAfter = [
+            $customerSalesChannel->stock_update,
+            $customerSalesChannel->stock_threshold,
+            $customerSalesChannel->max_quantity_advertise
+        ];
+
+        if ($customerSalesChannel->stock_update && $stockSettingsBefore !== $stockSettingsAfter) {
+            match ($customerSalesChannel->platform->type) {
+                PlatformTypeEnum::WOOCOMMERCE => UpdateInventoryInWooPortfolio::dispatch($customerSalesChannel),
+                PlatformTypeEnum::TIKTOK => UpdateInventoryTiktokProducts::dispatch($customerSalesChannel),
+                default => null
+            };
+        }
+
+        return $customerSalesChannel;
 
     }
 

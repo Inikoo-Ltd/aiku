@@ -94,30 +94,34 @@ class UpdateInventoryTiktokProducts
                 ->get();
 
             foreach ($portfolios as $portfolio) {
-                if ($this->checkIfApplicable($portfolio)) {
+                if ($this->checkIfApplicable($portfolio, $customerSalesChannel)) {
                     UpdateTiktokInventory::dispatch($portfolio, $customerSalesChannel)->delay(5);
                 }
             }
         }
     }
 
-    public function checkIfApplicable(Portfolio $portfolio): bool
+    public function checkIfApplicable(Portfolio $portfolio, CustomerSalesChannel $customerSalesChannel): bool
     {
-        $applicable = false;
+        $product = $portfolio->item;
 
-
-        if (!$portfolio->stock_last_updated_at) {
-            $applicable = true;
-        } else {
-            /** @var Product $product */
-            $product = $portfolio->item;
-
-            if (!$product->available_quantity_updated_at || $product->available_quantity_updated_at->gt($portfolio->stock_last_updated_at)) {
-                $applicable = true;
-            }
+        if (!$product instanceof Product) {
+            return false;
         }
 
-        return $applicable;
+        $lastSuccessAt = $portfolio->stock_last_updated_at;
+        $lastFailAt = $portfolio->stock_last_fail_updated_at;
+
+        if ($lastFailAt && (!$lastSuccessAt || $lastFailAt->gt($lastSuccessAt))) {
+            return $lastFailAt->lt(now()->subDay())
+                || ($product->available_quantity_updated_at && $product->available_quantity_updated_at->gt($lastFailAt));
+        }
+
+        if (!$lastSuccessAt) {
+            return true;
+        }
+
+        return (int) $portfolio->last_stock_value !== UpdateTiktokInventory::quantityToSend($product, $customerSalesChannel);
     }
 
     public function asCommand(Command $command): void

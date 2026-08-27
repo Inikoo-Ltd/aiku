@@ -14,7 +14,12 @@ use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBaske
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateEbayCustomerSalesChannel;
+use App\Actions\Dropshipping\Tiktok\Product\UpdateInventoryTiktokProducts;
+use App\Actions\Dropshipping\Tiktok\Product\UpdateTiktokInventory;
+use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
+use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio;
 use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
 use App\Actions\Dropshipping\Ebay\StoreEbayUser;
 use App\Actions\Dropshipping\Ebay\Product\UpdateEbayPortfolio;
@@ -587,6 +592,74 @@ test('ebay stock sync pushes when capped quantity differs from last push', funct
     expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
 
     return $customerSalesChannel;
+});
+
+test('woo and tiktok stock sync push when capped quantity differs from last push', function () {
+    $this->product->update([
+        'available_quantity'            => 250,
+        'available_quantity_updated_at' => now()->subMonths(2)
+    ]);
+
+    foreach ([
+        [PlatformTypeEnum::WOOCOMMERCE, UpdateWooCustomerSalesChannelPortfolio::make(), fn ($p, $c) => UpdateWooCustomerSalesChannelPortfolio::quantityToSend($p, $c)],
+        [PlatformTypeEnum::TIKTOK, UpdateInventoryTiktokProducts::make(), fn ($p, $c) => UpdateTiktokInventory::quantityToSend($p, $c)],
+    ] as [$platformType, $checker, $quantityToSend]) {
+        $platform = $this->group->platforms()->where('type', $platformType)->first();
+
+        $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+            $this->customer,
+            $platform,
+            ['reference' => 'test_stock_sync_'.$platformType->value]
+        );
+        $customerSalesChannel->update(['max_quantity_advertise' => 80]);
+
+        $portfolio = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+        $portfolio->update(['platform_product_id' => 'offer-'.$platformType->value, 'platform_status' => true]);
+
+        expect($quantityToSend($this->product->refresh(), $customerSalesChannel))->toBe(80);
+
+        expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
+
+        $portfolio->update(['last_stock_value' => 50, 'stock_last_updated_at' => now()->subMonths(6)]);
+        expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
+
+        $portfolio->update(['last_stock_value' => 80]);
+        expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeFalse();
+
+        $portfolio->update(['stock_last_fail_updated_at' => now()->subHour(), 'last_stock_value' => 50]);
+        expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeFalse();
+    }
+});
+
+test('updating woo and tiktok channel stock settings queues inventory sync', function () {
+    Queue::fake();
+
+    foreach ([
+        [PlatformTypeEnum::WOOCOMMERCE, UpdateInventoryInWooPortfolio::class],
+        [PlatformTypeEnum::TIKTOK, UpdateInventoryTiktokProducts::class],
+    ] as [$platformType, $syncClass]) {
+        $platform = $this->group->platforms()->where('type', $platformType)->first();
+
+        $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+            $this->customer,
+            $platform,
+            ['reference' => 'test_settings_sync_'.$platformType->value]
+        );
+
+        $customerSalesChannel = UpdateCustomerSalesChannel::make()->action($customerSalesChannel, [
+            'stock_update'           => true,
+            'max_quantity_advertise' => 90
+        ]);
+
+        $syncClass::assertPushed(1);
+
+        UpdateCustomerSalesChannel::make()->action($customerSalesChannel, [
+            'stock_update'           => true,
+            'max_quantity_advertise' => 90
+        ]);
+
+        $syncClass::assertPushed(1);
+    }
 });
 
 test('updating ebay channel stock settings queues inventory sync', function () {
