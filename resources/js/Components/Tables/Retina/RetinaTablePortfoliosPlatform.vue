@@ -1039,10 +1039,10 @@ const compTableFilterForSale = computed(() => {
 						"
 						v-tooltip="
 							item.is_for_sale
-								? trans('Connect with other product')
+								? trans('Link this product to a different listing on :platform', { platform: props.platform_data.name })
 								: trans('This product line is currently not for sale')
 						"
-						:label="trans('Connect with other product')"
+						:label="trans('Change linked listing')"
 						:capitalize="false"
 						:icon="faRecycle"
 						size="xxs"
