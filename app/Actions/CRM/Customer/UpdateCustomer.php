@@ -279,28 +279,21 @@ class UpdateCustomer extends OrgAction
             Event::dispatch(new AuditCustom($customer));
         }
 
-        $registeredAtDate = $customer->registered_at ? Carbon::parse($customer->registered_at)->toDateString() : null;
+        if (Arr::has($changes, 'registered_at')) {
+            $registeredAtDates = collect([$oldRegisteredAt, $customer->registered_at])
+                ->filter()
+                ->map(fn ($registeredAt) => Carbon::parse($registeredAt)->toDateString())
+                ->unique();
 
-        if (Arr::has($changes, 'registered_at') && $oldRegisteredAt) {
-            $oldRegisteredAtDate = Carbon::parse($oldRegisteredAt)->toDateString();
-            RedoShopTimeSeries::dispatch(shopId: $customer->shop_id, from: $oldRegisteredAtDate, to: $oldRegisteredAtDate)->delay(900);
-            RedoOrganisationTimeSeries::dispatch(organisationId: $customer->organisation_id, from: $oldRegisteredAtDate, to: $oldRegisteredAtDate)->delay(900);
-            if ($customer->master_shop_id) {
-                RedoMasterShopTimeSeries::dispatch(masterShopId: $customer->master_shop_id, from: $oldRegisteredAtDate, to: $oldRegisteredAtDate)->delay(900);
-            }
-            foreach ($customer->customerSalesChannels as $customerSalesChannel) {
-                RedoPlatformTimeSeries::dispatch(platformId: $customerSalesChannel->platform_id, from: $oldRegisteredAtDate, to: $oldRegisteredAtDate)->delay(900);
-            }
-        }
-
-        if ($registeredAtDate) {
-            RedoShopTimeSeries::dispatch(shopId: $customer->shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
-            RedoOrganisationTimeSeries::dispatch(organisationId: $customer->organisation_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
-            if ($customer->master_shop_id) {
-                RedoMasterShopTimeSeries::dispatch(masterShopId: $customer->master_shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
-            }
-            foreach ($customer->customerSalesChannels as $customerSalesChannel) {
-                RedoPlatformTimeSeries::dispatch(platformId: $customerSalesChannel->platform_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+            foreach ($registeredAtDates as $registeredAtDate) {
+                RedoShopTimeSeries::dispatch(shopId: $customer->shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+                RedoOrganisationTimeSeries::dispatch(organisationId: $customer->organisation_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+                if ($customer->master_shop_id) {
+                    RedoMasterShopTimeSeries::dispatch(masterShopId: $customer->master_shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+                }
+                foreach ($customer->customerSalesChannels as $customerSalesChannel) {
+                    RedoPlatformTimeSeries::dispatch(platformId: $customerSalesChannel->platform_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+                }
             }
         }
 
