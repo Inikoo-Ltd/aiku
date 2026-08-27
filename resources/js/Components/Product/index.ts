@@ -14,3 +14,4 @@ export * from './GridProducts'
 
 // Other product components
 export { default as ImageProducts } from './ImageProducts.vue'
+export { default as ProductImageViewerDialog } from './ProductImageViewerDialog.vue'

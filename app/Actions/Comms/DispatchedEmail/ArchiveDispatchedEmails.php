@@ -87,6 +87,15 @@ class ArchiveDispatchedEmails
                 ->when($from, fn ($query) => $query->where('created_at', '>=', $from))
                 ->count();
 
+            if ($eligible === 0) {
+                if (!$dryRun) {
+                    DB::selectOne('select pg_advisory_unlock(?)', [$lockKey]);
+                }
+                $command->info('Nothing older than '.$cutoff->toDateString().' (retention '.config('archive.email_retention_days').' days)');
+
+                return 0;
+            }
+
             $progress = $command->getOutput()->createProgressBar($limit ? min($limit, $eligible) : $eligible);
             $progress->setFormat(' %current%/%max% [%bar%] %percent:3s%%  elapsed %elapsed:6s%  eta %estimated:-6s%  %message%');
             $progress->setMessage('');
