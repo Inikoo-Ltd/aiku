@@ -838,3 +838,20 @@ test('pricing reset all overrides product opt outs', function () {
         ->and(\Illuminate\Support\Arr::get($portfolio->settings, 'pricing_opt_out'))->toBeNull()
         ->and(\Illuminate\Support\Arr::get($portfolio->settings, 'pricing'))->toBeNull();
 });
+
+test('ebay token refresh marks auth revoked only on invalid grant', function () {
+    \Illuminate\Support\Facades\Http::fake([
+        '*' => \Illuminate\Support\Facades\Http::sequence()
+            ->push('oops', 500)
+            ->push(['error' => 'invalid_grant'], 400)
+    ]);
+
+    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-auth-transient']);
+    $ebayUser->settings = ['credentials' => ['ebay_refresh_token' => 'live-token']];
+
+    $ebayUser->refreshEbayToken();
+    expect($ebayUser->ebayAuthRevoked)->toBeFalse();
+
+    $ebayUser->refreshEbayToken();
+    expect($ebayUser->ebayAuthRevoked)->toBeTrue();
+});

@@ -786,6 +786,8 @@ trait WithEbayApiRequest
      *
      * @throws \Exception
      */
+    public bool $ebayAuthRevoked = false;
+
     public function refreshEbayToken()
     {
         $config = $this->getEbayConfig();
@@ -835,6 +837,10 @@ trait WithEbayApiRequest
                 ]);
 
                 return $tokenData;
+            }
+
+            if ($response->status() === 400 && Arr::get($response->json(), 'error') === 'invalid_grant') {
+                $this->ebayAuthRevoked = true;
             }
         } catch (Exception $e) {
             Log::error('eBay Token Refresh Error: '.$e->getMessage());

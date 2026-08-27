@@ -50,7 +50,13 @@ class CheckEbayChannel
 
         $step = EbayUserStepEnum::MARKETPLACE;
 
-        if (! blank($ebayUser->getUser())) {
+        $ebayApiUser = $ebayUser->getUser();
+
+        if (blank($ebayApiUser) && !$ebayUser->ebayAuthRevoked) {
+            return $ebayUser->customerSalesChannel;
+        }
+
+        if (! blank($ebayApiUser)) {
             $canConnectToPlatform = true;
             $existInPlatform = true;
             $step = EbayUserStepEnum::AUTH;
