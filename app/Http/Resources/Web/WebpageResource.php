@@ -41,6 +41,7 @@ class WebpageResource extends JsonResource
             /** @var Product $product */
             $product     = $webpage->model;
             $modelId     = $product->family_id;
+            $modelSlug   = $product->family?->slug;
             $productData = [
                 'id'             => $product->id,
                 'slug'           => $product->slug,
@@ -54,7 +55,8 @@ class WebpageResource extends JsonResource
 
             $availabilityChecklist = $this->getLuigiAvailabilityChecklist($product);
         } else {
-            $modelId = $webpage->model_id;
+            $modelId   = $webpage->model_id;
+            $modelSlug = $webpage->model?->slug;
         }
 
         return [
@@ -66,6 +68,7 @@ class WebpageResource extends JsonResource
             'code'                         => $webpage->code,
             'model_id'                     => $webpage->model_id,
             'product_category_id'          => $modelId,
+            'model_slug'                   => $modelSlug,
             'product'                      => $productData,
             'url'                          => $webpage->getUrl(),
             'canonical_url'                => $webpage->canonical_url,

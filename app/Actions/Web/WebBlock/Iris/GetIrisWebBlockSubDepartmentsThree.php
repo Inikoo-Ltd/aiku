@@ -35,6 +35,7 @@ class GetIrisWebBlockSubDepartmentsThree
         data_set($webBlock, 'web_block.layout.data.fieldValue.department', ['slug' => $department->slug, 'name' => $department->name]);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', $department->name);
 
+
         return [
             'type' => $webBlock['type'],
             'structure' => Arr::get(

@@ -24,7 +24,6 @@ class ShowIrisBlogDashboard
 
     private const SUB_TYPES = [
         WebpageSubTypeEnum::BLOG,
-        WebpageSubTypeEnum::NEWSLETTERS,
         WebpageSubTypeEnum::PRODUCT_GUIDES,
         WebpageSubTypeEnum::BUSINESS_TIPS,
         WebpageSubTypeEnum::INSIGHT,

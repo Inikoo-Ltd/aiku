@@ -26,6 +26,8 @@ use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsOfVariant;
 use App\Actions\Catalogue\Product\Json\GetVariantAndProducts;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesComparisonDetail;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesForComparisonOption;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\Shop\Json\FetchProductReviewThirdParty;
 use App\Actions\CRM\WebUser\Retina\Json\GetRedirectUrl;
@@ -136,6 +138,9 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     // Families list under department page
     Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
+    // Families list for range comparison in Family Page Workshop
+    Route::get('{productCategory}/comparison-detail', GetFamiliesComparisonDetail::class)->name('website.category.comparison_detail');
+    Route::get('{productCategory}/comparison-option', GetFamiliesForComparisonOption::class)->name('website.category.comparison_option');
 
     Route::get('{webpage:slug}/reviews', FetchIrisReviewsInWebpage::class)->name('fetch_reviews');
     Route::get('reviews/{webpage:id}', GetIrisReviews::class)->name('fetch_reviews_new')->whereNumber('webpage');

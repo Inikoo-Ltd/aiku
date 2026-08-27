@@ -142,7 +142,6 @@ const reviewRatingLabels = computed(() => {
 
 const showDialog = ref(false)
 
-
 </script>
 
 <template>

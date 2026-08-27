@@ -79,7 +79,7 @@ const picked = ref<Record<string, any>>({
   [picker?.selectionKey ?? 'selection']: null,
   [picker?.resultKey ?? 'results']: []
 })
-const isPicking = ref(Boolean(picker?.routeParam))
+const isPicking = ref(Boolean(picker))
 
 const updateRoute = computed(() =>
   props.data?.update_route ??
@@ -245,14 +245,47 @@ const onPickTemplate = async (template: any) => {
   autosave()
 }
 
+const selectionRoute = computed(() =>
+  picker?.selectionRouteKey ? props.data?.[picker.selectionRouteKey] : null
+)
+
+const fetchSelection = async (item: any) => {
+  if (!picker?.selectionRouteParam || !selectionRoute.value) {
+    return item
+  }
+
+  const { data } = await axios.get(
+    route(selectionRoute.value.name, {
+      ...selectionRoute.value.parameters,
+      [picker.selectionRouteParam]: item.slug
+    })
+  )
+
+  return { ...item, ...(data?.data ?? {}) }
+}
+
 const selectPreviewSource = async (item: any) => {
   if (!picker) {
     return
   }
 
   if (!picker.routeParam || !props.data?.route_get_list) {
-    picked.value[picker.selectionKey] = item
-    visibleDrawer.value = false
+    isPicking.value = true
+
+    try {
+      picked.value[picker.selectionKey] = await fetchSelection(item)
+      visibleDrawer.value = false
+    } catch (error) {
+      picked.value[picker.selectionKey] = null
+
+      notify({
+        title: trans('Error'),
+        text: trans('Failed to fetch the preview data. Please try again.'),
+        type: 'error'
+      })
+    } finally {
+      isPicking.value = false
+    }
 
     return
   }
@@ -260,14 +293,17 @@ const selectPreviewSource = async (item: any) => {
   isPicking.value = true
 
   try {
-    const { data } = await axios.get(
-      route(props.data.route_get_list.name, {
-        ...props.data.route_get_list.parameters,
-        [picker.routeParam]: item.slug
-      })
-    )
+    const [selection, { data }] = await Promise.all([
+      fetchSelection(item),
+      axios.get(
+        route(props.data.route_get_list.name, {
+          ...props.data.route_get_list.parameters,
+          [picker.routeParam]: item.slug
+        })
+      )
+    ])
 
-    picked.value[picker.selectionKey] = item
+    picked.value[picker.selectionKey] = selection
     picked.value[picker.resultKey ?? 'results'] = data?.data ?? []
     visibleDrawer.value = false
   } catch (error) {

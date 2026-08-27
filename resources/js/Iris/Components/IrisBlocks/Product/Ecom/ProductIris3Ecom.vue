@@ -58,6 +58,7 @@ import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList
 import StepDiscountOffer from "@/Components/CMS/Webpage/Product1/StepDiscountOffer.vue"
 import { getBestOffer } from "@/Composables/useOffers"
 import { Popover } from "primevue"
+import ProductDescriptionUseTab from "@/Iris/Components/BlocksUtils/ProductDescription/ProductDescriptionUseTab.vue"
 
 library.add(
     faCube,
@@ -389,6 +390,7 @@ onMounted(async () => {
 </script>
 
 <template>
+  <div>
     <div :id="fieldValue?.id ? fieldValue?.id : 'product-iris-3-ecom' + indexBlock" component="product-iris-3-ecom"
         class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
@@ -789,7 +791,8 @@ onMounted(async () => {
 
             <template v-if="layout?.iris?.is_logged_in">
                 <EcomAddToBasketv2 v-if="product.stock > 0" ref="_mobileAddToBasket" v-model:product="product"
-                    :customerData="customerData" :key="keyCustomer" class="button-basket w-full" />
+                    :customerData="customerData" :key="keyCustomer"
+                    :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" class="button-basket w-full" />
                 <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
             </template>
 
@@ -898,16 +901,19 @@ onMounted(async () => {
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
+
+  
+  </div>
+    <ProductDescriptionUseTab
+        :fieldValue
+        :screenType
+        :indexBlock 
+    />
 </template>
 
 <style scoped>
-.product-title {
-  color: var(--theme-color-4, #1e3a5f);
-}
-
 .button-basket :deep(.qty-price-new) {
   @apply font-semibold text-black text-base sm:text-lg md:text-xl;
 }

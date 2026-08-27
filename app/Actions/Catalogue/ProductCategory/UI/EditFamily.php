@@ -9,6 +9,8 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
+use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
@@ -347,6 +349,73 @@ class EditFamily extends OrgAction
                                     ...$departmentIdFormData
                                 ]
                             ],
+                            $family->shop->masterShop->slug == 'aroma' ? [
+                                'label'  => __('Customize'),
+                                'icon'   => 'fa-light fa-sliders-h',
+                                'fields' => [
+                                    'customize_option' => [
+                                        'type'    => 'family_customize',
+                                        'label'   => __('Customize'),
+                                        'options' => FamilyCustomizeEnum::valuesWithLabelsAndIcons(),
+                                        'value'   => FamilyCustomizeEnum::rows($family->customize_option),
+                                    ],
+                                ],
+                            ] : [],
+                            $family->shop->masterShop->slug == 'aroma' ? [
+                                'label'  => __('Labeling Guide'),
+                                'icon'   => 'fa-light fa-file-pdf',
+                                'fields' => [
+                                    'labeling_guide_file' => [
+                                        'type'              => 'file_upload',
+                                        'label'             => __('Labeling guide'),
+                                        'placeholder'       => __('Upload a PDF file'),
+                                        'required'          => false,
+                                        'value'             => $family->labelingGuide()?->name,
+                                        'accept'            => '.pdf,application/pdf',
+                                        'information'       => __('Downloadable labeling & compliance guide shown on the family page.'),
+                                        'media_ulid'        => $family->labelingGuide()?->ulid
+                                    ],
+                                ],
+                            ] : [],
+                            $family->shop->masterShop->slug == 'aroma' ? [
+                                'label'  => __('Storage & Shelf Life'),
+                                'icon'   => 'fa-light fa-temperature-low',
+                                'fields' => [
+                                    'storage_conditions'  => [
+                                        'type'    => 'family_storage_conditions',
+                                        'label'   => __('Storage table'),
+                                        'options' => FamilyStorageConditionEnum::valuesWithLabelsAndPlaceholders(),
+                                        'value'   => FamilyStorageConditionEnum::rows(data_get($family->storage_option, 'storage_conditions', [])),
+                                    ],
+                                    'storage_temperature' => [
+                                        'type'        => 'input',
+                                        'label'       => __('Storage temperature'),
+                                        'placeholder' => __('e.g. 15°C - 25°C'),
+                                        'value'   => data_get($family->storage_option, 'storage_temperature', ''),
+                                    ],
+                                    'storage_guidelines'  => [
+                                        'type'     => 'dynamic_list',
+                                        'label'    => __('Storage guidelines'),
+                                        'value'   => data_get($family->storage_option, 'storage_guidelines', []),
+                                        'fields'   => [
+                                            ['key' => 'text', 'placeholder' => __('e.g. Keep products in their original packaging.')],
+                                        ],
+                                        'addLabel' => __('Add guideline'),
+                                    ],
+                                ],
+                            ] : [],
+                            $family->shop->masterShop->slug == 'aroma' ? [
+                                'label'  => __('Category Comparison'),
+                                'icon'   => 'fa-light fa-balance-scale',
+                                'fields' => [
+                                    'category_comparison' => [
+                                        'full'      => true,
+                                        'type'      => 'category-comparison',
+                                        'label'     => __('Category Comparison'),
+                                        'value'     => $family->category_comparison,
+                                    ],
+                                ],
+                            ] : [],
                             [
                                 'label'  => __('Parent').' ('.__('Department/Sub-Department').')',
                                 'icon'   => 'fa-light fa-folder-tree',

@@ -10,7 +10,6 @@ import { Head } from "@inertiajs/vue3";
 
 // Utils
 import { capitalize } from "@/Composables/capitalize";
-import { encodePayload } from "@/Composables/useEncodePayload";
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 
@@ -179,8 +178,8 @@ const onPublish = async (action: routeType, popover) => {
     const response = await axios[action.method](
       route(action.name, action.parameters),
       props.webpage_sub_type === 'mailshot'
-        ? { comment: comment.value, layout_encoded: encodePayload(data.value.layout) }
-        : { comment: comment.value }
+        ? { comment: comment.value, layout: data.value.layout }
+        : { comment: comment.value, publishLayout: { blocks: data.value.layout } }
     );
 
     if (response.status === 200) {
