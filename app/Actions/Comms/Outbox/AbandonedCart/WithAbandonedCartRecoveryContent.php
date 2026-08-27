@@ -82,7 +82,7 @@ trait WithAbandonedCartRecoveryContent
 
         if ($remainingCount > 0) {
             $html .= '<p style="font-family: Helvetica, Arial, sans-serif; font-size: 14px; color: #555; margin-top: 12px;">';
-            $html .= __('and ').$remainingCount.($remainingCount > 1 ? __(' mores') : __(' more'));
+            $html .= __('and').' '.$remainingCount.' '.($remainingCount > 1 ? __('mores') : __('more'));
             $html .= '</p>';
         }
 

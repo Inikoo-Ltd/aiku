@@ -33,6 +33,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $state
  * @property string|null $recovered_at
  * @property string|null $email_sent_at
+ * @property int|null $outbox_id
  */
 class CheckoutAbandonmentsResource extends JsonResource
 {
@@ -59,6 +60,7 @@ class CheckoutAbandonmentsResource extends JsonResource
             'state_label'         => CheckoutAbandonmentStateEnum::labels()[$this->state->value] ?? ucfirst($this->state->value),
             'recovered_at'        => $this->recovered_at,
             'email_sent_at'       => $this->email_sent_at,
+            'outbox_state_active' => (bool) $this->outbox_id,
         ];
     }
 }
