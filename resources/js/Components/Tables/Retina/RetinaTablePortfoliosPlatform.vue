@@ -1406,6 +1406,7 @@ const compTableFilterForSale = computed(() => {
 	<Modal
 		:isOpen="isOpenModalEditProduct"
 		width="w-full max-w-2xl h-full"
+		closeButton
 		@close="isOpenModalEditProduct = false">
 		<div class="max-h-[570px] flex flex-col">
 			<div class="text-xl font-semibold text-center">
