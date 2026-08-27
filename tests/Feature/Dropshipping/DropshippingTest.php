@@ -855,3 +855,32 @@ test('ebay token refresh marks auth revoked only on invalid grant', function () 
     $ebayUser->refreshEbayToken();
     expect($ebayUser->ebayAuthRevoked)->toBeTrue();
 });
+
+test('bulk price rule prices each product from its own rrp', function () {
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'test_ebay_bulk_price']);
+
+    $this->product->update(['rrp' => 10]);
+    $portfolioA = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+
+    $family = $this->shop->productCategories()->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY)->first();
+    $productB = \App\Actions\Catalogue\Product\StoreProduct::make()->action($family, array_merge(
+        Product::factory()->definition(),
+        [
+            'trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]],
+            'price'       => 50,
+        ]
+    ));
+    $productB->update(['rrp' => 20]);
+    $portfolioB = StorePortfolio::make()->action($customerSalesChannel, $productB, []);
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::run([
+        'items'         => [$portfolioA->id, $portfolioB->id],
+        'pricing_type'  => 'percent',
+        'pricing_value' => -10
+    ], true);
+
+    expect((float) $portfolioA->refresh()->customer_price)->toBe(9.0)
+        ->and((float) $portfolioB->refresh()->customer_price)->toBe(18.0)
+        ->and(\Illuminate\Support\Arr::get($portfolioA->settings, 'pricing_opt_out'))->toBeTrue();
+});
