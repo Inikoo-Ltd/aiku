@@ -42,32 +42,54 @@ usage_report() {
     raw_df | awk 'NR > 1 && $5 ~ /%$/ { gsub(/%/, "", $5); print $6, $5, $4 }'
 }
 
-webhook_url() {
-    [ -n "${DISK_ALERT_WEBHOOK:-}" ] && { printf '%s' "$DISK_ALERT_WEBHOOK"; return; }
+# Reads a variable out of the app's .env without sourcing it (that file holds plenty
+# this script has no business evaluating).
+env_value() {
     [ -r "$ENV_FILE" ] || return
-    sed -n 's/^LOG_SLACK_WEBHOOK_URL=//p' "$ENV_FILE" | head -1 | tr -d '"'\''' | tr -d '\r'
+    sed -n "s/^$1=//p" "$ENV_FILE" | head -1 | tr -d '\042\047\r'
+}
+
+json_string() {
+    printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/^/"/; s/$/"/'
+}
+
+# Last resort so an alert is never lost: syslog, plus stderr so cron mails root.
+fallback() {
+    logger -t aiku-disk-alert "$1 ($2)"
+    printf 'aiku-disk-alert: %s (%s)\n' "$1" "$2" >&2
 }
 
 notify() {
-    local text=$1 url
-    url=$(webhook_url)
+    local text=$1 token channel response
 
     if [ "$DRY_RUN" = 1 ]; then
         printf 'WOULD SEND: %s\n' "$text"
         return 0
     fi
 
-    if [ -z "$url" ]; then
-        # No webhook configured: syslog plus stderr, so cron mails root rather than
-        # the alert disappearing silently.
-        logger -t aiku-disk-alert "$text"
-        printf 'aiku-disk-alert (no LOG_SLACK_WEBHOOK_URL configured): %s\n' "$text" >&2
+    # Reuses the bot token the application already authenticates with, rather than
+    # introducing a second Slack credential with its own rotation to forget about.
+    token=${DISK_ALERT_SLACK_TOKEN:-$(env_value SLACK_BOT_USER_OAUTH_TOKEN)}
+    channel=${DISK_ALERT_SLACK_CHANNEL:-$(env_value SLACK_CHANNEL)}
+    channel=${channel:-#general}
+
+    if [ -z "$token" ]; then
+        fallback "$text" 'no SLACK_BOT_USER_OAUTH_TOKEN available'
         return 1
     fi
 
-    curl -sS -m 15 -X POST -H 'Content-type: application/json' \
-        --data "$(printf '{"text": %s}' "$(printf '%s' "$text" | sed 's/\\/\\\\/g; s/"/\\"/g; s/^/"/; s/$/"/')")" \
-        "$url" >/dev/null 2>&1
+    response=$(curl -sS -m 15 -X POST https://slack.com/api/chat.postMessage \
+        -H "Authorization: Bearer $token" \
+        -H 'Content-type: application/json; charset=utf-8' \
+        --data "$(printf '{"channel": %s, "text": %s}' "$(json_string "$channel")" "$(json_string "$text")")" 2>&1)
+
+    # chat.postMessage answers 200 with {"ok":false,...} for channel_not_found, an
+    # expired token and the rest. Treating that as success is how alerting rots
+    # silently, which is the exact failure this script exists to prevent.
+    case $response in
+        *'"ok":true'*) return 0 ;;
+        *) fallback "$text" "Slack rejected it: ${response:0:200}"; return 1 ;;
+    esac
 }
 
 human_kb() {
@@ -151,6 +173,20 @@ self_test() {
     check "$(decide 91 91 1000000 1021700)"     realert   're-alerts after 6 hours'
     check "$(decide 70 91 1000000 1000060)"     recovered 'recovery when back under'
     check "$(decide 70 '' 0 1000000)"           quiet     'no recovery without a prior alert'
+
+    # A mangled payload means Slack silently rejects the alert, so escaping is checked
+    check "$(json_string 'plain')"              '"plain"'          'json quotes a plain string'
+    check "$(json_string 'a "quoted" word')"    '"a \"quoted\" word"' 'json escapes double quotes'
+    check "$(json_string 'back\slash')"         '"back\\slash"'    'json escapes backslashes'
+
+    local envfile
+    envfile=$(mktemp)
+    printf 'OTHER=x\nSLACK_CHANNEL="#devops"\nSLACK_BOT_USER_OAUTH_TOKEN=xoxb-secret\n' > "$envfile"
+    check "$(ENV_FILE=$envfile env_value SLACK_CHANNEL)"             '#devops'     'reads a quoted env value'
+    check "$(ENV_FILE=$envfile env_value SLACK_BOT_USER_OAUTH_TOKEN)" 'xoxb-secret' 'reads an unquoted env value'
+    check "$(ENV_FILE=$envfile env_value NOT_THERE)"                 ''            'missing env var is empty'
+    check "$(ENV_FILE=/nonexistent env_value SLACK_CHANNEL)"         ''            'unreadable env file is empty'
+    rm -f "$envfile"
 
     # end to end through the df parser, with no webhook and no state
     local out
