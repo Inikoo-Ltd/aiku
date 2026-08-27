@@ -607,14 +607,14 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-            // $this->logSchedule(
-            //     $schedule->job(RunAbandonedCartReminderEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
-            //         monitorSlug: 'RunAbandonedCartReminderEmailBulkRuns',
-            //     ),
-            //     name: 'RunAbandonedCartReminderEmailBulkRuns',
-            //     type: 'job',
-            //     scheduledAt: now()->format('H:i')
-            // );
+            $this->logSchedule(
+                $schedule->job(RunAbandonedCartReminderEmailBulkRuns::makeJob())->hourly()->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RunAbandonedCartReminderEmailBulkRuns',
+                ),
+                name: 'RunAbandonedCartReminderEmailBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
 
             $this->logSchedule(
                 $schedule->job(RunCheckoutAbandonmentScan::makeJob())->hourly()->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
