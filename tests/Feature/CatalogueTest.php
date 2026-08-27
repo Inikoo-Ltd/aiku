@@ -972,6 +972,7 @@ test('audit archiver moves closed shop and discontinued product audits, history 
     DB::purge('archive');
     DB::statement('create schema if not exists archive');
 
+    Product::enableAuditing();
     $shop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
     createProduct($shop);
     $discontinuedProduct = $shop->products()->orderBy('id')->first();

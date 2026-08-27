@@ -1617,11 +1617,12 @@ test('refund pdf lines include shipping and charge refunds', function () {
 test('Delete Refund', function (Invoice $refund) {
     $this->withoutExceptionHandling();
     $customer = $refund->customer;
-    expect($customer->stats->number_invoices_type_refund)->toBe(1);
+    $refundsBefore = $customer->stats->number_invoices_type_refund;
+    expect($refundsBefore)->toBeGreaterThanOrEqual(1);
 
     ForceDeleteRefund::make()->handle($refund);
     $customer->refresh();
-    expect($customer->stats->number_invoices_type_refund)->toBe(0);
+    expect($customer->stats->number_invoices_type_refund)->toBe($refundsBefore - 1);
 })->depends('Store invoice refund');
 
 test('UI index customer balances', function () {

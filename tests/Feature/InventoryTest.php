@@ -2370,7 +2370,7 @@ function costFixStockInLocation($group, $organisation, string $code): array
     $stock    = StoreStock::make()->action($group, array_merge(Stock::factory()->definition(), ['code' => $code, 'state' => StockStateEnum::ACTIVE]));
     $orgStock = StoreOrgStock::make()->action($organisation, $stock);
 
-    $warehouse = Warehouse::first() ?? StoreWarehouse::make()->action($organisation, ['code' => 'CF-WH', 'name' => 'CostFix WH']);
+    $warehouse = Warehouse::where('organisation_id', $organisation->id)->first() ?? StoreWarehouse::make()->action($organisation, ['code' => 'CF-WH', 'name' => 'CostFix WH']);
     $location  = StoreLocation::make()->action($warehouse, array_merge(Location::factory()->definition(), ['code' => 'CF-'.$code]));
     StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::STORING]);
 

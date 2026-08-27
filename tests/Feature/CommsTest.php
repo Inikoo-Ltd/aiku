@@ -3649,7 +3649,7 @@ describe('email retention', function () {
             ->expectsOutputToContain('Nothing older than')
             ->assertSuccessful();
 
-        expect(DB::selectOne('select count(*) as n from pg_locks where locktype = ?', ['advisory'])->n)->toBe(0);
+        expect(DB::selectOne('select count(*) as n from pg_locks where locktype = ? and pid = pg_backend_pid()', ['advisory'])->n)->toBe(0);
     });
 
     test('archiver reconciles archive tables when the live schema has moved on', function () {

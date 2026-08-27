@@ -349,7 +349,7 @@ class EditFamily extends OrgAction
                                     ...$departmentIdFormData
                                 ]
                             ],
-                            $family->shop->masterShop->slug == 'aroma' ? [
+                            $family->shop->masterShop?->slug == 'aroma' ? [
                                 'label'  => __('Customize'),
                                 'icon'   => 'fa-light fa-sliders-h',
                                 'fields' => [
@@ -361,7 +361,7 @@ class EditFamily extends OrgAction
                                     ],
                                 ],
                             ] : [],
-                            $family->shop->masterShop->slug == 'aroma' ? [
+                            $family->shop->masterShop?->slug == 'aroma' ? [
                                 'label'  => __('Labeling Guide'),
                                 'icon'   => 'fa-light fa-file-pdf',
                                 'fields' => [
@@ -377,7 +377,7 @@ class EditFamily extends OrgAction
                                     ],
                                 ],
                             ] : [],
-                            $family->shop->masterShop->slug == 'aroma' ? [
+                            $family->shop->masterShop?->slug == 'aroma' ? [
                                 'label'  => __('Storage & Shelf Life'),
                                 'icon'   => 'fa-light fa-temperature-low',
                                 'fields' => [
@@ -404,7 +404,7 @@ class EditFamily extends OrgAction
                                     ],
                                 ],
                             ] : [],
-                            $family->shop->masterShop->slug == 'aroma' ? [
+                            $family->shop->masterShop?->slug == 'aroma' ? [
                                 'label'  => __('Category Comparison'),
                                 'icon'   => 'fa-light fa-balance-scale',
                                 'fields' => [
