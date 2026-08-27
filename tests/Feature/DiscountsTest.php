@@ -11,6 +11,7 @@
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireOrder;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
+use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Discounts\Offer\ActivateOffer;
 use App\Actions\Discounts\Offer\ActivateScheduledOffers;
@@ -2784,6 +2785,126 @@ describe('calculate order discounts', function () {
         CalculateOrderDiscounts::run($order->refresh());
     });
 
+    test('an attached voucher beats a lower submitted discount but never a higher one', function () {
+        $order        = Order::latest('id')->first();
+        $transaction  = Transaction::where('order_id', $order->id)->first();
+        $fobOffer     = Offer::where('shop_id', $order->shop_id)->where('type', 'Amount AND Order Number')->first();
+        $fobAllowance = DB::table('offer_allowances')->where('offer_id', $fobOffer->id)->first();
+
+        $voucherOffer = StoreVoucherOffers::make()->action($this->shop, [
+            'voucher'            => 'LATE20',
+            'name'               => 'Late 20',
+            'offer_amount'       => 0,
+            'can_customer_reuse' => true,
+            'start_at'           => now()->subDay(),
+            'end_at'             => now()->addDay(),
+            'percentage_off'     => 20,
+            'target_type'        => 'shop',
+            'target_id'          => $this->shop->id,
+            'allowance_type'     => 'percentage_off',
+        ]);
+
+        $submittedOffersData = [
+            'v' => 1,
+            'o' => [
+                'oc'  => $fobOffer->offer_campaign_id,
+                'o'   => $fobOffer->id,
+                'oa'  => $fobAllowance->id,
+                't'   => 'percentage',
+                'p'   => '10%',
+                'l'   => $fobOffer->name,
+                'st'  => 'fob',
+                'sto' => null,
+                'f'   => 0,
+                'nf'  => 0,
+            ],
+        ];
+        $transaction->update([
+            'has_discount_when_submitted' => true,
+            'submitted_discount_factor'   => 0.9,
+            'submitted_offers_data'       => $submittedOffersData,
+            'gross_amount'                => 300,
+            'net_amount'                  => 270,
+            'current_discount_factor'     => 0.9,
+        ]);
+        $order->update(['state' => OrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
+
+        AddVoucherToOrder::run($order, ['voucher' => 'LATE20']);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(240.0)
+            ->and((float)$transaction->current_discount_factor)->toEqualWithDelta(0.8, 0.00001)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($voucherOffer->id);
+
+        data_set($submittedOffersData, 'o.p', '30%');
+        $transaction->update([
+            'submitted_discount_factor' => 0.7,
+            'submitted_offers_data'     => $submittedOffersData,
+        ]);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(210.0)
+            ->and((float)$transaction->current_discount_factor)->toEqualWithDelta(0.7, 0.00001)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($fobOffer->id);
+
+        RemoveVoucherFromOrder::run($order);
+        SuspendOffer::run($voucherOffer);
+        $order->update(['state' => OrderStateEnum::CREATING]);
+        $transaction->update(['has_discount_when_submitted' => false, 'submitted_offers_data' => []]);
+        CalculateOrderDiscounts::run($order->refresh());
+    });
+
+    test('discretionary discounts survive post-submission recalculation in both directions', function () {
+        $order        = Order::latest('id')->first();
+        $transaction  = Transaction::where('order_id', $order->id)->first();
+        $fobOffer     = Offer::where('shop_id', $order->shop_id)->where('type', 'Amount AND Order Number')->first();
+        $fobAllowance = DB::table('offer_allowances')->where('offer_id', $fobOffer->id)->first();
+
+        $submittedOffersData = [
+            'v' => 1,
+            'o' => [
+                'oc'  => $fobOffer->offer_campaign_id,
+                'o'   => $fobOffer->id,
+                'oa'  => $fobAllowance->id,
+                't'   => 'percentage',
+                'p'   => '10%',
+                'l'   => $fobOffer->name,
+                'st'  => 'fob',
+                'sto' => null,
+                'f'   => 0,
+                'nf'  => 0,
+            ],
+        ];
+        $transaction->update([
+            'has_discount_when_submitted' => true,
+            'submitted_discount_factor'   => 0.9,
+            'submitted_offers_data'       => $submittedOffersData,
+            'gross_amount'                => 300,
+            'net_amount'                  => 270,
+            'current_discount_factor'     => 0.9,
+        ]);
+        $order->update([
+            'state'                     => OrderStateEnum::SUBMITTED,
+            'submitted_at'              => now(),
+            'discretionary_offers_data' => [(string)$transaction->id => ['label' => 'CS special', 'percentage' => '0.150']],
+        ]);
+
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(255.0)
+            ->and((float)$transaction->current_discount_factor)->toEqualWithDelta(0.85, 0.00001)
+            ->and(Arr::get($transaction->offers_data, 'o.l'))->toBe('CS special');
+
+        $order->update(['discretionary_offers_data' => [(string)$transaction->id => ['label' => 'CS special', 'percentage' => '0.050']]]);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(285.0)
+            ->and((float)$transaction->current_discount_factor)->toEqualWithDelta(0.95, 0.00001);
+
+        $order->update(['state' => OrderStateEnum::CREATING, 'discretionary_offers_data' => []]);
+        $transaction->update(['has_discount_when_submitted' => false, 'submitted_offers_data' => []]);
+        CalculateOrderDiscounts::run($order->refresh());
+    });
+
     test('post-submission recalculation honors offers valid at submission time', function () {
         $shop = $this->shop;
         if (!$shop->offerCampaigns()->exists()) {
@@ -3018,6 +3139,35 @@ describe('gold reward window sweep', function () {
 
         $shop->update(['offers_data' => ['gr' => ['active' => true, 'interval' => 30, 'amnesty_offer_id' => 99]]]);
         expect(SweepGoldRewardWindowBaskets::run($shop))->toBe(0);
+    });
+
+    test('manual gr_extended_until grants gold reward and its expiry is swept', function () {
+        Queue::fake();
+
+        $shop = $this->shop;
+        $shop->update([
+            'is_aiku'     => true,
+            'type'        => ShopTypeEnum::B2B,
+            'offers_data' => ['gr' => ['active' => true, 'interval' => 30]],
+        ]);
+
+        $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+        $order    = StoreOrder::make()->action($customer, []);
+
+        expect($customer->hasActiveGrExtension())->toBeFalse()
+            ->and(CalculateOrderDiscounts::make()->getDaysSinceLastInvoiced($order))->toBe(10000);
+
+        UpdateCustomer::make()->action($customer, ['gr_extended_until' => now()->addDays(7)->toDateString()]);
+        $customer->refresh();
+
+        expect($customer->hasActiveGrExtension())->toBeTrue()
+            ->and(CalculateOrderDiscounts::make()->getDaysSinceLastInvoiced($order->refresh()))->toBe(0);
+
+        $customer->update(['gr_extended_until' => now()->subDay()]);
+        $customer->refresh();
+
+        expect($customer->hasActiveGrExtension())->toBeFalse()
+            ->and(SweepGoldRewardWindowBaskets::run($shop))->toBeGreaterThanOrEqual(1);
     });
 
     test('sweep command runs for a single shop', function () {

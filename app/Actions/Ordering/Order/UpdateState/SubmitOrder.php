@@ -385,7 +385,7 @@ class SubmitOrder extends OrgAction
             $daysSinceLastInvoiced = $lastInvoiced ? (int)-now()->diffInDays($lastInvoiced) : null;
 
 
-            if ($order->gross_amount >= $minAmount && ($daysSinceLastInvoiced != null && $daysSinceLastInvoiced <= Arr::get($offersData, 'gr.interval', 30))) {
+            if ($order->gross_amount >= $minAmount && (($daysSinceLastInvoiced != null && $daysSinceLastInvoiced <= Arr::get($offersData, 'gr.interval', 30)) || $order->customer->hasActiveGrExtension())) {
                 $eligible = true;
             }
             $isGiftOptedOut = $this->isGiftOptedOut($order);

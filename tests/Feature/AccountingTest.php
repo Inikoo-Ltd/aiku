@@ -1577,7 +1577,9 @@ test('Store invoice refund transaction', function (Invoice $refund) {
     ]);
 
     $refund->refresh();
-    expect($refundTransaction)->toBeInstanceOf(InvoiceTransaction::class);
+    expect($refundTransaction)->toBeInstanceOf(InvoiceTransaction::class)
+        ->and((float) $refundTransaction->net_amount)->toBe(-1000.0)
+        ->and((float) $refundTransaction->gross_amount)->toBe((float) $refundTransaction->net_amount);
 
     return $refund;
 })->depends('Store invoice refund');

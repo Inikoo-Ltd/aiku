@@ -2537,3 +2537,59 @@ describe('product available quantity resync', function () {
         expect($product->refresh()->available_quantity)->toBe($expected);
     });
 });
+
+describe('packing change guard', function () {
+    test('pivot change with stock in locations requires a stock strategy, keep flags recount, convert rescales at zero value', function () {
+        $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+        $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+        $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+
+        $location         = StoreLocation::make()->action(createWarehouse(), Location::factory()->definition());
+        $locationOrgStock = StoreLocationOrgStock::make()->action($orgStock, $location, []);
+        UpdateLocationOrgStock::make()->action($locationOrgStock, ['quantity' => 12]);
+        $locationOrgStock->updateQuietly(['audited_at' => now(), 'is_low_stock_checked' => true]);
+
+        $payload = ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 6]]];
+
+        try {
+            \App\Actions\Inventory\OrgStock\UpdateOrgStockTradeUnits::make()->handle($orgStock, $payload);
+            $this->fail('Expected a stock strategy to be required');
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            expect($exception->errors())->toHaveKeys(['stock_recount_required', 'stock_conversion_preview'])
+                ->and($exception->errors()['stock_conversion_preview'][0])->toContain('12 → 2');
+        }
+        expect((float) $orgStock->tradeUnits()->first()->pivot->quantity)->toBe(1.0);
+
+        \App\Actions\Inventory\OrgStock\UpdateOrgStockTradeUnits::make()->handle($orgStock, array_merge($payload, ['stock_strategy' => 'keep']));
+
+        expect((float) $orgStock->refresh()->tradeUnits->first()->pivot->quantity)->toBe(6.0)
+            ->and((float) $locationOrgStock->refresh()->quantity)->toBe(12.0)
+            ->and($locationOrgStock->audited_at)->toBeNull()
+            ->and($locationOrgStock->is_low_stock_checked)->toBeFalse();
+
+        $locationOrgStock->updateQuietly(['audited_at' => now()]);
+
+        \App\Actions\Inventory\OrgStock\UpdateOrgStockTradeUnits::make()->handle($orgStock, [
+            'trade_units'    => [['id' => $tradeUnit->id, 'quantity' => 3]],
+            'stock_strategy' => 'convert',
+        ]);
+
+        $conversionMovement = \App\Models\Inventory\OrgStockMovement::where('org_stock_id', $orgStock->id)
+            ->where('reason', 'uom')->latest('id')->first();
+
+        expect((float) $orgStock->refresh()->tradeUnits->first()->pivot->quantity)->toBe(3.0)
+            ->and((float) $locationOrgStock->refresh()->quantity)->toBe(24.0)
+            ->and($locationOrgStock->audited_at)->not->toBeNull()
+            ->and($conversionMovement)->not->toBeNull()
+            ->and((float) $conversionMovement->org_amount)->toBe(0.0)
+            ->and((float) $conversionMovement->audited_quantity)->toBe(24.0);
+
+        UpdateLocationOrgStock::make()->action($locationOrgStock, ['quantity' => 0]);
+        \App\Actions\Inventory\OrgStock\UpdateOrgStockTradeUnits::make()->handle($orgStock, [
+            'trade_units'    => [['id' => $tradeUnit->id, 'quantity' => 12]],
+            'stock_strategy' => 'convert',
+        ]);
+        expect((float) $orgStock->refresh()->tradeUnits->first()->pivot->quantity)->toBe(12.0);
+    });
+});
