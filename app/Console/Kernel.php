@@ -34,6 +34,7 @@ use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\DevOps\MonitorQueueBacklogs;
 use App\Actions\DevOps\WebsiteHealthLog\MonitorWebsitesUptime;
 use App\Actions\Discounts\Offer\ActivateScheduledOffers;
 use App\Actions\Web\Website\Cloudflare\FetchFirewallBlockedCountryEvents;
@@ -157,6 +158,15 @@ class Kernel extends ConsoleKernel
                 ),
                 name: 'MonitorWebsitesUptime',
                 type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(MonitorQueueBacklogs::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'MonitorQueueBacklogs',
+                ),
+                name: 'MonitorQueueBacklogs',
+                type: 'job',
                 scheduledAt: now()->format('H:i')
             );
 
