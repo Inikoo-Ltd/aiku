@@ -1622,8 +1622,12 @@ test('superseding pauses the other announcement and it comes back by itself', fu
         ->and($running->paused_by_announcement_id)->toBe($challenger->id)
         ->and($running->paused_until->timestamp)->toBe($finishAt->timestamp);
 
+    $this->travelTo($finishAt->copy()->addSecond());
+
     ResumeSupersededAnnouncement::run($running, $challenger->id);
     $running->refresh();
+
+    $this->travelBack();
 
     expect($running->status)->toBe(AnnouncementStatusEnum::ACTIVE)
         ->and($running->paused_by_announcement_id)->toBeNull()
