@@ -50,6 +50,15 @@ class InvoiceOutOfStockLineTest extends TestCase
         $this->assertFalse($this->subject->isFullyOutOfStockLine($this->line(10, '4.16', '0.00'), [10]));
     }
 
+    public function testItReportsTheMissingQuantityOfShortShippedLines(): void
+    {
+        $this->assertSame(3.5, $this->subject->undeliveredQuantity((object)['quantity' => '8.5', 'transaction' => (object)['quantity_ordered' => '12']]));
+        $this->assertSame(12.0, $this->subject->undeliveredQuantity((object)['quantity' => '0', 'transaction' => (object)['quantity_ordered' => '12']]));
+        $this->assertSame(0.0, $this->subject->undeliveredQuantity((object)['quantity' => '6', 'transaction' => (object)['quantity_ordered' => '6']]));
+        $this->assertSame(0.0, $this->subject->undeliveredQuantity((object)['quantity' => '1', 'transaction' => (object)['quantity_ordered' => '0']]));
+        $this->assertSame(0.0, $this->subject->undeliveredQuantity((object)['quantity' => '1', 'transaction' => null]));
+    }
+
     public function testDiscountPercentageLabel(): void
     {
         $this->assertSame('10%', discountPercentageLabel('125.84', '113.26'));

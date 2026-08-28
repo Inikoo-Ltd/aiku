@@ -656,13 +656,14 @@
 @if(!empty($outOfStockTransactions) && count($outOfStockTransactions))
     <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
         <tr class="title">
-            <td colspan="4">{{ __('Ordered but not supplied (out of stock)') }}</td>
+            <td colspan="5">{{ __('Ordered but not supplied (out of stock)') }}</td>
         </tr>
 
         <tr class="title">
             <td style="width:14%;text-align:left">{{ __('Code') }}</td>
             <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
             <td style="width:14%;text-align:right">{{ __('Qty ordered') }}</td>
+            <td style="width:14%;text-align:right">{{ __('Qty not supplied') }}</td>
         </tr>
 
         <tbody class="out_of_stock">
@@ -676,12 +677,13 @@
                     {{ $transaction->historicAsset?->name }}
                 </td>
                 <td style="text-align:right">{{ trimDecimalZeros($transaction->transaction?->quantity_ordered ?? 0) }}</td>
+                <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity_not_supplied ?? 0) }}</td>
             </tr>
         @endforeach
         </tbody>
     </table>
     <div style="font-size: 8pt; color: #777; margin-top: 2mm;">
-        {{ __('These items were out of stock, have not been supplied and are not charged on this invoice.') }}
+        {{ __('These quantities were out of stock, have not been supplied and are not charged on this invoice.') }}
     </div>
     <br>
 @endif

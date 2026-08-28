@@ -100,6 +100,19 @@ trait WithInvoicesExport
         return $transactions->partition(fn ($transaction) => $this->isFullyOutOfStockLine($transaction, $outOfStockTransactionIds))->all();
     }
 
+    /**
+     * Quantity ordered but never supplied, in the invoice's own units.
+     *
+     * Covers the short shipped lines too: a line that was ordered 12 and supplied 8.5 is missing 3.5
+     * even though it is dispatched, priced and stays in the main table.
+     */
+    public function undeliveredQuantity(object $transaction): float
+    {
+        $ordered = (float)($transaction->transaction?->quantity_ordered ?? 0);
+
+        return max(0.0, $ordered - (float)$transaction->quantity);
+    }
+
     public function isFullyOutOfStockLine(object $transaction, array $outOfStockTransactionIds): bool
     {
         return in_array($transaction->transaction_id, $outOfStockTransactionIds)
@@ -174,6 +187,14 @@ trait WithInvoicesExport
         $outOfStockTransactions = collect();
         if ($separateOutOfStock && $invoice->type == InvoiceTypeEnum::INVOICE) {
             [$outOfStockTransactions, $transactions] = $this->splitOutOfStockTransactions($transactions);
+
+            $outOfStockTransactions = $outOfStockTransactions
+                ->concat($transactions->filter(fn ($transaction) => $this->undeliveredQuantity($transaction) > 0))
+                ->each(function ($transaction) {
+                    $transaction->quantity_not_supplied = $this->undeliveredQuantity($transaction);
+                })
+                ->sortBy(fn ($transaction) => strtolower($transaction->historicAsset?->code ?? ''))
+                ->values();
         }
 
         $showDiscounts = (bool)Arr::get(
