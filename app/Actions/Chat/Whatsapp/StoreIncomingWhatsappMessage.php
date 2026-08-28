@@ -127,7 +127,7 @@ class StoreIncomingWhatsappMessage
             'meta_message_id' => $waMessageId,
             'message_type'    => $this->messageType($type),
             'sender_type'     => ChatSenderTypeEnum::GUEST,
-            'message_text'    => $type === 'text' ? Arr::get($message, 'text.body') : Arr::get($waNode, 'caption'),
+            'message_text'    => $this->messageText($type, $message, $waNode),
             'replied_to_id'   => $this->resolveQuotedMessageId($metaChatSession, $quotedWaMessageId),
             'metadata'        => [
                 'wa_type'      => $type,
@@ -164,10 +164,70 @@ class StoreIncomingWhatsappMessage
     protected function messageType(string $type): ChatMessageTypeEnum
     {
         return match (true) {
-            $type === 'text'                                       => ChatMessageTypeEnum::TEXT,
             in_array($type, DownloadWhatsappMedia::IMAGE_TYPES, true) => ChatMessageTypeEnum::IMAGE,
-            default                                                => ChatMessageTypeEnum::FILE,
+            in_array($type, DownloadWhatsappMedia::MEDIA_TYPES, true) => ChatMessageTypeEnum::FILE,
+            default                                                   => ChatMessageTypeEnum::TEXT,
         };
+    }
+
+    /**
+     * WhatsApp puts the readable part of a message in a different place for every type.
+     * Anything without one would otherwise be stored blank, which is how a customer
+     * tapping a template button ended up as an empty bubble.
+     *
+     * @param  array<string, mixed>  $message
+     */
+    protected function messageText(string $type, array $message, mixed $waNode): ?string
+    {
+        return match ($type) {
+            'text'        => Arr::get($message, 'text.body'),
+            'button'      => Arr::get($message, 'button.text'),
+            'interactive' => $this->interactiveText((array) $waNode),
+            'location'    => $this->locationText((array) $waNode),
+            'contacts'    => $this->contactsText((array) $waNode),
+            default       => Arr::get($waNode, 'caption'),
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $interactive
+     */
+    protected function interactiveText(array $interactive): ?string
+    {
+        $reply = Arr::get($interactive, 'button_reply') ?? Arr::get($interactive, 'list_reply');
+
+        return Arr::get((array) $reply, 'title');
+    }
+
+    /**
+     * @param  array<string, mixed>  $location
+     */
+    protected function locationText(array $location): ?string
+    {
+        $label = collect([Arr::get($location, 'name'), Arr::get($location, 'address')])
+            ->filter()
+            ->implode(' — ');
+
+        if ($label !== '') {
+            return $label;
+        }
+
+        $latitude  = Arr::get($location, 'latitude');
+        $longitude = Arr::get($location, 'longitude');
+
+        return $latitude && $longitude ? $latitude.', '.$longitude : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $contacts
+     */
+    protected function contactsText(array $contacts): ?string
+    {
+        $names = collect($contacts)
+            ->map(fn ($contact) => Arr::get((array) $contact, 'name.formatted_name'))
+            ->filter();
+
+        return $names->isEmpty() ? null : $names->implode(', ');
     }
 
     /**
