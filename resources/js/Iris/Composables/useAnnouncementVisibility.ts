@@ -4,12 +4,38 @@ export interface AnnouncementVisibilityData {
     schedule_at?: string | null
     schedule_finish_at?: string | null
     resumes_at?: string | null
+    show_pages?: string[]
+    hide_pages?: string[]
     settings?: {
         position?: string
         target_users?: {
             auth_state?: 'all' | 'logged_in' | 'logged_out'
         }
     }
+}
+
+export const normalizePagePath = (path: string): string => {
+    return path.trim().toLowerCase().replace(/^\/+|\/+$/g, '')
+}
+
+// Method: 'contain' rule against the page URL; a bare '/' rule only matches the homepage
+export const isPageRuleMatch = (rule: string, path: string): boolean => {
+    const normalizedRule = normalizePagePath(rule)
+    const normalizedPath = normalizePagePath(path)
+
+    if (!normalizedRule) return normalizedPath === ''
+    return normalizedPath.includes(normalizedRule)
+}
+
+// Method: to check show_pages ('all' or matched rule) minus hide_pages
+export const isShownOnPage = (announcement: AnnouncementVisibilityData, path: string): boolean => {
+    const showPages = announcement?.show_pages ?? []
+    const hidePages = announcement?.hide_pages ?? []
+
+    if (hidePages.some((rule) => isPageRuleMatch(rule, path))) return false
+    if (showPages.includes('all')) return true
+    if (showPages.length) return showPages.some((rule) => isPageRuleMatch(rule, path))
+    return true
 }
 
 export const isWithinSchedule = (announcement: AnnouncementVisibilityData, now: number): boolean => {
@@ -30,9 +56,10 @@ export const isPauseOver = (announcement: AnnouncementVisibilityData, now: numbe
     return !Number.isNaN(resumesAt) && now >= resumesAt
 }
 
-// Method: to check all/logged in/logged out
-export const isAnnouncementVisible = (announcement: AnnouncementVisibilityData, now: number, isLoggedIn: boolean): boolean => {
+// Method: to check schedule, pause, page (when given) and all/logged in/logged out
+export const isAnnouncementVisible = (announcement: AnnouncementVisibilityData, now: number, isLoggedIn: boolean, path?: string): boolean => {
     if (!isWithinSchedule(announcement, now) || !isPauseOver(announcement, now)) return false
+    if (path !== undefined && !isShownOnPage(announcement, path)) return false
 
     const authState = announcement?.settings?.target_users?.auth_state
     if (authState === 'all') return true
