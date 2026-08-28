@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { inject, computed, ref, onMounted, watch } from "vue"
+import { inject, computed, ref, onMounted, onUnmounted, watch } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faCheckDouble, faLanguage } from "@far"
+import { faCheck, faCheckDouble, faLanguage, faRobot, faShieldCheck } from "@far"
+import { faShare, faFaceSmile } from "@fortawesome/free-solid-svg-icons"
 import axios from "axios"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import Image from "primevue/image"
 import { trans } from "laravel-vue-i18n"
+import { notify } from "@kyvg/vue3-notification"
+import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
 
 type SenderType = "guest" | "user" | "agent" | "system"
 type MessageStatus = "sending" | "sent" | "failed"
@@ -30,10 +33,31 @@ interface Message {
     } | null
     is_read?: boolean
     id?: number
+    sender_name?: string | null
     _status?: MessageStatus
     original?: Translation
     translations?: Translation[]
     edited_at?: string | null
+    is_ai_generated?: boolean | null
+    is_validated?: boolean | null
+    is_verifiable_image?: boolean
+    ai_verification?: {
+        model_verdict: boolean
+        confidence: number
+        reasoning: string
+    } | null
+    reactions?: ReactionGroup[]
+}
+
+interface ReactionReactor {
+    type: string
+    id: number | null
+}
+
+interface ReactionGroup {
+    emoji: string
+    count: number
+    reactors: ReactionReactor[]
 }
 
 interface Translation {
@@ -52,10 +76,15 @@ const props = defineProps<{
     agentName?: string | null
     contactName?: string | null
     canEdit?: boolean
+    readonly?: boolean
+    sessionUlid?: string | null
+    apiBase?: string
+    viewerReactorId?: number | null
 }>()
 
 const emit = defineEmits<{
     (e: "edit-message", payload: { id: number; text: string }): void
+    (e: "open-slack-settings"): void
 }>()
 
 const EDIT_WINDOW_MS = 30 * 60 * 1000
@@ -92,6 +121,10 @@ const saveEditMessage = () => {
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
+
+const currentOrganisation = computed(
+    () => String((route().params as Record<string, any>)?.organisation ?? "aw")
+)
 
 const { languages, fetchLanguages, getLanguageIdByCode } = useChatLanguages(baseUrl)
 
@@ -146,9 +179,13 @@ const showSenderLabel = computed(() =>
     props.viewerType === "agent" && props.message.sender_type !== "system"
 )
 
+const firstName = (name?: string | null): string =>
+    (name ?? "").trim().split(/\s+/)[0] || ""
+
 const senderLabel = computed(() => {
     if (props.message.sender_type === "agent") {
-        return props.agentName ?? layout?.user?.contact_name ?? "Agent"
+        const fullName = props.message.sender_name ?? props.agentName ?? layout?.user?.contact_name ?? "Agent"
+        return firstName(fullName) || "Agent"
     }
     return props.contactName ?? "Customer"
 })
@@ -258,8 +295,175 @@ const translateMessage = async () => {
     }
 }
 
+// feature verify image
+const isVerifyingImage = ref(false)
+
+const canVerifyImage = computed(() =>
+    props.viewerType === "agent" &&
+    props.message.message_type === "image" &&
+    !!props.message.is_verifiable_image &&
+    activeMessage.value.is_validated == null
+)
+
+// feature forward to Slack
+const canForwardToSlack = computed(() => props.viewerType === "agent" && !!props.message.id)
+const isForwardModalOpen = ref(false)
+
+// feature hover toolbar (quick reactions) — persisted per message reactor
+const showHoverToolbar = computed(() => !props.readonly && !!props.message.id)
+const quickReactions = ["✅", "👀", "👏"] as const
+
+const reactionState = ref<ReactionGroup[]>([])
+
+watch(
+    () => props.message.reactions,
+    (val) => {
+        reactionState.value = Array.isArray(val)
+            ? val.map((g) => ({ emoji: g.emoji, count: g.count, reactors: [...g.reactors] }))
+            : []
+    },
+    { immediate: true, deep: true }
+)
+
+const isMyReactor = (reactor: ReactionReactor): boolean => {
+    if (props.viewerType === "agent") {
+        return reactor.type === "agent" && reactor.id === (props.viewerReactorId ?? null)
+    }
+    return reactor.type !== "agent"
+}
+
+const hasMyReaction = (group: ReactionGroup): boolean =>
+    group.reactors.some(isMyReactor)
+
+const myReactedEmojis = computed(
+    () => new Set(reactionState.value.filter(hasMyReaction).map((g) => g.emoji))
+)
+
+const myReactorStub = (): ReactionReactor =>
+    props.viewerType === "agent"
+        ? { type: "agent", id: props.viewerReactorId ?? null }
+        : { type: "__me__", id: null }
+
+const applyOptimisticToggle = (emoji: string): void => {
+    const group = reactionState.value.find((g) => g.emoji === emoji)
+
+    if (group && hasMyReaction(group)) {
+        const idx = group.reactors.findIndex(isMyReactor)
+        if (idx !== -1) {
+            group.reactors.splice(idx, 1)
+            group.count = Math.max(0, group.count - 1)
+        }
+        if (group.count === 0) {
+            reactionState.value = reactionState.value.filter((g) => g.emoji !== emoji)
+        }
+        return
+    }
+
+    if (group) {
+        group.reactors.push(myReactorStub())
+        group.count += 1
+        return
+    }
+
+    reactionState.value = [
+        ...reactionState.value,
+        { emoji, count: 1, reactors: [myReactorStub()] },
+    ]
+}
+
+const isReacting = ref(false)
+
+const toggleReaction = async (emoji: string) => {
+    if (!props.message.id || isReacting.value) return
+
+    const previous = reactionState.value.map((g) => ({
+        emoji: g.emoji,
+        count: g.count,
+        reactors: [...g.reactors],
+    }))
+
+    applyOptimisticToggle(emoji)
+    isReacting.value = true
+
+    try {
+        const { data } = await axios.post(
+            `${props.apiBase ?? ""}/app/api/chats/messages/${props.message.id}/reactions`,
+            {
+                emoji,
+                reactor: props.viewerType === "agent" ? "agent" : "customer",
+                session_ulid: props.sessionUlid ?? undefined,
+            }
+        )
+
+        const serverReactions = data?.data?.reactions
+        reactionState.value = Array.isArray(serverReactions)
+            ? serverReactions.map((g: ReactionGroup) => ({ emoji: g.emoji, count: g.count, reactors: [...g.reactors] }))
+            : reactionState.value
+    } catch (e) {
+        reactionState.value = previous
+        notify({ title: trans("Failed"), text: trans("Could not update reaction."), type: "error" })
+    } finally {
+        isReacting.value = false
+    }
+}
+
+// full emoji picker for "Add reaction" — reuses the persisted toggleReaction
+const isEmojiPickerOpen = ref(false)
+const emojiPickerRef = ref<HTMLElement | null>(null)
+const emojiPalette = [
+    "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃",
+    "😉", "😊", "😇", "🥰", "😍", "😘", "😗", "😋", "😛", "😜",
+    "🤪", "🤨", "🧐", "🤓", "😎", "🥳", "😏", "😒", "😞", "😔",
+    "😢", "😭", "😤", "😠", "😡", "🤯", "😳", "🥵", "🥶", "😱",
+    "😨", "😰", "😅", "🤗", "🤔", "🤫", "🤭", "🤐", "😴", "🤤",
+    "👍", "👎", "👏", "🙌", "🙏", "👀", "🎉", "🔥", "💯", "✅",
+]
+
+const selectEmoji = (emoji: string) => {
+    toggleReaction(emoji)
+    isEmojiPickerOpen.value = false
+}
+
+const handleClickOutsideEmojiPicker = (e: MouseEvent) => {
+    if (isEmojiPickerOpen.value && emojiPickerRef.value && !emojiPickerRef.value.contains(e.target as Node)) {
+        isEmojiPickerOpen.value = false
+    }
+}
+
+const verifyImage = async () => {
+    if (!props.message.id || isVerifyingImage.value) return
+
+    isVerifyingImage.value = true
+
+    try {
+        const { data } = await axios.post(
+            route("grp.org.chat.agents.messages.verify_image", [currentOrganisation.value, props.message.id])
+        )
+
+        if (data?.data) {
+            localMessage.value = {
+                ...props.message,
+                is_ai_generated: data.data.is_ai_generated,
+                is_validated: data.data.is_validated,
+                ai_verification: data.data.ai_verification ?? null,
+            }
+        }
+    } catch (e) {
+        console.error("Verify image failed", e)
+    } finally {
+        isVerifyingImage.value = false
+    }
+}
+
+const verificationReasoning = computed(() => activeMessage.value.ai_verification?.reasoning ?? "")
+
 onMounted(() => {
     if (canTranslate.value) fetchLanguages()
+    document.addEventListener("click", handleClickOutsideEmojiPicker)
+})
+
+onUnmounted(() => {
+    document.removeEventListener("click", handleClickOutsideEmojiPicker)
 })
 
 watch(
@@ -276,13 +480,61 @@ watch(selectedLanguage, async (val) => {
 </script>
 
 <template>
-    <div class="flex flex-col w-full" :class="isFromViewer ? 'items-end' : 'items-start'">
+    <div class="flex flex-col w-full group/msg" :class="isFromViewer ? 'items-end' : 'items-start'">
         <div class="mb-0.5 text-[11px] text-gray-500 px-1 max-w-[78%]"
             v-if="props.message.sender_type === 'agent' && props.viewerType === 'user'">
             {{ agentDisplayName }} (Agent)
         </div>
-        <div class="flex flex-col gap-0.5 text-sm leading-relaxed shadow-sm max-w-[70%] px-3.5 py-2.5 rounded-2xl"
-            :class="bubbleClass">
+        <div class="relative max-w-[70%]">
+            <div v-if="showHoverToolbar"
+                class="absolute -top-5 z-20 flex items-center gap-0.5 p-1 rounded-full bg-white border border-gray-200 shadow-lg whitespace-nowrap opacity-0 scale-95 pointer-events-none group-hover/msg:opacity-100 group-hover/msg:scale-100 group-hover/msg:pointer-events-auto transition-all duration-150"
+                :class="isFromViewer ? 'right-0' : 'left-0'">
+                <button
+                    v-for="emoji in quickReactions"
+                    :key="emoji"
+                    type="button"
+                    v-tooltip.top="trans('React')"
+                    class="w-[33px] h-[33px] flex items-center justify-center text-lg rounded-full hover:bg-gray-100 hover:scale-110 transition-all"
+                    :class="myReactedEmojis.has(emoji) ? 'bg-indigo-50 ring-1 ring-indigo-200' : ''"
+                    @click="toggleReaction(emoji)"
+                >
+                    {{ emoji }}
+                </button>
+
+                <span class="w-px h-5 bg-gray-200 mx-0.5"></span>
+
+                <div class="relative" ref="emojiPickerRef">
+                    <button type="button" v-tooltip.top="trans('Add reaction')"
+                        class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-full hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
+                        @click="isEmojiPickerOpen = !isEmojiPickerOpen">
+                        <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" />
+                    </button>
+
+                    <div v-if="isEmojiPickerOpen"
+                        class="absolute top-full mt-1.5 z-20 w-56 max-h-48 overflow-y-auto grid grid-cols-8 gap-0.5 p-2 rounded-lg bg-white border border-gray-200 shadow-lg"
+                        :class="isFromViewer ? 'right-0' : 'left-0'">
+                        <button
+                            v-for="emoji in emojiPalette"
+                            :key="emoji"
+                            type="button"
+                            class="w-6 h-6 flex items-center justify-center text-base rounded hover:bg-gray-100 transition-colors"
+                            :class="myReactedEmojis.has(emoji) ? 'bg-indigo-50' : ''"
+                            @click="selectEmoji(emoji)"
+                        >
+                            {{ emoji }}
+                        </button>
+                    </div>
+                </div>
+
+                <button v-if="canForwardToSlack" type="button" v-tooltip.top="trans('Forward message…')"
+                    class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-full hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
+                    @click="isForwardModalOpen = true">
+                    <FontAwesomeIcon :icon="faShare" class="text-sm" />
+                </button>
+            </div>
+
+            <div class="flex flex-col gap-0.5 text-sm leading-relaxed shadow-sm px-3.5 py-2.5 rounded-2xl"
+                :class="[bubbleClass, showHoverToolbar && viewerType === 'agent' ? 'min-w-[260px]' : '']">
 
             <div v-if="showSenderLabel" class="text-[11px] font-semibold mb-0.5 opacity-70">
                 {{ senderLabel }}
@@ -315,7 +567,31 @@ watch(selectedLanguage, async (val) => {
             </div>
 
             <Image v-if="message.message_type === 'image' && message.media_url" :src="message.media_url.webp" preview
-                imageClass="rounded-lg max-w-full cursor-pointer" class="mt-1" />
+                imageClass="rounded-lg max-w-full max-h-64 min-h-[96px] min-w-[96px] object-contain cursor-pointer bg-gray-50"
+                class="mt-1 block" />
+
+            <div v-if="viewerType === 'agent' && message.message_type === 'image' && activeMessage.is_validated === true"
+                class="mt-1" :title="verificationReasoning">
+                <span v-if="activeMessage.is_ai_generated"
+                    class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
+                    <FontAwesomeIcon :icon="faRobot" class="text-[10px]" />
+                    {{ trans("AI generated") }}
+                </span>
+                <span v-else
+                    class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">
+                    <FontAwesomeIcon :icon="faShieldCheck" class="text-[10px]" />
+                    {{ trans("Verified") }}
+                </span>
+            </div>
+
+            <div v-if="canVerifyImage" class="mt-1">
+                <button type="button" :disabled="isVerifyingImage" @click="verifyImage"
+                    class="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 underline disabled:opacity-50">
+                    <LoadingIcon v-if="isVerifyingImage" />
+                    <FontAwesomeIcon v-else :icon="faShieldCheck" class="text-[10px]" />
+                    {{ isVerifyingImage ? trans("Verifying…") : trans("Verify image") }}
+                </button>
+            </div>
 
             <div v-if="isFile && message.media_url" @click="openFile"
                 class="mt-1 flex items-center gap-3 p-3 rounded-lg border bg-white max-w-xs transition" :class="isOpening
@@ -405,6 +681,34 @@ watch(selectedLanguage, async (val) => {
                 </span>
             </div>
         </div>
+        </div>
+
+        <div v-if="reactionState.length" class="flex flex-wrap gap-1 mt-1 px-1"
+            :class="isFromViewer ? 'justify-end' : 'justify-start'">
+            <button
+                v-for="group in reactionState"
+                :key="group.emoji"
+                type="button"
+                class="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full border transition-colors"
+                :class="myReactedEmojis.has(group.emoji)
+                    ? 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                    : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'"
+                @click="toggleReaction(group.emoji)"
+            >
+                <span>{{ group.emoji }}</span>
+                <span v-if="group.count > 1" class="font-semibold">{{ group.count }}</span>
+            </button>
+        </div>
+
+        <SlackShareModal
+            v-if="canForwardToSlack"
+            :is-open="isForwardModalOpen"
+            mode="message"
+            :organisation="currentOrganisation"
+            :message-id="message.id"
+            @close="isForwardModalOpen = false"
+            @open-settings="emit('open-slack-settings')"
+        />
     </div>
 </template>
 

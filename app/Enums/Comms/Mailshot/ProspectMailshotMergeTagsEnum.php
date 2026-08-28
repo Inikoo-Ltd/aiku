@@ -19,6 +19,7 @@ enum ProspectMailshotMergeTagsEnum: string
     case PROSPECT_PHONE = 'Prospect Phone';
     case PROSPECT_COMPANY_NAME = 'Prospect Company Name';
     case UNSUBSCRIBE = 'Unsubscribe';
+    case PROSPECT_REGISTRATION_DATE = 'Prospect Registration Date';
 
 
     public static function tags(): array
@@ -44,6 +45,25 @@ enum ProspectMailshotMergeTagsEnum: string
                 'name'  => __('Unsubscribe'),
                 'value' => '[Unsubscribe]'
             ],
+            [
+                'name'  => __('Prospect Registration Date'),
+                'value' => '[Prospect Registration Date]'
+            ],
         ];
+    }
+
+    public static function filterTags(array $enumCases): array
+    {
+        // Get the enum values we're filtering by
+        $enumValues = array_map(fn ($case) => $case->value, $enumCases);
+
+        // Filter tags to only include those matching the provided enum cases
+        $filtered = array_filter(
+            self::tags(),
+            fn ($tag) => in_array(str_replace(['[', ']'], '', $tag['value']), $enumValues)
+        );
+
+        // Re-index array to remove gaps from filtering
+        return array_values($filtered);
     }
 }

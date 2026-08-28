@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Ebay\Orders;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -67,15 +68,15 @@ class FetchEbayUserOrders extends OrgAction implements ShouldBeUnique
         }
     }
 
-    public string $commandSignature = 'ebay-user-orders-fetch {ebayUserId}';
+    public string $commandSignature = 'ebay-user-orders-fetch {customerSalesChannel}';
 
     /**
      * @throws \Throwable
      */
     public function asCommand(Command $command): void
     {
-        $ebayUser = EbayUser::find($command->argument('ebayUserId'));
-        $this->handle($ebayUser);
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
+        $this->handle($customerSalesChannel->user);
     }
 
     /**

@@ -52,6 +52,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $raw_material
  * @property int|null $units_per_pack units per pack
  * @property int|null $units_per_carton units per carton
+ * @property string|null $barcode the outer/SKO CODE 128 barcode printed on the external packing
+ * @property string|null $unit_barcode the EAN13 of the individual unit
  * @property numeric|null $value_in_warehouses
  * @property int|null $image_id
  * @property int|null $gross_weight package weight grams

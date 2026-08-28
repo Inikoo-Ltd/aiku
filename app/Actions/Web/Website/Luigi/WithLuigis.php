@@ -68,6 +68,12 @@ trait WithLuigis
             $website = $parent->website;
         }
 
+        if (!$website->usesLuigiSearch()) {
+            Log::info('Luigi request skipped, website '.$website->slug.' uses internal search');
+
+            return [];
+        }
+
         if (!$website->migrated) {
             abort(404, 'Website not migrated');
         }
@@ -524,11 +530,11 @@ trait WithLuigis
             $modelWebpage = $model?->webpage;
             $type         = null;
             if (!$modelWebpage) {
-                if ($webpage->type == WebpageTypeEnum::BLOG) {
-                    $type = 'news';
-                } else {
+                if ($webpage->type != WebpageTypeEnum::BLOG) {
                     return [];
                 }
+                $type         = 'news';
+                $modelWebpage = $webpage;
             }
 
             return [
@@ -539,7 +545,7 @@ trait WithLuigis
                     "title"       => $modelWebpage->title,
                     "web_url"     => $modelWebpage->getCanonicalUrl(),
                     "description" => $modelWebpage->description,
-                    "image_link"  => Arr::get($model->imageSources(200, 200), 'original'),
+                    "image_link"  => Arr::get($model?->imageSources(200, 200), 'original'),
                 ]),
             ];
         }

@@ -11,7 +11,9 @@ namespace App\Actions\Procurement\OrgSupplier;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateOrgSuppliers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgSuppliers;
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Procurement\OrgSupplierProducts\SyncOrgSupplierProducts;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\SupplyChain\Supplier;
@@ -22,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreOrgSupplier extends OrgAction
 {
     use WithNoStrictRules;
+    use WithProcurementEditAuthorisation;
 
     /**
      * @throws \Throwable
@@ -65,6 +68,20 @@ class StoreOrgSupplier extends OrgAction
         }
 
         return $rules;
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function inOrganisation(Organisation $organisation, Supplier $supplier, ActionRequest $request): OrgSupplier
+    {
+        $this->initialisation($organisation, $request);
+
+        $orgSupplier = $this->handle($organisation, $supplier, $this->validatedData);
+
+        SyncOrgSupplierProducts::run($orgSupplier, $this->hydratorsDelay);
+
+        return $orgSupplier;
     }
 
     /**

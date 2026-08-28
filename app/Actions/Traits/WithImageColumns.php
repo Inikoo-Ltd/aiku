@@ -27,6 +27,7 @@ trait WithImageColumns
             'size_comparison_image_id',
             'lifestyle_image_id',
             'top_image_id',
+            'audio_id',
         ];
     }
 }

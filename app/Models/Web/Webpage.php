@@ -42,6 +42,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite;
 use App\Models\Traits\HasSearch;
 
 /**
@@ -146,6 +147,18 @@ class Webpage extends Model implements Auditable, HasMedia
     use InWebsite;
     use HasHistory;
     use HasImage;
+    protected static function booted(): void
+    {
+        static::saved(function (Webpage $webpage) {
+            if ($webpage->wasRecentlyCreated || $webpage->wasChanged('state')) {
+                HydrateIsInWebsite::make()->fromWebpage($webpage);
+            }
+        });
+
+        static::deleted(function (Webpage $webpage) {
+            HydrateIsInWebsite::make()->fromWebpage($webpage);
+        });
+    }
 
     protected $casts = [
         'data'                        => 'array',
@@ -272,6 +285,14 @@ class Webpage extends Model implements Auditable, HasMedia
             ->withTimestamps()->withPivot('model_type', 'model_id', 'scope');
     }
 
+
+    public function getBlogCategory(bool $withAmbiguousFallback = true): ?WebpageSubTypeEnum
+    {
+        return WebpageSubTypeEnum::resolveBlogCategory(
+            $this->getRawOriginal('sub_type'),
+            $withAmbiguousFallback
+        );
+    }
 
     public function getUrl($withWWW = false): string
     {

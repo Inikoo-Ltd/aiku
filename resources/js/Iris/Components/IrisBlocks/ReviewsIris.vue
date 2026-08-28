@@ -21,7 +21,7 @@ import { faArrowRight } from "@far"
 
 
 const props = defineProps<{
-    webpage_id?: string
+    webpage_id?: number | string
 }>()
 
 const reviewsData = ref({ data: [] as any[], meta: { current_page: 0, last_page: 1, total: 0 } })

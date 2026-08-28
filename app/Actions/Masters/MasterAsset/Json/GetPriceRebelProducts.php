@@ -21,7 +21,7 @@ class GetPriceRebelProducts extends OrgAction
 
         return $masterAsset
             ->products()
-            ->with(['family', 'shop', 'currency'])
+            ->with(['family', 'shop.organisation', 'currency'])
             ->get()
             ->mapWithKeys(function ($product) use ($getPrice) {
                 $shop = $product->shop;
@@ -39,6 +39,11 @@ class GetPriceRebelProducts extends OrgAction
                             'value'             => $getPrice ? $product->price : $product->rrp,
                             'units'             => (float) $product->units,
                             'currency_symbol'   => $product->currency?->symbol ?? $shop->currency->symbol,
+                            'url'               => route('grp.org.shops.show.catalogue.products.all_products.show', [
+                                'organisation' => $shop->organisation->slug,
+                                'shop'         => $shop->slug,
+                                'product'      => $product->slug,
+                            ]),
                         ]
                     ];
                 }

@@ -30,6 +30,10 @@ return [
         'secret'            => env('AWS_SECRET_ACCESS_KEY'),
         'region'            => env('AWS_DEFAULT_REGION', 'eu-west-1'),
         'configuration_set' => env('AWS_CONFIGURATION_SET'),
+
+        /* Average billed cost per thousand messages in USD, SNS event notifications included.
+           Used to estimate what a mailshot cost. */
+        'cost_per_thousand_usd' => env('SES_COST_PER_THOUSAND_USD', 0.1023),
     ],
 
     'tiktok'    => [
@@ -50,7 +54,7 @@ return [
     'ebay'      => [
         'client_id'       => env('EBAY_CLIENT_ID'),
         'client_secret'   => env('EBAY_CLIENT_SECRET'),
-        'sandbox'         => env('EBAY_SANDBOX', true),
+        'sandbox'         => env('APP_ENV') === 'production' ? env('EBAY_SANDBOX', true) : true,
         'redirect_uri'    => env('EBAY_REDIRECT_URI'),
         'redirect_uri_es' => env('EBAY_REDIRECT_URI_ES'),
     ],
@@ -59,7 +63,7 @@ return [
         'app_id'        => env('AMAZON_APP_ID'),
         'client_secret' => env('AMAZON_CLIENT_SECRET'),
         'region'        => env('AMAZON_REGION', 'na'),
-        'sandbox'       => env('AMAZON_SANDBOX', true)
+        'sandbox'       => env('APP_ENV') === 'production' ? env('AMAZON_SANDBOX', true) : true
     ],
     'apple_pay' => [
         'verification_string' => env('APPLE_PAY_VERIFICATION_STRING'),
@@ -72,6 +76,13 @@ return [
         'developer_token' => env('GOOGLE_ADS_DEVELOPER_TOKEN'),
         'client_id'       => env('GOOGLE_CLIENT_ID'),
         'client_secret'   => env('GOOGLE_CLIENT_SECRET'),
+    ],
+    'meta_ads'  => [
+        /* A Business Manager system user token, which does not expire and normally covers every ad
+           account in the business. A shop may override it in settings.meta_ads.access_token when its
+           account belongs to somebody else's business, e.g. an agency's. */
+        'access_token' => env('META_ADS_ACCESS_TOKEN'),
+        'api_version'  => env('META_ADS_API_VERSION', 'v21.0'),
     ],
     'slack'     => [
         'notifications' => [
@@ -117,4 +128,11 @@ return [
         'token' => env('GITHUB_TOKEN'),
         'repo' => env('GITHUB_REPO', 'Inikoo-Ltd/aiku'),
     ],
+    'klipy' => [
+        'key' => env('KLIPY_API_KEY'),
+    ],
+    'indexnow' => [
+        'key' => env('INDEXNOW_KEY'),
+    ],
+
 ];

@@ -40,6 +40,22 @@ class RedoOrganisationTimeSeries implements ShouldBeUnique
         return $organisationId.'_'.$from.'_'.$to;
     }
 
+    protected function dateRangeSources(): array
+    {
+        return [
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('invoices')->whereNull('deleted_at'),
+                'key'   => 'organisation_id',
+                'date'  => 'date',
+            ],
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('customers')->whereNull('deleted_at'),
+                'key'   => 'organisation_id',
+                'date'  => 'registered_at',
+            ],
+        ];
+    }
+
     public function handle(?int $organisationId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$organisationId) {
@@ -53,20 +69,14 @@ class RedoOrganisationTimeSeries implements ShouldBeUnique
         }
 
         if (!$from || !$to) {
-            $dates = collect([
-                DB::connection('aiku_no_sticky')->table('invoices')->where('organisation_id', $organisation->id)->whereNull('deleted_at')->selectRaw('MIN(date) as min_date, MAX(date) as max_date')->first(),
-                DB::connection('aiku_no_sticky')->table('customers')->where('organisation_id', $organisation->id)->whereNull('deleted_at')->selectRaw('MIN(registered_at) as min_date, MAX(registered_at) as max_date')->first(),
-            ]);
+            $dateRange = $this->getDateRange($organisation->id);
 
-            $firstActivityDate = $dates->pluck('min_date')->filter()->min();
-            $lastActivityDate  = $dates->pluck('max_date')->filter()->max();
-
-            if (!$firstActivityDate) {
+            if (!$dateRange['from']) {
                 return;
             }
 
-            $from = $from ?? Carbon::parse($firstActivityDate)->toDateString();
-            $to   = $to ?? Carbon::parse($lastActivityDate ?? now())->toDateString();
+            $from = $from ?? Carbon::parse($dateRange['from'])->toDateString();
+            $to   = $to ?? Carbon::parse($dateRange['to'] ?? now())->toDateString();
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {

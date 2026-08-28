@@ -10,6 +10,7 @@ import { Icon } from "../Utils/Icon"
 
 export interface StatsBoxTS {
     id: number
+    key?: string
     label: string
     value: number
     subtitle?: string
@@ -23,6 +24,16 @@ export interface StatsBoxTS {
     route: {
         name: string
         parameters: {}
+    }
+    editable?: {
+        label: string
+        icon?: string
+        field: string
+        value: number
+        title?: string
+        tooltip?: string
+        readonly?: boolean
+        route: routeType
     }
     metaRight?: {
         count: number
@@ -38,7 +49,5 @@ export interface StatsBoxTS {
         icon: Icon
         route?: routeType
         tooltip: string
-        hide : boolean
-        logo_icon : Object
     }[]
 }

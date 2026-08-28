@@ -9,6 +9,7 @@
 namespace App\Actions\SupplyChain\SupplierProduct;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgSupplierProducts\SyncOrgSupplierProducts;
 use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSupplierProducts;
 use App\Actions\SupplyChain\HistoricSupplierProduct\StoreHistoricSupplierProduct;
@@ -21,14 +22,18 @@ use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Rules\AlphaDashDotSpaceSlashParenthesisPlus;
 use App\Rules\IUnique;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreSupplierProduct extends OrgAction
 {
-    use WithSupplyChainEditAuthorisation;
     use WithNoStrictRules;
+    use WithSupplierProductJsonColumns;
+    use WithSupplyChainEditAuthorisation;
 
     public bool $skipHistoric = false;
     private int $supplier_id;
@@ -38,18 +43,36 @@ class StoreSupplierProduct extends OrgAction
      */
     public function handle(Supplier $supplier, array $modelData): SupplierProduct
     {
+        $tradeUnits = Arr::pull($modelData, 'trade_units', []);
+        $modelData  = $this->pullSupplierProductJsonColumns($modelData);
+
         data_set($modelData, 'group_id', $supplier->group_id);
+        data_set($modelData, 'state', SupplierProductStateEnum::ACTIVE, overwrite: false);
 
         if ($supplier->agent_id) {
             $modelData['agent_id'] = $supplier->agent_id;
         }
+
         data_set($modelData, 'currency_id', $supplier->currency_id);
 
-        $supplierProduct = DB::transaction(function () use ($supplier, $modelData) {
+        $supplierProduct = DB::transaction(function () use ($supplier, $modelData, $tradeUnits) {
             /** @var SupplierProduct $supplierProduct */
             $supplierProduct = $supplier->supplierProducts()->create($modelData);
             $supplierProduct->refresh();
             $supplierProduct->stats()->create();
+
+            if ($tradeUnits) {
+                $quantityPerTradeUnit = Arr::get($modelData, 'units_per_pack') ?: 1;
+
+                SyncSupplierProductTradeUnits::run(
+                    $supplierProduct,
+                    collect($tradeUnits)
+                        ->mapWithKeys(fn ($tradeUnitId) => [
+                            $tradeUnitId => ['quantity' => $quantityPerTradeUnit]
+                        ])
+                        ->all()
+                );
+            }
 
             if (!$this->skipHistoric) {
                 $historicProduct = StoreHistoricSupplierProduct::make()->action($supplierProduct, [
@@ -65,6 +88,7 @@ class StoreSupplierProduct extends OrgAction
             return $supplierProduct;
         });
 
+        SyncOrgSupplierProducts::make()->fromSupplierProduct($supplierProduct, $this->hydratorsDelay);
 
         GroupHydrateSupplierProducts::dispatch($supplier->group)->delay($this->hydratorsDelay);
         SupplierHydrateSupplierProducts::dispatch($supplier)->delay($this->hydratorsDelay);
@@ -77,7 +101,7 @@ class StoreSupplierProduct extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'             => [
+            'code'                 => [
                 'required',
                 $this->strict ? 'max:64' : 'max:255',
                 $this->strict ? new AlphaDashDotSpaceSlashParenthesisPlus() : 'string',
@@ -89,15 +113,20 @@ class StoreSupplierProduct extends OrgAction
                     ]
                 ),
             ],
-            'name'             => ['required', 'string', 'max:255'],
-            'state'            => ['sometimes', 'required', Rule::enum(SupplierProductStateEnum::class)],
-            'is_available'     => ['sometimes', 'required', 'boolean'],
-            'cost'             => ['required'],
-            'units_per_pack'   => ['sometimes', 'nullable'],
-            'units_per_carton' => ['sometimes', 'nullable'],
-            'cbm'              => ['sometimes', 'nullable', 'numeric'],
-            'extra_costs'      => ['sometimes', 'nullable', 'numeric','min:0'],
+            'name'                 => ['required', 'string', 'max:255'],
+            'state'                => ['sometimes', 'required', Rule::enum(SupplierProductStateEnum::class)],
+            'is_available'         => ['sometimes', 'required', 'boolean'],
+            'cost'                 => ['required'],
+            'units_per_pack'       => ['sometimes', 'nullable'],
+            'units_per_carton'     => ['sometimes', 'nullable'],
+            'cbm'                  => ['sometimes', 'nullable', 'numeric'],
+            'extra_costs'          => ['sometimes', 'nullable', 'numeric', 'min:0'],
+
+            'trade_units'          => ['sometimes', 'nullable', 'array'],
+            'trade_units.*'        => ['integer', 'exists:trade_units,id'],
         ];
+
+        $rules = array_merge($rules, $this->supplierProductJsonFieldRules());
 
         if (!$this->strict) {
             $rules                = $this->noStrictStoreRules($rules);
@@ -110,11 +139,23 @@ class StoreSupplierProduct extends OrgAction
     /**
      * @throws \Throwable
      */
+    public function asController(Supplier $supplier, ActionRequest $request): SupplierProduct
+    {
+        $this->supplier_id = $supplier->id;
+        $this->initialisationFromGroup($supplier->group, $request);
+
+        return $this->handle($supplier, $this->validatedData);
+    }
+
+    /**
+     * @throws \Throwable
+     */
     public function action(Supplier $supplier, array $modelData, bool $skipHistoric = false, int $hydratorsDelay = 0, bool $strict = true, $audit = true): SupplierProduct
     {
         if (!$audit) {
             SupplierProduct::disableAuditing();
         }
+
         $this->supplier_id    = $supplier->id;
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
@@ -126,11 +167,20 @@ class StoreSupplierProduct extends OrgAction
         return $this->handle($supplier, $this->validatedData);
     }
 
-    public function asController(Supplier $supplier, ActionRequest $request)
+    public function htmlResponse(SupplierProduct $supplierProduct): RedirectResponse
     {
-        $this->supplier_id = $supplier->id;
-        $this->initialisationFromGroup($supplier->group, $request);
+        $supplier = $supplierProduct->supplier;
 
-        return $this->handle($supplier, $this->validatedData);
+        if ($supplier->agent_id) {
+            return Redirect::route(
+                'grp.supply-chain.agents.show.suppliers.supplier_products.show',
+                [$supplier->agent->slug, $supplier->slug, $supplierProduct->slug]
+            );
+        }
+
+        return Redirect::route(
+            'grp.supply-chain.suppliers.supplier_products.show',
+            [$supplier->slug, $supplierProduct->slug]
+        );
     }
 }

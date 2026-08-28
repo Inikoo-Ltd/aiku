@@ -21,8 +21,8 @@ class IndexOrgStockFamilyTimeSeries extends OrgAction
 {
     public function handle(OrgStockFamily $orgStockFamily, string|null $prefix): LengthAwarePaginator
     {
-        $frequency = request()->input('frequency', TimeSeriesFrequencyEnum::DAILY->value);
-        $frequencyEnum = TimeSeriesFrequencyEnum::tryFrom($frequency) ?? TimeSeriesFrequencyEnum::DAILY;
+        $frequency = request()->input('frequency', TimeSeriesFrequencyEnum::MONTHLY->value);
+        $frequencyEnum = TimeSeriesFrequencyEnum::tryFrom($frequency) ?? TimeSeriesFrequencyEnum::MONTHLY;
 
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
@@ -42,7 +42,6 @@ class IndexOrgStockFamilyTimeSeries extends OrgAction
                 'id',
                 'from',
                 'to',
-                'sales_external',
                 'sales_org_currency_external',
                 'sales_grp_currency_external',
                 'invoices',
@@ -50,8 +49,18 @@ class IndexOrgStockFamilyTimeSeries extends OrgAction
                 'orders',
                 'customers_invoiced',
             ])
+            ->selectRaw('? as currency_code', [$orgStockFamily->organisation->currency->code])
+            ->selectSub(
+                OrgStockFamilyTimeSeriesRecord::query()
+                    ->from('org_stock_family_time_series_records as last_year_records')
+                    ->select('last_year_records.sales_org_currency_external')
+                    ->whereColumn('last_year_records.org_stock_family_time_series_id', 'org_stock_family_time_series_records.org_stock_family_time_series_id')
+                    ->whereRaw('org_stock_family_time_series_records."from" - interval \'1 year\' between last_year_records."from" and last_year_records."to"')
+                    ->limit(1),
+                'sales_org_currency_external_ly'
+            )
             ->defaultSort('-from')
-            ->allowedSorts(['from', 'to', 'sales_external', 'invoices', 'refunds', 'customers_invoiced'])
+            ->allowedSorts(['from', 'to', 'sales_org_currency_external', 'invoices', 'refunds', 'customers_invoiced'])
             ->allowedFilters([])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -73,7 +82,8 @@ class IndexOrgStockFamilyTimeSeries extends OrgAction
                 )
                 ->withFrequency()
                 ->column('period', __('Period'), canBeHidden: false, sortable: false)
-                ->column('sales_external', __('Sales'), canBeHidden: false, sortable: true, type: 'number')
+                ->column('sales_org_currency_external', __('Sales'), canBeHidden: false, sortable: true, type: 'number')
+                ->column('sales_org_currency_external_delta', __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
                 ->column('invoices', __('Invoices'), canBeHidden: false, sortable: true, type: 'number')
                 ->column('refunds', __('Refunds'), canBeHidden: false, sortable: true, type: 'number')
                 ->column('customers_invoiced', __('Customers'), canBeHidden: false, sortable: true, type: 'number')

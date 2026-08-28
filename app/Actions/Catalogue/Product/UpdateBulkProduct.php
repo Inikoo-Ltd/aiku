@@ -22,11 +22,14 @@ class UpdateBulkProduct extends OrgAction
     use WithActionUpdate;
     use WithCatalogueEditAuthorisation;
 
-    public function handle(array $modelData): void
+    public function handle(Shop $shop, array $modelData): void
     {
         $rawProductData = Arr::get($modelData, 'products', []);
         foreach ($rawProductData as $productData) {
-            $product = Product::find((int)Arr::get($productData, 'id'));
+            $product = Product::where('shop_id', $shop->id)->find((int)Arr::get($productData, 'id'));
+            if (!$product) {
+                continue;
+            }
 
             $dataToUpdate = [];
             if (Arr::exists($productData, 'rrp')) {
@@ -59,6 +62,6 @@ class UpdateBulkProduct extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
 
-        $this->handle($this->validatedData);
+        $this->handle($shop, $this->validatedData);
     }
 }

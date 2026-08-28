@@ -30,6 +30,11 @@ class RetinaLogout
 
         Cookie::queue(Cookie::forget('iris_vua'));
 
+        /* The touch history belongs to the journey that just ended. On a shared browser the next
+           person to log in must not inherit it into their own attribution record. */
+        Cookie::queue(Cookie::forget('aiku_tsd'));
+        Cookie::queue(Cookie::forget('aiku_lts'));
+
         return Redirect::back();
 
     }

@@ -10,8 +10,6 @@ namespace App\Actions\Production\RawMaterial\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
-use App\Enums\Production\RawMaterial\RawMaterialStateEnum;
-use App\Enums\Production\RawMaterial\RawMaterialStockStatusEnum;
 use App\Enums\Production\RawMaterial\RawMaterialTypeEnum;
 use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
 use App\Http\Resources\Fulfilment\PalletResource;
@@ -94,13 +92,6 @@ class EditRawMaterial extends OrgAction
                                     'value'    => $rawMaterial->type,
                                     'required' => true
                                 ],
-                                'state' => [
-                                    'type'     => 'select',
-                                    'options'  => RawMaterialStateEnum::values(),
-                                    'label'    => __('state'),
-                                    'value'    => $rawMaterial->state,
-                                    'required' => true
-                                ],
                                 'code' => [
                                     'type'     => 'input',
                                     'label'    => __('Code'),
@@ -120,24 +111,37 @@ class EditRawMaterial extends OrgAction
                                     'value'     => $rawMaterial->unit,
                                     'required'  => true
                                 ],
-                                'unit_cost' => [
-                                    'type'     => 'input',
-                                    'label'    => __('unit cost'),
-                                    'value'    => $rawMaterial->unit_cost,
-                                    'required' => true
+                                'trade_unit_id' => [
+                                    'type'       => 'select_infinite',
+                                    'label'      => __('Trade unit'),
+                                    'options'    => array_filter([
+                                        $rawMaterial->tradeUnit ? ['id' => $rawMaterial->tradeUnit->id, 'code' => $rawMaterial->tradeUnit->code] : null,
+                                    ]),
+                                    'fetchRoute' => [
+                                        'name'       => 'grp.goods.trade-units.index',
+                                        'parameters' => []
+                                    ],
+                                    'valueProp' => 'id',
+                                    'labelProp' => 'code',
+                                    'required'  => false,
+                                    'value'     => $rawMaterial->trade_unit_id,
                                 ],
-                                'quantity_on_location' => [
-                                    'type'     => 'input',
-                                    'label'    => __('quantity on location'),
-                                    'value'    => $rawMaterial->quantity_on_location,
-                                    'required' => true
-                                ],
-                                'stock_status' => [
-                                    'type'      => 'select',
-                                    'options'   => RawMaterialStockStatusEnum::values(),
-                                    'label'     => __('stock status'),
-                                    'value'     => $rawMaterial->stock_status,
-                                    'required'  => true
+                                'org_stock_id' => [
+                                    'type'       => 'select_infinite',
+                                    'label'      => __('Stock (SKU)'),
+                                    'options'    => array_filter([
+                                        $rawMaterial->orgStock ? ['id' => $rawMaterial->orgStock->id, 'code' => $rawMaterial->orgStock->code] : null,
+                                    ]),
+                                    'fetchRoute' => [
+                                        'name'       => 'grp.json.org_stocks.index',
+                                        'parameters' => [
+                                            'organisation' => $rawMaterial->organisation->slug,
+                                        ]
+                                    ],
+                                    'valueProp' => 'id',
+                                    'labelProp' => 'code',
+                                    'required'  => false,
+                                    'value'     => $rawMaterial->org_stock_id,
                                 ],
                                 // 'type' => [
                                 //     'type'    => 'select',

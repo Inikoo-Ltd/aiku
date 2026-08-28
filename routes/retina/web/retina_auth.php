@@ -25,6 +25,9 @@ use App\Actions\Retina\UI\Auth\SendRetinaResetPasswordEmail;
 use App\Actions\Retina\UI\Auth\ShowForgotPasswordForm;
 use App\Actions\Reviews\GetReviewableReviews;
 use App\Actions\Reviews\GetReviews;
+use App\Actions\Search\GetIrisSearchFeaturedItems;
+use App\Actions\Search\RecordWebsiteSearchClick;
+use App\Actions\Search\SearchIrisCatalogue;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('json')->name('json.')->group(function () {
@@ -32,6 +35,12 @@ Route::prefix('json')->name('json.')->group(function () {
     Route::get('shop/{shop:id}/reviews', [GetReviewableReviews::class, 'inShop'])->name('reviews.shop.show');
     Route::get('product/{product:id}/reviews', [GetReviewableReviews::class, 'inProduct'])->name('reviews.product.show')->withoutScopedBindings();
     Route::get('product-category/{productCategory:id}/reviews', [GetReviewableReviews::class, 'inProductCategory'])->name('reviews.product_category.show');
+
+    Route::middleware(['iris-relax-auth:retina', 'throttle:iris-search'])->group(function () {
+        Route::get('search/catalogue', SearchIrisCatalogue::class)->name('search.catalogue');
+        Route::post('search/click', RecordWebsiteSearchClick::class)->name('search.click');
+        Route::get('search/featured-items', GetIrisSearchFeaturedItems::class)->name('search.featured_items');
+    });
 });
 
 Route::middleware('guest:retina')->group(function () {

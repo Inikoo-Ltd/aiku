@@ -252,6 +252,23 @@ class ShowProduct extends OrgAction
                     'parameters' => $request->route()->originalParameters()
                 ]
             ];
+
+            if ($product->shop->type != ShopTypeEnum::EXTERNAL) {
+                $actions[] = [
+                    'type'  => 'button',
+                    'style' => 'edit',
+                    'label' => __('Composition'),
+                    'icon'  => ['fal', 'fa-atom'],
+                    'route' => [
+                        'name'       => 'grp.org.shops.show.catalogue.products.all_products.composition',
+                        'parameters' => [
+                            'organisation' => $product->organisation->slug,
+                            'shop'         => $product->shop->slug,
+                            'product'      => $product->slug,
+                        ]
+                    ]
+                ];
+            }
         }
 
         // $actions[] = [
@@ -353,8 +370,8 @@ class ShowProduct extends OrgAction
                 : Inertia::optional(fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
 
             ProductTabsEnum::HISTORY->value => $this->tab == ProductTabsEnum::HISTORY->value ?
-                fn () => HistoryResource::collection(IndexHistory::run($product))
-                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($product))),
+                fn () => HistoryResource::collection(IndexHistory::run($product, ProductTabsEnum::HISTORY->value))
+                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($product, ProductTabsEnum::HISTORY->value))),
 
             ProductTabsEnum::CUSTOMERS->value => $this->tab == ProductTabsEnum::CUSTOMERS->value ?
                 fn () => CustomersResource::collection(IndexCustomers::run($product))
@@ -453,6 +470,7 @@ class ShowProduct extends OrgAction
                 ],
                 'is_external_shop'          => $isExternalShop,
                 'is_dependent_trade_unit'   => $product->not_follow_master_trade_units,
+                'not_follow_master_media'   => $product->not_follow_master_media,
                 'family_slug'               => $product->family->slug ?? null,
                 'product_state'             => $product->state->value,
                 'webpage_canonical_url'     => $product->webpage?->canonical_url,
@@ -475,7 +493,7 @@ class ShowProduct extends OrgAction
             ->table(IndexOrdersInProduct::make()->tableStructure($product, ProductTabsEnum::ORDERS->value))
             ->table(IndexTradeUnitsInProduct::make()->tableStructure(prefix: ProductTabsEnum::TRADE_UNITS->value))
             ->table(IndexOrgStocksInProduct::make()->tableStructure(prefix: ProductTabsEnum::STOCKS->value))
-            ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value))
+            ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value, model: $product))
             ->table(IndexCustomers::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::CUSTOMERS->value))
             ->table(IndexReviews::make()->tableStructure(prefix: ProductTabsEnum::REVIEWS->value));
 
@@ -683,6 +701,44 @@ class ShowProduct extends OrgAction
                     ],
                     $suffix,
                     ' ('.__('In process').')'
+                )
+            ),
+            'grp.org.shops.show.catalogue.products.mismatched_families.show' =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.mismatched_families.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.mismatched_families.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    ' ('.__('With Mismatch Family').')'
+                )
+            ),
+            'grp.org.shops.show.catalogue.products.no_image_product.show' =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.no_image_product.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.no_image_product.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    ' ('.__('Missing Image').')'
                 )
             ),
             'grp.org.shops.show.catalogue.products.orphan_products.show' =>

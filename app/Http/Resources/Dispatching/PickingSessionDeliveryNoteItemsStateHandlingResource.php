@@ -22,7 +22,9 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $quantity_picked
  * @property mixed $org_stock_code
  * @property mixed $org_stock_name
+ * @property mixed $barcode
  * @property mixed $is_handled
+ * @property mixed $is_dirty
  * @property mixed $quantity_packed
  * @property mixed $quantity_not_picked
  * @property mixed $quantity_waiting_warehouse
@@ -168,11 +170,13 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'org_stock_code'                    => $this->org_stock_code,
             'org_stock_slug'                    => $this->org_stock_slug,
             'org_stock_name'                    => $this->org_stock_name,
+            'barcode'                           => $this->barcode,
             'locations'                         => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
             'pickings'                          => PickingResource::collection($pickings),
             'packings'                          => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'                           => $fullWarning,
             'is_handled'                        => $this->is_handled,
+            'is_dirty'                          => $this->is_dirty,
             'delivery_note_reference'           => $this->delivery_note_reference,
             'delivery_note_slug'                => $this->delivery_note_slug,
             'delivery_note_id'                  => $this->delivery_note_id,

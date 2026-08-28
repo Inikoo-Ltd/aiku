@@ -43,6 +43,7 @@ class GetAgentUnreadMessagesSummary
             ->whereIn('sender_type', $visitorSenderTypes)
             ->whereHas('chatSession', function ($query) use ($agent, $shopIds) {
                 $query->whereIn('shop_id', $shopIds)
+                    ->where('is_spam', false)
                     ->whereHas('assignments', function ($assignmentQuery) use ($agent) {
                         $assignmentQuery->where('chat_agent_id', $agent->id)
                             ->where('status', ChatAssignmentStatusEnum::ACTIVE->value);
@@ -55,8 +56,11 @@ class GetAgentUnreadMessagesSummary
             ->whereIn('sender_type', $visitorSenderTypes)
             ->whereHas('chatSession', function ($query) use ($shopIds) {
                 $query->where('status', ChatSessionStatusEnum::WAITING->value)
+                    ->where('is_spam', false)
                     ->whereIn('shop_id', $shopIds)
-                    ->whereDoesntHave('assignments');
+                    ->whereDoesntHave('assignments', function ($assignmentQuery) {
+                        $assignmentQuery->where('status', ChatAssignmentStatusEnum::ACTIVE->value);
+                    });
             })
             ->count();
 

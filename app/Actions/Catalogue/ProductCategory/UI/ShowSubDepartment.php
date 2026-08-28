@@ -242,8 +242,8 @@ class ShowSubDepartment extends OrgAction
                     : Inertia::optional(fn () => GetRelatedProductCategories::run($subDepartment)),
 
                 DepartmentTabsEnum::HISTORY->value => $this->tab == DepartmentTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($subDepartment))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($subDepartment))),
+                    fn () => HistoryResource::collection(IndexHistory::run($subDepartment, DepartmentTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($subDepartment, DepartmentTabsEnum::HISTORY->value))),
 
                 DepartmentTabsEnum::IMAGES->value => $this->tab == DepartmentTabsEnum::IMAGES->value ?
                     fn () => GetProductCategoryImages::run($subDepartment)

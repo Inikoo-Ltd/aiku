@@ -7,6 +7,7 @@ export interface Navigation {
         number?: number
         icon_rotation: '90' | '180' | '270'
         iconClass?: string
+        colorScheme?: string  // Paints the whole tab in one colour, active or not. See Tabs.vue
         indicator?: boolean  // A blue dot indicator in Tabs
     }
 }

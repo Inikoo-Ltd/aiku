@@ -8,7 +8,6 @@
 
 namespace App\Actions\HumanResources\Clocking;
 
-use App\Actions\HumanResources\Clocking\Traits\SetClockingPhotoFromImage;
 use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateClockings;
 use App\Actions\HumanResources\Timesheet\GetTimesheet;
 use App\Actions\HumanResources\Timesheet\Hydrators\TimesheetHydrateTimeTrackers;
@@ -18,12 +17,15 @@ use App\Actions\SysAdmin\Guest\Hydrators\GuestHydrateClockings;
 use App\Actions\Traits\WithBase64FileConverter;
 use App\Actions\Traits\WithUpdateModelImage;
 use App\Enums\HumanResources\Clocking\ClockingTypeEnum;
+use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
+use App\Events\BroadcastEmployeeClockingUpdated;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Http\Resources\HumanResources\ClockingHanResource;
 use App\Http\Resources\HumanResources\ClockingResource;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\Timesheet;
 use App\Models\HumanResources\Workplace;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\Organisation;
@@ -41,6 +43,8 @@ class StoreClocking extends OrgAction
     use WithBase64FileConverter;
     use WithUpdateModelImage;
 
+    private const DUPLICATE_CLOCKING_WINDOW_SECONDS = 5;
+
     private Employee $employee;
 
     public function authorize(ActionRequest $request): bool
@@ -50,13 +54,8 @@ class StoreClocking extends OrgAction
         }
 
         if ($request->user() instanceof ClockingMachine) {
-            $employeeWorkplace = $this->employee->workplaces()
-                    ->wherePivot('workplace_id', $request->user()->workplace_id)
-                    ->count() > 0;
-
-            return ($this->organisation->id === $request->user()->organisation_id)
-                && $employeeWorkplace
-                && $this->employee->state === EmployeeStateEnum::WORKING;
+            return $this->employee->group_id === $request->user()->group_id
+                && in_array($this->employee->state, [EmployeeStateEnum::WORKING, EmployeeStateEnum::LEAVING], true);
         }
 
         return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
@@ -92,40 +91,72 @@ class StoreClocking extends OrgAction
         data_set($modelData, 'clocked_at', now(), overwrite: false);
 
         $clockedAt = Carbon::parse($modelData['clocked_at']);
-        $timezone = $parent->organisation->timezone->name ?? 'UTC';
+        $workplace = $parent instanceof ClockingMachine ? $parent->workplace : $parent;
+        $timezone  = $workplace?->timezone?->name ?? $parent->organisation->timezone->name ?? 'UTC';
         $localDate = $clockedAt->copy()->setTimezone($timezone);
         $timesheet = GetTimesheet::run($subject, $localDate);
         data_set($modelData, 'timesheet_id', $timesheet->id);
 
 
-        $clocking = DB::transaction(function () use ($modelData, $subject, $timesheet, $uploadedPhoto) {
+        $clocking = DB::transaction(function () use ($modelData, $subject, $timesheet, $uploadedPhoto, $parent, $clockedAt) {
+
+            Timesheet::whereKey($timesheet->id)->lockForUpdate()->first();
+
+            if ($parent instanceof ClockingMachine) {
+                $recentClocking = $this->findRecentClocking($subject, $clockedAt);
+
+                if ($recentClocking) {
+                    return $recentClocking;
+                }
+            }
+
             /** @var Clocking $clocking */
             $clocking = $subject->clockings()->create($modelData);
             AddClockingToTimeTracker::run($timesheet, $clocking);
 
             $clocking->refresh();
 
-            if ($uploadedPhoto) {
-                SetClockingPhotoFromImage::run(
-                    clocking: $clocking,
-                    imagePath: $uploadedPhoto->getPathName(),
-                    originalFilename: $uploadedPhoto->getClientOriginalName(),
-                    extension: $uploadedPhoto->getClientOriginalExtension()
-                );
-            }
-
-            TimesheetHydrateTimeTrackers::run($timesheet);
+            TimesheetHydrateTimeTrackers::run($timesheet->id);
 
             return $clocking;
         });
 
+        if ($uploadedPhoto && $clocking->wasRecentlyCreated) {
+            AttachClockingPhoto::dispatch(
+                $clocking,
+                base64_encode((string) file_get_contents($uploadedPhoto->getPathName())),
+                $uploadedPhoto->getClientOriginalName(),
+                $uploadedPhoto->getClientOriginalExtension()
+            );
+        }
+
+        $isSelfScannedQrCode = $parent instanceof ClockingMachine && $parent->type === ClockingMachineTypeEnum::QR_CODE->value;
+
         if ($subject instanceof Employee) {
             EmployeeHydrateClockings::dispatch($subject)->delay($this->hydratorsDelay);
+
+            if (!$isSelfScannedQrCode) {
+                BroadcastEmployeeClockingUpdated::dispatch($subject);
+            }
         } else {
             GuestHydrateClockings::dispatch($subject)->delay($this->hydratorsDelay);
         }
 
         return $clocking;
+    }
+
+    /**
+     * A barcode scanner that double fires, or a QR code left in front of the kiosk camera, would
+     * otherwise clock the employee in and straight back out. The existing clocking is returned so
+     * the kiosk repeats the result it already showed.
+     */
+    private function findRecentClocking(Employee|Guest $subject, Carbon $clockedAt): ?Clocking
+    {
+        return $subject->clockings()
+            ->where('clocked_at', '>', $clockedAt->copy()->subSeconds(self::DUPLICATE_CLOCKING_WINDOW_SECONDS))
+            ->where('clocked_at', '<=', $clockedAt)
+            ->latest('clocked_at')
+            ->first();
     }
 
     public function jsonResponse(Clocking $clocking): ClockingResource|ClockingHanResource
@@ -173,7 +204,7 @@ class StoreClocking extends OrgAction
         $this->han = true;
 
 
-        if ($request->user()->organisation_id !== $employee->organisation_id) {
+        if ($request->user()->group_id !== $employee->group_id) {
             abort(404);
         }
         if (in_array($employee->state, [EmployeeStateEnum::HIRED, EmployeeStateEnum::LEFT])) {

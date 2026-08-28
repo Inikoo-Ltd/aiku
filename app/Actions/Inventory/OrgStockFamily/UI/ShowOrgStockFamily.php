@@ -81,6 +81,17 @@ class ShowOrgStockFamily extends OrgAction
                     'tooltip' => __('SKOs'),
                 ],
             ],
+            [
+                'label'    => __('Invoices'),
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.invoices',
+                    'parameters' => $routeParameters,
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-file-invoice-dollar'],
+                    'tooltip' => __('Invoices'),
+                ],
+            ],
         ];
     }
 
@@ -121,8 +132,8 @@ class ShowOrgStockFamily extends OrgAction
                     : Inertia::optional(fn () => OrgStockFamilyTimeSeriesResource::collection(IndexOrgStockFamilyTimeSeries::run($orgStockFamily, OrgStockFamilyTabsEnum::SALES->value))),
 
                 OrgStockFamilyTabsEnum::HISTORY->value => $this->tab == OrgStockFamilyTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))),
+                    fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily, OrgStockFamilyTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily, OrgStockFamilyTabsEnum::HISTORY->value))),
 
                 'salesData' => $this->tab == OrgStockFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockFamilyTimeSeriesData::run($orgStockFamily)

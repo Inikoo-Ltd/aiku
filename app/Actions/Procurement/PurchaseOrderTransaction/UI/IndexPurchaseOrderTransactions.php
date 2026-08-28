@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrderTransaction\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -28,14 +29,7 @@ use Spatie\QueryBuilder\AllowedSort;
 
 class IndexPurchaseOrderTransactions extends OrgAction
 {
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-        $this->canDelete = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
-    }
-
+    use WithProcurementAuthorisation;
     protected function showDeliveryState(PurchaseOrder $purchaseOrder): bool
     {
         return in_array($purchaseOrder->state, [PurchaseOrderStateEnum::CONFIRMED, PurchaseOrderStateEnum::SETTLED], true)

@@ -125,7 +125,8 @@ class IndexIrisCatalogue extends IrisAction
     private function queryForProducts(?string $parent = null, ?string $parentKey = null)
     {
         $queryBuilder = QueryBuilder::for(Product::class)
-            ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
+            ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
+            ->where('products.is_for_sale', true);
 
         $parentColumnMap = [
             'department'     => 'department_id',
@@ -240,7 +241,7 @@ class IndexIrisCatalogue extends IrisAction
             ->allowedFilters([$globalSearch])
             ->allowedSorts(['code', 'name', ...$additionalSortableKeys])
             ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+            ->appends(Arr::except(request()->query(), ['domain', 'website']));
     }
 
     public function tableStructure(string $scope, ?string $parent = null, $prefix = null): Closure
@@ -303,6 +304,11 @@ class IndexIrisCatalogue extends IrisAction
             }
 
             $table->column(key: 'public_url', label: __('Webpage'), align: 'center');
+
+            if (in_array($scope, ['family', 'product'])) {
+                $table->column(key: 'download_csv', label: __('CSV'), align: 'center');
+                $table->column(key: 'download_images', label: __('Images'), align: 'center');
+            }
         };
     }
 

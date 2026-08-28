@@ -46,7 +46,7 @@ defineSlots<{
  * Normalize raw input
  */
 const computedHref = computed<string | null>(() => {
-  let raw = props.canonical_url ?? props.href
+  let raw = props.type === "external" ? props.href : (props.canonical_url ?? props.href)
 
   if (typeof raw !== "string") return null
 
@@ -142,6 +142,10 @@ const isAnchor = computed(() => {
   return !!href && href.startsWith("#")
 })
 
+const opensOutsideCurrentTab = computed(
+  () => !!props.target && props.target !== "_self"
+)
+
 const isLoading = ref(false)
 
 const handleClick = (event: MouseEvent) => {
@@ -171,7 +175,8 @@ const handleClick = (event: MouseEvent) => {
       type === 'internal' &&
       resolvedHref &&
       linkLocation === location &&
-      !isAnchor
+      !isAnchor &&
+      !opensOutsideCurrentTab
     "
     :href="resolvedHref"
     :method="method"
@@ -196,6 +201,7 @@ const handleClick = (event: MouseEvent) => {
     :class="class"
     :style="style"
     :target="target"
+    :id="id"
     rel="noopener noreferrer"
     @click="handleClick"
   >
@@ -203,7 +209,7 @@ const handleClick = (event: MouseEvent) => {
   </a>
 
   <!-- fallback -->
-  <div v-else :class="class" :style="style">
+  <div v-else :class="class" :style="style" :id="id">
     <slot>{{ label }}</slot>
   </div>
 </template>

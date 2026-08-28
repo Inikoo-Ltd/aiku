@@ -37,6 +37,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -106,6 +107,8 @@ class Warehouse extends Model implements Auditable
     use HasAddress;
     use HasAddresses;
 
+    public const DEFAULT_LOW_STOCK_THRESHOLD = 5;
+
     protected $casts = [
         'state'              => WarehouseStateEnum::class,
         'data'               => 'array',
@@ -151,6 +154,11 @@ class Warehouse extends Model implements Auditable
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function getLowStockThreshold(): float
+    {
+        return (float) Arr::get($this->settings, 'low_stock_threshold', self::DEFAULT_LOW_STOCK_THRESHOLD);
     }
 
     public function address(): BelongsTo

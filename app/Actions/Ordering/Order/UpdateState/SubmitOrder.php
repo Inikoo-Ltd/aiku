@@ -12,9 +12,11 @@ use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTrafficSource;
+use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\HasOrderHydrators;
+use App\Actions\Ordering\Order\ProcessOrderTrafficSource;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\OrgAction;
@@ -22,6 +24,7 @@ use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithGiftOptOut;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Events\RetinaOrderSubmittedEvent;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -67,7 +70,10 @@ class SubmitOrder extends OrgAction
         $modelData = [
             'state'          => OrderStateEnum::SUBMITTED,
             'status'         => OrderStatusEnum::PROCESSING,
-            'internal_notes' => $order->customer->warehouse_internal_notes,
+            'private_warehouse_note' => collect([$order->private_warehouse_note, $order->customer->warehouse_internal_notes, $order->customer->warehouse_temporary_notes])
+                ->filter()
+                ->unique()
+                ->implode(' — ') ?: null,
         ];
 
         $date = now();
@@ -108,6 +114,12 @@ class SubmitOrder extends OrgAction
         }
 
         $this->update($order, $modelData);
+        
+        if ($order->customer->warehouse_temporary_notes) {
+            UpdateCustomer::make()->action($order->customer, [
+                'warehouse_temporary_notes' => null
+            ]);
+        }
 
         if ($order->shop->masterShop) {
             $order->shop->masterShop->orderingStats->update(
@@ -148,6 +160,11 @@ class SubmitOrder extends OrgAction
         }
 
         CustomerHydrateTrafficSource::dispatch($order->customer_id);
+        ProcessOrderTrafficSource::dispatch($order)->delay($this->hydratorsDelay);
+
+        /** Tells any other browser tab still showing this order's checkout to redirect away,
+         * so a stale card widget cannot take a second payment */
+        RetinaOrderSubmittedEvent::dispatch($order->customer_id, $order->id);
 
         return $order;
     }
@@ -375,7 +392,7 @@ class SubmitOrder extends OrgAction
             $daysSinceLastInvoiced = $lastInvoiced ? (int)-now()->diffInDays($lastInvoiced) : null;
 
 
-            if ($order->gross_amount >= $minAmount && ($daysSinceLastInvoiced != null && $daysSinceLastInvoiced <= Arr::get($offersData, 'gr.interval', 30))) {
+            if ($order->gross_amount >= $minAmount && (($daysSinceLastInvoiced != null && $daysSinceLastInvoiced <= Arr::get($offersData, 'gr.interval', 30)) || $order->customer->hasActiveGrExtension())) {
                 $eligible = true;
             }
             $isGiftOptedOut = $this->isGiftOptedOut($order);

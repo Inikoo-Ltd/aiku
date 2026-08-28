@@ -9,7 +9,6 @@ use App\Helpers\NaturalLanguage;
 use App\Actions\Traits\HasBucketAttachment;
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Actions\Masters\MasterAsset\UI\GetMasterProductTimeSeriesData;
-use Illuminate\Support\Facades\DB;
 use App\Models\Goods\TradeUnit;
 
 class MasterProductVariantResource extends JsonResource
@@ -24,7 +23,7 @@ class MasterProductVariantResource extends JsonResource
 
         $dataTradeUnits = [];
         if ($masterProduct->tradeUnits) {
-            $dataTradeUnits = $this->getDataTradeUnit($masterProduct->tradeUnits);
+            $dataTradeUnits = $this->getDataTradeUnit($masterProduct);
         }
 
         $gpsr = [
@@ -102,15 +101,11 @@ class MasterProductVariantResource extends JsonResource
     }
 
 
-    private function getDataTradeUnit($tradeUnits): array
+    private function getDataTradeUnit($masterProduct): array
     {
-        $packedIn = DB::table('model_has_trade_units')
-            ->where('model_type', 'Stock')
-            ->whereIn('trade_unit_id', $tradeUnits->pluck('id'))
-            ->pluck('quantity', 'trade_unit_id')
-            ->toArray();
+        $packedIn = $masterProduct->getEffectiveStockPackedInByTradeUnit();
 
-        return $tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) {
+        return $masterProduct->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) {
             return array_merge(
                 ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit->pivot->quantity / $packedIn[$tradeUnit->id])), $packedIn[$tradeUnit->id])],
                 GetTradeUnitShowcase::run($tradeUnit)

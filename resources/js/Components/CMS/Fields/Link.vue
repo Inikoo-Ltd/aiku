@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
 import RadioButton from "primevue/radiobutton"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import SelectQuery from "@/Components/SelectQuery.vue"
-import { set } from 'lodash-es'
+import { isPlainObject, set } from 'lodash-es'
 
 const props = withDefaults(defineProps<{
 	modelValue?: {
@@ -42,7 +42,50 @@ const localModel = computed({
 const options = [
 	{ label: "Internal", value: "internal" },
 	{ label: "External", value: "external" },
+	{ label: "No Link", value: "none" },
 ]
+
+const isCleared = ref(props.modelValue === null)
+
+watch(() => props.modelValue, (value) => {
+	if (value) {
+		isCleared.value = false
+	}
+})
+
+const selectedType = computed(() => isCleared.value ? 'none' : localModel.value?.type)
+
+const emptyDestination = {
+	href: null,
+	url: null,
+	canonical_url: null,
+	id: null,
+	image_alt: null,
+	workshop: null,
+	data: {},
+}
+
+function changeType(value: string) {
+	if (value === 'none') {
+		isCleared.value = true
+		emit('update:modelValue', null)
+		return
+	}
+
+	const currentLink: Record<string, any> = isPlainObject(localModel.value) ? localModel.value : {}
+
+	if (!isCleared.value && currentLink.type === value) {
+		return
+	}
+
+	isCleared.value = false
+	emit('update:modelValue', {
+		...currentLink,
+		...emptyDestination,
+		target: currentLink.target ?? '_self',
+		type: value,
+	})
+}
 
 const targets = [
 	{ label: "In this Page", value: "_self" },
@@ -84,7 +127,7 @@ const cleanCanonicalPath = (url) => {
 <template>
 	<div>
 		<!-- Target Selection -->
-		<div>
+		<div v-if="!isCleared">
 			<div class="text-gray-500 text-xs tracking-wide mb-2">{{ trans("Target") }}</div>
 			<div class="mb-3 border border-gray-300 rounded-md w-full px-4 py-2">
 				<div class="flex flex-wrap justify-between w-full">
@@ -105,18 +148,17 @@ const cleanCanonicalPath = (url) => {
 			<div class="mb-3 border border-gray-300 rounded-md w-full px-4 py-2">
 				<div class="flex flex-wrap justify-between w-full">
 					<div v-for="(option, indexOption) in options" class="flex items-center gap-2">
-						<RadioButton :modelValue="localModel.type" v-bind="props_radio_type" @update:modelValue="(e: string) => {
-							set(localModel, 'type', e)
-							emit('update:modelValue', localModel) // Emit setiap perubahan
-						}" :inputId="`${option.value}${indexOption}`" name="type" size="small" :value="option.value" />
-						<label @click="() => set(localModel, 'type', option.value)" class="cursor-pointer">{{option.label }}</label>
+						<RadioButton :modelValue="selectedType" v-bind="props_radio_type"
+							@update:modelValue="(e: string) => changeType(e)"
+							:inputId="`${option.value}${indexOption}`" name="type" size="small" :value="option.value" />
+						<label @click="() => changeType(option.value)" class="cursor-pointer">{{ option.label }}</label>
 					</div>
 				</div>
 			</div>
 		</div>
 
 		<!-- Destination Input -->
-		<div v-if="localModel?.type">
+		<div v-if="!isCleared && localModel?.type">
 			<div class="my-2 text-gray-500 text-xs tracking-wide mb-2">{{ trans("Destination") }}</div>
 			<PureInput v-if="localModel?.type == 'external'" v-model="localModel.href"
 				placeholder="https://www.anotherwebsite.com/page" v-bind="props_input" @update:modelValue="(e) => {

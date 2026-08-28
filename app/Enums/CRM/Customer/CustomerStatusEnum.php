@@ -10,6 +10,7 @@ namespace App\Enums\CRM\Customer;
 
 use App\Enums\EnumHelperTrait;
 use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 
 enum CustomerStatusEnum: string
 {
@@ -68,7 +69,7 @@ enum CustomerStatusEnum: string
         ];
     }
 
-    public static function count(Shop $parent): array
+    public static function count(Shop|Organisation $parent): array
     {
         $stats = $parent->crmStats;
 

@@ -20,6 +20,7 @@ use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Helpers\TaxNumber\DeleteTaxNumber;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
 use App\Actions\Helpers\TaxNumber\UpdateTaxNumber;
+use App\Actions\Ordering\Order\CalculateOrderDiscounts;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\ResetOrderTaxCategory;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
@@ -34,6 +35,7 @@ use App\Actions\Traits\WithAddressAuditing;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Actions\Traits\WithPrepareTaxNumberValidation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -42,7 +44,6 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
@@ -233,16 +234,15 @@ class UpdateCustomer extends OrgAction
 
         $changes = Arr::except($customer->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if (Arr::hasAny($changes, ['contact_name', 'email'])) {
-            $rootWebUser = $customer->webUsers->where('is_root', true)->first();
-            if ($rootWebUser) {
-                $rootWebUser->update(
-                    [
-                        'contact_name' => $customer->contact_name,
-                        'email'        => $customer->email
-                    ]
-                );
-            }
+        if (Arr::has($changes, 'contact_name')) {
+            $customer->webUsers()->where('is_root', true)->first()?->update(
+                ['contact_name' => $customer->contact_name]
+            );
+        }
+
+        if (Arr::has($changes, 'email')) {
+            $webUserWithOldEmail = $customer->webUsers()->where('email', Arr::get($staleData, 'email'))->first();
+            $webUserWithOldEmail?->update(['email' => $customer->email]);
         }
 
         if (Arr::has($changes, 'state')) {
@@ -251,6 +251,12 @@ class UpdateCustomer extends OrgAction
             ShopHydrateCustomers::dispatch($customer->shop);
         }
 
+
+        if (Arr::has($changes, 'gr_extended_until') && $customer->shop->is_aiku && $customer->shop->type == ShopTypeEnum::B2B) {
+            foreach ($customer->orders()->where('state', OrderStateEnum::CREATING)->get() as $order) {
+                CalculateOrderDiscounts::dispatch($order);
+            }
+        }
 
         if (Arr::hasAny($changes, ['is_re'])) {
             foreach ($customer->orders()->where('state', OrderStateEnum::CREATING)->whereNull('orders.source_id')->get() as $order) {
@@ -263,7 +269,7 @@ class UpdateCustomer extends OrgAction
             MatchCustomerProspects::run($customer);
         }
 
-        if (Arr::hasAny($changes, ['internal_notes', 'warehouse_internal_notes'])) {
+        if (Arr::hasAny($changes, ['internal_notes', 'warehouse_internal_notes', 'warehouse_temporary_notes'])) {
             $customer->auditEvent    = AuditEventEnum::CUSTOMER_NOTE->value;
             $customer->isCustomEvent = true;
 
@@ -273,28 +279,21 @@ class UpdateCustomer extends OrgAction
             Event::dispatch(new AuditCustom($customer));
         }
 
-        $registeredAtDate = $customer->registered_at ? Carbon::parse($customer->registered_at)->toDateString() : null;
+        if (Arr::has($changes, 'registered_at')) {
+            $registeredAtDates = collect([$oldRegisteredAt, $customer->registered_at])
+                ->filter()
+                ->map(fn ($registeredAt) => Carbon::parse($registeredAt)->toDateString())
+                ->unique();
 
-        if (Arr::has($changes, 'registered_at') && $oldRegisteredAt) {
-            $oldRegisteredAtDate = Carbon::parse($oldRegisteredAt)->toDateString();
-            RedoShopTimeSeries::dispatch(shopId: $customer->shop_id, from: $oldRegisteredAtDate, to: $oldRegisteredAtDate)->delay(900);
-            RedoOrganisationTimeSeries::dispatch(organisationId: $customer->organisation_id, from: $oldRegisteredAtDate, to: $oldRegisteredAtDate)->delay(900);
-            if ($customer->master_shop_id) {
-                RedoMasterShopTimeSeries::dispatch(masterShopId: $customer->master_shop_id, from: $oldRegisteredAtDate, to: $oldRegisteredAtDate)->delay(900);
-            }
-            foreach ($customer->customerSalesChannels as $customerSalesChannel) {
-                RedoPlatformTimeSeries::dispatch(platformId: $customerSalesChannel->platform_id, from: $oldRegisteredAtDate, to: $oldRegisteredAtDate)->delay(900);
-            }
-        }
-
-        if ($registeredAtDate) {
-            RedoShopTimeSeries::dispatch(shopId: $customer->shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
-            RedoOrganisationTimeSeries::dispatch(organisationId: $customer->organisation_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
-            if ($customer->master_shop_id) {
-                RedoMasterShopTimeSeries::dispatch(masterShopId: $customer->master_shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
-            }
-            foreach ($customer->customerSalesChannels as $customerSalesChannel) {
-                RedoPlatformTimeSeries::dispatch(platformId: $customerSalesChannel->platform_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+            foreach ($registeredAtDates as $registeredAtDate) {
+                RedoShopTimeSeries::dispatch(shopId: $customer->shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+                RedoOrganisationTimeSeries::dispatch(organisationId: $customer->organisation_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+                if ($customer->master_shop_id) {
+                    RedoMasterShopTimeSeries::dispatch(masterShopId: $customer->master_shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+                }
+                foreach ($customer->customerSalesChannels as $customerSalesChannel) {
+                    RedoPlatformTimeSeries::dispatch(platformId: $customerSalesChannel->platform_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+                }
             }
         }
 
@@ -318,6 +317,16 @@ class UpdateCustomer extends OrgAction
                         ['column' => 'id', 'value' => $this->customer->id, 'operator' => '!=']
                     ]
                 ),
+                ...$this->shop->website ? [
+                    new IUnique(
+                        table: 'web_users',
+                        extraConditions: [
+                            ['column' => 'website_id', 'value' => $this->shop->website->id],
+                            ['column' => 'deleted_at', 'operator' => 'null'],
+                            ['column' => 'customer_id', 'value' => $this->customer->id, 'operator' => '!=']
+                        ]
+                    ),
+                ] : [],
             ],
             'phone'                                                 => [
                 'sometimes',
@@ -336,6 +345,7 @@ class UpdateCustomer extends OrgAction
             'internal_notes'                                        => ['sometimes', 'nullable', 'string'],
             'warehouse_internal_notes'                              => ['sometimes', 'nullable', 'string'],
             'warehouse_public_notes'                                => ['sometimes', 'nullable', 'string'],
+            'warehouse_temporary_notes'                             => ['sometimes', 'nullable', 'string'],
             'tax_number'                                            => ['sometimes', 'nullable', 'array'],
             'tags'                                                  => ['sometimes', 'array'],
             'email_subscriptions'                                   => ['sometimes', 'array'],
@@ -350,12 +360,10 @@ class UpdateCustomer extends OrgAction
             'is_re'                                                 => ['sometimes', 'boolean'],
             'is_credit_customer'                                    => ['sometimes', 'boolean'],
             'accounting_reference'                                  => ['sometimes', 'nullable', 'string', 'max:255'],
-            'eori'                                                  => ['sometimes', 'nullable', 'string', 'max:20'],
-            'ukims'                                                 => ['sometimes', 'nullable', 'string', 'max:255'],
             'is_gift_opted_out'                                     => ['sometimes', 'boolean'],
+            'gr_extended_until'                                     => ['sometimes', 'nullable', 'date'],
             'fiscal_name'                                           => ['sometimes', 'nullable', 'string', 'max:255'],
             'is_vip'                                                => ['sometimes', 'boolean'],
-
         ];
 
         if ($this?->asAction) {
@@ -394,7 +402,7 @@ class UpdateCustomer extends OrgAction
     }
 
 
-    public function asController(Organisation $organisation, Customer $customer, ActionRequest $request): Customer
+    public function asController(Customer $customer, ActionRequest $request): Customer
     {
         $this->customer = $customer;
         $this->initialisationFromShop($customer->shop, $request);

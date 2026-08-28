@@ -25,8 +25,7 @@ trait WithProformaInvoicePdf
             $totalNet = $totalItemsNet + $totalShipping;
 
 
-            $transactionModel = $order->transactions->where('model_type', 'Product');
-
+            $transactionModel = $order->transactions->whereIn('model_type', ['Product', 'Service']);
 
             $transactions = $transactionModel->map(function ($transaction) {
                 if (!empty($transaction->data['date'])) {

@@ -22,7 +22,7 @@ class AgentFactory extends Factory
         $currency = Currency::latest()->first();
 
         return [
-            'code'        => fake()->lexify(),
+            'code'        => fake()->lexify('??????'),
             'name'        => fake()->company,
             'email'       => fake()->email,
             'currency_id' => $currency->id,

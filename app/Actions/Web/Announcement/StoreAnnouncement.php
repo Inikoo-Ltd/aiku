@@ -11,12 +11,15 @@ namespace App\Actions\Web\Announcement;
 use App\Actions\Helpers\Snapshot\StoreAnnouncementSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Web\WebsiteHydrateAnnouncements;
+use App\Enums\Announcement\AnnouncementPositionEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Web\Announcement;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\Response;
@@ -34,6 +37,9 @@ class StoreAnnouncement extends OrgAction
     {
         $this->parent = $website;
 
+        $position = Arr::pull($modelData, 'position', AnnouncementPositionEnum::TOP_BAR->value);
+
+        data_set($modelData, 'settings.position', $position);
         data_set($modelData, 'group_id', $website->group_id);
         data_set($modelData, 'organisation_id', $website->organisation_id);
         data_set($modelData, 'ulid', Str::ulid());
@@ -80,7 +86,8 @@ class StoreAnnouncement extends OrgAction
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255']
+            'name'     => ['required', 'string', 'max:255'],
+            'position' => ['sometimes', 'string', Rule::enum(AnnouncementPositionEnum::class)]
         ];
     }
 

@@ -20,6 +20,10 @@ use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Nightwatch\Facades\Nightwatch;
+use App\Jobs\BoundedUniqueJobDecorator;
+use Lorisleiva\Actions\ActionManager;
+use Lorisleiva\Actions\DesignPatterns\CommandDesignPattern;
+use Lorisleiva\Actions\DesignPatterns\ControllerDesignPattern;
 use Lorisleiva\Actions\Facades\Actions;
 use Illuminate\Support\Facades\Event;
 use Laravel\Nightwatch\Records\QueuedJob;
@@ -39,6 +43,20 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(\Inertia\Ssr\Gateway::class, \App\Services\ReportingSsrGateway::class);
+
+        /**
+         * ListenerDesignPattern is deliberately excluded: laravel-actions v2.10.2 backtrace
+         * heuristic wrapped Action::make() in a ListenerDecorator when called from model
+         * event closures (Dispatcher::invokeListeners), breaking calls like
+         * HydrateIsInWebsite::make()->fromWebpage(). No action is used as an event listener;
+         * if one ever is, re-add ListenerDesignPattern here knowingly.
+         */
+        $this->app->scoped(ActionManager::class, function () {
+            return new ActionManager([
+                new ControllerDesignPattern(),
+                new CommandDesignPattern(),
+            ]);
+        });
 
         $this->app->singleton(GeocoderService::class, function ($app) {
             return new GeocoderService();
@@ -84,6 +102,8 @@ class AppServiceProvider extends ServiceProvider
                 'fetch:stock_locations',
                 'fetch:email_tracking_events',
                 'clone:aurora_vol_gr_offers',
+                'comms:archive_dispatched_emails',
+                'helpers:archive_audits',
                 'inertia:start-ssr --runtime bun'
             ])) {
                 Nightwatch::dontSample();
@@ -121,6 +141,8 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
+
+        ActionManager::useUniqueJobDecorator(BoundedUniqueJobDecorator::class);
 
         if ($this->app->runningInConsole()) {
             Actions::registerCommands();
@@ -172,6 +194,7 @@ class AppServiceProvider extends ServiceProvider
                 'DeliveryNoteItem'                 => 'App\Models\Dispatching\DeliveryNoteItem',
                 'PdfLabel'                         => 'App\Models\Dispatching\PdfLabel',
                 'Picking'                          => 'App\Models\Dispatching\Picking',
+                'PickingSession'                   => 'App\Models\Inventory\PickingSession',
                 'Shipment'                         => 'App\Models\Dispatching\Shipment',
                 'Shipper'                          => 'App\Models\Dispatching\Shipper',
                 'WaitingItem'                      => 'App\Models\Dispatching\WaitingItem',

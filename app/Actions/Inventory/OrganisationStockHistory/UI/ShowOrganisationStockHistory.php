@@ -56,6 +56,7 @@ class ShowOrganisationStockHistory extends OrgAction
                     ],
                     'title' => __('Stock History').' '.$organisationStockHistory->date->format('D, M j, Y'),
                 ],
+                'wac_calculations_start_date' => $organisationStockHistory->organisation->wac_calculations_start_date,
                 'tabs'           => [
                     'current'    => $this->tab,
                     'navigation' => OrganisationStockHistoryTabsEnum::navigation(),

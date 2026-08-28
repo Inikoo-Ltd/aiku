@@ -26,7 +26,7 @@ class FetchAuroraCustomer extends FetchAurora
             return;
         }
 
-        if ($shop->is_aiku) {
+        if ($shop->is_aiku && !$this->organisationSource->isForcedFetch()) {
             return;
         }
 

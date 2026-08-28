@@ -81,6 +81,15 @@ class GetAgentOrganisationNavigation
                             ]
                         ],
                         [
+                            'label' => __('Supplier Purchase Orders'),
+                            'icon'  => ['fal', 'fa-clipboard-list'],
+                            'root'  => 'grp.org.procurement.agent_supplier_purchase_orders.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.agent_supplier_purchase_orders.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
                             'label' => __('Stock Deliveries'),
                             'icon'  => ['fal', 'fa-truck-container'],
                             'root'  => 'grp.org.procurement.stock_deliveries.',
@@ -89,17 +98,26 @@ class GetAgentOrganisationNavigation
                                 'parameters' => [$organisation->slug],
                             ]
                         ],
+                        [
+                            'label' => __('Shopping List Board'),
+                            'icon'  => ['fal', 'fa-shopping-basket'],
+                            'root'  => 'grp.org.procurement.shopping_list.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.shopping_list.board',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
                     ]
                 ]
             ];
         }
 
-        $navigation = $this->getAccountingNavs($user, $organisation, $navigation);
+        // $navigation = $this->getAccountingNavs($user, $organisation, $navigation); // Still no need
 
         $navigation = $this->getHumanResourcesNavs($user, $organisation, $navigation);
 
 
-        $navigation = $this->getReportsNavs($user, $organisation, $navigation);
+        // $navigation = $this->getReportsNavs($user, $organisation, $navigation); // Still no need
 
         return $this->getSettingsNavs($user, $organisation, $navigation);
 

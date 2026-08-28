@@ -60,8 +60,20 @@ class DeliveryNoteItemsCrmWaitingResource extends JsonResource
         $quantityToPickFractional   = riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $this->packed_in);
         $quantityToPickFractionalDS = $quantityToPickFractional;
 
+        $packedInMessage = '';
+        if ($packedIn == 1) {
+            $packedInMessage = '('.__('Individually packed').')';
+        } elseif ($packedIn > 1) {
+            $packedInMessage = '('.__('Pack of').": $packedIn".")";
+        }
+
         if (floor($quantityToPick) == $quantityToPick && $packedIn > 1) {
             $quantityToPickFractionalDS = [0, [$quantityToPick * $this->packed_in, $this->packed_in]];
+        }
+
+        $waitingCrmFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_crm ?? 0)), $packedIn);
+        if (floor($this->quantity_waiting_crm ?? 0) == ($this->quantity_waiting_crm ?? 0) && $packedIn > 1) {
+            $waitingCrmFractionalDS = [0, [($this->quantity_waiting_crm ?? 0) * $packedIn, $packedIn]];
         }
 
         return [
@@ -78,10 +90,13 @@ class DeliveryNoteItemsCrmWaitingResource extends JsonResource
             'quantity_dispatched'            => $this->quantity_dispatched,
             'quantity_waiting_warehouse'     => $this->quantity_waiting_warehouse,
             'quantity_waiting_crm'           => $this->quantity_waiting_crm,
+            'quantity_waiting_crm_fractional_ds' => $waitingCrmFractionalDS,
             'org_stock_id'                   => $this->org_stock_id,
             'org_stock_code'                 => $this->org_stock_code,
             'org_stock_slug'                 => $this->org_stock_slug,
             'org_stock_name'                 => $this->org_stock_name,
+            'packed_in'                      => $packedIn,
+            'packed_in_message'              => $packedInMessage,
             'is_handled'                     => $this->is_handled,
             'quantity_required_fractional'   => $requiredFactionalData,
             'notes'                          => $this->notes,

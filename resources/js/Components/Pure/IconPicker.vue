@@ -52,8 +52,6 @@ const props = withDefaults(
   }
 );
 
-console.log('IconPicker props.iconList', props.iconList);
-
 const _popover = ref();
 const allIcons = props.listType === "extend"
   ? [...[faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone, faPlus,

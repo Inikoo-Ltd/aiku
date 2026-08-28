@@ -13,12 +13,14 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUn
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateCustomerExclusiveProducts;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateOrgStocksWithoutProducts;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateProducts;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
+use Illuminate\Support\Facades\Log;
 
 trait WithProductOrgStocks
 {
@@ -67,9 +69,25 @@ trait WithProductOrgStocks
     // todo: this method need to be removed after aurora no longer in use, syncTradeUnits will be used instead
     protected function syncOrgStocksToBeDeleted(Product $product, array $orgStocksRaw): Product
     {
+        /*
+         * This is the Aurora reverse pipe: it overwrites P-OS directly and then derives the
+         * product's trade units from it, the opposite direction of every other writer. Once
+         * an organisation has left Aurora its staff edit these relations in aiku, so letting
+         * a late fetch through here is silent data loss, not a sync.
+         */
+        if (!in_array($product->organisation->slug, config('aurora.following_organisations'))) {
+            Log::warning("Skipped Aurora org stock sync for product $product->code: organisation {$product->organisation->slug} no longer follows Aurora");
+
+            return $product;
+        }
+
         $orgStocks = $this->processOrgStocks($orgStocksRaw);
         $product->orgStocks()->sync($orgStocks);
         $product->refresh();
+
+        foreach ($product->organisation->warehouses as $warehouse) {
+            WarehouseHydrateOrgStocksWithoutProducts::dispatch($warehouse)->delay(2);
+        }
 
 
         $product = $this->syncTradeUnitsToBeDeleted($product);

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\InertiaAction;
 use App\Models\Procurement\PurchaseOrder;
 use Inertia\Inertia;
@@ -16,15 +17,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditPurchaseOrder extends InertiaAction
 {
+    use WithProcurementAuthorisation;
     public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
         return $purchaseOrder;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo('procurement.edit');
-        return $request->user()->authTo("procurement.view");
     }
 
     public function asController(PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder

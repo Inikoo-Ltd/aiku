@@ -41,6 +41,8 @@ use App\Models\Traits\HasSearch;
  * @property string|null $original_text
  * @property array<array-key, mixed>|null $metadata
  * @property \Illuminate\Support\Carbon|null $edited_at
+ * @property bool|null $is_ai_generated
+ * @property bool|null $is_validated
  * @property-read Media|null $attachment
  * @property-read \App\Models\Chat\ChatSession|null $chatSession
  * @property-read Media|null $image
@@ -74,6 +76,8 @@ class ChatMessage extends Model implements HasMedia
     protected $casts = [
         'message_type' => ChatMessageTypeEnum::class,
         'sender_type' => ChatSenderTypeEnum::class,
+        'is_ai_generated' => 'boolean',
+        'is_validated' => 'boolean',
         'is_read' => 'boolean',
         'delivered_at' => 'datetime',
         'read_at' => 'datetime',
@@ -103,10 +107,29 @@ class ChatMessage extends Model implements HasMedia
     {
         return $this->morphTo(__FUNCTION__, 'sender_type', 'sender_id');
     }
+    public function getSenderNameAttribute(): ?string
+    {
+        if (array_key_exists('sender_name', $this->attributes)) {
+            return $this->attributes['sender_name'];
+        }
+
+        if ($this->sender_type === ChatSenderTypeEnum::AGENT && $this->sender_id) {
+            $chatAgent = ChatAgent::with('user')->find($this->sender_id);
+
+            return $chatAgent?->user?->contact_name ?? $chatAgent?->user?->username;
+        }
+
+        return null;
+    }
 
     public function translations(): HasMany
     {
         return $this->hasMany(ChatMessageTranslation::class);
+    }
+
+    public function reactions(): HasMany
+    {
+        return $this->hasMany(ChatMessageReaction::class);
     }
     public function originalLanguage(): BelongsTo
     {
@@ -174,6 +197,14 @@ class ChatMessage extends Model implements HasMedia
     public function isFile(): bool
     {
         return $this->message_type === ChatMessageTypeEnum::FILE;
+    }
+
+
+    public function isVerifiableCustomerImage(): bool
+    {
+        return $this->isImage()
+            && $this->media_id !== null
+            && ($this->isFromGuest() || $this->isFromUser());
     }
 
 

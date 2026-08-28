@@ -9,89 +9,94 @@
 namespace App\Actions\CRM\Customer;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateRfm;
+use App\Actions\Helpers\Tag\Hydrators\TagHydrateModels;
 use App\Models\CRM\Customer;
-use App\Models\Helpers\Tag;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Lorisleiva\Actions\Concerns\AsAction;
 use Illuminate\Support\Facades\Log;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class HydrateCustomersTag
 {
     use AsAction;
 
-    private string $model = Customer::class;
-
     public string $commandSignature = 'hydrate:customers-tag';
 
     public function handle(): void
     {
-        $tableName = (new $this->model())->getTable();
+        $tableName     = (new Customer())->getTable();
+        $morphClass    = (new Customer())->getMorphClass();
         $dateThreshold = now()->subYear();
 
-        $rfmTagIds = Tag::whereIn('data->type', ['recency', 'frequency', 'monetary'])
-            ->pluck('id')
-            ->toArray();
+        $rfmTagIds = array_values(GetCustomerRfmTagIds::run());
 
-        $query = DB::table($tableName)
+        DB::table($tableName)
             ->select("$tableName.id")
-            ->whereExists(function ($q) use ($tableName, $dateThreshold) {
-                $q->select(DB::raw(1))
+            ->whereNull("$tableName.deleted_at")
+            ->whereExists(function ($query) use ($tableName, $dateThreshold) {
+                $query->select(DB::raw(1))
                     ->from('invoices')
                     ->whereColumn('invoices.customer_id', "$tableName.id")
                     ->where('invoices.in_process', false)
-                    ->where('invoices.created_at', '>=', $dateThreshold);
+                    ->whereNull('invoices.deleted_at')
+                    ->where('invoices.date', '>=', $dateThreshold);
             })
-            ->orderBy("$tableName.id", 'desc');
-
-        $query->chunk(
-            1000,
-            function (Collection $modelsData) {
-                foreach ($modelsData as $modelData) {
-                    try {
-                        CustomerHydrateRfm::run($modelData->id);
-                    } catch (Exception $e) {
-                        Log::info("Failed to Hydrate Customers Tag: " . $e->getMessage());
-                    }
-                }
-            }
-        );
-
-        if (!empty($rfmTagIds)) {
-            $customersToCleanup = DB::table($tableName)
-                ->select("$tableName.id")
-                ->whereExists(function ($q) use ($tableName, $rfmTagIds) {
-                    $q->select(DB::raw(1))
-                        ->from('model_has_tags')
-                        ->whereColumn('model_has_tags.model_id', "$tableName.id")
-                        ->where('model_has_tags.model_type', Customer::class)
-                        ->whereIn('model_has_tags.tag_id', $rfmTagIds);
-                })
-                ->whereNotExists(function ($q) use ($tableName, $dateThreshold) {
-                    $q->select(DB::raw(1))
-                        ->from('invoices')
-                        ->whereColumn('invoices.customer_id', "$tableName.id")
-                        ->where('invoices.in_process', false)
-                        ->where('invoices.created_at', '>=', $dateThreshold);
-                })
-                ->orderBy("$tableName.id", 'desc');
-
-            $customersToCleanup->chunk(
+            ->orderBy("$tableName.id", 'desc')
+            ->chunk(
                 1000,
-                function (Collection $modelsData) use ($rfmTagIds) {
+                function (Collection $modelsData) {
                     foreach ($modelsData as $modelData) {
                         try {
-                            $customer = Customer::find($modelData->id);
-                            if ($customer) {
-                                $customer->tags()->detach($rfmTagIds);
-                            }
+                            CustomerHydrateRfm::run($modelData->id, false);
                         } catch (Exception $e) {
-                            Log::error("Failed to cleanup RFM tags for customer: " . $e->getMessage());
+                            Log::info("Failed to Hydrate Customers Tag: ".$e->getMessage());
                         }
                     }
                 }
             );
+
+        if (!empty($rfmTagIds)) {
+            DB::table($tableName)
+                ->select("$tableName.id")
+                ->whereExists(function ($query) use ($tableName, $rfmTagIds, $morphClass) {
+                    $query->select(DB::raw(1))
+                        ->from('model_has_tags')
+                        ->whereColumn('model_has_tags.model_id', "$tableName.id")
+                        ->where('model_has_tags.model_type', $morphClass)
+                        ->whereIn('model_has_tags.tag_id', $rfmTagIds);
+                })
+                ->where(function ($query) use ($tableName, $dateThreshold) {
+                    $query->whereNotNull("$tableName.deleted_at")
+                        ->orWhereNotExists(function ($invoices) use ($tableName, $dateThreshold) {
+                            $invoices->select(DB::raw(1))
+                                ->from('invoices')
+                                ->whereColumn('invoices.customer_id', "$tableName.id")
+                                ->where('invoices.in_process', false)
+                                ->whereNull('invoices.deleted_at')
+                                ->where('invoices.date', '>=', $dateThreshold);
+                        });
+                })
+                ->chunkById(
+                    1000,
+                    function (Collection $modelsData) use ($rfmTagIds, $morphClass) {
+                        try {
+                            DB::table('model_has_tags')
+                                ->where('model_type', $morphClass)
+                                ->whereIn('model_id', $modelsData->pluck('id'))
+                                ->whereIn('tag_id', $rfmTagIds)
+                                ->delete();
+                        } catch (Exception $e) {
+                            Log::error("Failed to cleanup RFM tags for customers: ".$e->getMessage());
+                        }
+                    },
+                    "$tableName.id",
+                    'id'
+                );
+
+            foreach ($rfmTagIds as $tagId) {
+                TagHydrateModels::dispatch($tagId);
+            }
         }
 
         HydrateCustomerRfmSnapshot::run();

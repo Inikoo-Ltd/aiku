@@ -18,10 +18,22 @@ use App\Actions\Chat\Jira\UpdateChatAgentJiraSettings;
 use App\Actions\Chat\ChatSession\AssignChatToAgent;
 use App\Actions\Chat\ChatSession\CloseChatSession;
 use App\Actions\Chat\ChatSession\ForceDeleteChatAgent;
+use App\Actions\Chat\ChatSession\ForwardChatMessageToSlack;
+use App\Actions\Chat\ChatSession\GetChatMessageSlackSettings;
+use App\Actions\Chat\ChatSession\DeleteChatSessionPermanently;
+use App\Actions\Chat\ChatSession\GetChatSessionSlackSettings;
+use App\Actions\Chat\ChatSession\MarkChatSessionAsSpam;
 use App\Actions\Chat\ChatSession\ReopenChatSession;
+use App\Actions\Chat\ChatSession\RestoreChatSession;
+use App\Actions\Chat\ChatSession\SetChatSessionPriority;
+use App\Actions\Chat\ChatSession\ToggleChatSessionHighlight;
+use App\Actions\Chat\ChatSession\TrashChatSession;
+use App\Actions\Chat\ChatSession\UnmarkChatSessionAsSpam;
 use App\Actions\Chat\ChatSession\RestoreChatAgent;
 use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Actions\Chat\ChatSession\UpdateChatMessage;
+use App\Actions\Chat\ChatSession\UpdateChatSessionSlackSettings;
+use App\Actions\Chat\ChatSession\VerifyChatImageMessage;
 use Illuminate\Support\Facades\Route;
 
 Route::name('agents.')->prefix('agents')->group(function () {
@@ -41,8 +53,18 @@ Route::name('agents.')->prefix('agents')->group(function () {
         ->name('takeover');
     Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
     Route::patch('/messages/{chatSession:ulid}/{chatMessage}/edit', UpdateChatMessage::class)->name('messages.update');
+    Route::post('/messages/{chatMessage}/verify-image', VerifyChatImageMessage::class)->name('messages.verify_image');
+    Route::get('/messages/{chatMessage}/slack-settings', GetChatMessageSlackSettings::class)->name('messages.slack_settings');
+    Route::post('/messages/{chatMessage}/forward-slack', ForwardChatMessageToSlack::class)->name('messages.forward_slack');
     Route::patch('/sessions/{chatSession:ulid}/close', CloseChatSession::class)->name('sessions.close');
     Route::patch('/sessions/{chatSession:ulid}/reopen', ReopenChatSession::class)->name('sessions.reopen');
+    Route::patch('/sessions/{chatSession:ulid}/spam', MarkChatSessionAsSpam::class)->name('sessions.spam');
+    Route::patch('/sessions/{chatSession:ulid}/not-spam', UnmarkChatSessionAsSpam::class)->name('sessions.not_spam');
+    Route::patch('/sessions/{chatSession:ulid}/priority', SetChatSessionPriority::class)->name('sessions.priority');
+    Route::patch('/sessions/{chatSession:ulid}/highlight', ToggleChatSessionHighlight::class)->name('sessions.highlight');
+    Route::delete('/sessions/{chatSession:ulid}/trash', TrashChatSession::class)->name('sessions.trash');
+    Route::patch('/sessions/{chatSession:ulid}/restore', RestoreChatSession::class)->name('sessions.restore')->withTrashed();
+    Route::delete('/sessions/{chatSession:ulid}/force', DeleteChatSessionPermanently::class)->name('sessions.force_delete')->withTrashed();
     Route::name('sessions.jira.')->prefix('sessions/{chatSession:ulid}/jira')->group(function () {
         Route::get('/projects', GetChatSessionJiraProjects::class)->name('projects');
         Route::get('/projects/{project}/issue-types', GetChatSessionJiraIssueTypes::class)->name('issue_types');
@@ -50,6 +72,10 @@ Route::name('agents.')->prefix('agents')->group(function () {
         Route::get('/priorities', GetChatSessionJiraPriorities::class)->name('priorities');
         Route::get('/labels', GetChatSessionJiraLabels::class)->name('labels');
         Route::post('/ticket', StoreChatSessionJiraTicket::class)->name('ticket');
+    });
+    Route::name('sessions.slack.')->prefix('sessions/{chatSession:ulid}/slack')->group(function () {
+        Route::get('/', GetChatSessionSlackSettings::class)->name('show');
+        Route::put('/', UpdateChatSessionSlackSettings::class)->name('update');
     });
     Route::name('jira.settings.')->prefix('jira/settings')->group(function () {
         Route::get('/', GetChatAgentJiraSettings::class)->name('show');

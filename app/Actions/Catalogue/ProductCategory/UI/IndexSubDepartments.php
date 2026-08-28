@@ -9,9 +9,11 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\Catalogue\WithCatalogueIndexSubNavigation;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\WithListingsColumns;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -26,6 +28,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -35,6 +38,8 @@ class IndexSubDepartments extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithDepartmentSubNavigation;
+    use WithCatalogueIndexSubNavigation;
+    use WithListingsColumns;
 
     private Shop|ProductCategory|Organisation $parent;
     private bool $sales = true;
@@ -116,6 +121,7 @@ class IndexSubDepartments extends OrgAction
             'shops.code as shop_code',
             'shops.name as shop_name',
             'currencies.code as currency_code',
+            DB::raw("'".group()->currency->code."' as grp_currency_code"),
             'organisations.slug as organisation_slug',
             'organisations.code as organisation_code',
             'organisations.name as organisation_name',
@@ -124,19 +130,26 @@ class IndexSubDepartments extends OrgAction
             'product_categories.health_rank',
         ];
 
+        $hasListingsColumns = $this->hasListingsColumns($parent);
+
         if ($prefix === ProductCategoryTabsEnum::SALES->value) {
+            $aggregateColumns = [
+                'sales_grp_currency_external' => 'sales_grp_currency_external',
+                'invoices'                    => 'invoices',
+                'sold'                        => 'sold',
+            ];
+
+            if ($hasListingsColumns) {
+                $aggregateColumns['dropshippers'] = 'dropshippers';
+                $aggregateColumns['listings']     = 'listings';
+            }
+
             // Use reusable time series aggregation method
             $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
                 timeSeriesTable: 'product_category_time_series',
                 timeSeriesRecordsTable: 'product_category_time_series_records',
                 foreignKey: 'product_category_id',
-                aggregateColumns: [
-                    'sales_grp_currency_external' => 'sales_grp_currency_external',
-                    'invoices'                    => 'invoices',
-                    'dropshippers'                => 'dropshippers',
-                    'listings'                    => 'listings',
-                    'sold'                        => 'sold',
-                ],
+                aggregateColumns: $aggregateColumns,
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
                 includeLY: true
@@ -146,9 +159,12 @@ class IndexSubDepartments extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
-            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
-            $selects[] = $timeSeriesData['selectRaw']['listings'];
             $selects[] = $timeSeriesData['selectRaw']['sold'];
+
+            if ($hasListingsColumns) {
+                $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
+                $selects[] = $timeSeriesData['selectRaw']['listings'];
+            }
         }
 
         $queryBuilder->select($selects);
@@ -158,7 +174,7 @@ class IndexSubDepartments extends OrgAction
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->leftjoin('product_categories as departments', 'departments.id', 'product_categories.department_id')
-            ->allowedSorts(['code', 'name', 'shop_code', 'department_code', 'number_families', 'number_products', 'sales_grp_currency_external', 'invoices', 'dropshippers', 'listings', 'sold', 'health_rank'])
+            ->allowedSorts(['code', 'name', 'shop_code', 'department_code', 'number_families', 'number_products', 'sales_grp_currency_external', 'invoices', 'sold', 'health_rank', ...($hasListingsColumns ? ['dropshippers', 'listings'] : [])])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -217,10 +233,14 @@ class IndexSubDepartments extends OrgAction
                 ->withModelOperations($modelOperations);
 
             if ($sales) {
-                $table->column(key: 'code', label: __('Code'), sortable: true)
-                    ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
-                    ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
-                    ->column(key: 'invoices', label: __('Invoices'), sortable: true, align: 'right')
+                $table->column(key: 'code', label: __('Code'), sortable: true);
+
+                if ($this->hasListingsColumns($parent)) {
+                    $table->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
+                        ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right');
+                }
+
+                $table->column(key: 'invoices', label: __('Invoices'), sortable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), align: 'right')
@@ -257,6 +277,11 @@ class IndexSubDepartments extends OrgAction
         }
 
         $navigation = ProductCategoryTabsEnum::navigationExcept([ProductCategoryTabsEnum::MISSING_GR]);
+
+        if ($this->parent instanceof Shop) {
+            unset($navigation[ProductCategoryTabsEnum::SALES->value]);
+            $subNavigation = $this->getSubDepartmentsIndexSubNavigation($this->parent);
+        }
 
         $title      = __('Sub-departments');
         $model      = '';
@@ -354,7 +379,8 @@ class IndexSubDepartments extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.catalogue.sub_departments.index' => array_merge(
+            'grp.org.shops.show.catalogue.sub_departments.index',
+            'grp.org.shops.show.catalogue.sub_departments.sales' => array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [

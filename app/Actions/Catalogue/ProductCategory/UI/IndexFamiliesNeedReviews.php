@@ -51,6 +51,7 @@ class IndexFamiliesNeedReviews extends OrgAction
 
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
+        $queryBuilder->leftJoin('master_product_categories as mpc', 'mpc.id', 'product_categories.master_product_category_id');
         $queryBuilder->leftJoin('webpages', function ($join) {
             $join->on('webpages.model_id', 'product_categories.id')
                 ->where('webpages.model_type', class_basename(ProductCategory::class));
@@ -134,6 +135,11 @@ class IndexFamiliesNeedReviews extends OrgAction
                         AND c.deleted_at IS NULL
                 )::text as collections"
                 ),
+                'shops.settings as shop_settings',
+                'mpc.name_updated_at',
+                'mpc.description_updated_at',
+                'mpc.description_title_updated_at',
+                'mpc.extra_description_updated_at',
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
@@ -208,6 +214,7 @@ class IndexFamiliesNeedReviews extends OrgAction
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'webpage_state', label:['fal', 'fa-browser'], tooltip: 'Webpage State', type: 'icon', canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'is_following_master', label: ['fab', 'fa-octopus-deploy'], type: 'icon')
                 ->column(key: 'is_name_reviewed', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'is_description_title_reviewed', label: __('Description Title'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'is_description_reviewed', label: __('Description'), canBeHidden: false, sortable: true, searchable: true)

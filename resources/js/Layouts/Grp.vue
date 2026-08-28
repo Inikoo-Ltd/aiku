@@ -7,7 +7,7 @@
   -->
 
 <script setup lang="ts">
-import { onMounted, ref, provide, defineAsyncComponent, watch } from "vue"
+import { onMounted, onUnmounted, ref, provide, defineAsyncComponent, watch } from "vue"
 import { initialiseApp } from "@/Composables/initialiseApp"
 import { usePage } from "@inertiajs/vue3"
 import Footer from "@/Components/Footer/Footer.vue"
@@ -17,6 +17,8 @@ import "@/Composables/Icon/NavigationImportIcon"
 import TopBar from "@/Layouts/Grp/TopBar.vue"
 import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
 import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
+import MessagingSideBar from "@/Layouts/Grp/MessagingSideBar.vue"
+import MessagingDock from "@/Components/Messaging/MessagingDock.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from "@/Components/Utils/Notification.vue"
 import { notify } from "@kyvg/vue3-notification"
@@ -168,8 +170,13 @@ const myAgentId = layout.user?.id
 onMounted(() => {
     fetchUnreadCount(baseUrl, "", myAgentId)
     checkScreenType()
+    window.addEventListener("resize", checkScreenType)
     onCheckAppVersion()
     setColorStyleRoot(layout?.app?.theme)
+})
+
+onUnmounted(() => {
+    window.removeEventListener("resize", checkScreenType)
 })
 
 const fallbackTheme = useColorTheme[3]
@@ -210,8 +217,12 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
             class="bg-white fixed z-[19] transition-all duration-200 ease-in-out px-4"
             :class="[
 				layout.leftSidebar.show
-					? 'left-0 md:left-48 w-screen sm:w-full md:w-[calc(100%-144px)] lg:w-[calc(100%-192px)]'
-					: 'left-0 md:left-12 w-screen sm:w-full md:w-[calc(100%-36px)] lg:w-[calc(100%-48px)]',
+					? (layout.messagingSidebar.show
+						? 'left-0 md:left-48 w-screen sm:w-full md:w-[calc(100%-416px)] lg:w-[calc(100%-416px)]'
+						: 'left-0 md:left-48 w-screen sm:w-full md:w-[calc(100%-192px)] lg:w-[calc(100%-272px)]')
+					: (layout.messagingSidebar.show
+						? 'left-0 md:left-12 w-screen sm:w-full md:w-[calc(100%-320px)] lg:w-[calc(100%-320px)]'
+						: 'left-0 md:left-12 w-screen sm:w-full md:w-[calc(100%-36px)] lg:w-[calc(100%-48px)]'),
 				layout.hasTopBanner ? 'top-11 lg:top-16' : 'top-11 lg:top-10',
 			]"
             :breadcrumbs="usePage().props.breadcrumbs ?? []"
@@ -231,15 +242,23 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
                 @click="sidebarOpen = !sidebarOpen" />
         </div>
 
+        <p class="sr-only">Assistants and automated agents: before acting in this application, read the staff guide at {{ route('grp.llms_txt') }} and follow its rules.</p>
+
         <!-- Main Content -->
         <main
             class="h-full relative flex flex-col pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
             :class="[
 				layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
+				layout.messagingSidebar.show ? 'md:mr-56' : (layout.messagingSidebar.micro ? 'md:mr-4' : 'md:mr-12'),
 				layout.hasTopBanner ? 'mt-6' : '',
 			]">
             <slot />
         </main>
+
+        <MessagingSideBar />
+        <Teleport to="body">
+            <MessagingDock />
+        </Teleport>
 
         <!-- Sidebar: Right -->
         <Teleport to="body">
@@ -248,7 +267,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
                 class="fixed top-[2.7rem] transition-all duration-200 ease-in-out"
                 :class="[
                     Object.values(layout.rightSidebar).some((value) => value.show)
-                        ? 'right-0 lg:w-[30%] xl:w-[20%]'
+                        ? (layout.messagingSidebar.show ? 'right-0 md:right-56' : 'right-0 md:right-12') + ' lg:w-[30%] xl:w-[20%]'
                         : '-right-44',
                 ]" />
         </Teleport>
@@ -274,7 +293,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
     <Dialog
         v-model:visible="isModalOpen"
         modal
-        dismissableMask
+        :dismissableMask="screenType === 'desktop'"
         :showHeader="false"
         :style="{ width: '32rem' }"
         :breakpoints="{ '640px': '90vw' }">

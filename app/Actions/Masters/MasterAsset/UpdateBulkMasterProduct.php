@@ -26,11 +26,9 @@ class UpdateBulkMasterProduct extends OrgAction
         $rawProductDatas = Arr::get($modelData, 'products', []);
         foreach ($rawProductDatas as $productData) {
             $product = MasterAsset::find((int) Arr::get($productData, 'id'));
-            UpdateMasterAsset::make()->action($product, [
-                'rrp'  => Arr::get($productData, 'rrp', $product->rrp),
-                'price' => Arr::get($productData, 'price', $product->price),
-                'unit' => Arr::get($productData, 'unit', $product->unit),
-            ]);
+            /** Only the sent fields: a field filled back from the model re-submits its own value,
+             *  and a null description would then fail the update's `required` rule. */
+            UpdateMasterAsset::make()->action($product, Arr::except($productData, 'id'));
         }
     }
 
@@ -43,6 +41,9 @@ class UpdateBulkMasterProduct extends OrgAction
             'products.*.rrp' => ['sometimes', 'numeric'],
             'products.*.price' => ['sometimes', 'numeric'],
             'products.*.unit' => ['sometimes', 'string'],
+            'products.*.name' => ['sometimes', 'string', 'max:250'],
+            'products.*.description' => ['sometimes', 'string', 'max:1500'],
+            'products.*.description_extra' => ['sometimes', 'string', 'max:65500']
         ];
     }
 

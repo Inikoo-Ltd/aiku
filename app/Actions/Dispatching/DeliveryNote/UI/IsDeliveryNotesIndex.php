@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UI;
 
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
@@ -193,10 +194,24 @@ trait IsDeliveryNotesIndex
                 ->whereColumn('picking_session_has_delivery_notes.delivery_note_id', 'delivery_notes.id');
         };
 
+        $dateColumn = 'delivery_notes.date';
+
+        $dateColumn = match($bucket) {
+            'handling'     => 'delivery_notes.handling_at',
+            'waiting'      => 'delivery_notes.blocked_at',
+            'picked'       => 'delivery_notes.picked_at',
+            'packing'      => 'delivery_notes.packing_at',
+            'packed'       => 'delivery_notes.packed_at',
+            'finalised'    => 'delivery_notes.finalised_at',
+            'dispatched'   => 'delivery_notes.dispatched_at',
+            default        => 'delivery_notes.date',
+        };
+
         $selectColumns = [
             'delivery_notes.id',
             'delivery_notes.reference',
-            'delivery_notes.date',
+            'delivery_notes.date as date',
+            "$dateColumn as last_modified_date",
             'delivery_notes.data',
             'delivery_notes.state',
             'delivery_notes.is_premium_dispatch',
@@ -206,6 +221,7 @@ trait IsDeliveryNotesIndex
             'delivery_notes.slug',
             'delivery_notes.type',
             'delivery_notes.number_items',
+            'delivery_notes.number_items_composition_dirty',
             'delivery_notes.weight',
             'delivery_notes.effective_weight',
             'delivery_notes.estimated_weight',
@@ -218,7 +234,7 @@ trait IsDeliveryNotesIndex
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
             'delivery_notes.customer_notes',
-            'delivery_notes.internal_notes',
+            'delivery_notes.private_warehouse_note as internal_notes',
             'delivery_notes.public_notes',
             'delivery_notes.shipping_notes',
             'delivery_notes.shipping_data',
@@ -242,9 +258,9 @@ trait IsDeliveryNotesIndex
                 // Ensure all / dispatched bucket order is not disturbed, otherwise would be hard to navigate
                 $forceSortByPremiumDispatch ? [
                     '-delivery_notes.is_premium_dispatch',
-                    'delivery_notes.date',
+                    "$dateColumn",
                 ] : [
-                    '-delivery_notes.date',
+                    "-$dateColumn",
                 ]
             )
             ->with('trolleys')
@@ -279,15 +295,20 @@ trait IsDeliveryNotesIndex
             ])
             ->allowedFilters($allowedFilters)
             ->withBetweenDates(['date'])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, $this->getRecordsPerPage(), tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    protected function getRecordsPerPage(): ?int
+    {
+        return null;
     }
 
     public function tableStructure(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all', $isReturn = false): Closure
     {
         $employee = null;
         if (!request()->user() instanceof WebUser) {
-            $employee = request()->user()->employees()->first() ?? null;
+            $employee = GetUserCurrentEmployee::run(request()->user());
         }
         $pickerEmployee = null;
         if ($employee) {
@@ -347,6 +368,16 @@ trait IsDeliveryNotesIndex
                 $count     = $parent->stats->number_delivery_notes ?? 0;
             }
 
+            $dateColumn = match($bucket) {
+                'handling'     => __('Handling At'),
+                'waiting'      => __('Set as Waiting at'),
+                'picked'       => __('Picked at'),
+                'packing'      => __('Packing at'),
+                'packed'       => __('Picked at'),
+                'finalised'    => __('Finalised at'),
+                'dispatched'   => __('Dispatched at'),
+                default        => __('Submitted Date'),
+            };
 
             $table
                 ->withGlobalSearch()
@@ -431,7 +462,7 @@ trait IsDeliveryNotesIndex
                 $table->column(key: 'sort_picked_bays', label: __('Picked bays'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'date', label: $dateColumn, canBeHidden: false, sortable: true, searchable: true, align: 'right');
             if (!$parent instanceof Customer) {
                 $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
             }

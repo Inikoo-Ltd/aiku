@@ -6,7 +6,7 @@ import { ref, watch, computed } from "vue"
 import { get } from "lodash-es"
 
 const props = defineProps<{
-    data: any
+    data?: any
     topSeller: number
     screenType?: "mobile" | "tablet" | "desktop"
 }>()

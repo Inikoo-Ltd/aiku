@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
@@ -60,15 +61,12 @@ class StoreMasterAsset extends OrgAction
         $tradeUnits   = Arr::pull($modelData, 'trade_units', []);
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
-        $numberOfTradeUnits = count($tradeUnits);
-        if ($numberOfTradeUnits > 1) {
-            data_set($modelData, 'units', 1);
-            data_set($modelData, 'unit', 'bundle');
-        } elseif ($numberOfTradeUnits === 1) {
-            $single = Arr::first($tradeUnits);
-            data_set($modelData, 'units', $single['quantity'] ?? 1);
-        } else {
-            data_set($modelData, 'units', '1');
+        $unitsFromTradeUnits = $this->getUnitsFromTradeUnits($tradeUnits);
+        if (!Arr::get($modelData, 'has_independent_units', false)) {
+            data_set($modelData, 'units', $unitsFromTradeUnits['units'] ?? Arr::get($modelData, 'units', 1));
+        }
+        if (count($tradeUnits) > 1) {
+            data_set($modelData, 'unit', $unitsFromTradeUnits['unit']);
         }
 
         data_set($modelData, 'group_id', $masterFamily->group_id);
@@ -126,6 +124,7 @@ class StoreMasterAsset extends OrgAction
 
         CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
 
+        MasterAssetHydrateEffectiveCost::dispatch($masterAsset)->delay($this->hydratorsDelay);
         GroupHydrateMasterAssets::dispatch($masterFamily->group)->delay($this->hydratorsDelay);
         MasterShopHydrateMasterAssets::dispatch($masterAsset->masterShop)->delay($this->hydratorsDelay);
         if ($masterAsset->masterdepartment) {
@@ -172,7 +171,8 @@ class StoreMasterAsset extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ],
             'image_id'                 => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
-            'price'                    => ['sometimes', 'numeric', 'min:0.01'],
+            // Free of charge is a real price, 129 masters hold it; UpdateMasterAsset already allows it
+            'price'                    => ['sometimes', 'numeric', 'min:0'],
             'unit'                     => ['sometimes', 'required', 'string'],
             'rrp'                      => ['sometimes', 'required', 'numeric', 'min:0.01'],
             'description'              => ['sometimes', 'nullable', 'max:15000'],
@@ -190,6 +190,8 @@ class StoreMasterAsset extends OrgAction
             'type'                     => ['required', Rule::enum(MasterAssetTypeEnum::class)],
             'shop_products'            => ['sometimes', 'array'],
             'units'                    => ['sometimes'],
+
+            'has_independent_units'    => ['sometimes', 'boolean'],
             'description_title'        => ['sometimes', 'string', 'nullable', 'max:300'],
             'description_extra'        => ['sometimes', 'string', 'nullable', 'max:15000'],
             'marketing_weight'         => ['sometimes', 'numeric', 'min:0'],
@@ -199,11 +201,11 @@ class StoreMasterAsset extends OrgAction
             'is_for_sale'              => ['sometimes', 'boolean'],
             // Master Prices
             'master_prices'                => ['sometimes', 'array'],
-            'master_prices.*.value'        => ['sometimes', 'numeric', 'gt:0'],
+            'master_prices.*.value'        => ['sometimes', 'nullable', 'numeric', 'gte:0'],
             'master_prices.*.independent'  => ['sometimes', 'boolean'],
             // Master RRPs | This is per unit btw
             'master_rrps'                   => ['sometimes', 'array'],
-            'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
+            'master_rrps.*.value'           => ['sometimes', 'nullable', 'numeric', 'gte:0'],
             'master_rrps.*.independent'     => ['sometimes', 'boolean'],
 
         ];

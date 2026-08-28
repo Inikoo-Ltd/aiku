@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\PurchaseOrderTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithStoreProcurementOrderItem;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
@@ -24,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StorePurchaseOrderTransaction extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithNoStrictRules;
     use WithStoreProcurementOrderItem;
 
@@ -53,6 +55,7 @@ class StorePurchaseOrderTransaction extends OrgAction
             $rules['net_amount'] = ['sometimes', 'numeric'];
             $rules['org_exchange'] = ['sometimes', 'numeric'];
             $rules['grp_exchange'] = ['sometimes', 'numeric'];
+            $rules['agent_supplier_purchase_order_id'] = ['sometimes', 'nullable', 'integer', 'exists:agent_supplier_purchase_orders,id'];
 
             $rules = $this->noStrictStoreRules($rules);
         }

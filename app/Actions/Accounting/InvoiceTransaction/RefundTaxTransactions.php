@@ -15,6 +15,7 @@ use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
+use App\Models\Accounting\InvoiceTransaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
@@ -29,6 +30,14 @@ class RefundTaxTransactions extends OrgAction
         'parameters' => []
     ];
     /**
+     * Refunds the whole of an invoice's tax.
+     *
+     * The invoice charges tax once on its total net, while the refund shows it line by
+     * line, and each line is stored to the penny. Adding up the rounded lines does not
+     * have to give back the rounded total: an invoice of 1901.04 is charged 380.21 but
+     * its seven lines add up to 380.20. A credit note has to return exactly the tax that
+     * was charged, so the leftover goes on the last line.
+     *
      * @throws \Throwable
      */
     public function handle(Invoice $invoice): Invoice
@@ -36,17 +45,26 @@ class RefundTaxTransactions extends OrgAction
         $originalInvoice = $invoice;
         $refund = CreateRefund::run($invoice);
 
-        $transactions = $originalInvoice->invoiceTransactions->where('net_amount', '>', 0);
+        $transactions = $originalInvoice->invoiceTransactions->where('net_amount', '>', 0)->values();
         $tasks        = [];
 
         $refund = $this->update($refund, [
             'is_tax_only' => true
         ]);
 
-        foreach ($transactions->chunk(100) as $chunkedTransactions) {
-            foreach ($chunkedTransactions as $transaction) {
+        $taxAmounts = $transactions->map(
+            fn (InvoiceTransaction $transaction) => round($transaction->taxCategory->rate * $transaction->net_amount, 2)
+        );
 
-                $taxAmount = $transaction->taxCategory->rate * $transaction->net_amount;
+        if ($taxAmounts->isNotEmpty()) {
+            $lastLine              = $taxAmounts->count() - 1;
+            $taxAmounts[$lastLine] = round($taxAmounts[$lastLine] + $originalInvoice->tax_amount - $taxAmounts->sum(), 2);
+        }
+
+        foreach ($transactions->chunk(100) as $chunkedTransactions) {
+            foreach ($chunkedTransactions as $index => $transaction) {
+
+                $taxAmount = $taxAmounts[$index];
 
                 $tasks[] = fn () => StoreRefundInvoiceTransaction::run($refund, $transaction, [
                     'net_amount'  => 0,

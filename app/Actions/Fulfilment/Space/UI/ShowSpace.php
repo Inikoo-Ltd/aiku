@@ -10,11 +10,13 @@
 namespace App\Actions\Fulfilment\Space\UI;
 
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Enums\Fulfilment\Space\SpaceStateEnum;
 use App\Enums\UI\Fulfilment\SpaceTabsEnum;
 use App\Http\Resources\Fulfilment\SpaceResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Space;
@@ -101,8 +103,12 @@ class ShowSpace extends OrgAction
                 ],
                 'showcase'    => SpaceResource::make($space),
 
+                SpaceTabsEnum::HISTORY->value => $this->tab == SpaceTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($space, SpaceTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($space, SpaceTabsEnum::HISTORY->value))),
+
             ]
-        );
+        )->table(IndexHistory::make()->tableStructure(SpaceTabsEnum::HISTORY->value));
     }
 
     public function jsonResponse(Space $space): SpaceResource

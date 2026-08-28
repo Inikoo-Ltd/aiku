@@ -17,6 +17,23 @@ class GetOrganisationNavigation
     use AsAction;
     use WithLayoutNavigation;
 
+    /**
+     * Marketing is a shop-scoped permission, so the organisation-wide entry appears for anyone who may
+     * see marketing on any shop of it. There is no unscoped `marketing.view` to check.
+     *
+     * @param \Illuminate\Support\Collection<int, int> $shopIds
+     */
+    private function canViewAnyShopMarketing(User $user, $shopIds): bool
+    {
+        foreach ($shopIds as $shopId) {
+            if ($user->authTo("marketing.$shopId.view")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function handle(User $user, Organisation $organisation): array
     {
         $navigation = [];
@@ -135,12 +152,35 @@ class GetOrganisationNavigation
                             ]
                         ],
                         [
+                            'label' => __("Agent's Shipping List"),
+                            'icon'  => ['fal', 'fa-shopping-basket'],
+                            'root'  => 'grp.org.procurement.shopping_list.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.shopping_list.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
+                            'label' => __('Agent Suppliers'),
+                            'icon'  => ['fal', 'fa-person-dolly'],
+                            'root'  => 'grp.org.procurement.org_agent_suppliers.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.org_agent_suppliers.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
                             'label' => __('Suppliers'),
                             'icon'  => ['fal', 'fa-person-dolly'],
                             'root'  => 'grp.org.procurement.org_suppliers.',
                             'route' => [
                                 'name'       => 'grp.org.procurement.org_suppliers.index',
-                                'parameters' => [$organisation->slug],
+                                'parameters' => [
+                                    'organisation' => $organisation->slug,
+                                    '_query'       => [
+                                        'sort' => 'code',
+                                    ],
+                                ],
                             ]
                         ],
                         [
@@ -172,6 +212,18 @@ class GetOrganisationNavigation
 
         $navigation = $this->getHumanResourcesNavs($user, $organisation, $navigation);
 
+
+        if ($this->canViewAnyShopMarketing($user, $organisation->shops()->pluck('id'))) {
+            $navigation['marketing'] = [
+                'label' => __('Org Marketing'),
+                'icon'  => ['fal', 'fa-bullhorn'],
+                'root'  => 'grp.org.marketing.',
+                'route' => [
+                    'name'       => 'grp.org.marketing.dashboard',
+                    'parameters' => [$organisation->slug],
+                ],
+            ];
+        }
 
         $navigation['overview'] = [
             'label'   => __('Overview'),

@@ -2,104 +2,114 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Enums\CRM\Customer\CustomerRfmSegmentEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\CustomerRfmSnapshot;
+use Carbon\Carbon;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetCustomerRfmComparison
 {
     use AsObject;
 
-    public function handle(int $shopId): ?array
+    public function handle(Shop $shop, ?string $from = null, ?string $to = null): array
     {
-        $current = CustomerRfmSnapshot::where('shop_id', $shopId)
-            ->orderBy('snapshot_date', 'desc')
-            ->first();
+        $periodEnd   = $this->parseDate($to) ?? now();
+        $periodStart = $this->parseDate($from) ?? $periodEnd->copy()->subMonth();
+
+        $current  = $this->snapshotOn($shop->id, $periodEnd);
+        $previous = $this->snapshotOn($shop->id, $periodStart);
 
         if (!$current) {
-            return null;
-        }
-
-        $previousTargetDate = $current->snapshot_date->copy()->subMonth();
-
-        $previous = CustomerRfmSnapshot::where('shop_id', $shopId)
-            ->whereDate('snapshot_date', $previousTargetDate->format('Y-m-d'))
-            ->first();
-
-        if (!$previous) {
-            $previous = CustomerRfmSnapshot::where('shop_id', $shopId)
-                ->orderBy('snapshot_date', 'asc')
+            $current = CustomerRfmSnapshot::where('shop_id', $shop->id)
+                ->orderBy('snapshot_date')
                 ->first();
-
-            if ($previous && $previous->id === $current->id) {
-                $previous = $this->createEmptyPreviousData($current->rfm_data());
-            }
         }
 
-        if (!$previous) {
-            $previous = $this->createEmptyPreviousData($current->rfm_data());
+        if ($previous && $current && $previous->id === $current->id) {
+            $previous = null;
         }
+
+        $currentData  = $current ? $this->rfmData($current) : $this->emptyRfmData();
+        $previousData = $previous ? $this->rfmData($previous) : $this->emptyRfmData();
 
         return [
             'comparison' => [
-                'current' => [
-                    'date' => $current->snapshot_date,
-                    'data' => $current->rfm_data(),
-                    'total' => array_sum($current->tags_summary ?? [])
+                'current'    => [
+                    'date'  => $current?->snapshot_date,
+                    'data'  => $currentData,
+                    'total' => array_sum($currentData[CustomerRfmSegmentEnum::TYPE_RECENCY]),
                 ],
-                'previous' => [
-                    'date' => $previous->snapshot_date ?? $current->snapshot_date->copy()->subDay(),
-                    'data' => $previous instanceof CustomerRfmSnapshot ? $previous->rfm_data() : $previous['data'],
-                    'total' => $previous instanceof CustomerRfmSnapshot ?
-                        array_sum($previous->tags_summary ?? []) : $previous['total']
+                'previous'   => [
+                    'date'  => $previous?->snapshot_date,
+                    'data'  => $previousData,
+                    'total' => array_sum($previousData[CustomerRfmSegmentEnum::TYPE_RECENCY]),
                 ],
-                'comparison' => $this->calculateChanges($current, $previous)
+                'comparison' => $this->calculateChanges($currentData, $previousData),
+                'period'     => [
+                    'from' => $periodStart->toDateString(),
+                    'to'   => $periodEnd->toDateString(),
+                ],
             ],
-            'segments' => $this->getRfmSegmentsStructure()
+            'segments'          => $this->getRfmSegmentsStructure($shop),
+            'newsletterRevenue' => [
+                'currency' => $shop->currency->code,
+                'data'     => GetCustomerRfmNewsletterRevenue::run($shop, $this->parseDate($from), $this->parseDate($to)),
+            ],
         ];
     }
 
-    protected function createEmptyPreviousData($currentRfmData): array
+    protected function parseDate(?string $date): ?Carbon
     {
-        $emptyData = [];
+        if (!$date) {
+            return null;
+        }
 
-        foreach ($currentRfmData as $type => $segments) {
-            $emptyData[$type] = [];
-            foreach ($segments as $segment => $value) {
-                $emptyData[$type][$segment] = 0;
+        $parsed = is_numeric($date) ? Carbon::createFromFormat('Ymd', $date) : Carbon::parse($date);
+
+        return $parsed->endOfDay();
+    }
+
+    protected function snapshotOn(int $shopId, Carbon $date): ?CustomerRfmSnapshot
+    {
+        return CustomerRfmSnapshot::where('shop_id', $shopId)
+            ->where('snapshot_date', '<=', $date->copy()->endOfDay())
+            ->orderByDesc('snapshot_date')
+            ->first();
+    }
+
+    protected function rfmData(CustomerRfmSnapshot $snapshot): array
+    {
+        return $snapshot->rfm_data();
+    }
+
+    protected function emptyRfmData(): array
+    {
+        $data = [];
+
+        foreach (CustomerRfmSegmentEnum::types() as $type) {
+            foreach (CustomerRfmSegmentEnum::tagNamesOfType($type) as $tagName) {
+                $data[$type][$tagName] = 0;
             }
         }
 
-        return [
-            'date' => null,
-            'data' => $emptyData,
-            'total' => 0
-        ];
+        return $data;
     }
 
-    protected function calculateChanges($current, $previous): array
+    protected function calculateChanges(array $currentData, array $previousData): array
     {
-        $currentData = $current->rfm_data();
-
-        if ($previous instanceof CustomerRfmSnapshot) {
-            $previousData = $previous->rfm_data();
-        } else {
-            $previousData = $previous['data'];
-        }
-
         $changes = [];
 
         foreach ($currentData as $type => $segments) {
-            $changes[$type] = [];
             foreach ($segments as $segment => $currentCount) {
                 $previousCount = $previousData[$type][$segment] ?? 0;
-                $change = $currentCount - $previousCount;
+                $change        = $currentCount - $previousCount;
 
                 $changes[$type][$segment] = [
-                    'current' => $currentCount,
-                    'previous' => $previousCount,
-                    'change' => $change,
-                    'percent_change' => $previousCount > 0 ?
-                        round(($change / $previousCount) * 100, 2) : 0
+                    'current'        => $currentCount,
+                    'previous'       => $previousCount,
+                    'change'         => $change,
+                    'percent_change' => $previousCount > 0 ? round(($change / $previousCount) * 100, 2) : 0,
                 ];
             }
         }
@@ -107,63 +117,45 @@ class GetCustomerRfmComparison
         return $changes;
     }
 
-    public function getRfmSegmentsStructure(): array
+    public function getRfmSegmentsStructure(Shop $shop): array
+    {
+        $structure = [];
+
+        foreach (CustomerRfmSegmentEnum::types() as $type) {
+            $segments = CustomerRfmSegmentEnum::ofType($type);
+
+            $structure[$type] = [
+                'title'       => CustomerRfmSegmentEnum::typeTitles()[$type],
+                'description' => CustomerRfmSegmentEnum::typeDescriptions()[$type],
+                'segments'    => array_map(fn (CustomerRfmSegmentEnum $segment) => $segment->tagName(), $segments),
+                'tooltips'    => $this->keyByTagName($segments, fn (CustomerRfmSegmentEnum $segment) => CustomerRfmSegmentEnum::tooltips()[$segment->value]),
+                'routes'      => $this->keyByTagName($segments, fn (CustomerRfmSegmentEnum $segment) => $this->segmentRoute($shop, $segment)),
+            ];
+        }
+
+        return $structure;
+    }
+
+    protected function keyByTagName(array $segments, callable $value): array
+    {
+        $keyed = [];
+
+        foreach ($segments as $segment) {
+            $keyed[$segment->tagName()] = $value($segment);
+        }
+
+        return $keyed;
+    }
+
+    protected function segmentRoute(Shop $shop, CustomerRfmSegmentEnum $segment): array
     {
         return [
-            'recency' => [
-                'title' => 'Recency Segments',
-                'description' => 'Based on when the last transaction was made',
-                'segments' => [
-                    'New Customer',
-                    'Active',
-                    'At Risk',
-                    'Inactive',
-                    'Lost Customer'
-                ],
-                'tooltips' => [
-                    'New Customer'   => 'Customer has never placed an order yet.',
-                    'Active'         => 'Last purchase within the last 30 days. Highly engaged customer.',
-                    'At Risk'        => 'Last purchase was 31–90 days ago. May need re-engagement.',
-                    'Inactive'       => 'Last purchase was 91–180 days ago. High churn risk.',
-                    'Lost Customer'  => 'Last purchase was more than 180 days ago. Considered churned.',
-                ]
+            'name'       => 'grp.org.shops.show.crm.customers.index',
+            'parameters' => [
+                'organisation' => $shop->organisation->slug,
+                'shop'         => $shop->slug,
+                'filter[tag]'  => $segment->value,
             ],
-            'frequency' => [
-                'title' => 'Frequency Segments',
-                'description' => 'Based on number of orders placed in the last 12 months',
-                'segments' => [
-                    'One-Time Buyer',
-                    'Occasional Shopper',
-                    'Frequent Buyer',
-                    'Brand Advocate'
-                ],
-                'tooltips' => [
-                    'One-Time Buyer'     => 'Placed exactly 1 order in the last 12 months.',
-                    'Occasional Shopper' => 'Placed 2–4 orders in the last 12 months.',
-                    'Frequent Buyer'     => 'Placed 5–9 orders in the last 12 months.',
-                    'Brand Advocate'     => 'Placed 10 or more orders in the last 12 months. Highly loyal customer.',
-                ]
-            ],
-            'monetary' => [
-                'title' => 'Monetary Segments',
-                'description' => 'Based on total spend in the last 12 months, ranked against all customers in this shop',
-                'segments' => [
-                    'Low Value',
-                    'Medium Value',
-                    'High Value',
-                    'Gold Reward',
-                    'Top 100',
-                    'Top 10'
-                ],
-                'tooltips' => [
-                    'Low Value'    => 'Total spend is in the bottom 50% of all customers in this shop (≤ 50th percentile).',
-                    'Medium Value' => 'Total spend is between the 50th and 80th percentile of all customers.',
-                    'High Value'   => 'Total spend is between the 80th and 95th percentile of all customers.',
-                    'Gold Reward'  => 'Total spend is between the 95th and 99th percentile of all customers.',
-                    'Top 100'      => 'Total spend is in the top 1% of all customers in this shop (> 99th percentile).',
-                    'Top 10'       => 'Absolute top spenders — elite tier customers in this shop.',
-                ]
-            ]
         ];
     }
 }

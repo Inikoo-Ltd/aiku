@@ -93,6 +93,16 @@ class WaitingDNItemsGroupedByDeliveryNoteForItemsResource extends JsonResource
             $packedInMessage = '('.__('Pack of').": $packedIn".')';
         }
 
+        $waitingWarehouseFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_warehouse ?? 0)), $packedIn);
+        if (floor($this->quantity_waiting_warehouse ?? 0) == ($this->quantity_waiting_warehouse ?? 0) && $packedIn > 1) {
+            $waitingWarehouseFractionalDS = [0, [($this->quantity_waiting_warehouse ?? 0) * $packedIn, $packedIn]];
+        }
+
+        $waitingCrmFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_crm ?? 0)), $packedIn);
+        if (floor($this->quantity_waiting_crm ?? 0) == ($this->quantity_waiting_crm ?? 0) && $packedIn > 1) {
+            $waitingCrmFractionalDS = [0, [($this->quantity_waiting_crm ?? 0) * $packedIn, $packedIn]];
+        }
+
         return [
             // 'waiting_warehouse_quantity' => $waitingWarehouseQuantity,
             'id'                         => $this->id,
@@ -112,7 +122,9 @@ class WaitingDNItemsGroupedByDeliveryNoteForItemsResource extends JsonResource
             'quantity_packed'            => $this->quantity_packed,
             'quantity_dispatched'        => $this->quantity_dispatched,
             'quantity_waiting_warehouse' => $this->quantity_waiting_warehouse,  // TODO: RAUL -- wrong quantity if multiple pickings location (case in page Index Waiting Warehouse Group)
+            'quantity_waiting_warehouse_fractional_ds' => $waitingWarehouseFractionalDS,
             'quantity_waiting_crm'       => $this->quantity_waiting_crm,
+            'quantity_waiting_crm_fractional_ds'       => $waitingCrmFractionalDS,
             'trolley_names'              => $deliveryNoteItem->deliveryNote?->trolleys->pluck('name')->join(', ') ?: null,
 
             'is_handled'                 => $this->is_handled,

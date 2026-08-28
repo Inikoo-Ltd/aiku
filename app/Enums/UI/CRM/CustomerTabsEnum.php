@@ -18,6 +18,7 @@ enum CustomerTabsEnum: string
 
     case SHOWCASE            = 'showcase';
     case TIMELINE            = 'timeline';
+    case JOURNEY             = 'journey';
 
     case HISTORY             = 'history';
     case ATTACHMENTS         = 'attachments';
@@ -39,6 +40,11 @@ enum CustomerTabsEnum: string
             CustomerTabsEnum::TIMELINE => [
                 'title' => __('Timeline'),
                 'icon'  => 'fal fa-code-branch',
+            ],
+
+            CustomerTabsEnum::JOURNEY => [
+                'title' => __('Journey'),
+                'icon'  => 'fal fa-route',
             ],
 
             CustomerTabsEnum::HISTORY => [

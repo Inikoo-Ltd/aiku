@@ -53,11 +53,11 @@ class UpdateDeliveryNoteItemUnpack extends OrgAction
         $deliveryNote = $deliveryNoteItem->deliveryNote;
         $siblingDeliveryNoteItems = $deliveryNote->deliveryNoteItems()->with('packings')->get();
 
-        $hasUnfinishedPackings = $siblingDeliveryNoteItems->filter(fn ($item) => empty((float) $item->quantity_not_picked) && $item->packings->count() == 0);
+        /** Measured against what was picked; a short-picked line still has to be packed. */
+        $hasUnfinishedPackings = $siblingDeliveryNoteItems->filter(
+            fn (DeliveryNoteItem $item) => !UpdateDeliveryNoteItemPacking::isFullyPacked($item)
+        );
 
-        $siblingDeliveryNoteItems = $deliveryNote->deliveryNoteItems()->with('packings')->get();
-
-        $hasUnfinishedPackings = $siblingDeliveryNoteItems->filter(fn ($item) => $item->packings->count() == 0);
         if ($oldState == DeliveryNoteStateEnum::PACKED && $hasUnfinishedPackings->count() > 0) {
             UpdateDeliveryNote::make()->action($deliveryNote, [
                 'packed_at' => null,

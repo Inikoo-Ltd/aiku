@@ -60,6 +60,8 @@ class IUnique implements ValidationRule
                     continue;
                 }
 
+                $columnCollection['operator'] = $columnCollection['operator'] ?? $columnCollection['operation'] ?? '=';
+
                 if (empty($columnCollection['operator'])) {
                     $columnCollection['operator'] = '=';
                 }

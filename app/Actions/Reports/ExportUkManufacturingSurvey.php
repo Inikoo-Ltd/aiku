@@ -30,17 +30,24 @@ class ExportUkManufacturingSurvey extends OrgAction
 
     public function asController(Organisation $organisation, ActionRequest $request): BinaryFileResponse
     {
-        ini_set('memory_limit', '512M');
-        $this->initialisation($organisation, $request);
+        $previousMemoryLimit = ini_set('memory_limit', '512M');
 
-        $startDate = $request->get('start_date')
-            ? Carbon::parse($request->get('start_date'))->format('Y-m-d')
-            : now()->subYear()->startOfYear()->format('Y-m-d');
+        try {
+            $this->initialisation($organisation, $request);
 
-        $endDate = $request->get('end_date')
-            ? Carbon::parse($request->get('end_date'))->format('Y-m-d')
-            : now()->subYear()->endOfYear()->format('Y-m-d');
+            $startDate = $request->get('start_date')
+                ? Carbon::parse($request->get('start_date'))->format('Y-m-d')
+                : now()->subYear()->startOfYear()->format('Y-m-d');
 
-        return $this->handle($organisation, $startDate, $endDate);
+            $endDate = $request->get('end_date')
+                ? Carbon::parse($request->get('end_date'))->format('Y-m-d')
+                : now()->subYear()->endOfYear()->format('Y-m-d');
+
+            return $this->handle($organisation, $startDate, $endDate);
+        } finally {
+            if ($previousMemoryLimit !== false) {
+                ini_set('memory_limit', $previousMemoryLimit);
+            }
+        }
     }
 }

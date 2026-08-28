@@ -9,9 +9,10 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, ref } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
-import ScanQrUser from "./ScanQrUser.vue"
+import { useEchoEmployeeClocking } from "@/Stores/echo-employee-clocking"
+import EmployeeClockingPanel from "./EmployeeClockingPanel.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
 	faEnvelope,
@@ -77,13 +78,14 @@ type EmployeeCalendarData = {
 const props = defineProps<{
 	data: object
 	title: string
+	employeeId?: number | null
 	pageHead: PageHeadingTypes
 	tabs: {
 		current: string
 		navigation: Record<string, any>
 	}
 	timesheets?: Record<string, any>
-	scan_qr_code?: Record<string, any>
+	clock_in_out?: Record<string, any>
 	leaves?: Record<string, any>
 	adjustments?: Record<string, any>
 	overtime?: Record<string, any>
@@ -91,6 +93,14 @@ const props = defineProps<{
 }>()
 
 let currentTab = ref(props.tabs.current)
+
+// Any clock in/out from any device (kiosk PIN/barcode, or the employee's own QR scan)
+// broadcasts here, so this page's status refreshes live without a manual reload.
+onMounted(() => {
+	if (props.employeeId) {
+		useEchoEmployeeClocking().subscribe(props.employeeId)
+	}
+})
 const isRequestLeaveModalOpen = ref(false)
 const isRequestOvertimeModalOpen = ref(false)
 
@@ -120,7 +130,7 @@ const handleTabUpdate = (tabSlug: string) => {
 const component = computed(() => {
 	const components = {
 		timesheets: TableTimesheetsEmployee,
-		scan_qr_code: ScanQrUser,
+		clock_in_out: EmployeeClockingPanel,
 		leaves: TableLeaves,
 		adjustments: TableAttendanceAdjustments,
 		overtime: TableOvertimeEmployee,
@@ -178,13 +188,15 @@ const component = computed(() => {
 		:tab="currentTab"
 		:isRequestLeaveModalOpen="isRequestLeaveModalOpen"
 		:isRequestOvertimeModalOpen="isRequestOvertimeModalOpen"
-		:activeTimeTracker="scan_qr_code?.active_time_tracker"
-		:clockingStatus="scan_qr_code?.clocking_status"
-		:todayTimesheet="scan_qr_code?.today_timesheet"
-		:lastClockIn="scan_qr_code?.last_clock_in"
-		:lastClockOut="scan_qr_code?.last_clock_out"
-		:clockingSessions="scan_qr_code?.clocking_sessions"
-		:timezone="scan_qr_code?.timezone"
+		:activeTimeTracker="clock_in_out?.active_time_tracker"
+		:clockingStatus="clock_in_out?.clocking_status"
+		:todayTimesheet="clock_in_out?.today_timesheet"
+		:lastClockIn="clock_in_out?.last_clock_in"
+		:lastClockOut="clock_in_out?.last_clock_out"
+		:clockingSessions="clock_in_out?.clocking_sessions"
+		:timezone="clock_in_out?.timezone"
+		:availableMethods="clock_in_out?.available_methods"
+		:pin="clock_in_out?.pin"
 		@update:isRequestLeaveModalOpen="isRequestLeaveModalOpen = $event"
 		@update:isRequestOvertimeModalOpen="isRequestOvertimeModalOpen = $event">
 	</component>

@@ -65,6 +65,7 @@ class BundleResource extends JsonResource
             'slug'               => $product->slug,
             'code'               => $product->code,
             'current_images'     => $imageArrCurrent,
+            'main_image_id'      => $product->image_id,
             'list_images'        => $imageArrList,
             'items'              => $productList,
             'price'              => $product->price,

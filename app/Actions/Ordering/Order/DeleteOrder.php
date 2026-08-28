@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Helpers\Address\FixedAddressGarbageCollection;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -33,23 +34,32 @@ class DeleteOrder extends OrgAction
     public function handle(Order $order): Order
     {
         if (in_array($order->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED])) {
+            /**
+             * The addresses an order points at are not always its own. A delivery address is
+             * routinely the customer's, held by them as well, so deleting every address the
+             * order references took the customer's with it - only the foreign key from
+             * model_has_fixed_addresses stopped that. Collect the candidates, release this
+             * order's hold on them, then let the garbage collection drop the ones nothing
+             * else is still using.
+             */
+            $addressIds = $order->addresses->pluck('id')
+                ->merge([$order->billing_address_id, $order->delivery_address_id])
+                ->filter()
+                ->unique();
+
             $order = DB::transaction(function () use ($order) {
                 DB::table('model_has_fixed_addresses')->where('model_type', 'Order')->where('model_id', $order->id)->delete();
+                DB::table('model_has_addresses')->where('model_type', 'Order')->where('model_id', $order->id)->delete();
 
                 $order->transactions()->forceDelete();
                 $order->forceDelete();
 
-                $order->billingAddress()->forceDelete();
-                $order->deliveryAddress()->forceDelete();
-
-                foreach ($order->addresses as $address) {
-                    $address->forceDelete();
-                }
-
-
-
                 return $order;
             });
+
+            foreach ($addressIds as $addressId) {
+                FixedAddressGarbageCollection::run($addressId);
+            }
             $this->orderHandlingHydrators($order, $order->state);
 
             return $order;

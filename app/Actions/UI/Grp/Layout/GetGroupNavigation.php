@@ -79,6 +79,17 @@ class GetGroupNavigation
         }
 
 
+        if (\App\Models\Catalogue\Shop::pluck('id')->contains(fn ($shopId) => $user->authTo("marketing.$shopId.view"))) {
+            $groupNavigation['marketing'] = [
+                'label' => __('Group Marketing'),
+                'icon'  => ['fal', 'fa-bullhorn'],
+                'root'  => 'grp.marketing.',
+                'route' => [
+                    'name' => 'grp.marketing.dashboard',
+                ],
+            ];
+        }
+
         $groupNavigation['chat'] = [
             'label'   => __('Chat'),
             'tooltip' => __('Chat'),
@@ -89,6 +100,15 @@ class GetGroupNavigation
             ],
             'topMenu' => [
                 'subSections' => [
+                    [
+                        'label'   => __('Messaging'),
+                        'tooltip' => __('Messaging'),
+                        'icon'    => ['fal', 'fa-comments'],
+                        'root'    => 'grp.chat.staff.index',
+                        'route'   => [
+                            'name' => 'grp.chat.staff.index',
+                        ],
+                    ],
                     [
                         'label'   => __('Dashboard'),
                         'tooltip' => __('Dashboard'),
@@ -313,15 +333,28 @@ class GetGroupNavigation
                         ]
                     ],
                     [
+                        'label' => __('Agent Suppliers'),
+                        'icon'  => ['fal', 'fa-people-arrows'],
+                        'root'  => 'grp.supply-chain.agent_suppliers.',
+                        'route' => [
+                            'name' => 'grp.supply-chain.agent_suppliers.index',
+                        ]
+                    ],
+                    [
                         'label' => __('Suppliers'),
                         'icon'  => ['fal', 'fa-person-dolly'],
                         'root'  => 'grp.supply-chain.suppliers.',
                         'route' => [
-                            'name' => 'grp.supply-chain.suppliers.index',
+                            'name'       => 'grp.supply-chain.suppliers.index',
+                            'parameters' => [
+                                '_query' => [
+                                    'sort' => 'code',
+                                ],
+                            ],
                         ]
                     ],
                     [
-                        'label' => __('Supplier products'),
+                        'label' => __('Supplier Products'),
                         'icon'  => ['fal', 'fa-box-usd'],
                         'root'  => 'grp.supply-chain.supplier_products.',
                         'route' => [
@@ -410,6 +443,14 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
+                        'tooltip' => __('System Administration'),
+                        'icon'    => ['fal', 'fa-users-cog'],
+                        'root'    => 'grp.sysadmin.dashboard',
+                        'route'   => [
+                            'name' => 'grp.sysadmin.dashboard',
+                        ]
+                    ],
+                    [
                         'label' => __('Users'),
                         'icon'  => ['fal', 'fa-user-circle'],
                         'root'  => 'grp.sysadmin.users.',
@@ -426,45 +467,13 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('Analytics'),
+                        'label' => __('System Analytics'),
                         'icon'  => ['fal', 'fa-analytics'],
                         'root'  => 'grp.sysadmin.analytics.',
                         'route' => [
                             'name' => 'grp.sysadmin.analytics.dashboard',
                         ]
                     ],
-                    [
-                        'label' => __('Scheduled Tasks'),
-                        'icon'  => ['fal', 'fa-clock'],
-                        'root'  => 'grp.sysadmin.scheduled-tasks.',
-                        'route' => [
-                            'name' => 'grp.sysadmin.scheduled-tasks.index',
-                        ]
-                    ],
-                    [
-                        'label' => __('Search analytics'),
-                        'icon'  => ['fal', 'fa-search'],
-                        'root'  => 'grp.sysadmin.search_logs.',
-                        'route' => [
-                            'name' => 'grp.sysadmin.search_logs.index',
-                        ]
-                    ],
-                    [
-                        'label' => __('System Settings'),
-                        'icon'  => ['fal', 'fa-cog'],
-                        'root'  => 'grp.sysadmin.settings.',
-                        'route' => [
-                            'name' => 'grp.sysadmin.settings.edit',
-                        ]
-                    ],
-                    [
-                        'label' => __('Changelogs'),
-                        'icon'  => ['fal', 'fa-history'],
-                        'root'  => 'grp.sysadmin.changelogs.index',
-                        'route' => [
-                            'name' => 'grp.sysadmin.changelogs.index',
-                        ]
-                    ]
                 ]
             ]
         ];

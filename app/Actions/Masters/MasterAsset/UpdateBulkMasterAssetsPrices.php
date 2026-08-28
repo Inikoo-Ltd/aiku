@@ -24,9 +24,15 @@ class UpdateBulkMasterAssetsPrices extends OrgAction
 {
     use WithMastersEditAuthorisation;
 
-    public function handle(array $masterAssetIDs, array $modelData): void
+    /**
+     * @return array{updated: int, skipped: array<string, list<string>>}
+     */
+    public function handle(array $masterAssetIDs, array $modelData): array
     {
         $rrpPerUnit = Arr::pull($modelData, 'rrp_per_unit', false);
+
+        $updated = 0;
+        $skipped = [];
 
         foreach (MasterAsset::whereIn('id', $masterAssetIDs)->where('group_id', $this->group->id)->get() as $masterAsset) {
             $dataToUpdate = [];
@@ -41,7 +47,11 @@ class UpdateBulkMasterAssetsPrices extends OrgAction
 
                 foreach ($modelData[$field] as $currencyCode => $entry) {
                     $value = $entry['value'] ?? null;
-                    if ($value === null || data_get($record, "$currencyCode.independent") === true) {
+                    if ($value === null) {
+                        continue;
+                    }
+                    if (data_get($record, "$currencyCode.independent") === true) {
+                        $skipped[$masterAsset->code][] = $currencyCode;
                         continue;
                     }
 
@@ -63,8 +73,14 @@ class UpdateBulkMasterAssetsPrices extends OrgAction
                 $updatePrices = UpdateMasterAssetPrices::make();
                 $updatePrices->forceAsyncCascade = true;
                 $updatePrices->action($masterAsset, $dataToUpdate);
+                $updated++;
             }
         }
+
+        return [
+            'updated' => $updated,
+            'skipped' => array_map(fn (array $currencies) => array_values(array_unique($currencies)), $skipped),
+        ];
     }
 
     public function rules(): array
@@ -86,18 +102,36 @@ class UpdateBulkMasterAssetsPrices extends OrgAction
     {
         $this->initialisationFromGroup(group(), $request);
 
-        $this->handle(
+        $result = $this->handle(
             $this->validatedData['ids'],
             Arr::except($this->validatedData, ['ids'])
         );
+
+        if ($result['skipped']) {
+            $codes = collect($result['skipped'])
+                ->map(fn (array $currencies, string $code) => $code.' ('.implode(', ', $currencies).')')
+                ->values();
+
+            $request->session()->flash('notification', [
+                'status'      => 'warning',
+                'title'       => __('Some prices were not changed'),
+                'description' => __(':updated updated. Skipped hand-set values: :codes', [
+                    'updated' => $result['updated'],
+                    'codes'   => $codes->take(10)->implode('; ').($codes->count() > 10 ? ' …' : ''),
+                ]),
+            ]);
+        }
     }
 
-    public function action(array $modelData): void
+    /**
+     * @return array{updated: int, skipped: array<string, list<string>>}
+     */
+    public function action(array $modelData): array
     {
         $this->asAction = true;
         $this->initialisationFromGroup(group(), $modelData);
 
-        $this->handle(
+        return $this->handle(
             $this->validatedData['ids'],
             Arr::except($this->validatedData, ['ids'])
         );

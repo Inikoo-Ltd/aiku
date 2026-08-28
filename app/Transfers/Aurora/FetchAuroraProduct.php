@@ -35,7 +35,7 @@ class FetchAuroraProduct extends FetchAurora
         if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
             return;
         }
-        if ($shop->is_aiku) {
+        if ($shop->is_aiku && !$this->organisationSource->isForcedFetch()) {
             return;
         }
 

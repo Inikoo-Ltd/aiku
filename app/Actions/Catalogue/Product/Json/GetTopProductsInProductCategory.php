@@ -10,6 +10,7 @@
 namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -39,8 +40,12 @@ class GetTopProductsInProductCategory extends OrgAction
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.is_for_sale', true);
         $queryBuilder->whereNotNull('products.top_seller');
-        $queryBuilder->where('products.family_id', $productCategory->id)
-                ->orderBy('products.top_seller', 'asc');
+        $queryBuilder->when(
+            $productCategory->type == ProductCategoryTypeEnum::DEPARTMENT,
+            fn ($q) => $q->where('products.department_id', $productCategory->id),
+            fn ($q) => $q->where('products.family_id', $productCategory->id)
+        );
+        $queryBuilder->orderBy('products.top_seller', 'asc');
         $queryBuilder
                 ->where(function ($query) {
                     $query
@@ -55,6 +60,8 @@ class GetTopProductsInProductCategory extends OrgAction
                 'products.image_id',
                 'products.code',
                 'products.name',
+                'products.slug',
+                'products.url',
                 'products.available_quantity',
                 'products.price',
                 'products.rrp',

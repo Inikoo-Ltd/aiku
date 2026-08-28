@@ -37,9 +37,6 @@ class GetWarehouseNavigation
                         'organisation' => $warehouse->organisation->slug,
                         'warehouse'    => $warehouse->slug,
                         'tab'          => 'sales',
-                        'between'      => [
-                            'date' => now()->startOfMonth()->format('Ymd').'-'.now()->format('Ymd'),
-                        ],
                     ],
                 ],
                 'topMenu' => [],

@@ -54,6 +54,8 @@ class IndexRefundInProcessTransactions extends OrgAction
                 'invoice_transactions.id',
                 'invoice_transactions.updated_at',
                 'invoice_transactions.in_process',
+                'invoice_transactions.model_type',
+                'invoice_transactions.model_id',
                 'quantity',
                 'net_amount',
             ], $commonSelect))
@@ -68,6 +70,8 @@ class IndexRefundInProcessTransactions extends OrgAction
                 'original_invoice_transaction.id',
                 'original_invoice_transaction.updated_at',
                 'original_invoice_transaction.in_process',
+                'original_invoice_transaction.model_type',
+                'original_invoice_transaction.model_id',
                 'original_invoice_transaction.quantity',
                 'original_invoice_transaction.net_amount',
             ], $commonSelect))
@@ -86,6 +90,7 @@ class IndexRefundInProcessTransactions extends OrgAction
                 ]);
         }
 
+        $queryBuilder->with('model');
 
         $queryBuilder->defaultSort('code');
 

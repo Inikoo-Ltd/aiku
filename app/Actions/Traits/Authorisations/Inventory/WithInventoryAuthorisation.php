@@ -8,6 +8,7 @@
 
 namespace App\Actions\Traits\Authorisations\Inventory;
 
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithInventoryAuthorisation
@@ -20,15 +21,8 @@ trait WithInventoryAuthorisation
 
         $warehousesIDs = $this->organisation->warehouses()->pluck('id')->toArray();
 
-        $editPermissions = [
-            "inventory.{$this->organisation->id}.edit",
-        ];
-        foreach ($warehousesIDs as $warehouseId) {
-            $editPermissions[] = "supervisor-stocks.$warehouseId.view";
-        }
-
         $this->canEdit = $request->user()->authTo(
-            $editPermissions
+            WarehousePermissionsEnum::getStockEditPermissionNames($this->organisation)
         );
 
         $viewPermissions = [

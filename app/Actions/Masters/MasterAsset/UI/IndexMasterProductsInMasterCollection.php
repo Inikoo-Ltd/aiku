@@ -151,7 +151,7 @@ class IndexMasterProductsInMasterCollection extends OrgAction
                 'hide_bulk_edit'          => true,
                 'tabs' => [
                     'current'    => $this->tab,
-                    'navigation' => MasterProductsTabsEnum::navigationExcept([MasterProductsTabsEnum::SALES, MasterProductsTabsEnum::INDEX_ORDERING]),
+                    'navigation' => MasterProductsTabsEnum::navigationExcept([MasterProductsTabsEnum::INDEX_ORDERING]),
                 ],
                 'routes'    => [
                     'dataList'     => [
@@ -223,7 +223,7 @@ class IndexMasterProductsInMasterCollection extends OrgAction
         $this->parent = $masterCollection;
         $group = group();
 
-        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::valuesExcept([MasterProductsTabsEnum::SALES]));
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterCollection, MasterProductsTabsEnum::INDEX->value);
     }
@@ -234,7 +234,7 @@ class IndexMasterProductsInMasterCollection extends OrgAction
         $this->parent = $masterCollection;
         $group = group();
 
-        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::valuesExcept([MasterProductsTabsEnum::SALES]));
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterCollection, MasterProductsTabsEnum::INDEX->value);
     }
@@ -245,7 +245,7 @@ class IndexMasterProductsInMasterCollection extends OrgAction
         $this->parent = $masterCollection;
         $group = group();
 
-        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::valuesExcept([MasterProductsTabsEnum::SALES]));
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterCollection, MasterProductsTabsEnum::INDEX->value);
     }
@@ -256,7 +256,7 @@ class IndexMasterProductsInMasterCollection extends OrgAction
         $this->parent = $masterCollection;
         $group        = group();
 
-        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::valuesExcept([MasterProductsTabsEnum::SALES]));
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterCollection, MasterProductsTabsEnum::INDEX->value);
     }

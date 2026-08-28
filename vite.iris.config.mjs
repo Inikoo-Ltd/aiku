@@ -13,6 +13,7 @@ import path from "node:path";
 import fs from "node:fs";
 import tailwindcss from 'tailwindcss';
 import { analyzer } from 'vite-bundle-analyzer'
+import { codecov } from "./vite.codecov.mjs";
 
 /*
  * The lang/*.json files hold translations for every app (grp backoffice included).
@@ -27,19 +28,27 @@ const irisLangFilter = () => {
     const collectSourceStrings = () => {
         const strings = new Set();
         const stringLiteral = /(['"`])((?:\\.|(?!\1).)*?)\1/g;
+        /*
+         * :label="trans('Some key')" is captured as "trans('Some key')"
+         * now :label="trans('Some key')" is captured as "Some key"
+         */
+        const collect = (code) => {
+            for (const match of code.matchAll(stringLiteral)) {
+                const value = match[2].replace(/\\'/g, "'").replace(/\\"/g, '"');
+                if (!value || value.length > 500 || strings.has(value)) {
+                    continue;
+                }
+                strings.add(value);
+                collect(value);
+            }
+        };
         const walk = (dir) => {
             for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
                 const full = path.join(dir, entry.name);
                 if (entry.isDirectory()) {
                     walk(full);
                 } else if (/\.(vue|ts|js|mjs)$/.test(entry.name)) {
-                    const code = fs.readFileSync(full, "utf8");
-                    for (const match of code.matchAll(stringLiteral)) {
-                        const value = match[2].replace(/\\'/g, "'").replace(/\\"/g, '"');
-                        if (value && value.length <= 500) {
-                            strings.add(value);
-                        }
-                    }
+                    collect(fs.readFileSync(full, "utf8"));
                 }
             }
         };
@@ -64,8 +73,8 @@ const irisLangFilter = () => {
     };
 };
 
-export default defineConfig(
-  {
+export default defineConfig(({ isSsrBuild }) =>
+  ({
     cacheDir: "node_modules/.vite-iris",
     server : {
       cors : true,
@@ -94,7 +103,8 @@ export default defineConfig(
             }
           }),
       i18n(),
-      irisLangFilter()
+      irisLangFilter(),
+      codecov(isSsrBuild ? "iris-ssr" : "iris")
      // , analyzer()
     ],
     ssr    : {
@@ -147,4 +157,4 @@ export default defineConfig(
         }
       }
     }
-  });
+  }));

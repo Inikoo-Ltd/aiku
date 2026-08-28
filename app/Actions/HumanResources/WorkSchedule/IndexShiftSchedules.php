@@ -3,6 +3,7 @@
 namespace App\Actions\HumanResources\WorkSchedule;
 
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Models\HumanResources\WorkSchedule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +19,7 @@ class IndexShiftSchedules extends OrgAction
             return response()->json(['data' => []]);
         }
 
-        $employee = $user->employees->first();
+        $employee = GetUserCurrentEmployee::run($user);
 
         if (!$employee || !$employee->organisation_id) {
             return response()->json(['data' => []]);

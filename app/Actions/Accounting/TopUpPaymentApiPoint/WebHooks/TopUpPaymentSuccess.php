@@ -95,6 +95,7 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
 
             $existingPayment = Payment::where('payment_account_shop_id', $paymentAccountShop->id)
                 ->where('reference', Arr::get($checkoutComPayment, 'id'))
+                ->where('status', '!=', PaymentStatusEnum::FAIL)
                 ->first();
 
             if ($existingPayment) {

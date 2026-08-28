@@ -49,6 +49,9 @@ class DeleteOrgStock extends OrgAction
             if (Schema::hasTable('pickings')) {
                 DB::table('pickings')->where('org_stock_id', $orgStock->id)->update(['org_stock_id' => null]);
             }
+            if (Schema::hasTable('raw_materials')) {
+                DB::table('raw_materials')->where('org_stock_id', $orgStock->id)->update(['org_stock_id' => null]);
+            }
 
             // Delete audits for this model
             DB::table('audits')->where('auditable_type', 'OrgStock')->where('auditable_id', $orgStock->id)->delete();

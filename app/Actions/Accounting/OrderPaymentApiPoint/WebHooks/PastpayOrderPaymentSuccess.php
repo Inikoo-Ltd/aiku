@@ -158,9 +158,11 @@ class PastpayOrderPaymentSuccess extends IrisAction
                 ->where('code', 'like', 'Pastpay-'.$termDays.'-%')
                 ->where('state', ChargeStateEnum::ACTIVE)->first();
 
+            $feeBookedInTotal = false;
             if ($charge && $chargeAmount > 0) {
                 $netChargeAmount = round($chargeAmount / (1 + (float) $order->taxCategory->rate), 2);
                 $this->storeChargeTransaction($order, $charge, $netChargeAmount);
+                $feeBookedInTotal = true;
             }
 
             AttachPaymentToOrder::make()->action($order, $payment, [
@@ -169,7 +171,16 @@ class PastpayOrderPaymentSuccess extends IrisAction
 
             $order->update(['is_pastpay' => true]);
 
-            if ($order->total_amount > $order->payment_amount && $order->customer->balance > 0) {
+            /** storeChargeTransaction() bumps total_amount by the financing fee (via
+             * CalculateOrderTotalAmounts) when a Pastpay charge is configured, so
+             * payment_amount and total_amount already balance out in that case. When no
+             * charge is configured, the fee is still paid to Pastpay but never added to
+             * total_amount, so it must be excluded here or it looks like the order was
+             * overpaid and the customer's balance never gets settled */
+            $orderPaidAmount = $feeBookedInTotal ? $order->payment_amount : round($order->payment_amount - $chargeAmount, 2);
+
+            if ($order->total_amount > $orderPaidAmount && $order->customer->balance > 0) {
+                $order->payment_amount = $orderPaidAmount;
                 SettleRetinaOrderWithBalance::run($order);
             }
 

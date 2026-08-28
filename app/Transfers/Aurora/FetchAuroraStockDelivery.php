@@ -49,6 +49,10 @@ class FetchAuroraStockDelivery extends FetchAurora
 
         $this->parsedData["org_parent"] = $orgParent;
 
+        if ($this->auroraModelData->{'Supplier Delivery Purchase Order Key'} > 0) {
+            $this->parsedData["purchase_order_source_id"] = $this->organisation->id.':'.$this->auroraModelData->{'Supplier Delivery Purchase Order Key'};
+        }
+
 
         //print ">>".$this->auroraModelData->{'Supplier Delivery State'}."\n";
         $state = match ($this->auroraModelData->{'Supplier Delivery State'}) {
@@ -57,7 +61,7 @@ class FetchAuroraStockDelivery extends FetchAurora
             "Placed",  "Costing", "InvoiceChecked" => StockDeliveryStateEnum::PLACED,
 
 
-            "InProcess", "Confirmed", "Manufactured", "QC_Pass"."Submitted" => StockDeliveryStateEnum::IN_PROCESS,
+            "InProcess", "Confirmed", "Manufactured", "QC_Pass", "Submitted" => StockDeliveryStateEnum::IN_PROCESS,
 
             "Inputted", "Dispatched" => StockDeliveryStateEnum::DISPATCHED,
             "Received" => StockDeliveryStateEnum::RECEIVED,
@@ -75,7 +79,15 @@ class FetchAuroraStockDelivery extends FetchAurora
 
 
 
-        $data = [];
+        $data = array_filter([
+            'delivery_type'            => strtolower($this->auroraModelData->{'Supplier Delivery Type'} ?? ''),
+            'incoterm'                 => $this->parseIncoterm($this->auroraModelData->{'Supplier Delivery Incoterm'}),
+            'port_of_export'           => $this->auroraModelData->{'Supplier Delivery Port of Export'},
+            'port_of_import'           => $this->auroraModelData->{'Supplier Delivery Port of Import'},
+            'invoice_number'           => $this->auroraModelData->{'Supplier Delivery Invoice Public ID'},
+            'invoice_date'             => $this->parseDatetime($this->auroraModelData->{'Supplier Delivery Invoice Date'})?->toDateString(),
+            'estimated_receiving_date' => $this->parseDatetime($this->auroraModelData->{'Supplier Delivery Estimated Receiving Date'})?->toDateString(),
+        ]);
 
 
         $date = $this->parseDatetime($this->auroraModelData->{'Supplier Delivery Last Updated Date'});
@@ -98,13 +110,15 @@ class FetchAuroraStockDelivery extends FetchAurora
             'parent_code' => $this->auroraModelData->{'Supplier Delivery Parent Code'},
             'parent_name' => $this->auroraModelData->{'Supplier Delivery Parent Name'},
 
-            "reference" => $this->auroraModelData->{'Supplier Delivery Public ID'} ?? $this->auroraModelData->{'Supplier Delivery Key'},
+            "reference" => (string)($this->auroraModelData->{'Supplier Delivery Public ID'} ?? $this->auroraModelData->{'Supplier Delivery Key'}),
             "state"     => $state,
 
-            "cost_items" => $this->auroraModelData->{'Supplier Delivery Items Amount'},
-            // "cost_shipping" => $this->auroraModelData->{'Supplier Delivery Shipping Net Amount'},
+            "cost_items" => $this->auroraModelData->{'Supplier Delivery Items Amount'} ?? null,
+            "cost_extra" => $this->auroraModelData->{'Supplier Delivery Extra Costs Amount'} ?? null,
+            "cost_total" => $this->auroraModelData->{'Supplier Delivery Total Amount'} ?? null,
 
-            //  "cost_total" => $this->auroraModelData->{'Supplier Delivery Total Amount'},
+            "cbm"          => $this->auroraModelData->{'Supplier Delivery CBM'} ?? null,
+            "gross_weight" => $this->auroraModelData->{'Supplier Delivery Weight'} ?? null,
 
             "source_id" => $this->organisation->id.':'.$this->auroraModelData->{'Supplier Delivery Key'},
 

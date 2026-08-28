@@ -14,7 +14,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithImportModel;
 use App\Http\Resources\Helpers\UploadsResource;
 use App\Models\Helpers\Upload;
-use App\Models\Production\Artefact;
 use App\Models\Production\Production;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,7 +24,15 @@ class ImportArtefact extends OrgAction
 
     public function handle(Production $production, $file): Upload
     {
-        $upload = StoreUpload::run($file, Artefact::class);
+        $upload = StoreUpload::make()->fromFile(
+            $production->organisation,
+            $file,
+            [
+                'model'       => 'Artefact',
+                'parent_type' => $production->getMorphClass(),
+                'parent_id'   => $production->id,
+            ]
+        );
 
         if ($this->isSync) {
             ImportUpload::run(

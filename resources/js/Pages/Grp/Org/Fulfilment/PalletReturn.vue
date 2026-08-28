@@ -22,6 +22,7 @@ import { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { BoxStats, PalletReturn, PDRNotes, UploadPallet } from "@/types/Pallet"
 import BoxStatsPalletReturn from "@/Pages/Grp/Org/Fulfilment/Return/BoxStatsPalletReturn.vue"
+import ScanToPickPalletReturn from "@/Components/Fulfilment/ScanToPickPalletReturn.vue"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { trans } from "laravel-vue-i18n"
@@ -158,6 +159,9 @@ const props = defineProps<{
 			route: routeType
 		}[]
 	}
+	scan_to_pick?: {
+		scan_route: routeType
+	}
 	requireShipping?: boolean
 }>()
 
@@ -173,8 +177,6 @@ const openModal = ref(false)
 const isLoadingButton = ref<string | boolean>(false)
 const isLoadingData = ref<string | boolean>(false)
 const isModalUploadOpen = ref(false)
-const dataPGoodList = ref([])
-const dataServiceList = ref([])
 
 const formAddService = useForm({ service_id: "", quantity: 1, historic_asset_id: null })
 const formAddPhysicalGood = useForm({ outer_id: "", quantity: 1, historic_asset_id: null })
@@ -205,27 +207,7 @@ watch(
 )
 
 // Tabs: Services
-const onOpenModalAddService = async () => {
-	isLoadingData.value = "addService"
-	try {
-		const xxx = await axios.get(
-			route(props.service_list_route.name, props.service_list_route.parameters)
-		)
-		dataServiceList.value = xxx?.data?.data || []
-	} catch (error) {
-		console.error(error)
-		notify({
-			title: "Something went wrong.",
-			text: "Failed to fetch Services list",
-			type: "error",
-		})
-	}
-	isLoadingData.value = false
-}
 const onSubmitAddService = (data: Action, closedPopover: Function) => {
-	formAddService.historic_asset_id = dataServiceList.value.filter(
-		(service) => service.id == formAddService.service_id
-	)[0].historic_asset_id
 	isLoadingButton.value = "addService"
 
 	formAddService.post(route(data.route?.name, { ...data.route?.parameters }), {
@@ -249,28 +231,7 @@ const onSubmitAddService = (data: Action, closedPopover: Function) => {
 }
 
 // Tabs: Physical Goods
-const onOpenModalAddPGood = async () => {
-	isLoadingData.value = "addPhysicalGood"
-	try {
-		const xxx = await axios.get(
-			route(props.physical_good_list_route.name, props.physical_good_list_route.parameters)
-		)
-		dataPGoodList.value = xxx.data.data
-	} catch (error) {
-		notify({
-			title: "Something went wrong.",
-			text: "Failed to fetch Physical Goods list",
-			type: "error",
-		})
-	}
-	isLoadingData.value = false
-}
-
 const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
-	formAddPhysicalGood.historic_asset_id = dataPGoodList.value.filter(
-		(physical_good) => physical_good.id == formAddPhysicalGood.outer_id
-	)[0].historic_asset_id
-
 	isLoadingButton.value = "addPhysicalGood"
 	formAddPhysicalGood.post(route(data.route?.name, data.route?.parameters), {
 		preserveScroll: true,
@@ -522,9 +483,8 @@ provide("listError", listError.value)
 		<!-- Button: Add service (single) -->
 		<template #button-group-add-service="{ action }">
 			<Popover>
-				<template #button="{ open }">
+				<template #button>
 					<Button
-						@click="() => (open ? false : onOpenModalAddService())"
 						:style="action.style"
 						:label="action.label"
 						:icon="action.icon"
@@ -538,6 +498,7 @@ provide("listError", listError.value)
 						<div class="">
 							<PureMultiselectInfiniteScroll
 								v-model="formAddService.service_id"
+								@selectedObject="(option) => formAddService.historic_asset_id = option?.historic_asset_id ?? null"
 								:fetchRoute="props.service_list_route"
 								:placeholder="trans('Select Services')"
 								valueProp="id">
@@ -599,17 +560,6 @@ provide("listError", listError.value)
 								full
 								@click="() => onSubmitAddService(action, closed)" />
 						</div>
-
-						<!-- Loading: fetching service list -->
-						<div
-							v-if="isLoadingData === 'addService'"
-							class="bg-white/50 absolute inset-0 flex place-content-center items-center">
-							<FontAwesomeIcon
-								icon="fad fa-spinner-third"
-								class="animate-spin text-5xl"
-								fixed-width
-								aria-hidden="true" />
-						</div>
 					</div>
 				</template>
 			</Popover>
@@ -619,9 +569,8 @@ provide("listError", listError.value)
 		<template #button-group-add-physical-good="{ action }">
 			<div class="relative ml-2">
 				<Popover>
-					<template #button="{ open }">
+					<template #button>
 						<Button
-							@click="open ? false : onOpenModalAddPGood()"
 							:style="action.style"
 							:label="action.label"
 							:icon="action.icon"
@@ -635,6 +584,7 @@ provide("listError", listError.value)
 							<div>
 								<PureMultiselectInfiniteScroll
 									v-model="formAddPhysicalGood.outer_id"
+									@selectedObject="(option) => formAddPhysicalGood.historic_asset_id = option?.historic_asset_id ?? null"
 									:fetchRoute="physical_good_list_route"
 									:placeholder="trans('Select Physical Goods')"
 									valueProp="id" />
@@ -670,17 +620,6 @@ provide("listError", listError.value)
 									:label="'save'"
 									full
 									@click="() => onSubmitAddPhysicalGood(action, closed)" />
-							</div>
-
-							<!-- Loading: fetching physical_good list -->
-							<div
-								v-if="isLoadingData === 'addPhysicalGood'"
-								class="bg-white/50 absolute inset-0 flex place-content-center items-center">
-								<FontAwesomeIcon
-									icon="fad fa-spinner-third"
-									class="animate-spin text-5xl"
-									fixed-width
-									aria-hidden="true" />
 							</div>
 						</div>
 					</template>
@@ -766,6 +705,12 @@ provide("listError", listError.value)
 	<BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :address_management :shipments :picker_packer_routes="picker_packer_routes" />
 
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+
+	<ScanToPickPalletReturn
+		v-if="scan_to_pick && (currentTab === 'pallets' || currentTab === 'stored_items')"
+		:scanRoute="scan_to_pick.scan_route"
+		:reloadProps="[currentTab, 'box_stats', 'pageHead', 'data']" />
+
 	<component
 		:is="component"
 		:data="props[currentTab]"

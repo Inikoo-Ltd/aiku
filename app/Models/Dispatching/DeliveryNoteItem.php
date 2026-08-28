@@ -90,6 +90,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $has_waiting_crm
  * @property int|null $batch_code_id
  * @property numeric $quantity_returned
+ * @property \Illuminate\Support\Carbon|null $composition_dirty_at The SKU composition changed after picking work was done, a human must roll back or confirm
+ * @property numeric|null $composition_dirty_quantity_required What quantity_required would be under the new composition
+ * @property bool $is_dirty
  * @property-read \App\Models\Dispatching\BatchCode|null $batchCode
  * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
  * @property-read \App\Models\SysAdmin\Group|null $group
@@ -119,6 +122,7 @@ class DeliveryNoteItem extends Model
         'cancel_state' => DeliveryNoteItemCancelStateEnum::class,
 
         'date'                       => 'datetime',
+        'composition_dirty_at'       => 'datetime',
         'order_submitted_at'         => 'datetime',
         'assigned_at'                => 'datetime',
         'picking_at'                 => 'datetime',
@@ -134,8 +138,6 @@ class DeliveryNoteItem extends Model
         'is_packed'                  => 'boolean',
         'is_done'                    => 'boolean',
         'need_packing'               => 'boolean',
-        'has_waiting_warehouse'      => 'boolean',
-        'has_waiting_crm'            => 'boolean',
         'quantity_waiting_warehouse' => 'decimal:6',
         'quantity_waiting_crm'       => 'decimal:6',
     ];
@@ -145,6 +147,32 @@ class DeliveryNoteItem extends Model
     ];
 
     protected $guarded = [];
+
+    /**
+     * Both flags are generated columns in the database, so the row can never disagree with its
+     * quantity. A model in hand that has just been updated has not read the row back, so the same
+     * derivation is applied here: the flag is the quantity, in memory as on disk.
+     */
+    public function getHasWaitingWarehouseAttribute(): bool
+    {
+        return (float)$this->quantity_waiting_warehouse > 0;
+    }
+
+    public function getHasWaitingCrmAttribute(): bool
+    {
+        return (float)$this->quantity_waiting_crm > 0;
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(
+            function (DeliveryNoteItem $deliveryNoteItem) {
+                if ($deliveryNoteItem->quantity_required) {
+                    $deliveryNoteItem->original_quantity_required = $deliveryNoteItem->quantity_required;
+                }
+            }
+        );
+    }
 
     public function pickings(): HasMany
     {

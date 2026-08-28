@@ -10,6 +10,7 @@ namespace App\Actions\Iris\Basket;
 
 use App\Actions\IrisAction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -36,6 +37,16 @@ class UpdateEcomBasketTransaction extends IrisAction
 
     public function asController(Transaction $transaction, ActionRequest $request): Transaction
     {
+        $customer = $request->user()?->customer;
+
+        if (!$customer || $transaction->order->customer_id != $customer->id) {
+            abort(404);
+        }
+
+        if ($transaction->order->state != OrderStateEnum::CREATING) {
+            abort(422, 'Order can not be modified after submission');
+        }
+
         $this->initialisation($request);
 
         return $this->handle($transaction, $this->validatedData);
@@ -56,6 +67,7 @@ class UpdateEcomBasketTransaction extends IrisAction
             'department_id'     => $product?->department_id,
             'sub_department_id' => $product?->sub_department_id,
             'family_id'         => $product?->family_id,
+            'is_golden_product' => (bool)$product?->is_golden_product,
         ];
     }
 }

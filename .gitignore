@@ -131,3 +131,6 @@ laradumps.yaml
 /tests/Browser/Screenshots
 /devops/server.env
 storage/oauth-*.key
+/docs/gsl-es
+/devops/search
+public/art/logo-source.png

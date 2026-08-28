@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Transaction;
 
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\LogBasketEvent;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
@@ -52,7 +53,7 @@ class StoreTransaction extends OrgAction
                 $transaction = $order->transactions->where('model_type', 'Product')->where('model_id', $historicAsset->asset->model_id)->where('is_gift', false)->first();
                 if ($transaction) {
                     return UpdateTransaction::make()->action($transaction, [
-                        'quantity_ordered' => (float)data_get($modelData, 'quantity')
+                        'quantity_ordered' => (float)$transaction->quantity_ordered + (float)data_get($modelData, 'quantity_ordered', 0)
                     ]);
                 }
             }
@@ -84,6 +85,9 @@ class StoreTransaction extends OrgAction
             }
 
             data_set($modelData, 'estimated_weight', $estimatedWeight);
+        } elseif (Arr::get($modelData, 'model_type') == 'Service' && !Arr::exists($modelData, 'net_amount')) {
+            $net   = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
+            $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
         } else {
             $net   = Arr::get($modelData, 'net_amount', 0);
             $gross = Arr::get($modelData, 'gross_amount', 0);
@@ -117,12 +121,16 @@ class StoreTransaction extends OrgAction
         data_set($modelData, 'submitted_at', $order->submitted_at, overwrite: false);
         data_set($modelData, 'gross_amount', $gross ?? 0);
         data_set($modelData, 'net_amount', $net ?? 0);
-        data_set($modelData, 'state', TransactionStateEnum::CREATING, overwrite: false);
-        data_set($modelData, 'status', TransactionStatusEnum::CREATING, overwrite: false);
-
-
         if ($order->state == OrderStateEnum::SUBMITTED) {
+            data_set($modelData, 'state', TransactionStateEnum::SUBMITTED, overwrite: false);
+            data_set($modelData, 'status', TransactionStatusEnum::PROCESSING, overwrite: false);
             data_set($modelData, 'submitted_at', now(), overwrite: false);
+            data_set($modelData, 'submitted_quantity_ordered', Arr::get($modelData, 'quantity_ordered'), overwrite: false);
+            data_set($modelData, 'submitted_gross_amount', $gross, overwrite: false);
+            data_set($modelData, 'submitted_net_amount', $net, overwrite: false);
+        } else {
+            data_set($modelData, 'state', TransactionStateEnum::CREATING, overwrite: false);
+            data_set($modelData, 'status', TransactionStatusEnum::CREATING, overwrite: false);
         }
 
 
@@ -138,6 +146,8 @@ class StoreTransaction extends OrgAction
             CalculateOrderTotalAmounts::run($order, $calculateShipping);
             OrderHydrateTransactions::dispatch($order);
         }
+
+        LogBasketEvent::run($order->fresh(), 'add', $transaction, (float) $transaction->quantity_ordered);
 
         if (request()->hasSession() && request()->input('website')) {
             StoreWebsiteConversionEvent::dispatch(

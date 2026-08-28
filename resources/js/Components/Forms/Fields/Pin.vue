@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { faSyncAlt, faHistory } from "@fortawesome/free-solid-svg-icons"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from "@/types/route"
@@ -19,6 +19,20 @@ const props = defineProps<{
         route_generate: routeType
     };
 }>()
+
+// Some generated pin emojis are more than one Unicode codepoint (a skin tone modifier or
+// variation selector attached to a base emoji), so Array.from(string) would split them into
+// an extra, empty-looking box. Segment by grapheme cluster instead so each tap/emoji is one box.
+const pinCharacters = computed(() => {
+    const value = props.form[props.fieldName]
+    if (!value) return []
+
+    if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
+        return Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(value), (s) => s.segment)
+    }
+
+    return Array.from(value)
+})
 
 const emits = defineEmits()
 const originalPin = props.form[props.fieldName]
@@ -50,7 +64,7 @@ const generateNewPin = async () => {
 
     <div class="flex  gap-1 flex-wrap rounded-lg" :class="get(form, ['errors', `${fieldName}`]) ? 'errorShake' : ''">
         <template v-if="form[fieldName]">
-            <div v-for="(value, index) in Array.from(form[fieldName])" :key="index"
+            <div v-for="(value, index) in pinCharacters" :key="index"
                  class="relative w-10 h-10 flex items-center justify-center text-lg font-medium border border-gray-300 rounded-lg bg-white shadow-sm hover:bg-blue-50 transition duration-150">
                 <span>{{ value }}</span>
             </div>

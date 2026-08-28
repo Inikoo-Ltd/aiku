@@ -20,16 +20,13 @@ library.add(faTrashAlt)
 const props = defineProps({
     modelValue: { type: Object, default: () => ({}) }
 })
-console.log('model', props.modelValue)
+
 const emit = defineEmits(['update:modelValue'])
 
 
 const cards = computed({
     get: () => props.modelValue ?? {},
-    set: (val) => {
-        console.log('changed -> emit', val)
-        emit('update:modelValue', val)
-    }
+    set: (val) => emit('update:modelValue', val)
 })
 
 
@@ -86,7 +83,7 @@ const updateCard = (key: string, patch: any) => {
 }
 
 const updateButton = (key: string, patch: any) => {
-    const card = cards.value[key]
+    const card = cards.value[key] ?? {}
 
     updateCard(key, {
         button: {
@@ -98,16 +95,14 @@ const updateButton = (key: string, patch: any) => {
 }
 
 const updateTitle = (key: string, index: number, val: any) => {
-    const newCards = { ...cards.value }
-    const titles = [...(newCards[key].titles || [])]
+    const titles = [...(cards.value[key]?.titles || [])]
 
     titles[index] = {
         ...titles[index],
         ...val
     }
 
-    newCards[key].titles = titles
-    cards.value = newCards
+    updateCard(key, { titles })
 }
 
 
@@ -128,45 +123,29 @@ const removeCard = (key: string) => {
 }
 
 const addTitle = (key: string) => {
-    const newCards = { ...cards.value }
-    const titles = [...(newCards[key].titles || [])]
+    const titles = [...(cards.value[key]?.titles || []), { text: '' }]
 
-    titles.push({ text: '' })
-    newCards[key].titles = titles
-    cards.value = newCards
+    updateCard(key, { titles })
 }
 
 const removeTitle = (key: string, index: number) => {
-    const newCards = { ...cards.value }
-    const titles = [...(newCards[key].titles || [])]
+    const titles = [...(cards.value[key]?.titles || [])]
 
     titles.splice(index, 1)
-    newCards[key].titles = titles
-    cards.value = newCards
+    updateCard(key, { titles })
 }
 
-const ensureButton = (card: any) => {
-    if (!card.button || typeof card.button !== 'object') {
-        card.button = defaultButton()
-        return
-    }
-
-    // merge jika sebagian field hilang (data lama)
-    card.button = {
+const withDefaultButton = (card: any) => ({
+    ...card,
+    button: {
         ...defaultButton(),
-        ...card.button
+        ...(card?.button && typeof card.button === 'object' ? card.button : {})
     }
-}
-
-const normalizedCards = computed(() => {
-    const obj = cards.value || {}
-
-    Object.keys(obj).forEach(key => {
-        ensureButton(obj[key])
-    })
-
-    return obj
 })
+
+const normalizedCards = computed(() => Object.fromEntries(
+    Object.entries(cards.value || {}).map(([key, card]) => [key, withDefaultButton(card)])
+))
 </script>
 
 <template>

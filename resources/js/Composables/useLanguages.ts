@@ -6,11 +6,25 @@ export interface LanguageOption {
 	code: string
 	flag: string
 	native_name: string
+	status?: boolean
 }
 
 const languages = ref<LanguageOption[]>([])
 const isLoadingLanguages = ref(false)
 const isLoaded = ref(false)
+
+const resolveUrl = (baseUrl: string) => {
+	try {
+		if (route().has('grp.chat.languages.index')) {
+			return route('grp.chat.languages.index')
+		}
+	} catch (e) {
+		// Ziggy is not loaded on the storefront bundle
+	}
+
+	return `${baseUrl}/app/api/chats/languages`
+}
+
 export function useChatLanguages(baseUrl: string) {
 	const fetchLanguages = async () => {
 		if (isLoaded.value || isLoadingLanguages.value) return
@@ -18,7 +32,7 @@ export function useChatLanguages(baseUrl: string) {
 		isLoadingLanguages.value = true
 
 		try {
-			const { data } = await axios.get(`${baseUrl}/app/api/chats/languages`)
+			const { data } = await axios.get(resolveUrl(baseUrl))
 			languages.value = data?.data ?? data ?? []
 			isLoaded.value = true
 		} catch (e) {

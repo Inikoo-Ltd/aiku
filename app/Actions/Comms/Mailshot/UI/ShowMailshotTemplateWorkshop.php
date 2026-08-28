@@ -122,11 +122,10 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                 ],
 
                 'sendTestRoute' => [
-                    'name'       => 'grp.org.shops.show.marketing.templates.send-test',
+                    'name'       => 'grp.models.shop.email-template.send-test',
                     'parameters' => [
-                        'organisation'  => $this->organisation->slug,
-                        'shop'          => $this->shop->slug,
-                        'emailTemplate' => $emailTemplate->slug
+                        'shop'          => $this->shop->id,
+                        'emailTemplate' => $emailTemplate->id
                     ],
                     'method'     => 'post'
                 ],

@@ -20,7 +20,6 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\ActionRequest;
@@ -117,7 +116,7 @@ class DeletePalletReturn extends OrgAction
         return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
     }
 
-    public function asController(Organisation $organisation, PalletReturn $palletReturn, ActionRequest $request): void
+    public function asController(PalletReturn $palletReturn, ActionRequest $request): void
     {
         $this->fulfilmentCustomer = $palletReturn->fulfilmentCustomer;
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);

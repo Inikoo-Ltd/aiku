@@ -8,7 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
-use App\Actions\Traits\WithLuigiAvailabilityChecklist;
+use App\Actions\Traits\WithSearchInWebsiteAvailabilityChecklist;
 use App\Actions\Web\Webpage\WithGetWebpageWebBlocks;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\HasSelfCall;
@@ -24,7 +24,7 @@ class WebpageResource extends JsonResource
 {
     use HasSelfCall;
     use WithGetWebpageWebBlocks;
-    use WithLuigiAvailabilityChecklist;
+    use WithSearchInWebsiteAvailabilityChecklist;
 
     public function toArray($request): array
     {
@@ -41,6 +41,7 @@ class WebpageResource extends JsonResource
             /** @var Product $product */
             $product     = $webpage->model;
             $modelId     = $product->family_id;
+            $modelSlug   = $product->family?->slug;
             $productData = [
                 'id'             => $product->id,
                 'slug'           => $product->slug,
@@ -52,9 +53,10 @@ class WebpageResource extends JsonResource
                 'webpage_title' => $webpage->model?->family?->department?->webpage?->title,
             ];
 
-            $availabilityChecklist = $this->getLuigiAvailabilityChecklist($product);
+            $availabilityChecklist = $this->getSearchInWebsiteAvailabilityChecklist($product);
         } else {
-            $modelId = $webpage->model_id;
+            $modelId   = $webpage->model_id;
+            $modelSlug = $webpage->model?->slug;
         }
 
         return [
@@ -66,6 +68,7 @@ class WebpageResource extends JsonResource
             'code'                         => $webpage->code,
             'model_id'                     => $webpage->model_id,
             'product_category_id'          => $modelId,
+            'model_slug'                   => $modelSlug,
             'product'                      => $productData,
             'url'                          => $webpage->getUrl(),
             'canonical_url'                => $webpage->canonical_url,
@@ -85,12 +88,13 @@ class WebpageResource extends JsonResource
             'updated_at'                   => $webpage->updated_at,
             'state'                        => $webpage->state,
             'title'                        => $webpage->title,
+            'search_in_website_availability' => $availabilityChecklist,
             'luigi_data' => [
+                'iris_search_model'     => Arr::get($website->settings, "iris_search_model", "luigi"),
                 'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
                 'luigisbox_tracker_id'  => Arr::get($website->settings, "luigisbox.tracker_id"),
                 'luigisbox_private_key' => Arr::get($website->settings, "luigisbox.private_key"),
                 'luigisbox_lbx_code'    => Arr::get($website->settings, "luigisbox.lbx_code"),
-                'availability_checklist' => $availabilityChecklist,
             ],
 
             'add_web_block_route'                    => [

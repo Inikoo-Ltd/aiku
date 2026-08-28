@@ -24,6 +24,12 @@ class RefundTransactionsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $packedInMessage = '';
+        $units = soldPackUnits($this->historicAsset?->units, $this->model?->units);
+        if ($this->model_type === 'Product' && $units > 1) {
+            $packedInMessage = '('.__('Pack of').": " . trimDecimalZeros($units) . ")";
+        }
+
         return [
             'code'                      => $this->code,
             'name'                      => $this->name,
@@ -34,6 +40,7 @@ class RefundTransactionsResource extends JsonResource
             'in_process'                => $this->in_process,
             'is_tax_only'                => $this->is_tax_only,
             'tax_amount'                => $this->tax_amount,
+            'packed_in_message'         => $packedInMessage,
             'refund_route'              => [
                 'name'       => 'grp.models.refund.refund_transaction.store',
                 'parameters' => [

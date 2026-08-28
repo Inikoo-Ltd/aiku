@@ -8,6 +8,8 @@
 
 namespace App\Actions\Catalogue\Product\Hydrators;
 
+use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
@@ -28,34 +30,29 @@ class ProductHydrateMarketingIngredientsFromTradeUnits implements ShouldBeUnique
     {
         $tradeUnits = $product->tradeUnits;
 
-        if ($tradeUnits->count() == 1) {
-            $this->updateFromSingleTradeUnit($tradeUnits->first(), $product);
-        } else {
-            $this->updateFromMultipleTradeUnits($tradeUnits, $product);
+        if ($tradeUnits->isEmpty()) {
+            return;
+        }
+
+        $marketingIngredients = $this->marketingIngredients($tradeUnits);
+
+        if ($marketingIngredients == ($product->marketing_ingredients ?? '')) {
+            return;
+        }
+
+        $product->updateQuietly([
+            'marketing_ingredients' => $marketingIngredients,
+        ]);
+
+        if ($product instanceof Product && $product->webpage && $product->webpage->state == WebpageStateEnum::LIVE) {
+            BreakWebpageCache::dispatch($product->webpage)->delay(5);
         }
     }
 
-    private function updateFromSingleTradeUnit(TradeUnit $tradeUnit, MasterAsset|Product $product): void
+    public function marketingIngredients(Collection $tradeUnits): string
     {
+        $sourceTradeUnit = $tradeUnits->first(fn (TradeUnit $tradeUnit) => filled($tradeUnit->marketing_ingredients));
 
-        if ($tradeUnit->marketing_ingredients) {
-            $product->updateQuietly([
-                'marketing_ingredients' => $tradeUnit->marketing_ingredients,
-            ]);
-        }
-    }
-
-    private function updateFromMultipleTradeUnits(Collection $tradeUnits, MasterAsset|Product $product): void
-    {
-        // For multiple trade units, we'll use the dimensions from the first trade unit that has them
-        foreach ($tradeUnits as $tradeUnit) {
-            if ($tradeUnit->marketing_ingredients) {
-                if ($product instanceof MasterAsset);
-                $product->updateQuietly([
-                    'marketing_ingredients' => $tradeUnit->marketing_ingredients,
-                ]);
-                return;
-            }
-        }
+        return $sourceTradeUnit?->marketing_ingredients ?? '';
     }
 }

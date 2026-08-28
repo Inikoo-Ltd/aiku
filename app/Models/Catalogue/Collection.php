@@ -67,6 +67,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $description_title_i8n
  * @property string|null $description_extra_i8n
  * @property HealthRankEnum|null $health_rank
+ * @property bool $is_in_website
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
@@ -103,6 +104,14 @@ class Collection extends Model implements Auditable, HasMedia
     use InShop;
     use HasImage;
     use HasSearch;
+    protected static function booted(): void
+    {
+        static::saved(function (Collection $collection) {
+            if ($collection->wasChanged('webpage_id')) {
+                \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($collection);
+            }
+        });
+    }
 
     protected $guarded = [];
 
@@ -122,6 +131,17 @@ class Collection extends Model implements Auditable, HasMedia
         'offers_data' => '{}',
     ];
 
+    protected array $auditInclude = [
+        'code',
+        'name',
+        'description',
+        'description_title',
+        'description_extra',
+        'state',
+        'url',
+        'is_in_website',
+    ];
+
     public function toSearchableArray(): array
     {
         return [
@@ -131,6 +151,7 @@ class Collection extends Model implements Auditable, HasMedia
             'name'              => (string)$this->name,
             'description'       => (string)$this->description,
             'state'             => $this->state->value,
+            'is_in_website'     => (bool) $this->is_in_website,
             'image'             => json_encode(Arr::get($this->web_images, 'main.thumbnail')),
             'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];

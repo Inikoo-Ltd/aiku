@@ -12,6 +12,7 @@ namespace Tests\Feature;
 
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
+use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Inventory\Location\DeleteLocation;
 use App\Actions\Inventory\Location\HydrateLocation;
 use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
@@ -30,6 +31,7 @@ use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\AddLostAndFoundOrgStock;
 use App\Actions\Inventory\OrgStock\AssociateOrgStockToOrgStockFamily;
 use App\Actions\Inventory\OrgStock\DeleteOrgStock;
+use App\Actions\Inventory\OrgStock\FillOrgStockWithTradeUnitsBarcodes;
 use App\Actions\Inventory\OrgStock\HydrateOrgStock;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentBatchCodes;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost;
@@ -61,6 +63,7 @@ use App\Actions\Inventory\OrgStockFamily\UpdateOrgStockFamily;
 use App\Actions\Inventory\OrgStockMovement\CalculateRunningQuantityOrgStockMovement;
 use App\Actions\Inventory\OrgStockMovement\DeleteOrgStockMovement;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
+use App\Actions\Maintenance\Inventory\OrgStockMovement\RepairPickedOrgStockMovementCost;
 use App\Actions\Inventory\OrgStockMovement\UpdateOrgStockMovement;
 use App\Actions\Inventory\Warehouse\DeleteWarehouse;
 use App\Actions\Inventory\Warehouse\HydrateWarehouse;
@@ -88,6 +91,7 @@ use App\Enums\UI\Inventory\LocationTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
+use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\LostAndFoundStock;
@@ -97,7 +101,31 @@ use App\Models\Inventory\OrgStockFamily;
 use App\Models\Inventory\OrgStockMovement;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
+use App\Actions\Dispatching\BackfillWarehouseTimestamps;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked;
+use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
+use App\Actions\Dispatching\Packing\StorePacking;
+use App\Actions\Dispatching\Picking\StorePicking;
+use App\Actions\Goods\Stock\UpdateStock;
+use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Models\Dispatching\Packing;
+use App\Models\Dispatching\Picking;
+use App\Models\Helpers\Address;
+use App\Models\Ordering\Transaction;
 use Config;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Spatie\Permission\PermissionRegistrar;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -202,6 +230,25 @@ test('seed warehouse permissions', function () {
     expect($warehouse->roles()->count())->toBe(10);
 });
 
+
+test('stock controllers pass the stock edit authorisation', function () {
+    $warehouse = Warehouse::first();
+    $user      = $this->guest->getUser();
+
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+
+    $user->syncRoles([RolesEnum::getRoleName('stock-controller', $warehouse)]);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    expect($user->refresh()->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($this->organisation)))->toBeTrue();
+
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles($originalRoles);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+});
 
 test('create warehouse area', function ($warehouse) {
     $warehouseArea = StoreWarehouseArea::make()->action($warehouse, WarehouseArea::factory()->definition());
@@ -412,21 +459,26 @@ test('audit stock in location', function () {
     expect($locationOrgStock->quantity)->toEqual(2);
 });
 
-test('move stock location', function () {
-    /** @var LocationOrgStock $currentLocation */
-    $currentLocation = LocationOrgStock::first();
-    $targetLocation  = LocationOrgStock::latest()->first();
+test('move stock location', function ($warehouseArea) {
+    /** @var LocationOrgStock $sourceSlot */
+    $sourceSlot = LocationOrgStock::first();
 
-    expect($currentLocation->quantity)->toBeNumeric(2)
-        ->and($targetLocation->quantity)->toBeNumeric(0);
+    $targetSlot = StoreLocationOrgStock::make()->action(
+        $sourceSlot->orgStock,
+        StoreLocation::make()->action($warehouseArea, Location::factory()->definition()),
+        ['type' => LocationStockTypeEnum::PICKING]
+    );
 
-    $currentLocation = MoveOrgStockToOtherLocation::make()->action($currentLocation, $targetLocation, [
+    expect($sourceSlot->quantity)->toBeNumeric(2)
+        ->and($targetSlot->quantity)->toBeNumeric(0);
+
+    $sourceSlot = MoveOrgStockToOtherLocation::make()->action($sourceSlot, $targetSlot, [
         'quantity' => 1
     ]);
-    $targetLocation->refresh();
-    expect($currentLocation->quantity)->toBeNumeric(1)
-        ->and($targetLocation->quantity)->toBeNumeric(1);
-})->depends('detach stock from location');
+    $targetSlot->refresh();
+    expect($sourceSlot->quantity)->toBeNumeric(1)
+        ->and($targetSlot->quantity)->toBeNumeric(1);
+})->depends('create warehouse area');
 
 test('update location', function ($location) {
     $location = UpdateLocation::make()->action($location, ['code' => 'AE-3']);
@@ -680,6 +732,8 @@ test("UI show org stock", function (OrgStock $orgStock) {
     $warehouse = $this->organisation->warehouses->first();
     $this->withoutExceptionHandling();
 
+    $orgStock->update(['is_on_demand' => true]);
+
     $response = get(
         route("grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show", [
             $this->organisation->slug,
@@ -694,11 +748,14 @@ test("UI show org stock", function (OrgStock $orgStock) {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $orgStock->code)->etc()
+                fn (AssertableInertia $page) => $page->where("title", $orgStock->code)
+                    ->where("afterTitle.label", "On Demand")->etc()
             )
             ->has("showcase.latest_movements")
             ->has("tabs");
     });
+
+    $orgStock->update(['is_on_demand' => false]);
 })->depends('create org stock');
 
 test("UI show org stock navigation follows the bucket and sort", function () {
@@ -1410,6 +1467,161 @@ test('store, update, and delete org stock movement', function () {
     expect(OrgStockMovement::find($deleted->id))->toBeNull();
 });
 
+test('wac per sku calculation', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $warehouse = StoreWarehouse::make()->action($this->organisation, ['code' => 'WAC-WH', 'name' => 'Wac WH']);
+    $area      = StoreWarehouseArea::make()->action($warehouse, ['code' => 'WAC-AR', 'name' => 'Wac Area']);
+    $location  = StoreLocation::make()->action($area, array_merge(Location::factory()->definition(), ['code' => 'WAC-LOC']));
+
+    StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::STORING]);
+
+    $calculator = \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories::make();
+
+    expect($calculator->getWacPerSku($orgStock, now()))->toBeNull();
+
+    $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+    $orgStock->unsetRelation('organisation');
+
+    $firstPurchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 10,
+    ]);
+    $firstPurchase->update(['cost_per_sku' => 2, 'date' => now()->subDays(3)]);
+
+    expect((float) $calculator->getWacPerSku($orgStock, now()))->toBe(2.0);
+
+    $picked = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PICKED->value,
+        'quantity' => -5,
+    ]);
+    $picked->update(['date' => now()->subDays(2)]);
+
+    $secondPurchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 5,
+    ]);
+    $secondPurchase->update(['cost_per_sku' => 4, 'date' => now()->subDay()]);
+
+    expect((float) $calculator->getWacPerSku($orgStock, now()))->toBe(3.0)
+        ->and($calculator->getWacPerSku($orgStock, now()->subYears(2)))->toBeNull();
+
+    expect((float) $calculator->getFifoPerSku($orgStock, now()))->toBe(3.0)
+        ->and($calculator->getFifoPerSku($orgStock, now()->subYears(2)))->toBeNull();
+
+    $thirdPicked = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PICKED->value,
+        'quantity' => -7,
+    ]);
+    $thirdPicked->update(['date' => now()->subHours(2)]);
+
+    expect((float) $calculator->getFifoPerSku($orgStock, now()))->toBe(4.0)
+        ->and((float) $calculator->getWacPerSku($orgStock, now()))->toBe(3.0);
+
+    expect($calculator->getValuationPerSku($orgStock, now()))->toBe(['wac' => 3.0, 'fifo' => 4.0]);
+});
+
+test('movement org amount uses the per sku cost, not the total stock value', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $warehouse = StoreWarehouse::make()->action($this->organisation, ['code' => 'COGS-WH', 'name' => 'Cogs WH']);
+    $area      = StoreWarehouseArea::make()->action($warehouse, ['code' => 'COGS-AR', 'name' => 'Cogs Area']);
+    $location  = StoreLocation::make()->action($area, array_merge(Location::factory()->definition(), ['code' => 'COGS-LOC']));
+
+    StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::STORING]);
+
+    $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+    $orgStock->unsetRelation('organisation');
+
+    $purchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 100,
+    ]);
+    $purchase->update(['cost_per_sku' => 2, 'date' => now()->subDays(3)]);
+
+    $orgStock->update(['sku_value' => 2, 'quantity_in_locations' => 100, 'value_in_locations' => 200]);
+    $orgStock->refresh();
+
+    $picked = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PICKED->value,
+        'quantity' => -5,
+    ]);
+
+    expect((float) $picked->org_amount)->toBe(-10.0);
+});
+
+test('repair picked org stock movement cost zeroes corrupt values', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $warehouse = StoreWarehouse::make()->action($this->organisation, ['code' => 'RPC-WH', 'name' => 'Rpc WH']);
+    $area      = StoreWarehouseArea::make()->action($warehouse, ['code' => 'RPC-AR', 'name' => 'Rpc Area']);
+    $location  = StoreLocation::make()->action($area, array_merge(Location::factory()->definition(), ['code' => 'RPC-LOC']));
+
+    StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::STORING]);
+
+    $corrupt = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PICKED->value,
+        'quantity' => -5,
+    ]);
+    DB::table('org_stock_movements')->where('id', $corrupt->id)->update([
+        'date'       => '2026-07-15',
+        'org_amount' => -1000,
+        'grp_amount' => -2000,
+    ]);
+
+    $untouched = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 5,
+    ]);
+    DB::table('org_stock_movements')->where('id', $untouched->id)->update([
+        'date'       => '2026-07-15',
+        'org_amount' => 100,
+    ]);
+
+    $result = RepairPickedOrgStockMovementCost::make()->handle('2026-07-01', 2000, false);
+
+    expect($result['zeroed'])->toBeGreaterThanOrEqual(1)
+        ->and((float) $corrupt->refresh()->org_amount)->toBe(0.0)
+        ->and((float) $corrupt->grp_amount)->toBe(0.0)
+        ->and((float) $untouched->refresh()->org_amount)->toBe(100.0);
+});
+
+test('backfill picked org stock movement cost from fifo walk', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $warehouse = StoreWarehouse::make()->action($this->organisation, ['code' => 'BF-WH', 'name' => 'Bf WH']);
+    $area      = StoreWarehouseArea::make()->action($warehouse, ['code' => 'BF-AR', 'name' => 'Bf Area']);
+    $location  = StoreLocation::make()->action($area, array_merge(Location::factory()->definition(), ['code' => 'BF-LOC']));
+
+    StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::STORING]);
+
+    $this->organisation->update(['wac_calculations_start_date' => '2025-01-01']);
+    $orgStock->unsetRelation('organisation');
+
+    $purchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 10,
+    ]);
+    DB::table('org_stock_movements')->where('id', $purchase->id)->update(['cost_per_sku' => 3, 'date' => '2025-02-01']);
+
+    $historicPick = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PICKED->value,
+        'quantity' => -4,
+    ]);
+    DB::table('org_stock_movements')->where('id', $historicPick->id)->update(['org_amount' => 0, 'grp_amount' => 0, 'date' => '2025-03-01']);
+
+    $result = \App\Actions\Maintenance\Inventory\OrgStockMovement\BackfillPickedOrgStockMovementCost::make()
+        ->handle($orgStock, '2026-07-01', false);
+
+    expect($result['filled'])->toBe(1)
+        ->and($result['skipped_no_cost'])->toBe(0)
+        ->and((float) $historicPick->refresh()->org_amount)->toBe(-12.0);
+});
+
 test('sync org stock locations creates, updates and removes links', function () {
     $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
     $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
@@ -1445,9 +1657,9 @@ test('calculate value location org stock sets value = quantity * cost', function
     CalculateValueLocationOrgStock::run($locationOrgStock->id);
 
     $locationOrgStock->refresh();
-    // Value should be recomputed = quantity * cost_per_sku (0 quantity or 0 cost gives 0)
-    $expected = (float) $locationOrgStock->quantity * (float) $locationOrgStock->orgStock->sku_value;
-    expect((float) $locationOrgStock->value)->toBe($expected);
+    $expected = (float) $locationOrgStock->quantity * CalculateValueLocationOrgStock::make()->getLppPerSku($locationOrgStock->orgStock, now());
+    expect($expected)->toBe(0.0)
+        ->and((float) $locationOrgStock->value)->toBe($expected);
 
     // Guard clauses: null/missing ids return early without throwing
     CalculateValueLocationOrgStock::run(null);
@@ -1527,6 +1739,19 @@ test('UI Edit org stock', function () {
     });
 })->depends('create warehouse', 'create org stock');
 
+test('UI Edit org stock warehouse packing', function () {
+    $warehouse = Warehouse::first();
+    $orgStock  = OrgStock::first();
+    $this->withoutExceptionHandling();
+    get(route('grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.composition', [
+        $this->organisation->slug, $warehouse->slug, $orgStock->slug,
+    ]))->assertInertia(function (AssertableInertia $page) {
+        $page->component('Goods/ProductComposition')
+            ->has('formData.blueprint.0.fields.trade_units.productsContext')
+            ->where('formData.args.updateRoute.name', 'grp.models.org_stock.trade_units.update');
+    });
+})->depends('create warehouse', 'create org stock');
+
 test('UI Show org stock procurement tab', function () {
     $warehouse = Warehouse::first();
     $orgStock  = OrgStock::first();
@@ -1576,7 +1801,7 @@ test('UI Index invoices in org stock family', function () {
     $family      = StoreOrgStockFamily::make()->action($this->organisation, $stockFamily, []);
 
     $this->withoutExceptionHandling();
-    get(route('grp.org.warehouses.show.inventory.org_stock_families.show.invoices.index', [
+    get(route('grp.org.warehouses.show.inventory.org_stock_families.invoices', [
         $this->organisation->slug, $warehouse->slug, $family->slug,
     ]))->assertStatus(200);
 })->depends('create warehouse');
@@ -1640,4 +1865,928 @@ test('org stock indexes use time series aggregation', function () {
 
     expect($indexOrgStocks->handle($this->organisation, bucket: 'all')->total())->toBeGreaterThanOrEqual(1)
         ->and($indexOrgStocksWithNoProducts->handle($this->organisation, bucket: 'all')->total())->toBeGreaterThanOrEqual(0);
+});
+
+test('fill org stock barcode from its single trade unit', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $tradeUnit->update(['barcode' => '5050000000017']);
+
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+
+    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBe('5050000000017')
+        ->and($orgStock->refresh()->unit_barcode)->toBe('5050000000017')
+        ->and($orgStock->barcode)->toBeNull();
+});
+
+test('guess a barcode for org stocks holding several copies of one trade unit', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $tradeUnit->update(['barcode' => '5050000000048']);
+
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 6]]);
+
+    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBe('5050000000048');
+});
+
+test('do not guess a barcode for org stocks that are not a single trade unit', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $tradeUnit->update(['barcode' => '5050000000024']);
+
+    $otherTradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $orgStock->tradeUnits()->sync([
+        $tradeUnit->id      => ['quantity' => 1],
+        $otherTradeUnit->id => ['quantity' => 1],
+    ]);
+    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBeNull();
+});
+
+test('do not guess a barcode shared by two org stocks of the same organisation', function () {
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $tradeUnit->update(['barcode' => '5050000000031']);
+
+    $orgStocks = collect([1, 2])->map(function () use ($tradeUnit) {
+        $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+            'state' => StockStateEnum::ACTIVE
+        ]));
+
+        $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+        $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+
+        return $orgStock->refresh();
+    });
+
+    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStocks->first()))->toBeNull()
+        ->and(FillOrgStockWithTradeUnitsBarcodes::run($orgStocks->last()))->toBeNull();
+});
+
+test('changing a trade unit barcode refreshes the unit_barcode of its single-trade-unit org stocks', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+    $orgStock->update(['is_single_trade_unit' => true, 'unit_barcode' => 'OLD-EAN']);
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['barcode' => '5055796528387']);
+    expect($orgStock->refresh()->unit_barcode)->toBe('5055796528387');
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['barcode' => null]);
+    expect($orgStock->refresh()->unit_barcode)->toBeNull();
+});
+
+test('editing an org stock sko barcode writes through the stock to every sibling org stock', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $orgData = \App\Models\SysAdmin\Organisation::factory()->definition();
+    data_set($orgData, 'code', 'acm2');
+    data_set($orgData, 'type', \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP);
+    $organisation2 = \App\Models\SysAdmin\Organisation::where('code', 'acm2')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, $orgData);
+    $sibling = StoreOrgStock::make()->action($organisation2, $stock);
+
+    $orgStock = UpdateOrgStock::make()->action($orgStock, ['barcode' => ' 5050000000055 ']);
+    expect($orgStock->barcode)->toBe('5050000000055')
+        ->and($stock->refresh()->barcode)->toBe('5050000000055')
+        ->and($sibling->refresh()->barcode)->toBe('5050000000055');
+
+    $otherStock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $otherOrgStock = StoreOrgStock::make()->action($this->organisation, $otherStock);
+
+    expect(fn () => UpdateOrgStock::make()->action($otherOrgStock, ['barcode' => '5050000000055']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $siblingOfTheSameStockIsNotAConflict = UpdateOrgStock::make()->action($sibling, ['barcode' => '5050000000055']);
+    expect($siblingOfTheSameStockIsNotAConflict->barcode)->toBe('5050000000055');
+
+    $orgStock = UpdateOrgStock::make()->action($orgStock, ['barcode' => null]);
+    expect($orgStock->barcode)->toBeNull()
+        ->and($orgStock->independent_barcode)->toBeFalse()
+        ->and($stock->refresh()->barcode)->toBeNull()
+        ->and($sibling->refresh()->barcode)->toBeNull()
+        ->and($sibling->refresh()->independent_barcode)->toBeFalse();
+});
+
+test('a new org stock is born holding the sko barcode its stock already carries', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+    UpdateOrgStock::make()->action($orgStock, ['barcode' => '5050000000123']);
+
+    $orgData = \App\Models\SysAdmin\Organisation::factory()->definition();
+    data_set($orgData, 'code', 'acm3');
+    data_set($orgData, 'type', \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP);
+    $organisation3 = \App\Models\SysAdmin\Organisation::where('code', 'acm3')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, $orgData);
+
+    $newcomer = StoreOrgStock::make()->action($organisation3, $stock->refresh());
+
+    expect($newcomer->barcode)->toBe('5050000000123')
+        ->and($newcomer->independent_barcode)->toBeTrue();
+});
+
+test('sko barcode repair pushes the majority barcode up to the stock and across all siblings', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $orgData = \App\Models\SysAdmin\Organisation::factory()->definition();
+    data_set($orgData, 'code', 'acm2');
+    data_set($orgData, 'type', \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP);
+    $organisation2 = \App\Models\SysAdmin\Organisation::where('code', 'acm2')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, $orgData);
+    $sibling = StoreOrgStock::make()->action($organisation2, $stock);
+
+    $orgStock->updateQuietly(['barcode' => '5050000000109']);
+    $sibling->updateQuietly(['barcode' => '5050000000109N']);
+
+    $repair                                = new \App\Actions\Goods\Stock\RepairStocksSkoBarcodes();
+    $onATieOnUsesTheOldestOrgStockWins     = $repair->canonicalBarcode($stock);
+
+    expect($onATieOnUsesTheOldestOrgStockWins)->toBe('5050000000109');
+
+    $repair->handle($stock, $onATieOnUsesTheOldestOrgStockWins, true);
+
+    expect($stock->refresh()->barcode)->toBe('5050000000109')
+        ->and($orgStock->refresh()->barcode)->toBe('5050000000109')
+        ->and($orgStock->independent_barcode)->toBeTrue()
+        ->and($sibling->refresh()->barcode)->toBe('5050000000109');
+
+    $eanStock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $eanOrgStock = StoreOrgStock::make()->action($this->organisation, $eanStock);
+    $eanOrgStock->updateQuietly(['unit_barcode' => '5050000000116', 'packed_in' => 1]);
+
+    expect($repair->unitBarcodeToCopy($eanStock->refresh()))->toBe('5050000000116');
+
+    $eanOrgStock->updateQuietly(['packed_in' => 6]);
+    expect($repair->unitBarcodeToCopy($eanStock->refresh()))->toBeNull();
+
+    $eanOrgStock->updateQuietly(['packed_in' => 1]);
+    $orgStock->updateQuietly(['barcode' => '5050000000116']);
+
+    expect($repair->conflictingHolder($eanStock, '5050000000116'))->toBe("stock id $stock->id");
+});
+
+test('a discontinued org stock neither wins the barcode ballot nor vetoes the unit ean copy', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $live = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $orgData = \App\Models\SysAdmin\Organisation::factory()->definition();
+    data_set($orgData, 'code', 'acm2');
+    data_set($orgData, 'type', \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP);
+    $organisation2 = \App\Models\SysAdmin\Organisation::where('code', 'acm2')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, $orgData);
+    $dead = StoreOrgStock::make()->action($organisation2, $stock);
+
+    $repair = new \App\Actions\Goods\Stock\RepairStocksSkoBarcodes();
+
+    $dead->updateQuietly([
+        'barcode'    => 'DEAD-BARCODE',
+        'state'      => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED,
+        'packed_in'  => 12,
+    ]);
+    $live->updateQuietly(['barcode' => 'LIVE-BARCODE', 'packed_in' => 1]);
+
+    expect($repair->canonicalBarcode($stock->refresh()))->toBe('LIVE-BARCODE');
+
+    $live->updateQuietly(['barcode' => null, 'unit_barcode' => '5050000000147']);
+    $dead->updateQuietly(['barcode' => null, 'unit_barcode' => '5050000000154']);
+
+    expect($repair->unitBarcodeToCopy($stock->refresh()))->toBe('5050000000147');
+});
+
+test('cascading a sko barcode leaves a history entry on the siblings it changed', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $orgData = \App\Models\SysAdmin\Organisation::factory()->definition();
+    data_set($orgData, 'code', 'acm2');
+    data_set($orgData, 'type', \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP);
+    $organisation2 = \App\Models\SysAdmin\Organisation::where('code', 'acm2')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, $orgData);
+    $sibling = StoreOrgStock::make()->action($organisation2, $stock);
+
+    UpdateOrgStock::make()->action($orgStock, ['barcode' => '5050000000161']);
+
+    $siblingAudit = $sibling->audits()->get()->last();
+
+    expect($sibling->refresh()->barcode)->toBe('5050000000161')
+        ->and($siblingAudit)->not->toBeNull()
+        ->and(data_get($siblingAudit->new_values, 'barcode'))->toBe('5050000000161');
+});
+
+test('two stocks in a group cannot answer to the same sko barcode', function () {
+    $first = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $second = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    $first->update(['barcode' => '5050000000178']);
+
+    expect(fn () => $second->update(['barcode' => '5050000000178']))
+        ->toThrow(\Illuminate\Database\QueryException::class);
+});
+
+test('a stock duplicated inside one organisation gives its barcode to a single org stock', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    $original  = StoreOrgStock::make()->action($this->organisation, $stock);
+    $duplicate = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    expect($duplicate->organisation_id)->toBe($original->organisation_id);
+
+    $repair = new \App\Actions\Goods\Stock\RepairStocksSkoBarcodes();
+
+    $nobodyIsPickedAsTheWinner = $repair::orgStocksToCarryBarcode($stock->refresh(), '5050000000185');
+
+    expect($nobodyIsPickedAsTheWinner)->toBeEmpty()
+        ->and($repair::organisationsWithDuplicates($stock))->toContain($original->organisation_id);
+
+    $repair->handle($stock, '5050000000185', true);
+
+    expect($stock->refresh()->barcode)->toBe('5050000000185')
+        ->and($original->refresh()->barcode)->toBeNull()
+        ->and($duplicate->refresh()->barcode)->toBeNull();
+
+    $original->updateQuietly(['barcode' => '5050000000185']);
+
+    $theTwinAlreadyScannedKeepsIt = $repair::orgStocksToCarryBarcode($stock->refresh(), '5050000000185');
+
+    expect($theTwinAlreadyScannedKeepsIt->pluck('id')->all())->toBe([$original->id]);
+
+    UpdateOrgStock::make()->action($original->refresh(), ['barcode' => '5050000000192']);
+
+    expect($original->refresh()->barcode)->toBe('5050000000192')
+        ->and($duplicate->refresh()->barcode)->toBeNull();
+});
+
+test('sko barcode repair treats an orphan org stock holding the barcode as a conflict', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orphan = StoreOrgStock::make()->action($this->organisation, $stock);
+    $orphan->updateQuietly(['barcode' => '5050000000130', 'stock_id' => null]);
+
+    $otherStock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    expect((new \App\Actions\Goods\Stock\RepairStocksSkoBarcodes())->conflictingHolder($otherStock, '5050000000130'))
+        ->toBe("org stock id $orphan->id");
+});
+
+test('set org stock unit_barcode does not touch independent_barcode', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $orgStock = UpdateOrgStock::make()->action($orgStock, ['unit_barcode' => ' 5050000000062 ']);
+    expect($orgStock->unit_barcode)->toBe('5050000000062')
+        ->and($orgStock->independent_barcode)->toBeFalse()
+        ->and($orgStock->barcode)->toBeNull();
+
+    $orgStock = UpdateOrgStock::make()->action($orgStock, ['unit_barcode' => null]);
+    expect($orgStock->unit_barcode)->toBeNull();
+});
+
+test('scan ignores the unit_barcode and matches only the sko barcode', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['unit_barcode' => '5050000000079', 'barcode' => 'SKO-5050']);
+
+    $deliveryNoteItem = new \App\Models\Dispatching\DeliveryNoteItem();
+    $deliveryNoteItem->org_stock_id = $orgStock->id;
+    $deliveryNoteItem->setRelation('orgStock', $orgStock);
+
+    $matcher = new class () {
+        use \App\Actions\Dispatching\DeliveryNoteItem\WithScannedDeliveryNoteItemMatching;
+
+        public function match($items, $scanned)
+        {
+            return $this->matchItems($items, $scanned);
+        }
+    };
+
+    expect($matcher->match(collect([$deliveryNoteItem]), '5050000000079'))->toBeEmpty()
+        ->and($matcher->match(collect([$deliveryNoteItem]), 'SKO-5050')->first())->toBe($deliveryNoteItem);
+});
+
+/*
+ * Folded in from its own file so it stops paying for a database restore of its own. The tests below
+ * are the only ones here that need a shop, so they build the rest of the chain themselves rather than
+ * widening the beforeEach every other test in this file runs.
+ *
+ * Two of them move the shop's migrated_to_aiku_on to decide whether the backfill should touch the
+ * work at all, and the afterEach puts it back: the shop is shared with every block in this file, and
+ * a date left in the future would quietly switch off the backfill for anything appended after this.
+ */
+describe('warehouse instrumentation', function () {
+    beforeEach(function () {
+        list(, , $this->shop) = createShop();
+
+        $this->warehouse = createWarehouse();
+        $this->customer  = createCustomer($this->shop);
+
+        list($this->tradeUnit, $this->product) = createProduct($this->shop);
+
+        $this->migratedOn = $this->shop->migrated_to_aiku_on;
+    });
+
+    afterEach(function () {
+        DB::table('shops')->where('id', $this->shop->id)->update(['migrated_to_aiku_on' => $this->migratedOn]);
+    });
+
+    test('picking and packing stamp the lifecycle timestamps as the work happens', function () {
+        [$deliveryNote] = packedDeliveryNote($this);
+
+        $picking = Picking::where('delivery_note_id', $deliveryNote->id)->first();
+        $packing = Packing::where('delivery_note_id', $deliveryNote->id)->first();
+
+        expect($picking->last_picked_at)->not->toBeNull()
+            ->and($packing->queued_at)->not->toBeNull()
+            ->and($packing->packing_at)->not->toBeNull()
+            ->and($packing->done_at)->not->toBeNull()
+            ->and($packing->packing_at->gte($packing->queued_at))->toBeTrue()
+            ->and($packing->done_at->gte($packing->packing_at))->toBeTrue()
+            ->and($packing->queued_at->eq($deliveryNote->picked_at))->toBeTrue()
+            ->and($packing->packing_at->eq($deliveryNote->packing_at))->toBeTrue();
+    });
+
+    test('backfill refills the timestamps from what the application already recorded', function () {
+        [$deliveryNote] = packedDeliveryNote($this);
+
+        DB::table('shops')->where('id', $this->shop->id)->update(['migrated_to_aiku_on' => now()->subYear()]);
+        DB::table('delivery_notes')->where('id', $deliveryNote->id)->update(['source_id' => null]);
+        clearInstrumentation($deliveryNote->id);
+
+        BackfillWarehouseTimestamps::run();
+
+        $picking = Picking::where('delivery_note_id', $deliveryNote->id)->first();
+        $packing = Packing::where('delivery_note_id', $deliveryNote->id)->first();
+
+        expect($picking->last_picked_at->eq($picking->created_at))->toBeTrue()
+            ->and($packing->done_at->eq($packing->created_at))->toBeTrue()
+            ->and($packing->queued_at->eq($deliveryNote->picked_at))->toBeTrue()
+            ->and($packing->packing_at->eq($deliveryNote->packing_at))->toBeTrue();
+    });
+
+    test('backfill leaves alone work the shop did before it moved to aiku', function () {
+        [$deliveryNote] = packedDeliveryNote($this);
+
+        DB::table('shops')->where('id', $this->shop->id)->update(['migrated_to_aiku_on' => now()->addYear()]);
+        clearInstrumentation($deliveryNote->id);
+
+        BackfillWarehouseTimestamps::run();
+
+        expect(Picking::where('delivery_note_id', $deliveryNote->id)->first()->last_picked_at)->toBeNull()
+            ->and(Packing::where('delivery_note_id', $deliveryNote->id)->first()->done_at)->toBeNull();
+    });
+
+    test('backfill leaves alone orders that came over from aurora', function () {
+        [$deliveryNote] = packedDeliveryNote($this);
+
+        DB::table('shops')->where('id', $this->shop->id)->update(['migrated_to_aiku_on' => now()->subYear()]);
+        DB::table('delivery_notes')->where('id', $deliveryNote->id)->update(['source_id' => 'aurora:1']);
+        clearInstrumentation($deliveryNote->id);
+
+        BackfillWarehouseTimestamps::run();
+
+        expect(Picking::where('delivery_note_id', $deliveryNote->id)->first()->last_picked_at)->toBeNull()
+            ->and(Packing::where('delivery_note_id', $deliveryNote->id)->first()->done_at)->toBeNull();
+    });
+
+    test('lines swept up by marking a whole note packed are flagged so rates can exclude them', function () {
+        [$deliveryNote] = packedDeliveryNote($this, markWholeNotePacked: true);
+
+        $packing = Packing::where('delivery_note_id', $deliveryNote->id)->first();
+
+        expect($packing->data['auto_packed'] ?? null)->toBeTrue()
+            ->and($packing->done_at)->not->toBeNull();
+    });
+});
+
+/**
+ * Takes one order all the way to a packed delivery note, which is the only state in which all four
+ * lifecycle timestamps exist.
+ */
+function packedDeliveryNote($ctx, bool $markWholeNotePacked = false): array
+{
+    $order = StoreOrder::make()->action($ctx->customer, [
+        'reference'        => 'O'.Str::random(8),
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $ctx->customer->id,
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'billing_address'  => new Address(Address::factory()->definition()),
+    ]);
+    StoreTransaction::make()->action($order, $ctx->product->historicAsset, Transaction::factory()->definition());
+    $order = SubmitOrder::make()->action($order);
+
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, ['warehouse_id' => $ctx->warehouse->id]);
+
+    $stock    = StoreStock::make()->action($ctx->group, Stock::factory()->definition());
+    $stock    = UpdateStock::make()->action($stock, ['state' => StockStateEnum::ACTIVE]);
+    $orgStock = StoreOrgStock::make()->action($ctx->organisation, $stock);
+
+    $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => $orgStock->id,
+        'transaction_id'    => $order->transactions()->first()->id,
+        'quantity_required' => 10,
+    ]);
+
+    $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $ctx->user);
+    $deliveryNote = StartHandlingDeliveryNote::make()->action($deliveryNote, $ctx->user);
+
+    $location         = StoreLocation::make()->action($ctx->warehouse, Location::factory()->definition());
+    $locationOrgStock = StoreLocationOrgStock::make()->action(
+        orgStock: $deliveryNoteItem->orgStock,
+        location: $location,
+        modelData: ['quantity' => 100, 'type' => LocationStockTypeEnum::PICKING, 'fetched_at' => now()],
+        strict: false
+    );
+
+    StorePicking::make()->action($deliveryNoteItem, $ctx->user, [
+        'picker_user_id'        => $ctx->user->id,
+        'location_org_stock_id' => $locationOrgStock->id,
+        'quantity'              => 10,
+    ]);
+
+    $deliveryNote = UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    $deliveryNote = StartPackingDeliveryNote::make()->action($deliveryNote, $ctx->user);
+
+    if ($markWholeNotePacked) {
+        UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $ctx->user);
+    } else {
+        StorePacking::make()->action($deliveryNoteItem->refresh(), $ctx->user, []);
+    }
+
+    return [$deliveryNote->refresh(), $deliveryNoteItem->refresh()];
+}
+
+function clearInstrumentation(int $deliveryNoteId): void
+{
+    DB::table('pickings')->where('delivery_note_id', $deliveryNoteId)->update(['last_picked_at' => null]);
+    DB::table('packings')->where('delivery_note_id', $deliveryNoteId)
+        ->update(['queued_at' => null, 'packing_at' => null, 'done_at' => null]);
+}
+
+function costFixStockInLocation($group, $organisation, string $code): array
+{
+    $stock    = StoreStock::make()->action($group, array_merge(Stock::factory()->definition(), ['code' => $code, 'state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($organisation, $stock);
+
+    $warehouse = Warehouse::where('organisation_id', $organisation->id)->first() ?? StoreWarehouse::make()->action($organisation, ['code' => 'CF-WH', 'name' => 'CostFix WH']);
+    $location  = StoreLocation::make()->action($warehouse, array_merge(Location::factory()->definition(), ['code' => 'CF-'.$code]));
+    StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::STORING]);
+
+    return [$orgStock, $location];
+}
+
+function costFixStoreDelivery($group, $organisation, int $auroraDeliveryId, array $items): int
+{
+    $stockDeliveryId = DB::table('stock_deliveries')->insertGetId([
+            'group_id'        => $group->id,
+            'organisation_id' => $organisation->id,
+            'slug'            => 'cf-delivery-'.$auroraDeliveryId,
+            'parent_type'     => 'OrgSupplier',
+            'parent_id'       => 1,
+            'parent_code'     => 'CF-SUP',
+            'parent_name'     => 'CostFix Supplier',
+            'reference'       => 'CF'.$auroraDeliveryId,
+            'state'           => 'placed',
+            'date'            => now(),
+            'currency_id'     => $organisation->currency_id,
+            'cost_data'       => '{}',
+            'data'            => '{}',
+            'source_id'       => $organisation->id.':'.$auroraDeliveryId,
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+    foreach ($items as $item) {
+        DB::table('stock_delivery_items')->insert([
+            'group_id'          => $group->id,
+            'organisation_id'   => $organisation->id,
+            'stock_delivery_id' => $stockDeliveryId,
+            'org_stock_id'      => $item['org_stock_id'],
+            'state'             => 'placed',
+            'data'              => '{}',
+            'unit_quantity'     => $item['unit_quantity'],
+            'net_amount'        => $item['net_amount'],
+            'created_at'        => now(),
+            'updated_at'        => now(),
+        ]);
+    }
+
+    return $stockDeliveryId;
+}
+
+describe('aurora provisional cost fix', function () {
+    test('repair command fixes provisional purchase costs from delivery items', function () {
+        [$orgStock, $location]   = costFixStockInLocation($this->group, $this->organisation, 'CFA');
+        [$orgStock2, $location2] = costFixStockInLocation($this->group, $this->organisation, 'CFB');
+
+        $badMovement = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 100,
+        ]);
+        $badMovement->update([
+            'org_amount'   => 790500,
+            'cost_per_sku' => 7905,
+            'note'         => 'received from <span onClick="change_view(\'delivery/15501\')">CF15501</span>',
+            'date'         => now()->subDays(30),
+        ]);
+        costFixStoreDelivery($this->group, $this->organisation, 15501, [['org_stock_id' => $orgStock->id, 'unit_quantity' => 100, 'net_amount' => 550]]);
+
+        $unitsMismatchMovement = StoreOrgStockMovement::make()->action($orgStock2, $location2, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ]);
+        $unitsMismatchMovement->update([
+            'org_amount'   => 10000,
+            'cost_per_sku' => 1000,
+            'note'         => 'received from <span onClick="change_view(\'delivery/15502\')">CF15502</span>',
+            'date'         => now()->subDays(30),
+        ]);
+        costFixStoreDelivery($this->group, $this->organisation, 15502, [['org_stock_id' => $orgStock2->id, 'unit_quantity' => 10000, 'net_amount' => 1000]]);
+
+        $this->artisan('org_stock_movement:repair_cost_from_stock_delivery_items', ['--dry-run' => true])->assertExitCode(0);
+        $badMovement->refresh();
+        expect((float) $badMovement->cost_per_sku)->toBe(7905.0)
+            ->and($badMovement->cost_status)->toBeNull();
+
+        $this->artisan('org_stock_movement:repair_cost_from_stock_delivery_items')->assertExitCode(0);
+
+        $badMovement->refresh();
+        $unitsMismatchMovement->refresh();
+        expect((float) $badMovement->cost_per_sku)->toBe(5.5)
+            ->and((float) $badMovement->org_amount)->toBe(550.0)
+            ->and($badMovement->cost_status)->toBe(\App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum::DELIVERY)
+            ->and((float) $unitsMismatchMovement->cost_per_sku)->toBe(1000.0)
+            ->and($unitsMismatchMovement->cost_status)->toBeNull();
+
+        $snapshot = DB::table('org_stock_movements_pre_costfix')->where('id', $badMovement->id)->first();
+        expect($snapshot)->not->toBeNull()
+            ->and((float) $snapshot->org_amount)->toBe(790500.0);
+    });
+
+    test('recompute keeps pre-cutoff lpp untouched while wac and fifo change', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFC');
+
+        $this->organisation->update(['wac_calculations_start_date' => '2025-08-01']);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $movement = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ]);
+        $movement->update([
+            'org_amount'   => 79050,
+            'cost_per_sku' => 7905,
+            'date'         => '2026-07-01 10:00:00',
+        ]);
+
+        $preCutoffDate  = \Illuminate\Support\Carbon::parse('2026-05-15');
+        $postCutoffDate = \Illuminate\Support\Carbon::parse('2026-07-15');
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockHistoricStockHistories::run($orgStock, $preCutoffDate);
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockHistoricStockHistories::run($orgStock, $postCutoffDate);
+
+        $preRow = DB::table('org_stock_histories')->where('org_stock_id', $orgStock->id)->where('date', '2026-05-15')->first();
+        expect((float) $preRow->lpp_per_sku)->toBe(7905.0)
+            ->and((float) $preRow->wac_per_sku)->toBe(7905.0);
+
+        $movement->update([
+            'cost_per_sku' => 5.5,
+            'org_amount'   => 55,
+            'cost_status'  => 'delivery',
+        ]);
+
+        $this->artisan('org_stock_movement:recalculate_histories_post_costfix', ['organisation' => $this->organisation->slug, '--sync' => true])->assertExitCode(0);
+
+        $preRow  = DB::table('org_stock_histories')->where('org_stock_id', $orgStock->id)->where('date', '2026-05-15')->first();
+        $postRow = DB::table('org_stock_histories')->where('org_stock_id', $orgStock->id)->where('date', '2026-07-15')->first();
+
+        expect((float) $preRow->lpp_per_sku)->toBe(7905.0)
+            ->and((float) $preRow->wac_per_sku)->toBe(5.5)
+            ->and((float) $preRow->fifo_per_sku)->toBe(5.5)
+            ->and((float) $postRow->lpp_per_sku)->toBe(5.5)
+            ->and((float) $postRow->wac_per_sku)->toBe(5.5);
+
+        expect((float) $orgStock->refresh()->sku_value)->toBe(5.5);
+    });
+
+    test('recompute leaves rows before the first repaired movement alone', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFD');
+
+        $this->organisation->update(['wac_calculations_start_date' => '2025-08-01']);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $oldPurchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ]);
+        $oldPurchase->update(['cost_per_sku' => 3, 'org_amount' => 30, 'date' => '2025-07-01 10:00:00']);
+
+        $repaired = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ]);
+        $repaired->update(['cost_per_sku' => 7905, 'org_amount' => 79050, 'date' => '2026-07-01 10:00:00']);
+
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockHistoricStockHistories::run($orgStock, \Illuminate\Support\Carbon::parse('2026-05-15'));
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockHistoricStockHistories::run($orgStock, \Illuminate\Support\Carbon::parse('2026-07-15'));
+
+        $repaired->update(['cost_per_sku' => 5.5, 'org_amount' => 55, 'cost_status' => 'delivery']);
+
+        $this->artisan('org_stock_movement:recalculate_histories_post_costfix', ['organisation' => $this->organisation->slug, '--sync' => true])->assertExitCode(0);
+
+        $preRow  = DB::table('org_stock_histories')->where('org_stock_id', $orgStock->id)->where('date', '2026-05-15')->first();
+        $postRow = DB::table('org_stock_histories')->where('org_stock_id', $orgStock->id)->where('date', '2026-07-15')->first();
+
+        expect((float) $preRow->lpp_per_sku)->toBe(3.0)
+            ->and((float) $preRow->wac_per_sku)->toBe(3.0)
+            ->and((float) $postRow->wac_per_sku)->toBe(4.25)
+            ->and((float) $postRow->lpp_per_sku)->toBe(5.5);
+    });
+
+    test('update does not clobber a supplied org_amount', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFE');
+
+        $this->organisation->update(['wac_calculations_start_date' => '2025-08-01']);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $movement = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 100,
+        ]);
+
+        $movement = UpdateOrgStockMovement::make()->action($movement, ['quantity' => 100, 'org_amount' => 500], strict: false);
+        expect((float) $movement->org_amount)->toBe(500.0);
+
+        $orgStock->update(['value_in_locations' => 7905, 'current_supplier_sku_cost' => 7]);
+        $movement = UpdateOrgStockMovement::make()->action($movement->fresh(), ['quantity' => 200], strict: false);
+        expect((float) $movement->org_amount)->toBe(1000.0);
+    });
+
+    test('restore command reverts pre corruption-window movements to snapshot values', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFF');
+
+        $movement = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 20,
+        ]);
+        $movement->update(['org_amount' => 269.76, 'cost_per_sku' => 13.488, 'date' => '2017-02-27 14:24:49']);
+
+        DB::statement('create table if not exists org_stock_movements_pre_costfix (like org_stock_movements)');
+        DB::statement('create table if not exists org_stock_histories_pre_costfix (like org_stock_histories)');
+        DB::statement('insert into org_stock_movements_pre_costfix select * from org_stock_movements where id = '.$movement->id);
+
+        $movement->update(['org_amount' => 0.60, 'cost_per_sku' => 0.03, 'cost_status' => 'delivery']);
+
+        $this->artisan('org_stock_movement:restore_pre_corruption_movements', ['--dry-run' => true])->assertExitCode(0);
+        expect((float) $movement->fresh()->org_amount)->toBe(0.6);
+
+        $this->artisan('org_stock_movement:restore_pre_corruption_movements')->assertExitCode(0);
+
+        $movement->refresh();
+        expect((float) $movement->org_amount)->toBe(269.76)
+            ->and((float) $movement->cost_per_sku)->toBe(13.488)
+            ->and($movement->cost_status)->toBeNull();
+    });
+
+    test('aurora amount repair decision', function () {
+        $shouldRepair = fn ($movement, $aurora) => \App\Actions\Maintenance\Inventory\OrgStockMovement\RepairOrgStockMovementAmountFromAurora::shouldRepair((object) $movement, $aurora ? (object) $aurora : null);
+
+        expect($shouldRepair(['quantity' => 1600, 'org_amount' => 11200368], ['quantity' => 1600, 'amount' => 425.60]))->toBeTrue()
+            ->and($shouldRepair(['quantity' => 100, 'org_amount' => 500], ['quantity' => 100, 'amount' => 500]))->toBeFalse()
+            ->and($shouldRepair(['quantity' => 100, 'org_amount' => 790500], ['quantity' => 120, 'amount' => 500]))->toBeFalse()
+            ->and($shouldRepair(['quantity' => 100, 'org_amount' => 790500], null))->toBeFalse();
+    });
+
+    test('sku_value follows fifo as the official valuation', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFG');
+
+        $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $firstPurchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ]);
+        $firstPurchase->update(['cost_per_sku' => 2, 'date' => now()->subDays(4)]);
+
+        $secondPurchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ]);
+        $secondPurchase->update(['cost_per_sku' => 4, 'date' => now()->subDays(3)]);
+
+        $picked = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PICKED->value,
+            'quantity' => -5,
+        ]);
+        $picked->update(['date' => now()->subDays(2)]);
+
+        $calculator = \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories::make();
+        expect(round($calculator->getFifoPerSku($orgStock, now()), 4))->toBe(round(10 / 3, 4))
+            ->and((float) $calculator->getWacPerSku($orgStock, now()))->toBe(3.0)
+            ->and((float) $calculator->getLppPerSku($orgStock, now()))->toBe(4.0);
+
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories::run($orgStock->id);
+        expect(round((float) $orgStock->refresh()->sku_value, 2))->toBe(3.33);
+
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue::run($orgStock);
+        expect(round((float) $orgStock->refresh()->sku_value, 2))->toBe(3.33);
+    });
+
+    test('stock history exports carry the three valuations with legends', function () {
+        [$orgStock] = costFixStockInLocation($this->group, $this->organisation, 'CFH');
+        $headings   = (new \App\Exports\Inventory\OrgStockHistoryExport($orgStock))->headings();
+        expect($headings)->toContain(__('Stock Value').' FIFO ('.__('official').')')
+            ->toContain(__('Stock Value').' WAC')
+            ->toContain(__('Stock Value').' LPP')
+            ->toContain(__('Unit Value').' FIFO ('.__('official').')');
+    });
+
+    test('movements carry running stock values in all three methods', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFI');
+        $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $first = StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::PURCHASE->value, 'quantity' => 10]);
+        $first->update(['cost_per_sku' => 2, 'date' => now()->subDays(4)]);
+        $second = StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::PURCHASE->value, 'quantity' => 10]);
+        $second->update(['cost_per_sku' => 4, 'date' => now()->subDays(3)]);
+        $picked = StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::PICKED->value, 'quantity' => -5]);
+        $picked->update(['date' => now()->subDays(2)]);
+
+        \App\Actions\Inventory\OrgStockMovement\CalculateOrgStockMovementRunningValues::run($orgStock->id);
+
+        $picked->refresh();
+        expect((float) $picked->running_quantity_org_stock)->toBe(15.0)
+            ->and((float) $picked->running_lpp_value)->toBe(60.0)
+            ->and((float) $picked->running_wac_value)->toBe(45.0)
+            ->and((float) $picked->running_fifo_value)->toBe(50.0);
+    });
+
+    test('running values replay the quantity when it was never stored', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFJ');
+        $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $purchase = StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::PURCHASE->value, 'quantity' => 100]);
+        $purchase->update(['cost_per_sku' => 2, 'date' => now()->subDays(3)]);
+        $picked = StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::PICKED->value, 'quantity' => -40]);
+        $picked->update(['date' => now()->subDays(2)]);
+
+        // Aurora fetched movements arrive without a running quantity
+        DB::table('org_stock_movements')->where('org_stock_id', $orgStock->id)->update(['running_quantity_org_stock' => null]);
+
+        \App\Actions\Inventory\OrgStockMovement\CalculateOrgStockMovementRunningValues::run($orgStock->id);
+
+        expect((float) $picked->fresh()->running_fifo_value)->toBe(120.0);
+    });
+});
+
+test('merging a duplicate stock moves its links to the stocked twin and retires the orphans', function () {
+    $group  = $this->organisation->group;
+    $stocks = createStocks($group);
+    $empty  = $stocks[0];
+    $held   = $stocks[1];
+
+    [$emptyOrgStock] = createOrgStocks($this->organisation, [$empty]);
+    createOrgStocks($this->organisation, [$held]);
+
+    $tradeUnit = StoreTradeUnit::make()->action($group, TradeUnit::factory()->definition());
+    DB::table('model_has_trade_units')->insert([
+        'model_type' => 'Stock', 'model_id' => $empty->id, 'trade_unit_id' => $tradeUnit->id,
+        'quantity' => 1, 'created_at' => now(), 'updated_at' => now(),
+    ]);
+
+    \App\Actions\Goods\Stock\MergeDuplicateStock::make()->handle($empty->refresh(), $held->refresh(), 'ArtTT-MERGE');
+
+    expect(DB::table('model_has_trade_units')->where('model_type', 'Stock')->where('model_id', $empty->id)->count())->toBe(0)
+        ->and(DB::table('model_has_trade_units')->where('model_type', 'Stock')->where('model_id', $held->id)->where('trade_unit_id', $tradeUnit->id)->exists())->toBeTrue()
+        ->and($empty->refresh()->state)->toBe(\App\Enums\Goods\Stock\StockStateEnum::DISCONTINUED)
+        ->and($emptyOrgStock->refresh()->state)->toBe(\App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED)
+        ->and($held->refresh()->code)->toBe('ArtTT-MERGE')
+        ->and($held->slug)->toBe('arttt-merge')
+        ->and($empty->refresh()->slug)->not->toBe('arttt-merge');
+});
+
+describe('product available quantity resync', function () {
+    test('hydrator resyncs an out-of-sync product even when quantity_available does not change', function () {
+        list(, , $shop) = createShop();
+        list(, $product) = createProduct($shop);
+
+        $orgStock = $product->orgStocks()->first();
+        if (!$orgStock) {
+            $orgStock = OrgStock::first();
+            $product->orgStocks()->attach($orgStock->id, ['quantity' => 1, 'created_at' => now(), 'updated_at' => now()]);
+        }
+
+        $location         = StoreLocation::make()->action(createWarehouse(), Location::factory()->definition());
+        $locationOrgStock = StoreLocationOrgStock::make()->action($orgStock, $location, []);
+        UpdateLocationOrgStock::make()->action($locationOrgStock, ['quantity' => 50]);
+
+        OrgStockHydrateQuantityInLocations::run($orgStock->id);
+        $expected = (int) floor($orgStock->refresh()->quantity_available);
+        expect($expected)->toBeGreaterThan(0);
+
+        DB::table('products')->where('id', $product->id)->update(['available_quantity' => $expected + 7]);
+
+        OrgStockHydrateQuantityInLocations::run($orgStock->id);
+
+        expect($product->refresh()->available_quantity)->toBe($expected);
+    });
+});
+
+describe('packing change guard', function () {
+    test('pivot change with stock in locations requires a stock strategy, keep flags recount, convert rescales at zero value', function () {
+        $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+        $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+        $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+
+        $location         = StoreLocation::make()->action(createWarehouse(), Location::factory()->definition());
+        $locationOrgStock = StoreLocationOrgStock::make()->action($orgStock, $location, []);
+        UpdateLocationOrgStock::make()->action($locationOrgStock, ['quantity' => 12]);
+        $locationOrgStock->updateQuietly(['audited_at' => now(), 'is_low_stock_checked' => true]);
+
+        $payload = ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 6]]];
+
+        try {
+            \App\Actions\Inventory\OrgStock\UpdateOrgStockTradeUnits::make()->handle($orgStock, $payload);
+            $this->fail('Expected a stock strategy to be required');
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            expect($exception->errors())->toHaveKeys(['stock_recount_required', 'stock_conversion_preview'])
+                ->and($exception->errors()['stock_conversion_preview'][0])->toContain('12 → 2');
+        }
+        expect((float) $orgStock->tradeUnits()->first()->pivot->quantity)->toBe(1.0);
+
+        \App\Actions\Inventory\OrgStock\UpdateOrgStockTradeUnits::make()->handle($orgStock, array_merge($payload, ['stock_strategy' => 'keep']));
+
+        expect((float) $orgStock->refresh()->tradeUnits->first()->pivot->quantity)->toBe(6.0)
+            ->and((float) $locationOrgStock->refresh()->quantity)->toBe(12.0)
+            ->and($locationOrgStock->audited_at)->toBeNull()
+            ->and($locationOrgStock->is_low_stock_checked)->toBeFalse();
+
+        $locationOrgStock->updateQuietly(['audited_at' => now()]);
+
+        \App\Actions\Inventory\OrgStock\UpdateOrgStockTradeUnits::make()->handle($orgStock, [
+            'trade_units'    => [['id' => $tradeUnit->id, 'quantity' => 3]],
+            'stock_strategy' => 'convert',
+        ]);
+
+        $conversionMovement = \App\Models\Inventory\OrgStockMovement::where('org_stock_id', $orgStock->id)
+            ->where('reason', 'uom')->latest('id')->first();
+
+        expect((float) $orgStock->refresh()->tradeUnits->first()->pivot->quantity)->toBe(3.0)
+            ->and((float) $locationOrgStock->refresh()->quantity)->toBe(24.0)
+            ->and($locationOrgStock->audited_at)->not->toBeNull()
+            ->and($conversionMovement)->not->toBeNull()
+            ->and((float) $conversionMovement->org_amount)->toBe(0.0)
+            ->and((float) $conversionMovement->audited_quantity)->toBe(24.0);
+
+        UpdateLocationOrgStock::make()->action($locationOrgStock, ['quantity' => 0]);
+        \App\Actions\Inventory\OrgStock\UpdateOrgStockTradeUnits::make()->handle($orgStock, [
+            'trade_units'    => [['id' => $tradeUnit->id, 'quantity' => 12]],
+            'stock_strategy' => 'convert',
+        ]);
+        expect((float) $orgStock->refresh()->tradeUnits->first()->pivot->quantity)->toBe(12.0);
+    });
 });

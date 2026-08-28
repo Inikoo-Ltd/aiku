@@ -5,17 +5,20 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import type { Links, Meta } from "@/types/Table"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { inject } from "vue"
 import Icon from "@/Components/Icon.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { trans } from "laravel-vue-i18n"
 import { faTriangle, faEquals, faMinus } from "@fas"
+import { faTrashAlt } from "@far"
 
-library.add(faTriangle, faEquals, faMinus)
+library.add(faTriangle, faEquals, faMinus, faTrashAlt)
 
 defineProps<{
     data: {
@@ -81,6 +84,33 @@ const getIntervalStateColor = (isPositive: boolean) => {
         </template>
         <template #cell(sales_grp_currency_external)="{ item: charge }">
             {{ locale.currencyFormat(charge.currency_code, charge.sales_grp_currency_external) }}
+        </template>
+        <template #cell(actions)="{ item: charge }">
+            <div class="flex justify-end">
+                <FontAwesomeIcon
+                    v-if="charge.is_used"
+                    v-tooltip="trans('Used on orders, discontinue it instead of deleting')"
+                    :icon="faTrashAlt"
+                    fixed-width
+                    aria-hidden="true"
+                    class="text-gray-300"
+                />
+                <ModalConfirmationDelete
+                    v-else
+                    :routeDelete="{
+                        name: 'grp.models.charge.delete',
+                        parameters: [charge.id],
+                    }"
+                    :title="`${trans('Delete charge')} &quot;${charge.name}&quot;?`"
+                    @success="router.reload()"
+                >
+                    <template #default="{ changeModel }">
+                        <button class="text-red-400 hover:text-red-600" @click="changeModel">
+                            <FontAwesomeIcon :icon="faTrashAlt" fixed-width aria-hidden="true" />
+                        </button>
+                    </template>
+                </ModalConfirmationDelete>
+            </div>
         </template>
     </Table>
 </template>

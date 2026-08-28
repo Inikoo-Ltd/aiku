@@ -197,6 +197,7 @@ class IndexRetinaPortfolios extends RetinaAction
         // Button: Brave mode
         $bulkUploadRoute = false;
         $bulkAllRoute    = false;
+        $bulkMatchRoute  = false;
         if ($platformUser) {
             $bulkUploadRoute = match ($this->customerSalesChannel->platform->type) {
                 PlatformTypeEnum::SHOPIFY => [
@@ -277,25 +278,58 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
                 default => false
             };
+
+            $bulkMatchRoute = match ($this->customerSalesChannel->platform->type) {
+                PlatformTypeEnum::SHOPIFY,
+                PlatformTypeEnum::WOOCOMMERCE,
+                PlatformTypeEnum::EBAY,
+                PlatformTypeEnum::TIKTOK,
+                PlatformTypeEnum::ALLEGRO => [
+                    'name'       => 'retina.models.dropshipping.platform.batch_match',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
+                default => false
+            };
         }
 
         $actions = [];
+        if (in_array($this->customerSalesChannel->platform->type, [
+            PlatformTypeEnum::SHOPIFY,
+            PlatformTypeEnum::WOOCOMMERCE,
+            PlatformTypeEnum::EBAY,
+            PlatformTypeEnum::TIKTOK
+        ]) && $this->customerSalesChannel->user) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'tertiary',
+                'tooltip' => __('Push current stock levels of these products to this channel only'),
+                'label'   => __('Update Stock'),
+                'icon'    => ['fas', 'fa-sync-alt'],
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'retina.models.customer_sales_channel.sync_portfolios_manual',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
+            ];
+        }
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $actions = [
-                [
-                    'type'    => 'button',
-                    'style'   => 'tertiary',
-                    'tooltip' => __('This will automatically synced every day at 3:00 UTC'),
-                    'label'   => __('Re-Sync'),
-                    'icon'    => ['fal', 'fa-tachometer-alt'],
-                    'route'   => [
-                        'method'     => 'post',
-                        'name'       => 'retina.models.customer_sales_channel.portfolio_shopify_sync',
-                        'parameters' => [
-                            'customerSalesChannel' => $this->customerSalesChannel->id
-                        ]
-                    ],
-                ]
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'tertiary',
+                'tooltip' => __('This will automatically synced every day at 3:00 UTC'),
+                'label'   => __('Re-Sync'),
+                'icon'    => ['fal', 'fa-tachometer-alt'],
+                'route'   => [
+                    'method'     => 'post',
+                    'name'       => 'retina.models.customer_sales_channel.portfolio_shopify_sync',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
             ];
         }
 
@@ -372,6 +406,7 @@ class IndexRetinaPortfolios extends RetinaAction
                         ]
                     ],
                     'batch_all'                   => $bulkAllRoute,
+                    'batch_match'                 => $bulkMatchRoute,
                     'fetch_products'              => match ($this->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::WOOCOMMERCE => [
                             'name' => 'retina.json.dropshipping.customer_sales_channel.woo_products'

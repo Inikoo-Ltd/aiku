@@ -17,7 +17,7 @@ import { capitalize } from "@/Composables/capitalize"
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import Breadcrumb from 'primevue/breadcrumb'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { FontAwesomeIcon, FontAwesomeLayers } from '@fortawesome/vue-fontawesome'
 import type { PageHeadingTypes } from '@/types/PageHeading'
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableOrders from "@/Components/Tables/Grp/Org/Ordering/TableOrders.vue"
@@ -43,7 +43,7 @@ import Action from '@/Components/Forms/Fields/Action.vue'
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 import { faShapes, faStar } from '@fas'
 import { faHatCowboy } from "@far"
-import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
+// import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
 import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 import TableReviews from "@/Components/Shop/Reviews/TableReviews.vue"
 import Dialog from "primevue/dialog"
@@ -138,6 +138,7 @@ const props = defineProps<{
     product_id: number
     product_units?: number
     product_unit?: string
+    not_follow_master_media?: boolean
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -279,7 +280,22 @@ const saveProductReview = async () => {
                 :icon="faHatCowboy"
                 class="text-red-500 cursor-pointer"
             />
-            <!-- TODO PLEASE CHANGE TO HAVE LINK TO VARIANT -->
+
+            <FontAwesomeLayers
+                v-if="not_follow_master_media"
+                v-tooltip="ctrans('Product has independent media settings')"
+                class="flex items-center justify-center w-[2rem]"
+            >
+                <FontAwesomeIcon 
+                    :icon="faHatCowboy"
+                    :class="'text-red-500 text-[17px] !top-[-93%] !right-[-50%] !rotate-[17deg]'"
+                />
+                <FontAwesomeIcon 
+                    :icon="faCameraRetro"
+                    :class="'text-red-500'"
+                />
+            </FontAwesomeLayers>
+
             <Link  v-if="variant"  :href="routeVariant()" v-tooltip="trans('Go to Variant')">
                 <FontAwesomeIcon :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" />
             </Link>
@@ -313,6 +329,7 @@ const saveProductReview = async () => {
                 }"
             />
 
+            <!-- Luigi Search is discontinued, reindex button disabled
             <div class="w-fit" v-if="currentTab === 'showcase'">
                 <ButtonReindexWebpage
                     :webpage="{
@@ -342,6 +359,7 @@ const saveProductReview = async () => {
                     </template>
                 </ButtonReindexWebpage>
             </div>
+            -->
 
             <template v-if="currentTab === 'offers'">
                 <ModalCreateGiftOffers
@@ -365,7 +383,7 @@ const saveProductReview = async () => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
+    <div v-if="mini_breadcrumbs?.length" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">

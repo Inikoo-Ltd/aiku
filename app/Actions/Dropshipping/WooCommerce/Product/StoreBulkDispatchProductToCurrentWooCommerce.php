@@ -9,7 +9,6 @@
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
 use App\Actions\OrgAction;
-use App\Events\UploadProductToSalesChannelProgressEvent;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Facades\Cache;
@@ -21,7 +20,7 @@ class StoreBulkDispatchProductToCurrentWooCommerce extends OrgAction
     use AsAction;
     use WithAttributes;
 
-    public string $jobQueue = 'woo';
+    public string $jobQueue = 'dropshipping-long';
 
     /**
      * @throws \Exception
@@ -31,38 +30,20 @@ class StoreBulkDispatchProductToCurrentWooCommerce extends OrgAction
         /** @var WooCommerceUser $wooCommerceUser */
         $wooCommerceUser = $customerSalesChannel->user;
 
-        // Use a unique key per job/session to avoid cross-request pollution
         $cacheKey = 'upload_progress_' . $customerSalesChannel->id . '_' . uniqid();
         Cache::put($cacheKey . '_success', 0, now()->addHour());
         Cache::put($cacheKey . '_fail', 0, now()->addHour());
 
-        $needCheckConnection = false;
-        $result = $wooCommerceUser->checkConnection();
-        if (!$result) {
-            $needCheckConnection = true;
-        }
+        $needCheckConnection = !$wooCommerceUser->checkConnection();
 
+        $bulkProgress = [
+            'cache_key' => $cacheKey,
+            'total'     => $totalNumber,
+        ];
+
+        // ponytail: counters cleaned by TTL; a hard-failed product job leaves the progress bar short of total
         foreach ($portfolios as $portfolio) {
-            try {
-                $portfolio = StoreNewProductToCurrentWooCommerce::run($wooCommerceUser, $portfolio, $needCheckConnection);
-
-                if ($portfolio->platform_status) {
-                    Cache::increment($cacheKey . '_success');
-                } else {
-                    Cache::increment($cacheKey . '_fail');
-                }
-            } catch (\Exception $e) {
-                Cache::increment($cacheKey . '_fail');
-            }
-
-            broadcast(new UploadProductToSalesChannelProgressEvent($customerSalesChannel, $portfolio, [
-                'total'   => $totalNumber,
-                'success' => Cache::get($cacheKey . '_success'),
-                'fail'    => Cache::get($cacheKey . '_fail'),
-            ]));
+            StoreNewProductToCurrentWooCommerce::dispatch($wooCommerceUser, $portfolio, $needCheckConnection, $bulkProgress);
         }
-
-        Cache::forget($cacheKey . '_success');
-        Cache::forget($cacheKey . '_fail');
     }
 }

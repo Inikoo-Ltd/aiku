@@ -47,6 +47,10 @@ class StartPackingDeliveryNote extends OrgAction
             return $deliveryNote;
         }
 
+        if ($deliveryNote->hasBlockingItems()) {
+            abort(422, __('Cannot start packing: some items are waiting for a replacement decision or warehouse release'));
+        }
+
         data_set($modelData, 'packing_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::PACKING->value);
         data_set($modelData, 'packer_user_id', $user->id);

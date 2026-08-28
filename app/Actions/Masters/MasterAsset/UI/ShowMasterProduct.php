@@ -110,6 +110,10 @@ class ShowMasterProduct extends OrgAction
 
     public function htmlResponse(MasterAsset $masterAsset, ActionRequest $request): Response
     {
+        $navigation = MasterAssetTabsEnum::navigation($masterAsset);
+
+        unset($navigation[MasterAssetTabsEnum::SALES->value]);
+
         return Inertia::render(
             'Masters/MasterProduct',
             [
@@ -251,6 +255,7 @@ class ShowMasterProduct extends OrgAction
                     ],
                     'subNavigation'        => $this->getMasterProductsSubNavigation($masterAsset),
                 ],
+                'anomalies'            => EditMasterProductComposition::make()->getAnomalies($masterAsset),
                 'masterAsset'          => $masterAsset,
                 'currency'             => $masterAsset->group->currency,
                 'shopsData'            => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterAsset->masterShop, 'shops')),
@@ -259,7 +264,7 @@ class ShowMasterProduct extends OrgAction
                 'trade_unit_slug'      => $masterAsset->tradeUnits?->first->slug,
                 'tabs'                 => [
                     'current'    => $this->tab,
-                    'navigation' => MasterAssetTabsEnum::navigation($masterAsset)
+                    'navigation' => $navigation
                 ],
                 'masterVariant'        => $masterAsset->masterVariant,
                 'is_variant_leader'    => $masterAsset->is_variant_leader,

@@ -17,6 +17,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLongArrowRight } from '@fal'
 import { faPlus, faMinus } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { ctrans } from '@/Composables/useTrans'
 
 library.add(faLongArrowRight, faPlus, faMinus)
 
@@ -48,6 +49,12 @@ let statusTimeout: ReturnType<typeof setTimeout> | null = null
 
 const isLoadingSubmitQuantityProduct = ref(false)
 
+const availableStock = computed(() => {
+    const stock = customer.value.stock ?? product.value.stock
+
+    return Number.isFinite(Number(stock)) ? Number(stock) : Infinity
+})
+
 
 const pushAddToCart = (quantity: number) => {
     if (quantity <= 0) {
@@ -71,8 +78,8 @@ const setStatus = (newStatus: typeof status.value) => {
 
 const showWarning = () => {
     notify({
-        title: trans('Stock limit reached'),
-        text: trans('You cannot add more than :stock items.', { stock: customer.value.stock }),
+        title: ctrans('Stock limit reached'),
+        text: ctrans('You cannot add more than :stock items.', { stock: String(availableStock.value) }),
         type: 'error'
     })
 }
@@ -89,9 +96,12 @@ const fetchCustomerOrderingProduct = async () => {
                 })
             )
 
-            console.log('sdfsdf', response.data)
             Object.keys(response.data).forEach(key => {
-                props.customerData[key] = response.data[key]
+                if (props.customerData) {
+                    props.customerData[key] = response.data[key]
+                }
+
+                customer.value[key] = response.data[key]
             })
         } else throw new Error("Product ID is required")
 
@@ -149,6 +159,7 @@ const onAddToBasket = async (productData: ProductResource, quantity: number) => 
                 department_id: payload.department_id,
                 sub_department_id: payload.sub_department_id,
                 family_id: payload.family_id,
+                is_golden_product: payload.is_golden_product,
             }
         }
         set(layout, ['family_page', 'productInBasket', 'list'], updatedList)
@@ -161,7 +172,7 @@ const onAddToBasket = async (productData: ProductResource, quantity: number) => 
         setStatus('error')
         notify({
             title: trans('Something went wrong'),
-            text: error.message || trans('Failed to add product to basket'),
+            text: error.response?.data?.message || error.message || ctrans('Failed to add product to basket'),
             type: 'error'
         })
     } finally {
@@ -211,6 +222,7 @@ const onUpdateQuantity = async () => {
                 department_id: payload.department_id,
                 sub_department_id: payload.sub_department_id,
                 family_id: payload.family_id,
+                is_golden_product: payload.is_golden_product,
             }
         }
         set(layout, ['family_page', 'productInBasket', 'list'], updatedList)
@@ -223,7 +235,7 @@ const onUpdateQuantity = async () => {
         setStatus('error')
         notify({
             title: trans('Something went wrong'),
-            text: error.message || trans('Failed to update product quantity'),
+            text: error.response?.data?.message || error.message || ctrans('Failed to update product quantity'),
             type: 'error'
         })
     } finally {
@@ -247,7 +259,7 @@ const debouncedSync = debounce(() => {
 const incrementQty = () => {
     const current = customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0
 
-    if (current >= customer.value.stock) {
+    if (current >= availableStock.value) {
         showWarning()
         return
     }
@@ -262,19 +274,28 @@ const decrementQty = () => {
     debouncedSync()
 }
 
-const setQuantity = (quantity: number) => {
+
+const setQuantity = async (quantity: number) => {
     const next = Math.min(Math.max(0, quantity), customer.value.stock)
+
     if (next !== quantity) showWarning()
 
+    debouncedSync.cancel()
     set(customer.value, ['quantity_ordered_new'], next)
-    debouncedSync()
+
+    if (!customer.value.transaction_id && next > 0) {
+        await onAddToBasket(product.value, next)
+        return
+    }
+
+    await onUpdateQuantity()
 }
 
 const onManualInput = (e: Event) => {
     const value = Number((e.target as HTMLInputElement).value)
     if (Number.isNaN(value)) return
 
-    const next = Math.min(Math.max(0, value), customer.value.stock)
+    const next = Math.min(Math.max(0, value), availableStock.value)
     if (next !== value) showWarning()
 
     set(customer.value, ['quantity_ordered_new'], next)
@@ -298,9 +319,9 @@ const onNumeratorInput = (e: Event) => {
     const units = product.value.units ?? 1
     const next = value / units
 
-    if (next > customer.value.stock) {
+    if (next > availableStock.value) {
         showWarning()
-        set(customer.value, ['quantity_ordered_new'], customer.value.stock)
+        set(customer.value, ['quantity_ordered_new'], availableStock.value)
     } else {
         set(customer.value, ['quantity_ordered_new'], next)
     }
@@ -353,8 +374,9 @@ defineExpose({ setQuantity })
                 v-if="!customer.quantity_ordered && !customer.quantity_ordered_new" 
                 class="qty-add-btn"
                 icon="fas fa-plus" 
-                :label="trans('Add to basket')" 
+                :label="ctrans('Add to basket')" 
                 type="primary" 
+                :injectStyle="buttonStyle" 
                 size="lg"
                 :loading="isLoadingSubmitQuantityProduct" 
                 @click="onAddToBasket(product, 1)" 
@@ -364,7 +386,7 @@ defineExpose({ setQuantity })
 
         <div v-if="customer.quantity_ordered" class="qty-info">
             <span class="qty-info-label">
-                {{ trans('Current amount in basket') }}:
+                {{ ctrans('Current amount in basket') }}:
             </span>
 
             <!-- WITH OFFER -->

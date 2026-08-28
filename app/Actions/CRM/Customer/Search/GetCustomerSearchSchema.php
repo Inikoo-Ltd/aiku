@@ -69,14 +69,6 @@ class GetCustomerSearchSchema
                         'type' => 'string',
                     ],
                     [
-                        'name' => 'eori',
-                        'type' => 'string',
-                    ],
-                    [
-                        'name' => 'ukims',
-                        'type' => 'string',
-                    ],
-                    [
                         'name' => 'notes',
                         'type' => 'string',
                     ],

@@ -14,6 +14,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\CRM\Customer;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -35,6 +36,8 @@ class UpdateCustomerLastInvoicedDate
             }
         }
 
+        $previousDate = $customer->last_invoiced_at;
+
         $customer->update(['last_invoiced_at' => $date]);
         $customer->stats()->update(['last_invoiced_at' => $date]);
 
@@ -50,11 +53,26 @@ class UpdateCustomerLastInvoicedDate
 
 
 
-        if ($modifyBasket && $customer->shop->is_aiku && $customer->wasChanged('last_invoiced_at') && $customer->shop->type == ShopTypeEnum::B2B) {
+        if ($modifyBasket && $customer->shop->is_aiku && $customer->shop->type == ShopTypeEnum::B2B
+            && $this->crossesGoldRewardWindow($customer, $previousDate, $date)) {
             foreach ($customer->orders()->where('state', OrderStateEnum::CREATING)->get() as $order) {
                 CalculateOrderDiscounts::dispatch($order);
             }
         }
+    }
+
+    protected function crossesGoldRewardWindow(Customer $customer, ?Carbon $previousDate, ?Carbon $newDate): bool
+    {
+        if (!$customer->wasChanged('last_invoiced_at')) {
+            return false;
+        }
+
+        $windowStart = now()->subDays(Arr::get($customer->shop->offers_data, 'gr.interval', 30))->startOfDay();
+
+        $wasInsideWindow = $previousDate && $previousDate->gte($windowStart);
+        $isInsideWindow  = $newDate && $newDate->gte($windowStart);
+
+        return $wasInsideWindow !== $isInsideWindow;
     }
 
     public function getCommandSignature(): string

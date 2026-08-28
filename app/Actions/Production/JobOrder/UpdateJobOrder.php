@@ -10,11 +10,13 @@ namespace App\Actions\Production\JobOrder;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\CRM\WebUser;
 use App\Models\Production\JobOrder;
 use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
@@ -41,27 +43,39 @@ class UpdateJobOrder extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("productions-view.{$this->organisation->id}");
+        return $request->user()->authTo([
+            'org-supervisor.'.$this->organisation->id,
+            'productions-view.'.$this->organisation->id,
+            "productions_operations.{$this->jobOrder->production_id}.orchestrate",
+        ]);
     }
 
     public function rules(): array
     {
-        $rules = [];
+        $rules = [
+            'customer_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'reference'      => ['sometimes', 'nullable', 'string', 'max:64'],
+            'date'           => ['sometimes', 'nullable', 'date'],
+        ];
 
         if (!request()->user() instanceof WebUser) {
-            $rules = [
-                'public_notes'  => ['sometimes','nullable','string','max:4000'],
-                'internal_notes' => ['sometimes','nullable','string','max:4000'],
-            ];
+            $rules['public_notes']   = ['sometimes', 'nullable', 'string', 'max:4000'];
+            $rules['internal_notes'] = ['sometimes', 'nullable', 'string', 'max:4000'];
         }
 
-        return [
-            'customer_notes' => ['sometimes','nullable','string','max:4000'],
-            ...$rules
-        ];
+        if ($this->asAction) {
+            $rules['state']           = ['sometimes', Rule::enum(JobOrderStateEnum::class)];
+            $rules['in_process_at']   = ['sometimes', 'nullable', 'date'];
+            $rules['submitted_at']    = ['sometimes', 'nullable', 'date'];
+            $rules['confirmed_at']    = ['sometimes', 'nullable', 'date'];
+            $rules['received_at']     = ['sometimes', 'nullable', 'date'];
+            $rules['not_received_at'] = ['sometimes', 'nullable', 'date'];
+        }
+
+        return $rules;
     }
 
-    public function asController(Organisation $organisation, JobOrder $jobOrder, ActionRequest $request): JobOrder
+    public function asController(JobOrder $jobOrder, ActionRequest $request): JobOrder
     {
         $this->jobOrder = $jobOrder;
         $this->initialisation($jobOrder->organisation, $request);

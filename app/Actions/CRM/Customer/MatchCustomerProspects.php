@@ -9,6 +9,8 @@
 namespace App\Actions\CRM\Customer;
 
 use App\Actions\CRM\Prospect\UpdateProspect;
+use App\Actions\CRM\TrafficSource\MergeTrafficSourceTouchHistories;
+use App\Actions\CRM\TrafficSource\RecalculateTrafficSourceAttribution;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\CRM\Prospect\ProspectFailStatusEnum;
@@ -48,6 +50,9 @@ class MatchCustomerProspects extends OrgAction
             }
 
 
+            /* strict: false is load-bearing: customer_id is only an accepted field on the non-strict
+               rules, so the strict default silently discarded the link while still marking the
+               prospect registered. */
             UpdateProspect::make()->action(
                 $prospect,
                 [
@@ -57,8 +62,30 @@ class MatchCustomerProspects extends OrgAction
                     'fail_status'   => ProspectFailStatusEnum::NA,
                     'registered_at' => $customer->created_at,
                     'invoiced_at'   => $fistInvoice?->created_at,
-                ]
+                ],
+                strict: false
             );
+
+            /* The prospect's touches live only on the prospect row: a mailshot click is recorded
+               server-side and never reaches the browser cookie the registration captured. Without
+               merging them into the customer's history here, the mailshot that produced this
+               registration would get no credit for it. */
+            if (filled($prospect->traffic_sources)) {
+                /* Runs synchronously inside the registration request; attribution bookkeeping must
+                   never be the reason a registration fails. */
+                try {
+                    $customer->update([
+                        'traffic_sources' => MergeTrafficSourceTouchHistories::run(
+                            $prospect->traffic_sources,
+                            $customer->traffic_sources
+                        ),
+                    ]);
+
+                    RecalculateTrafficSourceAttribution::run($customer->fresh());
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
         }
 
 

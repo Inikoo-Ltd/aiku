@@ -8,7 +8,6 @@
 
 namespace App\Actions\SysAdmin\Group;
 
-use App\Actions\Audits\DispatchSimpleAudit;
 use App\Actions\OrgAction;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Traits\WithActionUpdate;
@@ -28,8 +27,6 @@ class UpdateGroupSettings extends OrgAction
 
     public function handle(Group $group, array $modelData): Group
     {
-        $settingAudits = $this->customAudit($group, $modelData);
-
         if (Arr::has($modelData, 'logo')) {
             /** @var UploadedFile $image */
             $image = Arr::get($modelData, 'logo');
@@ -47,115 +44,81 @@ class UpdateGroupSettings extends OrgAction
         }
         Cache::forget('bound-group-'.$group->id);
 
-        $groupSettings = $group->settings;
         if (Arr::has($modelData, 'client_id')) {
-            data_set($groupSettings, 'beefree.client_id', Arr::get($modelData, 'client_id'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'client_id');
+            data_set($modelData, 'settings.beefree.client_id', Arr::pull($modelData, 'client_id'));
         }
         if (Arr::has($modelData, 'client_secret')) {
-            data_set($groupSettings, 'beefree.client_secret', Arr::get($modelData, 'client_secret'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'client_secret');
+            data_set($modelData, 'settings.beefree.client_secret', Arr::pull($modelData, 'client_secret'));
         }
         if (Arr::has($modelData, 'page_builder_client_id')) {
-            data_set($groupSettings, 'beefree.page_builder.client_id', Arr::get($modelData, 'page_builder_client_id'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'page_builder_client_id');
+            data_set($modelData, 'settings.beefree.page_builder.client_id', Arr::pull($modelData, 'page_builder_client_id'));
         }
         if (Arr::has($modelData, 'page_builder_client_secret')) {
-            data_set($groupSettings, 'beefree.page_builder.client_secret', Arr::get($modelData, 'page_builder_client_secret'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'page_builder_client_secret');
+            data_set($modelData, 'settings.beefree.page_builder.client_secret', Arr::pull($modelData, 'page_builder_client_secret'));
+        }
+        if (Arr::has($modelData, 'staff_chat_quick_replies')) {
+            $quickReplies = collect(explode("\n", (string) Arr::pull($modelData, 'staff_chat_quick_replies')))
+                ->map(fn ($line) => trim($line))
+                ->filter()
+                ->take(12)
+                ->values()
+                ->all();
+            data_set($modelData, 'settings.staff_chat.quick_replies', $quickReplies);
         }
         if (Arr::has($modelData, 'grant_type')) {
-            data_set($groupSettings, 'beefree.grant_type', Arr::get($modelData, 'grant_type'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'grant_type');
+            data_set($modelData, 'settings.beefree.grant_type', Arr::pull($modelData, 'grant_type'));
         }
         if (Arr::has($modelData, 'printnode_api_key')) {
-            data_set($groupSettings, 'printnode.apikey', Arr::get($modelData, 'printnode_api_key'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'printnode_api_key');
+            data_set($modelData, 'settings.printnode.apikey', Arr::pull($modelData, 'printnode_api_key'));
         }
         if (Arr::has($modelData, 'print_by_printnode')) {
-            data_set($groupSettings, 'printnode.print_by_printnode', Arr::get($modelData, 'print_by_printnode'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'print_by_printnode');
+            data_set($modelData, 'settings.printnode.print_by_printnode', Arr::pull($modelData, 'print_by_printnode'));
+        }
+        if (Arr::has($modelData, 'timezones')) {
+            data_set($modelData, 'settings.timezones', array_values(Arr::pull($modelData, 'timezones') ?? []));
+        }
+        if (Arr::has($modelData, 'official_stock_valuation_method')) {
+            data_set($modelData, 'settings.inventory.official_valuation_method', Arr::pull($modelData, 'official_stock_valuation_method'));
         }
         if (Arr::has($modelData, 'jira_base_url')) {
-            data_set($groupSettings, 'jira.base_url', Arr::get($modelData, 'jira_base_url'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'jira_base_url');
+            data_set($modelData, 'settings.jira.base_url', Arr::pull($modelData, 'jira_base_url'));
         }
         if (Arr::has($modelData, 'jira_email')) {
-            data_set($groupSettings, 'jira.email', Arr::get($modelData, 'jira_email'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'jira_email');
+            data_set($modelData, 'settings.jira.email', Arr::pull($modelData, 'jira_email'));
         }
         if (Arr::has($modelData, 'jira_api_token')) {
-            data_set($groupSettings, 'jira.api_token', Arr::get($modelData, 'jira_api_token'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'jira_api_token');
+            data_set($modelData, 'settings.jira.api_token', Arr::pull($modelData, 'jira_api_token'));
         }
 
         if (Arr::exists($modelData, 'access_id')) {
-            data_set($groupSettings, 'email.provider.failover.access_id', Arr::get($modelData, 'access_id'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'access_id');
+            data_set($modelData, 'settings.email.provider.failover.access_id', Arr::pull($modelData, 'access_id'));
         }
         if (Arr::exists($modelData, 'access_key')) {
-            data_set($groupSettings, 'email.provider.failover.access_key', Arr::get($modelData, 'access_key'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'access_key');
+            data_set($modelData, 'settings.email.provider.failover.access_key', Arr::pull($modelData, 'access_key'));
         }
         if (Arr::exists($modelData, 'region')) {
-            data_set($groupSettings, 'email.provider.failover.region', Arr::get($modelData, 'region'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'region');
+            data_set($modelData, 'settings.email.provider.failover.region', Arr::pull($modelData, 'region'));
         }
         if (Arr::exists($modelData, 'customer_notification_access_id')) {
-            data_set($groupSettings, 'email.provider.customer_notification.access_id', Arr::get($modelData, 'customer_notification_access_id'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'customer_notification_access_id');
+            data_set($modelData, 'settings.email.provider.customer_notification.access_id', Arr::pull($modelData, 'customer_notification_access_id'));
         }
         if (Arr::exists($modelData, 'customer_notification_access_key')) {
-            data_set($groupSettings, 'email.provider.customer_notification.access_key', Arr::get($modelData, 'customer_notification_access_key'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'customer_notification_access_key');
+            data_set($modelData, 'settings.email.provider.customer_notification.access_key', Arr::pull($modelData, 'customer_notification_access_key'));
         }
         if (Arr::exists($modelData, 'customer_notification_region')) {
-            data_set($groupSettings, 'email.provider.customer_notification.region', Arr::get($modelData, 'customer_notification_region'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'customer_notification_region');
+            data_set($modelData, 'settings.email.provider.customer_notification.region', Arr::pull($modelData, 'customer_notification_region'));
         }
         if (Arr::exists($modelData, 'user_notification_access_id')) {
-            data_set($groupSettings, 'email.provider.user_notification.access_id', Arr::get($modelData, 'user_notification_access_id'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'user_notification_access_id');
+            data_set($modelData, 'settings.email.provider.user_notification.access_id', Arr::pull($modelData, 'user_notification_access_id'));
         }
         if (Arr::exists($modelData, 'user_notification_access_key')) {
-            data_set($groupSettings, 'email.provider.user_notification.access_key', Arr::get($modelData, 'user_notification_access_key'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'user_notification_access_key');
+            data_set($modelData, 'settings.email.provider.user_notification.access_key', Arr::pull($modelData, 'user_notification_access_key'));
         }
         if (Arr::exists($modelData, 'user_notification_region')) {
-            data_set($groupSettings, 'email.provider.user_notification.region', Arr::get($modelData, 'user_notification_region'));
-            $group->update(['settings' => $groupSettings]);
-            data_forget($modelData, 'user_notification_region');
+            data_set($modelData, 'settings.email.provider.user_notification.region', Arr::pull($modelData, 'user_notification_region'));
         }
 
-        foreach ($settingAudits as $settingAudit) {
-            DispatchSimpleAudit::run(
-                auditableModel: $group,
-                logKey: $settingAudit['logKey'],
-                oldValue: $settingAudit['oldValue'],
-                newValue: $settingAudit['newValue'],
-                eventName: 'updated',
-            );
-        }
-
-        return $this->update($group, $modelData);
+        return $this->update($group, $modelData, ['settings']);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -182,9 +145,16 @@ class UpdateGroupSettings extends OrgAction
             'page_builder_client_id'            => ['sometimes', 'string', 'nullable'],
             'page_builder_client_secret'        => ['sometimes', 'string', 'nullable'],
             'grant_type'                        => ['sometimes', 'string', 'nullable'],
+            'staff_chat_quick_replies'          => ['sometimes', 'nullable', 'string', 'max:1000'],
             'extra_languages'                   => ['sometimes', 'array', 'nullable'],
             'printnode_api_key' => ['sometimes', 'string', 'nullable'],
             'print_by_printnode' => ['sometimes', 'boolean', 'nullable'],
+            'timezones'          => ['sometimes', 'array'],
+            'timezones.*'        => ['string', 'timezone'],
+            'official_stock_valuation_method' => ['sometimes', Rule::in([
+                \App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum::FIFO->value,
+                \App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum::WAC->value,
+            ])],
             'jira_base_url'      => ['sometimes', 'nullable', 'url'],
             'jira_email'         => ['sometimes', 'nullable', 'email'],
             'jira_api_token'     => ['sometimes', 'nullable', 'string'],
@@ -221,41 +191,5 @@ class UpdateGroupSettings extends OrgAction
     public function jsonResponse(Group $group): GroupResource
     {
         return new GroupResource($group);
-    }
-
-    private function customAudit(Group $group, array $modelData): array
-    {
-        $settingAudits = [];
-
-        foreach ([
-            'access_id'                        => 'email.provider.failover.access_id',
-            'access_key'                       => 'email.provider.failover.access_key',
-            'region'                           => 'email.provider.failover.region',
-            'customer_notification_access_id'  => 'email.provider.customer_notification.access_id',
-            'customer_notification_access_key' => 'email.provider.customer_notification.access_key',
-            'customer_notification_region'     => 'email.provider.customer_notification.region',
-            'user_notification_access_id'      => 'email.provider.user_notification.access_id',
-            'user_notification_access_key'     => 'email.provider.user_notification.access_key',
-            'user_notification_region'         => 'email.provider.user_notification.region',
-        ] as $field => $settingsPath) {
-            if (!Arr::exists($modelData, $field)) {
-                continue;
-            }
-
-            $oldValue = Arr::get($group->settings, $settingsPath);
-            $newValue = Arr::get($modelData, $field);
-
-            if ($oldValue === $newValue) {
-                continue;
-            }
-
-            $settingAudits[] = [
-                'logKey'   => str_replace('.', '_', $settingsPath),
-                'oldValue' => $oldValue,
-                'newValue' => $newValue,
-            ];
-        }
-
-        return $settingAudits;
     }
 }

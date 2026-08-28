@@ -105,6 +105,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_products
  * @property int $number_stock_deliveries_state_booking_in
  * @property int $number_stock_deliveries_state_booked_in
+ * @property numeric $stock_commercial_value
+ * @property int $number_org_stock_movements_type_production
  * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats newQuery()

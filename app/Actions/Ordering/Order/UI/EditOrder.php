@@ -103,7 +103,19 @@ class EditOrder extends OrgAction
                                     'value' => $order->sales_channel_id,
                                 ],
                             ],
-                        ]
+                        ],
+                        ...($order->billingAddress?->country_code == 'ES' && !$order->invoices()->exists() ? [[
+                            'label'  => 'Recargo de equivalencia',
+                            'title'  => 'Recargo de equivalencia',
+                            'fields' => [
+                                'is_re' => [
+                                    'type'        => 'toggle',
+                                    'label'       => 'Recargo de equivalencia',
+                                    'information' => __("Changes the tax category of this order only, not the customer's"),
+                                    'value'       => $order->is_re
+                                ],
+                            ],
+                        ]] : [])
                     ],
                     'args' => [
                         'updateRoute' => [

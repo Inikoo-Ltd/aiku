@@ -30,11 +30,14 @@ import ConfirmDialog from 'primevue/confirmdialog';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Dialog from 'primevue/dialog';
 import ImageUploadWithCroppedFunction from '@/Components/ImageUploadWithCroppedFunction.vue'
+import CreateTemplateDialog from '@/Components/Workshop/CreateTemplateDialog.vue'
+import ApplyTemplateDialog from '@/Components/Workshop/ApplyTemplateDialog.vue'
 
 import { Root, Daum } from "@/types/webBlockTypes";
 import { Root as RootWebpage } from "@/types/webpageTypes";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { routeType } from "@/types/route";
+import { WebLayoutTemplate, WebLayoutTemplateList } from "@/types/WebLayoutTemplate";
 
 import {
   faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide,
@@ -43,16 +46,19 @@ import {
   faEye,
   faUndo,
   faRedo,
-  faChevronRight
+  faChevronRight,
+  faSync,
+  faLayerPlus
 } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronLeft } from "@far";
+import { faLayerGroup } from "@fas";
 
 library.add(
   faBrowser, faDraftingCompass, faRectangleWide, faTimes, faStars,
   faBars, faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower,
-  faSkull, faEye,
+  faSkull, faEye, faExpandWide, faCompressWide,
 );
 
 const props = defineProps<{
@@ -91,7 +97,8 @@ const addBlockParentIndex = ref({ parentIndex: data.value.layout.web_blocks.leng
 const isLoadingDeleteBlock = ref<number | null>(null);
 const comment = ref("");
 const isLoadingPublish = ref(false);
-const fullScreen = ref(false);
+const isSidebarCollapsed = ref(false);
+const isFullScreen = ref(false);
 const filterBlock = ref('all');
 const history = ref<any[]>([]);
 const future = ref<any[]>([]);
@@ -101,9 +108,29 @@ const imageUploadSetting = ref(null)
 const activeChildBlockArray = ref<number | null>(null);
 const activeChildBlockArrayBlock = ref<number | null>(null);
 const sideKey = ref(1);
+const isCreateTemplateDialogVisible = ref(false);
+const isCreatingTemplate = ref(false);
+const TEMPLATES_INDEX_ROUTE = "grp.json.template_layouts.index";
+const TEMPLATE_DETAIL_ROUTE = "grp.json.template_layouts.detail";
+const TEMPLATE_APPLY_ROUTE = "grp.models.webpage.apply_template";
+const TEMPLATE_DELETE_ROUTE = "grp.models.web_layout_template.delete";
+const TEMPLATES_PER_PAGE = 10;
+const templates = ref<WebLayoutTemplateList>({ data: [] });
+const templatesSearch = ref("");
+const isLoadingTemplates = ref(false);
+const templatesErrorMessage = ref<string | null>(null);
+const applyingTemplateId = ref<number | null>(null);
+const deletingTemplateId = ref<number | null>(null);
+const isApplyTemplateDialogVisible = ref(false);
+const isApplyingTemplate = ref(false);
+const selectedTemplate = ref<WebLayoutTemplate | null>(null);
+const templateMerge = ref<{ current: any[], incoming: any[] }>({ current: [], incoming: [] });
 
 const canUndo = computed(() => history.value.length > 1);
 const canRedo = computed(() => future.value.length > 0);
+
+const WEBPAGE_TYPES_WITHOUT_TEMPLATE = ['storefront', 'blog'];
+const canUseTemplate = computed(() => !WEBPAGE_TYPES_WITHOUT_TEMPLATE.includes(props.webpage.type));
 
 console.log('layout',layout)
 
@@ -192,7 +219,7 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
   );
 };
 
-const debounceSaveWorkshop = (block, reload = false) => {
+const debounceSaveWorkshop = (block, reload = false, reloadIframe = false) => {
   // Clear any pending debounce timers for this block
   if (debounceTimers.value[block.id]) {
     clearTimeout(debounceTimers.value[block.id]);
@@ -245,7 +272,9 @@ const debounceSaveWorkshop = (block, reload = false) => {
         })
         /* router.reload({ only: ["webpage"] }) */
       }
-      /* sendToIframe({ key: "reload", value: {} }); */
+      if (reloadIframe) {
+        sendToIframe({ key: "reload", value: {} });
+      }
     } catch (error) {
       if (axios.isCancel?.(error) || error?.code === "ERR_CANCELED") {
         console.log(error)
@@ -304,15 +333,15 @@ const debouncedSaveSiteSettings = debounce(block => {
 
 const onSaveSiteSettings = block => debouncedSaveSiteSettings(block);
 
-const onSaveWorkshop = (block, sendChangeValue = true, reload = false) => {
+const onSaveWorkshop = (block, isFromSideEditor = true, reload = false) => {
   if (cancelTokens.value[block.id]) cancelTokens.value[block.id]();
-  if (sendChangeValue) {
+  if (isFromSideEditor) {
     sendToIframe({
       key: 'setWebpage',
       value: JSON.parse(JSON.stringify(data.value))
     });
   }
-  debounceSaveWorkshop(block, reload);
+  debounceSaveWorkshop(block, reload, isFromSideEditor);
 };
 
 const onSaveWorkshopFromId = (blockId, from) => {
@@ -325,7 +354,7 @@ const onSaveWorkshopFromId = (blockId, from) => {
     key: 'setWebpage',
     value: JSON.parse(JSON.stringify(data.value))
   });
-  if (block) debounceSaveWorkshop(block);
+  if (block) debounceSaveWorkshop(block, false, true);
 };
 
 provide('onSaveWorkshopFromId', onSaveWorkshopFromId);
@@ -469,28 +498,217 @@ const openFullScreenPreview = () => {
   window.open(url.toString(), '_blank');
 };
 
+const enterFullScreen = async () => {
+  isFullScreen.value = true;
+  layout.leftSidebar.show = false;
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    }
+  } catch (error) {
+    console.warn('Native fullscreen unavailable', error);
+  }
+};
+
+const exitFullScreen = async () => {
+  isFullScreen.value = false;
+  try {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+    }
+  } catch (error) {
+    console.warn('Unable to exit native fullscreen', error);
+  }
+};
+
+const toggleFullScreen = () => isFullScreen.value ? exitFullScreen() : enterFullScreen();
+
 const setHideBlock = (block: Daum) => {
   block.show = !block.show;
   onSaveWorkshop(block);
 };
 
-const SyncAurora = () => {
-  router.patch(
-    route(props.webpage.route_webpage_edit.name, props.webpage.route_webpage_edit.parameters),
-    { allow_fetch: props.webpage.allow_fetch },
-    {
-      onStart: () => isSavingBlock.value = true,
-      onFinish: () => isSavingBlock.value = false,
-      onSuccess: () => sendToIframe({ key: 'reload', value: {} }),
-      onError: error => notify({
-        title: trans("Something went wrong"),
-        text: error.message,
-        type: "error"
-      }),
-      preserveScroll: true
-    }
-  );
+const onCreateTemplate = (payload: {
+  name: string,
+  scope: 'shown' | 'all',
+  blocks: Array<{
+    id: number,
+    type: string,
+    position: number,
+    show: boolean,
+    visibility: any,
+    web_block_id: number | undefined,
+    web_block_type_id: number | undefined,
+    fieldValue: any
+  }>
+}) => {
+  isCreatingTemplate.value = true;
+
+  axios.post(
+    route('grp.models.webpage.store_as_template', { webpage: data.value.id }),
+    payload
+  ).then(() => {
+    isCreateTemplateDialogVisible.value = false;
+    notify({
+      title: trans("Success"),
+      text: trans("Template has been created"),
+      type: "success"
+    });
+    fetchTemplates();
+  }).catch(error => {
+    notify({
+      title: trans("Something went wrong"),
+      text: error?.response?.data?.message || error.message,
+      type: "error"
+    });
+  }).finally(() => {
+    isCreatingTemplate.value = false;
+  });
 };
+
+const buildTemplatesUrl = (url?: string) => {
+  const target = new URL(
+    url || route(TEMPLATES_INDEX_ROUTE, { webpage: data.value.id }),
+    window.location.origin
+  );
+
+  target.searchParams.set("per_page", String(TEMPLATES_PER_PAGE));
+
+  if (templatesSearch.value) {
+    target.searchParams.set("filter[global]", templatesSearch.value);
+  } else {
+    target.searchParams.delete("filter[global]");
+  }
+
+  return target.toString();
+};
+
+const fetchTemplates = async (url?: string) => {
+  isLoadingTemplates.value = true;
+  templatesErrorMessage.value = null;
+
+  try {
+    const response = await axios.get(buildTemplatesUrl(url));
+
+    templates.value = {
+      data: response.data?.data ?? [],
+      meta: response.data?.meta,
+      links: response.data?.links,
+    };
+  } catch (error: any) {
+    templatesErrorMessage.value = error?.response?.data?.message || error.message;
+  } finally {
+    isLoadingTemplates.value = false;
+  }
+};
+
+const onSearchTemplates = (value: string) => {
+  templatesSearch.value = value;
+  fetchTemplates();
+};
+
+const applyTemplate = async (template: WebLayoutTemplate) => {
+  applyingTemplateId.value = template.id;
+
+  try {
+    const response = await axios.get(
+      route(TEMPLATE_DETAIL_ROUTE, { webpage: data.value.id, layoutTemplate: template.id })
+    );
+
+    selectedTemplate.value = template;
+    templateMerge.value = {
+      current: response.data?.current ?? [],
+      incoming: response.data?.incoming ?? [],
+    };
+    isApplyTemplateDialogVisible.value = true;
+  } catch (error: any) {
+    notify({
+      title: trans("Something went wrong"),
+      text: error?.response?.data?.message || error.message,
+      type: "error"
+    });
+  } finally {
+    applyingTemplateId.value = null;
+  }
+};
+
+const deleteTemplate = async (template: WebLayoutTemplate) => {
+  deletingTemplateId.value = template.id;
+
+  try {
+    await axios.delete(route(TEMPLATE_DELETE_ROUTE, { template: template.id }));
+
+    notify({
+      title: trans("Success"),
+      text: trans("Template has been deleted"),
+      type: "success"
+    });
+
+    await fetchTemplates();
+  } catch (error: any) {
+    notify({
+      title: trans("Something went wrong"),
+      text: error?.response?.data?.message || error.message,
+      type: "error"
+    });
+  } finally {
+    deletingTemplateId.value = null;
+  }
+};
+
+const onApplyTemplate = (payload: {
+  template_id: number | null,
+  blocks: Array<{
+    source: 'current' | 'incoming',
+    id: number,
+    ulid : ulid,
+    type: string,
+    show: boolean,
+    visibility: any,
+    position: number
+  }>
+}) => {
+  isApplyingTemplate.value = true;
+
+  console.log(payload)
+  axios.post(
+    route(TEMPLATE_APPLY_ROUTE, { webpage: data.value.id }),
+    payload
+  ).then(response => {
+    isApplyTemplateDialogVisible.value = false;
+    data.value = { ...data.value, layout: response.data };
+
+    sendToIframe({
+      key: "setWebpage",
+      value: JSON.parse(JSON.stringify(data.value)),
+    });
+
+    saveState();
+    router.reload({
+      only: ['webpage'],
+      onSuccess: (newValue) => {
+        data.value = newValue.props.webpage;
+        sideKey.value++;
+        sendToIframe({ key: 'reload', value: {} });
+      },
+    });
+
+    notify({
+      title: trans("Success"),
+      text: trans("Template has been applied"),
+      type: "success"
+    });
+  }).catch(error => {
+    notify({
+      title: trans("Something went wrong"),
+      text: error?.response?.data?.message || error.message,
+      type: "error"
+    });
+  }).finally(() => {
+    isApplyingTemplate.value = false;
+  });
+};
+
 
 
 const saveState = () => {
@@ -567,12 +785,7 @@ const closeUploadImage = (visible) => {
 watch(openedBlockSideEditor, (newValue) => sendToIframe({ key: 'activeBlock', value: newValue }));
 watch(currentView, (newValue) => iframeClass.value = setIframeView(newValue));
 watch(filterBlock, (newValue) => sendToIframe({ key: 'isPreviewLoggedIn', value: newValue }));
-/* watch(()=>props.webpage, (newValue) => {
-   console.log('msssssssssssasukk')
-   data.value = newValue
-  sideKey.value++
-},{ deep: true }); */
-// When component is unmounted
+
 onUnmounted(() => {
   clearHistory();
 });
@@ -587,6 +800,7 @@ onMounted(() => {
   layout.leftSidebar.show = false
   const handleMessage = (event: MessageEvent) => {
     if (event.origin !== window.location.origin) return;
+    if (isCreateTemplateDialogVisible.value) return;
     const { key, value } = event.data;
     switch (key) {
       case 'autosave':
@@ -624,11 +838,30 @@ onMounted(() => {
     }
   };
 
-  
+  const handleFullScreenChange = () => {
+    if (!document.fullscreenElement) isFullScreen.value = false;
+  };
+
+  const handleFullScreenShortcut = (event: KeyboardEvent) => {
+    if (event.key === 'Escape' && isFullScreen.value && !document.querySelector('.p-dialog-mask')) {
+      exitFullScreen();
+      return;
+    }
+    if (event.key === 'F11') {
+      event.preventDefault();
+      toggleFullScreen();
+    }
+  };
+
   window.addEventListener("message", handleMessage);
+  document.addEventListener("fullscreenchange", handleFullScreenChange);
+  window.addEventListener("keydown", handleFullScreenShortcut);
 
   onUnmounted(() => {
     window.removeEventListener("message", handleMessage);
+    document.removeEventListener("fullscreenchange", handleFullScreenChange);
+    window.removeEventListener("keydown", handleFullScreenShortcut);
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   });
 });
 
@@ -646,7 +879,7 @@ console.log('props_workshop',props)
 
 <template>
   <Head :title="capitalize(title)" />
-  <PageHeading :data="pageHead" ignoreIsolate>
+  <PageHeading v-show="!isFullScreen" :data="pageHead" ignoreIsolate>
     <template #button-publish="{ action }">
       <Publish 
         :isLoading="isLoadingPublish" 
@@ -673,87 +906,179 @@ console.log('props_workshop',props)
     </template>
   </ConfirmDialog>
 
-  <div class="flex">
-    <div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1 relative z-[20]">
+  <div class="flex bg-slate-100" :class="isFullScreen ? 'fixed inset-0 z-[45]' : ''">
+    <div class="hidden lg:flex lg:flex-col relative z-[20] bg-white border-r border-slate-200 shadow-sm"
+      :class="isFullScreen ? 'h-screen' : 'h-[calc(100vh-16vh)]'">
       <!-- Sidebar Content -->
-      <div v-show="!fullScreen">
-        <WebpageSideEditor 
-          ref="_WebpageSideEditor" 
-          v-model="isModalBlockList" 
+      <div v-show="!isSidebarCollapsed" class="flex-1 min-h-0 flex flex-col">
+        <WebpageSideEditor
+          ref="_WebpageSideEditor"
+          v-model="isModalBlockList"
           :webpage="data"
-          :webBlockTypes="webBlockTypes" 
+          :webBlockTypes="webBlockTypes"
           v-model:selectedTab="selectedTab"
           :editable="editable"
-          @update="onSaveWorkshop" 
-          @delete="sendDeleteBlock" 
+          :canUseTemplate="canUseTemplate"
+          :templates="templates"
+          :isLoadingTemplates="isLoadingTemplates"
+          :templatesErrorMessage="templatesErrorMessage"
+          :applyingTemplateId="applyingTemplateId"
+          :deletingTemplateId="deletingTemplateId"
+          @fetchTemplates="fetchTemplates()"
+          @searchTemplates="onSearchTemplates"
+          @navigateTemplates="fetchTemplates"
+          @useTemplate="applyTemplate"
+          @deleteTemplate="deleteTemplate"
+          @update="onSaveWorkshop"
+          @delete="sendDeleteBlock"
           @add="addNewBlock"
-          @order="sendOrderBlock" 
-          @setVisible="setHideBlock" 
+          @order="sendOrderBlock"
+          @setVisible="setHideBlock"
           @onSaveSiteSettings="onSaveSiteSettings"
           @onDuplicateBlock="duplicateBlock"
           @update:selected-tab="(e) => selectedTab = e" />
       </div>
 
+      <!-- Collapsed rail: keeps the panel reachable when hidden -->
+      <button type="button" v-show="isSidebarCollapsed" @click="isSidebarCollapsed = false"
+        v-tooltip.right="trans('Show editor panel')"
+        class="flex-1 w-8 flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors">
+        <FontAwesomeIcon :icon="faLayerGroup" fixed-width />
+      </button>
+
       <!-- Toggle Button -->
-      <button @click="fullScreen = !fullScreen" class="absolute top-1/2 -translate-y-1/2 right-[-18px]
-                bg-white text-gray-600 hover:text-gray-900 
-                rounded-full shadow-lg hover:shadow-xl 
-                p-2.5 transition-all duration-300 ease-in-out 
-                border border-gray-200 hover:border-gray-300 " title="Toggle Sidebar">
-        <FontAwesomeIcon :icon="!fullScreen ? faChevronLeft : faChevronRight" class="text-lg" />
+      <button type="button" @click="isSidebarCollapsed = !isSidebarCollapsed"
+        v-tooltip.right="isSidebarCollapsed ? trans('Show editor panel') : trans('Hide editor panel')"
+        class="absolute top-1/2 -translate-y-1/2 right-[-12px] z-10 h-7 w-6 flex items-center justify-center
+               bg-white text-slate-500 hover:text-slate-900 rounded-r-md
+               shadow-md hover:shadow-lg transition-all duration-200 ease-in-out
+               border border-l-0 border-slate-200 hover:border-slate-300">
+        <FontAwesomeIcon :icon="!isSidebarCollapsed ? faChevronLeft : faChevronRight" class="text-xs" />
       </button>
     </div>
 
     <!-- Preview Section -->
-    <div class="h-[calc(100vh-16vh)] w-full flex flex-col bg-gray-200 overflow-x-auto">
-      <div class="flex justify-between items-center px-2 py-1">
-        <div class="flex items-center gap-2 text-gray-500">
-          <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
-          <div v-tooltip="trans('Open preview in new tab')" @click="openFullScreenPreview"
-            class="cursor-pointer hover:text-amber-600">
-            <FontAwesomeIcon :icon="faEye" fixed-width />
+    <div class="w-full flex flex-col bg-slate-100 overflow-x-auto"
+      :class="isFullScreen ? 'h-screen' : 'h-[calc(100vh-16vh)]'">
+      <div class="flex shrink-0 flex-wrap justify-between items-center gap-1.5 px-2 py-1 bg-white border-b border-slate-200">
+        <!-- Group: view + history -->
+        <div class="flex items-center gap-0.5 text-xs">
+          <!-- Page title: the PageHeading is hidden in full screen -->
+          <span v-if="isFullScreen"
+            class="max-w-[220px] truncate mr-1.5 text-xs font-semibold text-slate-700">
+            {{ capitalize(title) }}
+          </span>
+
+          <div class="flex items-center rounded border border-slate-200 overflow-hidden"
+            v-tooltip.bottom="trans('Preview device size')">
+            <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
           </div>
+
+          <span class="mx-0.5 h-4 w-px bg-slate-200" aria-hidden="true" />
+
           <!-- Undo -->
-          <div class="py-1 px-2" v-tooltip="'undo'"
-            :class="canUndo ? 'cursor-pointer hover:text-amber-600' : 'opacity-40 cursor-not-allowed'"
-            @click="() => canUndo && undo()">
+          <button type="button" v-tooltip.bottom="trans('Undo')" :disabled="!canUndo" @click="undo"
+            class="h-7 w-7 flex items-center justify-center rounded text-slate-500 transition-colors
+                   enabled:hover:bg-slate-100 enabled:hover:text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed">
             <FontAwesomeIcon :icon="faUndo" fixed-width aria-hidden="true" />
-          </div>
+          </button>
 
           <!-- Redo -->
-          <div class="py-1 px-2" v-tooltip="'redo'"
-            :class="canRedo ? 'cursor-pointer hover:text-amber-600' : 'opacity-40 cursor-not-allowed'"
-            @click="() => canRedo && redo()">
+          <button type="button" v-tooltip.bottom="trans('Redo')" :disabled="!canRedo" @click="redo"
+            class="h-7 w-7 flex items-center justify-center rounded text-slate-500 transition-colors
+                   enabled:hover:bg-slate-100 enabled:hover:text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed">
             <FontAwesomeIcon :icon="faRedo" fixed-width aria-hidden="true" />
-          </div>
+          </button>
         </div>
 
+        <!-- Group: collaboration warning -->
         <div v-if="compUsersEditThisPage?.length > 1"
-          class="flex items-center gap-2 px-2 bg-yellow-300 text-yellow-700 rounded">
+          v-tooltip.bottom="compUsersEditThisPage.join(', ')"
+          class="flex items-center gap-1.5 px-2 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 text-[11px] font-medium">
           <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
           <span>
             {{ compUsersEditThisPage.length }} {{ trans("users edit this page.") }}
           </span>
-          <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
         </div>
 
-        <div class="flex items-center gap-2 text-sm text-gray-700">
-          <label v-if="props.webpage.allow_fetch" for="sync-toggle">Connected with aurora</label>
-          <label v-else for="sync-toggle">Disconnected from aurora</label>
-          <ToggleSwitch id="sync-toggle" v-model="props.webpage.allow_fetch"
-            @update:modelValue="(e) => SyncAurora(e)" />
+     
+        <div class="flex items-center gap-0.5 text-xs">
+          <!-- Saving indicator: the PageHeading one is hidden in full screen -->
+          <span v-if="isFullScreen && isSavingBlock"
+            class="flex items-center gap-1.5 mr-1 text-xs text-slate-400">
+            <LoadingIcon />
+            {{ trans('Saving..') }}
+          </span>
+
+          <!-- Create as template -->
+          <template v-if="canUseTemplate">
+            <button type="button" v-tooltip.bottom="trans('Pick the blocks to keep and save this page as a template')"
+              @click="isCreateTemplateDialogVisible = true"
+              class="h-7 flex items-center gap-1.5 px-2 rounded border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+              <FontAwesomeIcon :icon="faLayerPlus" fixed-width />
+              <span class="text-xs font-medium">{{ trans('Create as template') }}</span>
+            </button>
+
+            <span class="mx-0.5 h-4 w-px bg-slate-200" aria-hidden="true" />
+          </template>
+
+          <!-- Reload preview -->
+          <button type="button" v-tooltip.bottom="trans('Reload preview')"
+            @click="sendToIframe({ key: 'reload', value: {} })"
+            class="h-7 w-7 flex items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+            <FontAwesomeIcon :icon="faSync" fixed-width />
+          </button>
+
+          <!-- Open preview in new tab -->
+          <button type="button" v-tooltip.bottom="trans('Open preview in new tab')" @click="openFullScreenPreview"
+            class="h-7 w-7 flex items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+            <FontAwesomeIcon :icon="faEye" fixed-width />
+          </button>
+
+          <!-- Full screen: expands to a labelled exit button while active -->
+          <button type="button" @click="toggleFullScreen"
+            v-tooltip.bottom="isFullScreen ? '' : trans('Full screen (F11)')"
+            class="h-7 flex items-center gap-1.5 rounded transition-colors"
+            :class="isFullScreen
+              ? 'px-2 bg-slate-900 text-white hover:bg-slate-700'
+              : 'w-7 justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-900'">
+            <FontAwesomeIcon :icon="isFullScreen ? faCompressWide : faExpandWide" fixed-width />
+            <template v-if="isFullScreen">
+              <span class="text-xs font-medium">{{ trans('Exit full screen') }}</span>
+              <kbd class="px-1 py-px rounded bg-white/20 text-[10px] font-sans leading-none">Esc</kbd>
+            </template>
+          </button>
         </div>
       </div>
 
-      <div class="relative border-2 h-full w-full bg-white overflow-auto">
-        <div v-if="isIframeLoading" class="absolute inset-0 flex items-center justify-center bg-white">
-          <LoadingIcon class="w-24 h-24 text-6xl" />
+      <div class="relative flex-1 min-h-0 w-full overflow-auto">
+        <div v-if="isIframeLoading"
+          class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white">
+          <LoadingIcon class="w-16 h-16 text-5xl text-slate-400" />
+          <span class="text-sm text-slate-400">{{ trans("Loading preview…") }}</span>
         </div>
         <iframe ref="_iframe" :src="iframeSrc" :title="props.title"
-          :class="[iframeClass, isIframeLoading ? 'hidden' : '']" @load="isIframeLoading = false" allowfullscreen />
+          :class="[iframeClass, isIframeLoading ? 'invisible' : '', 'border-0 bg-white']"
+          @load="isIframeLoading = false" allowfullscreen />
       </div>
     </div>
   </div>
+
+  <CreateTemplateDialog
+    v-model:visible="isCreateTemplateDialogVisible"
+    :webpage="data"
+    :previewSrc="iframeSrc"
+    :isLoading="isCreatingTemplate"
+    @create="onCreateTemplate" />
+
+  <ApplyTemplateDialog
+    v-model:visible="isApplyTemplateDialogVisible"
+    :template="selectedTemplate"
+    :current="templateMerge.current"
+    :incoming="templateMerge.incoming"
+    :webBlocks="data.layout.web_blocks"
+    :isLoading="isApplyingTemplate"
+    @apply="onApplyTemplate" />
 
   <Dialog v-model:visible="dialogUploadImageVisible" modal header="Upload Image" :style="{ width: '80rem' }"
     @hide="() => closeUploadImage(false)">

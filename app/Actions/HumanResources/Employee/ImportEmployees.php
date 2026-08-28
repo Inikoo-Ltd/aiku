@@ -15,7 +15,6 @@ use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\Traits\WithImportModel;
 use App\Imports\HumanResources\Employee\EmployeeImport;
 use App\Models\Helpers\Upload;
-use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,7 +27,15 @@ class ImportEmployees extends OrgAction
 
     public function handle(Organisation $parent, $file): Upload
     {
-        $upload = StoreUpload::run($file, Employee::class);
+        $upload = StoreUpload::make()->fromFile(
+            $parent,
+            $file,
+            [
+                'model'       => 'Employee',
+                'parent_type' => $parent->getMorphClass(),
+                'parent_id'   => $parent->id,
+            ]
+        );
 
         if ($this->isSync) {
             ImportUpload::run(

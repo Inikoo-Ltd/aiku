@@ -44,6 +44,7 @@ class GetApiFulfilmentStoredItems extends RetinaApiAction
         }
         $query->where('item_type', class_basename(StoredItem::class));
         $query->leftJoin('stored_items', 'stored_items.id', 'portfolios.item_id');
+        $query->leftJoin('pallet_stored_items', 'pallet_stored_items.stored_item_id', 'stored_items.id');
 
         $query->select(
             'portfolios.id',
@@ -55,6 +56,7 @@ class GetApiFulfilmentStoredItems extends RetinaApiAction
             'stored_items.slug as stored_item_slug',
             'stored_items.name as stored_items_name',
             'stored_items.total_quantity',
+            'pallet_stored_items.id as pallet_stored_item_id'
         );
 
         return $query->withPaginator(null, queryName: 'per_page')

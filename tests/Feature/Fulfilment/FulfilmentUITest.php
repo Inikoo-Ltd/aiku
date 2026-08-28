@@ -684,6 +684,22 @@ test('UI show invoice (in Operation)', function () {
     });
 });
 
+test('UI show fulfilment invoice via org accounting route', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.accounting.invoices.show', [$this->organisation->slug, $this->invoice->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Accounting/Invoice')
+            ->has('title')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $this->invoice->reference)
+                    ->etc()
+            );
+    });
+});
+
 test('UI show invoice (in Fulfilment Customer)', function () {
     $this->withoutExceptionHandling();
     $response = get(route('grp.org.fulfilments.show.crm.customers.show.invoices.show', [$this->organisation->slug, $this->fulfilment->slug, $this->customer->fulfilmentCustomer->slug, $this->invoice->slug]));

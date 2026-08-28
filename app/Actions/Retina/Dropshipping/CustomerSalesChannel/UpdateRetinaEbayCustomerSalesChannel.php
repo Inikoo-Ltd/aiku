@@ -16,6 +16,7 @@ use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Rules\IUnique;
 use App\Traits\SanitizeInputs;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -61,6 +62,8 @@ class UpdateRetinaEbayCustomerSalesChannel extends RetinaAction
                 ),
             ],
             'is_vat_adjustment' => ['sometimes', 'required', 'boolean'],
+            'do_not_update_prices' => ['sometimes', 'boolean'],
+            'prices_follow_rrp' => ['sometimes', 'boolean'],
             'tax_category_id'   => ['sometimes', 'nullable', 'integer', Rule::exists('tax_categories', 'id')],
             'status'       => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'name' => ['sometimes', 'string', 'max:255'],
@@ -73,16 +76,17 @@ class UpdateRetinaEbayCustomerSalesChannel extends RetinaAction
             'fulfillment_policy_id' => ['sometimes', 'required', 'string'],
 
             'stock_update' => ['sometimes', 'boolean'],
-            'stock_threshold' => ['sometimes', 'numeric'],
-            'max_quantity_advertise' => ['sometimes', 'numeric'],
+            'stock_threshold' => ['sometimes', 'nullable', 'numeric'],
+            'max_quantity_advertise' => ['sometimes', 'nullable', 'numeric'],
 
             'return_accepted' => ['sometimes', 'required', 'boolean'],
             'return_payer' => ['sometimes', 'required_if:return_accepted,true'],
             'return_within' => ['sometimes', 'required_if:return_accepted,true'],
             'return_description' => ['nullable', 'string'],
 
-            'pricing_type' => ['sometimes', 'string'],
-            'pricing_value' => ['sometimes', 'numeric']
+            'pricing_type' => ['sometimes', Rule::in(['percent', 'fixed', 'not_follow'])],
+            'pricing_value' => ['sometimes', 'numeric', 'gte:-100'],
+            'pricing_reset_all' => ['sometimes', 'boolean']
         ];
     }
 
@@ -93,5 +97,17 @@ class UpdateRetinaEbayCustomerSalesChannel extends RetinaAction
         $this->initialisation($request);
 
         $this->handle($customerSalesChannel, $this->validatedData);
+
+        if (
+            Arr::get($this->validatedData, 'do_not_update_prices')
+            || Arr::get($this->validatedData, 'prices_follow_rrp') === false
+            || Arr::get($this->validatedData, 'pricing_type') === 'not_follow'
+        ) {
+            $request->session()->flash('notification', [
+                'status'      => 'success',
+                'title'       => __('Prices are in your hands'),
+                'description' => __('You are now free to set your own prices on eBay, we will not upload or overwrite them.'),
+            ]);
+        }
     }
 }

@@ -18,12 +18,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $org_stock_id
  * @property \Illuminate\Support\Carbon $date
  * @property float $quantity_in_locations Stock at the end of the day, min value zero
- * @property numeric $org_stock_value FIFO method
- * @property numeric $grp_stock_value FIFO method
+ * @property numeric $org_stock_lpp_value FIFO method
+ * @property numeric $grp_stock_lpp_value FIFO method
  * @property numeric $org_stock_commercial_value
  * @property numeric $grp_stock_commercial_value
  * @property int $number_locations
- * @property float|null $value_per_sku
+ * @property float|null $lpp_per_sku
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property bool|null $sold_within_1y
@@ -44,8 +44,8 @@ class OrgStockHistory extends Model
     {
         return [
             'date'                        => 'date',
-            'org_stock_value'             => 'decimal:2',
-            'grp_stock_value'             => 'decimal:2',
+            'org_stock_lpp_value'             => 'decimal:2',
+            'grp_stock_lpp_value'             => 'decimal:2',
             'org_stock_commercial_value'  => 'decimal:2',
             'grp_stock_commercial_value'  => 'decimal:2',
             'sold_1y'                     => 'boolean',

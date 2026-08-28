@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Profile;
 
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\HumanResources\Timesheet\UI\IndexTimesheets;
 use App\Actions\OrgAction;
@@ -45,7 +46,7 @@ class ShowProfile extends OrgAction
     public function htmlResponse(User $user, ActionRequest $request): Response
     {
 
-        $parent = $user->employees()->first();
+        $parent = GetUserCurrentEmployee::run($user);
         if (!$parent) {
             $parent = $user->guests()->first();
         }

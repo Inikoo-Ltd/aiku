@@ -1,3 +1,5 @@
+import { expandGallery } from "@/Common/Composables/useCompactImage"
+
 export type StructuredDataNode = Record<string, any>
 export type StructuredDataValue = StructuredDataNode | StructuredDataNode[]
 
@@ -16,6 +18,7 @@ type GenerateProductsStructureOptions = {
     webBlocks?: any[] | Record<string, any>
     categoryName?: string | null
     currencyCode?: string | null
+    showPrice?: boolean
 }
 
 type BuildStructuredDataOptions = {
@@ -23,6 +26,7 @@ type BuildStructuredDataOptions = {
     webBlocks?: any[] | Record<string, any>
     currencyCode?: string | null
     websiteName?: string | null
+    showPrice?: boolean
 }
 
 const PRODUCT_BLOCK_TYPES = ["products-1", "products-2"]  // Family page
@@ -76,6 +80,7 @@ export const generateProductsStructureFromProductsList = ({
     webBlocks,
     categoryName,
     currencyCode,
+    showPrice = true,
 }: GenerateProductsStructureOptions): StructuredDataNode[] => {
     const variants: StructuredDataNode[] = []
 
@@ -114,8 +119,7 @@ export const generateProductsStructureFromProductsList = ({
             const imageUrl =
                 product.web_images?.main?.original?.original ??
                 product.web_images?.main?.original ??
-                product.web_images?.main?.gallery?.original ??
-                product.web_images?.main?.gallery ??
+                expandGallery(product.web_images?.main?.gallery)?.original ??
                 product.image?.source?.original
 
             if (imageUrl) {
@@ -132,7 +136,7 @@ export const generateProductsStructureFromProductsList = ({
                 }
             }
 
-            if (product.price) {
+            if (showPrice && product.price) {
                 variant.offers = {
                     "@type": "Offer",
                     price: product.price,
@@ -178,12 +182,10 @@ export const getEntityImageUrls = (entity: Record<string, any> | null | undefine
     const candidates = [
         entity?.web_images?.main?.original?.original,
         entity?.web_images?.main?.original,
-        entity?.web_images?.main?.gallery?.original,
-        entity?.web_images?.main?.gallery,
+        expandGallery(entity?.web_images?.main?.gallery)?.original,
         entity?.web_images?.all?.[0]?.original?.original,
         entity?.web_images?.all?.[0]?.original,
-        entity?.web_images?.all?.[0]?.gallery?.original,
-        entity?.web_images?.all?.[0]?.gallery,
+        expandGallery(entity?.web_images?.all?.[0]?.gallery)?.original,
         entity?.image?.source?.original,
         entity?.image,
     ]
@@ -433,6 +435,7 @@ export const buildStructuredData = ({
     webBlocks,
     currencyCode,
     websiteName,
+    showPrice = true,
 }: BuildStructuredDataOptions): StructuredDataValue | null => {
     if (webpageData?.model_type === "ProductCategory" && webpageData?.sub_type === "family") {
         const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
@@ -441,6 +444,7 @@ export const buildStructuredData = ({
             webBlocks,
             categoryName: webpageData?.title ?? null,
             currencyCode,
+            showPrice,
         })
     
         if (!autoVariants.length) {

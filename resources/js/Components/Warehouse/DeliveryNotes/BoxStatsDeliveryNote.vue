@@ -62,6 +62,9 @@ const props = withDefaults(defineProps<{
             estimated_weight: number
             number_items?: number
             number_skos?: number
+            number_units?: number
+            estimated_picking_minutes?: number | null
+            estimated_packing_minutes?: number | null
         }
         packer: {
             id: number
@@ -592,7 +595,9 @@ function returnNoteRoute(returnDeliveryNote) {
                                 <LoadingIcon v-if="isLoadingSelfTemporarily" />
                                 <FontAwesomeIcon
                                     v-else
-                                    v-tooltip="allowActions ? ctrans('Unlock picking for 5 minutes, everybody can pick') : ctrans('Locked, only assigned picker/packer can process this delivery note. Click to allow everybody free pick for 5 minutes.')"
+                                    v-tooltip="allowActions
+                                        ? ctrans('You can work on this delivery note. Click again if your access runs out')
+                                        : ctrans('Assigned to somebody else. Click to take it over so you can pick and pack it')"
                                     class="cursor-pointer focus:outline-none"
                                     :icon="allowActions ? faLockOpen : faLock"
                                     :class="allowActions ? 'text-green-500' : 'text-red-500'"
@@ -622,7 +627,9 @@ function returnNoteRoute(returnDeliveryNote) {
                                 <LoadingIcon v-if="isLoadingSelfTemporarily" />
                                 <FontAwesomeIcon
                                     v-else
-                                    v-tooltip="allowActions ? ctrans('Unlock picking for 5 minutes, everybody can pick') : ctrans('Locked, only assigned picker/packer can process this delivery note. Click to allow everybody free pick for 5 minutes.')"
+                                    v-tooltip="allowActions
+                                        ? ctrans('You can work on this delivery note. Click again if your access runs out')
+                                        : ctrans('Assigned to somebody else. Click to take it over so you can pick and pack it')"
                                     class="cursor-pointer focus:outline-none"
                                     :icon="allowActions ? faLockOpen : faLock"
                                     :class="allowActions ? 'text-green-500' : 'text-red-500'"
@@ -681,7 +688,19 @@ function returnNoteRoute(returnDeliveryNote) {
                                 aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500">
-                            {{ locale.number(boxStats.products?.number_items || 0) }} items <span v-if="Number(boxStats.products?.number_skos ?? 0) > 0">({{ locale.number(boxStats.products?.number_skos || 0) }} SKOs)</span>
+                            {{ locale.number(boxStats.products?.number_items || 0) }} items <span v-if="Number(boxStats.products?.number_skos ?? 0) > 0">({{ locale.number(boxStats.products?.number_skos || 0) }} SKOs<span v-if="Number(boxStats.products?.number_units ?? 0) > 0">, {{ locale.number(boxStats.products?.number_units || 0) }} units</span>)</span>
+                        </dd>
+                    </dl>
+
+                    <!-- Estimated handling time -->
+                    <dl v-if="boxStats.products?.estimated_picking_minutes || boxStats.products?.estimated_packing_minutes"
+                        class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                        <dt class="flex-none">
+                            <FontAwesomeIcon v-tooltip="trans('Typical time for an order this size in this warehouse, from its own recent history')"
+                                icon="fal fa-stopwatch" fixed-width aria-hidden="true" class="text-gray-500" />
+                        </dt>
+                        <dd class="text-gray-500">
+                            <span v-if="boxStats.products?.estimated_picking_minutes">~{{ boxStats.products.estimated_picking_minutes }} min {{ trans('picking') }}</span><span v-if="boxStats.products?.estimated_picking_minutes && boxStats.products?.estimated_packing_minutes">, </span><span v-if="boxStats.products?.estimated_packing_minutes">~{{ boxStats.products.estimated_packing_minutes }} min {{ trans('packing') }}</span>
                         </dd>
                     </dl>
 
@@ -763,6 +782,7 @@ function returnNoteRoute(returnDeliveryNote) {
                                 :shipping_fields_update_route="boxStats.shipping_fields_update_route"
                                 :shipments="boxStats.shipments"
                                 :shipments_routes="boxStats.shipments_routes"
+                                :shipper_directive="boxStats.shipper_directive"
                                 :address="boxStats.address"
                                 :customer="boxStats?.shop_type === 'dropshipping' ? boxStats.customer : undefined"
                                 :currencyCode="boxStats?.currency_code"

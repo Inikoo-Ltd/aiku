@@ -27,7 +27,7 @@ class OrganisationFactory extends Factory
 
         return [
             'ulid'        => (string)\Illuminate\Support\Str::ulid(),
-            'code'        => fake()->lexify(),
+            'code'        => fake()->lexify('??????'),
             'name'        => fake()->company(),
             'email'       => fake()->safeEmail(),
             'country_id'  => $country->id,

@@ -49,6 +49,7 @@ class IndexInvoiceTransactionsGroupedByAsset extends OrgAction
             [
                 'invoice_transactions.invoice_id',
                 'invoice_transactions.model_type',
+                'invoice_transactions.model_id',
                 'invoice_transactions.in_process',
                 'invoice_transactions.is_tax_only',
                 'invoice_transactions.tax_amount',
@@ -82,7 +83,8 @@ class IndexInvoiceTransactionsGroupedByAsset extends OrgAction
                 'invoice_transactions.historic_asset_id',
                 'assets.shop_id',
                 'invoice_transactions.model_type',
-            );
+                'invoice_transactions.model_id'
+            )->with('model');
 
 
         $queryBuilder->defaultSort('code');

@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use Lorisleiva\Actions\ActionRequest;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class DeletePurchaseOrderTransaction extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use AsAction;
     use WithAttributes;
 

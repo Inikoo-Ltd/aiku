@@ -8,16 +8,17 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use Illuminate\Validation\Validator;
-use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStockDeliveryStateToReceived extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
     use HasStockDeliveryHydrators;
 
@@ -38,15 +39,6 @@ class UpdateStockDeliveryStateToReceived extends OrgAction
         $this->runStockDeliveryHydrators($stockDelivery);
 
         return $stockDelivery;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
     }
 
     public function afterValidator(Validator $validator): void

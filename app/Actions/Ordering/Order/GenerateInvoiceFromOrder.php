@@ -19,6 +19,7 @@ use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromShippin
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -43,6 +44,7 @@ use Lorisleiva\Actions\ActionRequest;
 class GenerateInvoiceFromOrder extends OrgAction
 {
     use WithActionUpdate;
+    use WithLineTaxCategories;
     use HasOrderHydrators;
 
     /**
@@ -54,10 +56,13 @@ class GenerateInvoiceFromOrder extends OrgAction
             $billingAddress = $order->billingAddress;
             $updatedData    = [];
 
+            $this->applyLineTaxCategories($order);
+            $order->unsetRelation('transactions');
+
             /** @var DeliveryNote $deliveryNote */
             $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)->first();
 
-            if ($order->deliveryNotes) {
+            if ($deliveryNote) {
                 $updatedData = $this->recalculateTotals($order, $deliveryNote);
             }
 
@@ -105,7 +110,7 @@ class GenerateInvoiceFromOrder extends OrgAction
 
             foreach ($transactions as $transaction) {
                 $data = [
-                    'tax_category_id' => $transaction->order->tax_category_id,
+                    'tax_category_id' => $transaction->tax_category_id,
                     'quantity'        => $transaction->quantity_ordered ?? 0,
                     'gross_amount'    => $transaction->gross_amount,
                     'net_amount'      => $transaction->net_amount,
@@ -139,7 +144,13 @@ class GenerateInvoiceFromOrder extends OrgAction
 
             $amountToCredit = round($totalPaid - $invoice->total_amount, 2);
 
-            if ($amountToCredit > 0) {
+            $hasManuallySettledPayment = $order->payments()
+                ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
+                ->whereHas('paymentAccount', function ($query) {
+                    $query->whereIn('type', PaymentAccountTypeEnum::MANUALLY_SETTLED);
+                })->exists();
+
+            if ($amountToCredit > 0 && !$hasManuallySettledPayment) {
                 /** @var \App\Models\Accounting\PaymentAccountShop $paymentAccountShop */
                 $paymentAccountShop = $order->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
                 $paymentData        = [
@@ -183,48 +194,74 @@ class GenerateInvoiceFromOrder extends OrgAction
 
     public function recalculateTotals(Order $order, DeliveryNote $deliveryNote): array
     {
-        $itemsNet   = 0;
         $itemsGross = 0;
+        $lines      = collect();
 
         foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
             $totals     = $this->recalculateTransactionTotals($transaction, $deliveryNote);
-            $itemsNet   += $totals['net_amount'];
             $itemsGross += $totals['gross_amount'];
+            $lines->push((object)[
+                'tax_category_id' => $totals['tax_category_id'],
+                'net_amount'      => $totals['net_amount'],
+            ]);
         }
 
-        $tax = $order->taxCategory->rate;
+        $itemsNet = $lines->sum('net_amount');
 
-        $netAmount = $itemsNet + $order->shipping_amount + $order->charges_amount - $order->amount_off;
+        foreach ($order->transactions()->where('model_type', 'Service')->get(['tax_category_id', 'net_amount']) as $serviceLine) {
+            $lines->push((object)[
+                'tax_category_id' => $serviceLine->tax_category_id,
+                'net_amount'      => $serviceLine->net_amount,
+            ]);
+        }
 
-        $taxAmount   = $netAmount * $tax;
+        $lines->push((object)[
+            'tax_category_id' => $order->tax_category_id,
+            'net_amount'      => $order->shipping_amount + $order->charges_amount,
+        ]);
+
+        foreach ($order->transactions()->where('model_type', 'Adjustment')->get(['tax_category_id', 'net_amount']) as $adjustmentLine) {
+            $lines->push((object)[
+                'tax_category_id' => $adjustmentLine->tax_category_id,
+                'net_amount'      => $adjustmentLine->net_amount,
+            ]);
+        }
+
+        $taxBreakdown = $this->getTaxBreakdown($lines, $order->amount_off);
+
+        $netAmount   = round(array_sum(array_column($taxBreakdown, 'net_amount')), 2);
+        $taxAmount   = round(array_sum(array_column($taxBreakdown, 'tax_amount')), 2);
         $totalAmount = $netAmount + $taxAmount;
 
         return [
-            'net_amount'   => $netAmount,
-            'total_amount' => $totalAmount,
-            'tax_amount'   => $taxAmount,
-            'goods_amount' => $itemsNet,
-            'gross_amount' => $itemsGross,
+            'net_amount'    => $netAmount,
+            'total_amount'  => $totalAmount,
+            'tax_amount'    => $taxAmount,
+            'goods_amount'  => $itemsNet,
+            'gross_amount'  => $itemsGross,
+            'tax_breakdown' => $taxBreakdown,
         ];
     }
 
-    public function recalculateTransactionTotals(Transaction $transaction, DeliveryNote $deliveryNote): array
+    public function recalculateTransactionTotals(Transaction $transaction, ?DeliveryNote $deliveryNote): array
     {
         $historicAsset = $transaction->historicAsset;
 
 
         $pickings = [];
 
-        foreach (
-            DB::table('delivery_note_items')->select('quantity_required', 'quantity_picked')->where('transaction_id', $transaction->id)
-                ->where('delivery_note_id', $deliveryNote->id)->get() as $deliveryNoteItem
-        ) {
-            if ($deliveryNoteItem->quantity_required == 0) {
-                $ratioOfPicking = 1;
-            } else {
-                $ratioOfPicking = $deliveryNoteItem->quantity_picked / $deliveryNoteItem->quantity_required;
+        if ($deliveryNote) {
+            foreach (
+                DB::table('delivery_note_items')->select('quantity_required', 'quantity_picked')->where('transaction_id', $transaction->id)
+                    ->where('delivery_note_id', $deliveryNote->id)->get() as $deliveryNoteItem
+            ) {
+                if ($deliveryNoteItem->quantity_required == 0) {
+                    $ratioOfPicking = 1;
+                } else {
+                    $ratioOfPicking = $deliveryNoteItem->quantity_picked / $deliveryNoteItem->quantity_required;
+                }
+                $pickings[] = $ratioOfPicking;
             }
-            $pickings[] = $ratioOfPicking;
         }
         if (empty($pickings)) {
             //todo: check this or I will reget
@@ -234,15 +271,33 @@ class GenerateInvoiceFromOrder extends OrgAction
             $quantityPicked = ($transaction->quantity_ordered + $transaction->quantity_bonus) * $sumOfPickings;
         }
 
-        $discountsRatio = 1;
-        if ($transaction->gross_amount != 0) {
-            $discountsRatio = $transaction->net_amount / $transaction->gross_amount;
-        }
-
-
         $gross = $historicAsset->price * $quantityPicked;
-        $net   = $historicAsset->price * $discountsRatio * $quantityPicked;
 
+        /**
+         * A submitted line is not priced again, it is read back. Submission records the whole
+         * sale - quantity, gross, net and factor - so the net of what was picked is the unit net
+         * that was sold, times the units taken. No factor, no complement, no rounding shape, so
+         * no later change to pricing code can move the price of something already sold. Every
+         * penny incident on this path came from re-deriving a number that was already stored.
+         *
+         * A line re-priced on purpose after submission - a discretionary discount, a correction -
+         * has a factor that no longer matches the submitted one, and is calculated instead.
+         */
+        $sale = DB::table('transactions')->where('id', $transaction->id)->first([
+            'current_discount_factor',
+            'submitted_discount_factor',
+            'submitted_net_amount',
+            'submitted_quantity_ordered',
+        ]);
+
+        $submittedQuantity = (float)($sale?->submitted_quantity_ordered ?? 0);
+
+        if ($sale?->submitted_net_amount !== null && $submittedQuantity > 0
+            && (float)$sale->current_discount_factor === (float)$sale->submitted_discount_factor) {
+            $net = round((float)$sale->submitted_net_amount / $submittedQuantity * $quantityPicked, 2);
+        } else {
+            $net = $gross - discountAmountOffGross($gross, (float)($sale->current_discount_factor ?? 1));
+        }
 
         if ($transaction->is_gift) {
             $gross = 0;
@@ -250,7 +305,7 @@ class GenerateInvoiceFromOrder extends OrgAction
         }
 
         return [
-            'tax_category_id' => $transaction->order->tax_category_id,
+            'tax_category_id' => $transaction->tax_category_id,
             'quantity'        => $quantityPicked,
             'gross_amount'    => $gross,
             'net_amount'      => $net,

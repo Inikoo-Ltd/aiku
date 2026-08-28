@@ -2,13 +2,14 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCheck, faChevronDown, faExclamationTriangle, faSave as falSave , faStarfighter} from '@fal'
+import { faCheck, faChevronDown, faExclamationTriangle, faSave as falSave, faStarfighter, faStarfighterAlt } from '@fal'
+import { router } from '@inertiajs/vue3'
 import { faSave as fadSave, faSpinnerThird } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import PriceCurrencyRow from '@/Components/Pure/Supports/PriceCurrencyRow.vue'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import axios from 'axios'
-library.add(faCheck, faChevronDown, faExclamationTriangle, falSave, fadSave, faSpinnerThird)
+library.add(faCheck, faChevronDown, faExclamationTriangle, falSave, fadSave, faSpinnerThird, faStarfighterAlt)
 
 interface CurrencyRate {
     currency: string
@@ -31,8 +32,10 @@ interface PriceRebel {
     shop_id: number
     shop_code: string
     currency_code: string
+    currency_symbol?: string
     value: number | null
     units?: number
+    url?: string
 }
 
 const props = defineProps<{
@@ -415,6 +418,9 @@ const onCascadeProgress = (event: { state: string, type?: string, done: number, 
         return
     }
     cascadeProgress.value = event
+    if (event.state === 'done') {
+        fetchPriceRebels()
+    }
 }
 
 onMounted(() => {
@@ -431,7 +437,10 @@ onUnmounted(() => {
     }
 })
 
-onMounted(async () => {
+// Refetched, not just mutated locally: a kill can be triggered from the anomalies
+// block on the same page, and both price and RRP instances must end up agreeing
+// with the database rather than with whichever one issued the request.
+const fetchPriceRebels = async () => {
     if (!props.masterAsset) {
         return
     }
@@ -464,7 +473,54 @@ onMounted(async () => {
         priceRebels.value = {}
         originalRebelValues.value = {}
     }
-})
+}
+
+onMounted(fetchPriceRebels)
+
+const killingRebelIds = ref<Record<number, boolean>>({})
+
+const masterValueFor = (rebel: PriceRebel) => prices.value[rebel.currency_code]?.value ?? null
+
+const formatRebelPrice = (rebel: PriceRebel, value: number | null) => {
+    if (value == null) return '?'
+    return Number(value).toFixed(props.currencies[rebel.currency_code]?.fraction_digits ?? 2)
+}
+
+const killingAllRebels = ref(false)
+const killAllRebels = async () => {
+    if (!confirm(ctrans("Kill all price rebels? Every shop product will follow the master's price and RRP again and be fixed from them."))) return
+    killingAllRebels.value = true
+    try {
+        await axios.post(
+            route('grp.models.master_asset.kill_all_rebels', {
+                masterAsset: props.masterAsset
+            }),
+            { scope: 'prices' }
+        )
+        await fetchPriceRebels()
+        router.reload({ preserveScroll: true })
+    } finally {
+        killingAllRebels.value = false
+    }
+}
+
+const killRebel = async (rebel: PriceRebel) => {
+    if (!confirm(ctrans('Kill this price rebel? :shop will follow the master prices again and be fixed from them.', { shop: rebel.shop_code }))) return
+    killingRebelIds.value[rebel.shop_id] = true
+    try {
+        await axios.post(
+            route('grp.models.master_asset.kill_rebel', {
+                masterAsset: props.masterAsset,
+                product: rebel.id
+            }),
+            { scope: 'prices' }
+        )
+        await fetchPriceRebels()
+        router.reload({ preserveScroll: true })
+    } finally {
+        killingRebelIds.value[rebel.shop_id] = false
+    }
+}
 
 const saveRebel = async (rebel: PriceRebel) => {
     savingRebelIds.value[rebel.shop_id] = true
@@ -731,23 +787,55 @@ const saveRebel = async (rebel: PriceRebel) => {
             >
                 <FontAwesomeIcon :icon="faStarfighter" class="text-xs" fixed-width aria-hidden="true" />
                 <span>
-                    {{ priceRebelsList.length }} {{ ctrans('shops not following master price') }}
+                    {{ priceRebelsList.length }} {{ ctrans('shops not following master price/RRP') }}<template v-if="priceRebelsList.length <= 4">:
+                        <span class="font-medium">{{ priceRebelsList.map(rebel => `${rebel.shop_code} ${rebel.currency_symbol ?? ''}${formatRebelPrice(rebel, rebel.value)}`).join(', ') }}</span>
+                    </template>
                 </span>
             </PopoverButton>
 
             <transition name="headlessui">
-                <PopoverPanel class="absolute left-8 z-10 mt-1 w-72 rounded-md border border-gray-200 bg-white shadow-lg">
-                    <div class="border-b border-gray-100 px-3 py-2 text-xs font-medium uppercase tracking-wide text-gray-400">
-                        {{ ctrans('Price rebels') }}
+                <PopoverPanel class="absolute left-8 z-10 mt-1 w-[26rem] rounded-md border border-gray-200 bg-white shadow-lg">
+                    <div class="flex items-center justify-between gap-x-2 border-b border-gray-100 px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-gray-400">
+                        <span>{{ ctrans('Price rebels') }}</span>
+                        <button
+                            v-if="!readonly && type_input === 'price' && priceRebelsList.length > 1"
+                            type="button"
+                            class="flex items-center gap-x-1 normal-case text-amber-500 hover:text-amber-600 disabled:cursor-not-allowed disabled:text-gray-300"
+                            v-tooltip="ctrans('Kill all rebels: make every shop product follow the master\'s price and RRP and autofix')"
+                            :disabled="killingAllRebels"
+                            @click="killAllRebels"
+                        >
+                            <FontAwesomeIcon
+                                v-if="killingAllRebels"
+                                icon="fad fa-spinner-third"
+                                class="animate-spin"
+                                fixed-width
+                                aria-hidden="true"
+                            />
+                            <FontAwesomeIcon v-else :icon="faStarfighterAlt" fixed-width aria-hidden="true" />
+                            {{ ctrans('Kill all') }}
+                        </button>
                     </div>
-                    <ul class="max-h-64 divide-y divide-gray-100 overflow-y-auto">
+                    <ul class="max-h-72 divide-y divide-gray-100 overflow-y-auto">
                         <li
                             v-for="rebel in priceRebelsList"
                             :key="rebel.shop_id"
-                            class="flex items-center justify-between gap-x-3 px-3 py-2 text-sm"
+                            class="flex items-center justify-between gap-x-4 px-4 py-3 text-sm"
                         >
-                            <span class="font-medium text-gray-700">{{ rebel.shop_code }}</span>
-                            <div class="flex items-center gap-x-1.5">
+                            <div class="flex flex-col gap-y-0.5">
+                                <a
+                                    v-if="rebel.url"
+                                    :href="rebel.url"
+                                    target="_blank"
+                                    class="font-medium text-gray-700 underline decoration-dotted hover:text-gray-900"
+                                    v-tooltip="ctrans('Open product in a new tab')"
+                                >{{ rebel.shop_code }}</a>
+                                <span v-else class="font-medium text-gray-700">{{ rebel.shop_code }}</span>
+                                <span v-if="masterValueFor(rebel) != null" class="whitespace-nowrap text-xs text-gray-400">
+                                    {{ ctrans('master') }}: {{ rebel.currency_symbol }}{{ formatRebelPrice(rebel, masterValueFor(rebel)) }}
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-x-2.5">
                                 <div class="w-28">
                                     <PureInputNumber
                                         v-model.number="rebel.value"
@@ -780,6 +868,25 @@ const saveRebel = async (rebel: PriceRebel) => {
                                     />
                                 </button>
                             </div>
+
+                            <button
+                                v-if="!readonly && type_input === 'price'"
+                                type="button"
+                                class="ml-2 flex shrink-0 items-center gap-x-1.5 rounded-md border border-amber-200 px-2 py-1 text-xs text-amber-600 hover:bg-amber-50 hover:text-amber-700 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-300"
+                                v-tooltip="ctrans('Kill rebel: make it follow the master\'s price and RRP and autofix')"
+                                :disabled="killingRebelIds[rebel.shop_id]"
+                                @click="killRebel(rebel)"
+                            >
+                                <FontAwesomeIcon
+                                    v-if="killingRebelIds[rebel.shop_id]"
+                                    icon="fad fa-spinner-third"
+                                    class="animate-spin"
+                                    fixed-width
+                                    aria-hidden="true"
+                                />
+                                <FontAwesomeIcon v-else :icon="faStarfighterAlt" fixed-width aria-hidden="true" />
+                                {{ ctrans('Kill') }}
+                            </button>
                         </li>
                     </ul>
                 </PopoverPanel>

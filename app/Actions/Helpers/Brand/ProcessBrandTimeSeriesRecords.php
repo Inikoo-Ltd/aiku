@@ -94,6 +94,6 @@ class ProcessBrandTimeSeriesRecords implements ShouldBeUnique
             $processedPeriods[] = $period;
         }
 
-        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['brand_time_series_id', 'shop_id', 'period', 'frequency']);
+        $this->syncTimeSeriesRecords($timeSeries, $rows, ['brand_time_series_id', 'shop_id', 'period', 'frequency'], $from, $to, ['shop_id' => $shop->id]);
     }
 }

@@ -192,8 +192,8 @@ class ShowClockingMachine extends OrgAction
                     ])),
 
                 ClockingMachineTabsEnum::HISTORY->value => $this->tab == ClockingMachineTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($clockingMachine))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($clockingMachine)))
+                    fn () => HistoryResource::collection(IndexHistory::run($clockingMachine, 'hst'))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($clockingMachine, 'hst')))
 
             ]
         )->table(IndexClockings::make()->tableStructure($clockingMachine, prefix: ClockingMachineTabsEnum::CLOCKINGS->value))

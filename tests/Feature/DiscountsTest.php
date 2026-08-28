@@ -8,8 +8,10 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireOrder;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
+use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Discounts\Offer\ActivateOffer;
 use App\Actions\Discounts\Offer\ActivateScheduledOffers;
@@ -59,7 +61,9 @@ use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use App\Actions\Catalogue\Collection\AttachModelToCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
+use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
@@ -76,6 +80,7 @@ use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransactionDiscretionaryDiscount;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -85,9 +90,14 @@ use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
+use App\Actions\Ordering\Order\SweepGoldRewardWindowBaskets;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Transaction\TransactionStateEnum;
+use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\Collection;
+use App\Models\CRM\Customer;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
@@ -96,8 +106,12 @@ use App\Models\Discounts\OfferCampaign;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
+use App\Jobs\BoundedUniqueJobDecorator;
+use App\Actions\Ordering\Order\CleanFinishedVouchers;
+use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
 
@@ -144,15 +158,15 @@ test('seed offer campaigns', function () {
     $this->group->refresh();
     $this->organisation->refresh();
 
-    expect($this->group->discountsStats->number_offer_campaigns)->toBe(11)
-        ->and($this->group->discountsStats->number_current_offer_campaigns)->toBe(10)
-        ->and($this->group->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11)
-        ->and($this->organisation->discountsStats->number_offer_campaigns)->toBe(11)
-        ->and($this->organisation->discountsStats->number_current_offer_campaigns)->toBe(10)
-        ->and($this->organisation->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11)
-        ->and($shop->discountsStats->number_offer_campaigns)->toBe(11)
-        ->and($shop->discountsStats->number_current_offer_campaigns)->toBe(10)
-        ->and($shop->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11);
+    expect($this->group->discountsStats->number_offer_campaigns)->toBe(12)
+        ->and($this->group->discountsStats->number_current_offer_campaigns)->toBe(11)
+        ->and($this->group->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(12)
+        ->and($this->organisation->discountsStats->number_offer_campaigns)->toBe(12)
+        ->and($this->organisation->discountsStats->number_current_offer_campaigns)->toBe(11)
+        ->and($this->organisation->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(12)
+        ->and($shop->discountsStats->number_offer_campaigns)->toBe(12)
+        ->and($shop->discountsStats->number_current_offer_campaigns)->toBe(11)
+        ->and($shop->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(12);
 });
 
 test('update offer campaign', function () {
@@ -562,6 +576,24 @@ test('store shop offer', function () {
         ->and($offer->type)->toBe('Shop Ordered');
 });
 
+test('store first order bonus', function () {
+    $shop = $this->shop;
+    if (!$shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::FIRST_ORDER)->exists()) {
+        SeedShopOfferCampaigns::run($shop);
+    }
+
+    $offer = \App\Actions\Discounts\Offer\StoreFirstOrderBonus::make()->handle($shop, [
+        'trigger_data_min_amount' => 50,
+        'percentage_off'          => 0.1,
+        'end_at'                  => null,
+    ]);
+
+    $offer->refresh();
+    expect($offer)->toBeInstanceOf(Offer::class)
+        ->and($offer->trigger_type)->toBe('Customer')
+        ->and($offer->trigger_data)->toBe(['min_amount' => 50, 'order_number' => 1]);
+});
+
 test('store discount shipping', function () {
     $shop = $this->shop;
     if (!$shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::SHIPPING)->exists()) {
@@ -741,8 +773,13 @@ test('force delete offer', function () {
 
 test('create first order bonus', function () {
     $shop = $this->shop;
-    if (!$shop->offerCampaigns()->where('type', \App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum::FIRST_ORDER)->exists()) {
+    if (!$shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::FIRST_ORDER)->exists()) {
         SeedShopOfferCampaigns::run($shop);
+    }
+
+    $firstOrderCampaign = $shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::FIRST_ORDER)->first();
+    foreach ($firstOrderCampaign->offers()->where('state', '!=', OfferStateEnum::FINISHED)->get() as $liveOffer) {
+        DeleteOffer::make()->action($liveOffer, true);
     }
 
     $this->artisan('offer:create_first_order_bonus', [
@@ -1210,6 +1247,65 @@ describe('calculate order discounts', function () {
         expect((float)$transaction->net_amount)->toBe(80.0);
     });
 
+    test('CalculateOrderDiscounts leaves an external shop order alone, Faire owns its pricing', function () {
+        $order = Order::latest('id')->first();
+        $originalType = $order->shop->type;
+
+        $order->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL]);
+        $order->update(['amount_off' => 9.24]);
+
+        CalculateOrderDiscounts::run($order->refresh());
+
+        // Faire sent the discount; recalculating from Aiku's offers would zero it
+        expect((float)$order->refresh()->amount_off)->toBe(9.24);
+
+        $order->shop->update(['type' => $originalType]);
+    });
+
+    test('Faire discount targets the invoice, never a credit note', function () {
+        $order = Order::latest('id')->first();
+
+        $refund = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($this->customer, \App\Models\Accounting\Invoice::factory()->definition());
+        $refund->update(['order_id' => $order->id, 'type' => \App\Enums\Accounting\Invoice\InvoiceTypeEnum::REFUND]);
+
+        $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($this->customer, \App\Models\Accounting\Invoice::factory()->definition());
+        $invoice->update(['order_id' => $order->id, 'type' => \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE]);
+
+        // the refund is the older row, so an unordered first() would have picked it
+        expect($refund->id)->toBeLessThan($invoice->id)
+            ->and(UpdateFaireOrder::make()->getInvoiceToDiscount($order->refresh())->id)->toBe($invoice->id);
+    });
+
+    test('a dispatched Faire line missing from the invoice gets billed, a waiting one does not', function () {
+        $order = Order::latest('id')->first();
+        $invoice = \App\Models\Accounting\Invoice::where('order_id', $order->id)
+            ->where('type', \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE)->firstOrFail();
+
+        $dispatched = $order->transactions()->where('model_type', 'Product')->first();
+        $dispatched->update(['quantity_dispatched' => $dispatched->quantity_ordered]);
+        $dispatched->invoiceTransaction?->delete();
+
+        $billedBefore = $invoice->invoiceTransactions()->count();
+        UpdateFaireOrder::make()->invoiceDispatchedLinesMissingFromInvoice($order->refresh(), $invoice);
+
+        expect($invoice->invoiceTransactions()->count())->toBe($billedBefore + 1)
+            ->and($dispatched->refresh()->invoiceTransaction)->not->toBeNull();
+
+        // second pass adds nothing: only genuinely missing lines are billed
+        UpdateFaireOrder::make()->invoiceDispatchedLinesMissingFromInvoice($order->refresh(), $invoice);
+        expect($invoice->invoiceTransactions()->count())->toBe($billedBefore + 1);
+
+        // a line still waiting stays off the invoice
+        $waiting = $order->transactions()->where('model_type', 'Product')->where('id', '!=', $dispatched->id)->first();
+        if ($waiting) {
+            $waiting->update(['quantity_dispatched' => 0]);
+            $waiting->invoiceTransaction?->delete();
+            $countBefore = $invoice->invoiceTransactions()->count();
+            UpdateFaireOrder::make()->invoiceDispatchedLinesMissingFromInvoice($order->refresh(), $invoice);
+            expect($invoice->invoiceTransactions()->count())->toBe($countBefore);
+        }
+    });
+
     test('suspend all active offers', function () {
         foreach (Offer::where('state', OfferStateEnum::ACTIVE)->get() as $offer) {
             SuspendOffer::run($offer);
@@ -1597,6 +1693,8 @@ describe('calculate order discounts', function () {
             ->and($offer->status)->toBeTrue()
             ->and($offer->trigger_type)->toBe('Product')
             ->and($offer->type)->toBe('Product Quantity Ordered')
+            ->and($offer->offerCampaign->type)->toBe(OfferCampaignTypeEnum::STEP_OFFERS)
+            ->and($offer->code)->toBe('st-'.strtolower($this->product->code))
             ->and($offer->allowance_signature)->toBe('product:'.$this->product->id.':percentage_off:1-0.15,5-0.25')
             ->and(Arr::get($offer->offerAllowances->first()->data, 'steps.0.min_quantity'))->toBe(1);
 
@@ -2641,6 +2739,258 @@ describe('calculate order discounts', function () {
         $order->update(['state' => OrderStateEnum::CREATING]);
         $transaction->update(['has_discount_when_submitted' => false, 'submitted_offers_data' => []]);
     });
+
+    test('submitted orders keep their submitted discount when current discount is better', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+        $fobOffer    = Offer::where('shop_id', $order->shop_id)->where('type', 'Amount AND Order Number')->first();
+        $fobAllowance = DB::table('offer_allowances')->where('offer_id', $fobOffer->id)->first();
+
+        $submittedOffersData = [
+            'v' => 1,
+            'o' => [
+                'oc'  => $fobOffer->offer_campaign_id,
+                'o'   => $fobOffer->id,
+                'oa'  => $fobAllowance->id,
+                't'   => 'percentage',
+                'p'   => '10%',
+                'l'   => $fobOffer->name,
+                'st'  => 'fob',
+                'sto' => null,
+                'f'   => 0,
+                'nf'  => 0,
+            ],
+        ];
+
+        /** Bought at 10% off, but re-priced at 20% while the order was being picked. */
+        $transaction->update([
+            'has_discount_when_submitted' => true,
+            'submitted_discount_factor'   => 0.9,
+            'submitted_offers_data'       => $submittedOffersData,
+            'gross_amount'                => 300,
+            'net_amount'                  => 240,
+            'current_discount_factor'     => 0.8,
+        ]);
+        $order->update(['state' => OrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
+
+        CalculateOrderDiscounts::make()->regenerateSubmittedTransactionDiscounts($order);
+        $transaction->refresh();
+
+        /** Billed at the 10% they agreed to, not the 20% they would qualify for today. */
+        expect((float)$transaction->net_amount)->toBe(270.0)
+            ->and((float)$transaction->current_discount_factor)->toEqualWithDelta(0.9, 0.00001);
+
+        $order->update(['state' => OrderStateEnum::CREATING]);
+        $transaction->update(['has_discount_when_submitted' => false, 'submitted_offers_data' => []]);
+        CalculateOrderDiscounts::run($order->refresh());
+    });
+
+    test('an attached voucher beats a lower submitted discount but never a higher one', function () {
+        $order        = Order::latest('id')->first();
+        $transaction  = Transaction::where('order_id', $order->id)->first();
+        $fobOffer     = Offer::where('shop_id', $order->shop_id)->where('type', 'Amount AND Order Number')->first();
+        $fobAllowance = DB::table('offer_allowances')->where('offer_id', $fobOffer->id)->first();
+
+        $voucherOffer = StoreVoucherOffers::make()->action($this->shop, [
+            'voucher'            => 'LATE20',
+            'name'               => 'Late 20',
+            'offer_amount'       => 0,
+            'can_customer_reuse' => true,
+            'start_at'           => now()->subDay(),
+            'end_at'             => now()->addDay(),
+            'percentage_off'     => 20,
+            'target_type'        => 'shop',
+            'target_id'          => $this->shop->id,
+            'allowance_type'     => 'percentage_off',
+        ]);
+
+        $submittedOffersData = [
+            'v' => 1,
+            'o' => [
+                'oc'  => $fobOffer->offer_campaign_id,
+                'o'   => $fobOffer->id,
+                'oa'  => $fobAllowance->id,
+                't'   => 'percentage',
+                'p'   => '10%',
+                'l'   => $fobOffer->name,
+                'st'  => 'fob',
+                'sto' => null,
+                'f'   => 0,
+                'nf'  => 0,
+            ],
+        ];
+        $transaction->update([
+            'has_discount_when_submitted' => true,
+            'submitted_discount_factor'   => 0.9,
+            'submitted_offers_data'       => $submittedOffersData,
+            'gross_amount'                => 300,
+            'net_amount'                  => 270,
+            'current_discount_factor'     => 0.9,
+        ]);
+        $order->update(['state' => OrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
+
+        AddVoucherToOrder::run($order, ['voucher' => 'LATE20']);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(240.0)
+            ->and((float)$transaction->current_discount_factor)->toEqualWithDelta(0.8, 0.00001)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($voucherOffer->id);
+
+        data_set($submittedOffersData, 'o.p', '30%');
+        $transaction->update([
+            'submitted_discount_factor' => 0.7,
+            'submitted_offers_data'     => $submittedOffersData,
+        ]);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(210.0)
+            ->and((float)$transaction->current_discount_factor)->toEqualWithDelta(0.7, 0.00001)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($fobOffer->id);
+
+        RemoveVoucherFromOrder::run($order);
+        SuspendOffer::run($voucherOffer);
+        $order->update(['state' => OrderStateEnum::CREATING]);
+        $transaction->update(['has_discount_when_submitted' => false, 'submitted_offers_data' => []]);
+        CalculateOrderDiscounts::run($order->refresh());
+    });
+
+    test('discretionary discounts survive post-submission recalculation in both directions', function () {
+        $order        = Order::latest('id')->first();
+        $transaction  = Transaction::where('order_id', $order->id)->first();
+        $fobOffer     = Offer::where('shop_id', $order->shop_id)->where('type', 'Amount AND Order Number')->first();
+        $fobAllowance = DB::table('offer_allowances')->where('offer_id', $fobOffer->id)->first();
+
+        $submittedOffersData = [
+            'v' => 1,
+            'o' => [
+                'oc'  => $fobOffer->offer_campaign_id,
+                'o'   => $fobOffer->id,
+                'oa'  => $fobAllowance->id,
+                't'   => 'percentage',
+                'p'   => '10%',
+                'l'   => $fobOffer->name,
+                'st'  => 'fob',
+                'sto' => null,
+                'f'   => 0,
+                'nf'  => 0,
+            ],
+        ];
+        $transaction->update([
+            'has_discount_when_submitted' => true,
+            'submitted_discount_factor'   => 0.9,
+            'submitted_offers_data'       => $submittedOffersData,
+            'gross_amount'                => 300,
+            'net_amount'                  => 270,
+            'current_discount_factor'     => 0.9,
+        ]);
+        $order->update([
+            'state'                     => OrderStateEnum::SUBMITTED,
+            'submitted_at'              => now(),
+            'discretionary_offers_data' => [(string)$transaction->id => ['label' => 'CS special', 'percentage' => '0.150']],
+        ]);
+
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(255.0)
+            ->and((float)$transaction->current_discount_factor)->toEqualWithDelta(0.85, 0.00001)
+            ->and(Arr::get($transaction->offers_data, 'o.l'))->toBe('CS special');
+
+        $order->update(['discretionary_offers_data' => [(string)$transaction->id => ['label' => 'CS special', 'percentage' => '0.050']]]);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(285.0)
+            ->and((float)$transaction->current_discount_factor)->toEqualWithDelta(0.95, 0.00001);
+
+        $order->update(['state' => OrderStateEnum::CREATING, 'discretionary_offers_data' => []]);
+        $transaction->update(['has_discount_when_submitted' => false, 'submitted_offers_data' => []]);
+        CalculateOrderDiscounts::run($order->refresh());
+    });
+
+    test('post-submission recalculation honors offers valid at submission time', function () {
+        $shop = $this->shop;
+        if (!$shop->offerCampaigns()->exists()) {
+            SeedShopOfferCampaigns::run($shop);
+        }
+
+        $department = $shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+        $familyData = ProductCategory::factory()->definition();
+        data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
+        $family = StoreProductCategory::make()->action($department, $familyData);
+
+        $tradeUnit = $this->product->tradeUnits()->first();
+
+        $products = [];
+        foreach ([1, 2] as $index) {
+            $productData = array_merge(
+                Product::factory()->definition(),
+                [
+                    'trade_units' => [
+                        [
+                            'id'       => $tradeUnit->id,
+                            'quantity' => 1
+                        ]
+                    ],
+                    'price'       => 100,
+                ]
+            );
+
+            $product          = StoreProduct::make()->action($family, $productData);
+            $products[$index] = UpdateProduct::make()->action($product, ['state' => ProductStateEnum::ACTIVE]);
+        }
+
+        $offer = StoreProductCategoryDiscount::make()->action(
+            $family,
+            [
+                'trigger_data_item_quantity' => 1,
+                'percentage_off'             => 0.25,
+                'type'                       => 'quantity',
+                'duration'                   => 'interval',
+                'start_at'                   => now()->subDay(),
+                'end_at'                     => now()->addDay()->toDateTimeString(),
+            ]
+        );
+        expect($offer)->toBeInstanceOf(Offer::class)
+            ->and($offer->status)->toBeTrue();
+
+        $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+        $order    = StoreOrder::make()->action($customer, []);
+
+        $submittedTransaction = StoreTransaction::make()->action($order, $products[1]->currentHistoricProduct, ['quantity_ordered' => 2]);
+        $order->refresh();
+        $submittedTransaction->refresh();
+        expect((float)$submittedTransaction->net_amount)->toBe(150.0);
+
+        SubmitOrder::make()->action($order);
+        $order->refresh();
+        $submittedTransaction->refresh();
+        expect($order->state)->toBe(OrderStateEnum::SUBMITTED)
+            ->and((float)$submittedTransaction->submitted_discount_factor)->toEqualWithDelta(0.75, 0.00001)
+            ->and($submittedTransaction->has_discount_when_submitted)->toBeTrue();
+
+        FinishOffer::run($offer->refresh());
+        expect($offer->refresh()->status)->toBeFalse();
+
+        $newTransaction = StoreTransaction::make()->action(
+            order: $order,
+            historicAsset: $products[2]->currentHistoricProduct,
+            modelData: [
+                'quantity_ordered' => 1,
+                'state'            => TransactionStateEnum::HANDLING_BLOCKED,
+                'status'           => TransactionStatusEnum::PROCESSING,
+                'submitted_at'     => now(),
+            ]
+        );
+
+        CalculateOrderDiscounts::run($order->refresh());
+        $order->refresh();
+        $submittedTransaction->refresh();
+        $newTransaction->refresh();
+
+        expect((float)$submittedTransaction->net_amount)->toBe(150.0)
+            ->and((float)$submittedTransaction->current_discount_factor)->toEqualWithDelta(0.75, 0.00001)
+            ->and((float)$newTransaction->net_amount)->toBe(75.0)
+            ->and((float)$newTransaction->current_discount_factor)->toEqualWithDelta(0.75, 0.00001)
+            ->and((float)$order->goods_amount)->toBe(225.0);
+    });
 });
 
 test('finish and update volume gr offer from master', function () {
@@ -2691,4 +3041,181 @@ test('finish and update volume gr offer from master', function () {
 
     $category->refresh();
     expect($category->has_gr_vol_discount)->toBeFalse();
+});
+
+test('repair aurora submitted transaction snapshots', function () {
+    $basketOrder       = StoreOrder::make()->action($this->customer, []);
+    $basketTransaction = StoreTransaction::make()->action($basketOrder, $this->product->currentHistoricProduct, ['quantity_ordered' => 1]);
+    $basketTransaction->update([
+        'state'     => TransactionStateEnum::SUBMITTED,
+        'source_id' => '1:12345',
+    ]);
+
+    $inFlightCustomer    = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $inFlightOrder       = StoreOrder::make()->action($inFlightCustomer, []);
+    $inFlightTransaction = StoreTransaction::make()->action($inFlightOrder, $this->product->currentHistoricProduct, ['quantity_ordered' => 2]);
+    SubmitOrder::make()->action($inFlightOrder);
+    $inFlightTransaction->refresh();
+    $inFlightTransaction->update([
+        'submitted_at'                => null,
+        'submitted_quantity_ordered'  => 0,
+        'submitted_gross_amount'      => null,
+        'submitted_net_amount'        => null,
+        'submitted_discount_factor'   => 1,
+        'submitted_offers_data'       => [],
+        'has_discount_when_submitted' => false,
+        'current_discount_factor'     => 0.75,
+        'net_amount'                  => 150,
+    ]);
+
+    $raceVictimCustomer    = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $raceVictimOrder       = StoreOrder::make()->action($raceVictimCustomer, []);
+    $raceVictimTransaction = StoreTransaction::make()->action($raceVictimOrder, $this->product->currentHistoricProduct, ['quantity_ordered' => 3]);
+    SubmitOrder::make()->action($raceVictimOrder);
+    $raceVictimTransaction->refresh();
+    $raceVictimTransaction->update([
+        'state'                       => TransactionStateEnum::CREATING,
+        'source_id'                   => '1:12346',
+        'submitted_at'                => null,
+        'submitted_quantity_ordered'  => 0,
+        'submitted_gross_amount'      => null,
+        'submitted_net_amount'        => null,
+        'submitted_discount_factor'   => 1,
+        'submitted_offers_data'       => [],
+        'has_discount_when_submitted' => false,
+    ]);
+
+    $this->artisan('repair:aurora_submitted_transaction_snapshots --dry_run')->assertSuccessful();
+    $basketTransaction->refresh();
+    expect($basketTransaction->state)->toBe(TransactionStateEnum::SUBMITTED->value);
+
+    $this->artisan('repair:aurora_submitted_transaction_snapshots')->assertSuccessful();
+
+    $basketTransaction->refresh();
+    $inFlightTransaction->refresh();
+
+    $raceVictimTransaction->refresh();
+    expect($raceVictimTransaction->state)->toBe(TransactionStateEnum::SUBMITTED->value)
+        ->and($raceVictimTransaction->status)->toBe(TransactionStatusEnum::PROCESSING->value)
+        ->and($raceVictimTransaction->submitted_at)->not->toBeNull()
+        ->and((float)$raceVictimTransaction->submitted_quantity_ordered)->toBe(3.0)
+        ->and($basketTransaction->state)->toBe(TransactionStateEnum::CREATING->value)
+        ->and($inFlightTransaction->submitted_at)->not->toBeNull()
+        ->and((float)$inFlightTransaction->submitted_quantity_ordered)->toBe(2.0)
+        ->and((float)$inFlightTransaction->submitted_net_amount)->toBe(150.0)
+        ->and((float)$inFlightTransaction->submitted_discount_factor)->toEqualWithDelta(0.75, 0.00001)
+        ->and($inFlightTransaction->has_discount_when_submitted)->toBeTrue();
+
+    SubmitOrder::make()->action($basketOrder->refresh());
+    $basketTransaction->refresh();
+    expect($basketTransaction->submitted_at)->not->toBeNull()
+        ->and((float)$basketTransaction->submitted_quantity_ordered)->toBe(1.0);
+});
+
+describe('gold reward window sweep', function () {
+    test('SweepGoldRewardWindowBaskets queues only baskets that just aged out of the window', function () {
+        Queue::fake();
+
+        $shop = $this->shop;
+        $shop->update([
+            'is_aiku'     => true,
+            'type'        => ShopTypeEnum::B2B,
+            'offers_data' => ['gr' => ['active' => true, 'interval' => 30]],
+        ]);
+
+        $agedOutCustomer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+        $agedOutCustomer->update(['last_invoiced_at' => now()->subDays(30)]);
+        $agedOutOrder = StoreOrder::make()->action($agedOutCustomer, []);
+
+        $insideWindowCustomer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+        $insideWindowCustomer->update(['last_invoiced_at' => now()->subDays(10)]);
+        StoreOrder::make()->action($insideWindowCustomer, []);
+
+        $neverInvoicedCustomer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+        StoreOrder::make()->action($neverInvoicedCustomer, []);
+
+        expect(SweepGoldRewardWindowBaskets::run($shop))->toBe(1)
+            ->and($agedOutOrder->refresh()->state)->toBe(OrderStateEnum::CREATING);
+
+        $shop->update(['offers_data' => ['gr' => ['active' => true, 'interval' => 30, 'amnesty_offer_id' => 99]]]);
+        expect(SweepGoldRewardWindowBaskets::run($shop))->toBe(0);
+    });
+
+    test('manual gr_extended_until grants gold reward and its expiry is swept', function () {
+        Queue::fake();
+
+        $shop = $this->shop;
+        $shop->update([
+            'is_aiku'     => true,
+            'type'        => ShopTypeEnum::B2B,
+            'offers_data' => ['gr' => ['active' => true, 'interval' => 30]],
+        ]);
+
+        $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+        $order    = StoreOrder::make()->action($customer, []);
+
+        expect($customer->hasActiveGrExtension())->toBeFalse()
+            ->and(CalculateOrderDiscounts::make()->getDaysSinceLastInvoiced($order))->toBe(10000);
+
+        UpdateCustomer::make()->action($customer, ['gr_extended_until' => now()->addDays(7)->toDateString()]);
+        $customer->refresh();
+
+        expect($customer->hasActiveGrExtension())->toBeTrue()
+            ->and(CalculateOrderDiscounts::make()->getDaysSinceLastInvoiced($order->refresh()))->toBe(0);
+
+        $customer->update(['gr_extended_until' => now()->subDay()]);
+        $customer->refresh();
+
+        expect($customer->hasActiveGrExtension())->toBeFalse()
+            ->and(SweepGoldRewardWindowBaskets::run($shop))->toBeGreaterThanOrEqual(1);
+    });
+
+    test('sweep command runs for a single shop', function () {
+        Queue::fake();
+
+        $this->shop->update([
+            'is_aiku'     => true,
+            'type'        => ShopTypeEnum::B2B,
+            'offers_data' => ['gr' => ['active' => true, 'interval' => 30]],
+        ]);
+
+        $this->artisan('ordering:sweep-gold-reward-window-baskets '.$this->shop->slug)->assertSuccessful();
+    });
+});
+
+describe('unique job lock bounds', function () {
+    $countPushed = function (string $actionClass): int {
+        return collect(Queue::pushedJobs())
+            ->flatten(1)
+            ->filter(fn ($pushed) => $pushed['job']->getAction() instanceof $actionClass)
+            ->count();
+    };
+
+    test('a stale CalculateOrderDiscounts lock expires instead of swallowing every later dispatch', function () use ($countPushed) {
+        Queue::fake();
+
+        $order     = new Order();
+        $order->id = 999999;
+
+        CalculateOrderDiscounts::dispatch($order);
+        CalculateOrderDiscounts::dispatch($order);
+        expect($countPushed(CalculateOrderDiscounts::class))->toBe(1);
+
+        $this->travel(CalculateOrderDiscounts::make()->jobUniqueFor + 1)->seconds();
+
+        CalculateOrderDiscounts::dispatch($order);
+        expect($countPushed(CalculateOrderDiscounts::class))->toBe(2);
+    });
+
+    test('a unique action declaring no jobUniqueFor gets a lock outliving its worker timeout', function () {
+        $onDefaultQueue = CleanFinishedVouchers::makeJob();
+
+        expect($onDefaultQueue)->toBeInstanceOf(BoundedUniqueJobDecorator::class)
+            ->and($onDefaultQueue->uniqueFor)->toBe(3600 + BoundedUniqueJobDecorator::LOCK_MARGIN);
+
+        $onLongQueue = RedoInvoiceCategoryTimeSeries::makeJob();
+
+        expect($onLongQueue->uniqueFor)->toBe(7200 + BoundedUniqueJobDecorator::LOCK_MARGIN)
+            ->and($onLongQueue->uniqueFor)->toBeGreaterThan(config('horizon.defaults.long-low-priority.timeout'));
+    });
 });

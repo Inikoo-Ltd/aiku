@@ -46,6 +46,11 @@ use App\Actions\Inventory\WarehouseArea\Search\ReindexWarehouseAreaSearch;
 use App\Actions\Ordering\Order\Search\ReindexOrdersSearch;
 use App\Actions\Reviews\Search\ReindexReviewsSearch;
 use App\Actions\SupplyChain\Supplier\Search\ReindexSupplierSearch;
+use App\Actions\Procurement\PurchaseOrder\Search\ReindexPurchaseOrderSearch;
+use App\Actions\GoodsIn\StockDelivery\Search\ReindexStockDeliverySearch;
+use App\Actions\SupplyChain\Agent\Search\ReindexAgentSearch;
+use App\Actions\SupplyChain\SupplierProduct\Search\ReindexSupplierProductSearch;
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\Search\ReindexAgentSupplierPurchaseOrderSearch;
 use App\Actions\SysAdmin\Guest\Search\ReindexGuestSearch;
 use App\Actions\SysAdmin\User\Search\ReindexUserSearch;
 use App\Actions\Traits\WithOrganisationsArgument;
@@ -298,10 +303,11 @@ class ReindexSearch extends HydrateModel
     protected function reindexProcurement(Command $command): void
     {
         $command->info('Procurement section 🚚');
-        //        $command->call('search:org_suppliers');
-        //        $command->call('search:org_agents');
-        //        $command->call('search:org_partners');
-        //        $command->call('search:purchase_orders');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexPurchaseOrderSearch::run(reset: $command->option('reset'));
+        ReindexStockDeliverySearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexSupplyChain(Command $command): void
@@ -311,10 +317,9 @@ class ReindexSearch extends HydrateModel
             $command->warn('Resetting search indexes');
         }
         ReindexSupplierSearch::run(reset: $command->option('reset'));
-
-
-        //        $command->call('search:agents');
-        //        $command->call('search:supplier_products'); // not yet tested
+        ReindexAgentSearch::run(reset: $command->option('reset'));
+        ReindexSupplierProductSearch::run(reset: $command->option('reset'));
+        ReindexAgentSupplierPurchaseOrderSearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexProduction(Command $command): void

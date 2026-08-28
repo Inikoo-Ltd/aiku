@@ -13,10 +13,10 @@ use App\Actions\Inventory\Location\Hydrators\LocationHydrateOrgStocks;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
+use App\Actions\Inventory\OrgStock\SetOrgStockPickingLocation;
 use App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
-use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\LocationOrgStock;
@@ -46,7 +46,7 @@ class DeleteLocationOrgStock extends OrgAction
         DB::transaction(function () use ($locationOrgStock, $location, $orgStock) {
             $currentStock = $locationOrgStock->quantity;
 
-            $costPerSku = $this->getCostPerSku($orgStock, Carbon::now());
+            $costPerSku = $this->getLppPerSku($orgStock, Carbon::now());
 
             if ($currentStock != 0) {
                 $stockDiff   = -$currentStock;
@@ -78,7 +78,7 @@ class DeleteLocationOrgStock extends OrgAction
         });
 
 
-        RepairOrgStockMissingLocationIds::dispatch($orgStock->id)->delay(2);
+        SetOrgStockPickingLocation::dispatch($orgStock->id)->delay(2);
         OrgStockHydrateQuantityInLocations::dispatch($orgStock->id)->delay(2);
 
         LocationHydrateOrgStocks::dispatch($location);

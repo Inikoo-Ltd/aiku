@@ -9,6 +9,7 @@
 namespace App\Transfers\Aurora;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class FetchAuroraHistoricAsset extends FetchAurora
 {
@@ -22,8 +23,10 @@ class FetchAuroraHistoricAsset extends FetchAurora
         }
 
         if (!$this->parsedData['asset_model']) {
+            Log::warning('Skipped historic asset '.$this->auroraModelData->{'Product Key'}.": asset model {$this->auroraModelData->{'Product ID'}} not found in aiku");
+            $this->parsedData = null;
 
-            dd($this->auroraModelData);
+            return;
         }
 
 

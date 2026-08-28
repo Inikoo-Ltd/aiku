@@ -326,9 +326,9 @@ class CalculateTimeSeriesStats
             return;
         }
 
-        DB::table('dashboard_time_series_aggregates')->updateOrInsert(
-            ['cache_hash' => $cacheHash],
+        DB::table('dashboard_time_series_aggregates')->upsert(
             [
+                'cache_hash' => $cacheHash,
                 'table_name' => $tableName,
                 'foreign_key' => $foreignKey,
                 'time_series_ids_hash' => hash('sha256', json_encode(array_values($timeSeriesIds))),
@@ -340,6 +340,19 @@ class CalculateTimeSeriesStats
                 'expires_at' => now()->addMinutes(30),
                 'updated_at' => now(),
                 'created_at' => now(),
+            ],
+            ['cache_hash'],
+            [
+                'table_name',
+                'foreign_key',
+                'time_series_ids_hash',
+                'metrics_hash',
+                'additional_where_hash',
+                'from_date',
+                'to_date',
+                'payload',
+                'expires_at',
+                'updated_at',
             ]
         );
     }

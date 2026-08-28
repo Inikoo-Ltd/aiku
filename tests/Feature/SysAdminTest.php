@@ -64,6 +64,7 @@ use App\Enums\SysAdmin\User\UserTypeEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Address;
+use App\Models\Helpers\Audit;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\Media;
@@ -341,6 +342,63 @@ test('set user employed in organisation', function (User $user) {
     return $user;
 })->depends('SetUserAuthorisedModels command');
 
+test('picking the language the account already uses still rebuilds the cached ui props', function (User $user) {
+    $isolatedUser = User::find($user->id);
+    setPermissionsTeamId($isolatedUser->group_id);
+    \Illuminate\Support\Facades\Session::forget('reloadLayout');
+
+    \App\Actions\UI\Profile\UpdateProfile::make()->handle($isolatedUser, ['language_id' => $isolatedUser->language_id]);
+
+    expect(\Illuminate\Support\Facades\Session::get('reloadLayout'))->toBe('1');
+
+    \Illuminate\Support\Facades\Session::forget('reloadLayout');
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+})->depends('SetUserAuthorisedModels command');
+
+test('locale follows the users saved language, not a stale session value', function (User $user) {
+    $spanish = \App\Models\Helpers\Language::where('code', 'es')->firstOrFail();
+    $english = \App\Models\Helpers\Language::where('code', 'en')->firstOrFail();
+
+    $user->update(['language_id' => $spanish->id]);
+    session(['aiku_language' => 'en']);
+
+    $this->actingAs($user);
+
+    expect(new \App\Http\Middleware\SetLocale()->getLocale())->toBe('es');
+
+    $user->update(['language_id' => $english->id]);
+})->depends('SetUserAuthorisedModels command');
+
+test('user timezone falls back to the organisation they work for', function (User $user) {
+    $organisation = $user->authorisedOrganisations()->first();
+    $employee     = Employee::factory()->create([
+        'user_id'         => $user->id,
+        'organisation_id' => $organisation->id,
+        'group_id'        => $user->group_id,
+        'state'           => 'working',
+    ]);
+    $user->employees()->syncWithoutDetaching([$employee->id => ['group_id' => $user->group_id]]);
+
+    // StoreUser gives every user a timezone; clearing it exercises the fallback behind it
+    expect($user->refresh()->timezone_id)->not->toBeNull();
+
+    $user->update(['timezone_id' => null]);
+
+    expect($user->refresh()->timezone_name)->toBe($organisation->timezone->name);
+
+    return $user;
+})->depends('set user employed in organisation');
+
+test('user timezone prefers their own choice over the organisation one', function (User $user) {
+    $auckland = \App\Models\Helpers\Timezone::where('name', 'Pacific/Auckland')->firstOrFail();
+
+    $user->update(['timezone_id' => $auckland->id]);
+
+    expect($user->refresh()->timezone_name)->toBe('Pacific/Auckland');
+
+    $user->update(['timezone_id' => null]);
+})->depends('user timezone falls back to the organisation they work for');
+
 test('set user employed in organisation command', function (User $user) {
     $this->artisan('user:set-employed-organisation', [
         'user' => $user->slug,
@@ -350,6 +408,20 @@ test('set user employed in organisation command', function (User $user) {
     expect($user->employed_in_organisation_id)->not->toBeNull();
 })->depends('set user employed in organisation');
 
+
+test('grp llms txt is served only to logged in users', function (User $user) {
+    expect(get(route('grp.llms_txt'))->getStatusCode())->toBeIn([302, 401]);
+
+    actingAs($user);
+
+    $response = get(route('grp.llms_txt'));
+
+    $response->assertOk()
+        ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
+        ->assertHeader('X-Robots-Tag', 'noindex, nofollow')
+        ->assertSee('You are acting as '.$user->username, false)
+        ->assertSee('Never submit, dispatch, cancel', false);
+})->depends('SetUserAuthorisedModels command');
 
 test('UI index users (active)', function (User $user) {
     $this->withoutExceptionHandling();
@@ -1056,6 +1128,26 @@ test('employee job position in another organisation', function () {
     return $employee;
 });
 
+test('update job positions in the organisation where the user is an employee', function (Employee $employee) {
+    $user         = $employee->getUser();
+    $organisation = $employee->organisation;
+    $jobPosition  = $organisation->jobPositions()->where('code', 'hr-c')->first();
+
+    UpdateUserOrganisationPseudoJobPositions::make()->action(
+        $user,
+        $organisation,
+        [
+            'permissions' => [
+                $jobPosition->code => []
+            ]
+        ]
+    );
+    $employee->refresh();
+
+    expect($employee->jobPositions()->where('job_positions.id', $jobPosition->id)->count())->toBe(1)
+        ->and($user->pseudoJobPositions()->wherePivot('organisation_id', $organisation->id)->count())->toBe(0);
+})->depends('employee job position in another organisation');
+
 test('can show hr dashboard', function () {
     actingAs(User::first());
 
@@ -1473,6 +1565,19 @@ test('update group settings action', function (Group $group) {
         ->and(Arr::get($group->settings, 'printnode.print_by_printnode'))->toBeTrue();
 })->depends('create group');
 
+test('group world clocks default until the group sets its own', function (Group $group) {
+    expect($group->world_clock_timezones)->toBe(Group::DEFAULT_WORLD_CLOCK_TIMEZONES);
+
+    $chosen = ['Europe/Madrid', 'Asia/Kuala_Lumpur'];
+    $group  = UpdateGroupSettings::make()->action($group, ['timezones' => $chosen]);
+
+    expect($group->refresh()->world_clock_timezones)->toBe($chosen);
+
+    $group->update(['settings' => Arr::except($group->settings, 'timezones')]);
+
+    expect($group->refresh()->world_clock_timezones)->toBe(Group::DEFAULT_WORLD_CLOCK_TIMEZONES);
+})->depends('create group');
+
 test('update user password action', function (User $user) {
     UpdateUserPassword::make()->action($user, ['password' => 'a-new-password']);
     expect(Hash::check('a-new-password', $user->fresh()->password))->toBeTrue();
@@ -1522,7 +1627,7 @@ test('UI sysadmin search analytics index', function (User $user) {
         'results_count' => 3,
     ]);
 
-    $response = get(route('grp.sysadmin.search_logs.index'));
+    $response = get(route('grp.sysadmin.analytics.search_logs.index'));
     $response->assertInertia(function (AssertableInertia $page) use ($user) {
         $page
             ->component('SysAdmin/SearchLogs')
@@ -1531,6 +1636,32 @@ test('UI sysadmin search analytics index', function (User $user) {
             ->has('users.data', 1)
             ->where('users.data.0.username', $user->username)
             ->where('users.data.0.searches', 1);
+    });
+})->depends('SetUserAuthorisedModels command');
+
+test('UI sysadmin user requests index', function (User $user) {
+    $this->withoutExceptionHandling();
+    actingAs($user);
+
+    \App\Models\Analytics\UserRequest::create([
+        'group_id'   => group()->id,
+        'user_id'    => $user->id,
+        'date'       => now(),
+        'route_name' => 'grp.sysadmin.dashboard',
+        'route_params' => json_encode([]),
+        'os'         => 'macOS',
+        'device'     => 'desktop',
+        'browser'    => 'Chrome',
+        'ip_address' => '127.0.0.1',
+        'location'   => json_encode(['XX']),
+    ]);
+
+    $response = get(route('grp.sysadmin.analytics.request.index'));
+    $response->assertInertia(function (AssertableInertia $page) use ($user) {
+        $page
+            ->component('SysAdmin/UserRequests')
+            ->has('data.data', 1)
+            ->where('data.data.0.username', $user->username);
     });
 })->depends('SetUserAuthorisedModels command');
 
@@ -1560,6 +1691,79 @@ test('UI sysadmin ai analytics index', function (User $user) {
     });
 })->depends('SetUserAuthorisedModels command');
 
+test('UI sysadmin staff chat analytics index', function (User $user) {
+    $this->withoutExceptionHandling();
+    actingAs($user);
+
+    $otherUser = StoreGuest::make()->action($user->group, Guest::factory()->definition())->getUser();
+
+    $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($user, ['user_ids' => [$otherUser->id]]);
+    \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $user, ['body' => 'hello']);
+    \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $otherUser, ['body' => 'hi']);
+    \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $user, ['body' => 'how are you']);
+
+    $insights = \App\Actions\SysAdmin\GetStaffChatAnalytics::run($user->group);
+    expect($insights['messages'])->toBe(3)
+        ->and($insights['users'])->toBe(2)
+        ->and($insights['conversations'])->toBe(1)
+        ->and($insights['top_users'][0]->username)->toBe($user->username)
+        ->and($insights['top_pairs'][0]['messages'])->toBe(3)
+        ->and($insights['top_pairs'][0]['members'])->toContain($user->username)
+        ->and($insights['top_pairs'][0]['members'])->toContain($otherUser->username);
+
+    $response = get(route('grp.sysadmin.dashboard'));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->component('SysAdmin/SysAdminDashboard')
+            ->where('staff_chat_insights.messages', 3);
+    });
+
+    $response = get(route('grp.sysadmin.staff_chat.index'));
+    $response->assertInertia(function (AssertableInertia $page) use ($user) {
+        $page
+            ->component('SysAdmin/StaffChatAnalytics')
+            ->where('insights.messages', 3)
+            ->has('users.data', 2)
+            ->where('users.data.0.username', $user->username)
+            ->where('users.data.0.messages', 2)
+            ->has('conversations.data', 1)
+            ->where('conversations.data.0.messages', 3);
+    });
+})->depends('SetUserAuthorisedModels command');
+
+test('UI hr staff chat analytics and conversation scoped to organisation', function (User $user) {
+    $this->withoutExceptionHandling();
+    actingAs($user);
+
+    $organisation = $user->authorisedOrganisations()->first();
+    $user->update(['employed_in_organisation_id' => $organisation->id]);
+    $conversation = \App\Models\Chat\StaffConversation::first();
+
+    $response = get(route('grp.org.hr.dashboard', [$organisation->slug]));
+    $response->assertInertia(fn (AssertableInertia $page) => $page->where('stats.5.name', 'Staff chat')->where('stats.5.stat', 3));
+
+    $response = get(route('grp.org.hr.staff_chat.index', [$organisation->slug]));
+    $response->assertInertia(function (AssertableInertia $page) use ($organisation) {
+        $page
+            ->component('SysAdmin/StaffChatAnalytics')
+            ->where('insights.messages', 3)
+            ->where('show_route.name', 'grp.org.hr.staff_chat.show')
+            ->where('show_route.parameters.organisation', $organisation->slug)
+            ->has('conversations.data', 1);
+    });
+
+    $response = get(route('grp.org.hr.staff_chat.show', [$organisation->slug, $conversation->ulid]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/HumanResources/StaffChatConversation')
+            ->has('messages', 3)
+            ->where('messages.0.body', 'hello');
+    });
+
+    $user->update(['employed_in_organisation_id' => null]);
+    $response = get(route('grp.org.hr.staff_chat.index', [$organisation->slug]));
+    $response->assertInertia(fn (AssertableInertia $page) => $page->where('insights.messages', 0));
+})->depends('SetUserAuthorisedModels command');
+
 test('UI sysadmin guest show and edit', function (User $user) {
     $this->withoutExceptionHandling();
     actingAs($user);
@@ -1584,8 +1788,43 @@ test('UI sysadmin scheduled tasks and settings', function (User $user) {
     $this->withoutExceptionHandling();
     actingAs($user);
 
-    get(route('grp.sysadmin.scheduled-tasks.index'))->assertOk();
+    get(route('grp.sysadmin.analytics.scheduled_tasks.index'))->assertOk();
     get(route('grp.sysadmin.settings.edit'))->assertOk();
+})->depends('SetUserAuthorisedModels command');
+
+test('UI sysadmin analytics dashboard', function (User $user) {
+    $this->withoutExceptionHandling();
+    actingAs($user);
+
+    \App\Models\Analytics\UserRequest::create([
+        'group_id'     => group()->id,
+        'user_id'      => $user->id,
+        'date'         => now(),
+        'route_name'   => 'grp.sysadmin.dashboard',
+        'route_params' => json_encode([]),
+        'os'           => 'macOS',
+        'device'       => 'desktop',
+        'browser'      => 'Chrome',
+        'ip_address'   => '127.0.0.1',
+        'location'     => json_encode(['XX']),
+    ]);
+
+    $response = get(route('grp.sysadmin.analytics.dashboard'));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SysAdmin/SysAdminAnalyticsDashboard')
+            ->has('analytics.requests_today')
+            ->has('analytics.online_now')
+            ->has('analytics.online_count')
+            ->has('analytics.active_users_30d')
+            ->has('analytics.logins_30d')
+            ->has('analytics.requests_per_day')
+            ->has('analytics.logins_per_day')
+            ->has('analytics.top_users_30d')
+            ->has('analytics.top_modules_30d')
+            ->has('analytics.devices_30d')
+            ->has('analytics.browsers_30d');
+    });
 })->depends('SetUserAuthorisedModels command');
 
 test('UI organisations create', function (User $user) {
@@ -1926,3 +2165,109 @@ test('user time series records aggregate requests and logins', function (User $u
     expect($insights['logins'])->toBeGreaterThanOrEqual(1)
         ->and(collect($insights['top_users'])->pluck('username'))->toContain($user->username);
 })->depends('SetUserAuthorisedModels command', 'process user request stores a request');
+
+/*
+ * Audit merging, folded in from its own file so it stops paying for a database restore of its own.
+ * It touches none of the fixtures above: every test invents its own auditable_id and asserts only on
+ * rows carrying that id, so it neither reads nor leaves anything the rest of this file cares about.
+ */
+describe('audit merging', function () {
+    it('merges into recent updated audit and does not create a second row', function () {
+        $auditableId = random_int(100000, 999999);
+
+        $firstAudit = Audit::create([
+            'auditable_type' => 'App\\Models\\Catalogue\\Product',
+            'auditable_id'   => $auditableId,
+            'event'          => 'updated',
+            'user_type'      => 'App\\Models\\SysAdmin\\User',
+            'user_id'        => 1,
+            'tags'           => 'alpha, beta,, gamma ',
+            'old_values'     => ['name' => 'before'],
+            'new_values'     => ['name' => 'after'],
+        ]);
+
+        Audit::create([
+            'auditable_type' => 'App\\Models\\Catalogue\\Product',
+            'auditable_id'   => $auditableId,
+            'event'          => 'updated',
+            'user_type'      => 'App\\Models\\SysAdmin\\User',
+            'user_id'        => 1,
+            'tags'           => 'delta',
+            'old_values'     => ['price' => 10],
+            'new_values'     => ['price' => 15],
+        ]);
+
+        $firstAudit->refresh();
+
+        expect(Audit::query()->where('auditable_id', $auditableId)->count())->toBe(1)
+            ->and($firstAudit->old_values)->toBe([
+                'name'  => 'before',
+                'price' => 10,
+            ])
+            ->and($firstAudit->new_values)->toBe([
+                'name'  => 'after',
+                'price' => 15,
+            ])
+            ->and(json_decode($firstAudit->tags, true))->toBe(['alpha', 'beta', 'gamma']);
+    });
+
+    it('deletes recent updated audit when merged diff becomes empty', function () {
+        $auditableId = random_int(100000, 999999);
+
+        Audit::create([
+            'auditable_type' => 'App\\Models\\Catalogue\\Product',
+            'auditable_id'   => $auditableId,
+            'event'          => 'updated',
+            'user_type'      => 'App\\Models\\SysAdmin\\User',
+            'user_id'        => 2,
+            'tags'           => 'audit',
+            'old_values'     => ['quantity' => 5],
+            'new_values'     => ['quantity' => 7],
+        ]);
+
+        Audit::create([
+            'auditable_type' => 'App\\Models\\Catalogue\\Product',
+            'auditable_id'   => $auditableId,
+            'event'          => 'updated',
+            'user_type'      => 'App\\Models\\SysAdmin\\User',
+            'user_id'        => 2,
+            'tags'           => 'audit',
+            'old_values'     => ['quantity' => 7],
+            'new_values'     => ['quantity' => 5],
+        ]);
+
+        expect(Audit::query()->where('auditable_id', $auditableId)->exists())->toBeFalse();
+    });
+
+    it('handles null incoming new values without failing', function () {
+        $auditableId = random_int(100000, 999999);
+
+        $firstAudit = Audit::create([
+            'auditable_type' => 'App\\Models\\Catalogue\\Product',
+            'auditable_id'   => $auditableId,
+            'event'          => 'updated',
+            'user_type'      => 'App\\Models\\SysAdmin\\User',
+            'user_id'        => 3,
+            'tags'           => 'safety',
+            'old_values'     => ['sku' => 'A1'],
+            'new_values'     => ['sku' => 'B1'],
+        ]);
+
+        Audit::create([
+            'auditable_type' => 'App\\Models\\Catalogue\\Product',
+            'auditable_id'   => $auditableId,
+            'event'          => 'updated',
+            'user_type'      => 'App\\Models\\SysAdmin\\User',
+            'user_id'        => 3,
+            'tags'           => 'safety',
+            'old_values'     => null,
+            'new_values'     => null,
+        ]);
+
+        $firstAudit->refresh();
+
+        expect(Audit::query()->where('auditable_id', $auditableId)->count())->toBe(1)
+            ->and($firstAudit->old_values)->toBe(['sku' => 'A1'])
+            ->and($firstAudit->new_values)->toBe(['sku' => 'B1']);
+    });
+});

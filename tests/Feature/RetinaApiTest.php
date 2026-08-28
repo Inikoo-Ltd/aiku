@@ -25,6 +25,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\deleteJson;
@@ -84,7 +85,7 @@ beforeEach(
 // ---- Profile ----
 
 test('retina api get profile', function () {
-    Sanctum::actingAs($this->dropshippingChannel, ['retina']);
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
 
     $response = getJson(route('retina.api.profile'));
     $response->assertOk();
@@ -98,10 +99,18 @@ test('retina api get profile unauthenticated', function () {
     $response->assertUnauthorized();
 });
 
+test('retina api dropshipping images rejects non integer id with validation error', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read']);
+
+    getJson(route('retina.api.dropshipping.images.index', ['id' => 'not-a-number', 'type' => 'product']))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['id']);
+});
+
 // ---- Dropshipping: clients ----
 
 test('retina api dropshipping store client', function () {
-    Sanctum::actingAs($this->dropshippingChannel, ['retina']);
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
 
     $response = postJson(route('retina.api.dropshipping.clients.create'), CustomerClient::factory()->definition());
     $response->assertCreated();
@@ -110,8 +119,36 @@ test('retina api dropshipping store client', function () {
     ]);
 });
 
+test('retina api read only token can read but not write', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read']);
+
+    getJson(route('retina.api.dropshipping.clients.index'))->assertOk();
+
+    postJson(route('retina.api.dropshipping.clients.create'), CustomerClient::factory()->definition())
+        ->assertForbidden()
+        ->assertJsonFragment(['message' => 'This API token is read only.']);
+});
+
+test('retina api legacy token without split abilities is full access after backfill', function () {
+    $token = $this->dropshippingChannel->createToken('legacy', ['retina']);
+    DB::table('personal_access_tokens')->where('id', $token->accessToken->id)->update(['abilities' => '["retina"]']);
+
+    (require database_path('migrations/2026_08_23_200000_backfill_retina_api_token_abilities.php'))->up();
+
+    expect(json_decode(DB::table('personal_access_tokens')->where('id', $token->accessToken->id)->value('abilities')))
+        ->toBe(['retina', 'retina:read', 'retina:write']);
+});
+
+test('retina api store token honours read_only flag', function () {
+    $plain = \App\Actions\Retina\Dropshipping\ApiToken\StoreCustomerToken::make()->handle($this->dropshippingChannel, true);
+    $id = explode('|', $plain)[0];
+
+    expect(json_decode(DB::table('personal_access_tokens')->where('id', $id)->value('abilities')))->toBe(['retina', 'retina:read'])
+        ->and(DB::table('personal_access_tokens')->where('id', $id)->value('name'))->toContain('(read only)');
+});
+
 test('retina api dropshipping clients flow', function () {
-    Sanctum::actingAs($this->dropshippingChannel, ['retina']);
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
 
     $client = StoreCustomerClient::make()->action(
         $this->dropshippingChannel,
@@ -144,7 +181,7 @@ test('retina api dropshipping clients flow', function () {
 // ---- Dropshipping: orders ----
 
 test('retina api dropshipping orders flow', function () {
-    Sanctum::actingAs($this->dropshippingChannel, ['retina']);
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
 
     $client = StoreCustomerClient::make()->action(
         $this->dropshippingChannel,
@@ -178,7 +215,7 @@ test('retina api dropshipping orders flow', function () {
 });
 
 test('retina api dropshipping order submit', function () {
-    Sanctum::actingAs($this->dropshippingChannel, ['retina']);
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
 
     $client = StoreCustomerClient::make()->action(
         $this->dropshippingChannel,
@@ -210,7 +247,7 @@ test('retina api dropshipping order submit', function () {
 // ---- Dropshipping: products & portfolios ----
 
 test('retina api dropshipping index products', function () {
-    Sanctum::actingAs($this->dropshippingChannel, ['retina']);
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
 
     $response = getJson(route('retina.api.dropshipping.products.index'));
     $response->assertOk();
@@ -220,7 +257,7 @@ test('retina api dropshipping index products', function () {
 });
 
 test('retina api dropshipping portfolio flow', function () {
-    Sanctum::actingAs($this->dropshippingChannel, ['retina']);
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
 
     $response = postJson(route('retina.api.dropshipping.products.my_product.store', $this->product));
     $response->assertCreated();
@@ -251,7 +288,7 @@ test('retina api dropshipping portfolio flow', function () {
 // ---- Dropshipping: order transactions ----
 
 test('retina api dropshipping order transactions flow', function () {
-    Sanctum::actingAs($this->dropshippingChannel, ['retina']);
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
 
     $client = StoreCustomerClient::make()->action(
         $this->dropshippingChannel,
@@ -292,17 +329,37 @@ test('retina api dropshipping order transactions flow', function () {
 });
 
 test('retina api dropshipping data feed csv', function () {
-    Sanctum::actingAs($this->dropshippingChannel, ['retina']);
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
 
     $response = getJson(route('retina.api.dropshipping.data_feed.csv'));
     $response->assertOk();
     $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
 });
 
+test('retina api data feed csv escapes quotes in descriptions', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    UpdateProduct::make()->action($this->product, [
+        'description' => 'Bochník <span style=\\"font-family: Comfortaa, sans-serif;\\">mýdla</span> se "závěsem"',
+    ]);
+    \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action(
+        $this->dropshippingChannel,
+        $this->product,
+        []
+    );
+
+    $response = getJson(route('retina.api.dropshipping.data_feed.csv'));
+    $response->assertOk();
+
+    $lines = array_filter(explode("\n", trim($response->getContent())));
+    $columnCounts = array_map(fn (string $line) => count(str_getcsv($line, ',', '"', '')), $lines);
+    expect(array_unique($columnCounts))->toHaveCount(1);
+});
+
 // ---- Fulfilment: clients ----
 
 test('retina api fulfilment clients flow', function () {
-    Sanctum::actingAs($this->fulfilmentChannel, ['retina']);
+    Sanctum::actingAs($this->fulfilmentChannel, ['retina', 'retina:read', 'retina:write']);
 
     $client = StoreCustomerClient::make()->action(
         $this->fulfilmentChannel,
@@ -333,7 +390,7 @@ test('retina api fulfilment clients flow', function () {
 });
 
 test('retina api fulfilment store client', function () {
-    Sanctum::actingAs($this->fulfilmentChannel, ['retina']);
+    Sanctum::actingAs($this->fulfilmentChannel, ['retina', 'retina:read', 'retina:write']);
 
     $response = postJson(route('retina.api.fulfilment.clients.create'), CustomerClient::factory()->definition());
     $response->assertCreated();
@@ -345,7 +402,7 @@ test('retina api fulfilment store client', function () {
 // ---- Fulfilment: orders ----
 
 test('retina api fulfilment orders flow', function () {
-    Sanctum::actingAs($this->fulfilmentChannel, ['retina']);
+    Sanctum::actingAs($this->fulfilmentChannel, ['retina', 'retina:read', 'retina:write']);
 
     $client = StoreCustomerClient::make()->action(
         $this->fulfilmentChannel,
@@ -375,21 +432,31 @@ test('retina api fulfilment orders flow', function () {
     $response->assertOk();
 
     $response = patchJson(route('retina.api.fulfilment.order.submit', $palletReturn));
-    $response->assertOk();
-    expect($response->json('data.state'))->not->toBeNull();
+    $response->assertUnprocessable();
+    $response->assertJsonPath('message', 'Please attach at least one transaction to the order.');
 
     $response = postJson(route('retina.api.fulfilment.order.cancel', $palletReturn));
-    $response->assertOk();
+    $response->assertUnprocessable();
+    $response->assertJsonPath('message', 'This Order is already in the "in_process" state and cannot be updated.');
 });
 
 // ---- Fulfilment: portfolios ----
 
 test('retina api fulfilment portfolio flow', function () {
-    Sanctum::actingAs($this->fulfilmentChannel, ['retina']);
+    Sanctum::actingAs($this->fulfilmentChannel, ['retina', 'retina:read', 'retina:write']);
 
-    $response = postJson(route('retina.api.fulfilment.portfolios.store', $this->fulfilmentProduct));
-    $response->assertCreated();
-    $portfolioId = $response->json('data.id');
+    $storedItem = \App\Actions\Fulfilment\StoredItem\StoreStoredItem::make()->action(
+        $this->fulfilmentCustomer->fulfilmentCustomer,
+        ['reference' => 'api-portfolio-item']
+    );
+    $storedItem->update(['state' => \App\Enums\Fulfilment\StoredItem\StoredItemStateEnum::ACTIVE]);
+
+    $response = postJson(route('retina.api.fulfilment.portfolios.store'));
+    $response->assertSuccessful();
+
+    $portfolio = $this->fulfilmentChannel->portfolios()->where('item_id', $storedItem->id)->first();
+    expect($portfolio)->not->toBeNull();
+    $portfolioId = $portfolio->id;
 
     $response = getJson(route('retina.api.fulfilment.portfolios.index'));
     $response->assertOk();

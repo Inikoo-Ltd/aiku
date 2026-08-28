@@ -211,6 +211,26 @@ class EditWebsite extends OrgAction
                 ]
             ];
             $blueprints[] = [
+                'label'  => __('Sound Player'),
+                'icon'   => 'fal fa-music',
+                'fields' => [
+                    'sound_player_style' => [
+                        'type'        => 'select',
+                        'mode'        => 'single',
+                        'information' => __('Look of the sound sample player shown on products with an audio sample'),
+                        'label'       => __('Sound player style'),
+                        'options'     => [
+                            ['value' => 'rainbow', 'label' => __('Rainbow bars (animated)')],
+                            ['value' => 'mono', 'label' => __('Monochrome bars (animated)')],
+                            ['value' => 'wave', 'label' => __('Soft wave (animated)')],
+                            ['value' => 'equalizer', 'label' => __('Bottom equalizer (animated)')],
+                            ['value' => 'minimal', 'label' => __('Minimal (no animation)')],
+                        ],
+                        'value'       => data_get($website->settings, 'sound_player_style', 'rainbow'),
+                    ]
+                ]
+            ];
+            $blueprints[] = [
                 'label'  => __('Related Products Web Block'),
                 'icon'   => 'fad fa-th',
                 'fields' => [
@@ -424,41 +444,17 @@ class EditWebsite extends OrgAction
         }
 
         $blueprints[] = [
-            'label' => __('Upload Your LLM'),
-            'icon' => 'fa-light fa-upload',
-            'fields' => [
-                'llms_txt' => [
-                    'type'        => 'file_upload',
-                    'label'       => __('LLMs.txt File'),
-                    'placeholder' => __('Upload a .txt file (max 50KB)'),
-                    'required'    => false,
-                    'value'       => Arr::get($website->settings, 'llms_txt.filename'),
-                    'accept'      => '.txt,text/plain',
-                    'information' => __('This file tells AI crawlers (ChatGPT, Gemini, etc.) how to interact with your website.'),
-                ],
-
-            ]
-        ];
-
-        // LLMs.txt section - for AI crawler configuration
-        $blueprints[] = [
             'label'  => __('LLMs.txt'),
             'icon'   => 'fa-light fa-robot',
             'fields' => [
                 'llms_txt' => [
                     'type'        => 'file_upload',
-                    'label'       => __('LLMs.txt File'),
+                    'label'       => __('Additional information'),
                     'placeholder' => __('Upload a .txt file (max 50KB)'),
                     'required'    => false,
                     'value'       => Arr::get($website->settings, 'llms_txt.filename'),
                     'accept'      => '.txt,text/plain',
-                    'information' => __('This file tells AI crawlers (ChatGPT, Gemini, etc.) how to interact with your website.'),
-                ],
-                'llms_txt_use_fallback' => [
-                    'type'        => 'toggle',
-                    'label'       => __('Use global fallback'),
-                    'value'       => Arr::get($website->settings, 'llms_txt.use_fallback', true),
-                    'information' => __('If enabled and no file is uploaded, the global LLMs.txt will be used.'),
+                    'information' => __('The llms.txt served at /llms.txt is generated from the website settings (shop type, whether prices need registration, catalogue URLs). Anything uploaded here is appended as additional information; it cannot replace the generated part.'),
                 ],
             ]
         ];

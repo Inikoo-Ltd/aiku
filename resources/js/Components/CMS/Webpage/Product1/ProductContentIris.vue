@@ -42,7 +42,7 @@ const openDisclosureId = ref<number | null>(null)
 
 <template>
     <div class="w-full">
-         <div v-if="setting?.product_specs" class="relative">
+         <div v-if="setting?.product_specs &&  product.specifications" class="relative">
             <div class="space-y-2">
                 <!-- Spec Item #1 -->
                 <div class="relative rounded transition">

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 
 import Table from "@/Components/Table/Table.vue"
+import MarginCell from "@/Components/Margin/MarginCell.vue"
 import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Link } from "@inertiajs/vue3"
@@ -59,6 +60,10 @@ function assetRedirectRoute(transaction: InvoiceTransaction) {
                 </div>
             </template>
 
+            <template #cell(margin)="{ item }">
+                <MarginCell :margin="item.margin" :currencyCode="item.currency_code" />
+            </template>
+
             <template #cell(net_amount)="{ item }">
                 <div :class="item.net_amount < 0 ? 'text-red-500' : ''">
                     {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
@@ -69,6 +74,17 @@ function assetRedirectRoute(transaction: InvoiceTransaction) {
                 <span>
                     {{ transaction.description }}
                 </span>
+                <span v-if="transaction.packed_in_message" class="italic opacity-80 pl-1">{{transaction.packed_in_message}}</span>
+                <span v-if="transaction.number_grouped_transactions" class="px-3">
+                    <FontAwesomeIcon icon="fal fa-stream" /> {{ transaction.number_grouped_transactions }}
+                </span>
+            </template>
+            
+            <template #cell(name)="{ item: transaction }">
+                <span>
+                    {{ transaction.name }}
+                </span>
+                <span v-if="transaction.packed_in_message" class="italic opacity-80 pl-1">{{transaction.packed_in_message}}</span>
                 <span v-if="transaction.number_grouped_transactions" class="px-3">
                     <FontAwesomeIcon icon="fal fa-stream" /> {{ transaction.number_grouped_transactions }}
                 </span>

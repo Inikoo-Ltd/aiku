@@ -144,4 +144,25 @@ trait WithRepairWebpages
         }
     }
 
+    protected function deleteWebBlocksByModelHasID(Webpage $webpage, array $modelHasWebBlocksIDs)
+    {
+        $webBlocks = DB::table('model_has_web_blocks')
+            ->select(['web_blocks.id'])
+            ->leftJoin('web_blocks', 'web_blocks.id', '=', 'model_has_web_blocks.web_block_id')
+            ->whereIn('model_has_web_blocks.id', $modelHasWebBlocksIDs)
+            ->get();
+
+        if (count($webBlocks) > 0) {
+            $webpage
+                ->modelHasWebBlocks()
+                ->whereIn('id', $modelHasWebBlocksIDs)
+                ->delete();
+
+            $webpage
+                ->webBlocks()
+                ->whereIn('web_blocks.id', $webBlocks->pluck('id'))
+                ->delete();
+        }
+    }
+
 }

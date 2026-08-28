@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
 use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
@@ -232,7 +233,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                 timeSeriesRecordsTable: 'org_stock_time_series_records',
                 foreignKey: 'org_stock_id',
                 aggregateColumns: [
-                    'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    'sales_org_currency_external' => 'sales_org_currency_external',
                     'invoices'                    => 'invoices',
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
@@ -240,8 +241,8 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                 includeLY: true
             );
 
-            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
-            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_org_currency_external'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_org_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
             $selects[] = DB::raw(
@@ -327,7 +328,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
         ];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
-            $allowedSorts[] = 'sales_grp_currency_external';
+            $allowedSorts[] = 'sales_org_currency_external';
             $allowedSorts[] = 'invoices';
         } else {
             $allowedSorts[] = 'revenue';
@@ -386,13 +387,13 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                     ->column(key: 'on_the_way_po_value', label: __("On the way (PO's)"), sortable: true, type: 'currency')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
-                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
+                    ->column(key: 'sales_org_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'sales_org_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
                     ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 if ($parent instanceof OrgStockFamily || !$bucket || in_array($bucket, ['active', 'discontinuing'])) {
                     $table
-                        ->column(key: 'sku_value', label: __('Sku value'), canBeHidden: false, sortable: true, type: 'currency')
+                        ->column(key: 'sku_value', label: __('Sku value'), tooltip: __('Valued with').' '.OrgStockValuationMethodEnum::official()->label().' ('.__('the official valuation').')', tooltipIcon: true, canBeHidden: false, sortable: true, type: 'currency')
                         ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
                         ->column(key: 'revenue', label: __('Revenue'), sortable: true, type: 'currency');
                 }

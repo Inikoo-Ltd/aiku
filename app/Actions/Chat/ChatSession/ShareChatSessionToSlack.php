@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\ChatSession\Concerns\WithChatSlackSettings;
 use App\Helpers\SlackNotification;
 use App\Models\Chat\ChatSession;
 use Illuminate\Http\JsonResponse;
@@ -16,15 +17,20 @@ use Illuminate\Notifications\Slack\BlockKit\Blocks\ActionsBlock;
 use Illuminate\Notifications\Slack\BlockKit\Blocks\ContextBlock;
 use Illuminate\Notifications\Slack\BlockKit\Blocks\SectionBlock;
 use Illuminate\Notifications\Slack\SlackMessage;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShareChatSessionToSlack
 {
     use AsAction;
+    use WithChatSlackSettings;
 
-    public function handle(ChatSession $chatSession, string $token, array $channels): array
+    /**
+     * @param  array<int, array{type: string, id: string, name: string}>  $destinations
+     *
+     * @return array{succeeded: array<int, string>, failed: array<int, array{destination: string, error: string}>}
+     */
+    public function handle(ChatSession $chatSession, string $token, array $destinations): array
     {
         $chatSession->loadMissing(['webUser.customer', 'shop', 'assignments.chatAgent.user']);
 
@@ -77,17 +83,17 @@ class ShareChatSessionToSlack
         $succeeded = [];
         $failed    = [];
 
-        foreach ($channels as $channel) {
+        foreach ($destinations as $destination) {
             try {
                 (new AnonymousNotifiable())
-                    ->route('slack', $channel)
+                    ->route('slack', $destination['id'])
                     ->notify(new SlackNotification($message));
 
-                $succeeded[] = $channel;
+                $succeeded[] = $destination['name'];
             } catch (\Exception $e) {
                 $failed[] = [
-                    'channel' => $channel,
-                    'error'   => $e->getMessage(),
+                    'destination' => $destination['name'],
+                    'error'       => $e->getMessage(),
                 ];
             }
         }
@@ -95,15 +101,21 @@ class ShareChatSessionToSlack
         return ['succeeded' => $succeeded, 'failed' => $failed];
     }
 
+    public function rules(): array
+    {
+        return [
+            'destination_keys'   => ['sometimes', 'array'],
+            'destination_keys.*' => ['string'],
+        ];
+    }
+
     public function asController(ChatSession $chatSession, ActionRequest $request): JsonResponse
     {
         $chatSession->loadMissing('shop');
 
-        $settings = $chatSession->shop?->settings ?? [];
-        $token    = Arr::get($settings, 'chat.slack_token') ?? '';
-        $channels = array_values(array_filter((array) (Arr::get($settings, 'chat.slack_channels') ?? [])));
+        $slack = $this->shopSlackSettings($chatSession->shop);
 
-        if (empty($token)) {
+        if (blank($slack['token'])) {
             return response()->json([
                 'success'        => false,
                 'not_configured' => true,
@@ -111,38 +123,58 @@ class ShareChatSessionToSlack
             ], 503);
         }
 
-        if (empty($channels)) {
+        if (empty($slack['destinations'])) {
             return response()->json([
                 'success'        => false,
                 'not_configured' => true,
-                'message'        => __('No Slack channels configured.'),
+                'message'        => __('No Slack channels or people configured.'),
             ], 503);
         }
 
-        $result = $this->handle($chatSession, $token, $channels);
+        $validated       = $request->validated();
+        $destinationKeys = $validated['destination_keys'] ?? null;
+
+        $destinations = collect($slack['destinations'])
+            ->when(
+                $destinationKeys !== null,
+                fn ($collection) => $collection->filter(
+                    fn (array $destination) => in_array($destination['type'] . ':' . $destination['id'], $destinationKeys, true)
+                )
+            )
+            ->values()
+            ->all();
+
+        if (empty($destinations)) {
+            return response()->json([
+                'success' => false,
+                'message' => __('No Slack destination selected.'),
+            ], 422);
+        }
+
+        $result = $this->handle($chatSession, $slack['token'], $destinations);
 
         $succeeded = $result['succeeded'];
         $failed    = $result['failed'];
 
         if (empty($succeeded) && !empty($failed)) {
-            $failedDetails = collect($failed)->map(fn ($f) => "{$f['channel']}: {$f['error']}")->join(', ');
+            $failedDetails = collect($failed)->map(fn ($f) => "{$f['destination']}: {$f['error']}")->join(', ');
 
             return response()->json([
                 'success' => false,
-                'message' => __('Failed to share to all channels. :details', ['details' => $failedDetails]),
+                'message' => __('Failed to share to all destinations. :details', ['details' => $failedDetails]),
                 'failed'  => $failed,
             ], 500);
         }
 
         if (!empty($failed)) {
-            $failedChannels = collect($failed)->pluck('channel')->join(', ');
+            $failedDestinations = collect($failed)->pluck('destination')->join(', ');
 
             return response()->json([
                 'success'   => true,
                 'partial'   => true,
                 'message'   => __('Shared to :succeeded. Failed: :failed.', [
                     'succeeded' => collect($succeeded)->join(', '),
-                    'failed'    => $failedChannels,
+                    'failed'    => $failedDestinations,
                 ]),
                 'succeeded' => $succeeded,
                 'failed'    => $failed,
@@ -152,7 +184,7 @@ class ShareChatSessionToSlack
         return response()->json([
             'success'   => true,
             'message'   => count($succeeded) > 1
-                ? __('Shared to :channels.', ['channels' => collect($succeeded)->join(', ')])
+                ? __('Shared to :destinations.', ['destinations' => collect($succeeded)->join(', ')])
                 : __('Conversation shared to Slack successfully.'),
             'succeeded' => $succeeded,
         ]);

@@ -44,14 +44,14 @@ class StoreProductStepDiscount extends OrgAction
             ->values()
             ->all();
 
-        $offerCampaign = OfferCampaign::where('shop_id', $product->shop_id)->where('type', OfferCampaignTypeEnum::PRODUCT_OFFERS)->first();
+        $offerCampaign = OfferCampaign::where('shop_id', $product->shop_id)->where('type', OfferCampaignTypeEnum::STEP_OFFERS)->first();
         if (!$offerCampaign) {
             return null;
         }
 
         data_set($modelData, 'type', OfferTypeEnum::PRODUCT_QUANTITY_ORDERED->value);
 
-        $code = Str::lower($offerCampaign->code.'-step-'.$product->code);
+        $code = Str::lower($offerCampaign->code.'-'.$product->code);
         data_set($modelData, 'code', $code, false);
 
         $english = Language::where('code', 'en')->first();

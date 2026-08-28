@@ -8,6 +8,7 @@
 
 namespace App\Actions\Maintenance\Dispatching;
 
+use App\Actions\Inventory\OrgStock\SyncOrgStockTradeUnits;
 use App\Actions\OrgAction;
 use App\Models\Inventory\OrgStock;
 use Exception;
@@ -33,7 +34,7 @@ class RepairTradeUnitsInOrgStocks extends OrgAction
                 ];
             }
 
-            $orgStock->tradeUnits()->sync($tradeUnits);
+            $orgStock = SyncOrgStockTradeUnits::run($orgStock, $tradeUnits);
         }
 
         return $orgStock;

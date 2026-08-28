@@ -8,6 +8,9 @@
 
 namespace App\Actions\Procurement\OrgSupplierProducts\UI;
 
+use App\Actions\Procurement\WithParentSiblingsNavigation;
+use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
@@ -15,6 +18,9 @@ use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
+use App\Enums\UI\Procurement\OrgSupplierProductsTabsEnum;
+use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgSupplierProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\OrgAgent;
@@ -33,15 +39,57 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOrgSupplierProducts extends OrgAction
 {
+    use WithParentSiblingsNavigation;
+    use WithProcurementAuthorisation;
     use WithOrgAgentSubNavigation;
     use WithOrgSupplierSubNavigation;
     use WithAgentOrganisation;
 
     private OrgSupplier|OrgAgent|Organisation $parent;
 
-    public function authorize(ActionRequest $request): bool
+    protected function getElementGroups(Organisation|OrgAgent|OrgSupplier $parent): array
     {
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
+        $query = OrgSupplierProduct::query()
+            ->join('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id');
+
+        $organisationAgent = $this->getParentOrganisationAgent($parent);
+
+        if ($parent instanceof OrgAgent) {
+            $query->where('org_supplier_products.org_agent_id', $parent->id);
+        } elseif ($parent instanceof OrgSupplier) {
+            $query->where('org_supplier_products.org_supplier_id', $parent->id);
+        } elseif ($organisationAgent) {
+            $query->whereIn('org_supplier_products.org_agent_id', function ($query) use ($organisationAgent) {
+                $query->select('id')
+                    ->from('org_agents')
+                    ->where('org_agents.agent_id', $organisationAgent->id);
+            });
+        } else {
+            $query->where('org_supplier_products.organisation_id', $parent->id);
+        }
+
+        $counts = $query
+            ->selectRaw('supplier_products.state, count(*) as total')
+            ->groupBy('supplier_products.state')
+            ->pluck('total', 'supplier_products.state');
+
+        $stateCounts = collect(OrgSupplierProductStateEnum::cases())
+            ->mapWithKeys(fn (OrgSupplierProductStateEnum $state) => [$state->value => $counts->get($state->value, 0)])
+            ->all();
+
+        return [
+            'state' => [
+                'label'    => __('State'),
+                'default'  => OrgSupplierProductStateEnum::ACTIVE->value,
+                'elements' => array_merge_recursive(
+                    OrgSupplierProductStateEnum::labels(),
+                    $stateCounts,
+                ),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('supplier_products.state', $elements);
+                },
+            ],
+        ];
     }
 
     public function handle(Organisation|OrgAgent|OrgSupplier $parent, $prefix = null): LengthAwarePaginator
@@ -59,6 +107,17 @@ class IndexOrgSupplierProducts extends OrgAction
 
         $queryBuilder = QueryBuilder::for(OrgSupplierProduct::class);
         $queryBuilder->leftJoin('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id');
+        $queryBuilder->leftJoin('currencies', 'supplier_products.currency_id', 'currencies.id');
+
+        foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix,
+                default: $elementGroup['default'] ?? null,
+            );
+        }
 
         $organisationAgent = $this->getParentOrganisationAgent($parent);
 
@@ -80,6 +139,9 @@ class IndexOrgSupplierProducts extends OrgAction
             'org_supplier_products.slug',
             'supplier_products.code',
             'supplier_products.name',
+            'supplier_products.cost',
+            'supplier_products.units_per_carton',
+            'currencies.code as currency_code',
         ]);
 
         if ($organisationAgent) {
@@ -90,19 +152,28 @@ class IndexOrgSupplierProducts extends OrgAction
 
         return $queryBuilder
             ->defaultSort('supplier_products.code')
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name', 'cost'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure($prefix = null): Closure
+    public function tableStructure(Organisation|OrgAgent|OrgSupplier $parent, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($parent, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
+            }
+
+            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'] ?? null,
+                );
             }
 
             $table
@@ -111,8 +182,14 @@ class IndexOrgSupplierProducts extends OrgAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
-            if ($this->getParentOrganisationAgent($this->parent)) {
+            if ($this->getParentOrganisationAgent($parent)) {
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
+            }
+
+            $table->column(key: 'cost', label: __('Cost'), canBeHidden: false, sortable: true, type: 'currency');
+
+            if ($parent instanceof Organisation && !$this->getParentOrganisationAgent($parent)) {
+                $table->column(key: 'add', label: '', canBeHidden: false);
             }
 
             $table->defaultSort('code');
@@ -122,25 +199,25 @@ class IndexOrgSupplierProducts extends OrgAction
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $organisation;
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab([OrgSupplierProductsTabsEnum::INDEX->value]);
 
-        return $this->handle($organisation);
+        return $this->handle($organisation, OrgSupplierProductsTabsEnum::INDEX->value);
     }
 
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $orgAgent;
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab([OrgSupplierProductsTabsEnum::INDEX->value]);
 
-        return $this->handle($orgAgent);
+        return $this->handle($orgAgent, OrgSupplierProductsTabsEnum::INDEX->value);
     }
 
     public function inOrgSupplier(Organisation $organisation, OrgSupplier $orgSupplier, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $orgSupplier;
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab(OrgSupplierProductsTabsEnum::values());
 
-        return $this->handle($orgSupplier);
+        return $this->handle($orgSupplier, OrgSupplierProductsTabsEnum::INDEX->value);
     }
 
     public function jsonResponse(LengthAwarePaginator $orgSupplierProducts): AnonymousResourceCollection
@@ -158,6 +235,7 @@ class IndexOrgSupplierProducts extends OrgAction
         $subNavigation = null;
         $afterTitle    = null;
         $iconRight     = null;
+        $tabsNavigation = OrgSupplierProductsTabsEnum::navigationOnly([OrgSupplierProductsTabsEnum::INDEX->value]);
 
         if ($this->parent instanceof OrgAgent) {
             $title         = $this->parent->agent->organisation->name;
@@ -177,6 +255,7 @@ class IndexOrgSupplierProducts extends OrgAction
             $subNavigation = $this->getOrgSupplierNavigation($this->parent);
             $afterTitle    = ['label' => __('Supplier Products')];
             $iconRight     = ['icon' => 'fal fa-box-usd'];
+            $tabsNavigation = OrgSupplierProductsTabsEnum::navigation();
         }
 
         return Inertia::render(
@@ -184,16 +263,32 @@ class IndexOrgSupplierProducts extends OrgAction
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('Supplier Products'),
+                'navigation'  => $this->getParentSiblingsNavigation($this->parent, $request),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
                     'subNavigation' => $subNavigation,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
+                    'actions'       => $this->parent instanceof OrgSupplier
+                        ? [$this->getOrgSupplierPurchaseOrderAction($this->parent)]
+                        : [],
                 ],
-                'data'        => OrgSupplierProductsResource::collection($orgSupplierProducts),
+                'tabs'        => [
+                    'current'    => $this->tab,
+                    'navigation' => $tabsNavigation,
+                ],
+                OrgSupplierProductsTabsEnum::INDEX->value => $this->tab == OrgSupplierProductsTabsEnum::INDEX->value
+                    ? fn () => OrgSupplierProductsResource::collection($orgSupplierProducts)
+                    : Inertia::optional(fn () => OrgSupplierProductsResource::collection($orgSupplierProducts)),
+                OrgSupplierProductsTabsEnum::HISTORY->value => $this->parent instanceof OrgSupplier && $this->tab == OrgSupplierProductsTabsEnum::HISTORY->value
+                    ? fn () => HistoryResource::collection(IndexHistory::run($this->parent, OrgSupplierProductsTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => $this->parent instanceof OrgSupplier
+                        ? HistoryResource::collection(IndexHistory::run($this->parent, OrgSupplierProductsTabsEnum::HISTORY->value))
+                        : null),
             ],
-        )->table($this->tableStructure());
+        )->table($this->tableStructure($this->parent, OrgSupplierProductsTabsEnum::INDEX->value))
+            ->table(IndexHistory::make()->tableStructure(prefix: OrgSupplierProductsTabsEnum::HISTORY->value));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
@@ -203,7 +298,7 @@ class IndexOrgSupplierProducts extends OrgAction
                 [
                     'type'   => 'simple',
                     'simple' => [
-                        'label' => __('Supplier products'),
+                        'label' => __('Supplier Products'),
                         'icon'  => 'fal fa-bars',
                         'route' => $routeParameters,
                     ],
@@ -224,7 +319,7 @@ class IndexOrgSupplierProducts extends OrgAction
             ),
             'grp.org.procurement.org_agents.show.supplier_products.index' =>
             array_merge(
-                (new ShowOrgAgent())->getBreadcrumbs($routeParameters),
+                (new ShowOrgAgent())->getBreadcrumbs($routeName, $routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.procurement.org_agents.show.supplier_products.index',

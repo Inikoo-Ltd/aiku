@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive">
+<defs>
+    <filter id="pen" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="bleed" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.014" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="18" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="1.6" result="b"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="4" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 -0.2" result="ga"/>
+      <feComposite in="b" in2="ga" operator="in" result="mottled"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="mottled"/></feMerge>
+    </filter>
+    <filter id="marker" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="21" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" seed="2" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.90  0 0 0 0 0.87  0 0 0 0 0.80  0 0 0 0.28 0" result="c"/>
+      <feComposite in="c" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <style>
+      .pen { fill: none; stroke: #23222e; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: url(#pen); }
+      .soft { stroke-width: 1.4; opacity: .6; }
+      .w { mix-blend-mode: multiply; filter: url(#bleed); stroke: none; opacity: .8; }
+      .m { fill: none; stroke-linecap: round; stroke-width: 26; opacity: .55; mix-blend-mode: multiply; filter: url(#marker); }
+      .h { fill: #23222e; filter: url(#pen); }
+      .hl { fill: #8a4b9e; filter: url(#pen); }
+    </style>
+  </defs>
+  <rect width="1200" height="750" fill="#fbf7ee"/>
+  <rect width="1200" height="750" fill="#fbf7ee" filter="url(#paper)"/>
+
+  <g class="w">
+    <path d="M80 70 C400 40 800 60 1140 80 C1160 120 1150 150 1120 160 C800 180 400 170 90 160 C60 130 60 90 80 70 Z" fill="#f3c04a" opacity=".34"/>
+    <path d="M90 250 C400 230 800 250 1130 240 C1150 290 1140 320 1110 326 C800 340 400 336 100 330 C70 300 70 270 90 250 Z" fill="#9dcab0" opacity=".40"/>
+    <path d="M90 420 C400 400 800 420 1130 410 C1150 460 1140 490 1110 496 C800 510 400 506 100 500 C70 470 70 440 90 420 Z" fill="#76b7c2" opacity=".34"/>
+    <path d="M820 560 C900 520 1060 540 1120 600 C1140 660 1080 700 1000 700 C900 700 820 680 800 640 C790 600 800 580 820 560 Z" fill="#e88a73" opacity=".42"/>
+    <path d="M100 560 C200 530 340 560 360 610 C370 660 320 700 240 700 C150 700 90 670 90 630 C90 600 90 580 100 560 Z" fill="#b4567a" opacity=".3"/>
+  </g>
+  <g class="m">
+    <path d="M120 300 L600 296" stroke="#9dcab0"/>
+    <path d="M120 470 L520 466" stroke="#76b7c2"/>
+  </g>
+  <g class="pen">
+    <path d="M70 120 C400 112 800 124 1140 116" class="soft"/>
+    <path d="M70 200 C400 192 800 204 1140 196" class="soft"/>
+    <path d="M70 288 C400 280 800 292 1140 284" class="soft"/>
+    <path d="M70 372 C400 364 800 376 1140 368" class="soft"/>
+    <path d="M70 458 C400 450 800 462 1140 454" class="soft"/>
+    <path d="M70 540 C400 532 800 544 1140 536" class="soft"/>
+    <path d="M96 176 l20 -1 l1 20 l-21 1 z M100 186 l6 6 l10 -14" />
+    <path d="M96 262 l20 -1 l1 20 l-21 1 z M100 272 l6 6 l10 -14" />
+    <path d="M96 348 l20 -1 l1 20 l-21 1 z" />
+    <path d="M96 432 l20 -1 l1 20 l-21 1 z M100 442 l6 6 l10 -14" />
+    <path d="M96 516 l20 -1 l1 20 l-21 1 z" />
+    <path d="M840 620 l100 -4 l4 -40 l60 2 l30 36 l2 40 l-196 6 z M944 578 l0 42 M960 584 l36 0 l20 28 l-56 2 z"/>
+    <circle cx="880" cy="666" r="14"/><circle cx="1000" cy="664" r="14"/>
+    <path d="M620 640 C680 600 740 660 800 636" class="soft" stroke-dasharray="6 10"/>
+    <path d="M790 628 l14 6 l-8 12" class="soft"/>
+    <path d="M150 590 l70 -20 l60 24 l-70 22 z M150 590 l0 50 l60 26 l0 -50 M280 594 l0 50 l-70 22"/>
+    <path d="M220 570 l0 50" class="soft"/>
+  </g>
+  <g class="h" font-size="24">
+    <text x="130" y="102">ref</text><text x="300" y="102">customer</text><text x="600" y="102">state</text><text x="880" y="102">net</text>
+    <text x="130" y="192">000071</text><text x="300" y="192">Smith &amp; Co</text><text x="600" y="192">dispatched ✓</text><text x="880" y="192">£928.11</text>
+    <text x="130" y="276">000072</text><text x="300" y="276">Murray Ltd</text><text x="600" y="276">packed</text><text x="880" y="276">£1,003.03</text>
+    <text x="130" y="362">000073</text><text x="300" y="362">Kelly Home</text><text x="600" y="362">picking…</text><text x="880" y="362">£2,041.88</text>
+    <text x="130" y="446">000074</text><text x="300" y="446">Anderson</text><text x="600" y="446">submitted</text><text x="880" y="446">£1,363.72</text>
+    <text x="130" y="530">000075</text><text x="300" y="530">Simpson</text><text x="600" y="530">in basket</text><text x="880" y="530">£645.82</text>
+  </g>
+  <g class="hl" font-size="21">
+    <text x="700" y="282">← paid, waiting for the courier</text>
+    <text x="300" y="610">one order, one delivery note,</text>
+    <text x="300" y="638">no re-keying</text>
+    <text x="860" y="720">out the door by 16:00</text>
+  </g>
+  <g class="h" font-size="19" opacity=".7"><text x="70" y="732">— orders, from basket to dispatched</text></g>
+</svg>

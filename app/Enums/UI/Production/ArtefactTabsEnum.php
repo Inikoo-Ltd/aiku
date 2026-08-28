@@ -19,7 +19,7 @@ enum ArtefactTabsEnum: string
     case SHOWCASE                = 'showcase';
     // case DASHBOARD               = 'dashboard';
     case MANUFACTURE_TASKS       = 'manufacture_tasks';
-    case RAW_MATERIALS           = 'raw_materials';
+    case COMPLIANCE              = 'compliance';
     case HISTORY                 = 'history';
     // case DATA                    = 'data';
 
@@ -36,9 +36,9 @@ enum ArtefactTabsEnum: string
                 'title' => __('Manufacture tasks'),
                 'icon'  => 'fal fa-hamsa',
             ],
-            ArtefactTabsEnum::RAW_MATERIALS => [
-                'title' => __('Raw materials'),
-                'icon'  => 'fal fa-hamsa',
+            ArtefactTabsEnum::COMPLIANCE => [
+                'title' => __('Compliance'),
+                'icon'  => 'fal fa-clipboard-check',
             ],
             // ArtefactTabsEnum::DATA => [
             //     'align' => 'right',

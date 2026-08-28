@@ -2,6 +2,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrderTransaction;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
@@ -14,16 +15,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CancelPurchaseOrderTransaction extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-    }
 
     public function handle(PurchaseOrderTransaction $purchaseOrderTransaction): PurchaseOrderTransaction
     {

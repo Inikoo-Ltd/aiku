@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Actions\Web\Website\BreakWebsiteIrisCache;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -188,6 +189,48 @@ class Website extends Model implements Auditable, HasMedia
     use InShop;
     use InteractsWithMedia;
 
+    /**
+     * Settings the storefront renders from cache; a change to any of them has to invalidate
+     * it or visitors keep the old behaviour for hours while the admin UI shows the new value.
+     */
+    private const IRIS_CACHED_SETTINGS = [
+        'iris_search_model',
+        'luigisbox.tracker_id',
+        'google_tag_id',
+        'webpage.show_price',
+    ];
+
+    protected static function booted(): void
+    {
+        static::saved(function (Website $website) {
+            if (!$website->wasChanged(['settings', 'domain'])) {
+                return;
+            }
+
+            // getOriginal() returns the already-cast new value for json columns, getRawOriginal
+            // is the pre-save database value
+            $previous = $website->getRawOriginal('settings');
+            $previous = is_string($previous) ? json_decode($previous, true) : $previous;
+
+            foreach (self::IRIS_CACHED_SETTINGS as $key) {
+                if (data_get($previous, $key) !== data_get($website->settings, $key)) {
+                    BreakWebsiteIrisCache::run($website);
+
+                    return;
+                }
+            }
+
+            if ($website->wasChanged('domain')) {
+                BreakWebsiteIrisCache::run($website);
+            }
+        });
+    }
+
+    public function usesLuigiSearch(): bool
+    {
+        return data_get($this->settings, 'iris_search_model', 'luigi') !== 'internal';
+    }
+
     protected $casts = [
         'type'                    => WebsiteTypeEnum::class,
         'data'                    => 'array',
@@ -277,7 +320,7 @@ class Website extends Model implements Auditable, HasMedia
         return $this->belongsTo(Media::class, 'favicon_id');
     }
 
-    public function imageSources($width = 0, $height = 0)
+    public function imageSources($width = 800, $height = 800)
     {
         if ($this->logo) {
             $avatarThumbnail = $this->logo->getImage()->resize($width, $height);

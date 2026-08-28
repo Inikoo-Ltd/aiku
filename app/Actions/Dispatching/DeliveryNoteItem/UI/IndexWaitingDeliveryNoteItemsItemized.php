@@ -55,18 +55,21 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
             $query->where('shops.type', $shopType);
         }
 
+        $query->where('delivery_note_items.quantity_required', '>', 0);
+
         return $query->defaultSort('locations.sort_code', 'org_stocks.code')
             ->select(array_merge(
                 $this->getDeliveryNoteItemBaseSelect(),
                 $this->getDeliveryNoteItemPickingSelect(),
                 [
                     'delivery_note_items.notes',
+                    'delivery_notes.id as delivery_note_id',
                     'delivery_notes.slug as delivery_note_slug',
                     'delivery_notes.reference as delivery_note_reference',
                     'delivery_notes.state as delivery_note_state',
                     'delivery_notes.customer_notes as delivery_note_customer_notes',
                     'delivery_notes.public_notes as delivery_note_public_notes',
-                    'delivery_notes.internal_notes as delivery_note_internal_notes',
+                    'delivery_notes.private_warehouse_note as delivery_note_internal_notes',
                     'delivery_notes.shipping_notes as delivery_note_shipping_notes',
                     'delivery_notes.is_premium_dispatch as delivery_note_is_premium_dispatch',
                     'delivery_notes.has_extra_packing as delivery_note_has_extra_packing',
@@ -77,6 +80,7 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
                 ]
             ))
             ->selectRaw('(SELECT string_agg(t.name, \', \' ORDER BY t.name) FROM delivery_note_has_trolleys dnt JOIN trolleys t ON t.id = dnt.trolley_id WHERE dnt.delivery_note_id = delivery_notes.id) as trolley_names')
+            ->selectRaw('(SELECT json_agg(json_build_object(\'id\', t.id, \'name\', t.name) ORDER BY t.name) FROM delivery_note_has_trolleys dnt JOIN trolleys t ON t.id = dnt.trolley_id WHERE dnt.delivery_note_id = delivery_notes.id) as trolleys_data')
             ->selectRaw('(SELECT string_agg(pb.code, \', \' ORDER BY pb.code) FROM picked_bay_has_delivery_notes pbdn JOIN picked_bays pb ON pb.id = pbdn.picked_bay_id WHERE pbdn.delivery_note_id = delivery_notes.id) as picked_bay_codes')
             ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_opp WHERE dni_opp.delivery_note_id = delivery_notes.id AND dni_opp.$oppositeWaitingColumn = true) as opposite_waiting_count")
             ->allowedSorts(['org_stock_name', 'org_stock_code', 'picking_position'])

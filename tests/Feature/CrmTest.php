@@ -15,11 +15,14 @@ use App\Actions\Comms\BackInStockReminder\DeleteBackInStockReminder;
 use App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
+use App\Actions\CRM\Customer\DeleteCustomer;
 use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\HydrateCustomers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\StoreCustomer;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\CRM\Customer\SyncCustomersToGoogleAds;
+use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\Customer\UI\GetCustomerTimeline;
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
 use App\Actions\CRM\CustomerNote\UpdateCustomerNote;
@@ -41,8 +44,12 @@ use App\Actions\CRM\Prospect\UpdateProspectEmailSent;
 use App\Actions\CRM\Prospect\UpdateProspectEmailSoftBounced;
 use App\Actions\CRM\Prospect\UpdateProspectEmailUndoUnsubscribed;
 use App\Actions\CRM\Prospect\UpdateProspectEmailUnsubscribed;
+use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\HydrateWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
+use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
+use App\Actions\Helpers\TaxNumber\ValidateEuropeanTaxNumber;
+use App\Actions\Ordering\Order\ResetCustomerOrdersTaxCategory;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\Web\Website\StoreWebsite;
@@ -58,6 +65,8 @@ use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Enums\CRM\Prospect\ProspectContactedStateEnum;
 use App\Enums\CRM\Prospect\ProspectFailStatusEnum;
 use App\Enums\CRM\Prospect\ProspectStateEnum;
+use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
+use App\Enums\Helpers\TaxNumber\TaxNumberValidationTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Comms\BackInStockReminder;
@@ -79,7 +88,11 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
+use Lorisleiva\Actions\Decorators\JobDecorator;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -174,6 +187,64 @@ test('create web user', function (Customer $customer) {
 
     return $customer;
 })->depends('create customer');
+
+test('customer email can not take another web user email', function (Customer $customerWithWebUser) {
+    $otherCustomer = StoreCustomer::make()->action(
+        $this->shop,
+        Customer::factory()->definition(),
+    );
+
+    expect(
+        fn () => UpdateCustomer::make()->action($otherCustomer, ['email' => 'example@mail.com'])
+    )->toThrow(ValidationException::class);
+})->depends('create web user');
+
+test('customer email change follows web user with matching email', function (Customer $customer) {
+    $matchingWebUser = StoreWebUser::make()->action(
+        $customer,
+        [
+            'email'    => $customer->email,
+            'username' => 'matching-web-user',
+            'password' => 'password',
+            'is_root'  => false,
+        ]
+    );
+
+    UpdateCustomer::make()->action($customer, ['email' => 'new-email@mail.com']);
+
+    $rootWebUser = $customer->webUsers()->where('is_root', true)->first();
+
+    expect($matchingWebUser->refresh()->email)->toBe('new-email@mail.com')
+        ->and($rootWebUser->email)->toBe('example@mail.com');
+})->depends('create web user');
+
+test('soft deleted web user does not block its email and username', function (Customer $customer) {
+    $webUser = StoreWebUser::make()->action(
+        $customer,
+        [
+            'email'    => 'reusable@mail.com',
+            'username' => 'reusable',
+            'password' => 'password',
+            'is_root'  => false,
+        ]
+    );
+
+    DeleteWebUser::run($webUser);
+    expect($webUser->refresh()->deleted_at)->not->toBeNull();
+
+    $newWebUser = StoreWebUser::make()->action(
+        $customer,
+        [
+            'email'    => 'reusable@mail.com',
+            'username' => 'reusable',
+            'password' => 'password',
+            'is_root'  => false,
+        ]
+    );
+
+    expect($newWebUser)->toBeInstanceOf(WebUser::class)
+        ->and($newWebUser->id)->not->toBe($webUser->id);
+})->depends('create web user');
 
 
 test('create prospect', function () {
@@ -369,9 +440,10 @@ test('delete back in stock reminder', function (BackInStockReminder $reminder) {
 })->depends('add back in stock reminder to customer');
 
 test('create customer note', function (Customer $customer) {
+    $customerNotesCount = $customer->customerNotes()->count();
+
     expect($customer)->toBeInstanceOf(Customer::class)
-        ->and($customer->customerNotes)->not->toBeNull()
-        ->and($customer->customerNotes->count())->toBe(2);
+        ->and($customer->customerNotes)->not->toBeNull();
 
     $note = StoreCustomerNote::make()->action(
         $customer,
@@ -385,7 +457,7 @@ test('create customer note', function (Customer $customer) {
     expect($note)->toBeInstanceOf(CustomerNote::class)
         ->and($customer)->toBeInstanceOf(Customer::class)
         ->and($customer->customerNotes)->not->toBeNull()
-        ->and($customer->customerNotes->count())->toBe(3);
+        ->and($customer->customerNotes->count())->toBe($customerNotesCount + 1);
 
     return $note;
 })->depends('create customer');
@@ -733,6 +805,7 @@ test('UI edit customer', function () {
                     ->where('name', 'grp.models.customer.update')
                     ->where('parameters', [$customer->id])
             )
+            ->where('formData.blueprint.0.fields.email.value', $customer->email)
             ->has('breadcrumbs', 3);
     });
 });
@@ -778,6 +851,47 @@ test('UI Create customer web users', function () {
             ->has('formData');
     });
 });
+
+test('customer with orders can not be deleted', function () {
+    $customer = Customer::whereHas('orders', function ($query) {
+        $query->whereNotIn('state', [OrderStateEnum::CANCELLED, OrderStateEnum::CREATING]);
+    })->first();
+
+    if (!$customer) {
+        $this->markTestSkipped('No customer with orders in the test set');
+    }
+
+    expect(DeleteCustomer::canBeDeleted($customer))->toBeFalse();
+
+    $this->delete(route('grp.models.customer.delete', ['customer' => $customer->id]))
+        ->assertStatus(422);
+
+    expect($customer->fresh())->not->toBeNull();
+});
+
+test('customer without orders can be deleted', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    expect(DeleteCustomer::canBeDeleted($customer))->toBeTrue();
+
+    $this->delete(route('grp.models.customer.delete', ['customer' => $customer->id]))
+        ->assertRedirect();
+
+    expect(Customer::find($customer->id))->toBeNull();
+});
+
+test('web user username can not be an email', function (Customer $customer) {
+    $response = $this->post(
+        route('grp.models.customer.web-user.store', ['customer' => $customer->id]),
+        [
+            'username' => 'someone@mail.com',
+            'email'    => 'someone@mail.com',
+            'password' => 'secret-password',
+        ]
+    );
+
+    $response->assertSessionHasErrors('username');
+})->depends('create web user');
 
 test('UI show customer web users', function () {
     $webUser = WebUser::first();
@@ -1185,11 +1299,16 @@ test('withdraw balance customer', function (Customer $customer) {
 
 test('Customer basket hydrator', function () {
     $customer = Customer::find(1);
+
+    $basketOrder = $customer->orders()->where('state', OrderStateEnum::CREATING->value)->first()
+        ?? StoreOrder::make()->action($customer, []);
+
     CustomerHydrateBasket::run($customer->id);
     $customer->refresh();
+
     expect($customer)->toBeInstanceOf(Customer::class)
-        ->and($customer->amount_in_basket)->toEqual(0)
-        ->and($customer->current_order_in_basket_id)->toBeNull();
+        ->and($customer->amount_in_basket)->toEqual($basketOrder->total_amount)
+        ->and($customer->current_order_in_basket_id)->toBe($basketOrder->id);
 });
 
 test('sync customers to google ads uploads hashed identifiers', function () {
@@ -1209,6 +1328,10 @@ test('sync customers to google ads uploads hashed identifiers', function () {
     $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     $customer->update(['email' => 'match@example.com', 'phone' => '+447911123456']);
 
+    $eligibleCustomersCount = $this->shop->customers()
+        ->where(fn ($query) => $query->whereNotNull('email')->orWhereNotNull('phone'))
+        ->count();
+
     Http::fake([
         'oauth2.googleapis.com/*'             => Http::response(['access_token' => 'fake-access-token']),
         'datamanager.googleapis.com/*'        => Http::response(['requestId' => 'req-1']),
@@ -1216,7 +1339,7 @@ test('sync customers to google ads uploads hashed identifiers', function () {
 
     $result = SyncCustomersToGoogleAds::make()->handle($this->shop);
 
-    expect($result['uploaded'])->toBe(3)
+    expect($result['uploaded'])->toBe($eligibleCustomersCount)
         ->and($result['request_ids'])->toBe(['req-1']);
 
     Http::assertSent(fn ($request) => $request->url() === 'https://oauth2.googleapis.com/token'
@@ -1243,5 +1366,124 @@ test('sync customers to google ads uploads hashed identifiers', function () {
             && $request['encoding'] === 'HEX'
             && $request['termsOfService']['customerMatchTermsOfServiceStatus'] === 'ACCEPTED'
             && $matchedMember !== null;
+    });
+});
+
+describe('EU VAT re-validation (HELP-2374)', function () {
+    beforeEach(function () {
+        $this->euCountry = Country::where('code', 'ES')->first();
+        $this->euCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    });
+
+    $storeTaxNumber = function (string $number, array $extra = []) {
+        return StoreTaxNumber::run($this->euCustomer, array_merge([
+            'country_id' => $this->euCountry->id,
+            'number'     => $number,
+        ], $extra), false);
+    };
+
+    test('invalid EU tax number schedules three delayed re-checks', function () use ($storeTaxNumber) {
+        Queue::fake();
+
+        $taxNumber = $storeTaxNumber->call($this, 'B12345678');
+        $taxNumber->update(['valid' => false, 'status' => TaxNumberStatusEnum::INVALID]);
+
+        ValidateEuropeanTaxNumber::make()->scheduleRechecks($taxNumber);
+
+        Queue::assertPushed(JobDecorator::class, 3);
+    });
+
+    test('valid EU tax number schedules no re-checks', function () use ($storeTaxNumber) {
+        Queue::fake();
+
+        $taxNumber = $storeTaxNumber->call($this, 'B12345678');
+        $taxNumber->update(['valid' => true, 'status' => TaxNumberStatusEnum::VALID]);
+
+        ValidateEuropeanTaxNumber::make()->scheduleRechecks($taxNumber);
+
+        Queue::assertNothingPushed();
+    });
+
+    test('implausible EU tax numbers are not re-checked', function () use ($storeTaxNumber) {
+        $action = ValidateEuropeanTaxNumber::make();
+
+        expect($action->isPlausibleEuropeanTaxNumber($storeTaxNumber->call($this, 'B12345678')))->toBeTrue()
+            ->and($action->isPlausibleEuropeanTaxNumber($storeTaxNumber->call($this, 'ESB12345678')))->toBeTrue()
+            ->and($action->isPlausibleEuropeanTaxNumber($storeTaxNumber->call($this, 'no idea')))->toBeFalse()
+            ->and($action->isPlausibleEuropeanTaxNumber($storeTaxNumber->call($this, 'FR12345678901')))->toBeFalse()
+            ->and($action->isPlausibleEuropeanTaxNumber($storeTaxNumber->call($this, 'ABCDEFGHI')))->toBeFalse()
+            ->and($action->isPlausibleEuropeanTaxNumber($storeTaxNumber->call($this, '12345678901234')))->toBeFalse();
+    });
+
+    test('a delayed re-check turning valid re-rates the customer orders', function () use ($storeTaxNumber) {
+        $taxNumber = $storeTaxNumber->call($this, 'B12345678');
+        $taxNumber->update(['valid' => false, 'status' => TaxNumberStatusEnum::INVALID]);
+
+        ResetCustomerOrdersTaxCategory::shouldRun()->once();
+
+        $taxNumber->update(['valid' => true, 'status' => TaxNumberStatusEnum::VALID]);
+    });
+
+    test('repeated edits schedule only one round of re-checks per 48 hours', function () use ($storeTaxNumber) {
+        Queue::fake();
+
+        $taxNumber = $storeTaxNumber->call($this, 'B12345678');
+        $taxNumber->update(['valid' => false, 'status' => TaxNumberStatusEnum::INVALID]);
+
+        $action = ValidateEuropeanTaxNumber::make();
+        $action->scheduleRechecks($taxNumber);
+        $action->scheduleRechecks($taxNumber->refresh());
+        $action->scheduleRechecks($taxNumber->refresh());
+
+        Queue::assertPushed(JobDecorator::class, 3);
+
+        $taxNumber->updateQuietly(['rechecks_scheduled_at' => now()->subHours(49)]);
+        $action->scheduleRechecks($taxNumber->refresh());
+
+        Queue::assertPushed(JobDecorator::class, 6);
+    });
+
+    test('a customer hammering the number gets the check deferred, not dropped', function () use ($storeTaxNumber) {
+        Queue::fake();
+
+        $taxNumber = $storeTaxNumber->call($this, 'B12345678');
+        $action    = ValidateEuropeanTaxNumber::make();
+
+        for ($i = 0; $i < ValidateEuropeanTaxNumber::MAX_CHECKS_PER_HOUR; $i++) {
+            RateLimiter::hit($action->rateLimiterKey($taxNumber));
+        }
+
+        expect($action->isCustomerDriven())->toBeFalse();
+
+        $customerDrivenAction = Mockery::mock(ValidateEuropeanTaxNumber::class)->makePartial();
+        $customerDrivenAction->shouldReceive('isCustomerDriven')->andReturnTrue();
+        $customerDrivenAction->handle($taxNumber);
+
+        expect($taxNumber->refresh()->checked_at)->toBeNull();
+        Queue::assertPushed(JobDecorator::class, 1);
+    });
+
+    test('a delayed re-check is skipped once the number is valid', function () use ($storeTaxNumber) {
+        $taxNumber = $storeTaxNumber->call($this, 'B12345678');
+        $taxNumber->update([
+            'valid'           => true,
+            'status'          => TaxNumberStatusEnum::VALID,
+            'validation_type' => TaxNumberValidationTypeEnum::MANUAL,
+            'checked_at'      => null,
+        ]);
+
+        ValidateEuropeanTaxNumber::make()->handle($taxNumber, null, false);
+
+        expect($taxNumber->refresh()->valid)->toBeTrue()
+            ->and($taxNumber->checked_at)->toBeNull();
+    });
+
+    test('a delayed re-check does not schedule further re-checks', function () use ($storeTaxNumber) {
+        Queue::fake();
+
+        $taxNumber = $storeTaxNumber->call($this, 'B12345678');
+        ValidateEuropeanTaxNumber::make()->handle($taxNumber, null, false);
+
+        Queue::assertNothingPushed();
     });
 });

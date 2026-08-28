@@ -78,6 +78,20 @@ class GetDropshippingOrderActions
                         ] : [],
                 ],
                 OrderStateEnum::SUBMITTED => [
+                    $platform && $platform->type == PlatformTypeEnum::MANUAL ? [
+                        'type'   => 'buttonGroup',
+                        'key'    => 'upload-add',
+                        'button' => [
+                            [
+                                'type'    => 'button',
+                                'style'   => 'secondary',
+                                'icon'    => ['fal', 'fa-upload'],
+                                'label'   => '',
+                                'key'     => 'upload',
+                                'tooltip' => __('Upload products via spreadsheet'),
+                            ],
+                        ],
+                    ] : [],
                     [
                         'type'    => 'button',
                         // 'style'   => 'create',

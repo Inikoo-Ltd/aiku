@@ -34,6 +34,12 @@ class RefundInProcessTaxOnlyTransactionsResource extends JsonResource
 
         $taxChargeAmount = round($this->net_amount * $this->tax_rate, 2);
 
+        $packedInMessage = '';
+        $units = soldPackUnits($this->historicAsset?->units, $this->model?->units);
+        if ($this->model_type === 'Product' && $units > 1) {
+            $packedInMessage = '('.__('Pack of').": " . trimDecimalZeros($units) . ")";
+        }
+
         return [
             'asset_id'                       => $this->asset_id,
             'code'                           => $this->code,
@@ -48,6 +54,7 @@ class RefundInProcessTaxOnlyTransactionsResource extends JsonResource
             'original_item_net_price'        => $this->quantity != 0 ? $this->net_amount / $this->quantity : $this->net_amount,
             'refund_net_amount'              => $refundNetAmount,
             'total_last_refund'              => $totalLastRefund,
+            'packed_in_message'              => $packedInMessage,
             'refund_route'                   => [
                 'name'       => 'grp.models.refund.refund_transaction.store',
                 'parameters' => [

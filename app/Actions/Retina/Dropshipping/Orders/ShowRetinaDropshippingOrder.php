@@ -45,6 +45,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 
 class ShowRetinaDropshippingOrder extends RetinaAction
 {
+    use \App\Actions\Traits\WithLineTaxCategories;
     use GetPlatformLogo;
     use WithOrderForbiddenCountryCheck;
 
@@ -446,11 +447,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                         'information' => '',
                         'price_total' => $order->net_amount
                     ],
-                    [
-                        'label'       => __('Tax').' '.$order->taxCategory->name,
-                        'information' => '',
-                        'price_total' => $order->tax_amount
-                    ]
+                    ...$this->getOrderTaxRows($order),
                 ],
                 [
                     [

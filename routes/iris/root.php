@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Retina\Dropshipping\Bundle\UI\RedirectIrisToRetinaBundle;
+use App\Actions\Helpers\Media\UI\ShowIrisAudio;
 use App\Actions\Retina\Media\DownloadRetinaAttachment;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Iris\UpdateIrisLocale;
@@ -15,11 +16,15 @@ use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Website\LlmsTxt\ServeLlmsTxt;
 use App\Actions\Accounting\Invoice\IrisPdfInvoice;
 use App\Actions\Iris\Catalogue\DownloadIrisProduct;
+use App\Actions\Web\Webpage\Iris\ShowIrisFavicon;
 use App\Actions\Web\Webpage\Iris\ShowIrisRobotsTxt;
 use App\Actions\Helpers\Media\UI\DownloadAttachment;
 use App\Actions\Web\Webpage\Iris\ShowIrisSubSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpagesList;
 use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
+use App\Actions\Web\Webpage\Iris\ShowIrisNewslettersDashboard;
+use App\Actions\Web\Webpage\Iris\ShowIrisProductGuidesDashboard;
+use App\Actions\Web\Webpage\Iris\ShowIrisBusinessTipsDashboard;
 use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 use App\Actions\Web\Webpage\Iris\ShowIrisCatalogue;
@@ -29,6 +34,8 @@ use App\Actions\Iris\Reviews\ShowIrisReviews;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
 Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
+
+Route::get('favicon.ico', ShowIrisFavicon::class)->name('iris_favicon');
 
 Route::get('{path}', function () {
     return redirect('/image_not_found.png');
@@ -68,11 +75,11 @@ Route::middleware(Sample::always())->prefix("json")
     ->group(__DIR__."/json.php");
 
 Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');
+Route::get('audio/{media:ulid}', ShowIrisAudio::class)->name('audio');
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::middleware(Sample::always())->prefix("models")
         ->name("models.")
         ->group(__DIR__."/models.php");
-
 
     Route::get('attachment/{media:ulid}/download', DownloadRetinaAttachment::class)->name('attach.download')->withoutScopedBindings();
 
@@ -99,6 +106,9 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         Route::get('/invoice/{invoice:ulid}', IrisPdfInvoice::class)->name('iris_invoice');
         Route::get('/attachment/{media:ulid}', DownloadAttachment::class)->name('iris_attachment');
         Route::get('/blog', ShowIrisBlogDashboard::class)->name('iris_blog');
+        Route::get('/david-aw-news', ShowIrisNewslettersDashboard::class)->name('iris_newsletters');
+        Route::get('/product-guides', ShowIrisProductGuidesDashboard::class)->name('iris_product_guides');
+        Route::get('/business-tips', ShowIrisBusinessTipsDashboard::class)->name('iris_business_tips');
 
         // LLMs.txt for AI crawlers
         Route::get('/llms.txt', ServeLlmsTxt::class)->name('iris_llms_txt');

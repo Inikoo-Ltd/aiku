@@ -12,6 +12,14 @@ use App\Actions\HydrateModel;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAdjustments;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAgents;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateApiTokens;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateArtefacts;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAssets;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomerClients;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceCategories;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateManufactureTasks;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePortfolios;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateReturnDeliveryNotes;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnitFamilies;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAudits;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateBanners;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCharges;
@@ -31,7 +39,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFamilies;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFamiliesWithNoDepartment;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFulfilmentCustomers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateGuests;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceCategories;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterCollections;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterFamiliesWithNoDepartment;
@@ -126,6 +133,14 @@ class HydrateGroup extends HydrateModel
     public function handle(Group $group): void
     {
         GroupHydrateAudits::run($group);
+        GroupHydrateArtefacts::run($group);
+        GroupHydrateAssets::run($group);
+        GroupHydrateCustomerClients::run($group);
+        GroupHydrateInvoiceCategories::run($group);
+        GroupHydrateManufactureTasks::run($group);
+        GroupHydratePortfolios::run($group);
+        GroupHydrateReturnDeliveryNotes::run($group);
+        GroupHydrateTradeUnitFamilies::run($group);
         GroupHydrateGuests::run($group);
         GroupHydrateJobPositions::run($group);
         GroupHydrateOrganisations::run($group);

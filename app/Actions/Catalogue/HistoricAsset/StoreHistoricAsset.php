@@ -43,6 +43,15 @@ class StoreHistoricAsset
             data_set($historicAssetData, 'unit', $assetModel->unit);
         }
 
+        /**
+         * The tax treatment is frozen here exactly like the price: order lines reference this
+         * historic, so a later preset change on the master mints a new historic and existing
+         * lines keep the treatment they were sold under.
+         */
+        if ($assetModel instanceof Product && $assetModel->masterProduct) {
+            data_set($historicAssetData, 'tax_category', $assetModel->masterProduct->tax_category ?? []);
+        }
+
 
 
 

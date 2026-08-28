@@ -126,7 +126,7 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
 
         $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $from, $to, $processedPeriods)];
 
-        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['master_product_category_time_series_id', 'period', 'frequency', 'type']);
+        $this->syncTimeSeriesRecords($timeSeries, $rows, ['master_product_category_time_series_id', 'period', 'frequency', 'type'], $from, $to);
     }
 
     protected function periodsWithoutInvoicesRows(MasterProductCategoryTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): array

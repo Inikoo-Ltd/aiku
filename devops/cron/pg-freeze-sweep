@@ -1,0 +1,11 @@
+# Weekly Postgres anti-wraparound freeze sweep. Install on the PRIMARY DB host
+# (boro) only, as a /etc/cron.d file (root-owned, mode 644):
+#     install -m 644 devops/cron/pg-freeze-sweep /etc/cron.d/pg-freeze-sweep
+#
+# Why: autovacuum let freeze debt build across ~800 tables for months (found
+# 13 Aug 2026, several tables at 98% of autovacuum_freeze_max_age). At 200M
+# transactions Postgres launches forced uncancellable vacuums at whatever hour
+# it likes. This sweep freezes anything past 150M (75%) every Sunday 03:30, so
+# the forced case can never be reached. Typically runs in under a minute: the
+# visibility map lets FREEZE skip already-frozen pages.
+30 3 * * 0 postgres psql -d aiku -tAc "select format('VACUUM (FREEZE) %I;', c.relname) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and age(c.relfrozenxid) > 150000000" | psql -d aiku -f - >> /var/log/postgresql/freeze-sweep.log 2>&1

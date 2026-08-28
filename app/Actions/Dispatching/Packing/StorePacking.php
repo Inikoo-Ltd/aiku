@@ -36,6 +36,16 @@ class StorePacking extends OrgAction
         data_set($modelData, 'delivery_note_id', $deliveryNoteItem->delivery_note_id);
         data_set($modelData, 'engine', PackingEngineEnum::AIKU);
 
+        /*
+         * Note-level timestamps come from the delivery note so every packing line of a note
+         * carries identical values: queued_at is when picking finished (note became packable),
+         * packing_at is when a packer started the note. done_at is genuinely per line.
+         */
+        $deliveryNote = $deliveryNoteItem->deliveryNote;
+        data_set($modelData, 'queued_at', $deliveryNote->picked_at ?? now());
+        data_set($modelData, 'packing_at', $deliveryNote->packing_at ?? now());
+        data_set($modelData, 'done_at', now());
+
         $packing = $deliveryNoteItem->packings()->create($modelData);
 
         CalculateDeliveryNoteItemTotalPacked::make()->action($deliveryNoteItem);
@@ -49,6 +59,7 @@ class StorePacking extends OrgAction
     {
         return [
             'quantity' => ['sometimes', 'numeric'],
+            'data'     => ['sometimes', 'array'],
             'packer_user_id'       => [
                 'required',
                 Rule::Exists('users', 'id')->where('group_id', $this->shop->group_id)
@@ -56,13 +67,18 @@ class StorePacking extends OrgAction
         ];
     }
 
-    public function prepareForValidation(ActionRequest $request)
+    /**
+     * Defaults are read from the action's own attributes rather than the request, so a quantity
+     * handed over by a calling action is honoured instead of being overwritten by the full picked
+     * quantity just because the surrounding HTTP request carries no quantity field.
+     */
+    public function prepareForValidation(): void
     {
-        if (!$request->has('packer_user_id')) {
+        if (!$this->has('packer_user_id')) {
             $this->set('packer_user_id', $this->user->id);
         }
-        if (!$request->has('quantity')) {
-            $this->set('quantity', $this->deliveryNoteItem->quantity_picked);
+        if (!$this->has('quantity')) {
+            $this->set('quantity', $this->deliveryNoteItem->quantity_picked ?? 0);
         }
     }
 

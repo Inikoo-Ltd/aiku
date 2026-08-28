@@ -6,6 +6,20 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    --chat-bg: #282a36;
+    --chat-bg-alt: #21222c;
+    --chat-line: #44475a;
+    --chat-muted: #6272a4;
+    --chat-label: #8b91ad;
+    --chat-text: #f8f8f2;
+    --chat-accent: #bd93f9;
+    --chat-green: #50fa7b;
+    --chat-cyan: #8be9fd;
+    --chat-red: #ff5555;
+    --chat-yellow: #f1fa8c;
+}
+
 @layer utilities {
     /* .primaryLink {
         @apply bg-gradient-to-t from-yellow-300 to-yellow-200
@@ -109,4 +123,8 @@
 
 p span.country {
     font-weight: 600
+}
+/* floating-vue ships no max-width, so a long v-tooltip stretches into a full-width band */
+.v-popper--theme-tooltip .v-popper__inner {
+    max-width: 20rem;
 }

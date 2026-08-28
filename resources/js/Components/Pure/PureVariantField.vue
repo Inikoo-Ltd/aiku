@@ -8,7 +8,6 @@ import { faTimes, faTrashAlt } from "@far"
 import { faPlus } from "@fal"
 import { trans } from "laravel-vue-i18n"
 import type { routeType } from "@/types/route"
-import { PageHeadingTypes } from "@/types/PageHeading"
 import Image from "@common/Components/Image.vue"
 
 
@@ -22,6 +21,9 @@ type Node = {
   key: Record<string, string>
   label: string
   product: any | null
+  is_leader?: boolean
+  is_hide?: boolean
+  all_child_has_webpage?: boolean
   children?: Node[]
 }
 
@@ -32,11 +34,15 @@ type DataVariants = {
 }
 
 
-defineProps<{
-  pageHead: PageHeadingTypes
-  title: string
-  master_assets_route: routeType
+const props = defineProps<{
+  master_assets_route?: routeType
+  lockStructure?: boolean
+  withIsHide?: boolean
 }>()
+
+const masterAssetsRoute = computed(() => props.master_assets_route as routeType)
+
+const NON_KEY_FIELDS = ["product", "is_leader", "is_hide", "all_child_has_webpage"]
 
 
 const model = defineModel<DataVariants>({ required: true })
@@ -115,7 +121,7 @@ const syncProducts = () => {
     const stored = model.value.products[id]
 
     const keyOnly = Object.fromEntries(
-      Object.entries(stored).filter(([k]) => k !== "product" && k !== "is_leader")
+      Object.entries(stored).filter(([k]) => !NON_KEY_FIELDS.includes(k))
     )
 
     if (!validKeys.has(normalizeKey(keyOnly))) {
@@ -147,10 +153,15 @@ const buildNodes = computed<Node[]>(() => {
       Object.keys(keyObj).every(k => p[k] === keyObj[k])
     )?.product ?? null
 
-  const getChildHasWebpage = (keyObj: Record<string, string>) => 
+  const getChildHasWebpage = (keyObj: Record<string, string>) =>
     Object.values(model.value.products).find(p =>
       Object.keys(keyObj).every(k => p[k] === keyObj[k])
     )?.all_child_has_webpage ?? false
+
+  const getIsHide = (keyObj: Record<string, string>) =>
+    Object.values(model.value.products).find(p =>
+      Object.keys(keyObj).every(k => p[k] === keyObj[k])
+    )?.is_hide ?? false
 
   if (variants.length === 1) {
     const v = variants[0]
@@ -163,6 +174,7 @@ const buildNodes = computed<Node[]>(() => {
         label: opt,
         product: getProduct(keyObj),
         is_leader: isLeaderByKey(keyObj),
+        is_hide: getIsHide(keyObj),
         all_child_has_webpage: getChildHasWebpage(keyObj),
       }
     })
@@ -181,6 +193,7 @@ const buildNodes = computed<Node[]>(() => {
       label: opt,
       product: getProduct(parentKey),
       is_leader: isLeaderByKey(parentKey),
+      is_hide: getIsHide(parentKey),
       children: getCombinations([
         { label: base.label, options: [opt] },
         ...others
@@ -194,7 +207,8 @@ const buildNodes = computed<Node[]>(() => {
           key: keyObj,
           label: Object.values(keyObj).join(" — "),
           product: getProduct(keyObj),
-          is_leader: isLeaderByKey(keyObj),  
+          is_leader: isLeaderByKey(keyObj),
+          is_hide: getIsHide(keyObj),
           all_child_has_webpage: getChildHasWebpage(keyObj),
         }
       })
@@ -254,6 +268,16 @@ const setLeader = (node: Node, checked: boolean) => {
 
   if (entry) {
     entry.is_leader = true
+  }
+}
+
+const setHidden = (node: Node, checked: boolean) => {
+  const entry = Object.values(model.value.products).find(p =>
+    Object.keys(node.key).every(k => p[k] === node.key[k])
+  )
+
+  if (entry) {
+    entry.is_hide = checked
   }
 }
 
@@ -396,7 +420,8 @@ const noLeader = computed(() => {
 
         <div v-for="(v, vi) in model.variants" :key="vi" class="border rounded mt-2">
           <!-- COLLAPSED -->
-          <div v-if="!v.active" class="p-2 cursor-pointer" @click="toggleActive(vi)">
+          <div v-if="!v.active || lockStructure" class="p-2" :class="lockStructure ? '' : 'cursor-pointer'"
+            @click="lockStructure ? null : toggleActive(vi)">
             <div class="text-sm font-medium">
               {{ v.label || "Untitled Variant" }}
             </div>
@@ -452,7 +477,7 @@ const noLeader = computed(() => {
 
         <!-- ADD VARIANT -->
         <div>
-          <Button v-if="model.variants.length < 2" type="dashed" size="xs" class="mt-2" :icon="faPlus"
+          <Button v-if="model.variants.length < 2 && !lockStructure" type="dashed" size="xs" class="mt-2" :icon="faPlus"
             @click="addVariant">
             {{ trans('Add Option') }}
           </Button>
@@ -463,7 +488,8 @@ const noLeader = computed(() => {
         <div class="border-t mt-6 pt-3" v-if="validVariants.length">
           <div class="flex items-center gap-2">
             <span class="text-sm"> {{ trans('Group by') }} </span>
-            <select v-model="model.groupBy" class="border rounded px-2 py-1 text-sm w-[90px]">
+            <select v-model="model.groupBy" :disabled="lockStructure"
+              class="border rounded px-2 py-1 text-sm w-[90px] disabled:opacity-60">
               <option v-for="v in validVariants" :key="v.label" :value="v.label">
                 {{ v.label }}
               </option>
@@ -499,6 +525,9 @@ const noLeader = computed(() => {
                   <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[120px] text-center">
                     {{ trans('Leader') }}
                   </th>
+                  <th v-if="withIsHide" class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[120px] text-center">
+                    {{ trans('Hidden') }}
+                  </th>
                   <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-1/2">
                     {{ trans('Product') }}
                   </th>
@@ -525,16 +554,38 @@ const noLeader = computed(() => {
 
                     <!-- Leader -->
                     <td class="px-4 text-center">
-                      <input v-if="!node.children" type="checkbox" :disabled="!node.product" :checked="node.is_leader"
+                      <input v-if="!node.children" type="checkbox" :disabled="!node.product || lockStructure" :checked="node.is_leader"
                         v-tooltip="!node.product ? '' : (!node.all_child_has_webpage ? trans(`One or more of it's child in a shop has no webpage. Choosing this product as a leader would create webpage under said shop`) : '')"
                         @change="setLeader(node, $event.target.checked)"
                         class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
                     </td>
 
+                    <!-- Hidden -->
+                    <td v-if="withIsHide" class="px-4 text-center">
+                      <input v-if="!node.children && !node.is_leader" type="checkbox" :disabled="!node.product" :checked="node.is_hide"
+                        v-tooltip="ctrans('Hide this product from the variant selector in the website')"
+                        @change="setHidden(node, $event.target.checked)"
+                        class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
+                    </td>
+
                     <!-- Product -->
                     <td class="px-4">
-                      <PureMultiselectInfiniteScroll v-if="!node.children" :model-value="node.product"
-                        @update:model-value="val => setProduct(node, val)" :fetchRoute="master_assets_route"
+                      <div v-if="lockStructure" class="flex items-center gap-3 p-2">
+                        <template v-if="node.product">
+                          <Image v-if="node.product.image?.main?.original" :src="node.product.image.main.original"
+                            class="w-12 h-12 rounded object-cover" />
+                          <div>
+                            <div class="font-medium leading-none">{{ node.product.code }}</div>
+                            <div class="mt-1 text-xs text-gray-500">{{ node.product.name || '-' }}</div>
+                          </div>
+                        </template>
+                        <span v-else-if="!node.children" class="text-xs italic text-gray-400">
+                          {{ trans('No product') }}
+                        </span>
+                      </div>
+
+                      <PureMultiselectInfiniteScroll v-else-if="!node.children" :model-value="node.product"
+                        @update:model-value="val => setProduct(node, val)" :fetchRoute="masterAssetsRoute"
                         valueProp="id" label-prop="name" :object="true" :caret="false"
                         :placeholder="trans('Select Product')">
                         <template #singlelabel="{ value }">
@@ -583,19 +634,41 @@ const noLeader = computed(() => {
 
                     <!-- Leader -->
                     <td class="px-4 text-center">
-                      <input 
-                        type="checkbox" 
-                        :disabled="!child.product || !child.all_child_has_webpage" 
+                      <input
+                        type="checkbox"
+                        :disabled="!child.product || !child.all_child_has_webpage || lockStructure"
                         :checked="child.is_leader"
                         @change="setLeader(child, $event.target.checked)"
                          v-tooltip="!child.all_child_has_webpage ? trans(`Unable to set this product as a leader. One or more of it's child has no webpage. A leader product is required to have webpage`) : ''"
                          class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
                     </td>
 
+                    <!-- Hidden -->
+                    <td v-if="withIsHide" class="px-4 text-center">
+                      <input v-if="!child.is_leader" type="checkbox" :disabled="!child.product" :checked="child.is_hide"
+                        v-tooltip="ctrans('Hide this product from the variant selector in the website')"
+                        @change="setHidden(child, $event.target.checked)"
+                        class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
+                    </td>
+
                     <!-- Product -->
                     <td class="px-4">
-                      <PureMultiselectInfiniteScroll :model-value="child.product"
-                        @update:model-value="val => setProduct(child, val)" :fetchRoute="master_assets_route"
+                      <div v-if="lockStructure" class="flex items-center gap-3 p-2">
+                        <template v-if="child.product">
+                          <Image v-if="child.product.image?.main?.original" :src="child.product.image.main.original"
+                            class="w-12 h-12 rounded object-cover" />
+                          <div>
+                            <div class="font-medium leading-none">{{ child.product.code }}</div>
+                            <div class="mt-1 text-xs text-gray-500">{{ child.product.name || '-' }}</div>
+                          </div>
+                        </template>
+                        <span v-else class="text-xs italic text-gray-400">
+                          {{ trans('No product') }}
+                        </span>
+                      </div>
+
+                      <PureMultiselectInfiniteScroll v-else :model-value="child.product"
+                        @update:model-value="val => setProduct(child, val)" :fetchRoute="masterAssetsRoute"
                         valueProp="id" label-prop="name" :object="true" :caret="false"
                         :placeholder="trans('Select Product')">
                         <template #singlelabel="{ value }">

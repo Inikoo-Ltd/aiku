@@ -44,7 +44,7 @@ class UpdateClockingNotes
 
         $this->handle(
             $clocking,
-            $validated['notes'] ?? null,
+            $request->has('notes') ? ($validated['notes'] ?? null) : $clocking->notes,
             $validated['clocked_at'] ?? null
         );
 
@@ -58,7 +58,7 @@ class UpdateClockingNotes
     public function rules(): array
     {
         return [
-            'notes'      => ['nullable', 'string', 'max:500'],
+            'notes'      => ['sometimes', 'nullable', 'string', 'max:500'],
             'clocked_at' => ['nullable', 'date'],
         ];
     }
@@ -94,11 +94,7 @@ class UpdateClockingNotes
                 $timeTracker->ends_at = $clocking->clocked_at;
             }
 
-            if ($timeTracker->starts_at && $timeTracker->ends_at) {
-                $timeTracker->duration = $timeTracker->starts_at->diffInSeconds($timeTracker->ends_at);
-            }
-
-            $timeTracker->save();
+            $timeTracker->normaliseInterval();
         }
 
         $startAt = $timesheet->timeTrackers()->min('starts_at');
@@ -109,7 +105,7 @@ class UpdateClockingNotes
             'end_at'   => $endAt,
         ]);
 
-        TimesheetHydrateTimeTrackers::dispatch($timesheet);
+        TimesheetHydrateTimeTrackers::run($timesheet->id);
     }
 
     protected function hydrateSubjectClockings(Clocking $clocking): void

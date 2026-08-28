@@ -67,7 +67,7 @@ class RepairMasterProductUnitsIntegrity
         $productTradeUnits = $this->tradeUnitQuantities('Product', $products->pluck('id')->all());
 
         $masterSignature      = $this->signature($masterTradeUnits);
-        $masterPivotQ         = $masterTradeUnits->count() === 1 ? $this->round($masterTradeUnits->first()) : null;
+        $masterPivotQ         = $this->pivotQuantity($masterTradeUnits);
         $masterSelfConsistent = $masterPivotQ !== null && $masterUnits === $masterPivotQ;
 
         $findings           = [];
@@ -85,7 +85,7 @@ class RepairMasterProductUnitsIntegrity
                 continue;
             }
 
-            if ($masterTradeUnits->count() !== 1) {
+            if ($masterPivotQ === null) {
                 $productFlags[$product->id] = 'bundle';
                 $findings[]                 = $this->finding($masterAsset, 'bundle', null, $this->productDetail($product, $masterPivotQ), false);
                 continue;
@@ -248,6 +248,17 @@ class RepairMasterProductUnitsIntegrity
             ->get()
             ->groupBy('model_id')
             ->map(fn ($rows) => $rows->pluck('quantity', 'trade_unit_id'));
+    }
+
+    /**
+     * The units a composition implies: its trade unit quantity when they all share one, null when
+     * they differ and no single pack size can be read off the composition.
+     */
+    private function pivotQuantity(Collection $tradeUnitQuantities): ?float
+    {
+        $quantities = $tradeUnitQuantities->map(fn ($quantity) => $this->round($quantity))->unique();
+
+        return $quantities->count() === 1 ? $quantities->first() : null;
     }
 
     private function signature(Collection $tradeUnitQuantities): string

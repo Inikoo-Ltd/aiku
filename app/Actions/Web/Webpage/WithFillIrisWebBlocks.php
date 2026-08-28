@@ -21,6 +21,7 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockCarousel;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockCta;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSlider;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlog;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlogList;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsCRB;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsFromMaster;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsProductCategoriesFromMaster;
@@ -28,6 +29,7 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\Iris\GetIrisRelatedProductCategory;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamiliesFour;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSubDepartmentsThree;
 use App\Actions\Web\WebBlock\Iris\GetIrisFaqDepartment;
 use App\Actions\Web\WebBlock\Iris\GetIrisTopFamilies;
@@ -40,7 +42,7 @@ trait WithFillIrisWebBlocks
     {
         $webBlockType = Arr::get($webBlock, 'type');
 
-        if (in_array($webBlockType, ['department-description-1', 'department-description-2'])) {
+        if (in_array($webBlockType, ['department-description-1', 'department-description-2', 'department-description-3'])) {
             $departmentData = GetIrisWebBlockDepartmentDescription::run($webpage, $webBlock);
             if ($departmentData) {
                 $parsedWebBlocks[$key] = $departmentData;
@@ -62,6 +64,13 @@ trait WithFillIrisWebBlocks
             }
         } elseif (str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetIrisWebBlockSubDepartments::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'families-4') {
+            $webBlockData = GetIrisWebBlockFamiliesFour::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif (str_contains($webBlockType, 'families-')) {
             $parsedWebBlocks[$key] = GetIrisWebBlockFamilies::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'products-')) {
@@ -76,6 +85,13 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetIrisWebBlockSeeAlso::run($webpage, $webBlock);
         } elseif ($webBlockType == 'blog') {
             $parsedWebBlocks[$key] = GetIrisWebBlockBlog::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'blog-list') {
+            $webBlockData = GetIrisWebBlockBlogList::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif ($webBlockType == 'recommendation-customer-recently-bought-1') {
             $parsedWebBlocks[$key] = GetIrisWebBlockRecommendationsCRB::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-product-category-from-master') {
@@ -83,12 +99,18 @@ trait WithFillIrisWebBlocks
             if ($webBlockData) {
                 $parsedWebBlocks[$key] = $webBlockData;
             } else {
+                // if 'trends' and Family page, remove the web block because it is not relevant for Family pages
                 unset($parsedWebBlocks[$key]);
             }
         } elseif ($webBlockType == 'recommendation-from-master') {
             $parsedWebBlocks[$key] = GetIrisWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
-        } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
-            $parsedWebBlocks[$key] = GetIrisWebBlockLuigiRecommendations::run($webpage, $webBlock);
+        } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1', 'luigi-trends-1'])) {
+            $webBlockData = GetIrisWebBlockLuigiRecommendations::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif ($webBlockType == 'banner') {
             $parsedWebBlocks[$key] = GetIrisWebBlockBanner::run($webpage, $webBlock);
         } elseif ($webBlockType == 'carousel-1') {

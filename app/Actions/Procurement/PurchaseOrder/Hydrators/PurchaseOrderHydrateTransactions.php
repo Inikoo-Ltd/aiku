@@ -21,6 +21,16 @@ class PurchaseOrderHydrateTransactions implements ShouldBeUnique
     use AsAction;
     use WithPurchaseOrderWeightAndVolume;
 
+    /**
+     * Without this the unique lock is keyed on the class alone, so one pending job blocks
+     * every other purchase order rather than just this one, and a bulk fetch dispatching
+     * thousands leaves all but the first silently discarded.
+     */
+    public function getJobUniqueId(PurchaseOrder $purchaseOrder): string
+    {
+        return (string) $purchaseOrder->id;
+    }
+
     public function handle(PurchaseOrder $purchaseOrder): void
     {
         $transactions = $purchaseOrder->purchaseOrderTransactions;

@@ -51,6 +51,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_clocking_machines_type_qr_code
  * @property int $number_employees_type_internship
+ * @property int $number_clocking_machines_type_pin
+ * @property int $number_clocking_machines_type_barcode_scanner
+ * @property int $number_clocking_machines_type_camera_qr
  * @property-read \App\Models\HumanResources\Workplace|null $workplace
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkplaceStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkplaceStats newQuery()

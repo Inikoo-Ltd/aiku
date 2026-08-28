@@ -8,11 +8,11 @@
 
 namespace App\Actions\Web\Announcement;
 
-use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\Helpers\Deployment\StoreDeployment;
 use App\Actions\Helpers\Snapshot\StoreAnnouncementSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Website\BreakWebsiteIrisCache;
 use App\Actions\Web\WebsiteHydrateAnnouncements;
 use App\Enums\Announcement\AnnouncementStateEnum;
 use App\Enums\Announcement\AnnouncementStatusEnum;
@@ -24,6 +24,8 @@ use App\Models\Web\Announcement;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class PublishAnnouncement extends OrgAction
@@ -36,14 +38,18 @@ class PublishAnnouncement extends OrgAction
 
     public function handle(Announcement $announcement, array $modelData): void
     {
-        $position = $announcement->settings['position'] ?? null;
-        Announcement::where('website_id', $announcement->website_id)
-            ->where('id', '!=', $announcement->id)
-            ->where('status', AnnouncementStatusEnum::ACTIVE)
-            ->whereRaw("settings->>'position' = ?", [$position])
-            ->update([
-                'status' => AnnouncementStatusEnum::INACTIVE
+        $from  = Arr::get($modelData, 'schedule_at') ? Carbon::parse(Arr::get($modelData, 'schedule_at')) : now();
+        $until = Arr::get($modelData, 'schedule_finish_at') ? Carbon::parse(Arr::get($modelData, 'schedule_finish_at')) : null;
+
+        $clashes = $this->getClashes($announcement, $from, $until);
+
+        if ($clashes->isNotEmpty() and !Arr::get($modelData, 'supersede')) {
+            throw ValidationException::withMessages([
+                'supersede' => __('This spot is already taken by :names during those dates. Publish again choosing to replace it, or change your dates.', [
+                    'names' => $clashes->pluck('name')->join(', ')
+                ])
             ]);
+        }
 
         $firstCommit = false;
         if ($announcement->state == AnnouncementStateEnum::IN_PROCESS or $announcement->state == AnnouncementStateEnum::READY) {
@@ -123,17 +129,64 @@ class PublishAnnouncement extends OrgAction
             $updateData['closed_at'] = Carbon::parse($scheduleFinishAt);
         } else {
             $updateData['schedule_finish_at'] = null;
-        }
-
-        ToggleAnnouncement::dispatch($announcement, AnnouncementStatusEnum::ACTIVE->value)->delay($updateData['live_at']);
-
-        if (!blank($updateData['schedule_finish_at'])) {
-            ToggleAnnouncement::dispatch($announcement, AnnouncementStatusEnum::INACTIVE->value)->delay($updateData['schedule_finish_at']);
+            $updateData['closed_at']          = null;
         }
 
         $this->update($announcement, $updateData);
-        ClearCacheByWildcard::run("irisData:website:$announcement->website_id:*");
+
+        ApplyAnnouncementSchedule::dispatch($announcement)->delay($updateData['live_at']);
+
+        if (!blank($updateData['schedule_finish_at'])) {
+            ApplyAnnouncementSchedule::dispatch($announcement)->delay($updateData['schedule_finish_at']);
+        }
+
+        $this->supersedeClashes($announcement, $from, $updateData['schedule_finish_at']);
+
+        BreakWebsiteIrisCache::run($announcement->website);
         WebsiteHydrateAnnouncements::dispatch($announcement->website_id)->delay(2);
+    }
+
+    /**
+     * Hands the spot over to the announcement being published: whatever it paused before is let go
+     * first, so the clashes are recomputed from scratch, and each one is then taken off the spot
+     * only when the new window actually starts, not the moment it is published.
+     */
+    private function supersedeClashes(Announcement $announcement, Carbon $from, ?Carbon $until): void
+    {
+        $this->releaseOwnPauses($announcement);
+
+        foreach ($this->getClashes($announcement, $from, $until) as $clash) {
+            if ($from->isFuture()) {
+                PauseSupersededAnnouncement::dispatch($clash, $announcement->id)->delay($from);
+            } else {
+                PauseSupersededAnnouncement::run($clash, $announcement->id);
+            }
+
+            if ($until) {
+                ResumeSupersededAnnouncement::dispatch($clash, $announcement->id)->delay($until);
+            }
+        }
+    }
+
+    private function releaseOwnPauses(Announcement $announcement): void
+    {
+        foreach ($announcement->pausedAnnouncements as $paused) {
+            $this->update($paused, [
+                'status'                    => AnnouncementStatusEnum::ACTIVE,
+                'paused_by_announcement_id' => null,
+                'paused_until'              => null,
+            ]);
+        }
+    }
+
+    /**
+     * @return Collection<int, Announcement>
+     */
+    public function getClashes(Announcement $announcement, Carbon $from, ?Carbon $until): Collection
+    {
+        return Announcement::clashingWith($announcement->website_id, $announcement->getPosition(), $from, $until)
+            ->where('id', '!=', $announcement->id)
+            ->get();
     }
 
     public function authorize(ActionRequest $request): bool
@@ -151,7 +204,8 @@ class PublishAnnouncement extends OrgAction
             'fields'               => ['sometimes', 'array'],
             'container_properties' => ['sometimes', 'array'],
             'compiled_layout'      => ['sometimes', 'string', 'nullable'],
-            'text'                 => ['sometimes', 'string']
+            'text'                 => ['sometimes', 'string'],
+            'supersede'            => ['sometimes', 'boolean']
         ];
     }
 

@@ -10,6 +10,8 @@ namespace App\Actions\HumanResources\Employee;
 
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
+use App\Actions\HumanResources\WorkSchedule\StoreWorkSchedule;
+use App\Actions\HumanResources\WorkSchedule\UpdateWorkSchedule;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateEmployees;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateEmployees;
@@ -97,6 +99,21 @@ class UpdateEmployee extends OrgAction
             $jobPositions = Arr::pull($modelData, 'job_positions', []);
             $jobPositions = $this->reorganisePositionsSlugsToIds($jobPositions);
             SyncEmployeeJobPositions::run($employee, $jobPositions);
+        }
+
+        if (Arr::has($modelData, 'working_hours')) {
+            $workingHours = Arr::pull($modelData, 'working_hours');
+            $workSchedule = $employee->getDefaultWorkSchedule();
+
+            if ($workSchedule) {
+                UpdateWorkSchedule::make()->handle($workSchedule, ['working_hours' => $workingHours]);
+            } else {
+                StoreWorkSchedule::make()->action($employee, [
+                    'name' => __('Working hours'),
+                    'type' => 'default',
+                    'working_hours' => $workingHours,
+                ]);
+            }
         }
 
         $identityDocuments     = null;
@@ -250,6 +267,7 @@ class UpdateEmployee extends OrgAction
             'identity_documents'                        => ['sometimes', 'nullable', 'array'],
             'identity_documents.*.type'                 => ['required', 'string', 'max:100'],
             'identity_documents.*.number'               => ['required', 'string', 'max:100'],
+            'working_hours'                              => ['sometimes', 'array'],
 
         ];
 

@@ -3,7 +3,7 @@ import IrisSidebar from '@/Components/IrisSidebar.vue'
 import { getStyles } from "@/Composables/styles";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
-import { inject, ref, onMounted } from 'vue';
+import { inject, ref, onMounted, defineAsyncComponent } from 'vue';
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGalaxy, faTimesCircle, faUserCircle } from "@fas";
 import { faBaby, faShoppingCart as falShoppingCart, faCactus, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faUserCircle as falUserCircle, faBars } from "@fal";
@@ -33,7 +33,8 @@ import { faLambda } from "@fad";
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { computed } from 'vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
-import LuigiSearchMobile from '../../LuigiSearchMobile.vue'
+const LuigiSearchMobile = defineAsyncComponent(() => import('@/Components/CMS/LuigiSearchMobile.vue'))
+const IrisSearchMobile = defineAsyncComponent(() => import('@/Iris/Components/IrisSearchMobile.vue'))
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 
 // Add icons to the library
@@ -107,7 +108,14 @@ const getStylesRemoveFontSize = (properties, screenType) => {
                 </IrisSidebar>
 
                 <!-- Search Bar -->
-                <LuigiSearchMobile v-if="layout.iris?.luigisbox_tracker_id && screenType === 'mobile'"
+                <IrisSearchMobile v-if="layout.iris?.iris_search_model === 'internal' && screenType === 'mobile'"
+                    id="iris_search_mobile"
+                    :style="{
+                        ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),
+                    }"
+                    class="text-3xl"
+                />
+                <LuigiSearchMobile v-else-if="layout.iris?.luigisbox_tracker_id && screenType === 'mobile'"
                     id="luigi_mobile"
                     :style="{
                         ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),

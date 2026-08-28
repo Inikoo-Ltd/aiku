@@ -118,7 +118,7 @@ class StoreWebsite extends OrgAction
                         ],
                         [
                             'column'    => 'status',
-                            'operation' => '=',
+                            'operator'  => '=',
                             'value'     => true
                         ],
                     ]

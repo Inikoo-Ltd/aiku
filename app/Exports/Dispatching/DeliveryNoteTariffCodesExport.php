@@ -27,7 +27,7 @@ class DeliveryNoteTariffCodesExport implements FromArray, ShouldAutoSize, WithHe
     public static function fieldDefinitions(): array
     {
         return [
-            'tariff_code' => ['heading' => 'Tariff code', 'select' => 'tariff_code'],
+            'tariff_code' => ['heading' => 'Tariff code', 'select' => "COALESCE(tariff_code, '*** MISSING TARIFF CODE / ORIGIN ***')"],
             'description' => ['heading' => 'Tariff code description', 'select' => 'description'],
             'origin'      => ['heading' => 'Origin', 'select' => 'origin'],
             'un_numbers'  => ['heading' => 'UN numbers', 'select' => 'un_numbers'],
@@ -58,12 +58,13 @@ class DeliveryNoteTariffCodesExport implements FromArray, ShouldAutoSize, WithHe
         $base        = $this->getTariffCodesBaseQuery($this->deliveryNote);
 
         $selects = array_map(
-            fn ($field) => $definitions[$field]['select'].' as '.$field,
+            fn ($field) => DB::raw($definitions[$field]['select'].' as '.$field),
             $this->selectedFields()
         );
 
         return DB::query()->fromSub($base, 'tc')
             ->select($selects)
+            ->orderByDesc('is_incomplete')
             ->orderBy('tariff_code');
     }
 

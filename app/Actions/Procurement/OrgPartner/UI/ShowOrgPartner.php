@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgPartner\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
@@ -23,18 +24,12 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrgPartner extends OrgAction
 {
+    use WithProcurementAuthorisation;
     use WithOrgPartnerSubNavigation;
 
     public function handle(OrgPartner $orgPartner): OrgPartner
     {
         return $orgPartner;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
     }
 
     public function asController(Organisation $organisation, OrgPartner $orgPartner, ActionRequest $request): OrgPartner

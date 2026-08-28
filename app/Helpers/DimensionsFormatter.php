@@ -52,7 +52,7 @@ class DimensionsFormatter
                         Arr::get($data, 'units', 'm')
                     )
                 ).' ('.Arr::get($data, 'units', 'm').')',
-                'cilinder' => number(
+                'cilinder', 'cylinder' => number(
                     convertUnits(
                         $data['h'] ?? 0,
                         'm',

@@ -4,7 +4,7 @@ import { trans } from 'laravel-vue-i18n'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faDotCircle, faSave } from "@fal"
-import { faArrowRight, faDotCircle as fasDotCircle } from "@fas"
+import { faArrowRight, faDotCircle as fasDotCircle, faFragile } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject, ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
@@ -20,7 +20,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { StockLocation } from '@/types/Inventory/StocksManagement'
 import Multiselect from '@vueform/multiselect'
 import { faFloppyDisk } from '@fortawesome/free-solid-svg-icons'
-library.add(faDotCircle, fasDotCircle, faSave)
+library.add(faDotCircle, fasDotCircle, faSave, faFragile)
 
 const props = defineProps<{
     locations: StockLocation[]
@@ -32,6 +32,7 @@ const props = defineProps<{
         decrease: [],
         transfer: [],
     }
+    lockedLocationIds?: number[]
     org_stock_id: number
 }>()
 
@@ -119,6 +120,11 @@ const bulkSubmitAudit = () => {
     )
 }
 
+
+// Locked by an audit running in another tab, or by this component's own request in flight
+const isLocationBusy = (locationOrgStockId: number) =>
+    listLoadingLocations.value.includes(locationOrgStockId) ||
+    (props.lockedLocationIds ?? []).includes(locationOrgStockId)
 
 const setInputRef = (el: any, id: number) => {
     if (el) {
@@ -217,6 +223,15 @@ const quantityInputs = ref<Record<number, { whole: number, numerator: number }>>
     }))
 )
 
+// The fraction input is hidden by default so users don't mistake it for the whole units input.
+// It stays open on rows that already hold a fraction, otherwise closing it would wipe them.
+const isFractionOpen = ref<Record<number, boolean>>(
+    Object.fromEntries(cloneLocations.value.map(location => [
+        location.id,
+        splitQuantity(Number(location.quantity)).numerator > 0
+    ]))
+)
+
 // Stock is stored rounded (1/6 as 0.1666), so an untouched fraction keeps its stored value
 // instead of drifting to 0.166667 and flagging the row as modified.
 const applyQuantityInputs = (location: StockLocation) => {
@@ -240,6 +255,15 @@ const updateFractionQuantity = (location: StockLocation, value: number) => {
 
     quantityInputs.value[location.id].numerator = Math.min(Math.max(numerator, 0), packedIn.value - 1)
     applyQuantityInputs(location)
+}
+
+const toggleFraction = (location: StockLocation) => {
+    const isOpen = !isFractionOpen.value[location.id]
+    isFractionOpen.value[location.id] = isOpen
+
+    if (!isOpen && quantityInputs.value[location.id].numerator > 0) {
+        updateFractionQuantity(location, 0)
+    }
 }
 
 interface ModifiedLocationOrgStock {
@@ -274,11 +298,12 @@ const currentPage = ref(1);
 </script>
 
 <template>
-    <div class="space-y-2">
+    <div class="flex flex-col min-h-0 max-h-[65vh]">
         <!-- list -->
+        <div :key="currentPage" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-2 pr-4 pb-3">
         <template v-if="cloneLocations.length > 0">
             <div v-if="currentPage == 1">
-                <div class="grid grid-cols-8 gap-2 border-b pb-2 font-semibold">
+                <div class="grid grid-cols-8 gap-2 border-b pb-2 pt-1 font-semibold sticky top-0 z-10 bg-white">
                     <div class="col-span-2 md:col-span-3 flex items-center gap-x-2">
                         {{ ctrans('Location') }}
                     </div>
@@ -287,9 +312,10 @@ const currentPage = ref(1);
                     </div>
                     <div class="col-span-4 md:col-span-3 text-right flex items-center justify-end gap-x-1">
                         {{ ctrans('New Quantity') }}
+                        <div class="w-24 opacity-0"></div>
                     </div>
                 </div>
-                <div v-for="(location, idx) in cloneLocations" :key="location.id" class="grid grid-cols-8 gap-2 border-b pb-2">
+                <div v-for="(location, idx) in cloneLocations" :key="location.id" class="grid grid-cols-8 gap-2 border-b pb-2 space-y-2 md:space-y-0 pt-2 md:pt-1 items-center">
                     <div class="col-span-2 md:col-span-3 flex items-center gap-x-2">
                         {{ location.code }}
                     </div>
@@ -313,8 +339,10 @@ const currentPage = ref(1);
                             </span>
                         </div>
 
-                        <div v-else-if="listLoadingLocations.includes(location.id)"
-                            v-tooltip="ctrans('Setting as audited')"
+                        <div v-else-if="isLocationBusy(location.id)"
+                            v-tooltip="listLoadingLocations.includes(location.id)
+                                ? ctrans('Setting as audited')
+                                : ctrans('Being audited somewhere else')"
                             class="text-gray-400"
                         >
                             <LoadingIcon />
@@ -332,12 +360,16 @@ const currentPage = ref(1);
                             />
                         </div>
                         <template v-if="isPackedStock">
-                            <div class="w-20">
+                            <div class="w-20 flex flex-col text-left">
+                                <span class="text-[10px] leading-none text-gray-400 mb-0.5">
+                                    {{ ctrans('Outer') }}
+                                </span>
                                 <InputNumber
                                     :ref="el => setInputRef(el, location.id)"
                                     v-tooltip="ctrans('Whole units')"
                                     :modelValue="quantityInputs[location.id].whole"
                                     @input="(event: { value: any }) => updateWholeQuantity(location, event.value)"
+                                    :disabled="isLocationBusy(location.id)"
                                     :min="0"
                                     :step="1"
                                     size="small"
@@ -345,19 +377,33 @@ const currentPage = ref(1);
                                     inputClass="!py-0"
                                 />
                             </div>
-                            <div class="w-24">
-                                <InputNumber
-                                    v-tooltip="ctrans('Fraction of a unit (:packedIn per unit)', { packedIn: packedIn })"
-                                    :modelValue="quantityInputs[location.id].numerator"
-                                    @input="(event: { value: any }) => updateFractionQuantity(location, event.value)"
-                                    :min="0"
-                                    :max="packedIn - 1"
-                                    :step="1"
-                                    :suffix="'/' + packedIn"
-                                    size="small"
-                                    fluid
-                                    inputClass="!py-0"
-                                />
+                            <div class="w-24 flex flex-col text-left">
+                                <template v-if="isFractionOpen[location.id]">
+                                    <span class="text-[10px] leading-none text-gray-400 mb-0.5">
+                                        {{ ctrans('Unit') }}
+                                    </span>
+                                    <InputNumber
+                                        v-tooltip="ctrans('Fraction of a unit (:packedIn per unit)', { packedIn: packedIn })"
+                                        :modelValue="quantityInputs[location.id].numerator"
+                                        @input="(event: { value: any }) => updateFractionQuantity(location, event.value)"
+                                        :disabled="isLocationBusy(location.id)"
+                                        :min="0"
+                                        :max="packedIn - 1"
+                                        :step="1"
+                                        :suffix="'/' + packedIn"
+                                        size="small"
+                                        fluid
+                                        inputClass="!py-0"
+                                    />
+                                </template>
+                            </div>
+                            <div
+                                v-tooltip="isFractionOpen[location.id] ? ctrans('Hide the fraction of a unit') : ctrans('Add a fraction of a unit')"
+                                @click="() => toggleFraction(location)"
+                                class="cursor-pointer opacity-60 hover:opacity-100 self-end pb-1.5"
+                                :class="quantityInputs[location.id].numerator > 0 || isFractionOpen[location.id] ? 'text-orange-500' : 'text-gray-400'"
+                            >
+                                <FontAwesomeIcon icon="fas fa-fragile" fixed-width aria-hidden="true" />
                             </div>
                         </template>
                         <div v-else class="w-24">
@@ -368,6 +414,7 @@ const currentPage = ref(1);
                                     location.quantity = event.value
                                     hydrateModifiedLocationsQuantity(location);
                                 }"
+                                :disabled="isLocationBusy(location.id)"
                                 :min="0"
                                 :step="1"
                                 size="small"
@@ -379,7 +426,7 @@ const currentPage = ref(1);
                 </div>
             </div>
             <div v-else> 
-                <div class="hidden md:grid grid-cols-6 gap-3 border-b pb-2 font-semibold">
+                <div class="hidden md:grid grid-cols-6 gap-3 border-b pb-2 pt-1 font-semibold sticky top-0 z-10 bg-white">
                     <div class="col-span-1">
                         {{ ctrans('Location Code') }}
                     </div>
@@ -426,6 +473,8 @@ const currentPage = ref(1);
                             :hideSelected="false"
                             :searchable="true"
                             :filter-results="false"
+                            appendToBody
+                            :classes="{ dropdown: 'multiselect-dropdown !z-[1400]' }"
                         />
                     </div>
                     <div class="col-span-2 min-w-0">
@@ -453,8 +502,9 @@ const currentPage = ref(1);
                 {{ trans("You haven't added any locations yet") }}
             </div>
         </div>
+        </div>
         <!-- Section: buttons -->
-         <div class="flex xjustify-end gap-2 pt-3">
+         <div class="shrink-0 flex xjustify-end gap-2 pt-3 mt-2 border-t bg-white">
             <Button 
                 :label="currentPage == 1 ? ctrans('Close') : ctrans('Back')" 
                 type="tertiary" 
@@ -469,7 +519,8 @@ const currentPage = ref(1);
             />
             <Button 
                 :label="currentPage == 1 ? ctrans('Next') : ctrans('Save')" 
-                :type="'primary'"                 
+                :type="currentPage == 1 ? 'secondary' : 'primary'"
+                :key="currentPage"
                 :icon="currentPage == 1 ? undefined : faFloppyDisk" 
                 :iconRight="currentPage == 1 ? faArrowRight : undefined"
                 class="ml-auto" @click="() => {

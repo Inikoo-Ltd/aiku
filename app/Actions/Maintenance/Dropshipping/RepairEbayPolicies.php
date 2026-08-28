@@ -24,17 +24,21 @@ class RepairEbayPolicies
 
     public function handle(EbayUser $ebayUser): void
     {
-        $fulfillmentPolicyId = Arr::get($ebayUser->settings, 'defaults.main_fulfilment_policy_id');
+        $fulfillmentPolicyId = $ebayUser->getUsableFulfilmentPolicyId(
+            Arr::get($ebayUser->settings, 'defaults.main_fulfilment_policy_id') ?? $ebayUser->fulfillment_policy_id
+        );
         $mainLocationKey = Arr::get($ebayUser->settings, 'defaults.main_location_key');
         $returnPolicyId = Arr::get($ebayUser->settings, 'defaults.main_return_policy_id');
         $paymentPolicyId = Arr::get($ebayUser->settings, 'defaults.main_payment_policy_id');
 
-        $this->update($ebayUser, [
+        $policies = [
             'fulfillment_policy_id' => $fulfillmentPolicyId,
             'payment_policy_id' => $paymentPolicyId,
             'return_policy_id' => $returnPolicyId,
             'location_key' => $mainLocationKey
-        ]);
+        ];
+
+        $this->update($ebayUser, array_filter($policies, fn ($policy) => filled($policy)));
     }
 
     public function getCommandSignature(): string

@@ -9,6 +9,8 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Asset\UpdateAsset;
+use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
+use App\Actions\Ordering\Order\RecalculateTotalsOrdersInBasket;
 use App\Actions\Catalogue\Product\CloneProductImagesFromTradeUnits;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithCustomTradeUnitAudits;
@@ -26,10 +28,13 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Helpers\Language;
+use App\Models\Helpers\TaxCategory;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
@@ -37,6 +42,7 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterAsset extends OrgAction
@@ -44,10 +50,14 @@ class UpdateMasterAsset extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithMastersEditAuthorisation;
+    use WithLineTaxCategories;
     use WithMasterAssetTradeUnits;
     use WithCustomTradeUnitAudits;
 
     private MasterAsset $masterAsset;
+
+    /** Only a human editing in the UI is guarded against overlapping sweeps; the seeder sequences itself. */
+    private bool $guardTaxSweep = false;
 
     /**
      * @throws \Throwable
@@ -56,6 +66,40 @@ class UpdateMasterAsset extends OrgAction
     {
         $oldMasterAsset      = clone($masterAsset);
         $oldMismatchDetected = $oldMasterAsset->mismatch_detected;
+
+        if ($this->guardTaxSweep && Arr::hasAny($modelData, ['tax_preset', 'tax_category'])) {
+            /**
+             * Two sweeps over the same baskets interleave their recalculations; the second
+             * change must wait for the first to finish, exactly like the price pipelines.
+             */
+            $runningSweep = TaxPresetBasketProgress::get($masterAsset);
+            if ($runningSweep && $runningSweep['state'] != 'finished') {
+                throw ValidationException::withMessages([
+                    'tax_preset' => __('The previous tax change is still repricing baskets, try again when it finishes.'),
+                ]);
+            }
+        }
+
+        if (Arr::has($modelData, 'tax_preset')) {
+            $presetName = (string)Arr::pull($modelData, 'tax_preset');
+            /** "custom" is display only, re-posting it must not clear the imported map. */
+            if ($presetName != 'custom') {
+                data_set($modelData, 'tax_category', $presetName == 'standard' || $presetName == '' ? [] : $this->expandTaxPreset($presetName));
+            }
+        }
+
+        if (Arr::has($modelData, 'tax_category')) {
+            $taxCategoryMap = $this->normaliseTaxCategoryMap(Arr::get($modelData, 'tax_category'));
+            data_set($modelData, 'tax_category', $taxCategoryMap);
+
+            /**
+             * The preset column exists so "everything that is food" can be re-expanded in
+             * mass when a rate changes; it is derived, never trusted from the input. A map
+             * no preset produces (imported, or hand set before presets existed) stores null.
+             */
+            $inferredPreset = $this->inferTaxPreset($taxCategoryMap);
+            data_set($modelData, 'tax_preset', $inferredPreset == 'custom' ? null : $inferredPreset);
+        }
 
         if (Arr::has($modelData, 'master_family_id')) {
             $masterFamily = null;
@@ -133,12 +177,15 @@ class UpdateMasterAsset extends OrgAction
             /** @var MasterAsset $masterAsset */
             if (!empty($tradeUnits)) {
                 $this->processTradeUnits($masterAsset, $tradeUnits);
-                if (count($tradeUnits) == 1) {
-                    data_set($modelData, 'units', $tradeUnits[0]['quantity']);
-                    data_set($modelData, 'unit', $tradeUnits[0]['type']);
-                } else {
-                    data_set($modelData, 'units', 1);
-                    data_set($modelData, 'unit', 'bundle');
+                $hasIndependentUnits = Arr::get($modelData, 'has_independent_units', $masterAsset->has_independent_units);
+
+                $unitsFromTradeUnits = $this->getUnitsFromTradeUnits($tradeUnits);
+                if (!$hasIndependentUnits && $unitsFromTradeUnits['units'] !== null) {
+                    data_set($modelData, 'units', $unitsFromTradeUnits['units']);
+                }
+                /** A label typed in this same save wins over the one the composition suggests. */
+                if (!Arr::has($modelData, 'unit')) {
+                    data_set($modelData, 'unit', $unitsFromTradeUnits['unit']);
                 }
 
                 foreach ($masterAsset->products()->whereNot('products.not_follow_master_trade_units', true)->get() as $product) {
@@ -173,17 +220,36 @@ class UpdateMasterAsset extends OrgAction
         if ($masterAsset->wasChanged('unit')) {
             $english = Language::where('code', 'en')->first();
 
+            /**
+             * The unit is a label a customer reads, so it rides the same rails as the name:
+             * copied verbatim to shops that speak the language it was written in, machine
+             * translated for the rest. A shop that has opted out of following the master
+             * keeps whatever it set, in any language. How many trade units the master is
+             * built from says nothing about that, so it does not gate the cascade.
+             */
             foreach ($masterAsset->products as $product) {
-                if ($product->is_single_trade_unit && $product->shop->language_id == $english->id) {
+                $shop = $product->shop;
+
+                if ($shop->language_id == $english->id) {
                     UpdateProduct::run($product, [
                         'unit' => $masterAsset->unit,
                     ]);
+
+                    continue;
                 }
+
+                if (!data_get($shop->settings, 'catalog.product_follow_master') || !$masterAsset->unit) {
+                    continue;
+                }
+
+                UpdateProduct::run($product, [
+                    'unit' => Translate::run($masterAsset->unit, $english, $shop->language, 'gpt-5-nano'),
+                ]);
             }
         }
 
         if ($masterAsset->wasChanged('units')) {
-            foreach ($masterAsset->products as $product) {
+            foreach ($masterAsset->products()->where('has_independent_units', false)->get() as $product) {
                 UpdateProduct::run($product, [
                     'units' => $masterAsset->units,
                 ]);
@@ -240,36 +306,101 @@ class UpdateMasterAsset extends OrgAction
                     'tax_category' => $masterAsset->tax_category
                 ]);
             }
-        }
 
-        if ($masterAsset->wasChanged(['name', 'description', 'description_title', 'description_extra', 'code'])) {
-            $english = Language::where('code', 'en')->first();
-
+            /**
+             * Tax rides the same rails as a price change: a new historic freezes the new
+             * treatment, baskets are moved onto it and recalculated, and every line already
+             * sold keeps the historic - and the treatment - it was sold under. The affected
+             * baskets are counted up front and each recalculation reports back, so the
+             * person who pressed Food watches a progress bar instead of guessing.
+             */
+            $assetIds = [];
             foreach ($masterAsset->products as $product) {
-                $shop = $product->shop;
-                if (!data_get($shop->settings, 'catalog.product_follow_master')) {
+                /**
+                 * Faire and other external shops are taxed from the marketplace payload;
+                 * their lines never read the map, so minting historics and sweeping their
+                 * baskets would be churn at best and a payload overwrite at worst.
+                 */
+                if ($product->shop->type == ShopTypeEnum::EXTERNAL) {
                     continue;
                 }
 
-                $shopLanguage    = $shop->language;
+                $historicAsset = StoreHistoricAsset::run($product, [], $this->hydratorsDelay);
+                $product->updateQuietly(['current_historic_asset_id' => $historicAsset->id]);
+
+                $assetIds[] = $product->asset_id;
+            }
+
+            $basketOrderIds = $this->getTaxSweepBasketOrderIds($assetIds);
+
+            TaxPresetBasketProgress::start($masterAsset, $basketOrderIds, $assetIds);
+
+            /**
+             * A giant basket (aws34545 carries 2,496 lines) recalculates for longer than the
+             * urgent connection's retry_after, so the queue re-serves it mid-run and burns
+             * its attempts. Oversized baskets go to the long-running connection, whose
+             * retry_after was sized for exactly this. One grouped query, not one per basket.
+             */
+            $oversizedOrderIds = empty($basketOrderIds) ? [] : DB::table('transactions')
+                ->whereIn('order_id', $basketOrderIds)
+                ->whereNull('deleted_at')
+                ->groupBy('order_id')
+                ->havingRaw('count(*) > ?', [TaxPresetBasketProgress::OVERSIZED_LINES])
+                ->pluck('order_id')
+                ->all();
+
+            foreach ($basketOrderIds as $orderId) {
+                /** No held PendingDispatch: on the sync driver it only runs on destruct, and a variable keeps the last one alive past the sweep. */
+                if (in_array($orderId, $oversizedOrderIds)) {
+                    RecalculateTotalsOrdersInBasket::dispatch($orderId, null, null, null, $masterAsset->id)
+                        ->onConnection('redis-long-running')
+                        ->onQueue('long-running');
+                } else {
+                    RecalculateTotalsOrdersInBasket::dispatch($orderId, null, null, null, $masterAsset->id);
+                }
+            }
+
+            /**
+             * The watchdog goes on the queue after the reprices so its first run already sees
+             * work done; it reconciles from the data, so dropped or dead jobs cannot wedge
+             * the bar the way a decrementing counter did.
+             */
+            if ($basketOrderIds) {
+                CheckTaxPresetBasketProgress::dispatch($masterAsset->id)->delay(5);
+            }
+        }
+
+        if ($masterAsset->wasChanged(['name', 'description', 'description_title', 'description_extra', 'code', 'is_golden_product'])) {
+            $english = Language::where('code', 'en')->first();
+
+            foreach ($masterAsset->products as $product) {
+                $shop            = $product->shop;
                 $dataToBeUpdated = [];
 
-                // Updates the affected field name using translation if follow_master_{field} is true
-                if ($masterAsset->wasChanged('name')) {
-                    $dataToBeUpdated['name']             = Translate::run($masterAsset->name, $english, $shopLanguage, 'gpt-5-nano');
-                    $dataToBeUpdated['is_name_reviewed'] = false;
+                if ($masterAsset->wasChanged('is_golden_product')) {
+                    $dataToBeUpdated['is_golden_product'] = $masterAsset->is_golden_product;
                 }
-                if ($masterAsset->wasChanged('description_title')) {
-                    $dataToBeUpdated['description_title']             = Translate::run($masterAsset->description_title, $english, $shopLanguage, 'gpt-5-nano');
-                    $dataToBeUpdated['is_description_title_reviewed'] = false;
-                }
-                if ($masterAsset->wasChanged('description')) {
-                    $dataToBeUpdated['description']             = Translate::run($masterAsset->description, $english, $shopLanguage, 'gpt-5-nano');
-                    $dataToBeUpdated['is_description_reviewed'] = false;
-                }
-                if ($masterAsset->wasChanged('description_extra')) {
-                    $dataToBeUpdated['description_extra']             = Translate::run($masterAsset->description_extra, $english, $shopLanguage, 'gpt-5-nano');
-                    $dataToBeUpdated['is_description_extra_reviewed'] = false;
+
+                if (data_get($shop->settings, 'catalog.product_follow_master', false)) {
+                    $shopLanguage    = $shop->language;
+
+                    // Updates the affected field name using translation if follow_master_{field} is true
+                    if ($masterAsset->wasChanged('name')) {
+                        $dataToBeUpdated['name']             = Translate::run($masterAsset->name, $english, $shopLanguage, 'gpt-5-nano');
+                        $dataToBeUpdated['is_name_reviewed'] = false;
+                    }
+                    if ($masterAsset->wasChanged('description_title')) {
+                        $dataToBeUpdated['description_title']             = Translate::run($masterAsset->description_title, $english, $shopLanguage, 'gpt-5-nano');
+                        $dataToBeUpdated['is_description_title_reviewed'] = false;
+                    }
+                    if ($masterAsset->wasChanged('description')) {
+                        $dataToBeUpdated['description']             = Translate::run($masterAsset->description, $english, $shopLanguage, 'gpt-5-nano');
+                        $dataToBeUpdated['is_description_reviewed'] = false;
+                    }
+                    if ($masterAsset->wasChanged('description_extra')) {
+                        $dataToBeUpdated['description_extra']             = Translate::run($masterAsset->description_extra, $english, $shopLanguage, 'gpt-5-nano');
+                        $dataToBeUpdated['is_description_extra_reviewed'] = false;
+                    }
                 }
 
                 if ($dataToBeUpdated) {
@@ -322,6 +453,8 @@ class UpdateMasterAsset extends OrgAction
             'data'                         => ['sometimes', 'array'],
             'status'                       => ['sometimes', 'required', 'boolean'],
             'units'                        => ['sometimes', 'numeric', 'min:0'],
+
+            'has_independent_units' => ['sometimes', 'boolean'],
             'master_family_id'             => [
                 'sometimes',
                 'nullable',
@@ -337,6 +470,7 @@ class UpdateMasterAsset extends OrgAction
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
             'follow_trade_unit_media'      => ['sometimes', 'boolean'],
             'tax_category'                 => ['sometimes', 'array'],
+            'tax_preset'                   => ['sometimes', 'nullable', Rule::in([...array_keys($this->getTaxPresets()), 'standard', 'custom', ''])],
             // Master Prices
             'master_prices'                => ['sometimes', 'array'],
             'master_prices.*.value'        => ['sometimes', 'numeric', 'gt:0'],
@@ -345,6 +479,7 @@ class UpdateMasterAsset extends OrgAction
             'master_rrps'                   => ['sometimes', 'array'],
             'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
             'master_rrps.*.independent'     => ['sometimes', 'boolean'],
+            'is_golden_product'             => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {
@@ -352,6 +487,33 @@ class UpdateMasterAsset extends OrgAction
         }
 
         return $rules;
+    }
+
+
+    /**
+     * Everything arriving here is the stored shape, order-category-id => override-category-id
+     * (the form itself posts a preset name, resolved before this runs). Unknown categories
+     * are dropped rather than trusted, this value ends up multiplying invoices.
+     *
+     * @param  array<int|string, mixed>  $taxCategory
+     *
+     * @return array<int, int>
+     */
+    private function normaliseTaxCategoryMap(array $taxCategory): array
+    {
+        $knownIds = TaxCategory::pluck('id')->all();
+
+        $map = [];
+        foreach ($taxCategory as $orderTaxCategoryId => $lineTaxCategoryId) {
+            $orderTaxCategoryId = (int)$orderTaxCategoryId;
+            $lineTaxCategoryId  = (int)$lineTaxCategoryId;
+
+            if (in_array($orderTaxCategoryId, $knownIds) && in_array($lineTaxCategoryId, $knownIds)) {
+                $map[$orderTaxCategoryId] = $lineTaxCategoryId;
+            }
+        }
+
+        return $map;
     }
 
     /**
@@ -378,7 +540,8 @@ class UpdateMasterAsset extends OrgAction
      */
     public function asController(MasterAsset $masterAsset, ActionRequest $request): MasterAsset
     {
-        $this->masterAsset = $masterAsset;
+        $this->guardTaxSweep = true;
+        $this->masterAsset   = $masterAsset;
         $this->initialisationFromGroup($masterAsset->group, $request);
 
         return $this->handle($masterAsset, $this->validatedData);

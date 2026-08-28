@@ -8,6 +8,7 @@
 
 namespace App\Actions\Maintenance\Masters;
 
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateStatus;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
@@ -30,8 +31,7 @@ class AddMissingFamiliesToMaster
      */
     public function handle(Shop $fromShop, MasterShop $shop, bool $missingOnly = false): void
     {
-        $categoriesToAdd = $fromShop->productCategories()->where('product_categories.type', MasterProductCategoryTypeEnum::FAMILY)
-            ->where('product_categories.state', ProductCategoryStateEnum::ACTIVE);
+        $categoriesToAdd = $fromShop->productCategories()->where('product_categories.type', MasterProductCategoryTypeEnum::FAMILY);
         if ($missingOnly) {
             $categoriesToAdd->leftJoin('master_product_categories as mpc', 'mpc.id', '=', 'product_categories.master_product_category_id')
                 ->whereNull('mpc.id')
@@ -99,13 +99,11 @@ class AddMissingFamiliesToMaster
 
         if ($foundMasterFamily) {
             $markForDiscontinued = false;
-            $status              = true;
             $discontinuingAt     = null;
             $discontinuedAt      = null;
 
 
             if ($family->state == ProductCategoryStateEnum::DISCONTINUED) {
-                $status          = false;
                 $discontinuedAt  = $family->discontinued_at;
                 $discontinuingAt = $family->discontinuing_at;
             }
@@ -118,16 +116,16 @@ class AddMissingFamiliesToMaster
             UpdateMasterProductCategory::run(
                 $foundMasterFamily,
                 [
-                    'status'                   => $status,
                     'mark_for_discontinued'    => $markForDiscontinued,
                     'mark_for_discontinued_at' => $discontinuingAt,
                     'discontinued_at'          => $discontinuedAt,
                 ]
             );
+
+            MasterFamilyHydrateStatus::run($foundMasterFamily);
         }
 
-        if ($family->no_master) {
-            // Link Product Category with Master
+        if ($foundMasterFamily && !$family->master_product_category_id) {
             UpdateProductCategory::make()->action(
                 $family,
                 ['master_product_category_id' => $foundMasterFamily->id]

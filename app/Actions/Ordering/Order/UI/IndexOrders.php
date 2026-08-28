@@ -226,10 +226,23 @@ class IndexOrders extends OrgAction
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
             ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at', 'updated_by_customer_at']) // Ensure `id` is the first sort column
-            ->withBetweenDates(['date'])
+            ->withBetweenDates([$this->getBucketDateColumn($this->bucket ?? null)])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    protected function getBucketDateColumn(?string $bucket): string
+    {
+        if (in_array($bucket, ['dispatched', 'dispatched_today'])) {
+            return 'dispatched_at';
+        }
+
+        if (in_array($bucket, ['in_basket', 'creating', 'all', null])) {
+            return 'date';
+        }
+
+        return 'submitted_at';
     }
 
     public function tableStructure(Group|Organisation|Shop|Customer|CustomerClient|Offer $parent, $prefix = null, $bucket = null): Closure
@@ -266,7 +279,7 @@ class IndexOrders extends OrgAction
                 $stats = $parent->orderingStats;
             }
 
-            $table->betweenDates(['date']);
+            $table->betweenDates([$this->getBucketDateColumn($bucket)]);
 
             $table
                 ->withGlobalSearch()
@@ -304,6 +317,9 @@ class IndexOrders extends OrgAction
                 $table->column(key: 'submitted_at', label: __('Submitted'), sortable: true, type: 'date_hm');
             } else {
                 $table->column(key: 'date', label: __('Created date'), sortable: true, type: 'date');
+                if ($parent instanceof Customer || $parent instanceof CustomerClient) {
+                    $table->column(key: 'submitted_at', label: __('Submitted'), sortable: true, type: 'date');
+                }
             }
 
             if ($bucket == 'in_basket') {
@@ -334,6 +350,7 @@ class IndexOrders extends OrgAction
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
         $customerId    = null;
+        $customerName  = null;
         $navigation    = OrdersTabsEnum::navigation();
         $subNavigation = null;
 
@@ -400,7 +417,8 @@ class IndexOrders extends OrgAction
             $afterTitle = [
                 'label' => __('Orders')
             ];
-            $customerId = $this->parent->id;
+            $customerId   = $this->parent->id;
+            $customerName = $this->parent->name;
         }
 
         if ($this->parent instanceof Shop) {
@@ -429,12 +447,19 @@ class IndexOrders extends OrgAction
                     'actions'       => $actions
                 ],
                 'data'           => OrdersResource::collection($orders),
-                'submitRoute'    => $customerId ? [
+                'submitRoute'    => [
                     'name'       => 'grp.models.customer.submitted_order.store',
                     'parameters' => [
                         'customer' => $customerId
                     ]
-                ] : null,
+                ],
+                'customerName'   => $customerName,
+                'customersRoute' => $customerId || !$shop ? null : [
+                    'name'       => 'grp.json.shop.customers',
+                    'parameters' => [
+                        'shop' => $shop->id
+                    ]
+                ],
                 'tabs'           => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,

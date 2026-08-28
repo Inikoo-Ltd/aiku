@@ -74,6 +74,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $shopify_fulfilment_service_id
  * @property string|null $shopify_location_id
  * @property int|null $external_shop_id
+ * @property string|null $shopify_offline_refresh_token
+ * @property string|null $shopify_offline_access_token_expires_at
+ * @property string|null $shopify_offline_refresh_token_expires_at
  * @property WebUserTypeEnum $state
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \Osiset\ShopifyApp\Storage\Models\Charge> $charges

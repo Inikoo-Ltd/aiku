@@ -39,6 +39,32 @@ class RedoPlatformTimeSeries implements ShouldBeUnique
         return $platformId.'_'.$from.'_'.$to;
     }
 
+    protected function dateRangeSources(): array
+    {
+        return [
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('invoices')->whereNull('deleted_at'),
+                'key'   => ['platform_id', 'shop_id'],
+                'date'  => 'date',
+            ],
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('customer_sales_channels'),
+                'key'   => ['platform_id', 'shop_id'],
+                'date'  => 'created_at',
+            ],
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('portfolios'),
+                'key'   => ['platform_id', 'shop_id'],
+                'date'  => 'created_at',
+            ],
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('customer_clients'),
+                'key'   => ['platform_id', 'shop_id'],
+                'date'  => 'created_at',
+            ],
+        ];
+    }
+
     public function handle(?int $platformId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$platformId) {
@@ -55,22 +81,14 @@ class RedoPlatformTimeSeries implements ShouldBeUnique
 
         foreach ($shopIds as $shopId) {
             if (!$from || !$to) {
-                $dates = collect([
-                    DB::connection('aiku_no_sticky')->table('invoices')->where('platform_id', $platform->id)->where('shop_id', $shopId)->whereNull('deleted_at')->selectRaw('MIN(date) as min_date, MAX(date) as max_date')->first(),
-                    DB::connection('aiku_no_sticky')->table('customer_sales_channels')->where('platform_id', $platform->id)->where('shop_id', $shopId)->selectRaw('MIN(created_at) as min_date, MAX(created_at) as max_date')->first(),
-                    DB::connection('aiku_no_sticky')->table('portfolios')->where('platform_id', $platform->id)->where('shop_id', $shopId)->selectRaw('MIN(created_at) as min_date, MAX(created_at) as max_date')->first(),
-                    DB::connection('aiku_no_sticky')->table('customer_clients')->where('platform_id', $platform->id)->where('shop_id', $shopId)->selectRaw('MIN(created_at) as min_date, MAX(created_at) as max_date')->first(),
-                ]);
+                $dateRange = $this->getDateRange([$platform->id, $shopId]);
 
-                $firstActivityDate = $dates->pluck('min_date')->filter()->min();
-                $lastActivityDate  = $dates->pluck('max_date')->filter()->max();
-
-                if (!$firstActivityDate) {
+                if (!$dateRange['from']) {
                     continue;
                 }
 
-                $resolvedFrom = Carbon::parse($firstActivityDate)->toDateString();
-                $resolvedTo   = Carbon::parse($lastActivityDate ?? now())->toDateString();
+                $resolvedFrom = Carbon::parse($dateRange['from'])->toDateString();
+                $resolvedTo   = Carbon::parse($dateRange['to'] ?? now())->toDateString();
             } else {
                 $resolvedFrom = $from;
                 $resolvedTo   = $to;

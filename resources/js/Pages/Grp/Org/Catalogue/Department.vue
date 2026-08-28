@@ -39,6 +39,7 @@ import Breadcrumb from 'primevue/breadcrumb'
 import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
+import ButtonExportWebsiteStructure from "@/Components/Catalogue/ButtonExportWebsiteStructure.vue"
 
 library.add(
     faFolder,
@@ -117,6 +118,17 @@ const component = computed(() => {
 <template>
     <Head :title="title" />
     <PageHeading :data="pageHead">
+        <template #button-export="{ action }">
+            <ButtonExportWebsiteStructure
+                :fields="action.fields"
+                :states="action.states"
+                :downloadRoute="action.download_route"
+                :label="action.label"
+                :tooltip="action.tooltip"
+                :icon="action.icon"
+            />
+        </template>
+
         <template #button-delete="propx">
             <ModalConfirmationDelete
                 :routeDelete="{
@@ -154,7 +166,7 @@ const component = computed(() => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-     <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
+     <div v-if="mini_breadcrumbs?.length" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
         <Breadcrumb  :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">

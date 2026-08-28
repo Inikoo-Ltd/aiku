@@ -55,7 +55,7 @@ class UpdateProduction extends OrgAction
                     table: 'productions',
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->organisation->group_id],
-                        ['column' => 'id', 'value' => $this->production->id, 'operation' => '!=']
+                        ['column' => 'id', 'value' => $this->production->id, 'operator'  => '!=']
                     ]
                 ),
             ],

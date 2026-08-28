@@ -41,6 +41,7 @@ class IndexInvoices extends OrgAction
 
         return $query
             ->select([
+                'invoices.id',
                 'invoices.reference',
                 'invoices.customer_name',
                 'invoices.date',

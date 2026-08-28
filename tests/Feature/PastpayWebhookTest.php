@@ -100,7 +100,10 @@ function createOrderWithPastpayApiPoint($customer, $product, PaymentAccountShop 
 
     $order = StoreOrder::make()->action($customer, $modelData);
 
-    StoreTransaction::make()->action($order, $product->historicAsset, Transaction::factory()->definition());
+    StoreTransaction::make()->action($order, $product->historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 2]
+    ));
     $order->refresh();
 
     $orderPaymentApiPoint = StoreOrderPaymentApiPoint::run($order);
@@ -476,6 +479,7 @@ test('order partially paid with balance is financed by pastpay only for the rema
         })
         ->andReturn(['data' => ['redirectUrl' => 'https://app.demo.pastpay.com/buy/test']]);
 
+    $order->unsetRelation('customer');
     $result = PayOrderWithPastpay::make()->handle($order, $orderPaymentApiPoint, ['days' => 30]);
 
     expect($result['status'])->toBe('ok')

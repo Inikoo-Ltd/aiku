@@ -19,7 +19,6 @@ use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -104,19 +103,6 @@ class ShowOrgChatConversation extends OrgAction
                     ],
                 ] : null,
                 'messages'         => $this->resolveMessagesWithSenderNames($chatSession),
-                'slackConfigured'  => !empty(Arr::get($chatSession->shop?->settings ?? [], 'chat.slack_token'))
-                    && !empty(Arr::get($chatSession->shop?->settings ?? [], 'chat.slack_channels')),
-                'slackCurrentConfig' => [
-                    'token'    => Arr::get($chatSession->shop?->settings ?? [], 'chat.slack_token') ?? '',
-                    'channels' => Arr::get($chatSession->shop?->settings ?? [], 'chat.slack_channels') ?? [],
-                ],
-                'slackUpdateRoute' => [
-                    'name'       => 'grp.models.org.shop.update',
-                    'parameters' => [
-                        'organisation' => $this->organisation->id,
-                        'shop'         => $chatSession->shop?->id,
-                    ],
-                ],
             ]
         );
     }

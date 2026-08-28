@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, inject } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faUser, faBuilding, faEnvelope, faPhone, faTags, faMedal as fasMedal, faGlobeEurope, faIslandTropical } from "@fas"
+import { faUser, faBuilding, faEnvelope, faPhone, faTags, faMedal as fasMedal, faGlobeEurope, faIslandTropical, faIdCard } from "@fas"
 import { faMedal } from "@fal"
 import { faMedal as fadMedal } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -12,7 +12,7 @@ import GoldReward from '@/Components/Utils/GoldReward.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { textReplaceVariables } from "@/Composables/Workshop"
 
-library.add(faUser, faMedal, fasMedal, fadMedal,faBuilding, faEnvelope, faPhone, faXmark, faTags, faGlobeEurope, faIslandTropical)
+library.add(faUser, faMedal, fasMedal, fadMedal,faBuilding, faEnvelope, faPhone, faXmark, faTags, faGlobeEurope, faIslandTropical, faIdCard)
 
 const props = defineProps<{
     data: {}
@@ -94,23 +94,23 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                             </span>
                         </div>
                     </div>
-                    <div v-if="data.customer.eori" class="flex items-center">
+                    <div v-if="data.customer.identity_document_number" class="flex items-center">
                         <FontAwesomeIcon
-                            icon="fas fa-globe-europe"
+                            icon="fas fa-id-card"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Economic Operators Registration and Identification (EORI) number')"
+                            v-tooltip="data.customer.identity_document_number?.label"
                         />
-                        <span class="text-gray-900">{{ data.customer.eori }}</span>
-                        <span class="text-xs text-gray-400 ml-2">EORI</span>
+                        <span class="text-gray-900">{{ data.customer.identity_document_number?.number }}</span>
+                        <span class="text-xs text-gray-400 ml-2">{{ data.customer.identity_document_number?.label }}</span>
                     </div>
-                    <div v-if="data.customer.ukims" class="flex items-center">
+                    <div v-if="data.customer.identity_document_number_alt" class="flex items-center">
                         <FontAwesomeIcon
-                            icon="fas fa-island-tropical"
+                            icon="fas fa-id-card"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('UK Internal Market Scheme (UKIMS) number')"
+                            v-tooltip="data.customer.identity_document_number_alt?.label"
                         />
-                        <span class="text-gray-900">{{ data.customer.ukims }}</span>
-                        <span class="text-xs text-gray-400 ml-2">UKIMS</span>
+                        <span class="text-gray-900">{{ data.customer.identity_document_number_alt?.number }}</span>
+                        <span class="text-xs text-gray-400 ml-2">{{ data.customer.identity_document_number_alt?.label }}</span>
                     </div>
                 </div>
 

@@ -10,7 +10,7 @@ import {Head, router} from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import {capitalize} from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import {computed, ref, inject} from 'vue'
+import {computed, ref, inject, onMounted, onUnmounted} from 'vue'
 import type {Component} from 'vue'
 import {useTabChange} from "@/Composables/tab-change"
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -138,6 +138,22 @@ const props = defineProps<{
     is_forbidden_billing?: boolean
 }>()
 const layout = inject('layout', retinaLayoutStructure)
+
+onMounted(() => {
+    if (window.Echo && layout.user?.customer_id && props.data?.data?.id) {
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`)
+            .listen(".order-submitted", (eventData: { order_id: number }) => {
+                if (eventData.order_id == props.data?.data?.id) {
+                    window.location.href = window.location.pathname.replace("/basket/", "/orders/")
+                }
+            })
+    }
+})
+onUnmounted(() => {
+    if (window.Echo && layout.user?.customer_id) {
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`).stopListening(".order-submitted")
+    }
+})
 const locale = inject('locale', aikuLocaleStructure)
 
 const isModalUploadOpen = ref(false)
@@ -429,7 +445,7 @@ const onChangeInsurance = async (val: boolean) => {
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
           @update:tab="handleTabUpdate"/>
 
-    <div class="mb-4 mx-4 mt-4 rounded-md border border-gray-200">
+    <div class="mb-4 mx-4 mt-4 overflow-x-auto rounded-md border border-gray-200">
         <component :is="component"
                    :data="props[currentTab as keyof typeof props]" :tab="currentTab"
                    :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state"
@@ -513,9 +529,9 @@ const onChangeInsurance = async (val: boolean) => {
         </template>
     </div>
 
-    <div v-if="total_products > 0" class="flex justify-end px-6 gap-x-4">
-        <div class="grid grid-cols-3 gap-x-4 w-full">
-            <div></div>
+    <div v-if="total_products > 0" class="flex flex-col md:flex-row justify-end px-4 md:px-6 gap-4">        
+        <div class="grid md:grid-cols-3 gap-4 w-full">
+            <div class="hidden md:block"></div>
             <!-- Input text: notes from staff  -->
             <!-- <div class="">
                 <div class="text-sm text-gray-500">
@@ -538,16 +554,13 @@ const onChangeInsurance = async (val: boolean) => {
             <!-- Input text: Delivery instructions -->
             <div class="">
                 <div class="text-sm text-gray-500">
-                    <FontAwesomeIcon icon="fal fa-truck" class="text-[#38bdf8]" fixed-width aria-hidden="true"/>
-                    {{ trans("Delivery instructions") }}
-                    <FontAwesomeIcon v-tooltip="trans('To be printed in shipping label')" icon="fal fa-info-circle"
-                                     class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true"/>
-                    :
+                    <FontAwesomeIcon style="color: #93C5FD" icon="fal fa-truck" fixed-width aria-hidden="true"/>
+                    {{ ctrans("Delivery Instructions") }}
                 </div>
                 <PureTextarea
                     v-model="deliveryInstructions"
                     @update:modelValue="() => debounceDeliveryInstructions()"
-                    :placeholder="trans('Add if needed')"
+                    :placeholder="ctrans('Add if needed') + ' (' + ctrans('This message will be printed in shipping label') + ')'"
                     rows="4"
                     :loading="isLoadingNote.includes('shipping_notes')"
                     :isSuccess="recentlySuccessNote.includes('shipping_notes')"
@@ -558,14 +571,13 @@ const onChangeInsurance = async (val: boolean) => {
             <!-- Input text: Other instructions -->
             <div class="">
                 <div class="text-sm text-gray-500">
-                    <FontAwesomeIcon icon="fal fa-sticky-note" style="color: rgb(255, 125, 189)" fixed-width
-                                     aria-hidden="true"/>
-                    {{ trans("Other instructions") }}:
+                    <FontAwesomeIcon style="color: #599FF0" icon="fal fa-sticky-note" fixed-width aria-hidden="true"/>
+                    {{ trans("Other Instructions") }}:
                 </div>
                 <PureTextarea
                     v-model="noteToSubmit"
                     @update:modelValue="() => debounceSubmitNote()"
-                    :placeholder="trans('Add if needed')"
+                    :placeholder="ctrans('Add if needed')"
                     rows="4"
                     :loading="isLoadingNote.includes('customer_notes')"
                     :isSuccess="recentlySuccessNote.includes('customer_notes')"
@@ -576,7 +588,7 @@ const onChangeInsurance = async (val: boolean) => {
 
 
         <!-- Button: Continue to checkout, Place Order -->
-        <div v-if="(!is_forbidden_delivery && !is_forbidden_billing) || data.data.is_collection" class="w-72 pt-5">
+        <div v-if="(!is_forbidden_delivery && !is_forbidden_billing) || data.data.is_collection" class="w-full md:w-72 pt-5">
             <!-- Place Order -->
             <template v-if="total_to_pay == 0 && balance > 0">
                 <ButtonWithLink
@@ -613,7 +625,7 @@ const onChangeInsurance = async (val: boolean) => {
                 :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length"
             />
         </div>
-        <div v-else class="w-72 pt-5 text-sm">
+        <div v-else class="w-full md:w-72 pt-5 text-sm">
             <div v-if="is_forbidden_billing" class="text-red-500">*{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: box_stats?.customer?.addresses?.billing?.country?.name }) }}</div>
             <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: box_stats?.customer?.addresses?.delivery?.country?.name}) }}</div>
         </div>

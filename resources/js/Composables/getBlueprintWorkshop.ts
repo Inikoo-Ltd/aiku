@@ -38,6 +38,7 @@ import Carousel1Blueprint from "@/Components/CMS/Webpage/Carousel-1/Blueprint"
 import SubDepartment1Blueprint from "@/Components/CMS/Webpage/SubDepartment1/Blueprint"
 import SubDepartment2Blueprint from "@/Components/CMS/Webpage/SubDepartment2/Blueprint"
 import SubDepartment3Blueprint from "@/Components/CMS/Webpage/SubDepartment3/Blueprint"
+import SubDepartment4Blueprint from "@/Components/CMS/Webpage/SubDepartment4/Blueprint"
 import Product1Blueprint from "@/Components/CMS/Webpage/Product1/Blueprint"
 import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint'
 import ProductsList2Blueprint from '@/Components/CMS/Webpage/Products2/Blueprint'
@@ -47,15 +48,18 @@ import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
 import Families1Blueprint from '@/Components/CMS/Webpage/Families1/Blueprint'
 import Families2Blueprint from '@/Components/CMS/Webpage/Families2/Blueprint'
 import Families3Blueprint from '@/Components/CMS/Webpage/Families3/Blueprint'
+import Families4Blueprint from '@/Components/CMS/Webpage/Families4/Blueprint'
 import CtaCarousel from '@/Components/CMS/Webpage/CarouselCta/Blueprint'
 import CarouselImageBackgroundIrisBlueprint from "@/Components/CMS/Webpage/CarouselImageBackground/Blueprint"
 import BluprintBestseller from "@/Components/CMS/Webpage/Products1/BluprintBestseller"
 import CtaImageBackroundIris from "@/Components/CMS/Webpage/CtaImageBackround/Blueprint"
 import TimelineIris2 from "@/Components/CMS/Webpage/Step2/Blueprint"
 import Product2 from '@/Components/CMS/Webpage/Product2/Blueprint'
+import Product3 from '@/Components/CMS/Webpage/Product3/Blueprint'
 import CollectionDescription from '@/Components/CMS/Webpage/CollectionDescription/Blueprint'
 import DepartmentDescription from "@/Components/CMS/Webpage/DepartmentDescription/Blueprint"
 import DepartmentDescription2 from "@/Components/CMS/Webpage/DepartmentDescription2/Blueprint"
+import DepartmentDescription3 from "@/Components/CMS/Webpage/DepartmentDescription3/Blueprint"
 import SubDepartmentDesciption from "../Components/CMS/Webpage/SubDepartmentDescription/Blueprint"
 import { Mainbluprint } from '@/Components/CMS/Webpage/Products1/BlueprintWebpages'
 import Product1EcomBlueprint from '@/Components/CMS/Webpage/Product1/Ecommerce/Blueprint'
@@ -76,6 +80,8 @@ import RelatedProductCategoryBlueprint from "@/Components/CMS/Webpage/RelatedPro
 import Tabs from "@/Components/CMS/Webpage/Tabs/Blueprint"
 import FaqDepartmentBlueprint from '@/Components/CMS/Webpage/FaqDepartment/Blueprint'
 import TopFamiliesWorkshop from '@/Components/CMS/Webpage/TopFamilies/Blueprint';
+import { blueprint as BlogListBlueprint } from '@/Components/CMS/Webpage/BlogList/Blueprint';
+import CategoryComparisonBlueprint from '@/Components/CMS/Webpage/CategoryComparison/Blueprint';
 
 export const getBlueprint = (componentName: string, data?: object, id? : number) => {
 	const components: Record<string, any> = {
@@ -96,17 +102,20 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		"sub-departments-1": SubDepartment1Blueprint.blueprint,
 		"sub-departments-2": SubDepartment2Blueprint.blueprint,
 		"sub-departments-3": SubDepartment3Blueprint.blueprint,
+		"sub-departments-4": SubDepartment4Blueprint.blueprint,
 
 		// family
 		'collection-description-1' : CollectionDescription.blueprint,
 		'department-description-1' : DepartmentDescription.blueprint,
 		'department-description-2' : DepartmentDescription2.blueprint,
+		'department-description-3' : DepartmentDescription3.blueprint,
 		'sub-department-description-1' : SubDepartmentDesciption.blueprint,
 
 		// families list
 		"families-1": Families1Blueprint.blueprint,
 		"families-2": Families2Blueprint.blueprint,
 		"families-3": Families3Blueprint.blueprint,
+		"families-4": Families4Blueprint.blueprint,
 
 		// family-description
 		'family-1': FamilyBluprint.blueprint,
@@ -114,8 +123,8 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		'family-3': FamilyBluprint3.blueprint,
 
 		// family-extra-description
-		'family-2-extra-description' : Family2ExtraDescriptionBlueprint.blueprint, 
-		'family-3-extra-description' : Family2ExtraDescriptionBlueprint.blueprint,
+		'family-2-extra-description' : () => Family2ExtraDescriptionBlueprint(data).blueprint,
+		'family-3-extra-description' : () => Family2ExtraDescriptionBlueprint(data).blueprint,
 
 		// families list
 		"families-1-overview": Families1Overview.blueprint,
@@ -130,6 +139,7 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		// product
 		"product-1": Product1Blueprint.blueprint,
 		"product-2": Product2.blueprint,
+		"product-3": Product3.blueprint,
 
 		// see also — accepts dynamic data
 		"see-also-1": () => SeeAlso1Blueprint(data).blueprint,
@@ -179,7 +189,9 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		'relatedProductCategory' : () => RelatedProductCategoryBlueprint(data).blueprint,
 		'tabs' : Tabs.blueprint,
 		'faq-department' : FaqDepartmentBlueprint.blueprint,
-		'top-families' : TopFamiliesWorkshop.blueprint
+		'top-families' : TopFamiliesWorkshop.blueprint,
+		'blog-list' : () => BlogListBlueprint(data, id).blueprint,
+		'category-comparison' : CategoryComparisonBlueprint.blueprint
 	}
 
 	const blueprint = components[componentName]
@@ -207,6 +219,7 @@ export const getBlueprintProduct = (componentName: string, shop_type?: string) =
 	const components: Record<string, any> = {
 		"product-1":  shop_type == 'b2b' ?  Product1EcomBlueprint.blueprint : Product1DSBlueprint.blueprint, 
 		"product-2": Product2.blueprint,
+		"product-3": Product3.blueprint,
 	}
 
 	const blueprint = components[componentName]

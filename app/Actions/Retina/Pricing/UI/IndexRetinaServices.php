@@ -64,6 +64,7 @@ class IndexRetinaServices extends RetinaAction
 
         $queryBuilder = QueryBuilder::for(Service::class);
         $queryBuilder->where('services.shop_id', $this->fulfilment->shop_id);
+        $queryBuilder->where('services.is_public', true);
         $queryBuilder->join('assets', 'services.asset_id', '=', 'assets.id');
         $queryBuilder->join('currencies', 'assets.currency_id', '=', 'currencies.id');
 

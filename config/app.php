@@ -285,6 +285,7 @@ return [
     'email_address_in_non_production_env' => env('EMAIL_ADDRESS_IN_NON_PRODUCTION_ENV', 'dev@aiku.io'),
     'test_email_to_address'               => env('TEST_EMAIL_TO_ADDRESS'),
     'unpaid_invoices_unknown_before'      => env('UNPAID_INVOICES_UNKNOWN_BEFORE'),
+    'payment_settlement_tolerance'        => env('PAYMENT_SETTLEMENT_TOLERANCE', 0.05),
 
     'help_portal_url' => env('JIRA_HELP_PORTAL'),
 

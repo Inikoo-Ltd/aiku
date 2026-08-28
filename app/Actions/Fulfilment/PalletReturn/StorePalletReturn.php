@@ -165,7 +165,7 @@ class StorePalletReturn extends OrgAction
         ];
     }
 
-    public function asController(Organisation $organisation, FulfilmentCustomer $fulfilmentCustomer, ActionRequest $request): PalletReturn
+    public function asController(FulfilmentCustomer $fulfilmentCustomer, ActionRequest $request): PalletReturn
     {
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);
 

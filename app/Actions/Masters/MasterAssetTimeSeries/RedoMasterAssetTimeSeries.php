@@ -37,39 +37,42 @@ class RedoMasterAssetTimeSeries implements ShouldBeUnique
         return "{$from}_$to";
     }
 
+    protected function dateRangeSources(): array
+    {
+        return [
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('invoice_transactions')->whereNull('deleted_at'),
+                'key'   => 'master_asset_id',
+                'date'  => 'date',
+            ],
+        ];
+    }
+
     public function handle(?int $masterAssetId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$masterAssetId) {
             return;
         }
 
-        $masterAsset = MasterAsset::find($masterAssetId);
-
-        if (!$masterAsset) {
-            return;
-        }
-
         if (!$from || !$to) {
-            $firstInvoicedDate = DB::connection('aiku_no_sticky')->table('invoice_transactions')->where('master_asset_id', $masterAsset->id)->whereNull('deleted_at')->min('date');
-            $lastInvoicedDate  = DB::connection('aiku_no_sticky')->table('invoice_transactions')->where('master_asset_id', $masterAsset->id)->whereNull('deleted_at')->max('date');
+            $dateRange = $this->getDateRange($masterAssetId);
 
-            if (!$firstInvoicedDate) {
+            if (!$dateRange['from']) {
                 return;
             }
 
-            $from = $from ?? Carbon::parse($firstInvoicedDate)->toDateString();
-            $to   = $to ?? Carbon::parse($lastInvoicedDate ?? now())->toDateString();
+            $from = $from ?? Carbon::parse($dateRange['from'])->toDateString();
+            $to   = $to ?? Carbon::parse($dateRange['to'] ?? now())->toDateString();
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
             if ($async) {
-                ProcessMasterAssetTimeSeriesRecords::dispatch($masterAsset->id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
+                ProcessMasterAssetTimeSeriesRecords::dispatch($masterAssetId, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
             } else {
-                ProcessMasterAssetTimeSeriesRecords::run($masterAsset->id, $frequency, $periodFrom, $periodTo);
+                ProcessMasterAssetTimeSeriesRecords::run($masterAssetId, $frequency, $periodFrom, $periodTo);
             }
         }
     }
-
 }

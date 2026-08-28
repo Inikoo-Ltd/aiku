@@ -20,6 +20,7 @@ const props = defineProps<{
     intervals: Intervals
     settings: Settings
     currentTab: string
+    reloadOnly?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -72,7 +73,19 @@ const isLoadingInterval = ref<string | null>(null)
 const updateInterval = (interval_code: string) => {
     props.intervals.value = interval_code
 
-    if (props.currentTab === 'top_customers') {
+    if (props.reloadOnly?.length) {
+        isLoadingOnTable.value = true
+        router.patch(
+            route("grp.models.profile.update"),
+            { settings: { selected_interval: interval_code } },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                only: props.reloadOnly,
+                onFinish: () => { isLoadingOnTable.value = false },
+            }
+        )
+    } else if (props.currentTab === 'top_customers') {
         isLoadingOnTable.value = true
         router.patch(
             route("grp.models.profile.update"),
@@ -248,7 +261,7 @@ onMounted(() => {
                     class="isolate rounded border py-1 px-1 sm:px-2 flex gap-1 items-center w-full overflow-x-scroll scrollbar-hide"
                     aria-label="Tabs">
                     <div>
-                        <DashboardCustomDateRange :intervals="intervals" :currentTab="currentTab" />
+                        <DashboardCustomDateRange :intervals="intervals" :currentTab="currentTab" :reloadOnly="reloadOnly" />
                     </div>
 
                     <div

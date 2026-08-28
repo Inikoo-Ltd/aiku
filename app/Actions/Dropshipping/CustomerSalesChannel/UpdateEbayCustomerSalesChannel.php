@@ -9,7 +9,9 @@
 namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
+use App\Actions\Dropshipping\Ebay\Product\ApplyPricingRuleToEbayPortfolios;
 use App\Actions\Dropshipping\Ebay\UpdateEbayUser;
+use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInEbayPortfolio;
 use App\Actions\Dropshipping\Ebay\UpdateReturnPolicyEbayUser;
 use App\Actions\Dropshipping\Ebay\UpdateShippingPolicyEbayUser;
 use App\Actions\OrgAction;
@@ -36,8 +38,25 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
         $platformUser = $customerSalesChannel->user;
 
         $shippingService = Arr::pull($modelData, 'shipping_service');
-        $shippingPrice = (string) Arr::pull($modelData, 'shipping_price', 0);
-        $shippingDispatchTime = (string) Arr::pull($modelData, 'shipping_max_dispatch_time');
+        $shippingPrice = Arr::pull($modelData, 'shipping_price');
+        $shippingDispatchTime = Arr::pull($modelData, 'shipping_max_dispatch_time');
+
+        if (Arr::has($modelData, 'prices_follow_rrp')) {
+            data_set($modelData, 'settings.do_not_update_prices', !Arr::pull($modelData, 'prices_follow_rrp'));
+        }
+
+        if (Arr::has($modelData, 'pricing_type')) {
+            $isNotFollow = Arr::get($modelData, 'pricing_type') === 'not_follow';
+            data_set($modelData, 'settings.do_not_update_prices', $isNotFollow);
+
+            if ($isNotFollow) {
+                Arr::forget($modelData, ['pricing_type', 'pricing_value']);
+            }
+        }
+
+        if (Arr::has($modelData, 'do_not_update_prices')) {
+            data_set($modelData, 'settings.do_not_update_prices', (bool) Arr::pull($modelData, 'do_not_update_prices'));
+        }
 
         if (Arr::has($modelData, 'is_vat_adjustment')) {
             data_set($modelData, 'settings.tax_category.checked', Arr::get($modelData, 'is_vat_adjustment'));
@@ -52,11 +71,13 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
             data_set($modelData, 'settings.shipping', $shippingServiceData);
         }
 
-        if ($shippingDispatchTime) {
-            data_set($modelData, 'settings.shipping.max_dispatch_time', $shippingDispatchTime);
+        if (filled($shippingDispatchTime)) {
+            data_set($modelData, 'settings.shipping.max_dispatch_time', (string) $shippingDispatchTime);
         }
 
-        data_set($modelData, 'settings.shipping.price', $shippingPrice);
+        if (filled($shippingPrice)) {
+            data_set($modelData, 'settings.shipping.price', (string) $shippingPrice);
+        }
 
         $returnAccepted = Arr::pull($modelData, 'return_accepted');
         $returnPayer = Arr::pull($modelData, 'return_payer');
@@ -83,9 +104,26 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
         data_forget($modelData, 'tax_category_id');
         data_forget($modelData, 'is_vat_adjustment');
 
+        $resetAllPrices = (bool) Arr::pull($modelData, 'pricing_reset_all');
+
+        $stockSettingsBefore = UpdateCustomerSalesChannel::stockSettings($customerSalesChannel);
+        $pricingSettingsBefore = json_encode(Arr::get($customerSalesChannel->settings, 'pricing'));
+        $doNotUpdatePricesBefore = (bool) Arr::get($customerSalesChannel->settings, 'do_not_update_prices');
+
         $customerSalesChannel = UpdateCustomerSalesChannel::run($customerSalesChannel, $modelData);
 
-        if ($fulfillmentPolicyId || $shippingService || $shippingPrice || $shippingDispatchTime) {
+        if (
+            !Arr::get($customerSalesChannel->settings, 'do_not_update_prices')
+            && ($resetAllPrices || $doNotUpdatePricesBefore || $pricingSettingsBefore !== json_encode(Arr::get($customerSalesChannel->settings, 'pricing')))
+        ) {
+            ApplyPricingRuleToEbayPortfolios::dispatch($customerSalesChannel, $resetAllPrices);
+        }
+
+        if ($customerSalesChannel->stock_update && $stockSettingsBefore !== UpdateCustomerSalesChannel::stockSettings($customerSalesChannel)) {
+            UpdateInventoryInEbayPortfolio::dispatch($customerSalesChannel, true);
+        }
+
+        if ($fulfillmentPolicyId || filled($shippingService) || filled($shippingPrice) || filled($shippingDispatchTime)) {
             if ($fulfillmentPolicyId) {
                 data_set($modelData, 'fulfillment_policy_id', $fulfillmentPolicyId);
             }
@@ -141,6 +179,11 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
                 ),
             ],
             'is_vat_adjustment' => ['sometimes', 'boolean'],
+            'do_not_update_prices' => ['sometimes', 'boolean'],
+            'prices_follow_rrp' => ['sometimes', 'boolean'],
+            'pricing_type' => ['sometimes', Rule::in(['percent', 'fixed', 'not_follow'])],
+            'pricing_value' => ['sometimes', 'numeric', 'gte:-100'],
+            'pricing_reset_all' => ['sometimes', 'boolean'],
             'tax_category_id'   => ['sometimes', 'integer', Rule::exists('tax_categories', 'id')],
             'status'            => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'state'             => ['sometimes', Rule::enum(CustomerSalesChannelStateEnum::class)],
@@ -154,8 +197,8 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
             'fulfillment_policy_id' => ['sometimes', 'string'],
 
             'stock_update' => ['sometimes', 'boolean'],
-            'stock_threshold' => ['sometimes', 'numeric'],
-            'max_quantity_advertise' => ['sometimes', 'numeric'],
+            'stock_threshold' => ['sometimes', 'nullable', 'numeric'],
+            'max_quantity_advertise' => ['sometimes', 'nullable', 'numeric'],
 
             'return_accepted' => ['sometimes', 'boolean'],
             'return_payer' => ['required_if:return_accepted,true', 'string'],

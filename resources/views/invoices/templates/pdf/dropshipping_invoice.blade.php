@@ -192,7 +192,7 @@
                     <span class="address_label">{{ __('Phone') }}:</span> <span
                             class="address_value">{{ $invoice->customer['phone'] }}</span>
                 </div>
-                @if($invoice->tax_number  && $invoice->tax_number_valid)
+                @if($invoice->tax_number && ($invoice->tax_number_valid || $invoice->billingAddress?->country?->code === 'ES'))
                     <div>
                         <span class="address_label">{{ __('Tax Number') }}:</span> <span
                                 class="address_value">{{ $invoice->tax_number }}</span>
@@ -316,8 +316,9 @@
 
                 <td style="text-align:left" colspan="2">
                     @if($transaction->historicAsset)
-                        @if(!$pro_mode && $transaction->model && $transaction->model->units > 1)
-                            {{ trimDecimalZeros($transaction->model->units) }}x
+                        @php($packUnits = soldPackUnits($transaction->historicAsset?->units, $transaction->model?->units))
+                        @if(!$pro_mode && $packUnits > 1)
+                            {{ trimDecimalZeros($packUnits) }}x
                         @endif
                         {{ $transaction->historicAsset->name }}
                         @if(isset($transaction->pallet))
@@ -404,17 +405,7 @@
         <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
     </tr>
 
-    <tr>
-        <td style="border:none" colspan="4"></td>
-        <td class="totals">
-            {{ __('Tax') }}
-
-            <br><small>{{$invoice->taxCategory->name}}
-                ({{__('rate')}}:{{percentage($invoice->taxCategory->rate,1)}})
-            </small>
-        </td>
-        <td class="totals">{{ $invoice->currency->symbol . $invoice->tax_amount }}</td>
-    </tr>
+    @include('invoices.templates.pdf.tax-rows', ['document' => $invoice])
 
     <tr class="total">
         <td style="border:none" colspan="4"></td>

@@ -19,8 +19,12 @@ class CrawlWebsites
 {
     use AsAction;
 
+    private const DEPLOYMENT_INITIAL_DELAY_SECONDS = 60;
 
-    public function handle(CrawlTypeEnum $type, CrawlTriggerEnum $trigger, int $depth, bool $isSeeder, ?Command $command = null): void
+    private const DEPLOYMENT_STAGGER_SECONDS = 5;
+
+
+    public function handle(CrawlTriggerEnum $trigger, ?Command $command = null): void
     {
         $index = 0;
         /** @var Website $website */
@@ -34,7 +38,7 @@ class CrawlWebsites
             /** @var Crawl $crawl */
             $crawl = $website->crawls()->create(
                 [
-                    'depth' => $depth,
+                    'depth' => 0,
 
                     'concurrency' => match ($index) {
                         0 => 5,
@@ -43,15 +47,21 @@ class CrawlWebsites
                         default => 1
                     },
                     'trigger'     => $trigger,
-                    'type'        => $type,
-                    'is_seeder'   => $isSeeder
+                    'type'        => CrawlTypeEnum::HTML
                 ]
             );
             $command?->info("Crawling website: $website->slug ; C: ".$crawl->concurrency);
 
-            $index++;
             $jobQueue = 'cache-warming';
-            CrawlWebsite::dispatch($crawl->id)->onQueue($jobQueue);
+            $pendingDispatch = CrawlWebsite::dispatch($crawl->id)->onQueue($jobQueue);
+
+            if ($trigger === CrawlTriggerEnum::DEPLOYMENT) {
+                $pendingDispatch->delay(
+                    self::DEPLOYMENT_INITIAL_DELAY_SECONDS + ($index * self::DEPLOYMENT_STAGGER_SECONDS)
+                );
+            }
+
+            $index++;
         }
     }
 

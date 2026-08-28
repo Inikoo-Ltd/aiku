@@ -15,6 +15,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -22,10 +23,10 @@ class UpdateInventoryInEbayPortfolio
 {
     use AsAction;
 
-    public string $commandSignature = 'ebay:update-inventory';
+    public string $commandSignature = 'ebay:update-inventory {customerSalesChannel?}';
 
 
-    public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
+    public function handle(?CustomerSalesChannel $customerSalesChannel = null, bool $force = false): void
     {
         $platform = Platform::where('type', PlatformTypeEnum::EBAY)->first();
 
@@ -77,6 +78,7 @@ class UpdateInventoryInEbayPortfolio
                     'id',
                     'item_id',
                     'item_type',
+                    'last_stock_value',
                     'stock_last_updated_at',
                     'stock_last_fail_updated_at',
                 ])
@@ -84,11 +86,11 @@ class UpdateInventoryInEbayPortfolio
                 ->whereNotNull('platform_product_id')
                 ->where('item_type', 'Product')
                 ->where('platform_status', true)
-                ->with('item:id,available_quantity,is_for_sale,available_quantity_updated_at')
-                ->chunkById(500, function ($portfolioChunk): void {
+                ->with('item:id,available_quantity,is_for_sale,is_bundle,available_quantity_updated_at')
+                ->chunkById(500, function ($portfolioChunk) use ($customerSalesChannel, $force): void {
                     /** @var Portfolio $portfolio */
                     foreach ($portfolioChunk as $portfolio) {
-                        if ($this->checkIfApplicable($portfolio)) {
+                        if ($this->checkIfApplicable($portfolio, $customerSalesChannel, $force)) {
                             $delaySeconds = random_int(1, 120);
                             UpdateEbayPortfolio::dispatch($portfolio->id)->delay(now()->addSeconds($delaySeconds));
                         }
@@ -97,7 +99,7 @@ class UpdateInventoryInEbayPortfolio
         }
     }
 
-    public function checkIfApplicable(Portfolio $portfolio): bool
+    public function checkIfApplicable(Portfolio $portfolio, CustomerSalesChannel $customerSalesChannel, bool $force = false): bool
     {
         $product = $portfolio->item;
 
@@ -108,28 +110,27 @@ class UpdateInventoryInEbayPortfolio
         $lastSuccessAt = $portfolio->stock_last_updated_at;
         $lastFailAt = $portfolio->stock_last_fail_updated_at;
 
-        $lastAttemptAt = $lastSuccessAt;
-        $lastAttemptFailed = false;
-
-        if ($lastFailAt && (!$lastAttemptAt || $lastFailAt->gt($lastAttemptAt))) {
-            $lastAttemptAt = $lastFailAt;
-            $lastAttemptFailed = true;
+        if (!$force && $lastFailAt && (!$lastSuccessAt || $lastFailAt->gt($lastSuccessAt))) {
+            return $lastFailAt->lt(now()->subDay())
+                || ($product->available_quantity_updated_at && $product->available_quantity_updated_at->gt($lastFailAt));
         }
 
-        if (!$lastAttemptAt) {
+        if (!$lastSuccessAt || $portfolio->last_stock_value === null) {
             return true;
         }
 
-        if ($product->available_quantity_updated_at && $product->available_quantity_updated_at->gt($lastAttemptAt)) {
-            return true;
-        }
-
-        return $lastAttemptFailed && $lastAttemptAt->lt(now()->subDay());
+        return (int) $portfolio->last_stock_value !== UpdateEbayPortfolio::quantityToSend($product, $customerSalesChannel);
     }
 
 
-    public function asCommand(): void
+    public function asCommand(Command $command): void
     {
-        $this->handle();
+        $customerSalesChannel = null;
+
+        if ($command->argument('customerSalesChannel')) {
+            $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
+        }
+
+        $this->handle($customerSalesChannel);
     }
 }

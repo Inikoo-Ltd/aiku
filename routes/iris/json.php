@@ -19,11 +19,15 @@ use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetIrisProductAlternatives;
 use App\Actions\Catalogue\Product\Json\GetIrisProductEcomOrdering;
+use App\Actions\Catalogue\Product\Json\GetIrisProductTrends;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsOfVariant;
 use App\Actions\Catalogue\Product\Json\GetVariantAndProducts;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesComparisonDetail;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesForComparisonOption;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\Shop\Json\FetchProductReviewThirdParty;
 use App\Actions\CRM\WebUser\Retina\Json\GetRedirectUrl;
@@ -37,6 +41,8 @@ use App\Actions\Helpers\Tag\Json\GetIrisTags;
 use App\Actions\Iris\Basket\FetchIrisEcomBasket;
 use App\Actions\Iris\Basket\GetIrisBasketTransactionProductData;
 use App\Actions\Iris\Catalogue\FetchFamilyListCustomSorted;
+use App\Actions\Iris\CRM\GetIrisProductLastSeen;
+use App\Actions\Iris\CRM\StoreIrisProductLastSeen;
 use App\Actions\Iris\Json\GetBanner;
 use App\Actions\Iris\Json\GetIrisFirstHitData;
 use App\Actions\Iris\Json\GetIrisFooterData;
@@ -48,6 +54,10 @@ use App\Actions\Retina\Dropshipping\Portfolio\ZentradaWebApi;
 use App\Actions\Reviews\GetReviewableReviews;
 use App\Actions\Reviews\GetReviews;
 use App\Actions\Reviews\Iris\GetIrisReviews;
+use App\Actions\Search\GetIrisSearchFeaturedItems;
+use App\Actions\Search\RecordWebsiteSearchClick;
+use App\Actions\Search\SearchIrisCatalogue;
+use App\Actions\Search\SearchIrisCataloguePage;
 use App\Actions\Web\Luigi\LuigiBoxGetProductDetail;
 use App\Actions\Web\Luigi\LuigiBoxRecommendation;
 use Illuminate\Support\Facades\Route;
@@ -69,6 +79,16 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('basket-transaction-product-data/{transaction:id}', GetIrisBasketTransactionProductData::class)->name('basket_transaction_product_data')->whereNumber('transaction');
 
     Route::get('canonical-redirect', GetRedirectUrl::class)->name('canonical_redirect');
+
+    Route::get('product-last-seen/{webpage:id}', GetIrisProductLastSeen::class)->name('product_last_seen.index')->withoutScopedBindings()->whereNumber('webpage');
+    Route::post('product-last-seen/{webpage:id}', StoreIrisProductLastSeen::class)->name('product_last_seen.store')->withoutScopedBindings()->whereNumber('webpage');
+    Route::get('product/{product:id}/alternatives', GetIrisProductAlternatives::class)->name('product.alternatives')->withoutScopedBindings()->whereNumber('product');
+    Route::get('product-trends', GetIrisProductTrends::class)->name('product_trends.index');
+
+    Route::get('search/catalogue', SearchIrisCatalogue::class)->name('search.catalogue')->middleware('throttle:iris-search');
+    Route::get('search/catalogue-page', SearchIrisCataloguePage::class)->name('search.catalogue_page')->middleware('throttle:iris-search');
+    Route::post('search/click', RecordWebsiteSearchClick::class)->name('search.click')->middleware('throttle:iris-search');
+    Route::get('search/featured-items', GetIrisSearchFeaturedItems::class)->name('search.featured_items')->middleware('throttle:iris-search');
 
     Route::get('/sidebar', GetIrisSidebarData::class)->name('sidebar');
     Route::get('/footer', GetIrisFooterData::class)->name('footer');
@@ -108,9 +128,9 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     // Reviews
     Route::get('reviews', GetReviews::class)->name('reviews.index');
-    Route::get('shop/{shop:id}/reviews', [GetReviewableReviews::class, 'inShop'])->name('reviews.shop.show');
-    Route::get('product/{product:id}/reviews', [GetReviewableReviews::class, 'inProduct'])->name('reviews.product.show')->withoutScopedBindings();
-    Route::get('product-category/{productCategory:id}/reviews', [GetReviewableReviews::class, 'inProductCategory'])->name('reviews.product_category.show');
+    Route::get('shop/{shop:id}/reviews', [GetReviewableReviews::class, 'inShop'])->name('reviews.shop.show')->whereNumber('shop');
+    Route::get('product/{product:id}/reviews', [GetReviewableReviews::class, 'inProduct'])->name('reviews.product.show')->withoutScopedBindings()->whereNumber('product');
+    Route::get('product-category/{productCategory:id}/reviews', [GetReviewableReviews::class, 'inProductCategory'])->name('reviews.product_category.show')->whereNumber('productCategory');
     Route::get('product/{product:id}/reviews-third-party', FetchProductReviewThirdParty::class)->name('reviews.third_party.product_review')->whereNumber('product');
 
     // Families Custom Sort
@@ -118,8 +138,11 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     // Families list under department page
     Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
+    // Families list for range comparison in Family Page Workshop
+    Route::get('{productCategory}/comparison-detail', GetFamiliesComparisonDetail::class)->name('website.category.comparison_detail');
+    Route::get('{productCategory}/comparison-option', GetFamiliesForComparisonOption::class)->name('website.category.comparison_option');
 
     Route::get('{webpage:slug}/reviews', FetchIrisReviewsInWebpage::class)->name('fetch_reviews');
-    Route::get('reviews/{webpage:id}', GetIrisReviews::class)->name('fetch_reviews_new');
+    Route::get('reviews/{webpage:id}', GetIrisReviews::class)->name('fetch_reviews_new')->whereNumber('webpage');
 
 });

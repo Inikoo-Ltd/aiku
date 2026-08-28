@@ -31,6 +31,8 @@ class ShowAgent extends OrgAction
 {
     use WithSupplyChainAuthorisation;
     use WithAgentSubNavigation;
+    use WithAgentEditAction;
+
     public function handle(Agent $agent): Agent
     {
         return $agent;
@@ -47,13 +49,13 @@ class ShowAgent extends OrgAction
 
     public function htmlResponse(Agent $agent, ActionRequest $request): Response
     {
-        // dd($agent);
         return Inertia::render(
             'SupplyChain/Agent',
             [
                 'title'                        => __("Agent") . " " . $agent->name,
                 'breadcrumbs'                  => $this->getBreadcrumbs(
                     $agent,
+                    $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'navigation'                   => [
@@ -61,43 +63,20 @@ class ShowAgent extends OrgAction
                     'next'     => $this->getNext($agent, $request),
                 ],
                 'pageHead'                     => [
-                    'model'   => __('Agent'),
-                    'icon'    =>
+                    'model'         => __('Agent'),
+                    'icon'          =>
                         [
                             'icon'  => ['fal', 'people-arrows'],
                             'title' => __('Agent')
                         ],
                     'subNavigation' => $this->getAgentNavigation($agent),
-                    'title'   => $agent->organisation->name,
-                    // 'actions' => [
-                    //     $this->canEdit ? [
-                    //         'type'  => 'button',
-                    //         'style' => 'edit',
-                    //         'route' => [
-                    //             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                    //             'parameters' => array_values($request->route()->originalParameters())
-                    //         ]
-                    //     ] : false,
-                    //     $this->canDelete ? [
-                    //         'type'  => 'button',
-                    //         'style' => 'delete',
-                    //         'route' => [
-                    //             'name'       => 'grp.org.procurement.marketplace.agents.remove',
-                    //             'parameters' => array_values($request->route()->originalParameters())
-                    //         ]
-                    //     ] : false,
-                    //     $this->canEdit ? [
-                    //         'type'  => 'button',
-                    //         'style' => 'create',
-                    //         'route' => [
-                    //             'name'       => 'grp.org.procurement.marketplace.agents.show.suppliers.create',
-                    //             'parameters' => array_values($request->route()->originalParameters())
-                    //         ],
-                    //         'label' => __('supplier')
-                    //     ] : false,
-                    // ],
-
-
+                    'title'         => $agent->organisation->name,
+                    'actions'       => [
+                        $this->agentEditAction(
+                            'grp.supply-chain.agents.edit',
+                            $request->route()->originalParameters()
+                        ),
+                    ],
                 ],
                 'tabs'                         => [
                     'current'    => $this->tab,
@@ -127,8 +106,8 @@ class ShowAgent extends OrgAction
                 //     : Inertia::optional(fn () => SupplierProductsResource::collection(IndexSupplierProducts::run($agent))),
 
                 AgentTabsEnum::HISTORY->value => $this->tab == AgentTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($agent))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($agent)))
+                    fn () => HistoryResource::collection(IndexHistory::run($agent, AgentTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($agent, AgentTabsEnum::HISTORY->value)))
 
 
             ]
@@ -145,67 +124,87 @@ class ShowAgent extends OrgAction
         return new AgentsResource($agent);
     }
 
-    public function getBreadcrumbs(Agent $agent, array $routeParameters, $suffix = null): array
+    public function getBreadcrumbs(Agent $agent, string $routeName, array $routeParameters, $suffix = null): array
     {
-
-        return array_merge(
-            ShowSupplyChainDashboard::make()->getBreadcrumbs(),
-            [
+        $headCrumb = function (Agent $agent, array $routeParameters, $suffix) {
+            return [
                 [
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
-                            'route' => [
-                                'name' => 'grp.supply-chain.agents.index',
-                            ],
-                            'label' => __("Agents"),
+                            'route' => $routeParameters['index'],
+                            'label' => __('Agents'),
                         ],
                         'model' => [
-                            'route' => [
-                                'name'       => 'grp.supply-chain.agents.show',
-                                'parameters' => $routeParameters
-                            ],
+                            'route' => $routeParameters['model'],
                             'label' => $agent->organisation->code,
                         ],
                     ],
                     'suffix' => $suffix,
-
                 ],
-            ]
-        );
+            ];
+        };
+
+        return match ($routeName) {
+            'grp.supply-chain.agents.show',
+            'grp.supply-chain.agents.edit',
+            'grp.supply-chain.agents.show.supplier_products.index',
+            'grp.supply-chain.agents.show.supplier_products.show',
+            'grp.supply-chain.agents.show.suppliers.index',
+            'grp.supply-chain.agents.show.suppliers.show',
+            'grp.supply-chain.agents.show.suppliers.supplier_products.index',
+            'grp.supply-chain.agents.show.suppliers.supplier_products.show' =>
+            array_merge(
+                ShowSupplyChainDashboard::make()->getBreadcrumbs(),
+                $headCrumb(
+                    $agent,
+                    [
+                        'index' => [
+                            'name'       => 'grp.supply-chain.agents.index',
+                            'parameters' => []
+                        ],
+                        'model' => [
+                            'name'       => 'grp.supply-chain.agents.show',
+                            'parameters' => ['agent' => $agent->slug]
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            default => []
+        };
     }
 
     public function getPrevious(Agent $agent, ActionRequest $request): ?array
     {
         $previous = Organisation::where('group_id', $agent->group_id)->where('type', OrganisationTypeEnum::AGENT)->where('code', '<', $agent->organisation->code)->orderBy('code', 'desc')->first();
 
-        return $this->getNavigation($previous?->agent, $request->route()->getName());
+        return $this->getNavigation($previous?->agent, $request);
     }
 
     public function getNext(Agent $agent, ActionRequest $request): ?array
     {
         $next = Organisation::where('group_id', $agent->group_id)->where('type', OrganisationTypeEnum::AGENT)->where('code', '>', $agent->organisation->code)->orderBy('code')->first();
 
-        return $this->getNavigation($next?->agent, $request->route()->getName());
+        return $this->getNavigation($next?->agent, $request);
     }
 
-    private function getNavigation(?Agent $agent, string $routeName): ?array
+    private function getNavigation(?Agent $agent, ActionRequest $request): ?array
     {
         if (!$agent) {
             return null;
         }
 
-        return match ($routeName) {
-            'grp.supply-chain.agents.show' => [
-                'label' => $agent->organisation->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'agent' => $agent->slug
-                    ]
-
-                ]
-            ]
-        };
+        return [
+            'label' => $agent->organisation->name,
+            'route' => [
+                'name'       => $request->route()->getName(),
+                'parameters' => array_merge(
+                    $request->route()->originalParameters(),
+                    ['agent' => $agent->slug]
+                ),
+            ],
+        ];
     }
+
 }

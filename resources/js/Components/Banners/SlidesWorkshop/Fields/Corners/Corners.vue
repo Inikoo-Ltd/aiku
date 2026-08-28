@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
 import { ref, computed } from "vue"
-import { get, set, isNull, cloneDeep } from "lodash-es"
+import { get, isNull, cloneDeep } from "lodash-es"
 import { faLock } from "@fas"
 import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -42,7 +42,6 @@ const cornersValue = computed({
         return props.modelValue || {}
     },
     set(val) {
-        console.log('finalData to emit:', val)
         emits("update:modelValue", val)
     }
 })

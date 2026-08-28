@@ -55,6 +55,7 @@ class IndexVariantInMasterVariant extends OrgAction
              'variants.number_used_slots',
              'variants.number_used_slots_for_sale',
              'variants.data',
+             'variants.status',
              'products.id as leader_product_id',
              'products.name as leader_product_name',
              'products.code as leader_product_code',
@@ -95,12 +96,14 @@ class IndexVariantInMasterVariant extends OrgAction
                 ->withLabelRecord([__('variant'),__('variants')])
                 ->withGlobalSearch();
 
-            $table->column(key: 'shop_id', label: __('Shop'), canBeHidden: false, sortable: false, searchable: false)
-            ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-            ->column(key: 'leader_product_name', label: __('Leader Product'), canBeHidden: false, sortable: false, searchable: true)
-            ->column(key: 'number_dimensions', label: __('Options'), canBeHidden: false, sortable: false, searchable: false)
-            ->column(key: 'number_used_slots', label: __('No. of Slots'), canBeHidden: false, sortable: false, searchable: false)
-            ->column(key: 'number_used_slots_for_sale', label: __('No. of Products for Sale'), canBeHidden: false, sortable: false, searchable: false);
+            $table
+                ->column(key: 'status', label: ['fal', 'fa-yin-yang'], type: 'icon')
+                ->column(key: 'shop_id', label: __('Shop'), canBeHidden: false, sortable: false, searchable: false)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'leader_product_name', label: __('Leader Product'), canBeHidden: false, sortable: false, searchable: true)
+                ->column(key: 'number_dimensions', label: __('Options'), canBeHidden: false, sortable: false, searchable: false)
+                ->column(key: 'number_used_slots', label: __('No. of Slots'), canBeHidden: false, sortable: false, searchable: false)
+                ->column(key: 'number_used_slots_for_sale', label: __('No. of Products for Sale'), canBeHidden: false, sortable: false, searchable: false);
         };
     }
 }

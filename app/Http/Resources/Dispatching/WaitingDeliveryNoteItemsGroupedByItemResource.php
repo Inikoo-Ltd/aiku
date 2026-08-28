@@ -42,6 +42,15 @@ class WaitingDeliveryNoteItemsGroupedByItemResource extends JsonResource
             $warehouseArea = __('No Area');
         }
 
+        $packedIn = $this->packed_in ?? 1;
+
+        $packedInMessage = '';
+        if ($packedIn == 1) {
+            $packedInMessage = '('.__('Individually packed').')';
+        } elseif ($packedIn > 1) {
+            $packedInMessage = '('.__('Pack of').": $packedIn".")";
+        }
+
         $waitingItems = DeliveryNoteItem::query()
             ->with('deliveryNote')
             ->where('org_stock_id', $this->id)
@@ -58,7 +67,8 @@ class WaitingDeliveryNoteItemsGroupedByItemResource extends JsonResource
             'org_stock_name'                 => $this->org_stock_name,
             'org_stock_slug'                 => $this->org_stock_slug,
             'org_stock_image_thumbnail'      => null, // Using ajax call anyway
-            'packed_in'                      => $this->packed_in ?? 1,
+            'packed_in'                      => $packedIn,
+            'packed_in_message'              => $packedInMessage,
             'picking_position'               => $this->picking_position,
             'warehouse_area'                 => $warehouseArea,
             'delivery_notes'                 => WaitingDeliveryNoteItemsGroupedByItemDeliveryNoteResource::collection($waitingItems)->resolve(),

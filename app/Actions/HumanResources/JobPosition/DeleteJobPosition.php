@@ -11,7 +11,6 @@ namespace App\Actions\HumanResources\JobPosition;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\JobPosition;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -34,9 +33,9 @@ class DeleteJobPosition extends OrgAction
         return $this->handle($jobPosition);
     }
 
-    public function asController(Organisation $organisation, JobPosition $jobPosition, ActionRequest $request): JobPosition
+    public function asController(JobPosition $jobPosition, ActionRequest $request): JobPosition
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisation($jobPosition->organisation, $request);
 
         return $this->handle($jobPosition);
     }

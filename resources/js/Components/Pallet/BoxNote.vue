@@ -27,6 +27,12 @@ const props = defineProps<{
     noteData: PDRNotes
     updateRoute: routeType
     alternativeStyle?: boolean
+    disableModal: false
+}>()
+
+const emits = defineEmits<{
+    (e: 'submitted', payload: { field: string, note: string }): void
+    (e: 'click'): void
 }>()
 
 // Section: Modal Note
@@ -45,6 +51,7 @@ const cleanseCapitalize = (value?: string) =>
 
 const onSubmitNote = () => {
     isSubmitNoteLoading.value = true
+    emits('submitted', { field: props.noteData.field, note: noteModalValue.value })
     router.patch(route(props.updateRoute.name, props.updateRoute.parameters), {
             [props.noteData.field]: noteModalValue.value
         },
@@ -100,6 +107,12 @@ const onSubmitNote = () => {
 
 const fallbackBgColor = '#f9fafb'  // Background
 const fallbackColor = '#374151'  // Color
+
+
+const openModal = () => {
+    isModalOpen.value = true;
+    emits('click');
+}
 </script>
 
 <template>
@@ -158,7 +171,7 @@ const fallbackColor = '#374151'  // Color
                 <!-- Section: Actions -->
                 <template v-if="noteData.editable">
                     <!-- Icon: pencil (edit) -->
-                    <div v-if="noteData.note" @click="isModalOpen = true" v-tooltip="trans('Edit note')" class="group px-0.5 cursor-pointer w-fit h-5 flex items-center">
+                    <div v-if="noteData.note" @click="openModal()" v-tooltip="trans('Edit note')" class="group px-0.5 cursor-pointer w-fit h-5 flex items-center">
                         <FontAwesomeIcon icon='fas fa-pencil' size="xs" class='group-hover:text-gray-100'
                             fixed-width aria-hidden='true'
                             :style="{
@@ -168,7 +181,7 @@ const fallbackColor = '#374151'  // Color
                     </div>
 
                     <!-- Icon: Plus (add note) -->
-                    <div v-else="!noteData.note" @click="isModalOpen = true" class="h-5 aspect-square flex items-center justify-center cursor-pointer">
+                    <div v-else="!noteData.note" @click="openModal()" class="h-5 aspect-square flex items-center justify-center cursor-pointer">
                         <FontAwesomeIcon v-tooltip="trans('Add note')" icon='far fa-plus' class='' fixed-width aria-hidden='true'
                         :style="{
                             color: noteData.textColor || fallbackColor
@@ -185,7 +198,7 @@ const fallbackColor = '#374151'  // Color
         </div>
 
         <!-- Section: Note -->
-        <p @dblclick="noteData.editable ? isModalOpen = true : false"
+        <p @dblclick="noteData.editable ? openModal() : false"
             v-tooltip="noteData.editable ? trans('Double click to edit') : false"
             class="h-full max-h-32 mx-auto items-center px-4 pt-2 pb-2 text-xxs break-words"
             :class="noteData.editable ? 'cursor-pointer' : ''"
@@ -203,7 +216,7 @@ const fallbackColor = '#374151'  // Color
     </div>
     <button
         v-else
-        @click="isModalOpen = true"
+        @click="openModal()"
         class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
     >
         <slot name="buttonClick">
@@ -212,7 +225,7 @@ const fallbackColor = '#374151'  // Color
         </slot>
     </button>
 
-    <Modal :isOpen="isModalOpen" @onClose="() => (isModalOpen = false, noteModalValue = noteData.note)" width="w-[600px]">
+    <Modal v-if="!disableModal" :isOpen="isModalOpen" @onClose="() => (isModalOpen = false, noteModalValue = noteData.note)" width="w-[600px]">
 		<div class="min-h-64 max-h-96 px-2 overflow-auto flex flex-col justify-between">
             <div>
                 <div class="text-xl font-semibold mb-2">

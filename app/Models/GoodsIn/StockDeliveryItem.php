@@ -9,6 +9,7 @@
 namespace App\Models\GoodsIn;
 
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\Traits\InOrganisation;
 use Eloquent;
@@ -63,6 +64,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property numeric $cost_tax
  * @property numeric $cost_total
  * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GoodsIn\Sowing> $sowings
  * @property-read \App\Models\GoodsIn\StockDelivery|null $stockDelivery
@@ -110,6 +112,11 @@ class StockDeliveryItem extends Model
     public function supplierProduct(): BelongsTo
     {
         return $this->belongsTo(SupplierProduct::class);
+    }
+
+    public function orgStock(): BelongsTo
+    {
+        return $this->belongsTo(OrgStock::class);
     }
 
     public function sowings(): HasMany

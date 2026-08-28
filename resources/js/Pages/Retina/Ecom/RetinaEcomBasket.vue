@@ -26,6 +26,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 // import RecommendersLuigi1Iris from '@/Components/CMS/Webpage/SeeAlso1/RecommendersLuigi1Iris.vue'
 import BasketRecommendations from '@/Components/Retina/BasketRecommendations.vue'
+import BasketRecommendationsInternal from '@/Components/Retina/BasketRecommendationsInternal.vue'
 import { Address, AddressManagement } from '@/types/PureComponent/Address'
 import { InputText, ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -34,6 +35,8 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
+import UploadExcel from '@/Components/Upload/UploadExcel.vue'
+import { UploadPallet } from '@/types/Pallet'
 import { pushGtmEvent, buildGtmProductPayload } from '@/Composables/useGtm'
 library.add(faTag, faCheck, faExclamationTriangle)
 
@@ -153,14 +156,69 @@ const props = defineProps<{
         discount: string
     } | null
     is_basket_created: boolean
+    shipping_options: {
+        shipper_id: number
+        name: string
+        code: string
+        amount: string | number
+        is_tbc: boolean
+        is_selected: boolean
+    }[] | null
+    select_shipper_route: routeType
+    upload_spreadsheet?: {
+        title: { label: string, information: string }
+        progressDescription: string
+        preview_template: { header: string[], rows: {}[] }
+        upload_spreadsheet: UploadPallet
+    } | null
 }>()
 
 
 const layout = inject('layout', retinaLayoutStructure)
+
+onMounted(() => {
+    if (window.Echo && layout.user?.customer_id && props.order?.id) {
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`)
+            .listen(".order-submitted", (eventData: { order_id: number }) => {
+                if (eventData.order_id == props.order?.id) {
+                    window.location.href = route("retina.ecom.orders.show", { order: (props.order as any)?.slug })
+                }
+            })
+    }
+})
+onBeforeUnmount(() => {
+    if (window.Echo && layout.user?.customer_id) {
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`).stopListening(".order-submitted")
+    }
+})
+
+const isLoadingSelectShipper = ref(false)
+const onSelectShipper = async (shipperId: number) => {
+    if (!props.select_shipper_route?.name) {
+        return
+    }
+    isLoadingSelectShipper.value = true
+    await axios.patch(
+        route(props.select_shipper_route.name, props.select_shipper_route.parameters),
+        { shipper_id: shipperId }
+    )
+        .catch((exception: any) => {
+            notify({
+                title: trans("Something went wrong"),
+                text: exception.response?.data?.message ?? trans("Failed to change shipping method"),
+                type: "error"
+            })
+        })
+        .finally(() => {
+            isLoadingSelectShipper.value = false
+            router.reload({ preserveScroll: true })
+        })
+}
 const locale = inject('locale', aikuLocaleStructure)
 const screenType = inject<string>('screenType', 'desktop')
 
 const isModalProductListOpen = ref(false)
+const isModalUploadSpreadsheet = ref(false)
 const listLoadingProducts = ref({
 
 })
@@ -442,19 +500,21 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
                     type: "success"
                 })
                 
-                const addToCartEcommerce = {
-                    currency: layout?.iris?.currency?.code,
-                    value: productLuigi?.attributes?.price || 0,
-                    items: [
-                        {
-                            item_id: productLuigi?.url,
-                        }
-                    ]
+                if (!isInternalRecommendation.value) {
+                    const addToCartEcommerce = {
+                        currency: layout?.iris?.currency?.code,
+                        value: productLuigi?.attributes?.price || 0,
+                        items: [
+                            {
+                                item_id: productLuigi?.url,
+                            }
+                        ]
+                    }
+                    window?.dataLayer?.push({
+                        event: "add_to_cart",
+                        ecommerce: addToCartEcommerce,
+                    })
                 }
-                window?.dataLayer?.push({
-                    event: "add_to_cart",
-                    ecommerce: addToCartEcommerce,
-                })
                 layout?.reload_handle?.()
 
                 listLoadingProducts.value[`recommender-${productId}`] = 'success'
@@ -475,6 +535,9 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
 //         .map(transaction => transaction.id.toString())
 //         .filter(Boolean)
 // })
+
+// Section: recommendations, websites on the internal search model use our own recommender
+const isInternalRecommendation = computed(() => layout.iris?.iris_search_model === 'internal')
 
 const basketProductIdentities = computed(() => {
     if (!props.transactions?.data) return []
@@ -621,14 +684,14 @@ const onChangeInsurance = async (val: boolean) => {
     <PageHeading :data="pageHead">
         <template #other>
             <div class="flex items-center border border-gray-300 rounded-md divide-x divide-gray-300">
-				<!-- <Button
-					v-if="upload_spreadsheet"
-					@click="() => upload_spreadsheet ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
-					:label="trans('Upload products')"
+                <Button
+                    v-if="upload_spreadsheet"
+                    @click="() => isModalUploadSpreadsheet = true"
+                    :label="trans('Upload products')"
                     icon="upload"
                     type="tertiary"
-					class="rounded-none border-0"
-				/> -->
+                    class="rounded-none border-0"
+                />
                 <Button
                     @click="() => isModalProductListOpen = true"
                     :label="trans('Add products')"
@@ -670,6 +733,32 @@ const onChangeInsurance = async (val: boolean) => {
                 :updateRoute="routes.update_route"
             />
 
+            <div v-if="shipping_options" class="mx-3 md:mx-6 my-4 border border-gray-200 rounded-md p-3">
+                <div class="font-medium mb-2">{{ trans('Shipping method') }}</div>
+                <div class="space-y-1">
+                    <label
+                        v-for="option in shipping_options"
+                        :key="option.shipper_id"
+                        class="flex items-center justify-between gap-2 px-2 py-1.5 rounded border cursor-pointer"
+                        :class="option.is_selected ? 'bg-indigo-50 border-indigo-300' : 'border-gray-200 hover:bg-gray-50'"
+                        :aria-disabled="isLoadingSelectShipper">
+                        <span class="flex items-center gap-2">
+                            <input
+                                type="radio"
+                                name="shipping_option"
+                                :checked="option.is_selected"
+                                :disabled="isLoadingSelectShipper"
+                                @change="() => onSelectShipper(option.shipper_id)"
+                            />
+                            <span>{{ option.name }}</span>
+                        </span>
+                        <span class="text-gray-500">
+                            {{ option.is_tbc ? trans('To be confirmed') : locale.currencyFormat(order?.currency_code, option.amount) }}
+                        </span>
+                    </label>
+                </div>
+            </div>
+
             <div class="grid md:grid-cols-2 gap-x-8 py-4">
                 <!-- Section: Instructions (delivery and other) -->
                 <div class="w-full md:px-4">
@@ -680,15 +769,14 @@ const onChangeInsurance = async (val: boolean) => {
                             <!-- Input text: Delivery instructions -->
                             <div class="">
                                 <div class="text-sm text-gray-500">
-                                    <FontAwesomeIcon icon="fal fa-truck" class="text-[#38bdf8]" fixed-width aria-hidden="true" />
-                                    {{ trans("Delivery instructions") }}
-                                    <FontAwesomeIcon v-tooltip="trans('To be printed in shipping label')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon style="color: #93C5FD" icon="fal fa-truck" fixed-width aria-hidden="true"/>
+                                    {{ ctrans("Delivery Instructions") }}
                                     :
                                 </div>
                                 <PureTextarea
                                     v-model="deliveryInstructions"
                                     @update:modelValue="() => debounceDeliveryInstructions()"
-                                    :placeholder="trans('Add if needed')"
+                                    :placeholder="ctrans('Add if needed') + ' (' + ctrans('This message will be printed in shipping label') + ')'"
                                     rows="4"
                                     :disabled="!is_in_basket"
                                     :loading="isLoadingNote.includes('shipping_notes')"
@@ -700,13 +788,13 @@ const onChangeInsurance = async (val: boolean) => {
                             <!-- Input text: Other instructions -->
                             <div class="">
                                 <div class="text-sm text-gray-500">
-                                    <FontAwesomeIcon icon="fal fa-sticky-note" style="color: rgb(255, 125, 189)" fixed-width aria-hidden="true" />
-                                    {{ trans("Other instructions") }}:
+                                    <FontAwesomeIcon style="color: #599FF0" icon="fal fa-sticky-note" fixed-width aria-hidden="true"/>
+                                    {{ trans("Other Instructions") }}:
                                 </div>
                                 <PureTextarea
                                     v-model="noteToSubmit"
                                     @update:modelValue="() => debounceSubmitNote()"
-                                    :placeholder="trans('Add if needed')"
+                                    :placeholder="ctrans('Add if needed')"
                                     rows="4"
                                     :loading="isLoadingNote.includes('customer_notes')"
                                     :isSuccess="recentlySuccessNote.includes('customer_notes')"
@@ -886,7 +974,14 @@ const onChangeInsurance = async (val: boolean) => {
         >
             <h2 class="text-2xl font-bold text-center p-4 mb-2">{{ ctrans('You might also like') }}</h2>
             <div class="bg-white p-4 rounded-md shadow-lg">
+                <BasketRecommendationsInternal
+                    v-if="isInternalRecommendation"
+                    @add-to-basket="(productId: string, productCode: string, product: {}) => onAddProductFromRecommender(productId, productCode, product)"
+                    :listLoadingProducts
+                />
+
                 <BasketRecommendations
+                    v-else
                     @add-to-basket="(productId: string, productCode: string, productLuigi: {}) => onAddProductFromRecommender(productId, productCode, productLuigi)"
                     :listLoadingProducts
                     xblacklistItems="blackListProductIds"
@@ -917,4 +1012,14 @@ const onChangeInsurance = async (val: boolean) => {
             />
         </div>
     </Modal>
+
+    <UploadExcel
+        v-if="upload_spreadsheet"
+        v-model="isModalUploadSpreadsheet"
+        :title="upload_spreadsheet.title"
+        :progressDescription="upload_spreadsheet.progressDescription"
+        :preview_template="upload_spreadsheet.preview_template"
+        :upload_spreadsheet="upload_spreadsheet.upload_spreadsheet"
+        :propsRefreshAfterFinish="['transactions', 'summary', 'total_products', 'order']"
+    />
 </template>

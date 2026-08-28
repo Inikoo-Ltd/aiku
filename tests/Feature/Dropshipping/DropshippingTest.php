@@ -14,7 +14,17 @@ use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBaske
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateEbayCustomerSalesChannel;
+use App\Actions\Dropshipping\Tiktok\Product\UpdateInventoryTiktokProducts;
+use App\Actions\Dropshipping\Tiktok\Product\UpdateTiktokInventory;
+use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
+use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio;
+use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
+use App\Actions\Dropshipping\Ebay\StoreEbayUser;
+use App\Actions\Dropshipping\Ebay\Product\UpdateEbayPortfolio;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInEbayPortfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Helpers\Media\SaveModelImages;
@@ -37,7 +47,9 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Helpers\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -148,6 +160,23 @@ test('add product to customer portfolio', function () {
     expect($dropshippingCustomerPortfolio)->toBeInstanceOf(Portfolio::class);
 
     return $dropshippingCustomerPortfolio;
+});
+
+
+test('add product from another shop to customer portfolio is rejected', function () {
+    $customerSalesChannel = $this->customer->customerSalesChannels()->first();
+    $portfoliosBefore     = $customerSalesChannel->portfolios()->count();
+
+    $productFromAnotherShop          = new Product();
+    $productFromAnotherShop->shop_id = $this->shop->id + 1000;
+    $productFromAnotherShop->code    = $this->product->code;
+
+    expect(fn () => StorePortfolio::make()->action(
+        $customerSalesChannel,
+        $productFromAnotherShop,
+        []
+    ))->toThrow(ValidationException::class)
+        ->and($customerSalesChannel->portfolios()->count())->toBe($portfoliosBefore);
 });
 
 
@@ -519,4 +548,339 @@ test('Dropshipping hydrators', function () {
     $this->artisan('hydrate', [
         '--sections' => 'dropshipping',
     ])->assertExitCode(0);
+});
+
+test('ebay stock sync pushes when capped quantity differs from last push', function () {
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
+
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+        $this->customer,
+        $platform,
+        ['reference' => 'test_ebay_stock_sync']
+    );
+
+    $portfolio = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+    $portfolio->update(['platform_product_id' => 'ebay-offer-1', 'platform_status' => true]);
+
+    $this->product->update([
+        'available_quantity'            => 250,
+        'available_quantity_updated_at' => now()->subMonths(2)
+    ]);
+    $customerSalesChannel->update(['max_quantity_advertise' => 80]);
+    $product = $this->product->refresh();
+
+    expect(UpdateEbayPortfolio::quantityToSend($product, $customerSalesChannel))->toBe(80);
+
+    $customerSalesChannel->max_quantity_advertise = 0;
+    expect(UpdateEbayPortfolio::quantityToSend($product, $customerSalesChannel))->toBe(250);
+    $customerSalesChannel->max_quantity_advertise = 80;
+
+    $customerSalesChannel->stock_threshold = 5;
+    expect(UpdateEbayPortfolio::quantityToSend($product, $customerSalesChannel))->toBe(80);
+
+    $customerSalesChannel->max_quantity_advertise = 5;
+    expect(UpdateEbayPortfolio::quantityToSend($product, $customerSalesChannel))->toBe(5);
+    $customerSalesChannel->max_quantity_advertise = 80;
+
+    $this->product->update(['available_quantity' => 5]);
+    expect(UpdateEbayPortfolio::quantityToSend($this->product->refresh(), $customerSalesChannel))->toBe(0);
+
+    $this->product->update(['available_quantity' => 6]);
+    expect(UpdateEbayPortfolio::quantityToSend($this->product->refresh(), $customerSalesChannel))->toBe(6);
+
+    $customerSalesChannel->stock_threshold = 0;
+    $this->product->update(['available_quantity' => 250]);
+    $product = $this->product->refresh();
+
+    $checker = UpdateInventoryInEbayPortfolio::make();
+
+    expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
+
+    $portfolio->update(['last_stock_value' => 50, 'stock_last_updated_at' => now()->subMonths(6)]);
+    expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
+
+    $portfolio->update(['last_stock_value' => 80]);
+    expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeFalse();
+
+    $portfolio->update(['last_stock_value' => 50, 'stock_last_fail_updated_at' => now()->subHour()]);
+    expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeFalse()
+        ->and($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel, true))->toBeTrue();
+
+    $portfolio->update(['stock_last_fail_updated_at' => now()->subDays(2)]);
+    expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
+
+    $portfolio->update(['last_stock_value' => null, 'stock_last_fail_updated_at' => null]);
+    expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
+
+    return $customerSalesChannel;
+});
+
+test('woo and tiktok stock sync push when capped quantity differs from last push', function () {
+    $this->product->update([
+        'available_quantity'            => 250,
+        'available_quantity_updated_at' => now()->subMonths(2)
+    ]);
+
+    foreach ([
+        [PlatformTypeEnum::WOOCOMMERCE, UpdateWooCustomerSalesChannelPortfolio::make(), fn ($p, $c) => UpdateWooCustomerSalesChannelPortfolio::quantityToSend($p, $c)],
+        [PlatformTypeEnum::TIKTOK, UpdateInventoryTiktokProducts::make(), fn ($p, $c) => UpdateTiktokInventory::quantityToSend($p, $c)],
+    ] as [$platformType, $checker, $quantityToSend]) {
+        $platform = $this->group->platforms()->where('type', $platformType)->first();
+
+        $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+            $this->customer,
+            $platform,
+            ['reference' => 'test_stock_sync_'.$platformType->value]
+        );
+        $customerSalesChannel->update(['max_quantity_advertise' => 80]);
+
+        $portfolio = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+        $portfolio->update(['platform_product_id' => 'offer-'.$platformType->value, 'platform_status' => true]);
+
+        expect($quantityToSend($this->product->refresh(), $customerSalesChannel))->toBe(80);
+
+        $customerSalesChannel->stock_threshold = 5;
+        $customerSalesChannel->max_quantity_advertise = 5;
+        expect($quantityToSend($this->product->refresh(), $customerSalesChannel))->toBe(5);
+
+        $this->product->update(['available_quantity' => 4]);
+        expect($quantityToSend($this->product->refresh(), $customerSalesChannel))->toBe(0);
+
+        $this->product->update(['available_quantity' => 250]);
+        $customerSalesChannel->stock_threshold = 0;
+        $customerSalesChannel->max_quantity_advertise = 80;
+
+        expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
+
+        $portfolio->update(['last_stock_value' => 50, 'stock_last_updated_at' => now()->subMonths(6)]);
+        expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
+
+        $portfolio->update(['last_stock_value' => 80]);
+        expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeFalse();
+
+        $portfolio->update(['stock_last_fail_updated_at' => now()->subHour(), 'last_stock_value' => 50]);
+        expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeFalse()
+            ->and($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel, true))->toBeTrue();
+
+        $portfolio->update(['last_stock_value' => null, 'stock_last_fail_updated_at' => null]);
+        expect($checker->checkIfApplicable($portfolio->refresh(), $customerSalesChannel))->toBeTrue();
+    }
+});
+
+test('updating woo and tiktok channel stock settings queues inventory sync', function () {
+    Queue::fake();
+
+    foreach ([
+        [PlatformTypeEnum::WOOCOMMERCE, UpdateInventoryInWooPortfolio::class],
+        [PlatformTypeEnum::TIKTOK, UpdateInventoryTiktokProducts::class],
+    ] as [$platformType, $syncClass]) {
+        $platform = $this->group->platforms()->where('type', $platformType)->first();
+
+        $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+            $this->customer,
+            $platform,
+            ['reference' => 'test_settings_sync_'.$platformType->value]
+        );
+
+        $customerSalesChannel = UpdateCustomerSalesChannel::make()->action($customerSalesChannel, [
+            'stock_update'           => true,
+            'max_quantity_advertise' => 90
+        ]);
+
+        $syncClass::assertPushed(1);
+
+        UpdateCustomerSalesChannel::make()->action($customerSalesChannel, [
+            'stock_update'           => true,
+            'max_quantity_advertise' => '90'
+        ]);
+
+        $syncClass::assertPushed(1);
+    }
+});
+
+test('updating ebay channel stock settings queues inventory sync', function () {
+    Queue::fake();
+
+    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-user']);
+    $customerSalesChannel = $ebayUser->customerSalesChannel;
+
+    CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
+
+    $customerSalesChannel = UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'stock_update'           => true,
+        'max_quantity_advertise' => 90
+    ]);
+    UpdateInventoryInEbayPortfolio::assertPushed(1);
+
+    UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'stock_update'           => true,
+        'max_quantity_advertise' => '90'
+    ]);
+
+    UpdateInventoryInEbayPortfolio::assertPushed(1);
+});
+
+test('ebay channel do not update prices setting is stored', function () {
+    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-user-prices']);
+    $customerSalesChannel = $ebayUser->customerSalesChannel;
+
+    CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
+
+    $customerSalesChannel = UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'do_not_update_prices' => true
+    ]);
+    expect(\Illuminate\Support\Arr::get($customerSalesChannel->settings, 'do_not_update_prices'))->toBeTrue();
+
+    $customerSalesChannel = UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'do_not_update_prices' => false
+    ]);
+    expect(\Illuminate\Support\Arr::get($customerSalesChannel->settings, 'do_not_update_prices'))->toBeFalse();
+});
+
+test('channel percent pricing rule prices new portfolios honestly', function () {
+    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-pricing-store']);
+    $customerSalesChannel = $ebayUser->customerSalesChannel;
+
+    CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
+
+    UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'pricing_type'  => 'percent',
+        'pricing_value' => 20
+    ]);
+
+    $this->product->update(['rrp' => 10]);
+
+    $portfolio = StorePortfolio::make()->action($customerSalesChannel->refresh(), $this->product, []);
+
+    expect((float) $portfolio->customer_price)->toBe(12.0);
+});
+
+test('saving a channel pricing policy queues a reprice of every product', function () {
+    Queue::fake();
+
+    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-pricing-all']);
+    $customerSalesChannel = $ebayUser->customerSalesChannel;
+
+    CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
+
+    $customerSalesChannel = UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'pricing_type'  => 'percent',
+        'pricing_value' => 20
+    ]);
+    \App\Actions\Dropshipping\Ebay\Product\ApplyPricingRuleToEbayPortfolios::assertPushed(1);
+    expect(\Illuminate\Support\Arr::get($customerSalesChannel->settings, 'pricing.value'))->toBe(20);
+
+    UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'pricing_type'  => 'percent',
+        'pricing_value' => 20
+    ]);
+    \App\Actions\Dropshipping\Ebay\Product\ApplyPricingRuleToEbayPortfolios::assertPushed(1);
+});
+
+test('portfolio relative price rule computes price from rrp', function () {
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'test_ebay_price_rule']);
+    $this->product->update(['rrp' => 10]);
+    $portfolio = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, [
+        'pricing_type'  => 'percent',
+        'pricing_value' => -10
+    ], true);
+
+    $portfolio->refresh();
+    expect((float) $portfolio->customer_price)->toBe(9.0)
+        ->and(\Illuminate\Support\Arr::get($portfolio->settings, 'pricing.value'))->toBe(-10);
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, [
+        'pricing_type'  => 'fixed',
+        'pricing_value' => 2.5
+    ], true);
+
+    $portfolio->refresh();
+    expect((float) $portfolio->customer_price)->toBe(12.5);
+});
+
+test('portfolio not follow rule freezes price and opts out', function () {
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'test_ebay_not_follow']);
+    $this->product->update(['rrp' => 10]);
+    $portfolio = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, [
+        'pricing_type' => 'not_follow'
+    ], true);
+
+    $portfolio->refresh();
+    expect((float) $portfolio->customer_price)->toBe(10.0)
+        ->and(\Illuminate\Support\Arr::get($portfolio->settings, 'pricing.type'))->toBe('not_follow')
+        ->and(\Illuminate\Support\Arr::get($portfolio->settings, 'pricing_opt_out'))->toBeTrue();
+});
+
+test('pricing reset all overrides product opt outs', function () {
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'test_ebay_nuclear']);
+    $this->product->update(['rrp' => 10]);
+    $portfolio = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, [
+        'pricing_type' => 'not_follow'
+    ], true);
+
+    $customerSalesChannel->update(['settings' => ['pricing' => ['type' => 'percent', 'value' => 50]]]);
+
+    \App\Actions\Dropshipping\Ebay\Product\ApplyPricingRuleToEbayPortfolios::run($customerSalesChannel->refresh());
+    expect((float) $portfolio->refresh()->customer_price)->toBe(10.0);
+
+    \App\Actions\Dropshipping\Ebay\Product\ApplyPricingRuleToEbayPortfolios::run($customerSalesChannel, true);
+    $portfolio->refresh();
+    expect((float) $portfolio->customer_price)->toBe(15.0)
+        ->and(\Illuminate\Support\Arr::get($portfolio->settings, 'pricing_opt_out'))->toBeNull()
+        ->and(\Illuminate\Support\Arr::get($portfolio->settings, 'pricing'))->toBeNull();
+});
+
+test('ebay token refresh marks auth revoked only on invalid grant', function () {
+    \Illuminate\Support\Facades\Http::fake([
+        '*' => \Illuminate\Support\Facades\Http::sequence()
+            ->push('oops', 500)
+            ->push(['error' => 'invalid_grant'], 400)
+    ]);
+
+    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-auth-transient']);
+    $ebayUser->settings = ['credentials' => ['ebay_refresh_token' => 'live-token']];
+
+    $ebayUser->refreshEbayToken();
+    expect($ebayUser->ebayAuthRevoked)->toBeFalse();
+
+    $ebayUser->refreshEbayToken();
+    expect($ebayUser->ebayAuthRevoked)->toBeTrue();
+});
+
+test('bulk price rule prices each product from its own rrp', function () {
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'test_ebay_bulk_price']);
+
+    $this->product->update(['rrp' => 10]);
+    $portfolioA = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+
+    $family = $this->shop->productCategories()->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY)->first();
+    $productB = \App\Actions\Catalogue\Product\StoreProduct::make()->action($family, array_merge(
+        Product::factory()->definition(),
+        [
+            'trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]],
+            'price'       => 50,
+        ]
+    ));
+    $productB->update(['rrp' => 20]);
+    $portfolioB = StorePortfolio::make()->action($customerSalesChannel, $productB, []);
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::run([
+        'items'         => [$portfolioA->id, $portfolioB->id],
+        'pricing_type'  => 'percent',
+        'pricing_value' => -10
+    ], true);
+
+    expect((float) $portfolioA->refresh()->customer_price)->toBe(9.0)
+        ->and((float) $portfolioB->refresh()->customer_price)->toBe(18.0)
+        ->and(\Illuminate\Support\Arr::get($portfolioA->settings, 'pricing_opt_out'))->toBeTrue();
 });

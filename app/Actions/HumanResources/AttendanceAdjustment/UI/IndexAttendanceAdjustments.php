@@ -2,6 +2,7 @@
 
 namespace App\Actions\HumanResources\AttendanceAdjustment\UI;
 
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Actions\OrgAction;
 use App\Enums\HumanResources\Attendance\AttendanceAdjustmentStatusEnum;
 use App\Http\Resources\HumanResources\AttendanceAdjustmentResource;
@@ -86,7 +87,7 @@ class IndexAttendanceAdjustments extends OrgAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $user = Auth::user();
-        $employee = $user?->employees->first();
+        $employee = $user ? GetUserCurrentEmployee::run($user) : null;
 
         if (!$employee) {
             abort(404, 'Employee not found');

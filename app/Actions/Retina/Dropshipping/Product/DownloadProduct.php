@@ -42,9 +42,12 @@ class DownloadProduct extends RetinaAction
 
         if ($type == 'products_images') {
             $filename .= '_images.zip';
-            return response()->streamDownload(function () use ($parent, $filename) {
-                ProductZipExport::make()->handle($parent, $filename);
-            }, $filename);
+
+            $zipPath = ProductZipExport::make()->handle($parent, $filename);
+
+            return response()->download($zipPath, $filename, [
+                'Content-Type' => 'application/zip',
+            ])->deleteFileAfterSend(true);
         } else {
             if ($parent instanceof Product) {
                 return Excel::download(new SingleProductExport($parent), $filename, null, [
@@ -52,6 +55,16 @@ class DownloadProduct extends RetinaAction
                     'Cache-Control' => 'max-age=0',
                 ]);
             } else {
+                if (!Storage::disk('data-feeds')->exists($path)) {
+                    SaveDataFeeds::run($parent);
+                }
+
+                abort_unless(
+                    Storage::disk('data-feeds')->exists($path),
+                    404,
+                    __('The data feed for :name is not available yet, please try again later.', ['name' => $parent->name])
+                );
+
                 return Storage::disk('data-feeds')->download($path);
             }
         }

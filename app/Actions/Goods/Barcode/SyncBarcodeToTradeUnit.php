@@ -11,8 +11,10 @@ namespace App\Actions\Goods\Barcode;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductsHydrateBarcodeFromTradeUnit;
 use App\Actions\OrgAction;
+use App\Enums\Helpers\Barcode\BarcodeStatusEnum;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Barcode;
+use App\Models\Inventory\OrgStock;
 
 class SyncBarcodeToTradeUnit extends OrgAction
 {
@@ -43,22 +45,35 @@ class SyncBarcodeToTradeUnit extends OrgAction
 
         $barcode->tradeUnits()->sync($tradeUnits);
 
-        // Remove previously active trade unit barcode to be null
-        if ($previousActiveTradeUnit) {
+        if ($previousActiveTradeUnit && $previousActiveTradeUnit->id !== $newTradeUnit?->id) {
             $previousActiveTradeUnit->updateQuietly([
                 'barcode_id'    => null,
                 'barcode'       => null
             ]);
         }
 
-        // Hydrate old trade units product. Would set their barcode to null
-        ProductsHydrateBarcodeFromTradeUnit::dispatch($previousActiveTradeUnit);
+        $barcode->update([
+            'status'      => $newTradeUnit ? BarcodeStatusEnum::USED : BarcodeStatusEnum::AVAILABLE,
+            'assigned_at' => $newTradeUnit ? now() : null,
+        ]);
+
+        if ($previousActiveTradeUnit && $previousActiveTradeUnit->id !== $newTradeUnit?->id) {
+            $this->refreshOrgStockUnitBarcodes($previousActiveTradeUnit);
+            ProductsHydrateBarcodeFromTradeUnit::dispatch($previousActiveTradeUnit);
+        }
         if ($newTradeUnit) {
-            // Hydrate new trade units product. Would set their barcode
+            $this->refreshOrgStockUnitBarcodes($newTradeUnit);
             ProductsHydrateBarcodeFromTradeUnit::dispatch($newTradeUnit);
         }
 
         return $barcode;
+    }
+
+    private function refreshOrgStockUnitBarcodes(TradeUnit $tradeUnit): void
+    {
+        OrgStock::where('is_single_trade_unit', true)
+            ->whereHas('tradeUnits', fn ($query) => $query->where('trade_units.id', $tradeUnit->id))
+            ->update(['unit_barcode' => $tradeUnit->barcode]);
     }
 
     public function action(Barcode $barcode, ?TradeUnit $newTradeUnit = null): Barcode

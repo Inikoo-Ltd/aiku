@@ -72,11 +72,6 @@ class RouteServiceProvider extends ServiceProvider
             ->prefix('maya')
             ->group(base_path('routes/maya/maya-app.php'));
 
-        Route::middleware('bk-api')
-            ->domain(config('app.domain'))
-            ->prefix('bk-api')
-            ->group(base_path('routes/bk-api/bk_api.php'));
-
         Route::middleware('aiku-public')
             ->domain(config('app.domain'))
             ->name('aiku-public.')
@@ -101,6 +96,12 @@ class RouteServiceProvider extends ServiceProvider
             ->name('analytics.')
             ->group(base_path('routes/analytics/analytics.php'));
 
+        foreach ([config('app.domain'), 'app.'.config('app.domain'), 'pupil.'.config('app.domain')] as $aikuDomain) {
+            Route::domain($aikuDomain)->get('favicon.ico', function () {
+                return response()->file(public_path('favicon.png'));
+            });
+        }
+
         Route::middleware('iris')
             ->name('iris.')
             ->group(base_path('routes/iris/root.php'));
@@ -108,6 +109,12 @@ class RouteServiceProvider extends ServiceProvider
 
     protected function configureRateLimiting(): void
     {
+        RateLimiter::for('retina-api', function (Request $request) {
+            $token = $request->user()?->currentAccessToken();
+
+            return Limit::perMinute(120)->by($token ? 'token:'.$token->id : 'ip:'.$request->ip());
+        });
+
         RateLimiter::for('han', function (Request $request) {
             return Limit::perMinute(600)->by($request->user()?->id ?: $request->ip());
         });
@@ -118,6 +125,22 @@ class RouteServiceProvider extends ServiceProvider
 
         RateLimiter::for('kiosk', function (Request $request) {
             return Limit::perMinute(600)->by($request->ip());
+        });
+
+        /*
+         * The kiosk submit endpoints are unauthenticated and match a 6 character employee pin,
+         * so they are brute forceable by anyone holding a kiosk link. Limited per kiosk token as
+         * well as per ip, since a whole workplace shares one tablet behind a single ip.
+         */
+        RateLimiter::for('kiosk-submit', function (Request $request) {
+            return [
+                Limit::perMinute(20)->by('kiosk-token:'.$request->route('kioskToken')),
+                Limit::perMinute(20)->by('kiosk-ip:'.$request->ip()),
+            ];
+        });
+
+        RateLimiter::for('iris-search', function (Request $request) {
+            return Limit::perMinute(6000)->by($request->ip());
         });
     }
 }

@@ -9,17 +9,18 @@ import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faDownload, faGlobe } from "@fal"
-import { faSkull } from "@fas"
+import { faSkull, faExclamationTriangle } from "@fas"
 import Popover from "primevue/popover"
 import Checkbox from "primevue/checkbox"
 
-library.add(faDownload, faGlobe, faSkull)
+library.add(faDownload, faGlobe, faSkull, faExclamationTriangle)
 
 const props = defineProps<{
     data: object
     tab?: string
     tariffCodesExport?: {
         currency_code?: string
+        org_stock_route?: routeType
         fields: { key: string; label: string }[]
         download_route: { xlsx: routeType; csv: routeType }
     }
@@ -55,9 +56,48 @@ const exportColumns = (type: 'csv' | 'xlsx') => {
     if (!selectedColumns.value.length) return
     window.open(exportUrl(type), '_blank')
 }
+
+const orgStockUrl = (slug: string) => {
+    const r = props.tariffCodesExport?.org_stock_route
+    return r?.name ? route(r.name, { ...r.parameters, orgStock: slug }) : ''
+}
+
+const incompleteRow = computed(() => (props.data as any)?.data?.find((row: any) => row.is_incomplete))
 </script>
 
 <template>
+  <div>
+    <div v-if="incompleteRow"
+        class="mb-3 flex items-start gap-3 rounded border-2 border-red-500 bg-red-50 px-4 py-3 text-red-700">
+        <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 text-xl" />
+        <div class="min-w-0">
+            <div class="font-semibold">{{ trans("Missing tariff code or country of origin") }}</div>
+            <div class="text-sm">
+                {{ trans("These parts cannot be declared for customs until they are fixed in their trade unit:") }}
+            </div>
+            <ul class="mt-2 space-y-1 text-sm">
+                <li v-for="offender in incompleteRow.offenders" :key="offender.part" class="flex flex-wrap items-center gap-x-2">
+                    <a v-if="offender.org_stock_slug" :href="orgStockUrl(offender.org_stock_slug)" target="_blank"
+                        class="font-semibold underline underline-offset-2 hover:no-underline">{{ offender.part }}</a>
+                    <span v-else class="font-semibold">{{ offender.part }}</span>
+                    <span class="text-red-600/80 truncate max-w-md">{{ offender.trade_unit_name }}</span>
+                    <span class="text-xs">
+                        {{ [
+                            offender.missing_tariff_code ? trans("no tariff code") : null,
+                            offender.missing_origin ? trans("no country of origin") : null,
+                        ].filter(Boolean).join(" + ") }}
+                    </span>
+                    <a v-if="offender.trade_unit_slug"
+                        :href="route('grp.goods.trade-units.edit', offender.trade_unit_slug)" target="_blank"
+                        class="text-xs font-semibold underline underline-offset-2 hover:no-underline">
+                        {{ trans("Edit trade unit") }}
+                    </a>
+                    <span v-else class="text-xs italic">{{ trans("no trade unit linked") }}</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
     <Table :resource="data" :name="tab">
         <template v-if="tariffCodesExport?.download_route" #add-on-button>
             <Button :icon="faDownload" :label="trans('Export')" type="tertiary" size="xs"
@@ -88,8 +128,19 @@ const exportColumns = (type: 'csv' | 'xlsx') => {
             </Popover>
         </template>
 
+        <template #cell(tariff_code)="{ item }">
+            <span v-if="item.is_incomplete" class="inline-flex items-center gap-1.5 font-semibold text-red-600">
+                <FontAwesomeIcon :icon="faExclamationTriangle" />
+                {{ trans("Missing") }}
+            </span>
+            <span v-else>{{ item.tariff_code }}</span>
+        </template>
+
         <template #cell(description)="{ item }">
-            <span class="block max-w-xs text-xs text-gray-500">{{ item.description }}</span>
+            <span v-if="item.is_incomplete" class="block max-w-xs text-xs font-semibold text-red-600">
+                {{ trans("No tariff code and/or country of origin — customs clearance will fail") }}
+            </span>
+            <span v-else class="block max-w-xs text-xs text-gray-500">{{ item.description }}</span>
         </template>
 
         <template #cell(origin)="{ item }">
@@ -109,8 +160,8 @@ const exportColumns = (type: 'csv' | 'xlsx') => {
 
             <template #cell(parts)="{ item }">
                 <div class="flex flex-wrap gap-1">
-                    <span v-for="part in item.parts" :key="part"
-                        class="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{{ part }}</span>
+                    <span v-for="part in item.parts" :key="part" class="text-xs px-1.5 py-0.5 rounded"
+                        :class="item.is_incomplete ? 'bg-red-100 text-red-700 font-semibold' : 'bg-gray-100 text-gray-600'">{{ part }}</span>
                 </div>
             </template>
 
@@ -122,4 +173,5 @@ const exportColumns = (type: 'csv' | 'xlsx') => {
             <span class="tabular-nums">{{ locale.currencyFormat(currencyCode, item.amount) }}</span>
         </template>
     </Table>
+  </div>
 </template>

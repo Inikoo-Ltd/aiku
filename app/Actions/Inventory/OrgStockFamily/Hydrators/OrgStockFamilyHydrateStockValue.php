@@ -25,13 +25,22 @@ class OrgStockFamilyHydrateStockValue implements ShouldBeUnique
 
     public function handle(OrgStockFamily $orgStockFamily): void
     {
-        $stockValue = DB::table('org_stocks')
+        $stats = $orgStockFamily->stats;
+
+        if (!$stats) {
+            return;
+        }
+
+        $values = DB::table('org_stocks')
             ->where('org_stocks.org_stock_family_id', $orgStockFamily->id)
             ->whereNull('org_stocks.deleted_at')
-            ->sum(DB::raw('coalesce(org_stocks.sku_value, 0) * coalesce(org_stocks.quantity_available, 0)'));
+            ->selectRaw('coalesce(sum(coalesce(org_stocks.sku_value, 0) * coalesce(org_stocks.quantity_available, 0)), 0) as stock_value')
+            ->selectRaw('coalesce(sum(coalesce(org_stocks.sku_commercial_value, 0) * coalesce(org_stocks.quantity_available, 0)), 0) as stock_commercial_value')
+            ->first();
 
-        $orgStockFamily->stats->update([
-            'stock_value' => $stockValue ?? 0,
+        $stats->update([
+            'stock_value'            => $values->stock_value,
+            'stock_commercial_value' => $values->stock_commercial_value,
         ]);
     }
 }

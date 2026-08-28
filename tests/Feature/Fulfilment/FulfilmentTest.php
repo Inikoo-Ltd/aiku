@@ -26,9 +26,11 @@ use App\Actions\Comms\OrgPostRoom\StoreOrgPostRoom;
 use App\Actions\Comms\Outbox\StoreOutbox;
 use App\Actions\CRM\Customer\ApproveCustomer;
 use App\Actions\CRM\Customer\RejectCustomer;
+use App\Actions\CRM\Customer\DeleteCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Fulfilment\Fulfilment\UpdateFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\FetchNewWebhookFulfilmentCustomer;
+use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydrateStatus;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UpdateFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentTransaction\DeleteFulfilmentTransaction;
@@ -116,6 +118,7 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementBillingCycleEnum;
+use App\Enums\Fulfilment\FulfilmentCustomer\FulfilmentCustomerStatusEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementStateEnum;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
 use App\Enums\Fulfilment\StoredItemAuditDelta\StoredItemAuditDeltaStateEnum;
@@ -1851,6 +1854,27 @@ test('picking pallet to return', function (PalletReturn $submittedPalletReturn) 
     return $pickingPalletReturn;
 })->depends('submit pallet return');
 
+test('pick whole pallet in return by scanning its reference', function (PalletReturn $palletReturn) {
+    SendPalletReturnNotification::shouldRun()
+        ->andReturn();
+
+    $pallet = $palletReturn->pallets->first();
+
+    $scan = fn (string $barcode) => \App\Actions\Fulfilment\PalletReturnItem\PickPalletReturnItemByScan::make()
+        ->handle($palletReturn->refresh(), $this->user, ['barcode' => $barcode]);
+
+    $picked = $scan($pallet->reference);
+    expect($picked['status'])->toBe('picked')
+        ->and($picked['item']['type'])->toBe('Pallet')
+        ->and($picked['item']['quantity_to_pick'])->toBe(0.0)
+        ->and($pallet->refresh()->state)->toBe(PalletStateEnum::PICKED);
+
+    $pickedAgain = $scan($pallet->reference);
+    expect($pickedAgain['status'])->toBe('already_picked');
+
+    return $palletReturn;
+})->depends('picking pallet to return');
+
 test('picked pallet to return', function (PalletReturn $pickingPalletReturn) {
     SendPalletReturnNotification::shouldRun()
         ->andReturn();
@@ -2639,6 +2663,38 @@ test('picking second pallet to return', function (PalletReturn $submittedPalletR
 
     return $pickingPalletReturn;
 })->depends('submit second pallet return');
+
+test('pick stored item in return by scanning its reference', function (PalletReturn $palletReturn) {
+    SendPalletReturnNotification::shouldRun()
+        ->andReturn();
+
+    $palletReturnItem = PalletReturnItem::where('pallet_return_id', $palletReturn->id)->first();
+    $reference        = $palletReturnItem->storedItem->reference;
+
+    $scan = fn (string $barcode) => \App\Actions\Fulfilment\PalletReturnItem\PickPalletReturnItemByScan::make()
+        ->handle($palletReturn->refresh(), $this->user, ['barcode' => $barcode]);
+
+    $missed = $scan('NOT-A-REFERENCE');
+    expect($missed['status'])->toBe('not_found');
+
+    $picked = $scan($reference);
+    expect($picked['status'])->toBe('picked')
+        ->and($picked['item']['reference'])->toBe($reference)
+        ->and($picked['item']['quantity_picked'])->toBe(1.0)
+        ->and((float) $palletReturnItem->refresh()->quantity_picked)->toBe(1.0);
+
+    $pickedAgain = $scan($reference);
+    expect($pickedAgain['status'])->toBe('picked')
+        ->and((float) $palletReturnItem->refresh()->quantity_picked)->toBe(2.0);
+
+    $palletReturnItem->storedItem->update(['barcode' => '5051234567890']);
+
+    $pickedByEan = $scan('5051234567890');
+    expect($pickedByEan['status'])->toBe('picked')
+        ->and((float) $palletReturnItem->refresh()->quantity_picked)->toBe(3.0);
+
+    return $palletReturn;
+})->depends('picking second pallet to return');
 
 test('pick pallet return item', function (PalletReturn $palletReturn) {
     SendPalletReturnNotification::shouldRun()
@@ -3490,4 +3546,84 @@ test('fulfilment rentals index uses time series aggregation', function () {
     $fulfilment = createFulfilment($this->organisation);
 
     expect(\App\Actions\Fulfilment\UI\Catalogue\Rentals\IndexFulfilmentRentals::make()->handle($fulfilment)->total())->toBeGreaterThanOrEqual(0);
+});
+
+test('deleting a customer cascades to its fulfilment customer and hydrator skips it', function () {
+    $fulfilment         = createFulfilment($this->organisation);
+    $fulfilmentCustomer = StoreFulfilmentCustomer::make()->action(
+        $fulfilment,
+        [
+            'state'           => CustomerStateEnum::IN_PROCESS,
+            'status'          => CustomerStatusEnum::PENDING_APPROVAL,
+            'contact_name'    => 'Contact Deleted',
+            'company_name'    => 'Company Deleted',
+            'interest'        => ['pallets_storage'],
+            'contact_address' => Address::factory()->definition(),
+        ]
+    );
+
+    DeleteCustomer::make()->handle($fulfilmentCustomer->customer, [], true);
+
+    $trashed = FulfilmentCustomer::withTrashed()->find($fulfilmentCustomer->id);
+
+    expect($trashed->trashed())->toBeTrue()
+        ->and($trashed->customer)->toBeNull();
+
+    FulfilmentCustomerHydrateStatus::run($trashed);
+
+    expect($trashed->fresh()->status)->toBe($fulfilmentCustomer->status);
+});
+
+test('fulfilment customer status follows invoicing recency', function () {
+    $fulfilment         = createFulfilment($this->organisation);
+    $fulfilmentCustomer = StoreFulfilmentCustomer::make()->action(
+        $fulfilment,
+        [
+            'state'           => CustomerStateEnum::IN_PROCESS,
+            'status'          => CustomerStatusEnum::PENDING_APPROVAL,
+            'contact_name'    => 'Contact Recency',
+            'company_name'    => 'Company Recency',
+            'interest'        => ['pallets_storage'],
+            'contact_address' => Address::factory()->definition(),
+        ]
+    );
+
+    StoreRentalAgreement::make()->action(
+        $fulfilmentCustomer,
+        [
+            'state'         => RentalAgreementStateEnum::ACTIVE,
+            'billing_cycle' => RentalAgreementBillingCycleEnum::MONTHLY,
+            'pallets_limit' => null,
+            'username'      => 'recency',
+            'email'         => 'recency@testmail.com',
+            'clauses'       => [],
+        ]
+    );
+
+    $fulfilmentCustomer->update([
+        'number_pallets_status_storing'         => 0,
+        'number_pallets_status_returning'       => 0,
+        'number_pallets_status_receiving'       => 0,
+        'number_recurring_bills_status_current' => 0,
+    ]);
+
+    $statusWhenLastInvoicedMonthsAgo = function (int $months) use ($fulfilmentCustomer) {
+        $fulfilmentCustomer->customer->update(['last_invoiced_at' => now()->subMonths($months)]);
+        FulfilmentCustomerHydrateStatus::run($fulfilmentCustomer->fresh());
+
+        return $fulfilmentCustomer->fresh()->status;
+    };
+
+    expect($statusWhenLastInvoicedMonthsAgo(1))->toBe(FulfilmentCustomerStatusEnum::ACTIVE)
+        ->and($statusWhenLastInvoicedMonthsAgo(4))->toBe(FulfilmentCustomerStatusEnum::INACTIVE)
+        ->and($statusWhenLastInvoicedMonthsAgo(7))->toBe(FulfilmentCustomerStatusEnum::LOST);
+
+    $fulfilmentCustomer->customer->update(['last_invoiced_at' => null]);
+    $fulfilmentCustomer->rentalAgreement->update(['created_at' => now()->subMonths(2)]);
+    FulfilmentCustomerHydrateStatus::run($fulfilmentCustomer->fresh());
+    expect($fulfilmentCustomer->fresh()->status)->toBe(FulfilmentCustomerStatusEnum::ACTIVE);
+
+    $fulfilmentCustomer->rentalAgreement->update(['created_at' => now()->subMonths(7)]);
+    FulfilmentCustomerHydrateStatus::run($fulfilmentCustomer->fresh());
+    expect($fulfilmentCustomer->fresh()->status)->toBe(FulfilmentCustomerStatusEnum::UNACCOMPLISHED);
 });

@@ -218,8 +218,8 @@ class IndexWarehouses extends OrgAction
 
 
                 WarehousesTabsEnum::WAREHOUSES_HISTORIES->value => $this->tab == WarehousesTabsEnum::WAREHOUSES_HISTORIES->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run(Warehouse::class, 'hst'))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run(Warehouse::class, 'hst')))
+                    fn () => HistoryResource::collection(IndexHistory::run(Warehouse::class, WarehousesTabsEnum::WAREHOUSES_HISTORIES->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run(Warehouse::class, WarehousesTabsEnum::WAREHOUSES_HISTORIES->value)))
 
 
             ]

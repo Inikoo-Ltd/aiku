@@ -31,11 +31,13 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StorePortfolio extends OrgAction
 {
     use WithNoStrictRules;
+    use WithPortfolioSKU;
 
     private Customer $customer;
 
@@ -44,18 +46,20 @@ class StorePortfolio extends OrgAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item, array $modelData): Portfolio
     {
+        $this->assertItemBelongsToChannelShop($customerSalesChannel, $item);
+
         $rrp = $item->rrp ?? 0;
 
         $pricingType  = Arr::get($customerSalesChannel->settings, 'pricing.type');
         $pricingValue = Arr::get($customerSalesChannel->settings, 'pricing.value');
 
-        if ($pricingType && $pricingValue) {
+        if (in_array($pricingType, ['percent', 'fixed']) && $pricingValue) {
             $addedValue = $pricingValue;
             if ($pricingType === 'percent') {
-                $addedValue = $rrp * (1 + $pricingValue / 100);
+                $addedValue = $rrp * ($pricingValue / 100);
             }
 
-            $rrp = $rrp + $addedValue;
+            $rrp = round($rrp + $addedValue, 2);
         }
 
         $customerProductName = Arr::get($modelData, 'customer_product_name', $item->name);
@@ -121,30 +125,18 @@ class StorePortfolio extends OrgAction
         return $portfolio;
     }
 
-    public function getSKU(Product|StoredItem $item): ?string
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function assertItemBelongsToChannelShop(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item): void
     {
-        if ($item instanceof Product) {
-            $product = $item;
-
-            $skuArray = [];
-            foreach ($product->orgStocks as $orgStock) {
-                $stock = $orgStock->stock;
-                if ($stock) {
-                    $skuArray[] = $stock->slug;
-                } else {
-                    $skuArray[] = $orgStock->slug;
-                }
-            }
-            if (!empty($skuArray)) {
-                $sku = implode('-', $skuArray);
-            } else {
-                $sku = null;
-            }
-
-            return $sku;
-        } else {
-            return $item->reference;
+        if (!$item instanceof Product || $item->shop_id == $customerSalesChannel->shop_id) {
+            return;
         }
+
+        throw ValidationException::withMessages([
+            'item_id' => __('Product :code belongs to another shop', ['code' => $item->code])
+        ]);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -177,6 +169,9 @@ class StorePortfolio extends OrgAction
             'bundle_id'                   => 'sometimes|integer',
             'platform_product_id'         => 'sometimes|string',
             'platform_product_variant_id' => 'sometimes|string',
+            'platform_status'             => 'sometimes|boolean',
+            'has_valid_platform_product_id' => 'sometimes|boolean',
+            'exist_in_platform'           => 'sometimes|boolean',
             'platform_handle'             => 'sometimes|string',
             'last_added_at'               => 'sometimes|date'
         ];

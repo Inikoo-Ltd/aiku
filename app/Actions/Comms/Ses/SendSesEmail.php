@@ -29,6 +29,12 @@ class SendSesEmail
     use AsAction;
     use AwsClient;
 
+    private const THROTTLE_BACKOFF_BASE_MICROSECONDS = 50000;
+
+    private const THROTTLE_BACKOFF_CAP_MICROSECONDS = 2000000;
+
+    private const THROTTLE_BACKOFF_JITTER_MICROSECONDS = 50000;
+
     public mixed $message;
 
     // reference: AWS SES error codes
@@ -167,12 +173,13 @@ class SendSesEmail
 
                     $sent = true;
                 } catch (AwsException $e) {
-                    Sentry::captureException($e);
                     if ($e->getAwsErrorCode() == 'Throttling' && $attempt < $numberAttempts - 1) {
                         $attempt++;
-                        usleep(rand(200, 300) + pow(2, $attempt));
+                        usleep($this->throttleBackoffMicroseconds($attempt));
                         continue;
                     }
+
+                    Sentry::captureException($e);
 
                     $isCredentialError = in_array($e->getAwsErrorCode(), self::CREDENTIAL_ERROR_CODES, true);
                     if ($isCredentialError && $candidateIndex < count($credentialCandidates) - 1) {
@@ -229,6 +236,13 @@ class SendSesEmail
 
 
         return $dispatchedEmail;
+    }
+
+    /** Exponential backoff with jitter, capped so the whole retry run stays well under the queue retry_after. */
+    public function throttleBackoffMicroseconds(int $attempt): int
+    {
+        return (int)min(pow(2, $attempt) * self::THROTTLE_BACKOFF_BASE_MICROSECONDS, self::THROTTLE_BACKOFF_CAP_MICROSECONDS)
+            + rand(0, self::THROTTLE_BACKOFF_JITTER_MICROSECONDS);
     }
 
     public function getEmailData($subject, $sender, $to, $emailHtmlBody, $unsubscribeUrl = null, ?string $senderName = null, array $attachments = []): array

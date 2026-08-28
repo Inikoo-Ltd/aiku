@@ -11,7 +11,7 @@ namespace App\Actions\Masters\MasterProductCategoryTimeSeries;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Models\Masters\MasterProductCategory;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -31,35 +31,44 @@ trait WithRedoMasterProductCategoryTimeSeries
         return $masterProductCategoryId.'_'.$from.'_'.$to;
     }
 
+    protected function modifyQuery(Builder $query): Builder
+    {
+        return $query->where('type', $this->categoryType->value);
+    }
+
+    protected function dateRangeSources(): array
+    {
+        return [
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('invoice_transactions')->whereNull('deleted_at'),
+                'key'   => "master_{$this->categoryType->value}_id",
+                'date'  => 'date',
+            ],
+        ];
+    }
+
     public function handle(?int $masterProductCategoryId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$masterProductCategoryId) {
             return;
         }
 
-        $masterProductCategory = MasterProductCategory::find($masterProductCategoryId);
-
-        if (!$masterProductCategory) {
-            return;
-        }
-
         if (!$from || !$to) {
-            $firstInvoicedDate = DB::connection('aiku_no_sticky')->table('invoice_transactions')->where("master_{$this->categoryType->value}_id", $masterProductCategory->id)->whereNull('deleted_at')->min('date');
-            $lastInvoicedDate  = DB::connection('aiku_no_sticky')->table('invoice_transactions')->where("master_{$this->categoryType->value}_id", $masterProductCategory->id)->whereNull('deleted_at')->max('date');
+            $dateRange = $this->getDateRange($masterProductCategoryId);
 
-            if (!$firstInvoicedDate) {
+            if (!$dateRange['from']) {
                 return;
             }
 
-            $from = $from ?? Carbon::parse($firstInvoicedDate)->toDateString();
-            $to   = $to ?? Carbon::parse($lastInvoicedDate ?? now())->toDateString();
+            $from = $from ?? Carbon::parse($dateRange['from'])->toDateString();
+            $to   = $to ?? Carbon::parse($dateRange['to'] ?? now())->toDateString();
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessMasterProductCategoryTimeSeriesRecords::dispatch($masterProductCategory->id, $frequency, $from, $to);
+                ProcessMasterProductCategoryTimeSeriesRecords::dispatch($masterProductCategoryId, $frequency, $from, $to);
             } else {
-                ProcessMasterProductCategoryTimeSeriesRecords::run($masterProductCategory->id, $frequency, $from, $to);
+                ProcessMasterProductCategoryTimeSeriesRecords::run($masterProductCategoryId, $frequency, $from, $to);
             }
         }
     }

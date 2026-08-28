@@ -26,6 +26,10 @@ const emits = defineEmits<{
 
 function serviceRoute(service: {}) {
     switch (route().current()) {
+        case "grp.org.shops.show.billables.services.index":
+            return route(
+                "grp.org.shops.show.billables.services.show",
+                [route().params["organisation"], route().params["shop"], service.slug])
 
         // case "grp.org.fulfilments.show.catalogue.services.index":
         //     return route(

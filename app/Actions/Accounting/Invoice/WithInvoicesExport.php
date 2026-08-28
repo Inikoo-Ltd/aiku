@@ -108,6 +108,22 @@ trait WithInvoicesExport
     }
 
     /**
+     * On invoices, shipping/charges/adjustments render as their own totals rows, so their
+     * transactions are excluded from the item lines. Refund totals have no such rows: every
+     * refund transaction must appear as a line or the credit note doesn't say what it refunds.
+     */
+    public function getInvoicePdfTransactions(Invoice $invoice): \Illuminate\Support\Collection
+    {
+        $invoiceTransactions = $invoice->invoiceTransactions()->with(['model', 'historicAsset', 'transaction'])->get();
+
+        if ($invoice->customer->is_fulfilment || $invoice->type == InvoiceTypeEnum::REFUND) {
+            return $invoiceTransactions;
+        }
+
+        return $invoiceTransactions->whereIn('model_type', ['Product', 'Service']);
+    }
+
+    /**
      * @return array{0: \Mccarlosen\LaravelMpdf\LaravelMpdf, 1: string}
      */
     private function buildInvoicePdf(Invoice $invoice, array $options = []): array
@@ -117,13 +133,7 @@ trait WithInvoicesExport
 
         $totalNet = $totalItemsNet + $totalShipping;
 
-        $invoiceTransactions = $invoice->invoiceTransactions()->with(['model', 'historicAsset', 'transaction'])->get();
-
-        if ($invoice->customer->is_fulfilment) {
-            $transactionModel = $invoiceTransactions;
-        } else {
-            $transactionModel = $invoiceTransactions->where('model_type', 'Product');
-        }
+        $transactionModel = $this->getInvoicePdfTransactions($invoice);
 
         $transactions = $transactionModel->map(function ($transaction) {
             if (!empty($transaction->data['pallet_id'])) {
@@ -162,7 +172,7 @@ trait WithInvoicesExport
         );
 
         $outOfStockTransactions = collect();
-        if ($separateOutOfStock) {
+        if ($separateOutOfStock && $invoice->type == InvoiceTypeEnum::INVOICE) {
             [$outOfStockTransactions, $transactions] = $this->splitOutOfStockTransactions($transactions);
         }
 
@@ -235,9 +245,9 @@ trait WithInvoicesExport
             'deliveryNote'            => $deliveryNote,
             'deliveryAddress'         => $deliveryNote?->deliveryAddress,
             'recipientName'           => $recipientName,
-            'invoiceNumberLabel'      => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice number') : __('Refund Number'),
-            'dateLabel'               => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice date') : __('Refund Date'),
-            'typeLabel'               => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice') : __('Refund'),
+            'invoiceNumberLabel'      => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice number') : __('Credit Note Number'),
+            'dateLabel'               => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice date') : __('Credit Note Date'),
+            'typeLabel'               => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice') : __('Credit Note'),
             'transactions'            => $transactions,
             'outOfStockTransactions'  => $outOfStockTransactions,
             'totalNet'                => number_format($totalNet, 2, '.', ''),

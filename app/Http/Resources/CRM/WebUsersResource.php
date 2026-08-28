@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\CRM;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -41,12 +42,13 @@ class WebUsersResource extends JsonResource
             'shop_slug'         => $this->shop_slug,
             'shop_code'         => $this->shop_code,
             'shop_type'       => $this->shop_type,
-            'delete_route' => [
+            'delete_route' => $this->shop_type == ShopTypeEnum::FULFILMENT->value
+                || $request->user()?->authTo("supervisor-crm.{$this->shop_id}") ? [
                 'name' => 'grp.models.web-user.delete',
                 'parameters' => [
                     'webUser' => $this->id
                 ]
-            ]
+            ] : null
         ];
     }
 }

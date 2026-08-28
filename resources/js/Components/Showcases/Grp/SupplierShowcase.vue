@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { computed, inject } from 'vue'
+import { Link } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -14,7 +15,9 @@ import {
     faBuilding,
     faCalendarPlus,
     faClipboardList,
+    faClock,
     faEnvelope,
+    faFileInvoiceDollar,
     faGlobe,
     faHashtag,
     faMapMarkedAlt,
@@ -27,6 +30,7 @@ import {
 } from '@fal'
 import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import CopyButton from '@/Components/Utils/CopyButton.vue'
+import Image from '@common/Components/Image.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
@@ -35,7 +39,9 @@ library.add(
     faBuilding,
     faCalendarPlus,
     faClipboardList,
+    faClock,
     faEnvelope,
+    faFileInvoiceDollar,
     faGlobe,
     faHashtag,
     faMapMarkedAlt,
@@ -65,12 +71,29 @@ const props = defineProps<{
             address?: {
                 formatted_address?: string
             }
-            image_id?: number | null
+            photo?: Record<string, any> | null
+            supplierInfo?: {
+                delivery_type?: string
+                delivery_time?: number
+                production_waiting_time?: number
+                incoterm?: string
+                port_of_export?: string
+                port_of_import?: string
+                products_origin?: string
+                payment_terms?: string
+                minimum_order?: number
+                cooling_period?: number
+                order_number_prefix?: string
+            }
         }
         stats: {
             label: string
             icon?: string
             count: number
+            route?: {
+                name: string
+                parameters?: Record<string, any>
+            }
         }[]
     }
 }>()
@@ -166,15 +189,83 @@ const details = computed(() =>
         }
     ].filter((row) => row.value)
 )
+
+const supplierInfo = computed(() => {
+    const info = contactCard.value?.supplierInfo
+
+    if (!info) {
+        return []
+    }
+
+    return [
+        {
+            key: 'delivery_type',
+            label: trans('Delivery type'),
+            icon: 'fal fa-truck-container',
+            value: info.delivery_type === 'container' ? trans('Container') : info.delivery_type === 'parcel' ? trans('Parcels') : info.delivery_type
+        },
+        {
+            key: 'delivery_time',
+            label: trans('Delivery time'),
+            icon: 'fal fa-clock',
+            value: info.delivery_time ? trans(':days days', { days: info.delivery_time }) : null
+        },
+        {
+            key: 'production_waiting_time',
+            label: trans('Production time'),
+            icon: 'fal fa-clock',
+            value: info.production_waiting_time ? trans(':days days', { days: info.production_waiting_time }) : null
+        },
+        {
+            key: 'products_origin',
+            label: trans('Products origin'),
+            icon: 'fal fa-globe',
+            value: info.products_origin
+        },
+        {
+            key: 'incoterm',
+            label: trans('Incoterm'),
+            icon: 'fal fa-file-invoice-dollar',
+            value: info.incoterm
+        },
+        {
+            key: 'ports',
+            label: trans('Ports'),
+            icon: 'fal fa-map-marked-alt',
+            value: info.port_of_export && info.port_of_import ? `${info.port_of_export} → ${info.port_of_import}` : info.port_of_export || info.port_of_import
+        },
+        {
+            key: 'payment_terms',
+            label: trans('Payment terms'),
+            icon: 'fal fa-file-invoice-dollar',
+            value: info.payment_terms
+        },
+        {
+            key: 'minimum_order',
+            label: trans('Minimum order'),
+            icon: 'fal fa-box-usd',
+            value: info.minimum_order
+        },
+        {
+            key: 'order_number_prefix',
+            label: trans('Order number prefix'),
+            icon: 'fal fa-hashtag',
+            value: info.order_number_prefix
+        }
+    ].filter((row) => row.value)
+})
 </script>
 
 <template>
     <div class="space-y-6 px-4 py-6 md:px-6 lg:px-8">
         <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div
+            <component
+                :is="stat.route?.name ? Link : 'div'"
                 v-for="stat in data?.stats"
                 :key="stat.label"
-                class="flex items-center gap-4 rounded-xl bg-white px-5 py-4 shadow-sm ring-1 ring-gray-900/5">
+                :href="stat.route?.name ? route(stat.route.name, stat.route.parameters) : undefined"
+                class="flex items-center gap-4 rounded-xl bg-white px-5 py-4 shadow-sm ring-1 ring-gray-900/5"
+                :class="stat.route?.name ? 'hover:bg-gray-50' : ''">
                 <div
                     class="flex h-11 w-11 flex-none items-center justify-center rounded-lg bg-indigo-50 text-indigo-500 ring-1 ring-indigo-500/20">
                     <FontAwesomeIcon :icon="stat.icon || 'fal fa-hashtag'" fixed-width aria-hidden="true" />
@@ -187,15 +278,19 @@ const details = computed(() =>
                         {{ locale.number(stat.count ?? 0) }}
                     </dd>
                 </div>
-            </div>
+            </component>
         </dl>
 
         <div class="grid gap-6 lg:grid-cols-2">
             <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
                 <div class="flex items-center gap-4 border-b border-gray-900/5 bg-gray-50/80 px-6 py-5">
                     <div
-                        class="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-indigo-50 text-indigo-500 ring-1 ring-indigo-500/20">
-                        <FontAwesomeIcon icon="fal fa-person-dolly" class="text-xl" fixed-width aria-hidden="true" />
+                        class="flex h-14 w-14 flex-none items-center justify-center overflow-hidden rounded-full bg-indigo-50 text-indigo-500 ring-1 ring-indigo-500/20">
+                        <Image
+                            v-if="contactCard?.photo"
+                            :src="contactCard.photo"
+                            class="h-full w-full object-cover" />
+                        <FontAwesomeIcon v-else icon="fal fa-person-dolly" class="text-xl" fixed-width aria-hidden="true" />
                     </div>
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
@@ -239,6 +334,25 @@ const details = computed(() =>
                 <p v-else class="px-6 py-8 text-center text-sm text-gray-400">
                     {{ trans('No contact details recorded') }}
                 </p>
+
+                <template v-if="supplierInfo.length">
+                    <div class="border-t border-gray-900/5 bg-gray-50/80 px-6 py-3">
+                        <h3 class="text-xs font-medium uppercase tracking-wide text-gray-400">
+                            {{ trans('Supplying') }}
+                        </h3>
+                    </div>
+                    <dl class="divide-y divide-gray-900/5">
+                        <div v-for="row in supplierInfo" :key="row.key" class="flex items-center gap-x-4 px-6 py-3.5">
+                            <dt v-tooltip="row.label" class="flex-none">
+                                <span class="sr-only">{{ row.label }}</span>
+                                <FontAwesomeIcon :icon="row.icon" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="min-w-0 flex-1 text-sm text-gray-700">
+                                <span class="text-gray-400">{{ row.label }}:</span> {{ row.value }}
+                            </dd>
+                        </div>
+                    </dl>
+                </template>
             </div>
 
             <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">

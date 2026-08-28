@@ -12,6 +12,7 @@ namespace App\Http\Resources\Masters;
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Http\Resources\HasSelfCall;
+use App\Models\Masters\MasterAsset;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
@@ -33,6 +34,9 @@ use Illuminate\Support\Arr;
  * @property mixed $used_in
  * @property mixed $id
  * @property mixed $unit
+ * @property mixed $units
+ * @property mixed $description
+ * @property mixed $description_extra
  * @property mixed $currency_code
  * @property mixed $rrp
  * @property mixed $price
@@ -68,7 +72,7 @@ class MasterProductsResource extends JsonResource
 
         // Don't worry, won't run if relationship is not eager loaded. Will only present from IndexMasterProduct
         if ($masterAsset->relationLoaded('tradeUnits')) {
-            data_set($extraField, 'trade_units', $this->getDataTradeUnit($masterAsset->tradeUnits));
+            data_set($extraField, 'trade_units', $this->getDataTradeUnit($masterAsset));
         }
 
         return [
@@ -92,9 +96,13 @@ class MasterProductsResource extends JsonResource
             'used_in'                           => $this->used_in,
             'unit'                              => $this->unit,
             'units'                             => $this->units,
+            'description'                       => $this->description,
+            'description_extra'                 => $this->description_extra,
+            'tax_preset'                        => $this->tax_preset ?? 'custom',
+            'trade_units_label'                 => $this->trade_units_label ?? null,
             'price'                             => $this->price,
             'rrp'                               => $this->rrp,
-            'master_prices'                      => $this->master_prices,
+            'master_prices'                     => $this->master_prices,
             'master_rrp'                        => $this->master_rrps,
             'status'                            => $this->status,
             'currency_code'                     => $this->currency_code,
@@ -107,7 +115,7 @@ class MasterProductsResource extends JsonResource
             'dropshippers'                      => $this->dropshippers ?? 0,
             'listings'                          => $this->listings ?? 0,
             'sold'                              => $this->sold ?? 0,
-            'image_thumbnail'                   => $this->web_images,
+            'image_thumbnail'                   => Arr::get($this->web_images, 'main.thumbnail'),
             'status_icon'                       => $this->status ? [
                 'tooltip' => __('Active'),
                 'icon'    => 'fas fa-check-circle',
@@ -143,11 +151,11 @@ class MasterProductsResource extends JsonResource
         ];
     }
 
-    private function getDataTradeUnit($tradeUnits): array
+    private function getDataTradeUnit(MasterAsset $masterAsset): array
     {
-        $packedIn = $tradeUnits->pluck('pivot.quantity', 'id');
+        $packedIn = $masterAsset->getEffectiveStockPackedInByTradeUnit();
 
-        return $tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) { //louis need fix it
+        return $masterAsset->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) {
             return array_merge(
                 ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit->pivot->quantity / Arr::get($packedIn, $tradeUnit->id, 1))), Arr::get($packedIn, $tradeUnit->id, 1))],
                 GetTradeUnitShowcase::run($tradeUnit)

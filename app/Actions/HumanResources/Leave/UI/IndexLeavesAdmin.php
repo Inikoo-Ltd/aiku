@@ -3,6 +3,8 @@
 namespace App\Actions\HumanResources\Leave\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Models\HumanResources\Employee;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
@@ -95,6 +97,11 @@ class IndexLeavesAdmin extends OrgAction
                     ->where('is_active', true)
                     ->exists(),
                 'holidays' => $this->getHolidayDates(),
+                'can_record' => $request->user()->authTo(["human-resources.{$this->organisation->id}.edit", "org-supervisor.{$this->organisation->id}.human-resources"]),
+                'employee_options' => Employee::where('organisation_id', $this->organisation->id)
+                    ->where('state', EmployeeStateEnum::WORKING)
+                    ->orderBy('contact_name')
+                    ->pluck('contact_name', 'id'),
             ]
         )->table($this->tableStructure());
     }

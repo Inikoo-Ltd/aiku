@@ -59,22 +59,23 @@ class StoreProductFromMasterProduct extends OrgAction
                     $isMain = $masterAsset->is_main;
 
                     $data   = [
-                        'code'              => $masterAsset->code,
-                        'name'              => $masterAsset->name,
-                        'description'       => $masterAsset->description,
-                        'description_title' => $masterAsset->description_title,
-                        'description_extra' => $masterAsset->description_extra,
-                        'price'             => $price,
-                        'rrp'               => $rrp,
-                        'unit'              => $masterAsset->unit,
-                        'units'             => $masterAsset->units,
-                        'trade_units'       => $tradeUnits,
-                        'master_product_id' => $masterAsset->id,
-                        'state'             => ProductStateEnum::ACTIVE,
-                        'status'            => ProductStatusEnum::FOR_SALE,
-                        'is_main'           => $isMain,
-                        'is_for_sale'       => data_get($modelData, 'is_for_sale', $masterAsset->is_for_sale),
-                        'is_minion_variant' => !$isMain,
+                        'code'                      => $masterAsset->code,
+                        'name'                      => $masterAsset->name,
+                        'description'               => $masterAsset->description,
+                        'description_title'         => $masterAsset->description_title,
+                        'description_extra'         => $masterAsset->description_extra,
+                        'price'                     => $price,
+                        'rrp'                       => $rrp,
+                        'unit'                      => $masterAsset->unit,
+                        'units'                     => $masterAsset->units,
+                        'trade_units'               => $tradeUnits,
+                        'master_product_id'         => $masterAsset->id,
+                        'state'                     => ProductStateEnum::ACTIVE,
+                        'status'                    => ProductStatusEnum::FOR_SALE,
+                        'is_main'                   => $isMain,
+                        'is_for_sale'               => data_get($modelData, 'is_for_sale', $masterAsset->is_for_sale),
+                        'is_golden_product'         => $masterAsset->is_golden_product,
+                        'is_minion_variant'         => !$isMain,
                     ];
 
                     if (count($tradeUnits) > 1) {
@@ -89,7 +90,7 @@ class StoreProductFromMasterProduct extends OrgAction
                         data_set($data, 'family_id', $productCategory->id);
                         data_set($data, 'trade_units', $tradeUnits);
 
-                        $this->updateFoundProduct($product, $data, ($isMain && !$ignoreCreateWebpage));
+                        $this->updateFoundProduct($product, $data, ($isMain && !$ignoreCreateWebpage), $generateVariant);
 
                         continue;
                     }
@@ -164,12 +165,12 @@ class StoreProductFromMasterProduct extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function updateFoundProduct(Product $product, array $modelData, bool $createWebpage): void
+    public function updateFoundProduct(Product $product, array $modelData, bool $createWebpage, bool $generateVariant = true): void
     {
         $product = UpdateProduct::run($product, $modelData);
         CloneProductImagesFromTradeUnits::run($product);
         $product->refresh();
-        if ($product->masterProduct) {
+        if ($product->masterProduct && $generateVariant) {
             $this->setVariantData($product, $product->masterProduct);
         }
         if ($createWebpage && $product->webpage === null) {

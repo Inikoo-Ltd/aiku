@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { computed, inject, ref } from "vue"
+import { computed, inject, onMounted, onUnmounted, ref } from "vue"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import type { Component } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { trans } from "laravel-vue-i18n"
@@ -59,6 +60,27 @@ const currentTab = ref({
 })
 
 const locale = inject('locale', {})
+
+const layout = inject("layout", retinaLayoutStructure)
+
+onMounted(() => {
+    if (window.Echo && layout.user?.customer_id && (props.order as any)?.id) {
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`)
+            .listen(".order-submitted", (eventData: { order_id: number }) => {
+                if (eventData.order_id == (props.order as any)?.id) {
+                    window.location.href = route("retina.dropshipping.customer_sales_channels.orders.show", {
+                        customerSalesChannel: props.routes.back_to_basket?.parameters?.customerSalesChannel,
+                        order: (props.order as any)?.slug
+                    })
+                }
+            })
+    }
+})
+onUnmounted(() => {
+    if (window.Echo && layout.user?.customer_id) {
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`).stopListening(".order-submitted")
+    }
+})
 
 
 const component = computed(() => {

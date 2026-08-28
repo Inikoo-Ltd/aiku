@@ -9,7 +9,6 @@
 
 namespace App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction;
 
-use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInProcessInvoiceTransaction;
 use App\Actions\OrgAction;
 use App\Models\Accounting\InvoiceTransaction;
@@ -19,13 +18,7 @@ class DeleteStandaloneFulfilmentInvoiceTransaction extends OrgAction
 {
     public function handle(InvoiceTransaction $invoiceTransaction): void
     {
-        $invoice = $invoiceTransaction->invoice;
-
-
         DeleteInProcessInvoiceTransaction::make()->action($invoiceTransaction);
-        $invoice->refresh();
-        CalculateInvoiceTotals::run($invoice);
-
     }
 
 

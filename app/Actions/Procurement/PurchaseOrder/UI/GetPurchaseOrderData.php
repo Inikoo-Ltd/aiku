@@ -2,6 +2,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Actions\Procurement\PurchaseOrder\ResolvePurchaseOrderDeliveryAddress;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Support\Arr;
@@ -14,6 +15,10 @@ class GetPurchaseOrderData
     public function handle(PurchaseOrder $purchaseOrder): array
     {
         $data = $purchaseOrder->data ?? [];
+        $deliveryAddress = ResolvePurchaseOrderDeliveryAddress::run(
+            $purchaseOrder->organisation,
+            Arr::get($data, 'delivery_address')
+        );
 
         $isParcel  = Arr::get($data, 'delivery_type') === 'parcel';
         $incoterms = ['EXW', 'FCA', 'FAS', 'FOB', 'CFR', 'CIF', 'CPT', 'CIP', 'DAP', 'DPU', 'DDP'];
@@ -74,7 +79,7 @@ class GetPurchaseOrderData
                     'delivery_address' => [
                         'type'  => 'textarea',
                         'label' => __('Delivery address'),
-                        'value' => Arr::get($data, 'delivery_address'),
+                        'value' => $deliveryAddress,
                     ],
                 ],
             ],

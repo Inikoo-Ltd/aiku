@@ -85,6 +85,11 @@ interface SourceOrganisationService
 
     public function fetchProductHasOrgStock($id);
 
+    /** True when a person named one record with -s, which overrides the per shop force_fetch column. */
+    public function isForcedFetch(): bool;
+
+    public function setForcedFetch(bool $forcedFetch): void;
+
     public function fetchStock($id);
 
     public function fetchStockFamily($id);
@@ -100,6 +105,10 @@ interface SourceOrganisationService
     public function fetchSupplierProduct($id);
 
     public function fetchArtefact($id);
+
+    public function fetchRawMaterial($id);
+
+    public function fetchJobOrder($id);
 
     public function fetchOrgPaymentServiceProvider($id);
 
@@ -120,6 +129,8 @@ interface SourceOrganisationService
     public function initialisation(Organisation $organisation);
 
     public function fetchPurchaseOrder($id);
+
+    public function fetchAgentSupplierPurchaseOrder($id);
 
     public function fetchStockDelivery($id);
 

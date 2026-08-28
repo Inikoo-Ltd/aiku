@@ -26,7 +26,7 @@ class IndexEmailTrackingEvents extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(EmailTrackingEvent::class);
+        $queryBuilder = QueryBuilder::for(EmailTrackingEvent::on($dispatchedEmail->getConnectionName()));
 
         $queryBuilder->where('dispatched_email_id', $dispatchedEmail->id);
 

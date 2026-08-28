@@ -36,6 +36,7 @@ import { provide } from "vue"
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
 import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
+import CompositionTriangle from '@/Components/Goods/CompositionTriangle.vue'
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { createReusableTemplate } from "@vueuse/core"
@@ -70,6 +71,12 @@ const props = defineProps<{
 	currency: string,
 	handleTabUpdate: Function
 	salesData?: any
+	anomalies?: {
+		items: {
+			issues: string[]
+			ignored_issues: string[]
+		}[]
+	} | null
 	data: {
 		rebel_prices  : {},
         rebel_rrp : {}
@@ -252,6 +259,15 @@ const tradeUnitTags = computed(() => {
 const tradeUnitBrands = computed(() => {
   return (props.data?.trade_units ?? [])
     .flatMap(unit => unit?.brand ?? [])
+})
+
+// Same triangle as the composition page, read-only here: anomalies make the eye cry,
+// ignored ones only make it angry.
+const triangleMood = computed(() => {
+	const items = props.anomalies?.items ?? []
+	if (items.some(item => item.issues.length)) return 'crying'
+	if (items.some(item => item.ignored_issues.length)) return 'angry'
+	return null
 })
 
 function productRoute(product: any, openEdit = false) {
@@ -522,6 +538,14 @@ const isModalProductForSale = ref(false)
 			</div>
 			<div class="mr-3">
 				<SalesAnalyticsCompact  v-if="salesData" :salesData="salesData" />
+			</div>
+
+			<div v-if="data.trade_units?.length" class="mr-3 mt-4">
+				<CompositionTriangle
+					:tradeUnits="data.trade_units"
+					:productsCount="data.availability_status?.total_products"
+					:mood="triangleMood"
+				/>
 			</div>
         </div>
 

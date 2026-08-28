@@ -41,10 +41,11 @@ export const retinaLayoutStructure = {
     family_page: {
         productInBasket: {
             isLoading: false,
-            list: {} as { [key: number]: { quantity_ordered: number|null, quantity_ordered_new: number|null, transactions_id?: number|null, transaction_id?: number|null, department_id?: number|null, sub_department_id?: number|null, family_id?: number|null } }  // list of quantity_ordered from each products
+            list: {} as { [key: number]: { quantity_ordered: number|null, quantity_ordered_new: number|null, transactions_id?: number|null, transaction_id?: number|null, department_id?: number|null, sub_department_id?: number|null, family_id?: number|null, is_golden_product?: boolean } }  // list of quantity_ordered from each products
         }
     },
     family_quantity_ordered: {} as Record<string, number>,  // total quantity_ordered grouped by family_id
+    family_has_golden_product: {} as Record<string, boolean>,  // whether a golden product of the family is in the basket, grouped by family_id
     iris: {
         currency: {
             code: '',
@@ -54,7 +55,9 @@ export const retinaLayoutStructure = {
             shop_language: {} as Language,
             language_options: {} as { [key: string]: Language },
         },
-        is_logged_in: false
+        is_logged_in: false,
+        iris_search_model: 'luigi' as 'luigi' | 'internal',
+        luigisbox_tracker_id: '' as string | null,
     },
     iris_variables: {
         cart_count: 0,

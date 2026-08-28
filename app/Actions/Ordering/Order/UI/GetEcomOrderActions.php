@@ -68,6 +68,20 @@ class GetEcomOrderActions
                             ]
                         ]
                     ],
+                    [
+                        'type'    => 'button',
+                        'style'   => 'secondary',
+                        'icon'    => 'fal fa-plus',
+                        'key'     => 'add-service',
+                        'label'   => __('Add a service'),
+                        'tooltip' => __('Add a service'),
+                        'route'   => [
+                            'name'       => 'grp.models.order.transaction.store',
+                            'parameters' => [
+                                'order' => $order->id,
+                            ]
+                        ]
+                    ],
                     ($order->transactions()->count() > 0) ?
                         [
                             'type'    => 'button',
@@ -86,6 +100,20 @@ class GetEcomOrderActions
                 ],
                 OrderStateEnum::SUBMITTED => [
                     [
+                        'type'   => 'buttonGroup',
+                        'key'    => 'upload-add',
+                        'button' => [
+                            [
+                                'type'    => 'button',
+                                'style'   => 'secondary',
+                                'icon'    => ['fal', 'fa-upload'],
+                                'label'   => '',
+                                'key'     => 'upload',
+                                'tooltip' => __('Upload products via spreadsheet'),
+                            ],
+                        ],
+                    ],
+                    [
                         'type'    => 'button',
                         'style'   => 'secondary',
                         'icon'    => 'fas fa-plus',
@@ -99,7 +127,21 @@ class GetEcomOrderActions
                             ]
                         ]
                     ],
-                    $order->transactions()->count() > 0 ? [
+                    [
+                        'type'    => 'button',
+                        'style'   => 'secondary',
+                        'icon'    => 'fas fa-plus',
+                        'tooltip' => __('Add a service'),
+                        'label'   => __('Add a service'),
+                        'key'     => 'add-service',
+                        'route'   => [
+                            'name'       => 'grp.models.order.transaction.store',
+                            'parameters' => [
+                                'order' => $order->id,
+                            ]
+                        ]
+                    ],
+                    $order->itemTransactions()->count() > 0 ? [
                         'type'    => 'button',
                         'style'   => 'save',
                         'tooltip' => __('Send order to Warehouse'),
@@ -112,7 +154,20 @@ class GetEcomOrderActions
                                 'order' => $order->id
                             ]
                         ]
-                    ] : []
+                    ] : ($order->itemTransactions()->doesntExist() && $order->transactions()->count() > 0 ? [
+                        'type'    => 'button',
+                        'style'   => 'save',
+                        'tooltip' => __('Generate invoice and dispatch (no warehouse needed)'),
+                        'label'   => __('Invoice'),
+                        'key'     => 'invoice-only',
+                        'route'   => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.order.state.in-warehouse',
+                            'parameters' => [
+                                'order' => $order->id
+                            ]
+                        ]
+                    ] : [])
                 ],
 
 

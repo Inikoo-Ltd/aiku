@@ -155,9 +155,10 @@ const productRoute = (item) => {
                 </div>
             </template>
 
-            <template #cell(description)="{ item }">
+            <template #cell(name)="{ item }">
                 <div class="whitespace-normal">
-                    {{item.name}}
+                    <span>{{item.name}}</span>
+                    <span v-if="item.packed_in_message" class="italic opacity-80 pl-1">{{item.packed_in_message}}</span>
                 </div>
             </template>
 
@@ -213,6 +214,7 @@ const productRoute = (item) => {
                                     placeholder="0"
                                     mode="currency"
                                     :currency="item.currency_code"
+                                    :maxFractionDigits="2"
                                     :locale="localeCode"
                                     showButtons buttonLayout="horizontal"
                                     :step="item.unit_price"

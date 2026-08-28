@@ -43,7 +43,7 @@ class CancelDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(DeliveryNote $deliveryNote, ?User $user, $modifyOrder = true): DeliveryNote
+    public function handle(DeliveryNote $deliveryNote, ?User $user, $modifyOrder = true, bool $repair = false, ?string $cancelledAt = null): DeliveryNote
     {
         $oldState = $deliveryNote->state;
 
@@ -62,12 +62,22 @@ class CancelDeliveryNote extends OrgAction
         $newCancelledRef = $cancelledRef.($cancelledCount > 0 ? '-'.($cancelledCount + 1) : '');
 
         data_set($modelData, 'reference', $newCancelledRef);
-        data_set($modelData, 'cancelled_at', now());
+        data_set($modelData, 'cancelled_at', $cancelledAt ?? now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::CANCELLED);
 
-        $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData, $modifyOrder, $user) {
+        $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData, $modifyOrder, $user, $repair) {
             $deliveryNote = $this->update($deliveryNote, $modelData);
 
+            if ($repair) {
+                foreach ($deliveryNote->deliveryNoteItems as $item) {
+                    UpdateDeliveryNoteItem::make()->action($item, [
+                        'state'        => DeliveryNoteItemStateEnum::CANCELLED,
+                        'cancel_state' => DeliveryNoteItemCancelStateEnum::RETURNED,
+                    ]);
+                }
+
+                return $deliveryNote;
+            }
 
             foreach ($deliveryNote->packings as $packing) {
                 DeletePacking::make()->action($packing);
@@ -146,6 +156,26 @@ class CancelDeliveryNote extends OrgAction
         return $deliveryNote;
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        $deliveryNote = $request->route('deliveryNote');
+
+        if (!$deliveryNote instanceof DeliveryNote) {
+            return true;
+        }
+
+        return $request->user()->authTo([
+            "supervisor-dispatching.$deliveryNote->warehouse_id",
+            "org-admin.$deliveryNote->organisation_id",
+            "orders.$deliveryNote->shop_id.edit",
+            "crm.$deliveryNote->shop_id.edit",
+        ]);
+    }
+
     /**
      * @throws \Throwable
      */
@@ -159,11 +189,12 @@ class CancelDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(DeliveryNote $deliveryNote, ?User $user, $modifyOrder = true): DeliveryNote
+    public function action(DeliveryNote $deliveryNote, ?User $user, $modifyOrder = true, bool $repair = false, ?string $cancelledAt = null): DeliveryNote
     {
+        $this->asAction = true;
         $this->initialisationFromShop($deliveryNote->shop, []);
 
-        return $this->handle($deliveryNote, $user, $modifyOrder);
+        return $this->handle($deliveryNote, $user, $modifyOrder, $repair, $cancelledAt);
     }
 
     public function getCommandSignature(): string
@@ -201,6 +232,7 @@ class CancelDeliveryNote extends OrgAction
 
         $modifyOrder = (bool)$command->option('modifyOrder');
 
+        $this->asAction = true;
         $this->initialisationFromShop($deliveryNote->shop, []);
         $this->handle($deliveryNote, null, $modifyOrder);
 

@@ -33,11 +33,52 @@ trait HasCardWebImages
             }
 
             $cardWebImages[$slot] = [
-                'gallery' => Arr::only($gallery, ['avif', 'avif_2x', 'webp', 'webp_2x', 'original', 'original_2x']),
+                'gallery' => $this->compactGallery(Arr::only($gallery, ['avif', 'avif_2x', 'webp', 'webp_2x', 'original', 'original_2x'])),
             ];
         }
 
         return $cardWebImages;
+    }
+
+    /**
+     * All imgproxy variants of one image share the same host and base64 source tail;
+     * only the signature/processing prefix and extension differ. Ship the shared parts
+     * once ({_cig: {u, b}}) and per-variant "prefix|ext" strings; the frontend Image
+     * component reassembles the urls. Any url that does not match the expected shape
+     * makes the whole gallery fall back to full urls.
+     *
+     * @param array<string, string> $gallery
+     */
+    protected function compactGallery(array $gallery): array
+    {
+        $host = null;
+        $base = null;
+        $variants = [];
+
+        foreach ($gallery as $format => $url) {
+            if (!is_string($url) || !preg_match('#^(https?://[^/]+)/([^/]+/.+)/([A-Za-z0-9_=-]+)(\.\w+)?$#', $url, $m)) {
+                return $gallery;
+            }
+
+            [, $urlHost, $prefix, $urlBase, $ext] = array_pad($m, 5, '');
+
+            if (($host !== null && $urlHost !== $host) || ($base !== null && $urlBase !== $base)) {
+                return $gallery;
+            }
+
+            $host = $urlHost;
+            $base = $urlBase;
+            $variants[$format] = $prefix.'|'.$ext;
+        }
+
+        if ($variants === []) {
+            return $gallery;
+        }
+
+        return [
+            '_cig' => ['u' => $host, 'b' => $base],
+            'v'    => $variants,
+        ];
     }
 
     /**

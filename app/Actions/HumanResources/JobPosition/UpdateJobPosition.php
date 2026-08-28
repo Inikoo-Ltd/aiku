@@ -14,7 +14,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\HumanResources\JobPosition\JobPositionScopeEnum;
 use App\Http\Resources\HumanResources\JobPositionResource;
 use App\Models\HumanResources\JobPosition;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -40,9 +39,9 @@ class UpdateJobPosition extends OrgAction
         ];
     }
 
-    public function asController(Organisation $organisation, JobPosition $jobPosition, ActionRequest $request): JobPosition
+    public function asController(JobPosition $jobPosition, ActionRequest $request): JobPosition
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisation($jobPosition->organisation, $request);
 
         return $this->handle($jobPosition, $this->validatedData);
     }

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Discounts\Offer;
 
+use App\Actions\Catalogue\Shop\BreakShopPricesCache;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
@@ -271,6 +272,8 @@ class UpdateProductCategoryOffersData
         $model->update([
             'offers_data' => $modelOfferData
         ]);
+
+        BreakShopPricesCache::run($model instanceof Shop ? $model->id : $model->shop_id);
     }
 
 }

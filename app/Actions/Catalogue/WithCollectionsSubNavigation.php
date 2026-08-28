@@ -23,8 +23,8 @@ trait WithCollectionsSubNavigation
                 'route'  => [
                     'name'       => 'grp.org.shops.show.catalogue.collections.active.index',
                     'parameters' => [
-                        $this->organisation->slug,
-                        $this->shop->slug
+                        $shop->organisation->slug,
+                        $shop->slug
                     ]
                 ],
                 'number' => $stats->number_collections_state_active
@@ -35,8 +35,8 @@ trait WithCollectionsSubNavigation
                 'route'  => [
                     'name'       => 'grp.org.shops.show.catalogue.collections.inactive.index',
                     'parameters' => [
-                        $this->organisation->slug,
-                        $this->shop->slug
+                        $shop->organisation->slug,
+                        $shop->slug
                     ]
                 ],
                 'number' => $stats->number_collections_state_inactive,
@@ -47,8 +47,8 @@ trait WithCollectionsSubNavigation
                 'route'  => [
                     'name'       => 'grp.org.shops.show.catalogue.collections.in_process.index',
                     'parameters' => [
-                        $this->organisation->slug,
-                        $this->shop->slug
+                        $shop->organisation->slug,
+                        $shop->slug
                     ]
                 ],
                 'number' => $stats->number_collections_state_in_process,
@@ -59,12 +59,28 @@ trait WithCollectionsSubNavigation
                 'route'  => [
                     'name'       => 'grp.org.shops.show.catalogue.collections.index',
                     'parameters' => [
-                        $this->organisation->slug,
-                        $this->shop->slug
+                        $shop->organisation->slug,
+                        $shop->slug
                     ]
                 ],
                 'number' => $stats->number_collections,
                 'align'  => 'right'
+            ],
+            [
+                'label'    => __('Sales'),
+                'root'     => 'grp.org.shops.show.catalogue.collections.sales',
+                'route'    => [
+                    'name'       => 'grp.org.shops.show.catalogue.collections.sales',
+                    'parameters' => [
+                        $shop->organisation->slug,
+                        $shop->slug
+                    ]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-money-bill-wave'],
+                    'tooltip' => __('Sales')
+                ],
+                'align'    => 'right'
             ],
         ];
     }

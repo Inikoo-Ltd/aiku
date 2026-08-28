@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
@@ -17,7 +18,10 @@ use Illuminate\Support\Arr;
 
 class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
 {
+    use WithLineTaxCategories;
+
     public string $jobQueue = 'urgent';
+    public int $jobUniqueFor = 120;
 
     public function getJobUniqueId(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false, bool $onlyIfInBasket = false): string
     {
@@ -42,13 +46,15 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
             return;
         }
 
+        $this->applyLineTaxCategories($order);
+
         $itemsNet   = $order->transactions()->where('model_type', 'Product')->sum('net_amount');
         $itemsGross = $order->transactions()->where('model_type', 'Product')->sum('gross_amount');
-        $tax        = $order->taxCategory->rate;
 
         $numberItemTransactions = $order->transactions()->where('model_type', 'Product')->count();
 
         $chargesAmount   = $order->transactions()->where('model_type', 'Charge')->sum('net_amount');
+        $servicesAmount  = $order->transactions()->where('model_type', 'Service')->sum('net_amount');
         $estimatedWeight = $order->transactions()->where('model_type', 'Product')->sum('estimated_weight');
 
         if ($order->collection_address_id) {
@@ -57,9 +63,10 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
             $shippingAmount = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
         }
 
-        $netAmount = $itemsNet + $shippingAmount + $chargesAmount - $order->amount_off;
+        $taxBreakdown = $this->getOrderTaxBreakdown($order);
 
-        $taxAmount   = $netAmount * $tax;
+        $netAmount   = round(array_sum(array_column($taxBreakdown, 'net_amount')), 2);
+        $taxAmount   = round(array_sum(array_column($taxBreakdown, 'tax_amount')), 2);
         $totalAmount = $netAmount + $taxAmount;
         $grpNet      = $netAmount * $order->grp_exchange;
         $orgNet      = $netAmount * $order->org_exchange;
@@ -73,6 +80,7 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         data_set($modelData, 'gross_amount', $itemsGross);
         data_set($modelData, 'shipping_amount', $shippingAmount);
         data_set($modelData, 'charges_amount', $chargesAmount);
+        data_set($modelData, 'services_amount', $servicesAmount);
         data_set($modelData, 'estimated_weight', $estimatedWeight);
         data_set($modelData, 'number_item_transactions', $numberItemTransactions);
 

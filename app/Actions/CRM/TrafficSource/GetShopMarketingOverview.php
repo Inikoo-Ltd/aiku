@@ -1,0 +1,614 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 06 Aug 2026
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\CRM\TrafficSource;
+
+use App\Actions\CRM\TrafficSource\UI\TrafficSourceTabsEnum;
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\Catalogue\Shop;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+class GetShopMarketingOverview
+{
+    use AsAction;
+    use WithAttributionWindow;
+
+    /**
+     * Assembles the marketing dashboard's numbers for a period: attributed revenue, ad spend, and the
+     * ROAS and CAC they imply, per channel and in total.
+     *
+     * Revenue is measured the same way the lifetime figure is - invoice net_amount, excluding
+     * in-process refunds - weighted by each channel's attribution share of the customer, so the
+     * all-time period reproduces traffic_source_stats.total_customer_revenue exactly and every other
+     * period is an honest slice of it. Spend comes from the daily cost rows over the same dates, so
+     * ROAS finally compares like with like: a period's return against that period's spend.
+     *
+     * All figures are in the shop's currency.
+     *
+     * @return array{from: string|null, to: string|null, currency_code: string, referrers: array<int, array{host: string, visitors: float, registrations: float, revenue: float}>, totals: array{spend: float, revenue: float, registrations: float, unsubscribed: int, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, route: array{name: string, parameters: array<string, mixed>}, registrations_route: array{name: string, parameters: array<string, mixed>}, spend: float, revenue: float, registrations: float, roas: float|null}>, campaigns: array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
+     */
+    public function handle(Shop $shop, ?Carbon $from = null, ?Carbon $to = null): array
+    {
+        /* One window for the whole screen. Everything - revenue, orders, sign-ups, spend, unsubscribes,
+           visits, the baseline they are shares of - starts when attribution started recording, so no
+           two figures on the page cover different stretches of time. Before that date the report
+           reads zero, which is the truthful answer: we were not measuring. */
+        $from = $this->clipToAttributionStart($from);
+
+        $sources = DB::table('traffic_sources')
+            ->where('shop_id', $shop->id)
+            ->select('id', 'name', 'type', 'slug')
+            ->get()
+            ->keyBy('id');
+
+        $window        = GetAttributionWindow::run($shop);
+        $revenue       = $this->revenueBySource($shop, $from, $to, $window);
+        $pending       = $this->pendingRevenueBySource($shop, $from, $to, $window);
+        $registrations = $this->registrationsBy('traffic_source_id', $shop, $from, $to, $window);
+        /* Cost is clipped to the same window everything else is measured over. Thirty days of mailshots
+           against half a day of attributable return is not a return on ad spend, it is two different
+           questions divided by each other. */
+        $costFrom      = $from;
+        $costTo        = $to;
+        /* The cost rows are read once and split two ways: the channel table wants them by source, the
+           campaign table by campaign, and both are the same rows over the same dates. */
+        $costs         = $this->costsBySourceAndCampaign($shop, $costFrom, $costTo);
+        $spend         = $costs->groupBy('traffic_source_id')->map(fn ($rows) => (float) $rows->sum('spend'));
+        /* Sending is not free and nobody invoices us for it, so the newsletter channel would show a
+           spend of zero and an infinite return. Estimated from the emails actually dispatched. */
+        /* Per email channel: a newsletter and a promotional mailshot cost separately and lose
+           subscribers separately, so averaging them would hide which one is doing the damage. */
+        $costPerEmail   = GetEstimatedEmailCost::make()->costPerEmail($shop->currency);
+        $mailshotTotals = GetEstimatedEmailCost::totalsByType([$shop->id], $costFrom, $costTo);
+        $emailCostBy    = [];
+        $unsubsBy       = [];
+
+        foreach ([TrafficSourcesTypeEnum::NEWSLETTER, TrafficSourcesTypeEnum::MARKETING_MAILSHOT] as $emailChannel) {
+            $channelTotals = GetEstimatedEmailCost::forChannel($mailshotTotals, $emailChannel, $costPerEmail);
+
+            $emailCostBy[$emailChannel->value] = $channelTotals['cost'];
+            $unsubsBy[$emailChannel->value]    = $channelTotals['unsubscribed'];
+        }
+
+        /* Automated marketing is billed per message like everything else we send. */
+        $emailCostBy[TrafficSourcesTypeEnum::EMAIL_AUTOMATED->value] = GetEstimatedEmailCost::automated([$shop->id], $costFrom, $costTo, $shop->currency, $costPerEmail);
+
+        $emailCost = array_sum($emailCostBy);
+        $visits        = $this->visitsBySource($shop, $from, $to);
+        $orders        = $this->ordersBySource($shop, $from, $to, $window);
+
+        /* The campaign table and the referrer list are two readings of one set of campaign figures:
+           every referrer is a campaign of the referral or organic search channel. Counting them apart
+           meant scanning the invoices and the customers twice over. */
+        $campaignRevenue       = $this->revenueByCampaign($shop, $from, $to, $window);
+        $campaignRegistrations = $this->registrationsBy('traffic_source_campaign_id', $shop, $from, $to, $window);
+
+        $channels = $sources
+            ->map(fn ($source) => [
+                'name'          => $source->name,
+                'type'          => $source->type,
+                'route'         => $this->channelRoute($shop, $source->slug),
+                'registrations_route' => $this->registrationsRoute($shop, $source->slug, $from, $to),
+                'orders_route'  => $this->ordersRoute($shop, $source->slug, $from, $to),
+                'group'         => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['key'] ?? 'other',
+                'group_label'   => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['label'] ?? __('Other'),
+                'group_position' => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['position'] ?? 9,
+                'spend'         => round((float) ($spend[$source->id] ?? 0)
+                    + ($emailCostBy[$source->type] ?? 0), 2),
+                'spend_is_estimated' => ($emailCostBy[$source->type] ?? 0) > 0,
+                /* Not netted off registrations: an unsubscribe is not a lost customer, it is lost
+                   permission to email one, and subtracting the two would report a number that means
+                   neither. Shown beside them instead. */
+                'unsubscribed'  => (int) ($unsubsBy[$source->type] ?? 0),
+                'visits'        => (int) ($visits[$source->id] ?? 0),
+                'orders'        => round((float) ($orders[$source->id] ?? 0), 2),
+                'revenue'       => round((float) ($revenue[$source->id]->amount ?? 0), 2),
+                'pending'       => round((float) ($pending[$source->id] ?? 0), 2),
+                'registrations' => round((float) ($registrations[$source->id] ?? 0), 2),
+            ])
+            ->map(fn (array $channel) => $channel + [
+                /* A channel that has spent money and taken orders that are not invoiced yet has not
+                   returned 0.00x, it has not finished being measured. Zero is only honest once there
+                   is nothing pending. */
+                'roas' => ($channel['spend'] > 0 && ($channel['revenue'] > 0 || $channel['pending'] <= 0))
+                    ? round($channel['revenue'] / $channel['spend'], 2)
+                    : null,
+            ])
+            ->filter(fn (array $channel) => $channel['spend'] > 0 || $channel['revenue'] > 0
+                || $channel['registrations'] > 0 || $channel['pending'] > 0 || $channel['visits'] > 0
+                || $channel['orders'] > 0 || $channel['unsubscribed'] > 0)
+            /* Money first, then the traffic behind it, and the name last so that channels which have
+               yet to earn or cost anything still land in the same order every load. Ties used to fall
+               back on whatever order the database happened to return the rows in. */
+            ->sortBy(fn (array $channel) => [
+                -max($channel['spend'], $channel['revenue']),
+                -$channel['revenue'],
+                -$channel['registrations'],
+                -$channel['orders'],
+                -$channel['visits'],
+                $channel['name'],
+            ])
+            ->values()
+            ->all();
+
+        $totalSpend         = round(array_sum(array_column($channels, 'spend')), 2);
+        $totalRevenue       = round(array_sum(array_column($channels, 'revenue')), 2);
+        $totalRegistrations = round(array_sum(array_column($channels, 'registrations')), 2);
+        $totalPending       = round(array_sum(array_column($channels, 'pending')), 2);
+
+        return [
+            'from'          => $from?->toDateString(),
+            'to'            => $to?->toDateString(),
+            'currency_code' => $shop->currency->code,
+            'totals'        => [
+                'spend'         => $totalSpend,
+                /* Split because they are different kinds of money: one is invoiced by an ad platform,
+                   the other is our own estimate of what sending the emails cost. Totalled for ROAS,
+                   shown apart so nobody reads an estimate as a bill. */
+                'spend_ads'     => round($totalSpend - $emailCost, 2),
+                'spend_email'   => round($emailCost, 2),
+                'revenue'       => $totalRevenue,
+                'registrations' => $totalRegistrations,
+                /* Beside the sign-ups, never taken off them: an unsubscribe costs permission to email
+                   somebody, not the customer, and netting the two would report a number that means
+                   neither. */
+                'unsubscribed'  => (int) array_sum(array_column($channels, 'unsubscribed')),
+                'pending'       => $totalPending,
+                'invoices'      => round(collect($revenue)->sum('invoices'), 2),
+                'roas'          => ($totalSpend > 0 && ($totalRevenue > 0 || $totalPending <= 0))
+                    ? round($totalRevenue / $totalSpend, 2)
+                    : null,
+                'cac'           => ($totalSpend > 0 && $totalRegistrations > 0)
+                    ? round($totalSpend / $totalRegistrations, 2)
+                    : null,
+            ],
+            /* The denominator: 0 attributed registrations out of 4 is noise, 0 out of 300 means every
+               ad and mailshot in the period earned us nobody. The remainder is the trade that arrives
+               whether we advertise or not. */
+            'attribution_started_at' => GetAttributionStartedAt::run()?->toIso8601String(),
+            'baseline'      => $this->baseline($shop, $from, $to),
+            'channels'      => $channels,
+            'campaigns'     => $this->campaigns($campaignRevenue, $campaignRegistrations, $costs),
+            'referrers'     => $this->referrers($shop, $campaignRevenue, $campaignRegistrations),
+            'spend_by_day'  => $this->spendByDay($shop, $from, $to),
+        ];
+    }
+
+    /**
+     * The channel's own page. No period travels with it: that page is the channel's standing
+     * overview, not a slice of this dashboard's window.
+     *
+     * @return array{name: string, parameters: array<string, string>}
+     */
+    private function channelRoute(Shop $shop, string $slug): array
+    {
+        return [
+            'name'       => 'grp.org.shops.show.marketing.traffic_sources.show',
+            'parameters' => [
+                'organisation'  => $shop->organisation->slug,
+                'shop'          => $shop->slug,
+                'trafficSource' => $slug,
+            ],
+        ];
+    }
+
+    /**
+     * The customers the channel signed up, on the channel's own page, over the dashboard's own dates:
+     * the figure being clicked counts a period, so the list it opens has to cover the same one.
+     *
+     * @return array{name: string, parameters: array<string, mixed>}
+     */
+    private function registrationsRoute(Shop $shop, string $slug, ?Carbon $from, ?Carbon $to): array
+    {
+        $route                      = $this->channelRoute($shop, $slug);
+        $route['parameters']['tab'] = TrafficSourceTabsEnum::CUSTOMERS->value;
+        $route['parameters']        += $this->periodFilter($from, $to, 'created_at');
+
+        return $route;
+    }
+
+    /**
+     * The orders the channel was touched before, on the channel's own page, over the dashboard's
+     * dates.
+     *
+     * @return array{name: string, parameters: array<string, mixed>}
+     */
+    private function ordersRoute(Shop $shop, string $slug, ?Carbon $from, ?Carbon $to): array
+    {
+        $route                      = $this->channelRoute($shop, $slug);
+        $route['parameters']['tab'] = TrafficSourceTabsEnum::ORDERS->value;
+        $route['parameters']        += $this->periodFilter($from, $to, 'date');
+
+        return $route;
+    }
+
+    /**
+     * The dashboard's window as a table takes it: a between filter on the same column the figure was
+     * counted over. An open-ended period travels as no filter at all.
+     *
+     * @return array<string, array<string, string>>
+     */
+    private function periodFilter(?Carbon $from, ?Carbon $to, string $column): array
+    {
+        if (!$from) {
+            return [];
+        }
+
+        return [
+            'between' => [
+                $column => $from->format('Ymd').'-'.($to ?? Carbon::now())->format('Ymd'),
+            ],
+        ];
+    }
+
+    /**
+     * Revenue a channel may claim: invoiced after the touch that earned it, and no later than the
+     * attribution window allows. Without the first condition a click today collects a customer's
+     * entire history; without the second it collects their next several years.
+     */
+    private function revenueBySource(Shop $shop, ?Carbon $from, ?Carbon $to, int $window)
+    {
+        return DB::table('invoices')
+            ->join('model_has_traffic_sources as p', function ($join) use ($window) {
+                $join->on('p.model_id', '=', 'invoices.customer_id')
+                    ->where('p.model_type', '=', 'Customer');
+
+                $this->constrainToAttributionWindow($join, $window);
+            })
+            ->where('invoices.shop_id', $shop->id)
+            ->where('invoices.in_process', false)
+            ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
+            ->when($to, fn ($query) => $query->where('invoices.date', '<=', $to))
+            ->groupBy('p.traffic_source_id')
+            ->select(
+                'p.traffic_source_id',
+                DB::raw('SUM(invoices.net_amount * p.share) as amount'),
+                DB::raw('SUM(p.share) as invoices'),
+            )
+            ->get()
+            ->keyBy('traffic_source_id');
+    }
+
+    /**
+     * Registrations a channel or campaign may claim: the same causality the revenue figure obeys. A
+     * touch cannot have acquired a customer who was already registered when it happened, which is why
+     * newsletter once appeared to acquire a hundred customers it had only mailed.
+     */
+    /**
+     * The leading indicator: value of orders already placed but not yet invoiced. Invoicing runs a
+     * day or two behind, and a mailshot sent this morning has to show something today - this is that
+     * something, and it drains into the invoiced figure as invoicing catches up. It can shrink when
+     * an order is cancelled, which is why it is labelled pending and never added into revenue.
+     */
+    private function pendingRevenueBySource(Shop $shop, ?Carbon $from, ?Carbon $to, int $window)
+    {
+        return DB::table('orders')
+            ->join('model_has_traffic_sources as p', function ($join) use ($window) {
+                $join->on('p.model_id', '=', 'orders.customer_id')
+                    ->where('p.model_type', '=', 'Customer');
+
+                $this->constrainToTouchWindow($join, 'orders.date', $window);
+            })
+            ->where('orders.shop_id', $shop->id)
+            ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
+            ->whereNull('orders.deleted_at')
+            ->tap(fn ($query) => $this->whereNotYetInvoiced($query))
+            ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
+            ->when($to, fn ($query) => $query->where('orders.date', '<=', $to))
+            ->groupBy('p.traffic_source_id')
+            ->select('p.traffic_source_id', DB::raw('SUM(orders.net_amount * p.share) as amount'))
+            ->pluck('amount', 'traffic_source_id');
+    }
+
+    /**
+     * "Not yet invoiced" is decided by looking for the invoice
+     *
+     * Mirrors the revenue condition (`in_process = false`) so every order lands in exactly one of the
+     * two figures.
+     *
+     * @param \Illuminate\Database\Query\Builder $query
+     */
+    private function whereNotYetInvoiced($query): void
+    {
+        $query->whereNotExists(fn ($invoice) => $invoice
+            ->select(DB::raw(1))
+            ->from('invoices')
+            ->whereColumn('invoices.order_id', 'orders.id')
+            ->where('invoices.in_process', false));
+    }
+
+    private function registrationsBy(string $pivotColumn, Shop $shop, ?Carbon $from, ?Carbon $to, int $window)
+    {
+        return DB::table('customers')
+            ->join('model_has_traffic_sources as p', function ($join) use ($window) {
+                $join->on('p.model_id', '=', 'customers.id')
+                    ->where('p.model_type', '=', 'Customer');
+
+                $this->constrainToTouchWindow($join, 'customers.created_at', $window);
+            })
+            ->where('customers.shop_id', $shop->id)
+            ->whereNotNull('p.'.$pivotColumn)
+            ->when($from, fn ($query) => $query->where('customers.created_at', '>=', $from))
+            ->when($to, fn ($query) => $query->where('customers.created_at', '<=', $to))
+            ->groupBy('p.'.$pivotColumn)
+            ->select('p.'.$pivotColumn, DB::raw('SUM(p.share) as registrations'))
+            ->pluck('registrations', $pivotColumn);
+    }
+
+    /**
+     * Everything that happened in the shop this period, marketing or not.
+     *
+     * @return array{registrations: float, orders: float, revenue: float}
+     */
+    /**
+     * The baseline exists so the attributed figure can be read as a share of it, which only works if
+     * both cover the same stretch of time. Attribution has only been recording since its first touch,
+     * so a 30-day baseline against half a day of tracking reports "marketing achieved 0%" when the
+     * true statement is "we were not recording for most of that window".
+     */
+    private function clipToAttributionStart(?Carbon $from): ?Carbon
+    {
+        $startedAt = GetAttributionStartedAt::run();
+
+        if (!$startedAt) {
+            return $from;
+        }
+
+        return $from && $from->isAfter($startedAt) ? $from : $startedAt;
+    }
+
+    private function baseline(Shop $shop, ?Carbon $from, ?Carbon $to): array
+    {
+        return [
+            'registrations' => (float) DB::table('customers')
+                ->where('shop_id', $shop->id)
+                ->when($from, fn ($query) => $query->where('created_at', '>=', $from))
+                ->when($to, fn ($query) => $query->where('created_at', '<=', $to))
+                ->count(),
+
+            'orders'        => (float) DB::table('orders')
+                ->where('shop_id', $shop->id)
+                ->whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
+                ->whereNull('deleted_at')
+                ->when($from, fn ($query) => $query->where('date', '>=', $from))
+                ->when($to, fn ($query) => $query->where('date', '<=', $to))
+                ->count(),
+
+            'revenue'       => round((float) DB::table('invoices')
+                ->where('shop_id', $shop->id)
+                ->where('in_process', false)
+                ->when($from, fn ($query) => $query->where('date', '>=', $from))
+                ->when($to, fn ($query) => $query->where('date', '<=', $to))
+                ->sum('net_amount'), 2),
+        ];
+    }
+
+    /**
+     * Orders the channel may claim, so a visit count can be read against what it produced.
+     */
+    private function ordersBySource(Shop $shop, ?Carbon $from, ?Carbon $to, int $window)
+    {
+        return DB::table('orders')
+            ->join('model_has_traffic_sources as p', function ($join) use ($window) {
+                $join->on('p.model_id', '=', 'orders.customer_id')
+                    ->where('p.model_type', '=', 'Customer');
+
+                $this->constrainToTouchWindow($join, 'orders.date', $window);
+            })
+            ->where('orders.shop_id', $shop->id)
+            ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
+            ->whereNull('orders.deleted_at')
+            ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
+            ->when($to, fn ($query) => $query->where('orders.date', '<=', $to))
+            ->groupBy('p.traffic_source_id')
+            ->select('p.traffic_source_id', DB::raw('SUM(p.share) as orders'))
+            ->pluck('orders', 'traffic_source_id');
+    }
+
+    /**
+     * People the channel actually sent us, converted or not. Attribution only ever sees the ones who
+     * log in or register, so without this a channel we pay for that sends visitors who all leave is
+     * simply absent from the report - which is precisely the case worth seeing.
+     */
+    private function visitsBySource(Shop $shop, ?Carbon $from, ?Carbon $to)
+    {
+        return DB::table('traffic_source_visits')
+            ->where('shop_id', $shop->id)
+            ->when($from, fn ($query) => $query->where('date', '>=', $from->toDateString()))
+            ->when($to, fn ($query) => $query->where('date', '<=', $to->toDateString()))
+            ->groupBy('traffic_source_id')
+            ->select('traffic_source_id', DB::raw('SUM(visits) as visits'))
+            ->pluck('visits', 'traffic_source_id');
+    }
+
+    /**
+     * What was spent in the period, split as finely as it is recorded, so a caller can add it up by
+     * channel or by campaign without asking the table twice.
+     *
+     * @return Collection<int, object>
+     */
+    private function costsBySourceAndCampaign(Shop $shop, ?Carbon $from, ?Carbon $to): Collection
+    {
+        return DB::table('traffic_source_costs')
+            ->where('shop_id', $shop->id)
+            ->when($from, fn ($query) => $query->where('date', '>=', $from->toDateString()))
+            ->when($to, fn ($query) => $query->where('date', '<=', $to->toDateString()))
+            ->groupBy('traffic_source_id', 'traffic_source_campaign_id')
+            ->select('traffic_source_id', 'traffic_source_campaign_id', DB::raw('SUM(amount) as spend'))
+            ->get();
+    }
+
+    /**
+     * Attributed revenue per campaign, carrying the channel each campaign belongs to so the campaign
+     * table and the referrer list can both be read off it.
+     *
+     * @return Collection<int, object>
+     */
+    private function revenueByCampaign(Shop $shop, ?Carbon $from, ?Carbon $to, int $window): Collection
+    {
+        return DB::table('invoices')
+            ->join('model_has_traffic_sources as p', function ($join) use ($window) {
+                $join->on('p.model_id', '=', 'invoices.customer_id')
+                    ->where('p.model_type', '=', 'Customer');
+
+                $this->constrainToAttributionWindow($join, $window);
+            })
+            ->whereNotNull('p.traffic_source_campaign_id')
+            ->where('invoices.shop_id', $shop->id)
+            ->where('invoices.in_process', false)
+            ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
+            ->when($to, fn ($query) => $query->where('invoices.date', '<=', $to))
+            ->groupBy('p.traffic_source_id', 'p.traffic_source_campaign_id')
+            ->select(
+                'p.traffic_source_id',
+                'p.traffic_source_campaign_id as campaign_id',
+                DB::raw('SUM(invoices.net_amount * p.share) as revenue'),
+            )
+            ->get();
+    }
+
+    /**
+     * @return array<int, array{date: string, amount: float}>
+     */
+    /**
+     * The campaigns that actually moved money or brought someone in during the period, richest first. Campaign refs come from
+     * ad platforms, so a shop can accumulate hundreds; the dashboard shows the handful worth looking
+     * at and the campaign listing carries the rest.
+     *
+     * @param Collection<int, object>  $campaignRevenue
+     * @param Collection<int, float>   $registrations
+     * @param Collection<int, object>  $costs
+     *
+     * @return array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>
+     */
+    private function campaigns(Collection $campaignRevenue, Collection $registrations, Collection $costs, int $limit = 8): array
+    {
+        $revenue = $campaignRevenue
+            ->groupBy('campaign_id')
+            ->map(fn ($rows) => (float) $rows->sum('revenue'));
+
+        $spend = $costs
+            ->whereNotNull('traffic_source_campaign_id')
+            ->groupBy('traffic_source_campaign_id')
+            ->map(fn ($rows) => (float) $rows->sum('spend'));
+
+        $campaignIds = $revenue->keys()->merge($spend->keys())->merge($registrations->keys())->unique();
+
+        if ($campaignIds->isEmpty()) {
+            return [];
+        }
+
+        return DB::table('traffic_source_campaigns as c')
+            ->join('traffic_sources as ts', 'ts.id', '=', 'c.traffic_source_id')
+            ->whereIn('c.id', $campaignIds)
+            ->select('c.id', 'c.name', 'ts.name as channel')
+            ->get()
+            ->map(fn ($campaign) => [
+                'name'          => $campaign->name,
+                'channel'       => $campaign->channel,
+                'spend'         => round((float) ($spend[$campaign->id] ?? 0), 2),
+                'revenue'       => round((float) ($revenue[$campaign->id] ?? 0), 2),
+                'registrations' => round((float) ($registrations[$campaign->id] ?? 0), 2),
+            ])
+            ->map(fn (array $campaign) => $campaign + [
+                'roas' => $campaign['spend'] > 0 ? round($campaign['revenue'] / $campaign['spend'], 2) : null,
+            ])
+            ->sortByDesc(fn (array $campaign) => max($campaign['spend'], $campaign['revenue']))
+            ->take($limit)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * The sites actually sending people here, richest first. Each host is a campaign of the referral
+     * or the organic search channel: trade directories, blogs, AI assistants, search engines. Before
+     * those channels existed they were all indistinguishable from someone typing the address in.
+     *
+     * @param Collection<int, object> $campaignRevenue
+     * @param Collection<int, float>  $registrations
+     *
+     * @return array<int, array{host: string, kind: string, visitors: float, registrations: float, revenue: float}>
+     */
+    private function referrers(Shop $shop, Collection $campaignRevenue, Collection $registrations, int $limit = 10): array
+    {
+        /* Search engines and AI assistants belong here as much as directories do: knowing DuckDuckGo sends people is
+           what tells you whether it is worth advertising on. They keep their own channel for the
+           totals, but this list is about which individual sites send us anybody. */
+        $kindBySource = DB::table('traffic_sources')
+            ->where('shop_id', $shop->id)
+            ->whereIn('type', TrafficSourcesTypeEnum::hostReferencedValues())
+            ->pluck('type', 'id');
+
+        if ($kindBySource->isEmpty()) {
+            return [];
+        }
+
+        $referralSources = $kindBySource->keys();
+
+        $revenue = $campaignRevenue
+            ->whereIn('traffic_source_id', $referralSources)
+            ->groupBy('campaign_id')
+            ->map(fn ($rows) => (float) $rows->sum('revenue'));
+
+        /* Counted as well as valued: a site that has only just started sending people is the whole
+           point of this block, and it would be invisible if it had to have earned money first. */
+        $touches = DB::table('model_has_traffic_sources')
+            ->where('model_type', 'Customer')
+            ->whereIn('traffic_source_id', $referralSources)
+            ->whereNotNull('traffic_source_campaign_id')
+            ->groupBy('traffic_source_campaign_id')
+            ->select('traffic_source_campaign_id', DB::raw('SUM(share) as touches'))
+            ->pluck('touches', 'traffic_source_campaign_id');
+
+        return DB::table('traffic_source_campaigns')
+            ->whereIn('traffic_source_id', $referralSources)
+            ->select('id', 'name', 'traffic_source_id')
+            ->get()
+            ->map(fn ($campaign) => [
+                'host'          => $campaign->name,
+                'kind'          => TrafficSourcesTypeEnum::referrerKind($kindBySource[$campaign->traffic_source_id] ?? ''),
+                'visitors'      => round((float) ($touches[$campaign->id] ?? 0), 2),
+                'registrations' => round((float) ($registrations[$campaign->id] ?? 0), 2),
+                'revenue'       => round((float) ($revenue[$campaign->id] ?? 0), 2),
+            ])
+            ->filter(fn (array $referrer) => $referrer['registrations'] > 0 || $referrer['revenue'] > 0
+                || $referrer['visitors'] > 0)
+            ->sortByDesc(fn (array $referrer) => [$referrer['revenue'], $referrer['visitors']])
+            ->take($limit)
+            ->values()
+            ->all();
+    }
+
+    private function spendByDay(Shop $shop, ?Carbon $from, ?Carbon $to): array
+    {
+        /* The sparkline is a shape, not a ledger: it always shows the last run of days in the period,
+           so the tile reads the same whichever period is selected, and never grows unbounded on all time. */
+        $end           = $to ?? now();
+        $sparklineFrom = $from && $from->isAfter($end->copy()->subDays(30))
+            ? $from
+            : $end->copy()->subDays(30)->startOfDay();
+
+        return DB::table('traffic_source_costs')
+            ->where('shop_id', $shop->id)
+            ->where('date', '>=', $sparklineFrom->toDateString())
+            ->when($to, fn ($query) => $query->where('date', '<=', $to->toDateString()))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->select('date', DB::raw('SUM(amount) as amount'))
+            ->get()
+            ->map(fn ($row) => [
+                'date'   => Carbon::parse($row->date)->toDateString(),
+                'amount' => round((float) $row->amount, 2),
+            ])
+            ->all();
+    }
+}

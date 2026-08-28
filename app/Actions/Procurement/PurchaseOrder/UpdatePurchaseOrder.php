@@ -8,21 +8,28 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePurchaseOrder extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
+    use HasPurchaseOrderHydrators;
 
     private PurchaseOrder $purchaseOrder;
 
@@ -46,16 +53,13 @@ class UpdatePurchaseOrder extends OrgAction
             }
         }
 
-        return $this->update($purchaseOrder, $modelData, ['data']);
-    }
+        $purchaseOrder = $this->update($purchaseOrder, $modelData, ['data']);
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
+        if ($purchaseOrder->wasChanged(['state', 'delivery_state'])) {
+            $this->purchaseOrderHydrate($purchaseOrder);
         }
 
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        return $purchaseOrder;
     }
 
     public function rules(): array
@@ -76,6 +80,7 @@ class UpdatePurchaseOrder extends OrgAction
             'terms_and_conditions' => ['sometimes', 'nullable', 'string'],
             'estimated_production_date' => ['sometimes', 'nullable', 'date'],
             'estimated_receiving_date'  => ['sometimes', 'nullable', 'date'],
+            'estimated_delivery_days'   => ['sometimes', 'nullable', 'integer', 'min:0'],
         ];
 
         if ($this->strict) {
@@ -98,6 +103,15 @@ class UpdatePurchaseOrder extends OrgAction
 
 
         if (!$this->strict) {
+            $rules['state']          = ['sometimes', Rule::enum(PurchaseOrderStateEnum::class)];
+            $rules['delivery_state'] = ['sometimes', Rule::enum(PurchaseOrderDeliveryStateEnum::class)];
+            $rules['cost_items']     = ['sometimes', 'numeric'];
+            $rules['cost_extra']     = ['sometimes', 'numeric'];
+            $rules['cost_shipping']  = ['sometimes', 'numeric'];
+            $rules['cost_duties']    = ['sometimes', 'numeric'];
+            $rules['cost_tax']       = ['sometimes', 'numeric'];
+            $rules['cost_total']     = ['sometimes', 'numeric'];
+
             $rules = $this->noStrictUpdateRules($rules);
             $rules = $this->noStrictProcurementOrderRules($rules);
             $rules = $this->noStrictPurchaseOrderDatesRules($rules);

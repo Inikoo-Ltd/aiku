@@ -108,6 +108,48 @@ class EditClockingMachine extends OrgAction
             ];
         }
 
+        if ($clockingMachine->type === ClockingMachineTypeEnum::PIN->value) {
+            $blueprint[] = [
+                'title'  => __('PIN Configuration'),
+                'label'  => __('PIN Settings'),
+                'fields' => [
+                    'config.pin.enable' => [
+                        'type'  => 'toggle',
+                        'label' => __('Enable PIN'),
+                        'value' => (bool) data_get($clockingMachine->config, 'pin.enable', false),
+                    ],
+                ],
+            ];
+        }
+
+        if ($clockingMachine->type === ClockingMachineTypeEnum::BARCODE_SCANNER->value) {
+            $blueprint[] = [
+                'title'  => __('Barcode Scanner Configuration'),
+                'label'  => __('Barcode Scanner Settings'),
+                'fields' => [
+                    'config.barcode.enable' => [
+                        'type'  => 'toggle',
+                        'label' => __('Enable Barcode Scanner'),
+                        'value' => (bool) data_get($clockingMachine->config, 'barcode.enable', false),
+                    ],
+                ],
+            ];
+        }
+
+        if ($clockingMachine->type === ClockingMachineTypeEnum::CAMERA_QR->value) {
+            $blueprint[] = [
+                'title'  => __('Camera QR Configuration'),
+                'label'  => __('Camera QR Settings'),
+                'fields' => [
+                    'config.camera_qr.enable' => [
+                        'type'  => 'toggle',
+                        'label' => __('Enable Camera QR Scanner'),
+                        'value' => (bool) data_get($clockingMachine->config, 'camera_qr.enable', false),
+                    ],
+                ],
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [

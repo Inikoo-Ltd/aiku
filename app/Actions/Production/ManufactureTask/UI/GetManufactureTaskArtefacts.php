@@ -8,8 +8,8 @@
 
 namespace App\Actions\Production\ManufactureTask\UI;
 
-use App\Http\Resources\Production\ArtefactsResource;
 use App\Models\Production\ManufactureTask;
+use Illuminate\Database\Eloquent\Collection;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -17,14 +17,8 @@ class GetManufactureTaskArtefacts
 {
     use AsObject;
 
-    public function handle(ManufactureTask $manufactureTask, ActionRequest $request): array
+    public function handle(ManufactureTask $manufactureTask, ActionRequest $request): Collection
     {
-        // Fetch the artefacts related to the manufacture task from the pivot table
-        $artefacts = $manufactureTask->artefacts()->get();
-
-
-        $artefactData = ArtefactsResource::collection($artefacts)->toArray($request);
-
-        return $artefactData;
+        return $manufactureTask->artefacts()->get();
     }
 }

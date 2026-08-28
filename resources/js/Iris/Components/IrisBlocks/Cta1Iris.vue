@@ -100,7 +100,7 @@ const imageBoxStyle = computed(() => {
 						<div v-if="fieldValue.button?.use_button ?? true" class="flex justify-center mt-6">
 							<LinkIris :href="fieldValue?.button?.link?.href"
 								:canonical_url="fieldValue?.button?.link?.canonical_url"
-								:target="fieldValue?.button?.link?.taget" typeof="button"
+								:target="fieldValue?.button?.link?.target" typeof="button"
 								:type="fieldValue?.button?.link?.type">
 								<template #default="{ isLoading } = { isLoading: false }">
 									<Button

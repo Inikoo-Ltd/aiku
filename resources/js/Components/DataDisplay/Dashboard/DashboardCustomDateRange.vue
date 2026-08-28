@@ -15,9 +15,14 @@ library.add(faChevronDown, faCheckSquare, faSquare, faCalendarAlt);
 const props = defineProps<{
     intervals: any;
     currentTab?: string;
+    reloadOnly?: string[];
 }>();
 
 const reloadOptions = () => {
+    if (props.reloadOnly?.length) {
+        return { only: props.reloadOnly, preserveState: true };
+    }
+
     return props.currentTab === 'insights'
         ? { only: ['dashboard', 'offers'], preserveState: true }
         : { only: ['dashboard', 'top_customers'] };

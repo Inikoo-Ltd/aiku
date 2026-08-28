@@ -12,11 +12,11 @@ import { Product } from "@/types/product"
 import Icon from "@/Components/Icon.vue"
 import { remove as loRemove, cloneDeep} from "lodash-es"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faToolbox, faTools } from "@fal"
+import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faToolbox, faTools, faDownload } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { onMounted, onUnmounted, ref, inject, shallowRef  } from "vue"
+import { computed, onMounted, onUnmounted, ref, inject, shallowRef, watch  } from "vue"
 import { FontAwesomeLayers, FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Invoice } from "@/types/invoice"
@@ -34,6 +34,10 @@ import axios from "axios"
 import { ulid } from "ulid"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { notify } from "@kyvg/vue3-notification"
+import Popover from "primevue/popover"
+import Dialog from "primevue/dialog"
+import Checkbox from "primevue/checkbox"
+import TableRowSelectCheckbox from "@/Components/Table/TableRowSelectCheckbox.vue"
 
 
 library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faThumbtack)
@@ -49,17 +53,55 @@ const props = defineProps<{
         detach: routeType
     },
     isCheckboxProducts?: boolean
-    selectedProductsId?: {}
+    selectedProductsId?: Set<number | string>
     variantSlugs?: Record<string, string>;
     mismatch_trade_unit_with_master?: boolean
     hide_sku_in_name_column?: boolean
+    productsExport?: {
+        fields: { key: string; label: string }[]
+        download_route: { xlsx: routeType; csv: routeType }
+    }
 }>()
 
-const emits = defineEmits<{
-    (e: "selectedRow", value: {}): void
-}>()
+const exportPanel = ref()
+const exportFields = computed(() => props.productsExport?.fields ?? [])
+const selectedExportColumns = ref<string[]>([])
 
-const editingValues = shallowRef<Record<number, { price: number; rrp: number, rrp_per_unit: number, unit : string }>>({})
+const allExportColumnsSelected = computed({
+    get: () => !!exportFields.value.length && selectedExportColumns.value.length === exportFields.value.length,
+    set: (value: boolean) => {
+        selectedExportColumns.value = value ? exportFields.value.map(field => field.key) : []
+    }
+})
+
+watch(exportFields, (fields) => {
+    selectedExportColumns.value = fields.map(field => field.key)
+}, { immediate: true })
+
+const exportUrl = (type: 'csv' | 'xlsx') => {
+    const exportRoute = props.productsExport?.download_route?.[type]
+    if (!exportRoute?.name) return ''
+
+    const base = route(exportRoute.name, exportRoute.parameters) as unknown as string
+
+    const query = new URLSearchParams()
+    new URLSearchParams(window.location.search).forEach((value, key) => {
+        if (key.includes('filter[') || key.includes('elements[')) {
+            query.append(key, value)
+        }
+    })
+    selectedExportColumns.value.forEach(column => query.append('columns[]', column))
+
+    const queryString = query.toString()
+    return queryString ? base + (base.includes('?') ? '&' : '?') + queryString : base
+}
+
+const onExport = (type: 'csv' | 'xlsx') => {
+    if (!selectedExportColumns.value.length) return
+    window.open(exportUrl(type), '_blank')
+}
+
+const editingValues = shallowRef<Record<number, { price: number; rrp: number, rrp_per_unit: number, unit : string, name: string }>>({})
 const editingBackup = ref<Record<number, any>>({})
 const onEditOpen = ref<number[]>([])
 const loadingSave = ref([])
@@ -76,7 +118,8 @@ function onEdit(data) {
         price: item.price,
         rrp_per_unit: item.rrp_per_unit,
         rrp: item.rrp,
-        unit: item.unit
+        unit: item.unit,
+        name: item.name
     }
 
     if (!onEditOpen.value.includes(item.id)) {
@@ -97,7 +140,8 @@ function onSave(item) {
             price: updated.price,
             rrp: updated.rrp,
             rrp_per_unit: updated.rrp_per_unit,
-            unit: updated.unit
+            unit: updated.unit,
+            name: updated.name
         },
         {
             preserveScroll: true,
@@ -126,6 +170,46 @@ function onSave(item) {
     )
 }
 
+const descriptionModalProduct = ref<any>(null)
+const descriptionDraft = ref('')
+const isSavingDescription = ref(false)
+
+function openDescriptionModal(item) {
+    descriptionModalProduct.value = item
+    descriptionDraft.value = item.description ?? ''
+}
+
+function saveDescription() {
+    const item = descriptionModalProduct.value
+    if (!item) return
+
+    router.patch(
+        route("grp.models.product.update", { product: item.id }),
+        { description: descriptionDraft.value },
+        {
+            preserveScroll: true,
+            onStart: () => isSavingDescription.value = true,
+            onSuccess: () => {
+                item.description = descriptionDraft.value
+                descriptionModalProduct.value = null
+                notify({
+                    title: trans("Success!"),
+                    text: trans("Description updated"),
+                    type: "success"
+                })
+            },
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error?.description || trans("Failed to update description"),
+                    type: "error"
+                })
+            },
+            onFinish: () => isSavingDescription.value = false
+        }
+    )
+}
+
 function onCancel(item) {
     if (editingBackup.value[item.id]) {
         Object.assign(item, editingBackup.value[item.id])
@@ -140,19 +224,20 @@ function productHref(product: Product) {
     return productRoute(product) + bucketQuery()
 }
 
+const routeParams = route().params as unknown as RouteParams
 function productRoute(product: Product) {
     if (!product.slug) {
         return "ss"
     }
 
-    // console.log(route().current())
-    switch (route().current()) {
+    // console.log(routeCurrent)
+    switch (routeCurrent) {
         case 'grp.org.shops.show.catalogue.products.not_online_products.index': 
             return route(
                 'grp.org.shops.show.catalogue.products.not_online_products.show',
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ]
             )
@@ -160,8 +245,8 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.independent_products.current.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ]
             )
@@ -169,8 +254,8 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.independent_products.in_process.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ]
             )
@@ -178,8 +263,8 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.independent_products.discontinued.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ]
             )
@@ -187,8 +272,8 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.independent_products.all.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ]
             )
@@ -196,56 +281,72 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.current_products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
+                    product.slug
+                ])
+        case "grp.org.shops.show.catalogue.products.mismatched_families.index":
+            return route(
+                "grp.org.shops.show.catalogue.products.mismatched_families.show",
+                [
+                    routeParams.organisation,
+                    routeParams.shop,
+                    product.slug
+                ])
+        case "grp.org.shops.show.catalogue.products.no_image_product.index":
+            return route(
+                "grp.org.shops.show.catalogue.products.no_image_product.show",
+                [
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ])
         case "grp.org.shops.show.catalogue.products.orphan_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.orphan_products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ])
         case "grp.org.shops.show.catalogue.products.out_of_stock_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.out_of_stock_products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ])
         case "grp.org.shops.show.catalogue.products.rrp_violation_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.rrp_violation_products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ])
         case "grp.org.shops.show.catalogue.products.missing_description_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.missing_description_products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ])
         case "grp.org.shops.show.catalogue.products.in_process_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.in_process_products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
 
                     product.slug])
         case "grp.org.shops.show.catalogue.products.discontinued_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.discontinued_products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug])
         case "grp.trade_units.units.show":
             return route(
@@ -254,14 +355,15 @@ function productRoute(product: Product) {
                     product.organisation_slug,
                     product.shop_slug,
                     product.slug])
+        case "grp.org.shops.show.catalogue.products.sales":
         case "grp.org.shops.show.catalogue.products.all_products.index":
         case "grp.org.shops.show.catalogue.collections.show":
         case "grp.org.shops.show.catalogue.dashboard":
             return route(
                 "grp.org.shops.show.catalogue.products.all_products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug])
 
 
@@ -269,62 +371,67 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.fulfilments.show.catalogue.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).fulfilment,
+                    routeParams.organisation,
+                    routeParams.fulfilment,
                     product.slug])
         case "grp.org.shops.show.catalogue.departments.show":
+        case "grp.org.shops.show.catalogue.departments.show.products.sales":
         case "grp.org.shops.show.catalogue.departments.show.products.index":
             return route(
                 "grp.org.shops.show.catalogue.departments.show.products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).department,
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.department,
 
 
                     product.slug])
+        case "grp.org.shops.show.catalogue.families.show.products.sales":
         case "grp.org.shops.show.catalogue.families.show.products.index":
             return route(
                 "grp.org.shops.show.catalogue.families.show.products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).family,
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.family,
 
                     product.slug])
+        case "grp.org.shops.show.catalogue.departments.show.families.show.products.sales":
         case "grp.org.shops.show.catalogue.departments.show.families.show.products.index":
             return route(
                 "grp.org.shops.show.catalogue.departments.show.families.show.products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).department,
-                    (route().params as RouteParams).family,
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.department,
+                    routeParams.family,
                     product.slug
                 ])
+        case "grp.org.shops.show.catalogue.sub_departments.show.products.sales":
         case "grp.org.shops.show.catalogue.sub_departments.show.products.index":
             return route(
                 "grp.org.shops.show.catalogue.sub_departments.show.products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).subDepartment,
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.subDepartment,
                     product.slug
                 ])
+        case "grp.org.shops.show.catalogue.sub_departments.show.families.show.products.sales":
         case "grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index":
             return route(
                 "grp.org.shops.show.catalogue.sub_departments.show.families.show.products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).subDepartment,
-                    (route().params as RouteParams).family,
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.subDepartment,
+                    routeParams.family,
                     product.slug
                 ])
         case "grp.masters.master_shops.show.master_collections.show":
             return route(
                 "grp.masters.master_shops.show.master_products.show",
-                [(route().params as RouteParams).masterShop, product.slug])
+                [routeParams.masterShop, product.slug])
 
         case "retina.dropshipping.products.index":
             return route(
@@ -342,8 +449,8 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ]
             )
@@ -361,8 +468,8 @@ const productHasPendingReminderRoute = (product: Product) => {
         return route(
             "grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.show",
             {
-                organisation: (route().params as RouteParams).organisation,
-                shop: (route().params as RouteParams).shop,
+                organisation: routeParams.organisation,
+                shop: routeParams.shop,
                 product: product.slug,
                 tab: 'reminders'
             }
@@ -379,6 +486,17 @@ function masterProductRoute(product: {}) {
         [product.master_product_id])
 }
 
+function masterFamilyRoute(product: {}) {
+    if (!product.master_family_id) {
+        return ""
+    }
+
+    return route(
+        'grp.majordomo.redirect_master_product_category',
+        [product.master_family_id]
+    )
+}
+
 function organisationRoute(invoice: Invoice) {
     if (!invoice.organisation_slug) {
         return ""
@@ -389,6 +507,7 @@ function organisationRoute(invoice: Invoice) {
         [invoice.organisation_slug])
 }
 
+const routeCurrent = route().current()
 function shopRoute(invoice: Invoice) {
     if (!invoice.organisation_slug || !invoice.shop_slug) {
         //todo fix this
@@ -396,7 +515,7 @@ function shopRoute(invoice: Invoice) {
         //     "grp.majordomo.redirect_asset",
         //     [invoice.asset_id])
     }
-    if (route().current() == "grp.trade_units.units.show") {
+    if (routeCurrent == "grp.trade_units.units.show") {
 
         return route(
             "grp.org.shops.show.catalogue.products.all_products.index",
@@ -473,15 +592,13 @@ function getClassColorIcon(varSlug: string) {
 function variantRoute(product: MasterProduct): string {
     if (!product.variant_slug) return "#"
 
-    const params = route().params as RouteParams
-
     return route(
         "grp.org.shops.show.catalogue.families.show.variants.show",
         {
-            organisation: params.organisation,
-            shop: params.shop,
-            subDepartment: params.subDepartment,
-            family: params.family ?? product.family_slug,
+            organisation: routeParams.organisation,
+            shop: routeParams.shop,
+            subDepartment: routeParams.subDepartment,
+            family: routeParams.family ?? product.family_slug,
             variant: product.variant_slug,
         }
     )
@@ -589,10 +706,50 @@ const repairTradeUnitFromChildren = async (product) => {
 
 }
 
+const familyRoute = (item) => {
+    return route(
+        'grp.org.shops.show.catalogue.families.show',
+        [
+            item.organisation_slug,
+            item.shop_slug,
+            item.family_slug
+        ]
+    )
+}
+
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts" key="product-table" ref="_table">
+
+        <template v-if="exportFields.length" #add-on-button>
+            <Button :icon="faDownload" :label="trans('Export')" type="tertiary" size="xs"
+                @click="exportPanel.toggle($event)" />
+
+            <Popover ref="exportPanel">
+                <div class="w-72">
+                    <div class="flex items-center gap-2 pb-2 mb-2 border-b border-gray-200">
+                        <Button :icon="faDownload" label="XLSX" type="tertiary"
+                            :disabled="!selectedExportColumns.length" @click="onExport('xlsx')" />
+                        <Button :icon="faDownload" label="CSV" type="tertiary"
+                            :disabled="!selectedExportColumns.length" @click="onExport('csv')" />
+                    </div>
+
+                    <label class="flex items-center gap-2 px-1 py-1.5 font-medium cursor-pointer select-none">
+                        <Checkbox v-model="allExportColumnsSelected" :binary="true" />
+                        <span>{{ trans("Select all") }}</span>
+                    </label>
+
+                    <div class="max-h-72 overflow-y-auto">
+                        <label v-for="field in exportFields" :key="field.key"
+                            class="flex items-center gap-2 px-1 py-1.5 cursor-pointer select-none hover:bg-gray-50 rounded">
+                            <Checkbox v-model="selectedExportColumns" :value="field.key" />
+                            <span>{{ field.label }}</span>
+                        </label>
+                    </div>
+                </div>
+            </Popover>
+        </template>
 
         <template #cell(image_thumbnail)="{ item: product }">
             <div class="flex justify-center">
@@ -602,7 +759,7 @@ const repairTradeUnitFromChildren = async (product) => {
 
         <template #cell(organisation_code)="{ item: refund }">
             <Link v-tooltip='refund["organisation_name"]' :href="organisationRoute(refund)" class="secondaryLink">
-            {{ refund["organisation_code"] }}
+                {{ refund["organisation_code"] }}
             </Link>
         </template>
 
@@ -626,7 +783,12 @@ const repairTradeUnitFromChildren = async (product) => {
                     />
                 </div>
 
-                <div class="xtruncate">
+                <PureInput
+                    v-if="editable_table && onEditOpen.includes(product.id)"
+                    :key="product.id"
+                    v-model="editingValues[product.id].name"
+                />
+                <div v-else class="xtruncate">
                     <!-- <ProductUnitLabel
                         v-if="product?.units"
                         :units="product?.units"
@@ -641,6 +803,15 @@ const repairTradeUnitFromChildren = async (product) => {
         <template #cell(unit)="{ item: product }">
                 <PureInput v-if="onEditOpen.includes(product.id)" :key="product.id" v-model="editingValues[product.id].unit"></PureInput>
                 <span v-else>{{ product.unit }}</span>
+        </template>
+
+        <template #cell(description)="{ item: product }">
+            <div class="flex items-center gap-2 max-w-xs">
+                <span class="truncate text-gray-500" v-tooltip="product.description">{{ product.description }}</span>
+                <button v-if="editable_table" class="shrink-0" @click="() => openDescriptionModal(product)" v-tooltip="trans('Edit description')">
+                    <FontAwesomeIcon icon="fal fa-pencil" class="text-gray-500 hover:text-gray-700" aria-hidden="true" />
+                </button>
+            </div>
         </template>
 
         <template #cell(product_org_stocks)="{ item: product }">
@@ -820,7 +991,7 @@ const repairTradeUnitFromChildren = async (product) => {
         </template>
 
         <template #cell(sales_grp_currency_external)="{ item: product }">
-            {{ locale.currencyFormat(product.currency_code, product.sales_grp_currency_external) }}
+            {{ locale.currencyFormat(product.grp_currency_code ?? product.currency_code, product.sales_grp_currency_external) }}
         </template>
 
         <template #cell(sales_grp_currency_external_delta)="{ item }">
@@ -1026,18 +1197,11 @@ const repairTradeUnitFromChildren = async (product) => {
         </template>
 
         <template #checkbox="data">
-            <FontAwesomeIcon
-                v-if="selectedProductsId?.[data.data.id]"
-                @click="() => emits('selectedRow', { [data.data.id]: false })"
-                icon='fas fa-check-square'
-                class='text-green-500 p-2 cursor-pointer text-lg mx-auto block'
-                fixed-width aria-hidden='true' />
-            <FontAwesomeIcon
-                v-if="!selectedProductsId?.[data.data.id]"
-                @click="() => emits('selectedRow', { [data.data.id]: true })"
-                icon='fal fa-square'
-                class='text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block'
-                fixed-width aria-hidden='true' />
+            <TableRowSelectCheckbox
+                v-if="selectedProductsId"
+                :rowKey="data.data.id"
+                :selection="selectedProductsId"
+            />
         </template>
 
 
@@ -1045,5 +1209,36 @@ const repairTradeUnitFromChildren = async (product) => {
             <div></div>
         </template>
 
+        <template #cell(family_code)="{ item }">
+            <Link :href="familyRoute(item)" class="secondaryLink">
+                {{ item.family_code }}
+            </Link>
+        </template>
+
+        <template #cell(master_family_code)="{ item }">
+            <Link :href="masterFamilyRoute(item)" class="secondaryLink">
+                {{ item.master_family_code }}
+            </Link>
+        </template>
+
     </Table>
+
+    <Dialog
+        :header="descriptionModalProduct ? `${descriptionModalProduct.code} — ${trans('Description')}` : ''"
+        :visible="!!descriptionModalProduct"
+        @update:visible="(val) => { if (!val) descriptionModalProduct = null }"
+        modal
+        closable
+        :style="{ width: '640px' }"
+    >
+        <textarea
+            v-model="descriptionDraft"
+            rows="10"
+            class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-indigo-500"
+        />
+        <div class="flex justify-end gap-2 mt-3">
+            <Button type="tertiary" :label="trans('Cancel')" @click="descriptionModalProduct = null" />
+            <Button type="save" :loading="isSavingDescription" @click="saveDescription" />
+        </div>
+    </Dialog>
 </template>

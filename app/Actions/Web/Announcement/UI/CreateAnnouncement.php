@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Announcement\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Announcement\AnnouncementPositionEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Website;
@@ -38,12 +39,26 @@ class CreateAnnouncement extends OrgAction
         $fields[] = [
             'title'  => '',
             'fields' => [
-                'name' => [
+                'name'     => [
                     'type'        => 'input',
                     'label'       => __('Name'),
                     'placeholder' => __('Name for new announcement'),
                     'required'    => true,
                     'value'       => '',
+                ],
+                'position' => [
+                    'type'     => 'radio',
+                    'label'    => __('Position'),
+                    'required' => true,
+                    'columns'  => 3,
+                    'value'    => AnnouncementPositionEnum::TOP_BAR->value,
+                    'options'  => collect(AnnouncementPositionEnum::labels())
+                        ->map(fn (string $label, string $value) => [
+                            'label' => $label,
+                            'value' => $value,
+                        ])
+                        ->values()
+                        ->all(),
                 ],
             ]
         ];
@@ -97,7 +112,7 @@ class CreateAnnouncement extends OrgAction
                 [
                     'type'          => 'creatingModel',
                     'creatingModel' => [
-                        'label' => __("creating banner"),
+                        'label' => __("creating announcement"),
                     ]
                 ]
             ]

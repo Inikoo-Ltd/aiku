@@ -20,6 +20,7 @@ use App\Rules\ValidAddress;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\HumanResources\WorkSchedule\UpdateWorkSchedule;
@@ -80,6 +81,26 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, "settings.invoicing.show_tax_liability_date", Arr::pull($modelData, 'show_tax_liability_date'));
         }
 
+        if (Arr::has($modelData, 'staff_chat_crm_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.crm_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'staff_chat_warehouse_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.warehouse_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_warehouse_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'staff_chat_crm_backup_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.crm_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_backup_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'staff_chat_warehouse_backup_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.warehouse_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_warehouse_backup_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'margin_break_even_pct')) {
+            data_set($modelData, 'settings.margins.break_even_pct', (float) Arr::pull($modelData, 'margin_break_even_pct'));
+        }
+
         if (Arr::has($modelData, 'allow_waiting')) {
             data_set($modelData, 'settings.orders.allow_waiting', Arr::pull($modelData, 'allow_waiting'));
         }
@@ -90,6 +111,14 @@ class UpdateOrganisation extends OrgAction
 
         if (Arr::has($modelData, 'allow_stock_controller_set_not_picked')) {
             data_set($modelData, 'settings.orders.allow_stock_controller_set_not_picked', Arr::pull($modelData, 'allow_stock_controller_set_not_picked'));
+        }
+
+        if (Arr::has($modelData, 'allow_scan_to_pick')) {
+            data_set($modelData, 'settings.orders.allow_scan_to_pick', Arr::pull($modelData, 'allow_scan_to_pick'));
+        }
+
+        if (Arr::has($modelData, 'allow_scan_to_pack')) {
+            data_set($modelData, 'settings.orders.allow_scan_to_pack', Arr::pull($modelData, 'allow_scan_to_pack'));
         }
 
 
@@ -139,6 +168,33 @@ class UpdateOrganisation extends OrgAction
         if (Arr::has($modelData, 'banned_countries')) {
             $bannedCountries = Arr::pull($modelData, 'banned_countries');
             data_set($modelData, 'banned_country_regions', Arr::get($bannedCountries, 'banned_list', []));
+        }
+
+        if (Arr::has($modelData, 'preferred_shipping')) {
+            $preferredShippingRows = Arr::pull($modelData, 'preferred_shipping');
+
+            $importantPerScope = collect($preferredShippingRows)->where('important', true)->countBy(fn ($row) => Arr::get($row, 'trade_scope', 'b2b'));
+            if ($importantPerScope->max() > 1) {
+                throw ValidationException::withMessages(['preferred_shipping' => __('Only one rule per set can be marked as important')]);
+            }
+
+            $keptIds = [];
+            foreach ($preferredShippingRows as $row) {
+                $rowData = Arr::only($row, ['shipper_id', 'country_id', 'postcode', 'important', 'trade_scope']);
+
+                $preferredShipping = Arr::get($row, 'id') ? $organisation->preferredShippings()->find($row['id']) : null;
+                if ($preferredShipping) {
+                    $preferredShipping->update($rowData);
+                } else {
+                    data_set($rowData, 'group_id', $organisation->group_id);
+                    $preferredShipping = $organisation->preferredShippings()->create($rowData);
+                }
+                $keptIds[] = $preferredShipping->id;
+            }
+
+            foreach ($organisation->preferredShippings()->whereNotIn('id', $keptIds)->get() as $obsoleteRule) {
+                $obsoleteRule->delete();
+            }
         }
 
 
@@ -209,14 +265,32 @@ class UpdateOrganisation extends OrgAction
             'hr_annual_leave_days'                  => ['sometimes', 'required', 'integer', 'min:0', 'max:365'],
             'hr_probation_period_days'              => ['sometimes', 'required', 'integer', 'min:0', 'max:365'],
             'allow_waiting'                         => ['sometimes', 'boolean'],
+            'margin_break_even_pct'                 => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'allow_picker_set_not_picked'           => ['sometimes', 'boolean'],
             'allow_stock_controller_set_not_picked' => ['sometimes', 'boolean'],
+            'allow_scan_to_pick'                    => ['sometimes', 'boolean'],
+            'allow_scan_to_pack'                    => ['sometimes', 'boolean'],
+            'staff_chat_crm_user_ids'               => ['sometimes', 'array'],
+            'staff_chat_crm_user_ids.*'              => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
+            'staff_chat_warehouse_user_ids'         => ['sometimes', 'array'],
+            'staff_chat_warehouse_user_ids.*'        => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
+            'staff_chat_crm_backup_user_ids'         => ['sometimes', 'array'],
+            'staff_chat_crm_backup_user_ids.*'       => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
+            'staff_chat_warehouse_backup_user_ids'   => ['sometimes', 'array'],
+            'staff_chat_warehouse_backup_user_ids.*' => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
             'banned_countries'                      => ['sometimes', 'nullable', 'array'],
             'banned_countries.banned_list'          => ['sometimes', 'nullable', 'array'],
             'banned_countries.banned_list.*'        => ['required', 'array'],
             'banned_countries.banned_list.*.postcode' => ['sometimes', 'string', 'nullable'],
             'banned_countries.banned_list.*.billing'  => ['required', 'boolean'],
             'banned_countries.banned_list.*.delivery' => ['required', 'boolean'],
+            'preferred_shipping'                      => ['sometimes', 'array'],
+            'preferred_shipping.*.id'                 => ['sometimes', 'nullable', 'integer', Rule::exists('preferred_shippings', 'id')->where('organisation_id', $this->organisation->id)->whereNull('shop_id')],
+            'preferred_shipping.*.shipper_id'         => ['required', 'integer', Rule::exists('shippers', 'id')->where('organisation_id', $this->organisation->id)],
+            'preferred_shipping.*.country_id'         => ['sometimes', 'nullable', 'integer', Rule::exists('countries', 'id')->where('status', true)],
+            'preferred_shipping.*.postcode'           => ['sometimes', 'nullable', 'string', 'max:255'],
+            'preferred_shipping.*.important'          => ['sometimes', 'boolean'],
+            'preferred_shipping.*.trade_scope'        => ['sometimes', Rule::in(['b2b', 'b2c'])],
         ];
 
         if (!$this->strict) {

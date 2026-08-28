@@ -27,6 +27,7 @@ use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -38,18 +39,18 @@ class DispatchOrder extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order, ?DeliveryNote $deliveryNote = null): Order
+    public function handle(Order $order, ?DeliveryNote $deliveryNote = null, ?string $dispatchedAt = null, bool $repair = false): Order
     {
         $oldState = $order->state;
 
-        $date = now();
+        $date = $dispatchedAt ? Carbon::parse($dispatchedAt) : now();
 
         $data = [
             'state'         => OrderStateEnum::DISPATCHED,
             'dispatched_at' => $date
         ];
 
-        $order = DB::transaction(function () use ($order, $data, $date, $deliveryNote) {
+        $order = DB::transaction(function () use ($order, $data, $date, $deliveryNote, $repair) {
             /** @var Transaction $transaction */
             foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
                 $dataToUpdate = [
@@ -62,9 +63,17 @@ class DispatchOrder extends OrgAction
                 $transaction->update($dataToUpdate);
             }
 
+            foreach ($order->transactions()->where('model_type', 'Service')->get() as $transaction) {
+                $transaction->update([
+                    'state'               => TransactionStateEnum::DISPATCHED,
+                    'dispatched_at'       => $date,
+                    'quantity_dispatched' => $transaction->quantity_ordered,
+                ]);
+            }
+
             $this->update($order, $data);
 
-            if ($order->shop->masterShop) {
+            if ($order->shop->masterShop && !$repair) {
                 $order->shop->masterShop->orderingStats->update(
                     [
                         'last_order_dispatched_at' => now()
@@ -75,7 +84,7 @@ class DispatchOrder extends OrgAction
 
             $order->refresh();
 
-            if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            if ($order->shop->type == ShopTypeEnum::DROPSHIPPING && !$repair) {
                 if ($order->customerSalesChannel?->user && app()->isProduction()) {
                     match ($order->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
@@ -101,8 +110,10 @@ class DispatchOrder extends OrgAction
         $this->orderHandlingHydrators($order, $oldState);
         $this->orderHandlingHydrators($order, OrderStateEnum::DISPATCHED);
 
-        SendDispatchedOrderEmailToSubscribers::dispatch($order);
-        SendDispatchedOrderEmailToCustomer::dispatch($order);
+        if (!$repair) {
+            SendDispatchedOrderEmailToSubscribers::dispatch($order);
+            SendDispatchedOrderEmailToCustomer::dispatch($order);
+        }
 
         return $order;
     }
@@ -110,9 +121,9 @@ class DispatchOrder extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Order $order, DeliveryNote $deliveryNote): Order
+    public function action(Order $order, ?DeliveryNote $deliveryNote, ?string $dispatchedAt = null, bool $repair = false): Order
     {
-        return $this->handle($order, $deliveryNote);
+        return $this->handle($order, $deliveryNote, $dispatchedAt, $repair);
     }
 
     /**

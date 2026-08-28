@@ -21,6 +21,7 @@ export const layoutStructure = {
         environment: null as string | null, // 'local' | 'staging'
         last_deployment_at: null as string | null, // created_at of the latest app deployment
         last_deployment_hash: null as string | null, // hash of the latest commit
+        last_deployment_version: null as string | null, // semantic version tag of the latest app deployment
         newVersionAvailable: false, // true after a post-deploy event when the user dismissed the refresh modal
     },
     currentModule: "",
@@ -32,6 +33,10 @@ export const layoutStructure = {
     help_portal_url: null as string | null,
     leftSidebar: {
         show: true,
+    },
+    messagingSidebar: {
+        show: false,
+        micro: false,
     },
     navigation: {
         grp: {} as grpNavigation,
@@ -61,8 +66,11 @@ export const layoutStructure = {
         id: number,
         email: string,
         username: string,
+        timezone: string | null,
+        timezone_place: string | null,
         settings: {
-            timezones: string[]
+            app_theme?: string[]
+            hide_logo?: boolean
         }
     },
     notifications: [] as Notification[],
@@ -74,5 +82,6 @@ export const layoutStructure = {
     crm_waiting_count: 0 as number,
     crm_return_count: 0 as number,
     master_updated_count: 0 as number,
+    faire_skipped_count: 0 as number,
     bookmarks: [] as Bookmark[],
 }

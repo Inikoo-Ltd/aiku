@@ -183,7 +183,7 @@
                     <span class="address_label">{{ __('Phone') }}:</span> <span
                             class="address_value">{{ $order->customer['phone'] }}</span>
                 </div>
-                @if($order->tax_number  && $order->tax_number_valid)
+                @if($order->tax_number && ($order->tax_number_valid || $order->billingAddress?->country?->code === 'ES'))
                     <div>
                         <span class="address_label">{{ __('Tax Number') }}:</span> <span
                                 class="address_value">{{ $order->tax_number }}</span>
@@ -336,23 +336,20 @@
         <td>{{ $order->currency->symbol . $order->shipping_amount }}</td>
     </tr>
 
+    @if(($adjustmentsNet = $order->transactions->where('model_type', 'Adjustment')->sum('net_amount')) != 0)
+        <tr>
+            <td style="border:none" colspan="4"></td>
+            <td>{{ __('Adjustments') }}</td>
+            <td>{{ $order->currency->symbol . number_format($adjustmentsNet, 2) }}</td>
+        </tr>
+    @endif
     <tr class="total_net">
         <td style="border:none" colspan="4"></td>
         <td>{{__('Total Net')}}</td>
         <td>{{ $order->currency->symbol . $order->net_amount }}</td>
     </tr>
 
-    <tr>
-        <td style="border:none" colspan="4"></td>
-        <td class="totals">
-            {{ __('Tax') }}
-
-            <br><small>{{$order->taxCategory->name}}
-                ({{__('rate')}}:{{percentage($order->taxCategory->rate,1)}})
-            </small>
-        </td>
-        <td class="totals">{{ $order->currency->symbol . $order->tax_amount }}</td>
-    </tr>
+    @include('invoices.templates.pdf.tax-rows', ['document' => $order, 'taxBreakdownOverride' => null])
 
     <tr class="total">
         <td style="border:none" colspan="4"></td>

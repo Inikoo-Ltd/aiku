@@ -6,14 +6,16 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
+use Illuminate\Support\Arr;
 use App\Models\Web\Webpage;
 use Illuminate\Support\MessageBag;
 
 if (!function_exists('group')) {
     function group(): ?Group
     {
-        return Group::first();
+        return Group::orderBy('id')->first();
     }
 }
 
@@ -642,18 +644,17 @@ if (!function_exists('riseDivisor')) {
         }
 
         $divisor = $input[1][1];
-        if ($divisor != 0) {
-            $factor                        = $raiser / $divisor;
-            $dividend                      = $input[1][0] * $factor;
-            $divisor                       = $input[1][1] * $factor;
-            $factoredRequiredFactionalData = [
-                $input[0],
-                [$dividend, $divisor]
-            ];
-            $input                         = $factoredRequiredFactionalData;
+        if ($divisor == 0 || $raiser == 0) {
+            return $input;
         }
 
-        return $input;
+        $numerator = $input[1][0] * $raiser / $divisor;
+
+        if ($numerator != round($numerator)) {
+            return $input;
+        }
+
+        return [$input[0], [(int) round($numerator), $raiser]];
     }
 }
 
@@ -966,5 +967,103 @@ if (!function_exists('getIsoLocale')) {
 
         return $map[$lang] ?? $languageCode;
 
+    }
+}
+
+if (!function_exists('paymentSettlementTolerance')) {
+    /**
+     * Largest shortfall (in the shop currency) that is written off instead of chased,
+     * capped at one currency unit.
+     */
+    function paymentSettlementTolerance(?Shop $shop = null): float
+    {
+        $tolerance = Arr::get($shop?->settings ?? [], 'accounting.payment_settlement_tolerance');
+
+        if ($tolerance === null) {
+            $tolerance = config('app.payment_settlement_tolerance');
+        }
+
+        return min(max((float)$tolerance, 0), 1);
+    }
+}
+
+if (!function_exists('discountAmountOffGross')) {
+    /**
+     * The discount taken off a gross amount for a given discount factor, rounded half up to the
+     * cent.
+     *
+     * Done in integer units because the factor's complement is not representable in binary and
+     * lands on either side of the true value depending on the factor: 1 - 0.9 is a hair under a
+     * tenth, 1 - 0.7 a hair over three tenths. Multiplied by a gross that puts the discount on
+     * an exact half cent, the two round opposite ways, and the line is billed a cent away from
+     * the price the basket quoted and the customer paid. Nudging the float only moves which
+     * factors break, so there is no float here at all.
+     *
+     * The factor is taken to four decimals (a basis point); the gross keeps four decimals so a
+     * part picked line does not lose its sub cent before the discount comes off.
+     */
+    function discountAmountOffGross(float $grossAmount, ?float $discountFactor): float
+    {
+        $offBasisPoints = (int)round((1 - ($discountFactor ?? 1)) * 10000);
+
+        if ($offBasisPoints === 0) {
+            return 0.0;
+        }
+
+        $sign       = $grossAmount < 0 ? -1 : 1;
+        $grossUnits = (int)round(abs($grossAmount) * 10000);
+
+        return $sign * intdiv($grossUnits * $offBasisPoints + 500000, 1000000) / 100;
+    }
+}
+
+if (!function_exists('soldPackUnits')) {
+    /**
+     * The pack size a sold line was actually sold in.
+     *
+     * The historic asset records the composition at the moment of the sale and is therefore the
+     * answer whenever it has one, including when that answer is 1. The product is consulted only
+     * where no historic composition was ever recorded, which is 171 rows out of 5.26 million.
+     *
+     * Testing the historic value with `> 1` instead of for its absence is the bug this replaces:
+     * it reads "sold as a single" as "not set", so a line whose product later became a pack is
+     * relabelled with a pack size that was never part of that sale.
+     */
+    function soldPackUnits(int|float|string|null $historicUnits, int|float|string|null $productUnits): int|float|string|null
+    {
+        return $historicUnits ?? $productUnits;
+    }
+}
+
+if (!function_exists('refundQuantityLabel')) {
+    /**
+     * Label for a refund line's quantity, or null when the quantity is an artifact.
+     *
+     * Refund quantities are derived from the refunded amount, so only two shapes carry meaning:
+     * whole packs, and whole loose units within a pack (1/3, 2/3 of a 3-pack). Anything else is
+     * an arbitrary money amount (a discretionary compensation) and null tells the caller to hide
+     * the quantity and unit price, leaving the amount as the only figure.
+     */
+    function refundQuantityLabel(int|float|string|null $quantity, int|float|string|null $unitsInPack): ?string
+    {
+        $quantity    = (float) $quantity;
+        $unitsInPack = (float) ($unitsInPack ?: 1);
+
+        if (fmod($quantity, 1) == 0.0) {
+            return trimDecimalZeros($quantity);
+        }
+
+        if ($unitsInPack > 1) {
+            $looseUnits = round($quantity * $unitsInPack);
+            if ($looseUnits != 0.0 && abs($quantity * $unitsInPack - $looseUnits) <= 0.01 * abs($looseUnits)) {
+                if (fmod($looseUnits, $unitsInPack) == 0.0) {
+                    return trimDecimalZeros($looseUnits / $unitsInPack);
+                }
+
+                return ($looseUnits < 0 ? '-' : '').abs($looseUnits).'/'.trimDecimalZeros($unitsInPack);
+            }
+        }
+
+        return null;
     }
 }

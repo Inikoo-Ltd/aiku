@@ -11,7 +11,6 @@ namespace App\Actions\CRM\Customer;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
-use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateCustomerDeliveryAddress extends OrgAction
@@ -35,7 +34,7 @@ class UpdateCustomerDeliveryAddress extends OrgAction
         ];
     }
 
-    public function asController(Organisation $organisation, Customer $customer, ActionRequest $request): Customer
+    public function asController(Customer $customer, ActionRequest $request): Customer
     {
         $this->initialisationFromShop($customer->shop, $request);
 

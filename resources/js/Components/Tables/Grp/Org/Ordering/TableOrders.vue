@@ -76,7 +76,17 @@ function orderRoute(order: Order) {
             return route(
                 "grp.org.shops.show.ordering.orders.show",
                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, order.slug])
-
+        case "grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.show":
+        case "grp.org.shops.show.catalogue.products.missing_description_products.show":
+        case "grp.org.shops.show.catalogue.products.independent_products.all.show":
+        case "grp.org.shops.show.catalogue.products.rrp_violation_products.show":
+        case "grp.org.shops.show.catalogue.products.discontinued_products.show":
+        case "grp.org.shops.show.catalogue.products.in_process_products.show":
+        case "grp.org.shops.show.catalogue.products.not_online_products.show":
+        case "grp.org.shops.show.catalogue.products.mismatched_families.show":
+        case "grp.org.shops.show.catalogue.products.no_image_product.show":
+        case "grp.org.shops.show.catalogue.products.current_products.show":
+        case "grp.org.shops.show.catalogue.products.orphan_products.show":
         case "grp.org.shops.show.catalogue.products.all_products.show":
         case "grp.org.overview.ordering.backlog":
         case "grp.overview.ordering.backlog":
@@ -84,6 +94,18 @@ function orderRoute(order: Order) {
                 "grp.org.shops.show.ordering.orders.show",
                 [order.organisation_slug, order.shop_slug, order.slug])
 
+        case "grp.org.shops.show.marketing.traffic_sources.show":
+            return route(
+                "grp.org.shops.show.ordering.orders.show",
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, order.slug])
+        case "grp.org.marketing.channels.show":
+            return route(
+                "grp.org.shops.show.ordering.orders.show",
+                [(route().params as RouteParams).organisation, order.shop_slug, order.slug])
+        case "grp.marketing.channels.show":
+            return route(
+                "grp.org.shops.show.ordering.orders.show",
+                [order.organisation_slug, order.shop_slug, order.slug])
         case "grp.org.shops.show.crm.show.orders.index":
             return route(
                 "grp.org.shops.show.crm.show.orders.show",
@@ -132,9 +154,15 @@ function customerRoute(order: Order) {
         case "grp.overview.ordering.orders_in_basket.index":
         case "grp.org.overview.ordering.backlog":
         case "grp.overview.ordering.backlog":
+        case "grp.marketing.channels.show":
             return route(
                 "grp.org.shops.show.crm.customers.show",
                 [order.organisation_slug, order.shop_slug, order.customer_slug]
+            )
+        case "grp.org.marketing.channels.show":
+            return route(
+                "grp.org.shops.show.crm.customers.show",
+                [(route().params as RouteParams).organisation, order.shop_slug, order.customer_slug]
             )
         default:
             return route(
@@ -308,6 +336,12 @@ const setNewMarkerDate = (newVal: Date) => {
                 <span>
                     {{ useFormatTime(order.platform_milestones?.placed_at || order.date, { localeCode: locale.language.code, formatTime: "aiku" }) }}
                 </span>
+            </div>
+        </template>
+
+        <template #cell(submitted_at)="{ item: order }">
+            <div class="text-right">
+                {{ order.submitted_at ? useFormatTime(order.submitted_at, { localeCode: locale.language.code, formatTime: "aiku" }) : '-' }}
             </div>
         </template>
 

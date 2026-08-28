@@ -12,11 +12,12 @@ import { get as getLodash } from "lodash-es"
 import { capitalize } from "@/Composables/capitalize"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faGoogle } from "@fortawesome/free-brands-svg-icons"
+import { faGoogle, faFacebook } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { router } from "@inertiajs/vue3"
 import {
+    faMusic,
     faMicrophoneAltSlash,
     faImage,
     faTag,
@@ -48,11 +49,13 @@ import {
     faFlagCheckered,
     faBracketsCurly,
     faFileInvoice,
+    faFilePdf,
     faTransporter,
     faCode,
     faExchange,
     faBoxes,
     faAtom,
+    faAtomAlt,
     faMoneyBill,
     faTags,
     faUserTag,
@@ -69,7 +72,14 @@ import {
     faMedal,
     faBullseyePointer,
     faClock,
-    faCalendarCheck
+    faCalendarCheck,
+    faPercent,
+    faBusinessTime,
+    faChessClock,
+    faCameraRetro,
+    faTemperatureLow,
+    faBalanceScale,
+    faNotEqual,
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -80,6 +90,9 @@ import axios from "axios"
 import Message from 'primevue/message';
 
 library.add(
+    faTemperatureLow,
+    faNotEqual,
+    faMusic,
     faShapes,
     faTags,
     faBiohazard,
@@ -89,6 +102,7 @@ library.add(
     faOctopusDeploy,
     faExclamationTriangle,
     faAtom,
+    faAtomAlt,
     faTag,
     faMicrophoneAltSlash,
     faImage,
@@ -119,9 +133,11 @@ library.add(
     faSlidersH,
     faCog,
     faGoogle,
+    faFacebook,
     faFlagCheckered,
     faBracketsCurly,
     faFileInvoice,
+    faFilePdf,
     faTransporter,
     faCode,
     faDoorClosed,
@@ -140,7 +156,12 @@ library.add(
     faTh,
     faFolderTree,
     faClock,
-    faCalendarCheck
+    faCalendarCheck,
+    faPercent,
+    faBusinessTime,
+    faChessClock,
+    faCameraRetro,
+    faBalanceScale,
 )
 
 const props = defineProps<{
@@ -332,7 +353,6 @@ const getSeverity = (type?: string) => {
                 </div>
             </div>
         </Message>
-
     </div>
     <!-- If overflow-hidden, affect to Multiselect on Address -->
     <div class="rounded-lg shadow">

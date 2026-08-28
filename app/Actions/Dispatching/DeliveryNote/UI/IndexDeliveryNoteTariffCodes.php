@@ -32,7 +32,8 @@ class IndexDeliveryNoteTariffCodes extends OrgAction
 
         $base = $this->getTariffCodesBaseQuery($deliveryNote);
 
-        return QueryBuilder::for(DeliveryNoteItem::query()->fromSub($base, 'tc'))
+        // ponytail: pinned first so the missing-data row is never buried on page 2
+        return QueryBuilder::for(DeliveryNoteItem::query()->fromSub($base, 'tc')->orderByDesc('is_incomplete'))
             ->defaultSort('tariff_code')
             ->allowedSorts(['tariff_code', 'origin', 'num_parts', 'units', 'weight', 'amount'])
             ->allowedFilters([$globalSearch])

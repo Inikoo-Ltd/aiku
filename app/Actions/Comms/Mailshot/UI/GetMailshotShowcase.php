@@ -18,13 +18,16 @@ class GetMailshotShowcase
 
     public function handle(Mailshot $mailshot): array
     {
-        $compiledLayout = $mailshot->email?->liveSnapshot?->compiled_layout;
+        $email          = $mailshot->email;
+        $compiledLayout = $email?->liveSnapshot?->compiled_layout;
+        $snapshot       = $email?->unpublishedSnapshot;
         $bytes = strlen($compiledLayout);
         $kb    = round(($bytes / 1024), 2);
         return [
             'mailshot' => new MailshotResource($mailshot),
             'compiled_layout' => $compiledLayout,
             'compiled_layout_size' => $kb,
+            'is_composed' => (bool) $compiledLayout || ($snapshot && !$snapshot->updated_at->eq($snapshot->created_at)),
         ];
     }
 }

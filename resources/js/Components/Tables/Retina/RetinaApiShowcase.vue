@@ -20,6 +20,7 @@ const props = defineProps<{
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
+const layout = inject('layout', aikuLocaleStructure)
 
 </script>
 
@@ -36,9 +37,9 @@ const locale = inject('locale', aikuLocaleStructure)
             </defs>
             <rect width="100%" height="100%" stroke-width="0" fill="url(#0787a7c5-978c-4f66-83c7-11c213f99cb7)" />
         </svg> -->
-        
+
         <div class="mx-auto px-12 pb-12 pt-10 lg:flex lg:px-14 ">
-           
+
 
             <div xv-else class="xmx-auto max-w-2xl lg:mx-0 lg:shrink-0 lg:pt-8">
                 <!-- <div class="">
@@ -55,11 +56,11 @@ const locale = inject('locale', aikuLocaleStructure)
                 <p class="mt-8 text-pretty text-lg font-medium text-gray-500 sm:text-xl/8">
                     {{ trans("API Tokens are used to authenticate requests to the API. You can create, view, and manage your API tokens here. With API Tokens, you can create order, add products, add client, etc by using Web API.") }}
                 </p>
-                
+
                 <!-- Section: See Documentation -->
                 <div class="mt-10 flex xitems-center flex-col justify-center gap-x-6">
                     <div class="mb-2 text-gray-500">{{ trans("Wanna learn more about API Tokens?") }}</div>
-                    <a href="https://documenter.getpostman.com/view/28816137/2sB34Zrjrp" target="_blank" rel="noopener noreferrer" class="w-fit">
+                    <a :href="layout?.retina?.type === 'fulfilment' ? 'https://documenter.getpostman.com/view/28816137/2sBY4WmwBA' : 'https://documenter.getpostman.com/view/28816137/2sB34Zrjrp'" target="_blank" rel="noopener noreferrer" class="w-fit">
                         <Button
                             :label="trans('See documentation')"
                             iconRight="fal fa-external-link"
@@ -73,7 +74,7 @@ const locale = inject('locale', aikuLocaleStructure)
                     <div class="mb-2 text-gray-500">
                         {{ trans("Wanna test the API Tokens in safe mode? You can test it in our staging. Enter the same credential as your current account.") }}
                     </div>
-                    <a href="https://canary.aw-dropship.com/app/dropshipping/sale-channels" target="_blank" rel="noopener noreferrer" class="w-fit">
+                    <a href="https://canary.aw-dropship.com/app" target="_blank" rel="noopener noreferrer" class="w-fit">
                         <Button
                             :label="trans('Test in staging')"
                             iconRight="fal fa-external-link"
@@ -83,7 +84,7 @@ const locale = inject('locale', aikuLocaleStructure)
                     </a>
                 </div>
             </div>
-            
+
         </div>
     </div>
 </template>

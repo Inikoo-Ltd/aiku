@@ -8,6 +8,9 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\SysAdmin\User\StoreUserFromEmployee;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use App\Actions\HumanResources\Employee\DeleteEmployee;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\HumanResources\Employee\UpdateEmployee;
@@ -27,9 +30,13 @@ use App\Actions\HumanResources\HolidayYear\UpdateHolidayYear;
 use App\Actions\HumanResources\EmployeeContract\StoreEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\UpdateEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\DeleteEmployeeContract;
+use App\Actions\HumanResources\Clocking\RepairMisattributedClockings;
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Actions\HumanResources\Clocking\StoreClocking;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachineQRCode;
+use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 use App\Actions\HumanResources\Clocking\UpdateClocking;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
 use App\Actions\HumanResources\Clocking\DeleteClocking;
@@ -47,6 +54,7 @@ use App\Actions\HumanResources\AttendanceAdjustment\RejectAttendanceAdjustment;
 use App\Actions\HumanResources\Employee\GeneratePinEmployee;
 use App\Actions\HumanResources\Employee\ValidatePinEmployee;
 use App\Actions\HumanResources\Employee\AdjustEmployeeLeaveBalance;
+use App\Actions\HumanResources\Employee\SetEmployeePin;
 use App\Actions\HumanResources\Holiday\GenerateNextYearHolidays;
 use App\Actions\HumanResources\HolidayYear\ActivateHolidayYear;
 use App\Actions\HumanResources\JobPosition\StoreJobPositionScopeGroup;
@@ -62,13 +70,18 @@ use App\Actions\HumanResources\WorkSchedule\StoreWorkSchedule;
 use App\Actions\HumanResources\WorkSchedule\UpdateWorkSchedule;
 use App\Actions\HumanResources\WorkSchedule\DeleteWorkSchedule;
 use App\Actions\HumanResources\TimeTracker\StoreTimeTracker;
+use App\Actions\HumanResources\TimeTracker\DeleteTimeTracker;
+use App\Actions\HumanResources\TimeTracker\ClockInTimeTracker;
 use App\Actions\HumanResources\TimeTracker\AddClockingToTimeTracker;
 use App\Actions\HumanResources\TimeTracker\CloseTimeTracker;
+use App\Actions\HumanResources\TimeTracker\RepairNegativeTimeTrackers;
 use App\Actions\HumanResources\Timesheet\StoreTimesheet;
+use App\Actions\HumanResources\Timesheet\DeleteTimesheet;
 use App\Actions\HumanResources\Leave\StoreLeave;
 use App\Actions\HumanResources\Leave\UpdateLeave;
 use App\Actions\HumanResources\Leave\DeleteLeave;
 use App\Actions\HumanResources\Leave\ApproveLeave;
+use App\Actions\HumanResources\Leave\StoreEmployeeLeave;
 use App\Actions\HumanResources\Leave\RejectLeave;
 use App\Actions\HumanResources\Leave\StoreLeaveApprover;
 use App\Actions\HumanResources\Leave\DeleteLeaveApprover;
@@ -417,6 +430,33 @@ test('can store clocking', function () {
         ->and($clocking->subject_id)->toBe($employee->id);
 });
 
+test('clocking is bucketed into the day of the workplace timezone not the organisation one', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $aucklandTimezone = \App\Models\Helpers\Timezone::where('name', 'Pacific/Auckland')->firstOrFail();
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name'        => 'Auckland Workplace',
+        'type'        => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+        'timezone_id' => $aucklandTimezone->id,
+    ]);
+
+    $clockedAt = \Illuminate\Support\Carbon::parse('2026-08-03 22:00:00', 'UTC');
+
+    $clocking = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type'       => 'in',
+        'clocked_at' => $clockedAt,
+    ], 0, true);
+
+    $expectedDate = $clockedAt->copy()->setTimezone('Pacific/Auckland')->toDateString();
+
+    expect($expectedDate)->toBe('2026-08-04')
+        ->and($clocking->timesheet->date->toDateString())->toBe($expectedDate);
+});
+
 test('can store clocking machine QR code', function () {
     $workplace = StoreWorkplace::make()->action($this->organisation, [
         'name' => 'QR Workplace',
@@ -500,6 +540,174 @@ test('can approve attendance adjustment', function () {
 
     expect($approved->status)->toBe(\App\Enums\HumanResources\Attendance\AttendanceAdjustmentStatusEnum::APPROVED)
         ->and($approved->approved_at)->not->toBeNull();
+});
+
+test('approving an adjustment recomputes the hours the employee is paid from', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $timesheet = \App\Models\HumanResources\Timesheet::create([
+        'group_id'                  => $this->group->id,
+        'organisation_id'           => $this->organisation->id,
+        'date'                      => '2026-06-30',
+        'subject_type'              => 'Employee',
+        'subject_id'                => $employee->id,
+        'subject_name'              => $employee->contact_name,
+        'start_at'                  => '2026-06-30 08:00:00',
+        'working_duration'          => 0,
+        'breaks_duration'           => 0,
+        'total_duration'            => 0,
+        'number_time_trackers'      => 1,
+        'number_open_time_trackers' => 1,
+    ]);
+
+    \App\Models\HumanResources\TimeTracker::create([
+        'timesheet_id'    => $timesheet->id,
+        'subject_type'    => 'Employee',
+        'subject_id'      => $employee->id,
+        'status'          => \App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::OPEN,
+        'starts_at'       => '2026-06-30 08:00:00',
+    ]);
+
+    $adjustment = StoreAttendanceAdjustment::make()->action($employee, [
+        'date'               => '2026-06-30',
+        'reason'             => 'Forgot to clock out',
+        'requested_start_at' => '08:00',
+        'requested_end_at'   => '17:00',
+    ]);
+    $adjustment->update(['timesheet_id' => $timesheet->id]);
+
+    ApproveAttendanceAdjustment::make()->handle($adjustment->refresh());
+
+    $timesheet->refresh();
+
+    expect($timesheet->working_duration)->toBe(9 * 3600)
+        ->and($timesheet->number_open_time_trackers)->toBe(0);
+});
+
+test('an adjustment that ends before it starts never reaches the paid hours', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $timesheet = \App\Models\HumanResources\Timesheet::create([
+        'group_id'                  => $this->group->id,
+        'organisation_id'           => $this->organisation->id,
+        'date'                      => '2026-06-30',
+        'subject_type'              => 'Employee',
+        'subject_id'                => $employee->id,
+        'subject_name'              => $employee->contact_name,
+        'working_duration'          => 28800,
+        'breaks_duration'           => 0,
+        'total_duration'            => 28800,
+        'number_time_trackers'      => 1,
+        'number_open_time_trackers' => 0,
+    ]);
+
+    \App\Models\HumanResources\TimeTracker::create([
+        'timesheet_id'    => $timesheet->id,
+        'subject_type'    => 'Employee',
+        'subject_id'      => $employee->id,
+        'status'          => \App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::CLOSED,
+        'starts_at'       => '2026-06-30 09:00:00',
+        'ends_at'         => '2026-06-30 17:00:00',
+        'duration'        => 28800,
+    ]);
+
+    $adjustment = AttendanceAdjustment::create([
+        'group_id'           => $this->group->id,
+        'organisation_id'    => $this->organisation->id,
+        'employee_id'        => $employee->id,
+        'employee_name'      => $employee->contact_name,
+        'timesheet_id'       => $timesheet->id,
+        'date'               => '2026-06-30',
+        'reason'             => 'Typo in the end time',
+        'requested_start_at' => '2026-06-30 09:00:00',
+        'requested_end_at'   => '2026-06-30 07:00:00',
+        'status'             => \App\Enums\HumanResources\Attendance\AttendanceAdjustmentStatusEnum::PENDING,
+    ]);
+
+    ApproveAttendanceAdjustment::make()->handle($adjustment);
+
+    $timesheet->refresh();
+
+    expect($timesheet->working_duration)->toBe(28800);
+});
+
+function makeOvertimeDay(mixed $context, string $compensationType, string $multiplier): array
+{
+    $employee = Employee::factory()->create([
+        'organisation_id' => $context->organisation->id,
+        'group_id'        => $context->group->id,
+    ]);
+
+    $timesheet = \App\Models\HumanResources\Timesheet::create([
+        'group_id'                  => $context->group->id,
+        'organisation_id'           => $context->organisation->id,
+        'date'                      => '2026-06-27',
+        'subject_type'              => 'Employee',
+        'subject_id'                => $employee->id,
+        'subject_name'              => $employee->contact_name,
+        'start_at'                  => '2026-06-27 09:00:00',
+        'end_at'                    => '2026-06-27 11:00:00',
+        'working_duration'          => 7200,
+        'breaks_duration'           => 0,
+        'total_duration'            => 7200,
+        'number_time_trackers'      => 1,
+        'number_open_time_trackers' => 0,
+    ]);
+
+    \App\Models\HumanResources\TimeTracker::create([
+        'timesheet_id' => $timesheet->id,
+        'subject_type' => 'Employee',
+        'subject_id'   => $employee->id,
+        'status'       => \App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::CLOSED,
+        'starts_at'    => '2026-06-27 09:00:00',
+        'ends_at'      => '2026-06-27 11:00:00',
+        'duration'     => 7200,
+    ]);
+
+    $overtimeType = \App\Models\HumanResources\OvertimeType::create([
+        'group_id'          => $context->group->id,
+        'organisation_id'   => $context->organisation->id,
+        'code'              => 'OT'.$employee->id,
+        'name'              => 'Overtime '.$employee->id,
+        'category'          => \App\Enums\HumanResources\Overtime\OvertimeCategoryEnum::OVERTIME,
+        'compensation_type' => $compensationType,
+        'multiplier'        => $multiplier,
+        'is_active'         => true,
+    ]);
+
+    \App\Models\HumanResources\OvertimeRequest::create([
+        'group_id'                   => $context->group->id,
+        'organisation_id'            => $context->organisation->id,
+        'employee_id'                => $employee->id,
+        'overtime_type_id'           => $overtimeType->id,
+        'requested_date'             => '2026-06-27',
+        'requested_duration_minutes' => 120,
+        'status'                     => \App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum::APPROVED,
+    ]);
+
+    return [$timesheet, \App\Actions\HumanResources\Timesheet\CalculateTimesheetOvertime::run($timesheet->refresh())];
+}
+
+test('paid overtime is weighted by its type multiplier without inflating hours worked', function () {
+    [, $split] = makeOvertimeDay($this, 'paid', '1.50');
+
+    expect($split['paid_overtime_duration'])->toBe(7200)
+        ->and($split['payable_overtime_equivalent_duration'])->toBe(10800)
+        ->and($split['unpaid_overtime_duration'])->toBe(0);
+});
+
+test('time in lieu overtime is never treated as payable', function () {
+    [, $split] = makeOvertimeDay($this, 'time_in_lieu', '1.50');
+
+    expect($split['paid_overtime_duration'])->toBe(0)
+        ->and($split['payable_overtime_equivalent_duration'])->toBe(0)
+        ->and($split['unpaid_overtime_duration'])->toBe(7200);
 });
 
 test('can reject attendance adjustment', function () {
@@ -672,7 +880,7 @@ test('can delete clocking', function () {
     ]);
 
     $workplace = StoreWorkplace::make()->action($this->organisation, [
-        'name' => 'Delete Clocking Workplace',
+        'name' => 'Delete Clocking Workplace ' . rand(100000, 999999),
         'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
     ]);
 
@@ -681,9 +889,150 @@ test('can delete clocking', function () {
         'at' => now()->toDateTimeString(),
     ], 0, true);
 
+    $timeTracker = $clocking->timesheet->timeTrackers()->first();
+
     DeleteClocking::make()->handle($clocking);
 
-    $this->assertSoftDeleted('clockings', ['id' => $clocking->id]);
+    $this->assertDatabaseMissing('clockings', ['id' => $clocking->id]);
+    $this->assertDatabaseHas('time_trackers', [
+        'id'                => $timeTracker->id,
+        'start_clocking_id' => null,
+        'starts_at'         => null,
+    ]);
+});
+
+test('can add clock in to repair a time tracker missing its start', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Repair Clock In Workplace ' . rand(100000, 999999),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockIn = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'in',
+        'at' => now()->toDateTimeString(),
+    ], 0, true);
+
+    $timeTracker = $clockIn->timesheet->timeTrackers()->first();
+
+    DeleteClocking::make()->handle($clockIn);
+
+    $timeTracker->refresh();
+    expect($timeTracker->start_clocking_id)->toBeNull();
+
+    $repaired = ClockInTimeTracker::make()->handle($timeTracker, now(), $employee->id, 'Employee');
+
+    expect($repaired->start_clocking_id)->not->toBeNull()
+        ->and($repaired->starts_at)->not->toBeNull();
+
+    $this->assertDatabaseHas('clockings', [
+        'time_tracker_id' => $timeTracker->id,
+        'type' => \App\Enums\HumanResources\Clocking\ClockingTypeEnum::MANUAL->value,
+    ]);
+});
+
+test('deleting the clock out clocking reopens its time tracker', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Delete Clock Out Workplace ' . rand(100000, 999999),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockIn = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'in',
+        'at' => now()->toDateTimeString(),
+    ], 0, true);
+
+    $clockOut = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'out',
+        'at' => now()->addHours(8)->toDateTimeString(),
+    ], 0, true);
+
+    $timeTracker = $clockIn->timesheet->timeTrackers()->first();
+
+    expect($timeTracker->status)->toBe(\App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::CLOSED);
+
+    DeleteClocking::make()->handle($clockOut);
+
+    $this->assertDatabaseMissing('clockings', ['id' => $clockOut->id]);
+    $this->assertDatabaseHas('clockings', ['id' => $clockIn->id]);
+    $this->assertDatabaseHas('time_trackers', [
+        'id'              => $timeTracker->id,
+        'end_clocking_id' => null,
+        'ends_at'         => null,
+        'duration'        => null,
+        'status'          => \App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::OPEN->value,
+    ]);
+});
+
+test('deleting the clock in of an already closed tracker does not crash the timesheet rehydration', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Delete Clock In After Close Workplace ' . rand(100000, 999999),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockIn = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'in',
+        'at' => now()->toDateTimeString(),
+    ], 0, true);
+
+    $clockOut = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'out',
+        'at' => now()->addHours(8)->toDateTimeString(),
+    ], 0, true);
+
+    $timesheet = $clockIn->timesheet;
+
+    DeleteClocking::make()->handle($clockIn);
+
+    $this->assertDatabaseMissing('clockings', ['id' => $clockIn->id]);
+    $this->assertDatabaseHas('clockings', ['id' => $clockOut->id]);
+    $this->assertDatabaseHas('timesheets', ['id' => $timesheet->id, 'start_at' => null]);
+});
+
+test('can delete timesheet and its clockings and time trackers', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Delete Timesheet Workplace ' . rand(100000, 999999),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockIn = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'in',
+        'at' => now()->toDateTimeString(),
+    ], 0, true);
+
+    $clockOut = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'out',
+        'at' => now()->addHours(8)->toDateTimeString(),
+    ], 0, true);
+
+    $timesheet = $clockIn->timesheet;
+    $timeTracker = $timesheet->timeTrackers()->first();
+
+    DeleteTimesheet::make()->handle($timesheet);
+
+    $this->assertDatabaseMissing('timesheets', ['id' => $timesheet->id]);
+    $this->assertDatabaseMissing('clockings', ['id' => $clockIn->id]);
+    $this->assertDatabaseMissing('clockings', ['id' => $clockOut->id]);
+    $this->assertDatabaseMissing('time_trackers', ['id' => $timeTracker->id]);
 });
 
 
@@ -712,6 +1061,400 @@ test('can validate employee pin', function () {
     $found = ValidatePinEmployee::make()->handle($this->organisation, ['pin' => 'TEST-PIN-1234']);
 
     expect($found->id)->toBe($employee->id);
+});
+
+// CLOCKING KIOSK PIN
+
+test('can clock in via kiosk pin', function () {
+    $suffix = 'A'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk PIN Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::PIN->value,
+    ]);
+    $clockingMachine->update([
+        'kiosk_token' => 'kiosk-token-'.$clockingMachine->id.'-'.$suffix,
+        'config'      => ['pin' => ['enable' => true]],
+    ]);
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+    $employee->update(['pin' => $this->organisation->id.':AB'.rand(10, 99)]);
+    $employee->workplaces()->attach($workplace->id);
+
+    $clocking = \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin::make()
+        ->handle($clockingMachine, substr($employee->fresh()->pin, strlen((string) $this->organisation->id) + 1))['clocking'];
+
+    expect($clocking)->toBeInstanceOf(Clocking::class)
+        ->and($clocking->subject_id)->toBe($employee->id)
+        ->and($clocking->clocking_machine_id)->toBe($clockingMachine->id)
+        ->and($clocking->type)->toBe(\App\Enums\HumanResources\Clocking\ClockingTypeEnum::CLOCKING_MACHINE);
+
+    return [$clockingMachine, $employee];
+});
+
+test('wrong kiosk pin is rejected', function (array $context) {
+    [$clockingMachine] = $context;
+
+    \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin::make()->handle($clockingMachine, 'WRONG');
+})->depends('can clock in via kiosk pin')->throws(\Exception::class, 'Invalid PIN.');
+
+test('kiosk pin typed with the leading organisation digits still clocks in', function () {
+    $suffix = 'B'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk PIN Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::PIN->value,
+    ]);
+    $clockingMachine->update(['config' => ['pin' => ['enable' => true]]]);
+
+    $code = 'EF'.rand(10, 99);
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+    $employee->update(['pin' => $this->organisation->id.':'.$code]);
+    $employee->workplaces()->attach($workplace->id);
+
+    // Employees only ever see the full pin (e.g. "5:EF56"); since the kiosk keypad has no
+    // ':' key, typing the leading organisation digits without the colon must still resolve.
+    $clocking = \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin::make()
+        ->handle($clockingMachine, $this->organisation->id.$code)['clocking'];
+
+    expect($clocking->subject_id)->toBe($employee->id);
+});
+
+test('kiosk pin does not require the employee to belong to the machine workplace', function () {
+    $suffix = 'C'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk PIN Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::PIN->value,
+    ]);
+    $clockingMachine->update(['config' => ['pin' => ['enable' => true]]]);
+
+    $code = 'CD'.rand(10, 99);
+
+    // The employee is never attached to any workplace, matching real employees whose
+    // employee_workplace pivot is empty - the kiosk PIN check no longer depends on it.
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+    $employee->update(['pin' => $this->organisation->id.':'.$code]);
+
+    $clocking = \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin::make()
+        ->handle($clockingMachine, $code)['clocking'];
+
+    expect($clocking->subject_id)->toBe($employee->id);
+});
+
+test('kiosk pin for a non working employee is rejected', function () {
+    $suffix = 'D'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk PIN Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::PIN->value,
+    ]);
+    $clockingMachine->update(['config' => ['pin' => ['enable' => true]]]);
+
+    $code = 'GH'.rand(10, 99);
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+        'state' => \App\Enums\HumanResources\Employee\EmployeeStateEnum::HIRED,
+    ]);
+    $employee->update(['pin' => $this->organisation->id.':'.$code]);
+
+    \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin::make()->handle($clockingMachine, $code);
+})->throws(\Exception::class, 'Invalid PIN.');
+
+test('kiosk endpoint 404s when pin mode is disabled', function () {
+    $suffix = 'E'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk Disabled Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::PIN->value,
+    ]);
+    $clockingMachine->update(['kiosk_token' => 'kiosk-token-disabled-'.$clockingMachine->id.'-'.$suffix]);
+
+    \Pest\Laravel\postJson(route('grp.kiosk.pin.submit', ['kioskToken' => $clockingMachine->kiosk_token]), [
+        'pin' => 'AB12',
+    ])->assertNotFound();
+});
+
+// CLOCKING KIOSK BARCODE
+
+test('can clock in via kiosk barcode', function () {
+    $suffix = 'F'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk Barcode Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::BARCODE_SCANNER->value,
+    ]);
+    $clockingMachine->update([
+        'kiosk_token' => 'kiosk-token-'.$clockingMachine->id.'-'.$suffix,
+        'config'      => ['barcode' => ['enable' => true]],
+    ]);
+
+    $code = 'BC'.rand(10, 99);
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+    $employee->update(['pin' => $this->organisation->id.':'.$code]);
+
+    // The barcode encodes the employee's own pin verbatim (no human typing involved), so an
+    // exact scanned match is the common case.
+    $clocking = \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskBarcode::make()
+        ->handle($clockingMachine, $code)['clocking'];
+
+    expect($clocking)->toBeInstanceOf(Clocking::class)
+        ->and($clocking->subject_id)->toBe($employee->id)
+        ->and($clocking->clocking_machine_id)->toBe($clockingMachine->id);
+
+    return [$clockingMachine, $employee];
+});
+
+test('wrong kiosk barcode is rejected', function (array $context) {
+    [$clockingMachine] = $context;
+
+    \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskBarcode::make()->handle($clockingMachine, 'WRONG');
+})->depends('can clock in via kiosk barcode')->throws(\Exception::class, 'Invalid barcode.');
+
+test('kiosk endpoint 404s when barcode mode is disabled', function () {
+    $suffix = 'G'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk Disabled Barcode Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::BARCODE_SCANNER->value,
+    ]);
+    $clockingMachine->update(['kiosk_token' => 'kiosk-token-disabled-'.$clockingMachine->id.'-'.$suffix]);
+
+    \Pest\Laravel\postJson(route('grp.kiosk.barcode.submit', ['kioskToken' => $clockingMachine->kiosk_token]), [
+        'barcode' => 'BC12',
+    ])->assertNotFound();
+});
+
+test('kiosk endpoint 404s when using the wrong mode for the machine', function () {
+    $suffix = 'H'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk PIN Only Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::PIN->value,
+    ]);
+    $clockingMachine->update([
+        'kiosk_token' => 'kiosk-token-'.$clockingMachine->id.'-'.$suffix,
+        'config'      => ['pin' => ['enable' => true]],
+    ]);
+
+    // pin.enable is true but barcode.enable is not, so the barcode endpoint must still 404.
+    \Pest\Laravel\postJson(route('grp.kiosk.barcode.submit', ['kioskToken' => $clockingMachine->kiosk_token]), [
+        'barcode' => 'AB12',
+    ])->assertNotFound();
+});
+
+// CLOCKING KIOSK CAMERA QR
+
+test('can clock in via kiosk camera qr', function () {
+    $suffix = 'I'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk Camera QR Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::CAMERA_QR->value,
+    ]);
+    $clockingMachine->update([
+        'kiosk_token' => 'kiosk-token-'.$clockingMachine->id.'-'.$suffix,
+        'config'      => ['camera_qr' => ['enable' => true]],
+    ]);
+
+    $code = 'IJ'.rand(10, 99);
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+    $employee->update(['pin' => $this->organisation->id.':'.$code]);
+    $employee->workplaces()->attach($workplace->id);
+
+    // The QR encodes the employee's own pin verbatim, same as the barcode flow.
+    $clocking = \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskCameraQr::make()
+        ->handle($clockingMachine, $code)['clocking'];
+
+    expect($clocking)->toBeInstanceOf(Clocking::class)
+        ->and($clocking->subject_id)->toBe($employee->id)
+        ->and($clocking->clocking_machine_id)->toBe($clockingMachine->id);
+
+    return [$clockingMachine, $employee];
+});
+
+test('wrong kiosk camera qr code is rejected', function (array $context) {
+    [$clockingMachine] = $context;
+
+    \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskCameraQr::make()->handle($clockingMachine, 'WRONG');
+})->depends('can clock in via kiosk camera qr')->throws(\Exception::class, 'Invalid QR code.');
+
+test('kiosk camera qr snapshot is stored as the clocking image', function () {
+    $suffix = 'J'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk Camera QR Snapshot Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::CAMERA_QR->value,
+    ]);
+    $clockingMachine->update(['config' => ['camera_qr' => ['enable' => true]]]);
+
+    $code = 'KL'.rand(10, 99);
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+    $employee->update(['pin' => $this->organisation->id.':'.$code]);
+
+    $pixel = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=');
+    $snapshot = 'data:image/png;base64,'.base64_encode($pixel);
+
+    $clocking = \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskCameraQr::make()
+        ->handle($clockingMachine, $code, $snapshot)['clocking'];
+
+    expect($clocking->fresh()->image_id)->not->toBeNull();
+});
+
+test('kiosk endpoint 404s when camera qr mode is disabled', function () {
+    $suffix = 'K'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk Disabled Camera QR Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::CAMERA_QR->value,
+    ]);
+    $clockingMachine->update(['kiosk_token' => 'kiosk-token-disabled-'.$clockingMachine->id.'-'.$suffix]);
+
+    \Pest\Laravel\postJson(route('grp.kiosk.camera-qr.submit', ['kioskToken' => $clockingMachine->kiosk_token]), [
+        'code' => 'AB12',
+    ])->assertNotFound();
+});
+
+test('generated employee pins are unique within the organisation', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $taken = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+    $taken->updateQuietly(['pin' => $this->organisation->id.':ABC123']);
+
+    for ($i = 0; $i < 30; $i++) {
+        SetEmployeePin::make()->action($employee, updateQuietly: true);
+        expect($employee->fresh()->pin)->not->toBe($taken->pin);
+    }
+});
+
+test('repairing pins leaves a valid pin untouched and replaces an invalid one', function () {
+    $valid = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+    $valid->updateQuietly(['pin' => $this->organisation->id.':XYZ987']);
+
+    $invalid = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+    $invalid->updateQuietly(['pin' => null]);
+
+    $this->artisan('employees:repair_pins')->assertExitCode(0);
+
+    expect($valid->fresh()->pin)->toBe($this->organisation->id.':XYZ987')
+        ->and($invalid->fresh()->pin)->toMatch('/^'.$this->organisation->id.':[A-GX-Z]{3}\d{3}$/');
+});
+
+test('a repeated kiosk scan within the duplicate window does not create a second clocking', function () {
+    $suffix = 'L'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk Double Scan Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::PIN->value,
+    ]);
+    $clockingMachine->update(['config' => ['pin' => ['enable' => true]]]);
+
+    $code     = 'GX'.rand(10, 99);
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+    $employee->updateQuietly(['pin' => $this->organisation->id.':'.$code]);
+
+    $first = \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin::make()
+        ->handle($clockingMachine, $code)['clocking'];
+
+    $second = \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin::make()
+        ->handle($clockingMachine, $code)['clocking'];
+
+    expect($second->id)->toBe($first->id)
+        ->and(Clocking::where('subject_id', $employee->id)->where('subject_type', 'Employee')->count())->toBe(1);
 });
 
 test('can adjust employee leave balance creating a new balance', function () {
@@ -1042,6 +1785,36 @@ test('can close a time tracker', function () {
         ->and($closed->duration)->toBeGreaterThan(0);
 });
 
+test('can delete time tracker and its related clockings', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Delete Time Tracker Workplace ' . rand(100000, 999999),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockIn = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'in',
+        'at' => now()->toDateTimeString(),
+    ], 0, true);
+
+    $clockOut = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'out',
+        'at' => now()->addHours(8)->toDateTimeString(),
+    ], 0, true);
+
+    $timeTracker = $clockIn->timesheet->timeTrackers()->first();
+
+    DeleteTimeTracker::make()->handle($timeTracker);
+
+    $this->assertDatabaseMissing('time_trackers', ['id' => $timeTracker->id]);
+    $this->assertDatabaseMissing('clockings', ['id' => $clockIn->id]);
+    $this->assertDatabaseMissing('clockings', ['id' => $clockOut->id]);
+});
+
 test('AddClockingToTimeTracker opens a tracker then closes it on the next clocking', function () {
     $employee = Employee::factory()->create([
         'organisation_id' => $this->organisation->id,
@@ -1209,4 +1982,551 @@ test('StoreLeave handle creates a leave with pending approval records', function
         ->and($leave->status)->toBe(LeaveStatusEnum::PENDING);
 
     expect(\App\Models\HumanResources\LeaveApprovalRecord::where('leave_id', $leave->id)->count())->toBeGreaterThanOrEqual(1);
+});
+
+test('StoreUserFromEmployee authorisation comes from the human resources trait', function () {
+    expect(class_uses_recursive(StoreUserFromEmployee::class))
+        ->toContain(WithHumanResourcesEditAuthorisation::class)
+        ->and(method_exists(StoreUserFromEmployee::class, 'authorize'))->toBeTrue();
+});
+
+test('can create a user from an employee', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'employee-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    expect($user)->toBeInstanceOf(User::class)
+        ->and($user->status)->toBeTrue()
+        ->and($employee->refresh()->user_id)->toBe($user->id);
+
+    return $employee;
+});
+
+test('an employee that already has a user can not get a second one', function (Employee $employee) {
+    expect(fn () => StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'employee-dup-' . $employee->id,
+        'password' => 'secret123',
+    ]))->toThrow(HttpException::class);
+})->depends('can create a user from an employee');
+
+test('a user can scan a QR code of a clocking machine in another organisation', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'qr-' . uniqid() . '@example.com',
+        'worker_number'   => 'QR' . uniqid(),
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'cross-org-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    $otherOrganisation = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()
+        ->action($this->group, array_merge(
+            \App\Models\SysAdmin\Organisation::factory()->definition(),
+            [
+                'code'  => 'o' . substr(uniqid(), -5),
+                'name'  => 'Other Org ' . uniqid(),
+                'email' => 'org-' . uniqid() . '@example.com',
+            ]
+        ));
+
+    $workplace = StoreWorkplace::make()->action($otherOrganisation, [
+        'name' => 'Cross Org Workplace ' . $employee->id,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Cross Org QR Machine ' . $employee->id,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+    ]);
+
+    $qrCode = StoreClockingMachineQRCode::make()->handle($clockingMachine, [
+        'label' => 'Cross org entrance',
+    ]);
+
+    actingAs($user);
+
+    $result = ValidateClockingMachineQrCode::make()->handle($qrCode->hash);
+
+    expect($result['clocking']->subject_id)->toBe($employee->id)
+        ->and($result['clocking']->organisation_id)->toBe($otherOrganisation->id)
+        ->and($result['clocking']->clocking_machine_id)->toBe($clockingMachine->id);
+});
+
+test('a user without any employee record can not clock in by QR code', function () {
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'No Employee Workplace ' . uniqid(),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'No Employee QR Machine ' . uniqid(),
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+    ]);
+
+    $qrCode = StoreClockingMachineQRCode::make()->handle($clockingMachine, [
+        'label' => 'No employee entrance',
+    ]);
+
+    expect(fn () => ValidateClockingMachineQrCode::make()->handle($qrCode->hash))
+        ->toThrow(Exception::class, 'User is not associated with an employee record.');
+});
+
+test('a remote employee skips coordinate validation on a machine of another organisation', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'qr-' . uniqid() . '@example.com',
+        'worker_number'   => 'QR' . uniqid(),
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'remote-cross-org-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    \App\Models\HumanResources\ClockingMachineCoordinatePolicy::create([
+        'organisation_id' => $this->organisation->id,
+        'scope_type'      => 'employee',
+        'scope_id'        => $employee->id,
+        'mode'            => \App\Enums\HumanResources\ClockingMachine\ClockingPolicyModeEnum::REMOTE,
+        'is_active'       => true,
+    ]);
+
+    $otherOrganisation = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()
+        ->action($this->group, array_merge(
+            \App\Models\SysAdmin\Organisation::factory()->definition(),
+            [
+                'code'  => 'o' . substr(uniqid(), -5),
+                'name'  => 'Other Org ' . uniqid(),
+                'email' => 'org-' . uniqid() . '@example.com',
+            ]
+        ));
+
+    $workplace = StoreWorkplace::make()->action($otherOrganisation, [
+        'name' => 'Remote Policy Workplace ' . $employee->id,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Remote Policy QR Machine ' . $employee->id,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+    ]);
+
+    $clockingMachine->update([
+        'config' => [
+            'qr' => [
+                'enable'            => true,
+                'allow_coordinates' => true,
+                'coordinates'       => '53.401268237762125, -1.40775203704834',
+                'radius'            => 100,
+            ],
+        ],
+    ]);
+
+    $qrCode = StoreClockingMachineQRCode::make()->handle($clockingMachine, [
+        'label' => 'Remote policy entrance',
+    ]);
+
+    actingAs($user);
+
+    $result = ValidateClockingMachineQrCode::make()->handle($qrCode->hash);
+
+    expect($result['effective_mode'])->toBe(\App\Enums\HumanResources\ClockingMachine\ClockingPolicyModeEnum::REMOTE->value)
+        ->and($result['clocking']->subject_id)->toBe($employee->id);
+});
+
+test('an employee without a remote policy still gets coordinate validation on another organisation machine', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'qr-' . uniqid() . '@example.com',
+        'worker_number'   => 'QR' . uniqid(),
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'onsite-cross-org-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    $otherOrganisation = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()
+        ->action($this->group, array_merge(
+            \App\Models\SysAdmin\Organisation::factory()->definition(),
+            [
+                'code'  => 'o' . substr(uniqid(), -5),
+                'name'  => 'Other Org ' . uniqid(),
+                'email' => 'org-' . uniqid() . '@example.com',
+            ]
+        ));
+
+    $workplace = StoreWorkplace::make()->action($otherOrganisation, [
+        'name' => 'Onsite Policy Workplace ' . $employee->id,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Onsite Policy QR Machine ' . $employee->id,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+    ]);
+
+    $clockingMachine->update([
+        'config' => [
+            'qr' => [
+                'enable'            => true,
+                'allow_coordinates' => true,
+                'coordinates'       => '53.401268237762125, -1.40775203704834',
+                'radius'            => 100,
+            ],
+        ],
+    ]);
+
+    $qrCode = StoreClockingMachineQRCode::make()->handle($clockingMachine, [
+        'label' => 'Onsite policy entrance',
+    ]);
+
+    actingAs($user);
+
+    expect(fn () => ValidateClockingMachineQrCode::make()->handle($qrCode->hash, 51.5, -0.12))
+        ->toThrow(Exception::class, 'Device is too far from the designated clocking location.');
+});
+
+test('get user current employee prefers active record over newer left record', function () {
+    $user = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->organisation->group_id]);
+
+    $makeEmployee = function (\App\Enums\HumanResources\Employee\EmployeeStateEnum $state) {
+        $modelData = Employee::factory()->make([
+            'organisation_id' => $this->organisation->id,
+        ])->toArray();
+        $modelData['worker_number'] = 'W' . rand(10000, 99999);
+        $modelData['alias'] = 'Alias ' . rand(10000, 99999);
+        $modelData['type'] = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+        $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+        $modelData['state'] = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+
+        $employee = StoreEmployee::make()->action($this->organisation, $modelData);
+        if ($state !== \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING) {
+            $employee->update(['state' => $state]);
+        }
+
+        return $employee;
+    };
+
+    $activeEmployee = $makeEmployee(\App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING);
+    $leftEmployee = $makeEmployee(\App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT);
+    $user->employees()->attach([
+        $activeEmployee->id => ['group_id' => $this->organisation->group_id, 'organisation_id' => $this->organisation->id],
+        $leftEmployee->id   => ['group_id' => $this->organisation->group_id, 'organisation_id' => $this->organisation->id],
+    ]);
+
+    expect($leftEmployee->id)->toBeGreaterThan($activeEmployee->id)
+        ->and(\App\Actions\SysAdmin\User\GetUserCurrentEmployee::run($user)->id)->toBe($activeEmployee->id)
+        ->and(\App\Actions\SysAdmin\User\GetUserCurrentEmployee::run($user, $this->organisation->id)->id)->toBe($activeEmployee->id)
+        ->and(\App\Actions\SysAdmin\User\GetUserCurrentEmployee::run($user, $this->organisation->slug)->id)->toBe($activeEmployee->id);
+
+    $activeEmployee->update(['state' => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT]);
+    expect(\App\Actions\SysAdmin\User\GetUserCurrentEmployee::run($user))->not->toBeNull();
+});
+
+describe('repair misattributed clockings', function () {
+    test('detects machine clockings left on a past employment and ignores legitimate ones', function () {
+        $pastEmployee = Employee::factory()->create([
+            'organisation_id'   => $this->organisation->id,
+            'group_id'          => $this->group->id,
+            'state'             => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT,
+            'employment_end_at' => now()->subYear(),
+        ]);
+
+        $user = StoreUserFromEmployee::make()->handle($pastEmployee, [
+            'username' => 'repair-' . $pastEmployee->id,
+            'password' => 'secret123',
+        ]);
+
+        $currentEmployee = Employee::factory()->create([
+            'organisation_id' => $this->organisation->id,
+            'group_id'        => $this->group->id,
+            'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        ]);
+        \App\Actions\SysAdmin\User\AttachEmployeeToUser::make()->action($user, $currentEmployee, ['status' => true]);
+
+        $workplace = StoreWorkplace::make()->action($this->organisation, [
+            'name' => 'Repair Workplace ' . rand(100000, 999999),
+            'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+        ]);
+
+        $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+            'name' => 'Repair Machine ' . rand(100000, 999999),
+            'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+        ]);
+
+        $stray = StoreClocking::make()->action($pastEmployee, $clockingMachine, $pastEmployee, [
+            'clocked_at' => now()->toDateTimeString(),
+        ], 0, true);
+
+        StoreClocking::make()->action($currentEmployee, $clockingMachine, $currentEmployee, [
+            'clocked_at' => now()->toDateTimeString(),
+        ], 0, true);
+
+        $pairs = collect(RepairMisattributedClockings::make()->handle());
+
+        $pair = $pairs->firstWhere('wrong_employee_id', $pastEmployee->id);
+
+        expect($pair)->not->toBeNull()
+            ->and($pair['correct_employee_id'])->toBe($currentEmployee->id)
+            ->and($pair['clocking_ids'])->toContain($stray->id)
+            ->and($pairs->firstWhere('wrong_employee_id', $currentEmployee->id))->toBeNull();
+    });
+});
+
+describe('shared group clocking machines', function () {
+    test('a kiosk resolves a pin typed bare or organisation-prefixed, and refuses a closed employment', function () {
+        $employee = Employee::factory()->create([
+            'organisation_id' => $this->organisation->id,
+            'group_id'        => $this->group->id,
+            'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        ]);
+        $employee->update(['pin' => $this->organisation->id . ':ZZQ421']);
+
+        $workplace = StoreWorkplace::make()->action($this->organisation, [
+            'name' => 'Shared Workplace ' . rand(100000, 999999),
+            'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+        ]);
+
+        $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+            'name' => 'Shared Machine ' . rand(100000, 999999),
+            'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+        ]);
+
+        $bare = ValidateClockingKioskPin::make()->handle($clockingMachine, 'ZZQ421');
+        $prefixed = ValidateClockingKioskPin::make()->handle($clockingMachine, $this->organisation->id . ':ZZQ421');
+
+        expect($bare['employee']->id)->toBe($employee->id)
+            ->and($prefixed['employee']->id)->toBe($employee->id);
+
+        $employee->update(['state' => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT]);
+
+        expect(fn () => ValidateClockingKioskPin::make()->handle($clockingMachine, 'ZZQ421'))
+            ->toThrow(Exception::class);
+    });
+});
+
+describe('stranded empty timesheets', function () {
+    test('only days with no clockings, no worked time and no real time trackers are listed', function () {
+        $pastEmployee = Employee::factory()->create([
+            'organisation_id'   => $this->organisation->id,
+            'group_id'          => $this->group->id,
+            'state'             => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT,
+            'employment_end_at' => now()->subYear(),
+        ]);
+
+        $empty = StoreTimesheet::make()->action($pastEmployee, ['date' => now()->subDays(2)]);
+        $withHusk = StoreTimesheet::make()->action($pastEmployee, ['date' => now()->subDays(3)]);
+        $withWork = StoreTimesheet::make()->action($pastEmployee, ['date' => now()->subDays(4)]);
+
+        $withHusk->timeTrackers()->create([
+            'subject_type' => 'Employee',
+            'subject_id'   => $pastEmployee->id,
+            'status'       => \App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::OPEN,
+        ]);
+
+        $withWork->timeTrackers()->create([
+            'subject_type' => 'Employee',
+            'subject_id'   => $pastEmployee->id,
+            'status'       => \App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::OPEN,
+            'starts_at'    => now()->subDays(4),
+        ]);
+
+        $action = RepairMisattributedClockings::make();
+        $action->handle(6);
+        $stranded = $action->strandedEmptyTimesheetIds();
+
+        expect($stranded)->toContain($empty->id)
+            ->and($stranded)->toContain($withHusk->id)
+            ->and($stranded)->not->toContain($withWork->id);
+
+        $husk = $withHusk->timeTrackers()->first();
+        $husk->delete();
+
+        $action->deleteStrandedTimesheets($stranded);
+
+        expect(\App\Models\HumanResources\Timesheet::find($empty->id))->toBeNull()
+            ->and(\App\Models\HumanResources\Timesheet::find($withHusk->id))->toBeNull()
+            ->and(\App\Models\HumanResources\TimeTracker::withTrashed()->find($husk->id))->toBeNull()
+            ->and(\App\Models\HumanResources\Timesheet::find($withWork->id))->not->toBeNull();
+    });
+});
+
+describe('time tracker interval guard', function () {
+    test('a tracker closed with an earlier clocking orders its endpoints instead of going negative', function () {
+        $employee = Employee::factory()->create([
+            'organisation_id' => $this->organisation->id,
+            'group_id'        => $this->group->id,
+            'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        ]);
+
+        $timesheet = StoreTimesheet::make()->action($employee, ['date' => now()]);
+
+        $tracker = $timesheet->timeTrackers()->create([
+            'subject_type' => 'Employee',
+            'subject_id'   => $employee->id,
+            'status'       => \App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::CLOSED,
+            'starts_at'    => now()->setTime(16, 0),
+            'ends_at'      => now()->setTime(8, 0),
+            'duration'     => -28800,
+        ]);
+
+        $tracker->normaliseInterval();
+
+        expect($tracker->duration)->toBe(28800)
+            ->and($tracker->starts_at->format('H:i'))->toBe('08:00')
+            ->and($tracker->ends_at->format('H:i'))->toBe('16:00');
+
+        $negatives = RepairNegativeTimeTrackers::make()->handle();
+
+        expect($negatives->pluck('id'))->not->toContain($tracker->id);
+
+        $timesheet->update([
+            'start_at' => now()->setTime(16, 0),
+            'end_at'   => now()->setTime(8, 0),
+        ]);
+
+        $action = RepairNegativeTimeTrackers::make();
+        $inverted = $action->invertedTimesheets();
+
+        expect($inverted->pluck('id'))->toContain($timesheet->id);
+
+        $action->realignTimesheets($inverted);
+        $timesheet->refresh();
+
+        expect($timesheet->start_at->format('H:i'))->toBe('08:00')
+            ->and($timesheet->end_at->format('H:i'))->toBe('16:00')
+            ->and($timesheet->total_duration)->toBeGreaterThan(0);
+    });
+});
+
+describe('current employee across organisations', function () {
+    test('a closed employment in the asked-for organisation never beats an active one elsewhere', function () {
+        $closed = Employee::factory()->create([
+            'organisation_id' => $this->organisation->id,
+            'group_id'        => $this->group->id,
+            'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT,
+        ]);
+
+        $user = StoreUserFromEmployee::make()->handle($closed, [
+            'username' => 'visitor-' . $closed->id,
+            'password' => 'secret123',
+        ]);
+
+        $active = Employee::factory()->create([
+            'organisation_id' => $this->organisation->id,
+            'group_id'        => $this->group->id,
+            'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        ]);
+        \App\Actions\SysAdmin\User\AttachEmployeeToUser::make()->action($user, $active, ['status' => true]);
+        $user->refresh();
+
+        $unreachableOrganisationId = $this->organisation->id + 9999;
+
+        expect(GetUserCurrentEmployee::run($user, $this->organisation->id)?->id)->toBe($active->id)
+            ->and(GetUserCurrentEmployee::run($user, $unreachableOrganisationId)?->id)->toBe($active->id)
+            ->and(GetUserCurrentEmployee::run($user)?->id)->toBe($active->id);
+    });
+});
+
+test('a QR scan log records the resolved employee, not the scanning user', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'qr-' . uniqid() . '@example.com',
+        'worker_number'   => 'QR' . uniqid(),
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'scan-log-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Scan Log Workplace ' . $employee->id,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Scan Log QR Machine ' . $employee->id,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+    ]);
+
+    $clockingMachine->update([
+        'config' => [
+            'qr' => [
+                'enable'            => true,
+                'allow_coordinates' => true,
+                'coordinates'       => '53.401268237762125, -1.40775203704834',
+                'radius'            => 100,
+            ],
+        ],
+    ]);
+
+    $qrCode = StoreClockingMachineQRCode::make()->handle($clockingMachine, [
+        'label' => 'Scan log entrance',
+    ]);
+
+    actingAs($user);
+
+    expect(fn () => ValidateClockingMachineQrCode::make()->handle($qrCode->hash, 51.5, -0.12))
+        ->toThrow(Exception::class);
+
+    $log = \App\Models\HumanResources\QrScanLog::where('clocking_machine_id', $clockingMachine->id)
+        ->latest('id')
+        ->first();
+
+    expect($log->employee_id)->toBe($employee->id);
+
+    expect(fn () => ValidateClockingMachineQrCode::make()->handle('no-such-hash'))
+        ->toThrow(Exception::class, 'Invalid QR Code.');
+
+    $unresolvedLog = \App\Models\HumanResources\QrScanLog::latest('id')->first();
+
+    expect($unresolvedLog->employee_id)->toBeNull();
+});
+
+describe('hr records leave on behalf of employee', function () {
+    test('leave is created approved, past dates allowed, balance deducted', function () {
+        $employee = Employee::factory()->create([
+            'organisation_id' => $this->organisation->id,
+            'group_id' => $this->group->id,
+        ]);
+        $leaveType = StoreLeaveType::make()->action($this->organisation, [
+            'code' => 'SICKHR' . rand(1000, 9999),
+            'name' => 'Sick leave',
+            'category' => \App\Enums\HumanResources\Leave\LeaveCategoryEnum::MEDICAL,
+        ]);
+
+        $leave = StoreEmployeeLeave::make()->handle($employee, [
+            'type' => $leaveType->code,
+            'start_date' => now()->subDays(3)->toDateString(),
+            'end_date' => now()->subDay()->toDateString(),
+            'reason' => 'Called in sick',
+        ]);
+
+        expect($leave->status)->toBe(LeaveStatusEnum::APPROVED)
+            ->and($leave->approved_at)->not->toBeNull()
+            ->and($leave->employee_id)->toBe($employee->id)
+            ->and($leave->leave_type_id)->toBe($leaveType->id)
+            ->and($leave->duration_days)->toBeGreaterThan(0);
+
+        $balance = \App\Models\HumanResources\EmployeeLeaveBalance::where('employee_id', $employee->id)->first();
+        expect((float) $balance->medical_used)->toBe((float) $leave->duration_days);
+    });
 });

@@ -11,14 +11,16 @@ import TableOrgSuppliers from "@/Components/Tables/Grp/Org/Procurement/TableOrgS
 import { capitalize } from "@/Composables/capitalize"
 
 defineProps<{
-    pageHead: object
-    title: string
-    data: object
+	pageHead: object
+	title: string
+	data: object
 }>()
 </script>
 
 <template>
-    <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
-    <TableOrgSuppliers :data="data" />
+	<div>
+		<Head :title="capitalize(title)" />
+		<PageHeading :data="pageHead" />
+		<TableOrgSuppliers :data="data" />
+	</div>
 </template>

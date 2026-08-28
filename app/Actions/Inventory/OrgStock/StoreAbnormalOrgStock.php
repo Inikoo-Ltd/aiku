@@ -93,7 +93,7 @@ class StoreAbnormalOrgStock extends OrgAction
     public function action(Organisation|OrgStockFamily $parent, $modelData = [], int $hydratorsDelay = 0, bool $strict = true, $audit = true): OrgStock
     {
         if (!$audit) {
-            OrgStock::disableAuditing();
+            return OrgStock::withoutAuditing(fn () => $this->action($parent, $modelData, $hydratorsDelay, $strict));
         }
 
         if ($parent instanceof Organisation) {

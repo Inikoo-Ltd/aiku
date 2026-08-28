@@ -7,12 +7,16 @@
  */
 
 use App\Actions\Billables\Charge\StoreCharge;
+use App\Actions\Billables\Service\StoreService;
 use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use Illuminate\Support\Facades\Route;
 
 Route::name('billables.')->prefix('shop/{shop:id}/billables')->group(function () {
     Route::name('charges.')->prefix('charges')->group(function () {
         Route::post('store', StoreCharge::class)->name('store');
+    });
+    Route::name('services.')->prefix('services')->group(function () {
+        Route::post('store', StoreService::class)->name('store');
     });
     Route::name('shipping-zone-schemas.')->prefix('shipping-one-schemas')->group(function () {
         Route::post('store', StoreShippingZoneSchema::class)->name('store');

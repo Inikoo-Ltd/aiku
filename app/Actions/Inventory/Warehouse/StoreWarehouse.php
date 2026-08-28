@@ -46,6 +46,7 @@ class StoreWarehouse extends OrgAction
     {
         data_set($modelData, 'group_id', $organisation->group_id);
         data_set($modelData, 'state', WarehouseStateEnum::OPEN, overwrite: false);
+        data_set($modelData, 'settings.low_stock_threshold', Warehouse::DEFAULT_LOW_STOCK_THRESHOLD, overwrite: false);
 
         $addressData = Arr::get($modelData, 'address');
         Arr::forget($modelData, 'address');

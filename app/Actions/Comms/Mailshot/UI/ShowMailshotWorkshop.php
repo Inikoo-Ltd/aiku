@@ -31,6 +31,7 @@ use App\Http\Resources\Mail\EmailTemplateResource;
 class ShowMailshotWorkshop extends OrgAction
 {
     use WithActionButtons;
+    use WithMailshotJourney;
     use WithOutboxBuilder;
 
     public function handle(Mailshot $mailshot): Mailshot
@@ -76,17 +77,22 @@ class ShowMailshotWorkshop extends OrgAction
                 ),
                 'title'       => $mailshot->subject,
                 'pageHead'    => [
-                    'title'     => $mailshot->subject,
+                    'title'      => $mailshot->subject,
+                    'model'      => __('Subject:'),
+                    'modelStyle' => 'text-sm',
+                    'titleStyle' => 'font-normal text-lg',
                     'icon'      => [
                         'tooltip' => __('snapshot'),
                         'icon'    => 'fal fa-mail-bulk'
                     ],
                     'actions'   => [
                         [
-                            'type'  => 'button',
-                            'style' => 'exit',
-                            'label' => __('Exit workshop'),
-                            'route' => [
+                            'type'      => 'button',
+                            'style'     => 'primary',
+                            'icon'      => false,
+                            'iconRight' => 'fal fa-arrow-right',
+                            'label'     => __('Review & send'),
+                            'route'     => [
                                 'name'       => preg_replace('/workshop$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ]
@@ -171,11 +177,31 @@ class ShowMailshotWorkshop extends OrgAction
                     'method' => 'post'
                 ],
                 'sendTestRoute' => [
-                    'name' => 'grp.org.shops.show.marketing.mailshots.send-test',
+                    'name' => 'grp.models.shop.mailshot.send-test',
                     'parameters' => [
-                        'organisation' => $this->organisation->slug,
-                        'shop' => $this->shop->slug,
-                        'mailshot' => $mailshot->slug
+                        'shop' => $this->shop->id,
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'post'
+                ],
+                'journey' => $this->getMailshotJourney($mailshot, 'compose'),
+                'openTemplateSelector' => !$hasPublishedVersion && !$templateLayout && $email->unpublishedSnapshot->created_at->eq($email->unpublishedSnapshot->updated_at),
+                'mailshot' => [
+                    'subject'      => $mailshot->subject,
+                    'name'         => $mailshot->name,
+                    'preview_text' => $mailshot->preview_text,
+                ],
+                'updateMailshotRoute' => [
+                    'name'       => 'grp.models.shop.mailshot.update',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'patch'
+                ],
+                'suggestCopyRoute' => [
+                    'name'       => 'grp.json.mailshot.copy_suggestion',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
                     ],
                     'method' => 'post'
                 ],

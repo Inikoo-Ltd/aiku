@@ -48,7 +48,7 @@ const component = computed(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-    <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
+    <Tabs v-if="Object.keys(tabs?.navigation ?? {}).length" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
     <component
         :is="component"

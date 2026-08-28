@@ -8,12 +8,15 @@
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
+use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
+use App\Actions\Ordering\Order\GetOrderShippingOptions;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\GetVoucherData;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
@@ -29,6 +32,9 @@ use Illuminate\Support\Facades\DB;
 
 trait IsOrder
 {
+    use WithLineTaxCategories;
+    use WithPreferredShipperResolver;
+
     use GetPlatformLogo;
 
     public function getOrderBoxStats(Order $order): array
@@ -162,6 +168,7 @@ trait IsOrder
                             'shipper_id'   => null
                         ]
                     ],
+                    'shipper_directive'            => $this->getShipperDirective($deliveryNote),
                     'shipments'                    => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null,
                     'shipments_routes'             => [
                         'submit_route' => [
@@ -231,6 +238,16 @@ trait IsOrder
 
         $orderSummary = $itemsData;
 
+        if ($order->services_amount != 0) {
+            $orderSummary[] = [
+                [
+                    'label'       => __('Services'),
+                    'information' => '',
+                    'price_total' => $order->services_amount,
+                ],
+            ];
+        }
+
         $orderSummary[] = [
             [
                 'label'       => __('Charges'),
@@ -259,7 +276,13 @@ trait IsOrder
                         'slug' => $order->shippingZone->slug,
                         'code' => $order->shippingZone->code,
                         'name' => $order->shippingZone->name,
-                    ] : null
+                    ] : null,
+                    'shipper'             => $order->shipper_id ? [
+                        'id'   => $order->shipper_id,
+                        'name' => $order->shipper->name,
+                    ] : null,
+                    'is_shipper_locked'   => (bool) $order->is_shipper_locked,
+                    'shipping_options'    => GetOrderShippingOptions::run($order),
                 ]
             ]
         ];
@@ -275,19 +298,14 @@ trait IsOrder
             ];
         }
 
-        $orderSummary[] =
+        $orderSummary[] = [
             [
-                [
-                    'label'       => __('Net'),
-                    'information' => '',
-                    'price_total' => $order->net_amount,
-                ],
-                [
-                    'label'       => __('Tax').' ('.$taxCategory->getLocalizedName().')',
-                    'information' => '',
-                    'price_total' => $order->tax_amount
-                ]
-            ];
+                'label'       => __('Net'),
+                'information' => '',
+                'price_total' => $order->net_amount,
+            ],
+            ...$this->getOrderTaxRows($order),
+        ];
 
         $orderSummary[] = [
             [
@@ -301,6 +319,18 @@ trait IsOrder
                 [
                     'label'       => __('Commission'),
                     'price_total' => $order->commission_amount,
+                ],
+            ];
+        }
+
+        $adjustmentsNet = $order->transactions()->where('model_type', 'Adjustment')->sum('net_amount');
+
+        if ($adjustmentsNet != 0) {
+            $orderSummary[] = [
+                [
+                    'label'       => __('Adjustments (net)'),
+                    'information' => __('Small differences settled by the shop, not charged to the customer'),
+                    'price_total' => $adjustmentsNet,
                 ],
             ];
         }
@@ -365,6 +395,16 @@ trait IsOrder
                     'pay_amount'          => $roundedDiff,
                     'pay_status'          => $order->pay_status,
                     'pay_detailed_status' => $order->pay_detailed_status,
+                    'write_off'           => $roundedDiff != 0 && abs($roundedDiff) <= paymentSettlementTolerance($order->shop) && !$order->invoices()->where('in_process', false)->exists() ? [
+                        'amount' => $roundedDiff,
+                        'route'  => [
+                            'name'       => 'grp.models.order.write_off_shortfall',
+                            'parameters' => [
+                                'order' => $order->id
+                            ],
+                            'method'     => 'post'
+                        ]
+                    ] : null,
                 ],
                 'excesses_payment' => [
                     'amount'               => round($order->payment_amount - $totalToPay, 2),

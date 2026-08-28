@@ -11,6 +11,10 @@
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
+use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\CRM\WebUser\StoreWebUser;
+use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
+use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\Web\Announcement\DeleteAnnouncement;
 use App\Actions\Web\Announcement\PublishAnnouncement;
@@ -19,6 +23,8 @@ use App\Actions\Web\Announcement\UpdateAnnouncement;
 use App\Actions\Web\Banner\DeleteBanner;
 use App\Actions\Web\Banner\StoreBanner;
 use App\Actions\Web\Banner\UpdateBanner;
+use App\Actions\Web\Crawl\CrawlWebsite;
+use App\Actions\Web\Crawl\CrawlWebsites;
 use App\Actions\Web\ExternalLink\AttachExternalLinkToWebBlock;
 use App\Actions\Web\ExternalLink\CheckExternalLinkStatus;
 use App\Actions\Web\ExternalLink\StoreExternalLink;
@@ -47,6 +53,8 @@ use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Actions\Web\Website\UpdateWebsite;
+use App\Actions\Web\Website\Analytics\TrackWebsiteVisitorActivity;
+use App\Actions\Web\Website\UpdateWebsiteSearchBoosts;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
@@ -54,19 +62,34 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Web\WebsiteTabsEnum;
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Enums\Web\Banner\BannerTypeEnum;
+use App\Enums\Web\Crawl\CrawlTriggerEnum;
+use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Events\Web\WebsiteVisitorCountUpdated;
+use App\Events\Web\WebsiteVisitorHit;
 use App\Models\Analytics\AikuScopedSection;
+use App\Models\CRM\Customer;
+use App\Models\Helpers\Address;
+use App\Models\Helpers\TaxCategory;
+use App\Models\Ordering\CheckoutAbandonment;
+use App\Models\Ordering\Order;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Helpers\Snapshot;
 use App\Models\Helpers\SnapshotStats;
 use App\Models\Web\Announcement;
+use App\Actions\Web\Announcement\ResumeSupersededAnnouncement;
+use App\Enums\Announcement\AnnouncementStatusEnum;
+use App\Http\Middleware\HandleIrisInertiaRequests;
+use Illuminate\Validation\ValidationException;
 use App\Models\Web\Banner;
+use App\Models\Web\Crawl;
 use App\Models\Web\ExternalLink;
 use App\Models\Web\Redirect;
 use App\Models\Web\WebBlock;
@@ -78,14 +101,20 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
 use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Decorators\JobDecorator;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
+use function Pest\Laravel\post;
 
 beforeAll(function () {
     loadDB();
@@ -157,6 +186,16 @@ test('update website', function (Website $website) {
     $shop->refresh();
 
     expect($shop->name)->toBe('Test Website Updated');
+})->depends('create b2b website');
+
+test('update website sound player style', function (Website $website) {
+    $website = UpdateWebsite::make()->action($website, ['sound_player_style' => 'mono']);
+    $website->refresh();
+
+    expect(Arr::get($website->settings, 'sound_player_style'))->toBe('mono');
+
+    expect(fn () => UpdateWebsite::make()->action($website, ['sound_player_style' => 'disco']))
+        ->toThrow(Illuminate\Validation\ValidationException::class);
 })->depends('create b2b website');
 
 test('create webpage', function (Website $website) {
@@ -417,6 +456,30 @@ test('web sitemap creation', function () {
 });
 
 // UI
+
+test('UI show website exposes showcase props the component actually reads', function (Website $website) {
+    $response = get(route('grp.org.shops.show.web.websites.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $website->slug,
+    ]));
+
+    // These live under the showcase tab payload, not the top level: WebsiteShowcase.vue reads
+    // them as props.data.*, so a key in the wrong array silently reads as undefined.
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Org/Web/Website')
+        ->has(
+            'showcase',
+            fn (AssertableInertia $showcase) => $showcase
+                ->has('migrated')
+                ->has('live_visitors')
+                ->has('live_visitors_enabled')
+                ->has('currency_code')
+                ->has('route_live_users')
+                ->etc()
+        )
+        ->etc());
+})->depends('launch website');
 
 test('UI index websites in organisation', function () {
     $response = get(
@@ -899,6 +962,7 @@ test('UI smoke shop web GET routes', function (Website $website, Webpage $webpag
 
     $base        = [$org, $shop, $w];
     $withWebpage = [$org, $shop, $w, $webpage->slug];
+    $customer    = createCustomer($this->shop);
 
     $routes = [
         'grp.org.shops.show.web.websites.index'              => [$org, $shop],
@@ -914,6 +978,14 @@ test('UI smoke shop web GET routes', function (Website $website, Webpage $webpag
         'grp.org.shops.show.web.websites.restricted_country' => $base,
         'grp.org.shops.show.web.analytics.dashboard'         => $base,
         'grp.org.shops.show.web.analytics.visitors.index'    => $base,
+        'grp.org.shops.show.web.analytics.live_users'        => $base,
+        'grp.org.shops.show.web.analytics.web_user_requests.index' => $base,
+        'grp.org.shops.show.web.analytics.search'            => $base,
+        'grp.org.shops.show.web.analytics.search.query'      => array_merge($base, ['q' => 'tea']),
+        'grp.org.shops.show.web.analytics.search.opportunities' => $base,
+        'grp.org.shops.show.web.analytics.search.boost_candidates' => array_merge($base, ['q' => 'tea']),
+        'grp.org.shops.show.web.analytics.search.page'       => array_merge($base, ['url' => 'https://example.com/p/tea']),
+        'grp.org.shops.show.web.analytics.search.customer'   => [$org, $shop, $w, $customer->slug],
         'grp.org.shops.show.web.announcements.index'         => $base,
         'grp.org.shops.show.web.announcements.create'        => $base,
         'grp.org.shops.show.web.announcements.show'          => [$org, $shop, $w, $announcement->ulid],
@@ -977,6 +1049,8 @@ test('UI smoke fulfilment web GET routes', function (Website $website) {
         'grp.org.fulfilments.show.web.websites.restricted_country' => $base,
         'grp.org.fulfilments.show.web.analytics.dashboard'       => $base,
         'grp.org.fulfilments.show.web.analytics.visitors.index'  => $base,
+        'grp.org.fulfilments.show.web.analytics.live_users'      => $base,
+        'grp.org.fulfilments.show.web.analytics.web_user_requests.index' => $base,
         'grp.org.fulfilments.show.web.banners.index'             => $base,
         'grp.org.fulfilments.show.web.crawls.index'              => $base,
         'grp.org.fulfilments.show.web.redirect.index'            => $base,
@@ -1054,6 +1128,141 @@ test('create catalogue webpages', function (Website $website) {
         ->and($productWebpage->model_type)->toBe('Product');
 
     return compact('department', 'family', 'subDepartment', 'product', 'departmentWebpage', 'familyWebpage', 'subDepartmentWebpage', 'productWebpage', 'blogWebpage');
+})->depends('launch website');
+
+test('update website search boosts', function (Website $website) {
+    $website->refresh();
+    createProduct($this->shop);
+    $product = $this->shop->products()->first();
+
+    $routeParams = [$this->organisation->slug, $this->shop->slug, $website->slug];
+
+    $response = post(route('grp.org.shops.show.web.analytics.search.boosts.update', $routeParams), [
+        'boosts' => [['type' => 'product', 'id' => $product->id]],
+    ]);
+    $response->assertSuccessful();
+
+    expect(data_get($website->refresh()->settings, 'search_boosts'))
+        ->toEqual([['type' => 'product', 'id' => $product->id]]);
+
+    $tooMany = array_fill(0, 4, ['type' => 'product', 'id' => $product->id]);
+    post(route('grp.org.shops.show.web.analytics.search.boosts.update', $routeParams), ['boosts' => $tooMany])
+        ->assertSessionHasErrors('boosts');
+
+    $product->updateQuietly(['available_quantity' => 5]);
+    expect(UpdateWebsiteSearchBoosts::activeBoostIds($website->refresh()))
+        ->toEqual(['product' => [$product->id]]);
+
+    $product->updateQuietly(['available_quantity' => 0]);
+    expect(UpdateWebsiteSearchBoosts::activeBoostIds($website))->toBe([]);
+
+    post(route('grp.org.shops.show.web.analytics.search.boosts.update', $routeParams), [
+        'boosts' => [['type' => 'product', 'id' => $product->id + 999999]],
+    ])->assertSuccessful();
+
+    expect(data_get($website->refresh()->settings, 'search_boosts'))->toBe([]);
+})->depends('launch website');
+
+test('manage search synonyms', function (Website $website) {
+    $website->refresh();
+    $routeParams = [$this->organisation->slug, $this->shop->slug, $website->slug];
+
+    $set = 'catalogue-'.$this->shop->language->code;
+
+    Http::fake([
+        "*/synonym_sets/$set/items/*" => Http::response(['id' => 'aromcandles']),
+        "*/synonym_sets/$set/items"   => Http::response([
+            ['id' => 'aromcandles', 'synonyms' => ['aromcandles', 'aroma candles'], 'root' => ''],
+        ]),
+        "*/synonym_sets/$set"         => Http::response(['name' => $set]),
+    ]);
+
+    post(route('grp.org.shops.show.web.analytics.search.synonyms.store', $routeParams), [
+        'words' => ['Aromcandles', 'aroma candles', 'aromcandles '],
+    ])->assertSuccessful();
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), "/synonym_sets/$set/items/aromcandles")
+        && $request['synonyms'] === ['aromcandles', 'aroma candles']);
+
+    get(route('grp.org.shops.show.web.analytics.search.synonyms.index', $routeParams))
+        ->assertSuccessful()
+        ->assertExactJson([['id' => 'aromcandles', 'synonyms' => ['aromcandles', 'aroma candles']]]);
+
+    delete(route('grp.org.shops.show.web.analytics.search.synonyms.delete', array_merge($routeParams, ['aromcandles'])))
+        ->assertSuccessful();
+
+    post(route('grp.org.shops.show.web.analytics.search.synonyms.store', $routeParams), ['words' => ['only-one']])
+        ->assertSessionHasErrors('words');
+})->depends('launch website');
+
+test('import search synonyms command', function () {
+    Http::fake(['*/synonym_sets/*' => Http::response(['id' => 'laboradite'])]);
+
+    $file = tempnam(sys_get_temp_dir(), 'synonyms').'.json';
+    file_put_contents($file, json_encode([
+        ['language' => 'en', 'words' => ['laboradite', 'labradorite']],
+        ['language' => 'en', 'words' => ['only-one']],
+    ]));
+
+    $this->artisan('search:import-synonyms', ['file' => $file])
+        ->expectsOutputToContain('Imported 1 synonyms, 1 failed/skipped')
+        ->assertExitCode(1);
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/synonym_sets/catalogue-en/items/laboradite')
+        && $request['synonyms'] === ['laboradite', 'labradorite']);
+
+    unlink($file);
+});
+
+test('propose and decide search synonym suggestions', function (Website $website) {
+    $website->refresh();
+    $lang = $this->shop->language->code;
+    $set  = 'catalogue-'.$lang;
+
+    \App\Models\Helpers\WebsiteSearchLog::create([
+        'ulid'          => (string)\Illuminate\Support\Str::ulid(),
+        'group_id'      => $this->shop->group_id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'       => $this->shop->id,
+        'website_id'    => $website->id,
+        'scope'         => 'catalogue',
+        'query'         => 'aromcandles',
+        'results_count' => 0,
+    ]);
+
+    $suggestionId = $lang.'-aromcandles';
+
+    Http::fake([
+        'api.openai.com/*' => Http::response([
+            'choices' => [['message' => ['content' => '[{"q":"aromcandles","action":"synonym","words":["aromcandles","aroma candles"]}]']]],
+        ]),
+        "*/collections/synonym_suggestions/documents/search*" => Http::response(['hits' => []]),
+        "*/collections/synonym_suggestions/documents?action=upsert" => Http::response(['id' => $suggestionId]),
+        "*/collections/synonym_suggestions/documents/$suggestionId" => Http::response([
+            'id' => $suggestionId, 'language' => $lang, 'query' => 'aromcandles',
+            'words' => ['aromcandles', 'aroma candles'], 'sessions' => 1, 'status' => 'pending',
+        ]),
+        "*/collections/synonym_suggestions" => Http::response(['name' => 'synonym_suggestions']),
+        "*/collections/products/documents/search*" => Http::response(['found' => 5]),
+        "*/synonym_sets/$set/items/*" => Http::response(['id' => 'aromcandles']),
+        "*/synonym_sets/$set*" => Http::response(['items' => []]),
+    ]);
+
+    $this->artisan('search:propose-synonyms')
+        ->expectsOutputToContain('suggestions staged for approval')
+        ->assertExitCode(0);
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'documents?action=upsert')
+        && $request['query'] === 'aromcandles' && $request['status'] === 'pending');
+
+    $routeParams = [$this->organisation->slug, $this->shop->slug, $website->slug];
+
+    post(route('grp.org.shops.show.web.analytics.search.synonym_suggestions.decide', array_merge($routeParams, [$suggestionId, 'approve'])))
+        ->assertSuccessful()
+        ->assertJson(['status' => 'approved']);
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), "/synonym_sets/$set/items/aromcandles")
+        && $request['synonyms'] === ['aromcandles', 'aroma candles']);
 })->depends('launch website');
 
 test('UI smoke catalogue webpage routes', function (Website $website, array $cat) {
@@ -1221,6 +1430,41 @@ test('robots txt is generated on demand with absolute sitemap urls', function (W
         ->not->toContain('Sitemap: /');
 })->depends('launch website');
 
+test('llms txt core is generated and an upload is only appended', function (Website $website) {
+    $website->update(['settings' => array_merge($website->settings ?? [], ['webpage' => ['show_price' => false]])]);
+
+    $core = App\Actions\Web\Website\LlmsTxt\GetLlmsTxt::run($website->refresh());
+
+    expect($core)
+        ->toContain('# '.$website->name)
+        ->toContain('register first at https://www.'.$website->domain.'/app/register')
+        ->toContain('There is no public ordering API')
+        ->not->toContain('## Additional information');
+
+    App\Models\Web\WebsiteLlmsTxt::create([
+        'group_id'        => $website->group_id,
+        'organisation_id' => $website->organisation_id,
+        'website_id'      => $website->id,
+        'path'            => '',
+        'file_size'       => 10,
+        'content'         => 'THIS IS A TEST UPLOAD',
+        'is_active'       => true,
+        'use_fallback'    => false,
+        'uploaded_at'     => now(),
+    ]);
+
+    $withUpload = App\Actions\Web\Website\LlmsTxt\GetLlmsTxt::run($website);
+
+    expect($withUpload)
+        ->toStartWith('# '.$website->name)
+        ->toContain('register first at')
+        ->toContain("## Additional information\n\nTHIS IS A TEST UPLOAD");
+
+    $website->update(['settings' => array_merge($website->settings, ['webpage' => ['show_price' => true]])]);
+
+    expect(App\Actions\Web\Website\LlmsTxt\GetLlmsTxt::run($website->refresh()))->toContain('Prices are public.');
+})->depends('launch website');
+
 test('update webpage canonical url', function (Webpage $webpage) {
     $canonicalUrl = UpdateWebpageCanonicalUrl::run($webpage);
 
@@ -1313,6 +1557,100 @@ test('publish announcement', function (Website $website) {
     expect($announcement->live_snapshot_id)->not->toBeNull();
 })->depends('create b2b website');
 
+function publishAnnouncementInPosition(Website $website, $user, string $name, string $position, array $modelData = []): Announcement
+{
+    $announcement = StoreAnnouncement::make()->action($website, ['name' => $name]);
+    UpdateAnnouncement::make()->handle($announcement, [
+        'fields'   => ['title' => 'hi'],
+        'settings' => ['position' => $position]
+    ]);
+    $announcement->refresh();
+
+    request()->setUserResolver(fn () => $user);
+    PublishAnnouncement::make()->handle($announcement, [
+        'text'                 => 'hello world',
+        'container_properties' => [],
+        ...$modelData
+    ]);
+
+    return $announcement->refresh();
+}
+
+test('publishing on top of an overlapping announcement is refused', function (Website $website) {
+    $running = publishAnnouncementInPosition($website, $this->user, 'running', 'refused-spot');
+
+    $challenger = StoreAnnouncement::make()->action($website, ['name' => 'challenger']);
+    UpdateAnnouncement::make()->handle($challenger, [
+        'fields'   => ['title' => 'hi'],
+        'settings' => ['position' => 'refused-spot']
+    ]);
+    $challenger->refresh();
+    request()->setUserResolver(fn () => $this->user);
+
+    expect(fn () => PublishAnnouncement::make()->handle($challenger, [
+        'text'                 => 'hello world',
+        'container_properties' => [],
+    ]))->toThrow(ValidationException::class);
+
+    $running->refresh();
+    $challenger->refresh();
+
+    expect($running->status)->toBe(AnnouncementStatusEnum::ACTIVE)
+        ->and($running->paused_by_announcement_id)->toBeNull()
+        ->and($challenger->live_snapshot_id)->toBeNull();
+})->depends('create b2b website');
+
+test('superseding pauses the other announcement and it comes back by itself', function (Website $website) {
+    $running = publishAnnouncementInPosition($website, $this->user, 'running', 'shared-spot');
+
+    Queue::fake();
+    $finishAt = now()->addHours(2);
+
+    $challenger = publishAnnouncementInPosition($website, $this->user, 'challenger', 'shared-spot', [
+        'schedule_finish_at' => $finishAt,
+        'supersede'          => true
+    ]);
+
+    $running->refresh();
+
+    expect($challenger->status)->toBe(AnnouncementStatusEnum::ACTIVE)
+        ->and($running->status)->toBe(AnnouncementStatusEnum::INACTIVE)
+        ->and($running->paused_by_announcement_id)->toBe($challenger->id)
+        ->and($running->paused_until->timestamp)->toBe($finishAt->timestamp);
+
+    ResumeSupersededAnnouncement::run($running, $challenger->id);
+    $running->refresh();
+
+    expect($running->status)->toBe(AnnouncementStatusEnum::ACTIVE)
+        ->and($running->paused_by_announcement_id)->toBeNull()
+        ->and($running->paused_until)->toBeNull();
+})->depends('create b2b website');
+
+test('announcements in the same position but different dates do not clash', function (Website $website) {
+    $first = publishAnnouncementInPosition($website, $this->user, 'first', 'queued-spot', [
+        'schedule_finish_at' => now()->addDay()
+    ]);
+
+    $second = publishAnnouncementInPosition($website, $this->user, 'second', 'queued-spot', [
+        'schedule_at' => now()->addDays(2)
+    ]);
+
+    $first->refresh();
+
+    expect($first->status)->toBe(AnnouncementStatusEnum::ACTIVE)
+        ->and($first->paused_by_announcement_id)->toBeNull()
+        ->and($second->live_snapshot_id)->not->toBeNull();
+})->depends('create b2b website');
+
+test('storefront cache expires at the next scheduled change', function (Website $website) {
+    publishAnnouncementInPosition($website, $this->user, 'timed', 'cache-spot', [
+        'schedule_finish_at' => now()->addMinutes(10)
+    ]);
+
+    $ttl = (new HandleIrisInertiaRequests())->getAnnouncementsCacheTtl($website->refresh());
+
+    expect($ttl)->toBeLessThanOrEqual(600)->toBeGreaterThan(0);
+})->depends('create b2b website');
 // Cloudflare: mutate website slugs, so keep last to avoid stale slugs in UI tests above
 
 it('correctly picks zone kind ruleset when multiple exist', function () {
@@ -1412,4 +1750,358 @@ it('creates ruleset if none of zone kind exists', function () {
     $result = BlockCountriesInCloudflare::run($website, ['UA']);
 
     expect($result['result']['id'])->toBe('new_zone_ruleset_id');
+});
+
+test('luigi object from blog webpage without model', function (array $cat) {
+    $object = (new ReindexWebpageLuigiData())->getObjectFromWebpage($cat['blogWebpage']);
+
+    expect($object['type'])->toBe('news')
+        ->and($object['fields']['slug'])->toBe('webpage-'.$cat['blogWebpage']->slug);
+})->depends('create catalogue webpages');
+
+/*
+ * Folded in from its own file, which restored the whole database in beforeEach rather than beforeAll
+ * and so paid eight restores for eight tests. It does not need them: the state these tests care about
+ * lives in Redis, and the four keys are deleted below before each one.
+ *
+ * The one database-shaped assertion is the basket total, which sums the shared customer's orders in
+ * CREATING. Nothing else in this file creates an order, and that is what keeps the figure at 906.30.
+ */
+describe('live visitor tracking', function () {
+    beforeEach(function () {
+        $this->website  = createWebsite($this->shop);
+        $this->customer = createCustomer($this->shop);
+        $this->webUser  = createWebUser($this->customer);
+        $this->tracker  = TrackWebsiteVisitorActivity::make();
+
+        Redis::del(
+            "website:{$this->website->id}:visitors:logged_in",
+            "website:{$this->website->id}:visitors:logged_out",
+            "website:{$this->website->id}:live:watched",
+            "website:{$this->website->id}:live:paused",
+        );
+
+        Event::fake();
+    });
+
+    it('counts a guest and a logged in visitor separately', function () {
+        $this->tracker->handle($this->website, 'session-guest', ['country' => 'GB']);
+        $this->tracker->handle($this->website, 'session-user', ['web_user_id' => $this->webUser->id]);
+
+        expect($this->tracker->getCounts($this->website))->toBe([
+            'logged_in'  => 1,
+            'logged_out' => 1,
+        ]);
+    });
+
+    it('stores booleans as redis strings and drops nulls', function () {
+        $this->tracker->handle($this->website, 'session-guest', [
+            'country'    => 'GB',
+            'city'       => 'Sheffield',
+            'page_title' => null,
+        ]);
+
+        $visitors = $this->tracker->getActiveVisitors($this->website);
+
+        expect($visitors)->toHaveCount(1)
+            ->and($visitors[0]['session_id'])->toBe('session-guest')
+            ->and($visitors[0]['logged_in'])->toBe('0')
+            ->and($visitors[0]['city'])->toBe('Sheffield')
+            ->and($visitors[0])->not->toHaveKey('page_title');
+    });
+
+    it('moves a session between the guest and logged in sets when it signs in', function () {
+        $this->tracker->handle($this->website, 'session-a', ['country' => 'GB']);
+        expect($this->tracker->getCounts($this->website))->toBe(['logged_in' => 0, 'logged_out' => 1]);
+
+        $this->tracker->handle($this->website, 'session-a', ['web_user_id' => $this->webUser->id]);
+        expect($this->tracker->getCounts($this->website))->toBe(['logged_in' => 1, 'logged_out' => 0]);
+    });
+
+    it('attaches the customer name and basket total to a logged in visitor', function () {
+        Order::factory()->create([
+            'group_id'        => $this->organisation->group_id,
+            'organisation_id' => $this->organisation->id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $this->customer->id,
+            'slug'            => 'live-visitors-basket',
+            'tax_category_id' => TaxCategory::first()->id,
+            'currency_id'     => $this->shop->currency_id,
+            'state'           => OrderStateEnum::CREATING,
+            'total_amount'    => 906.30,
+        ]);
+
+        $this->tracker->handle($this->website, 'session-user', ['web_user_id' => $this->webUser->id]);
+
+        $visitor = $this->tracker->getActiveVisitors($this->website)[0];
+
+        expect($visitor['logged_in'])->toBe('1')
+            ->and((float) $visitor['basket_amount'])->toBe(906.30)
+            ->and($visitor['customer_name'])->not->toBeEmpty();
+    });
+
+    it('stays silent on soketi until somebody is watching the dashboard', function () {
+        $this->tracker->handle($this->website, 'session-guest', ['country' => 'GB']);
+
+        Event::assertNotDispatched(WebsiteVisitorCountUpdated::class);
+        Event::assertNotDispatched(WebsiteVisitorHit::class);
+
+        $this->tracker->markWatched($this->website);
+        $this->tracker->handle($this->website, 'session-guest', ['country' => 'GB']);
+
+        Event::assertDispatched(WebsiteVisitorCountUpdated::class);
+        Event::assertDispatched(WebsiteVisitorHit::class, function ($event) {
+            return $event->website->id === $this->website->id
+                && $event->visitorData['session_id'] === 'session-guest'
+                && $event->visitorData['country'] === 'GB';
+        });
+    });
+
+    it('forgets visitors that fell outside the activity window', function () {
+        $this->tracker->handle($this->website, 'session-stale', ['country' => 'GB']);
+
+        Redis::zadd(
+            "website:{$this->website->id}:visitors:logged_out",
+            time() - TrackWebsiteVisitorActivity::WINDOW - 1,
+            'session-stale'
+        );
+
+        expect($this->tracker->getCounts($this->website))->toBe(['logged_in' => 0, 'logged_out' => 0])
+            ->and($this->tracker->getActiveVisitors($this->website))->toBe([]);
+    });
+
+    it('pauses tracking when a website is flooded with sessions', function () {
+        $key = "website:{$this->website->id}:visitors:logged_out";
+
+        $flood = [];
+        for ($i = 0; $i < TrackWebsiteVisitorActivity::MAX_ACTIVE - 1; $i++) {
+            $flood["flood-$i"] = time();
+        }
+        Redis::zadd($key, ...collect($flood)->flatMap(fn ($score, $member) => [$score, $member])->all());
+
+        $this->tracker->handle($this->website, 'real-visitor', ['country' => 'GB']);
+        expect($this->tracker->isPaused($this->website))->toBeFalse();
+
+        $this->tracker->handle($this->website, 'one-too-many', ['country' => 'GB']);
+        expect($this->tracker->isPaused($this->website))->toBeTrue();
+    });
+
+    it('does no work at all while paused', function () {
+        $this->tracker->pause($this->website);
+        $this->tracker->markWatched($this->website);
+
+        $this->tracker->handle($this->website, 'blocked-session', ['country' => 'GB']);
+
+        expect($this->tracker->getActiveVisitors($this->website))->toBe([]);
+        Event::assertNotDispatched(WebsiteVisitorHit::class);
+    });
+});
+
+/*
+ * Folded in from its own file for the same reason as the block above: eight database restores for two
+ * tests. The order is hung off a customer of its own, not the shared one createCustomer() hands back,
+ * so its CREATING basket never lands in the 906.30 figure the tracking block asserts.
+ */
+describe('checkout abandonment', function () {
+    beforeEach(function () {
+        $this->website        = createWebsite($this->shop);
+        $this->basketCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+        $this->order = StoreOrder::make()->action($this->basketCustomer, [
+            'reference'        => 'CA-'.Str::random(6),
+            'date'             => now()->toDateString(),
+            'customer_id'      => $this->basketCustomer->id,
+            'delivery_address' => new Address(Address::factory()->definition()),
+            'billing_address'  => new Address(Address::factory()->definition()),
+        ]);
+
+        DB::table('orders')->where('id', $this->order->id)->update([
+            'state'        => OrderStateEnum::CREATING->value,
+            'submitted_at' => null,
+            'total_amount' => 99,
+            'created_at'   => now()->subHours(48),
+        ]);
+
+        $this->basketCustomer->update(['current_order_in_basket_id' => $this->order->id]);
+
+        $webUser = StoreWebUser::make()->action($this->basketCustomer, [
+            'username' => 'ca-'.Str::random(8),
+            'email'    => 'ca-'.Str::random(8).'@testmail.com',
+            'password' => 'test',
+        ]);
+
+        $visitorId = DB::table('website_visitors')->insertGetId([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'website_id'      => $this->website->id,
+            'web_user_id'     => $webUser->id,
+            'session_id'      => 'sess-'.Str::random(8),
+            'visitor_hash'    => Str::random(16),
+            'device_type'     => 'desktop',
+            'os'              => 'linux',
+            'browser'         => 'firefox',
+            'user_agent'      => 'test-agent',
+            'ip_hash'         => Str::random(16),
+            'first_seen_at'   => now()->subHours(48),
+            'last_seen_at'    => now()->subHours(25),
+            'created_at'      => now()->subHours(48),
+            'updated_at'      => now()->subHours(25),
+        ]);
+
+        DB::table('website_page_views')->insert([
+            'group_id'           => $this->shop->group_id,
+            'organisation_id'    => $this->shop->organisation_id,
+            'shop_id'            => $this->shop->id,
+            'website_id'         => $this->website->id,
+            'website_visitor_id' => $visitorId,
+            'page_url'           => 'https://test/app/checkout',
+            'page_path'          => '/app/checkout',
+            'view_date'          => now()->subHours(25)->toDateString(),
+            'created_at'         => now()->subHours(25),
+            'updated_at'         => now()->subHours(25),
+        ]);
+
+        $this->order->refresh();
+    });
+
+    it('detects an abandoned checkout', function () {
+        RunCheckoutAbandonmentScan::run();
+
+        $this->assertDatabaseHas('checkout_abandonments', [
+            'order_id'    => $this->order->id,
+            'customer_id' => $this->order->customer_id,
+            'state'       => 'abandoned',
+        ]);
+
+        expect((float) CheckoutAbandonment::where('order_id', $this->order->id)->value('total_amount'))->toBe(99.0);
+    });
+
+    it('marks an abandonment recovered when the order leaves creating', function () {
+        RunCheckoutAbandonmentScan::run();
+        $this->assertDatabaseHas('checkout_abandonments', [
+            'order_id' => $this->order->id,
+            'state'    => 'abandoned',
+        ]);
+
+        DB::table('orders')->where('id', $this->order->id)->update([
+            'state'        => OrderStateEnum::SUBMITTED->value,
+            'submitted_at' => now(),
+        ]);
+
+        RunCheckoutAbandonmentScan::run();
+
+        $this->assertDatabaseHas('checkout_abandonments', [
+            'order_id' => $this->order->id,
+            'state'    => 'recovered',
+        ]);
+
+        expect(CheckoutAbandonment::where('order_id', $this->order->id)->value('recovered_at'))->not->toBeNull();
+    });
+});
+
+describe('deployment crawling', function () {
+    test('deployment crawls are delayed and staggered without delaying other crawls', function () {
+        Website::query()->update(['migrated' => false]);
+
+        foreach (range(1, 3) as $index) {
+            Website::factory()->create([
+                'shop_id'         => $this->shop->id,
+                'organisation_id' => $this->organisation->id,
+                'group_id'        => $this->organisation->group_id,
+                'code'            => "crawl-$index",
+                'type'            => WebsiteTypeEnum::INFO,
+                'state'           => WebsiteStateEnum::LIVE,
+                'migrated'        => true,
+                'status'          => true,
+            ]);
+        }
+
+        Queue::fake();
+
+        CrawlWebsites::run(CrawlTriggerEnum::DEPLOYMENT);
+
+        $deploymentDelays = Queue::pushed(JobDecorator::class)
+            ->filter(fn (JobDecorator $job) => $job->decorates(CrawlWebsite::class))
+            ->pluck('delay')
+            ->sort()
+            ->values()
+            ->all();
+
+        expect($deploymentDelays)->toBe([60, 65, 70]);
+
+        Queue::fake();
+
+        CrawlWebsites::run(CrawlTriggerEnum::COMMAND);
+
+        $commandDelays = Queue::pushed(JobDecorator::class)
+            ->filter(fn (JobDecorator $job) => $job->decorates(CrawlWebsite::class))
+            ->pluck('delay')
+            ->values()
+            ->all();
+
+        expect($commandDelays)->toBe([null, null, null]);
+    });
+
+    test('surge protection only lowers the assigned concurrency', function () {
+        $website = Website::factory()->create([
+            'shop_id'         => $this->shop->id,
+            'organisation_id' => $this->organisation->id,
+            'group_id'        => $this->organisation->group_id,
+            'code'            => 'crawl-surge',
+            'type'            => WebsiteTypeEnum::INFO,
+            'state'           => WebsiteStateEnum::LIVE,
+            'migrated'        => true,
+            'status'          => true,
+        ]);
+
+        $protectFromSurges = function (int $assigned) use ($website) {
+            $crawl = $website->crawls()->create([
+                'depth'       => 0,
+                'concurrency' => $assigned,
+                'trigger'     => CrawlTriggerEnum::DEPLOYMENT,
+                'type'        => CrawlTypeEnum::HTML,
+            ]);
+
+            $method = (new ReflectionClass(CrawlWebsite::class))->getMethod('protectFromSurges');
+            $method->setAccessible(true);
+
+            return $method->invoke(new CrawlWebsite(), $crawl)->concurrency;
+        };
+
+        Crawl::query()->update(['running' => false]);
+
+        expect($protectFromSurges(1))->toBe(1)
+            ->and($protectFromSurges(5))->toBe(5);
+
+        $website->crawls()->create([
+            'depth'       => 0,
+            'concurrency' => 7,
+            'running'     => true,
+            'trigger'     => CrawlTriggerEnum::DEPLOYMENT,
+            'type'        => CrawlTypeEnum::HTML,
+        ]);
+
+        expect($protectFromSurges(5))->toBe(1);
+    });
+
+    test('deployment stops active crawls before restarting SSR', function () {
+        $deployFile = file_get_contents(base_path('deploy/deploy.php'));
+
+        preg_match("/task\('deploy', \[(.*?)\]\);/s", $deployFile, $matches);
+
+        $deploymentSteps  = $matches[1] ?? '';
+        $stopCrawls       = strpos($deploymentSteps, "'deploy:stop-crawls'");
+        $terminateHorizon = strpos($deploymentSteps, "'artisan:horizon:terminate'");
+        $restartSsr       = strpos($deploymentSteps, "'deploy:restart-ssr-by-supervisorctl'");
+        $flushVarnish     = strpos($deploymentSteps, "'deploy:flush-varnish'");
+
+        expect($stopCrawls)->not->toBeFalse()
+            ->and($terminateHorizon)->not->toBeFalse()
+            ->and($restartSsr)->not->toBeFalse()
+            ->and($flushVarnish)->not->toBeFalse()
+            ->and($stopCrawls)->toBeLessThan($terminateHorizon)
+            ->and($terminateHorizon)->toBeLessThan($restartSsr)
+            ->and($restartSsr)->toBeLessThan($flushVarnish);
+    });
 });

@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Transaction\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithMarginData;
 use Illuminate\Support\Facades\DB;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -28,7 +29,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTransactions extends OrgAction
 {
-    public function handle(Organisation|Shop|Customer|Order|Invoice|Asset $parent, $prefix = null): LengthAwarePaginator
+    use WithMarginData;
+
+    public function handle(Organisation|Shop|Customer|Order|Invoice|Asset $parent, $prefix = null, bool $withMargins = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -60,10 +63,21 @@ class IndexTransactions extends OrgAction
         $query->whereIn('transactions.model_type', ['Product', 'Service']);
 
         $query->leftJoin('assets', 'transactions.asset_id', '=', 'assets.id');
-        $query->leftJoin('products', 'assets.model_id', '=', 'products.id');
+        $query->leftJoin('products', function ($join) {
+            $join->on('assets.model_id', '=', 'products.id')
+                ->where('assets.model_type', 'Product');
+        });
         $query->leftJoin('orders', 'transactions.order_id', '=', 'orders.id');
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('upcoming_transactions', 'transactions.id', '=', 'upcoming_transactions.transaction_id');
+
+        /*
+         * The line was charged at the price held on its historic asset, which is a snapshot taken
+         * when it was added. Reading the price off the product instead showed whatever it costs
+         * today, so repackaging something into an outer made every earlier order look as though
+         * it had been undercharged.
+         */
+        $query->leftJoin('historic_assets', 'transactions.historic_asset_id', '=', 'historic_assets.id');
 
         return $query->defaultSort('transactions.id')
             ->select([
@@ -90,8 +104,15 @@ class IndexTransactions extends OrgAction
                 'assets.name as asset_name',
                 'assets.type as asset_type',
                 'products.id as product_id',
-                'products.price as price',
-                'products.units as product_units',
+                DB::raw('COALESCE(historic_assets.price, products.price) as price'),
+                DB::raw('COALESCE(historic_assets.units, products.units) as product_units'),
+
+                /*
+                 * The line keeps the quantity and price agreed against the pack size it was
+                 * ordered at, so repacking the product afterwards leaves the warehouse shipping
+                 * a different pack size for the same money. Nothing repricies it, it is flagged.
+                 */
+                DB::raw('CASE WHEN historic_assets.units IS NOT NULL AND historic_assets.units <> products.units THEN products.units END as units_changed_to'),
                 'products.slug as product_slug',
                 'products.image_id as product_image_id',
                 'products.available_quantity as available_quantity',
@@ -110,15 +131,22 @@ class IndexTransactions extends OrgAction
                     AND p.batch_code_id IS NOT NULL
                 ) as batch_codes")
             ])
+            ->when($withMargins, fn ($q) => $q->addSelect([
+                'transactions.org_net_amount',
+                DB::raw($this->actualCostSql('transactions.id').' as margin_actual_cost'),
+                DB::raw($this->estimatedCostSql('transactions.quantity_ordered').' as margin_estimated_cost'),
+                'transactions.quantity_picked as margin_quantity_picked',
+                'transactions.quantity_ordered as margin_quantity_ordered',
+            ]))
             ->allowedSorts(['asset_code', 'asset_name', 'net_amount', 'quantity_ordered'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Organisation|Shop|Customer|Order|Invoice|Asset|CustomerClient $parent, $tableRows = null, $prefix = null): Closure
+    public function tableStructure(Organisation|Shop|Customer|Order|Invoice|Asset|CustomerClient $parent, $tableRows = null, $prefix = null, bool $withMargins = false): Closure
     {
-        return function (InertiaTable $table) use ($parent, $prefix, $tableRows) {
+        return function (InertiaTable $table) use ($parent, $prefix, $tableRows, $withMargins) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -143,11 +171,14 @@ class IndexTransactions extends OrgAction
                 $table->column(key: 'batch_codes', label: __('Batch Codes'), canBeHidden: false);
             }
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
+            if ($withMargins) {
+                $table->column(key: 'margin', label: __('Margin'), canBeHidden: false, align: 'right');
+            }
             if (
                 $parent instanceof Order
                 && (
-                    (!isset($parent->platform) && $parent->state === OrderStateEnum::CREATING)
-                    || (isset($parent->platform) && $parent->platform->type === PlatformTypeEnum::MANUAL)
+                    (!isset($parent->platform) || $parent->platform->type === PlatformTypeEnum::MANUAL)
+                    && !in_array($parent->state, [OrderStateEnum::CANCELLED, OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED])
                 )
 
             ) {

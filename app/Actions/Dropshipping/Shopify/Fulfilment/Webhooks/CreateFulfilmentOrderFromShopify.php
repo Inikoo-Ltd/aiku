@@ -52,6 +52,10 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
                 continue;
             }
 
+            if ($lineItem['remainingQuantity'] <= 0) {
+                continue;
+            }
+
             $assignedLineItems[] = [
                 'id' => $lineItem['id'],
                 'quantity' => $lineItem['remainingQuantity'],

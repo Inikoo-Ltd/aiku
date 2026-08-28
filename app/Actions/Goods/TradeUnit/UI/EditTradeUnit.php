@@ -139,14 +139,14 @@ class EditTradeUnit extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'label'  => __('Id'),
+                            'label'  => __('Properties'),
                             'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
-                                'code' => [
-                                    'type'  => 'input',
-                                    'label' => __('Code'),
-                                    'value' => $tradeUnit->code
-                                ],
+                                // 'code' => [
+                                //     'type'  => 'input',
+                                //     'label' => __('Code'),
+                                //     'value' => $tradeUnit->code
+                                // ],
                                 'cpnp_number' => [
                                     'type' => 'input',
                                     'label' => __('CPNP Number'),
@@ -284,13 +284,17 @@ class EditTradeUnit extends OrgAction
                             'icon'   => 'fa-light fa-book-open',
                             'fields' => [
                                 'ingredients' => [
-                                    'type'  => 'select_infinite',
+                                    'type'  => 'ingredients',
                                     'label' => __('Ingredients'),
                                     'value' => $tradeUnit->ingredients->pluck('slug')->all(),
                                     'mode' => 'tags',
                                     'options' => IngredientsResource::collection($tradeUnit->ingredients)->resolve(),
                                     'fetchRoute' => [
                                         'name'       => 'grp.goods.ingredients.index',
+                                        'parameters' => []
+                                    ],
+                                    'parseRoute' => [
+                                        'name'       => 'grp.json.ingredients.parse',
                                         'parameters' => []
                                     ],
                                     'valueProp'  => 'slug',

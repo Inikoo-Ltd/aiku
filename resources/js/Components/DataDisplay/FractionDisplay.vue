@@ -207,11 +207,11 @@ export default {
   left: -2px;
   right: -2px;
   top: 50%;
-  opacity: 0.5;
+  opacity: 0.8;
   transform: translateY(-50%);
   rotate: 35deg;
   height: 1px;
-  background: currentColor;
+  background: #ff0000;
   pointer-events: none;
 }
 </style>

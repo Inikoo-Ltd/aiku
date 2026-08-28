@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $recovered_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $email_sent_at
  * @property-read Customer|null $customer
  * @property-read Group|null $group
  * @property-read \App\Models\Ordering\Order|null $order
@@ -51,6 +52,7 @@ class CheckoutAbandonment extends Model
         return [
             'checkout_visited_at' => 'datetime',
             'recovered_at'        => 'datetime',
+            'email_sent_at'       => 'datetime',
             'total_amount'        => 'decimal:2',
             'state'               => CheckoutAbandonmentStateEnum::class,
         ];

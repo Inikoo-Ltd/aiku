@@ -31,6 +31,11 @@ class IndexDeliveryNotes extends OrgAction
 
     private string $shopType;
 
+    protected function getRecordsPerPage(): ?int
+    {
+        return request()->has('perPage') ? null : 150;
+    }
+
     public function htmlResponse(LengthAwarePaginator $deliveryNotes, ActionRequest $request): Response
     {
         $navigation = DeliveryNotesTabsEnum::navigation();
@@ -102,7 +107,8 @@ class IndexDeliveryNotes extends OrgAction
                 ],
                 'data'        => DeliveryNotesResource::collection($deliveryNotes),
                 "todo"        => $todo,
-                'shopType'      => $this->shopType,
+                'shopType'    => $this->shopType,
+                'bucket'      => $this->bucket,
                 'picking_session_route' => $pickingSessionRoute
             ]
         )->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket, shopType: $this->shopType));

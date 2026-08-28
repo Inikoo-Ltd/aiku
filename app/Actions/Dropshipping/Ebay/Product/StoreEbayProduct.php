@@ -31,6 +31,8 @@ class StoreEbayProduct extends RetinaAction
     use WithAttributes;
     use WithPortfolioErrorResponse;
 
+    private const string FALLBACK_CATEGORY_ID = '29511';
+
     /**
      * @throws \Exception
      */
@@ -121,17 +123,33 @@ class StoreEbayProduct extends RetinaAction
                 $family = $product->name;
             }
 
-            $categories = $ebayUser->getCategorySuggestions($family);
+            $categoryId = null;
+            $categoryName = null;
 
-            $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
-            $categoryName = Arr::get($categories, 'categorySuggestions.0.category.categoryName');
+            $categoryKeywords = array_filter([
+                $family,
+                $product->subDepartment?->name,
+                $product->department?->name
+            ]);
 
-            if ($categoryName === 'Other') {
-                $family = $product->subDepartment?->name;
+            foreach ($categoryKeywords as $categoryKeyword) {
+                $categories = $ebayUser->getCategorySuggestions($categoryKeyword);
 
-                $categories = $ebayUser->getCategorySuggestions($family);
-                $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
-                $categoryName = Arr::get($categories, 'categorySuggestions.0.category.categoryName');
+                $suggestedId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
+                $suggestedName = Arr::get($categories, 'categorySuggestions.0.category.categoryName');
+
+                if (!$suggestedId || $suggestedName === 'Other') {
+                    continue;
+                }
+
+                if (!$ebayUser->categoryAcceptsNewCondition($suggestedId)) {
+                    continue;
+                }
+
+                $categoryId = $suggestedId;
+                $categoryName = $suggestedName;
+
+                break;
             }
 
             if (!$categoryId) {
@@ -153,11 +171,17 @@ class StoreEbayProduct extends RetinaAction
 
             if (in_array($categoryId, $includedCategories)) {
                 // This force not to use book category
-                $categoryId = '29511';
+                $categoryId = self::FALLBACK_CATEGORY_ID;
+                $categoryName = null;
             }
 
             if ($handleError($categories)) {
                 return $portfolio;
+            }
+
+            if (!$categoryId || !$ebayUser->categoryAcceptsNewCondition($categoryId)) {
+                $categoryId = self::FALLBACK_CATEGORY_ID;
+                $categoryName = null;
             }
 
             $categoryAspects = $ebayUser->getItemAspectsForCategory($categoryId);

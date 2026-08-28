@@ -15,6 +15,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterShop;
+use App\Actions\Masters\MasterAsset\TaxPresetBasketProgress;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -33,13 +34,16 @@ class RecalculateTotalsOrdersInBasket implements ShouldBeUnique
         return $orderID ?? 'empty';
     }
 
-    public function handle(?int $orderID, ?Command $command = null, ?int $priceExchangeMasterShopID = null, ?string $priceExchangeCurrencyCode = null): void
+    public function handle(?int $orderID, ?Command $command = null, ?int $priceExchangeMasterShopID = null, ?string $priceExchangeCurrencyCode = null, ?int $taxPresetMasterAssetID = null): void
     {
         try {
             $this->recalculate($orderID, $command);
         } finally {
             if ($priceExchangeMasterShopID && $priceExchangeCurrencyCode) {
                 $this->updatePriceExchangeProgress($priceExchangeMasterShopID, $priceExchangeCurrencyCode);
+            }
+            if ($taxPresetMasterAssetID) {
+                TaxPresetBasketProgress::advance($taxPresetMasterAssetID);
             }
         }
     }

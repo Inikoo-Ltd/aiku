@@ -9,6 +9,8 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
+use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
@@ -114,17 +116,41 @@ class EditFamily extends OrgAction
             ];
         }
 
+        $iconLinks = [];
+
+        if ($family->masterProductCategory) {
+            $iconLinks[] = [
+                'icon'    => 'fab fa-octopus-deploy',
+                'tooltip' => __('Go to Edit Master Family'),
+                'route'   => [
+                    'name'       => 'grp.masters.master_shops.show.master_families.edit',
+                    'parameters' => [
+                        'masterShop'    => $family->shop->masterShop->slug,
+                        'masterFamily' => $family->masterProductCategory->slug,
+                    ]
+                ],
+                'color'   => 'rgb(75, 0, 130)'
+            ];
+        }
+
+        if ($family->tradeUnitFamily) {
+            $iconLinks[] = [
+                'icon'    => 'fal fa-atom-alt',
+                'tooltip' => __('Go to Edit Trade Unit Family'),
+                'route'   => [
+                    'name'       => 'grp.trade_units.families.edit',
+                    'parameters' => [
+                        $family->tradeUnitFamily->slug
+                    ]
+                ],
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
                 'title'       => __('Family'),
                 ...$warning,
-                'iconRight'   => $urlMaster ? [
-                    'icon'  => "fab fa-octopus-deploy",
-                    'color' => "#4B0082",
-                    'class' => 'opacity-70 hover:opacity-100',
-                    'url'   => $urlMaster
-                ] : [],
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $family,
                     $request->route()->getName(),
@@ -147,22 +173,23 @@ class EditFamily extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ]
-                    ]
+                    ],
+                    'iconLinks' => $iconLinks
                 ],
                 'formData' => [
                     'blueprint' => array_filter(
                         [
-                            [
-                                'label'  => __('Id'),
-                                'icon'   => 'fa-light fa-fingerprint',
-                                'fields' => [
-                                    'code' => [
-                                        'type'  => 'input',
-                                        'label' => __('Code'),
-                                        'value' => $family->code
-                                    ],
-                                ]
-                            ],
+                            // [
+                            //     'label'  => __('Id'),
+                            //     'icon'   => 'fa-light fa-fingerprint',
+                            //     'fields' => [
+                            //         'code' => [
+                            //             'type'  => 'input',
+                            //             'label' => __('Code'),
+                            //             'value' => $family->code
+                            //         ],
+                            //     ]
+                            // ],
                             [
                                 'label'  => __('FAQ'),
                                 'icon'   => 'fa-light fa-question-circle',
@@ -347,6 +374,79 @@ class EditFamily extends OrgAction
                                     ...$departmentIdFormData
                                 ]
                             ],
+                            $family->shop->masterShop?->slug == 'aroma' ? [
+                                'label'  => __('Customize'),
+                                'icon'   => 'fa-light fa-sliders-h',
+                                'fields' => [
+                                    'customize_option' => [
+                                        'type'    => 'family_customize',
+                                        'label'   => __('Customize'),
+                                        'options' => FamilyCustomizeEnum::valuesWithLabelsAndIcons(),
+                                        'value'   => FamilyCustomizeEnum::rows($family->customize_option),
+                                    ],
+                                ],
+                            ] : [],
+                            $family->shop->masterShop?->slug == 'aroma' ? [
+                                'label'  => __('Labeling Guide'),
+                                'icon'   => 'fa-light fa-file-pdf',
+                                'fields' => array_filter([
+                                    'follow_tuf_labeling_guide' => [
+                                        'type'              => 'toggle',
+                                        'label'             => __('Follow Trade Unit Family Labeling Guide'),
+                                        'value'             => $family->follow_tuf_labeling_guide,
+                                        'information'       => __('Enabling this would use the Trade Unit Family labeling guide'),
+                                    ],
+                                    'labeling_guide_file' => ($family->tradeUnitFamily && $family->follow_tuf_labeling_guide) ? null : [
+                                        'type'              => 'file_upload',
+                                        'label'             => __('Labeling guide'),
+                                        'placeholder'       => __('Upload a PDF file'),
+                                        'required'          => false,
+                                        'value'             => $family->labelingGuide()?->name,
+                                        'accept'            => '.pdf,application/pdf',
+                                        'information'       => __('Downloadable labeling & compliance guide shown on the family page.'),
+                                        'media_ulid'        => $family->labelingGuide()?->ulid
+                                    ],
+                                ]),
+                            ] : [],
+                            $family->shop->masterShop?->slug == 'aroma' ? [
+                                'label'  => __('Storage & Shelf Life'),
+                                'icon'   => 'fa-light fa-temperature-low',
+                                'fields' => [
+                                    'storage_conditions'  => [
+                                        'type'    => 'family_storage_conditions',
+                                        'label'   => __('Storage table'),
+                                        'options' => FamilyStorageConditionEnum::valuesWithLabelsAndPlaceholders(),
+                                        'value'   => FamilyStorageConditionEnum::rows(data_get($family->storage_option, 'storage_conditions', [])),
+                                    ],
+                                    'storage_temperature' => [
+                                        'type'        => 'input',
+                                        'label'       => __('Storage temperature'),
+                                        'placeholder' => __('e.g. 15°C - 25°C'),
+                                        'value'   => data_get($family->storage_option, 'storage_temperature', ''),
+                                    ],
+                                    'storage_guidelines'  => [
+                                        'type'     => 'dynamic_list',
+                                        'label'    => __('Storage guidelines'),
+                                        'value'   => data_get($family->storage_option, 'storage_guidelines', []),
+                                        'fields'   => [
+                                            ['key' => 'text', 'placeholder' => __('e.g. Keep products in their original packaging.')],
+                                        ],
+                                        'addLabel' => __('Add guideline'),
+                                    ],
+                                ],
+                            ] : [],
+                            $family->shop->masterShop?->slug == 'aroma' ? [
+                                'label'  => __('Category Comparison'),
+                                'icon'   => 'fa-light fa-balance-scale',
+                                'fields' => [
+                                    'category_comparison' => [
+                                        'full'      => true,
+                                        'type'      => 'category-comparison',
+                                        'label'     => __('Category Comparison'),
+                                        'value'     => $family->category_comparison,
+                                    ],
+                                ],
+                            ] : [],
                             [
                                 'label'  => __('Parent').' ('.__('Department/Sub-Department').')',
                                 'icon'   => 'fa-light fa-folder-tree',

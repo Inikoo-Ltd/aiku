@@ -13,6 +13,7 @@ use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\OutboxTimeSeries;
 use App\Traits\BuildsAggregatedTimeSeriesQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,7 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsAggregatedTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -33,6 +35,24 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
     public function handle(int $outboxId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
         [$from, $to] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
+        /**
+         * Daily records are rebuilt from the raw dispatched emails and syncTimeSeriesRecords replaces
+         * everything in the window, so a run reaching before the retention cutoff would zero out the
+         * periods whose source rows have been archived away. The other frequencies aggregate the daily
+         * records, which survive the archiving, so they are left to cover the whole window.
+         */
+        if ($frequency === TimeSeriesFrequencyEnum::DAILY) {
+            $cutoff = now()->subDays(config('archive.email_retention_days'))->startOfDay();
+
+            if ($cutoff->gt($to)) {
+                return;
+            }
+
+            if ($cutoff->gt($from)) {
+                $from = $cutoff->toDateTimeString();
+            }
+        }
 
         $outbox = Outbox::on('aiku_no_sticky')->find($outboxId);
 
@@ -60,16 +80,16 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
             ? $this->fetchDailyResults($outbox, $timeSeries, $from, $to)
             : $this->fetchAggregatedResults($timeSeries, $from, $to);
 
+        $rows = [];
+
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'outbox_time_series_id' => $timeSeries->id,
-                    'period'                => $period,
-                    'frequency'             => $timeSeries->frequency->singleLetter(),
-                ],
-                [
+            $rows[] = [
+                'outbox_time_series_id' => $timeSeries->id,
+                'period'                => $period,
+                'frequency'             => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'              => $periodFrom,
                     'to'                => $periodTo,
                     'runs'              => $result->runs,
@@ -79,8 +99,10 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
                     'bounced_emails'    => $result->bounced_emails,
                     'unsubscribed'      => $result->unsubscribed,
                 ]
-            );
+            ];
         }
+
+        $this->syncTimeSeriesRecords($timeSeries, $rows, ['outbox_time_series_id', 'period', 'frequency'], $from, $to);
     }
 
     protected function fetchDailyResults(Outbox $outbox, OutboxTimeSeries $timeSeries, string $from, string $to): Collection

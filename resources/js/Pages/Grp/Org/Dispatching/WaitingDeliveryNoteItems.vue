@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { Head, usePage } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from '@/types/PageHeading'
@@ -34,6 +34,16 @@ const props = defineProps<{
 
 let currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const page = usePage()
+
+const highlightedDeliveryNoteSlug = computed(() => {
+    const queryString = page.url.split('?')[1]
+    if (!queryString) {
+        return ''
+    }
+    return new URLSearchParams(queryString).get('highlight_delivery_note') ?? ''
+})
 
 const component = computed(() => {
     const components: Record<string, any> = {
@@ -65,6 +75,7 @@ watch(() => props.tabs.current, (newTab) => {
         :isStillPicking="is_still_picking"
         :isReadOnly="is_read_only"
         :waitingType="waiting_type"
+        :highlightDeliveryNoteSlug="highlightedDeliveryNoteSlug"
     />
 </template>
 

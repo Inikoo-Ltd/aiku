@@ -37,6 +37,7 @@ class DeliveryNoteResource extends JsonResource
             'is_cash_on_delivery'            => $deliverNote->is_cash_on_delivery,
             'number_items_waiting_warehouse' => $deliverNote->number_items_waiting_warehouse,
             'number_items_waiting_crm'       => $deliverNote->number_items_waiting_crm,
+            'number_items_composition_dirty' => $deliverNote->number_items_composition_dirty,
             'dispatched_at'                  => $deliverNote->dispatched_at,
 
 

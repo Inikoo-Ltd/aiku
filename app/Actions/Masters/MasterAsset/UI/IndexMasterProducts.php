@@ -21,6 +21,7 @@ use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\MasterProductsTabsEnum;
@@ -50,6 +51,7 @@ class IndexMasterProducts extends OrgAction
     use WithMasterDepartmentSubNavigation;
     use WithMasterFamilySubNavigation;
     use WithMastersAuthorisation;
+    use WithLineTaxCategories;
 
     private Group|MasterShop|MasterProductCategory $parent;
 
@@ -90,6 +92,27 @@ class IndexMasterProducts extends OrgAction
 
             ],
 
+            /**
+             * A master product is standard rated unless `tax_category` overrides it, which is
+             * how tea is zero rated. No counts: they would cost a scan of every master.
+             */
+            'tax' => [
+                'label'    => __('Tax'),
+                'elements' => [
+                    'overridden' => [__('Reduced or zero rated'), null],
+                    'standard'   => [__('Standard rate'), null],
+                ],
+
+                'engine' => function ($query, $elements) {
+                    if (in_array('overridden', $elements) && !in_array('standard', $elements)) {
+                        $query->whereRaw("master_assets.tax_category::text not in ('{}', '[]', 'null')");
+                    } elseif (in_array('standard', $elements) && !in_array('overridden', $elements)) {
+                        $query->whereRaw("master_assets.tax_category::text in ('{}', '[]', 'null')");
+                    }
+                }
+
+            ],
+
         ];
     }
 
@@ -106,7 +129,9 @@ class IndexMasterProducts extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $isSalesTab = $prefix === MasterProductsTabsEnum::SALES->value;
+        $isSalesTab = $prefix === IndexMasterProductsSales::PREFIX;
+
+        $isBulkEditTab = $prefix === MasterProductsTabsEnum::BULK_EDIT->value;
 
         $queryBuilder = QueryBuilder::for(MasterAsset::class)
             ->with(['products.shop'])
@@ -167,6 +192,7 @@ class IndexMasterProducts extends OrgAction
             'master_assets.unit',
             'master_assets.units',
             'master_assets.rrp',
+            'master_assets.tax_preset',
             'master_assets.web_images',
             'master_asset_stats.number_current_assets as used_in',
             'currencies.code as currency_code',
@@ -191,7 +217,7 @@ class IndexMasterProducts extends OrgAction
             );
         }
 
-        if ($prefix === MasterProductsTabsEnum::SALES->value) {
+        if ($prefix === IndexMasterProductsSales::PREFIX) {
             // Use reusable time series aggregation method
             $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
                 timeSeriesTable: 'master_asset_time_series',
@@ -200,8 +226,6 @@ class IndexMasterProducts extends OrgAction
                 aggregateColumns: [
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
                     'invoices'                    => 'invoices',
-                    'dropshippers'                => 'dropshippers',
-                    'listings'                    => 'listings',
                     'sold'                        => 'sold',
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
@@ -212,12 +236,31 @@ class IndexMasterProducts extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
-            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
-            $selects[] = $timeSeriesData['selectRaw']['listings'];
             $selects[] = $timeSeriesData['selectRaw']['sold'];
         }
 
+        /** The bulk edit tab edits the texts in place, so it needs them in the row. */
+        if ($isBulkEditTab) {
+            array_push(
+                $selects,
+                'master_assets.description',
+                'master_assets.description_extra',
+            );
+        }
+
         $queryBuilder->select($selects);
+
+        /** The Info cell shows the trade unit composition, same as the pricing tab. */
+        if ($isBulkEditTab) {
+            $queryBuilder->selectSub(
+                "select string_agg(trade_units.code || ' ×' || trim_scale(model_has_trade_units.quantity), ', ' order by trade_units.code)
+                 from model_has_trade_units
+                 join trade_units on trade_units.id = model_has_trade_units.trade_unit_id
+                 where model_has_trade_units.model_type = 'MasterAsset'
+                   and model_has_trade_units.model_id = master_assets.id",
+                'trade_units_label'
+            );
+        }
 
         // PARENT FILTER ONLY
         if ($parent instanceof Group) {
@@ -295,8 +338,6 @@ class IndexMasterProducts extends OrgAction
                 'used_in',
                 'sales_grp_currency_external',
                 'invoices',
-                'dropshippers',
-                'listings',
                 'sold',
                 'variant_slug',
                 'master_department_code',
@@ -344,6 +385,21 @@ class IndexMasterProducts extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
+            /** The bulk edit tab: one row per product, only the fields it makes sense to edit in bulk. */
+            if ($prefix == MasterProductsTabsEnum::BULK_EDIT->value) {
+                $table
+                    ->withGlobalSearch()
+                    ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'name', label: __('Info'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'description', label: __('Description'), canBeHidden: false)
+                    ->column(key: 'description_extra', label: __('Extra description'), canBeHidden: false)
+                    ->column(key: 'units', label: __('Units'), canBeHidden: false)
+                    ->column(key: 'tax_preset', label: __('Tax'), canBeHidden: false, align: 'right')
+                    ->defaultSort('code');
+
+                return;
+            }
+
             if ($sales) {
                 $table->betweenDates(['date']);
             }
@@ -378,8 +434,6 @@ class IndexMasterProducts extends OrgAction
             if ($sales) {
                 $table
                     ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: !$sortByIndex, searchable: true)
-                    ->column(key: 'dropshippers', label: __('Customer Listings'), sortable: !$sortByIndex, align: 'right')
-                    ->column(key: 'listings', label: __('Total Listings'), sortable: !$sortByIndex, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: !$sortByIndex, searchable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: !$sortByIndex, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: !$sortByIndex, searchable: true, align: 'right')
@@ -387,8 +441,8 @@ class IndexMasterProducts extends OrgAction
                     ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: !$sortByIndex, type: 'icon');
             } else {
                 $table
-                    ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                     ->column(key: 'status_icon', label: '', type: 'icon')
+                    ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                     ->column(key: 'code', label: __('Code'), sortable: !$sortByIndex);
                 $table->column(key: 'variant_slug', label: 'Variant', sortable: !$sortByIndex);
 
@@ -495,7 +549,7 @@ class IndexMasterProducts extends OrgAction
                     'icon' => 'fal fa-cube',
                 ];
                 $modelNavigation = GetMasterFamilyNavigation::run($this->parent, $request);
-                $exception       = [];
+                $exception       = [MasterProductsTabsEnum::SALES];
             }
             $shopsData = OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops'));
         }
@@ -579,6 +633,7 @@ class IndexMasterProducts extends OrgAction
                 'editable_table'          => false,
                 'shopsData'               => $shopsData,
                 'hide_bulk_edit'          => false,
+                'taxPresetOptions'        => $this->getTaxPresetOptions([]),
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => MasterProductsTabsEnum::navigationExcept($exception),
@@ -595,6 +650,10 @@ class IndexMasterProducts extends OrgAction
                     fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::SALES->value))
                     : Inertia::optional(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::SALES->value))),
 
+                MasterProductsTabsEnum::BULK_EDIT->value => $this->tab == MasterProductsTabsEnum::BULK_EDIT->value ?
+                    fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::BULK_EDIT->value))
+                    : Inertia::optional(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::BULK_EDIT->value))),
+
                 MasterProductsTabsEnum::PRICING->value => $this->parent instanceof MasterProductCategory
                     ? ($this->tab == MasterProductsTabsEnum::PRICING->value ?
                         fn () => MasterProductsPricingResource::collection(IndexMasterProductsPricing::run($this->parent, MasterProductsTabsEnum::PRICING->value))
@@ -605,7 +664,8 @@ class IndexMasterProducts extends OrgAction
         )
         ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX->value))
         ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX_ORDERING->value, sortByIndex: true))
-        ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::SALES->value, sales: true));
+        ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::SALES->value, sales: true))
+        ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::BULK_EDIT->value));
 
         if ($this->parent instanceof MasterProductCategory) {
             $response->table(
@@ -633,56 +693,57 @@ class IndexMasterProducts extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.masters.master_products.index' =>
-            array_merge(
+            'grp.masters.master_products.index' => array_merge(
                 ShowMastersDashboard::make()->getBreadcrumbs(),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => []
-                    ],
-                    $suffix
-                ),
+                $headCrumb([
+                    'name'       => $routeName,
+                    'parameters' => [],
+                ], $suffix),
             ),
-            'grp.masters.master_shops.show.master_products.index' =>
-            array_merge(
+
+            'grp.masters.master_shops.show.master_products.index',
+            'grp.masters.master_shops.show.master_products.sales' => array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => Arr::only($routeParameters, ['masterShop']),
-                    ],
-                    $suffix
-                ),
+                $headCrumb([
+                    'name'       => $routeName,
+                    'parameters' => Arr::only($routeParameters, ['masterShop']),
+                ], $suffix),
             ),
-            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index', 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index', 'grp.masters.master_shops.show.master_families.master_products.index', 'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index', 'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
-            array_merge(
+
+            // Master family routes (index and sales variants)
+            'grp.masters.master_shops.show.master_family.missing_image.families',
+            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index',
+            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.sales',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.sales',
+            'grp.masters.master_shops.show.master_families.master_products.sales',
+            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.sales',
+            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.sales' => array_merge(
                 ShowMasterFamily::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters,
-                    ],
-                    $suffix
-                ),
+                $headCrumb([
+                    'name'       => $routeName,
+                    'parameters' => $routeParameters,
+                ], $suffix),
             ),
-            'grp.masters.master_shops.show.master_departments.show.master_products.index' =>
-            array_merge(
+
+            'grp.masters.master_shops.show.master_departments.show.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_products.sales' => array_merge(
                 ShowMasterDepartment::make()->getBreadcrumbs(
                     $parent->masterShop,
                     $parent,
                     $routeName,
                     $routeParameters
                 ),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    $suffix
-                )
+                $headCrumb([
+                    'name'       => $routeName,
+                    'parameters' => $routeParameters,
+                ], $suffix)
             ),
-            default => []
+
+            default => [],
         };
     }
 
@@ -758,7 +819,6 @@ class IndexMasterProducts extends OrgAction
 
         return $this->handle(parent: $masterFamily, prefix: MasterProductsTabsEnum::INDEX->value, filterInVariant: $filterInVariant);
     }
-
     /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
     {

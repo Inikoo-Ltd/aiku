@@ -140,34 +140,9 @@ class UpdateDeliveryNote extends OrgAction
             }
 
 
-            if (Arr::hasAny($changes, ['customer_notes', 'public_notes', 'internal_notes', 'shipping_notes'])) {
-                $order = $deliveryNote->orders()->first();
-
-                if (Arr::has($changes, 'customer_notes')) {
-                    $order->update(
-                        [
-                            'customer_notes' => $deliveryNote->customer_notes,
-                        ]
-                    );
-                } elseif (Arr::has($changes, 'public_notes')) {
-                    $order->update(
-                        [
-                            'public_notes' => $deliveryNote->public_notes,
-                        ]
-                    );
-                } elseif (Arr::has($changes, 'internal_notes')) {
-                    $order->update(
-                        [
-                            'internal_notes' => $deliveryNote->internal_notes,
-                        ]
-                    );
-                } elseif (Arr::has($changes, 'shipping_notes')) {
-                    $order->update(
-                        [
-                            'shipping_notes' => $deliveryNote->shipping_notes,
-                        ]
-                    );
-                }
+            $changedNotes = Arr::only($changes, ['customer_notes', 'public_notes', 'private_warehouse_note', 'shipping_notes']);
+            if ($changedNotes) {
+                $deliveryNote->orders()->first()?->update($changedNotes);
             }
         }
 
@@ -204,6 +179,7 @@ class UpdateDeliveryNote extends OrgAction
             'customer_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
             'public_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'private_warehouse_note'  => ['sometimes', 'nullable', 'string', 'max:4000'],
             'shipping_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
             'dispatched_at'           => ['sometimes', 'nullable', 'date'],
             'finalised_at'            => ['sometimes', 'nullable', 'date'],

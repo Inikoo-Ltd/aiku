@@ -79,8 +79,13 @@ class StoreWebpage extends OrgAction
             ];
         }
 
-        if ($modelData['sub_type'] == WebpageSubTypeEnum::MAILSHOT && Arr::exists($modelData, 'fieldValue')) {
+        $isFromCSV = Arr::pull($modelData, 'fromCSV', false); // unset basically, safer this way. keep it be
+
+        if (
+            ($modelData['sub_type'] == WebpageSubTypeEnum::MAILSHOT || $isFromCSV) && Arr::exists($modelData, 'fieldValue')
+        ) {
             $newBlogModelData['fieldValue'] = Arr::pull($modelData, 'fieldValue');
+
         }
 
         data_set($modelData, 'url', '', overwrite: false);
@@ -97,7 +102,7 @@ class StoreWebpage extends OrgAction
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
 
-        $webpage = DB::transaction(function () use ($parent, $modelData, $newBlogModelData) {
+        $webpage = DB::transaction(function () use ($parent, $modelData, $newBlogModelData, $isFromCSV) {
             /** @var Webpage $webpage */
             $webpage = $parent->webpages()->create($modelData);
             $webpage->stats()->create();
@@ -141,7 +146,7 @@ class StoreWebpage extends OrgAction
             }
 
 
-            if ($this->strict) {
+            if ($this->strict || $isFromCSV) {
                 $usedProductsTemplateCode               = FetchUsedProductsWebBlock::run($this->website);
                 $usedProductTemplateCode                = FetchUsedProductWebBlock::run($this->website);
                 $usedFamiliesTemplateCode               = FetchUsedFamiliesWebBlock::run($this->website);
@@ -183,9 +188,14 @@ class StoreWebpage extends OrgAction
                                 $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
                             }
 
-                            $this->createWebBlock($webpage, 'top-families');
-                            $this->createWebBlock($webpage, 'luigi-trends-1');
-                            $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
+                            if (in_array($usedDepartmentDescriptionTemplateCode, ['department-description-1', 'department-description-2'])) {
+                                $this->createWebBlock($webpage, 'top-families');
+                                $this->createWebBlock($webpage, 'luigi-trends-1');
+                                $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
+                            } elseif ($usedDepartmentDescriptionTemplateCode == 'department-description-3') {
+                                $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
+                                $this->createWebBlock($webpage, 'see-also-1');
+                            }
 
                             $this->createWebBlock($webpage, 'faq-department');
                         }
@@ -193,6 +203,11 @@ class StoreWebpage extends OrgAction
                         foreach ($usedFamilyDescriptionTemplateCode as $code) {
                             $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILY_DESCRIPTION, $code);
                         }
+
+                        if (in_array('family-2', $usedFamilyDescriptionTemplateCode) && $parent->shop->masterShop->slug == 'aroma') {
+                            $this->createWebBlock($webpage, 'category-comparison');
+                        }
+
                         $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
 
                         $this->createWebBlock($webpage, 'recommendation-from-master');
@@ -205,7 +220,7 @@ class StoreWebpage extends OrgAction
                 }
 
                 if ($webpage->type == WebpageTypeEnum::BLOG) {
-                    if ($webpage->sub_type == WebpageSubTypeEnum::MAILSHOT) {
+                    if ($webpage->sub_type == WebpageSubTypeEnum::MAILSHOT || $isFromCSV) {
                         $this->createWebBlock($webpage, 'blog', $newBlogModelData);
                     } else {
                         $this->createWebBlock($webpage, 'blog', $webpage);
@@ -312,9 +327,10 @@ class StoreWebpage extends OrgAction
             'model_id'           => ['sometimes', 'integer'],
             'title'              => ['required', 'string'],
             'seo_structure_type' => ['sometimes', 'nullable', Rule::enum(WebpageSeoStructureTypeEnum::class)],
+            'seo_data'           => ['sometimes', 'array'],
             'layout_style'       => ['sometimes', 'string'],
             'fieldValue'         => ['sometimes', 'array'],
-
+            'fromCSV'            => ['sometimes', 'boolean']
         ];
 
         if ($this->parent instanceof Webpage) {
@@ -376,7 +392,6 @@ class StoreWebpage extends OrgAction
         $this->parent  = $website;
         $this->website = $website;
         $this->set('type', WebpageTypeEnum::BLOG);
-        $this->set('sub_type', WebpageSubTypeEnum::BLOG);
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($website, $this->validatedData);

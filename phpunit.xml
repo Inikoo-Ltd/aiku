@@ -18,6 +18,7 @@
     <groups>
         <exclude>
             <group>browser</group>
+            <group>integration</group>
         </exclude>
     </groups>
     <source>
@@ -40,6 +41,7 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="NIGHTWATCH_ENABLED" value="false"/>
         <env name="SCOUT_DRIVER" value="null"/>
         <env name="XDEBUG_MODE" value="coverage"/>
         <env name="LARAVEL_CLOUDFLARE_ENABLED" value="false"/>

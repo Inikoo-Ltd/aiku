@@ -25,12 +25,8 @@ interface ChargeData {
     created_at: string;
     updated_at: string;
     amount: string;
+    min_order?: number;
     currency_code: string;
-    settings: {
-        rules: string;
-        amount: string;
-        rule_subject: string;
-    };
 }
 
 const props = defineProps<{
@@ -46,6 +42,11 @@ const isActive = computed(() => props.data?.charge.state === 'active');
 const formattedAmount = computed(() => {
     if (!props.data) return '';
     return locale.currencyFormat(props.data.charge.currency_code, +props.data.charge.amount);
+});
+
+const formattedMinOrder = computed(() => {
+    if (!props.data?.charge.min_order) return '';
+    return locale.currencyFormat(props.data.charge.currency_code, +props.data.charge.min_order);
 });
 
 const formattedDate = computed(() => {
@@ -187,24 +188,19 @@ const stateBgColor = computed(() => {
                 </div>
 
                 <!-- Settings Section -->
-                <div v-if="data.charge.settings" class="bg-gray-50 rounded-lg p-4">
+                <div class="bg-gray-50 rounded-lg p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center">
                         <FontAwesomeIcon :icon="faCog" class="w-4 h-4 mr-2 text-gray-600" />
-                        {{ trans('Settings & Rules') }}
+                        {{ trans('When it is applied') }}
                     </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="bg-white rounded-lg p-3 border border-gray-200">
-                            <div class="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">Rules</div>
-                            <div class="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded min-h-6">
-                                {{ data.charge.settings.rules }}
-                            </div>
-                        </div>
-                        <div class="bg-white rounded-lg p-3 border border-gray-200">
-                            <div class="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">Rule Subject
-                            </div>
-                            <div class="text-sm text-gray-900">
-                                {{ data.charge.settings.rule_subject }}
-                            </div>
+                    <div class="bg-white rounded-lg p-3 border border-gray-200">
+                        <div class="text-sm text-gray-900">
+                            <template v-if="data.charge.min_order">
+                                {{ trans('Automatically, to orders below :amount', { amount: formattedMinOrder }) }}
+                            </template>
+                            <template v-else>
+                                {{ trans('Only when selected on an order') }}
+                            </template>
                         </div>
                     </div>
                 </div>

@@ -21,7 +21,7 @@ use Throwable;
 
 class FetchAuroraProducts extends FetchAuroraAction
 {
-    public string $commandSignature = 'fetch:products {organisations?*} {--s|source_id=} {--S|shop= : Shop slug} {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset}';
+    public string $commandSignature = 'fetch:products {organisations?*} {--s|source_id=} {--S|shop= : Shop slug} {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset} {--F|force : Overwrite the aiku record even though the organisation already runs on aiku}';
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Product
     {
@@ -47,6 +47,27 @@ class FetchAuroraProducts extends FetchAuroraAction
 
         /** @var Product $product */
         if ($product) {
+            // Aroma's quantity variants are being retired in aiku while aurora still runs, so
+            // aiku owns their lifecycle and a fetch must not reassert it. Scoped to aroma on
+            // purpose, the other organisations still rely on aurora for these fields.
+            // Remove once aroma is cut over.
+            if ($product->shop->code == 'AROMA'
+                && (data_get($productData, 'au_data.is_variant') == 'Yes' || data_get($productData, 'au_data.has_variants') == 'Yes')) {
+                $productData['product'] = Arr::except(
+                    $productData['product'],
+                    ['is_main', 'state', 'status', 'main_product_id', 'variant_ratio', 'variant_is_visible']
+                );
+
+                // aurora overwrites data wholesale, keep the cutover retirement decision alive
+                $retirementKeys = Arr::only($product->data ?? [], ['retire_at_cutover', 'replaced_by_product_id']);
+                if ($retirementKeys) {
+                    $productData['product']['data'] = array_merge(
+                        Arr::get($productData, 'product.data', []),
+                        $retirementKeys
+                    );
+                }
+            }
+
             //     try {
             if ($productData['family']) {
                 if ($product->shop->type != ShopTypeEnum::DROPSHIPPING) {

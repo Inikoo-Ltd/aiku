@@ -1098,3 +1098,26 @@ test('edit web user', function () {
             ->has('formData');
     });
 });
+
+test('root web user can update own customer', function () {
+    actingAs($this->webUser, 'retina');
+    $response = $this->patch(route('retina.models.customer.update', $this->customer->id), [
+        'contact_name' => 'Updated Contact Name',
+    ]);
+    $response->assertRedirect();
+    expect($this->customer->refresh()->contact_name)->toBe('Updated Contact Name');
+});
+
+test('web user cannot update another customer', function () {
+    actingAs($this->webUser, 'retina');
+    $otherCustomer = \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $this->fulfilment->shop,
+        \App\Models\CRM\Customer::factory()->definition()
+    );
+    $originalContactName = $otherCustomer->contact_name;
+    $response = $this->patch(route('retina.models.customer.update', $otherCustomer->id), [
+        'contact_name' => 'Should Not Update',
+    ]);
+    $response->assertForbidden();
+    expect($otherCustomer->refresh()->contact_name)->toBe($originalContactName);
+});

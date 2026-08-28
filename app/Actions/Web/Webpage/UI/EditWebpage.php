@@ -155,6 +155,18 @@ class EditWebpage extends OrgAction
             ],
         ];
 
+        if ($isBlog) {
+            $fields['sub_type'] = [
+                'type'        => 'select',
+                'label'       => __('Blog Category'),
+                'placeholder' => __('Select a blog category'),
+                'mode'        => 'single',
+                'options'     => WebpageSubTypeEnum::blogCategoriesWithLabel(),
+                'value'       => $webpage->sub_type?->value ?? '',
+                'required'    => true,
+            ];
+        }
+
         $inVariant = false;
 
         if ($webpage->model_type == 'Product') {

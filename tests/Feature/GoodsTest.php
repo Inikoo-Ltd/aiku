@@ -8,10 +8,12 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Goods\Ingredient\Json\ParseIngredientsList;
 use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Actions\Goods\Ingredient\UpdateIngredient;
 use App\Actions\Goods\Stock\HydrateStocks;
 use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Goods\Stock\SyncStockTradeUnits;
 use App\Actions\Goods\StockFamily\DeleteStockFamily;
 use App\Actions\Goods\StockFamily\HydrateStockFamily;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
@@ -146,6 +148,24 @@ test('update ingredient', function (Ingredient $ingredient) {
 
     return $ingredient;
 })->depends('store ingredient');
+
+test('parse pasted ingredients list', function () {
+    StoreIngredient::make()->action($this->group, ['name' => 'Aqua']);
+
+    $parsed = ParseIngredientsList::make()->handle($this->group, "aqua, Linalool*\nGlycerin, , Glycerin", false);
+
+    expect($parsed)->toHaveCount(3)
+        ->and($parsed[0])->toBe(['name' => 'Aqua', 'slug' => 'aqua', 'is_new' => false])
+        ->and($parsed[1]['name'])->toBe('Linalool')
+        ->and($parsed[1]['is_new'])->toBeTrue()
+        ->and($parsed[1]['slug'])->toBeNull()
+        ->and(Ingredient::where('name', 'Linalool')->exists())->toBeFalse();
+
+    $committed = ParseIngredientsList::make()->handle($this->group, 'Linalool*', true);
+
+    expect($committed[0]['slug'])->not->toBeNull()
+        ->and(Ingredient::where('name', 'Linalool')->exists())->toBeTrue();
+});
 
 test('index ingredients', function () {
     $count = Ingredient::count();
@@ -533,6 +553,7 @@ test("UI Edit Stock in Group", function () {
                     'parameters' => $stock->id
                 ],
             ])->etc())
+            ->has('formData.blueprint.1.fields.composition.route')
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", $stock->name)->etc()
@@ -893,4 +914,82 @@ test('stock and stock family indexes use time series aggregation', function () {
 
     expect($indexStocks->handle($this->group, bucket: 'all')->total())->toBeGreaterThanOrEqual(1)
         ->and(\App\Actions\Goods\StockFamily\UI\IndexStockFamilies::make()->handle($this->group, bucket: 'all')->total())->toBeGreaterThanOrEqual(0);
+});
+
+test('changing stock trade units recomputes packed_in on the stock and its org stocks', function () {
+    $stocks   = createStocks($this->group);
+    $stock    = $stocks[0];
+    createOrgStocks($this->organisation, [$stock]);
+    $tradeUnit = $stock->tradeUnits()->first();
+
+    SyncStockTradeUnits::run($stock, [
+        $tradeUnit->id => ['quantity' => 6]
+    ]);
+
+    $stock->refresh();
+    $orgStock = $this->organisation->orgStocks()->where('stock_id', $stock->id)->first();
+
+    expect($stock->packed_in)->toBe(6)
+        ->and($orgStock->packed_in)->toBe(6)
+        ->and((float) $orgStock->tradeUnits()->first()->pivot->quantity)->toBe(6.0);
+});
+
+test('warehouse packing can be edited per org stock from the master editor', function () {
+    [, $product] = createProduct($this->shop);
+    $stocks = createStocks($this->group);
+    $stock  = $stocks[0];
+    [$orgStock] = createOrgStocks($this->organisation, [$stock]);
+    $tradeUnit = $stock->tradeUnits()->first();
+
+    \Illuminate\Support\Facades\DB::table('product_has_org_stocks')->updateOrInsert(
+        ['product_id' => $product->id, 'org_stock_id' => $orgStock->id],
+        ['quantity' => 1]
+    );
+    expect($orgStock->products()->count())->toBeGreaterThanOrEqual(1);
+
+    $response = \Pest\Laravel\patchJson(route('grp.models.org_stock.trade_units.update', [$orgStock->id]), [
+        'trade_units' => [
+            ['id' => $tradeUnit->id, 'quantity' => 12],
+        ],
+    ]);
+    $response->assertOk();
+
+    $orgStock->refresh();
+    expect($orgStock->packed_in)->toBe(12)
+        ->and((float) $orgStock->tradeUnits()->first()->pivot->quantity)->toBe(12.0);
+});
+
+test('UI Edit Stock Composition', function () {
+    $stock    = Stock::first();
+    $response = get(
+        route('grp.goods.stocks.composition', [$stock->slug])
+    );
+    $response->assertInertia(function (AssertableInertia $page) use ($stock) {
+        $page
+            ->component('Goods/ProductComposition')
+            ->has('breadcrumbs')
+            ->has('formData.blueprint.0.fields.trade_units.productsContext')
+            ->where('formData.args.updateRoute.name', 'grp.models.stock.update')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $head) => $head->where('title', $stock->code)->etc()
+            );
+    });
+});
+
+test('UI Show Trade Unit composition tab', function () {
+    $this->withoutExceptionHandling();
+    createStocks($this->group);
+    $tradeUnit = $this->group->tradeUnits()->first();
+
+    $response = get(route('grp.goods.trade-units.show', [$tradeUnit->slug]).'?tab=composition');
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Goods/TradeUnit')
+            ->where('tabs.current', 'composition')
+            ->has('composition.stocks')
+            ->has('composition.org_stocks')
+            ->has('composition.master_products')
+            ->has('composition.products');
+    });
 });

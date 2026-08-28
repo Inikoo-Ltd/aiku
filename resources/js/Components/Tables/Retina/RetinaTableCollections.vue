@@ -15,6 +15,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
 import Image from "@common/Components/Image.vue";
 import Tag from "@/Components/Tag.vue";
+import { GridProducts } from "@/Components/Product"
+import { faExternalLink } from "@far";
 
 
 library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree);
@@ -37,7 +39,7 @@ function collectionRoute(collection): string {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab"  class="mt-5 hidden md:block">
          <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
                 <Image :src="item['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
@@ -71,11 +73,36 @@ function collectionRoute(collection): string {
                     v-tooltip="trans('Department')" />
                 <FontAwesomeIcon v-else-if="parent.type === 'subdepartment'" :icon="faFolders" class="mr-1"
                     v-tooltip="trans('Sub Department')" />
-                <!--   <Link :href="parentRoute(parent.slug) as string" class="secondaryLink">
-                    {{ parent.code && parent.code.length > 6 ? parent.code.substring(0, 6) + "..." : parent.code }}
-                </Link> -->
             </template>
         </template>
-
     </Table>
+
+
+    <GridProducts :resource="data" :preserve-scroll="true" class="mt-5 md:hidden" :name="tab"
+        :gridClass="'grid grid-cols-1'">
+        <template #card="{ item }">
+            <div
+                class="group flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 transition-all hover:border-primary-300 hover:shadow-sm">
+                <Image
+                    :src="item.image_thumbnail ?? item.web_images?.main?.thumbnail ?? item.web_images?.main?.original"
+                    class="h-12 w-12 rounded-full object-cover shadow-sm flex-shrink-0" />
+
+                <div class="min-w-0 flex-1">
+                       <Link :href="collectionRoute(item) as string" class="primaryLink">
+                        {{ item.code }}
+                    </Link>
+
+                    <p class="mt-2 p-1 truncate text-sm text-gray-500">
+                        {{ item.name }}
+                    </p>
+                </div>
+
+                <a v-if="item.public_url" :href="item.public_url" target="_blank"
+                    class="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-primary-600"
+                    title="Open public page">
+                    <FontAwesomeIcon :icon="faExternalLink" />
+                </a>
+            </div>
+        </template>
+  </GridProducts>
 </template>

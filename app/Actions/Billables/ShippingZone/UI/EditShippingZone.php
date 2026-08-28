@@ -11,10 +11,12 @@ namespace App\Actions\Billables\ShippingZone\UI;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ShippingZoneSchemaTabsEnum;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\Shop;
+use App\Models\Dispatching\Shipper;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -93,11 +95,21 @@ class EditShippingZone extends OrgAction
                                     'value' => $shippingZone->territories,
                                     'country_list' => GetCountriesOptions::run(),
                                 ],
-                                'price' => [
-                                    'type'  => 'pricing_zone',
-                                    'label' => __('Price'),
-                                    'value' => $shippingZone->price,
-                                    'currency' =>  $shippingZone->shop->currency
+                                'pricing' => [
+                                    'type'     => 'pricing_zone_mode',
+                                    'label'    => __('Price'),
+                                    'value'    => [
+                                        'price'          => $shippingZone->price,
+                                        'shippers_price' => $shippingZone->shippers_price ?? [],
+                                    ],
+                                    'currency' => $shippingZone->shop->currency,
+                                    'options'  => [
+                                        'hide_per_shipper' => $shippingZone->shop->type == ShopTypeEnum::DROPSHIPPING,
+                                        'shippers' => Shipper::where('organisation_id', $shippingZone->organisation_id)
+                                            ->where('status', true)
+                                            ->orderBy('name')
+                                            ->get(['id', 'name', 'code']),
+                                    ],
                                 ],
                             ],
                         ]

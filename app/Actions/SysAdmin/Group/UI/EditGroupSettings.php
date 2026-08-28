@@ -8,6 +8,8 @@
 
 namespace App\Actions\SysAdmin\Group\UI;
 
+use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
 use App\Actions\SysAdmin\WithSysAdminAuthorization;
@@ -109,6 +111,26 @@ class EditGroupSettings extends OrgAction
                         ],
                     ],
                      [
+                        'label'  => __('Clocks'),
+                        'icon'   => 'fa-light fa-clock',
+                        'fields' => [
+                            'timezones' => [
+                                'type'        => 'select_infinite',
+                                'label'       => __('Timezones shown in the footer'),
+                                'information' => __('These clocks are shown to everybody in the group'),
+                                'options'     => IndexTimeZones::make()->optionsFor($group->world_clock_timezones),
+                                'mode'        => 'multiple',
+                                'fetchRoute'  => [
+                                    'name' => 'grp.json.timezones',
+                                ],
+                                'valueProp'   => 'value',
+                                'labelProp'   => 'label',
+                                'required'    => false,
+                                'value'       => $group->world_clock_timezones,
+                            ],
+                        ],
+                    ],
+                    [
                         'label'  => __('Page Builder'),
                         'icon'   => 'fa-light fa-pager',
                         'fields' => [
@@ -156,6 +178,18 @@ class EditGroupSettings extends OrgAction
                         ),
                     ],
                     [
+                        'label'  => __('Staff chat'),
+                        'icon'   => 'fal fa-comments',
+                        'fields' => [
+                            'staff_chat_quick_replies' => [
+                                'type'        => 'textarea',
+                                'label'       => __('Quick replies'),
+                                'information' => __('One per line, shown as buttons in the staff chat composer'),
+                                'value'       => implode("\n", Arr::get($group->settings, 'staff_chat.quick_replies', [])),
+                            ],
+                        ],
+                    ],
+                    [
                         'label'  => __('Printer'),
                         'icon'   => 'fa-light fa-print',
                         'fields' => [
@@ -170,6 +204,34 @@ class EditGroupSettings extends OrgAction
                                 'value' => Arr::get($group->settings, 'printnode.print_by_printnode', false),
                             ],
                         ]
+                    ],
+                    [
+                        'label'  => __('Inventory'),
+                        'icon'   => 'fa-light fa-inventory',
+                        'fields' => [
+                            'official_stock_valuation_method' => [
+                                'type'             => 'radio',
+                                'mode'             => 'card',
+                                'columns'          => 1,
+                                'valueProp'        => 'value',
+                                'label'            => __('Official stock valuation method'),
+                                'information'      => __('Drives stock values, margins, product costs and dashboards. LPP is not an allowed valuation method in the UK.'),
+                                'required'         => true,
+                                'value'            => Arr::get($group->settings, 'inventory.official_valuation_method', OrgStockValuationMethodEnum::official()->value),
+                                'options'          => [
+                                    ...array_map(fn (OrgStockValuationMethodEnum $method) => [
+                                        'value'       => $method->value,
+                                        'title'       => $method->label().' ('.$method->fullName().')',
+                                        'description' => $method->description(),
+                                    ], [OrgStockValuationMethodEnum::FIFO, OrgStockValuationMethodEnum::WAC]),
+                                ],
+                                'saveConfirmation' => [
+                                    'title'       => __('Change the official stock valuation method?'),
+                                    'description' => __('This is a serious accounting decision. It must not be taken without prior discussion with all the accountants across the group (all organisations). Stock values, margins, product costs and dashboards will all change.'),
+                                    'yesLabel'    => __('I understand, change it'),
+                                ],
+                            ],
+                        ],
                     ],
                     [
                         'label'  => __('Jira'),

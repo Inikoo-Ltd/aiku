@@ -20,6 +20,7 @@ enum MasterVariantTabsEnum: string
     case SHOWCASE = 'showcase';
     case VARIANTS = 'variants';
     case PRODUCTS = 'products';
+    case PRICING = 'pricing';
 
     public function blueprint(): array
     {
@@ -35,6 +36,10 @@ enum MasterVariantTabsEnum: string
             MasterVariantTabsEnum::PRODUCTS => [
                 'title' => __('Master Products'),
                 'icon'  => 'fal fa-cube',
+            ],
+            MasterVariantTabsEnum::PRICING => [
+                'title' => __('Pricing'),
+                'icon'  => 'fal fa-money-bill',
             ],
         };
     }

@@ -9,17 +9,21 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
+use App\Actions\Catalogue\WithCatalogueIndexSubNavigation;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\WithListingsColumns;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
+use App\Http\Resources\Catalogue\FamiliesNeedReviewsResource;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
@@ -46,7 +50,9 @@ class IndexFamilies extends OrgAction
     use WithCatalogueAuthorisation;
     use WithDepartmentSubNavigation;
     use WithCollectionSubNavigation;
+    use WithCatalogueIndexSubNavigation;
     use WithSubDepartmentSubNavigation;
+    use WithListingsColumns;
 
     private bool $sales = true;
 
@@ -125,7 +131,8 @@ class IndexFamilies extends OrgAction
                     key: $key,
                     allowedElements: array_keys($elementGroup['elements']),
                     engine: $elementGroup['engine'],
-                    prefix: $prefix
+                    prefix: $prefix,
+                    default: $elementGroup['default'] ?? null
                 );
             }
         }
@@ -176,6 +183,7 @@ class IndexFamilies extends OrgAction
             'shops.code as shop_code',
             'shops.name as shop_name',
             'currencies.code as currency_code',
+            DB::raw("'".group()->currency->code."' as grp_currency_code"),
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
             'product_categories.master_product_category_id',
@@ -197,19 +205,27 @@ class IndexFamilies extends OrgAction
             ),
         ];
 
+        $hasListingsColumns = $this->hasListingsColumns($parent);
+
         if ($prefix === ProductCategoryTabsEnum::SALES->value) {
+            $aggregateColumns = [
+                'sales_grp_currency_external' => 'sales_grp_currency_external',
+                'customers_invoiced'          => 'customers_invoiced',
+                'invoices'                    => 'invoices',
+                'sold'                        => 'sold',
+            ];
+
+            if ($hasListingsColumns) {
+                $aggregateColumns['dropshippers'] = 'dropshippers';
+                $aggregateColumns['listings']     = 'listings';
+            }
+
             // Use reusable time series aggregation method
             $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
                 timeSeriesTable: 'product_category_time_series',
                 timeSeriesRecordsTable: 'product_category_time_series_records',
                 foreignKey: 'product_category_id',
-                aggregateColumns: [
-                    'sales_grp_currency_external' => 'sales_grp_currency_external',
-                    'invoices'                    => 'invoices',
-                    'dropshippers'                => 'dropshippers',
-                    'listings'                    => 'listings',
-                    'sold'                        => 'sold',
-                ],
+                aggregateColumns: $aggregateColumns,
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
                 includeLY: true
@@ -217,11 +233,57 @@ class IndexFamilies extends OrgAction
 
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['customers_invoiced'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
-            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
-            $selects[] = $timeSeriesData['selectRaw']['listings'];
             $selects[] = $timeSeriesData['selectRaw']['sold'];
+
+            if ($hasListingsColumns) {
+                $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
+                $selects[] = $timeSeriesData['selectRaw']['listings'];
+            }
+
+            $selects[] = DB::raw(
+                "(
+                    SELECT json_build_object(
+                        'slug', o.slug,
+                        'name', o.name,
+                        'state', o.state,
+                        'start_at', o.start_at,
+                        'end_at', o.end_at
+                    )
+                    FROM offers o
+                    JOIN offer_campaigns oc ON oc.id = o.offer_campaign_id
+                    WHERE o.trigger_type = 'ProductCategory'
+                        AND o.trigger_id = product_categories.id
+                        AND o.deleted_at IS NULL
+                        AND oc.type != '".OfferCampaignTypeEnum::VOLUME_DISCOUNT->value."'
+                    ORDER BY o.start_at DESC NULLS LAST, o.id DESC
+                    LIMIT 1
+                )::text as last_offer"
+            );
+
+            $queryBuilder->whereOfferFilter(
+                engine: function (QueryBuilder $query, string $presence, ?string $start, ?string $end) {
+                    $existsSql = "SELECT 1
+                        FROM offers o
+                        JOIN offer_campaigns oc ON oc.id = o.offer_campaign_id
+                        WHERE o.trigger_type = 'ProductCategory'
+                        AND o.trigger_id = product_categories.id
+                        AND o.deleted_at IS NULL
+                        AND oc.type != ?";
+                    $bindings  = [OfferCampaignTypeEnum::VOLUME_DISCOUNT->value];
+
+                    if ($start) {
+                        $existsSql .= ' AND o.start_at BETWEEN ? AND ?';
+                        $bindings[] = $start;
+                        $bindings[] = $end;
+                    }
+
+                    $query->whereRaw(($presence === 'with' ? '' : 'NOT ')."EXISTS ($existsSql)", $bindings);
+                },
+                prefix: $prefix
+            );
         }
 
         $queryBuilder->select($selects);
@@ -241,11 +303,34 @@ class IndexFamilies extends OrgAction
                 'sub_department_name',
                 'department_name',
                 'sales_grp_currency_external',
+                'customers_invoiced',
                 'invoices',
-                'dropshippers',
-                'listings',
                 'sold',
                 'health_rank',
+                ...($hasListingsColumns ? ['dropshippers', 'listings'] : []),
+                AllowedSort::custom(
+                    'last_offer',
+                    new class () implements Sort {
+                        public function __invoke(Builder $query, bool $descending, string $property)
+                        {
+                            $direction = $descending ? 'desc' : 'asc';
+                            $query->orderByRaw(
+                                "(
+                                SELECT o.start_at
+                                FROM offers o
+                                JOIN offer_campaigns oc ON oc.id = o.offer_campaign_id
+                                WHERE o.trigger_type = 'ProductCategory'
+                                AND o.trigger_id = product_categories.id
+                                AND o.deleted_at IS NULL
+                                AND oc.type != ?
+                                ORDER BY o.start_at DESC NULLS LAST, o.id DESC
+                                LIMIT 1
+                            ) $direction NULLS LAST",
+                                [OfferCampaignTypeEnum::VOLUME_DISCOUNT->value]
+                            );
+                        }
+                    }
+                ),
                 AllowedSort::custom(
                     'collections',
                     new class () implements Sort {
@@ -287,13 +372,15 @@ class IndexFamilies extends OrgAction
                     $table->elementGroup(
                         key: $key,
                         label: $elementGroup['label'],
-                        elements: $elementGroup['elements']
+                        elements: $elementGroup['elements'],
+                        default: $elementGroup['default'] ?? null
                     );
                 }
             }
 
             if ($sales) {
                 $table->betweenDates(['date']);
+                $table->offerFilter();
             }
 
             $table
@@ -334,8 +421,14 @@ class IndexFamilies extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
-                    ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
+                    ->column(key: 'last_offer', label: __('Last Offer'), tooltip: __('Most recent offer for this family (volume discounts excluded), showing its code, start date and expiration date. The dot indicates freshness: green running, blue scheduled, grey under 3 months, amber 3 to 6 months, red older than 6 months or never offered.'), canBeHidden: true, sortable: true);
+
+                if ($this->hasListingsColumns($parent)) {
+                    $table->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
+                        ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right');
+                }
+
+                $table->column(key: 'customers_invoiced', label: __('Customers'), tooltip: __('Customers that ordered or were invoiced this family'), canBeHidden: true, sortable: true, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
@@ -427,6 +520,10 @@ class IndexFamilies extends OrgAction
         }
         if ($this->parent instanceof Collection) {
             $subNavigation = $this->getCollectionSubNavigation($this->parent);
+        }
+        if ($this->parent instanceof Shop) {
+            unset($navigation[ProductCategoryTabsEnum::SALES->value]);
+            $subNavigation = $this->getFamiliesIndexSubNavigation($this->parent);
         }
 
         $modelNavigation = [];
@@ -531,8 +628,8 @@ class IndexFamilies extends OrgAction
                     : Inertia::optional(fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
 
                 ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
-                    fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
-                    : Inertia::optional(fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
+                    fn () => FamiliesNeedReviewsResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
+                    : Inertia::optional(fn () => FamiliesNeedReviewsResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales))
@@ -556,7 +653,8 @@ class IndexFamilies extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.catalogue.families.index' => array_merge(
+            'grp.org.shops.show.catalogue.families.index',
+            'grp.org.shops.show.catalogue.families.sales' => array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
@@ -612,6 +710,7 @@ class IndexFamilies extends OrgAction
             [
                 'state' => [
                     'label'    => __('State'),
+                    'default'  => ProductCategoryStateEnum::ACTIVE->value.','.ProductCategoryStateEnum::DISCONTINUING->value,
                     'elements' => array_merge_recursive(
                         ProductCategoryStateEnum::labels(),
                         ProductCategoryStateEnum::countFamily($parent)

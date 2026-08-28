@@ -10,6 +10,7 @@
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
+use App\Actions\Dispatching\Picking\Traits\AutoIgnoreZeroQuantityItems;
 use App\Actions\Inventory\OrgStockMovement\UpdateOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -17,6 +18,7 @@ use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
+use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -29,6 +31,7 @@ class UpdatePicking extends OrgAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use AutoIgnoreZeroQuantityItems;
 
     private Picking $picking;
     private ?User $user = null;
@@ -45,6 +48,21 @@ class UpdatePicking extends OrgAction
 
         if (Arr::has($modelData, 'quantity') && Arr::get($modelData, 'quantity') == 0) {
             return DeletePicking::make()->action($picking, $this->user);
+        }
+
+        if (Arr::has($modelData, 'quantity') && in_array($picking->type, [PickingTypeEnum::PICK, PickingTypeEnum::MAGIC_PICK], true)) {
+            $deliveryNoteItemForClamp = $picking->deliveryNoteItem;
+            /* Outstanding includes this picking's own quantity, so any decrease is always allowed */
+            $outstanding = (float)$deliveryNoteItemForClamp->quantity_required
+                - ((float)$deliveryNoteItemForClamp->quantity_picked - (float)$picking->quantity)
+                - (float)$deliveryNoteItemForClamp->quantity_waiting_warehouse
+                - (float)$deliveryNoteItemForClamp->quantity_waiting_crm;
+
+            if ($outstanding <= 0) {
+                abort(422, 'Nothing left to pick: the required quantity is already picked or waiting');
+            }
+
+            $modelData['quantity'] = min((float)$modelData['quantity'], $outstanding, $this->quantityAvailableInLocation($picking));
         }
 
         $picking = $this->update($picking, $modelData);
@@ -67,7 +85,27 @@ class UpdatePicking extends OrgAction
 
         CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
 
+        $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $this->user);
+
         return $picking;
+    }
+
+    /**
+     * What this picking can be raised to without sending the location negative. The location
+     * already has this picking's current quantity taken out of it, so that amount is headroom
+     * the picking gets to keep.
+     */
+    private function quantityAvailableInLocation(Picking $picking): float
+    {
+        $locationOrgStock = LocationOrgStock::where('location_id', $picking->location_id)
+            ->where('org_stock_id', $picking->org_stock_id)
+            ->first();
+
+        if (!$locationOrgStock) {
+            return (float)$picking->quantity;
+        }
+
+        return (float)$locationOrgStock->quantity + (float)$picking->quantity;
     }
 
     public function rules(): array

@@ -8,7 +8,7 @@
 
 namespace App\Actions\Traits;
 
-use App\Actions\Ordering\Order\CalculateOrderDiscounts;
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Enumerable;
@@ -20,10 +20,11 @@ trait WithRecalculateOrdersInBasket
         /** @var Order $order */
         foreach ($orders as $order) {
             if ($order->updated_by_customer_at && $order->updated_by_customer_at->isAfter(Carbon::now()->subHours(3))) {
-                CalculateOrderDiscounts::dispatch($order, true);
+                CalculateOrderTotalAmounts::dispatch($order, forceRecalculate: true, onlyIfInBasket: true);
             } else {
                 $randomDelay = rand(30, 600);
-                CalculateOrderDiscounts::dispatch($order, true)->delay($randomDelay)->onQueue('hydrators-slave-low-priority');
+                CalculateOrderTotalAmounts::dispatch($order, forceRecalculate: true, onlyIfInBasket: true)
+                    ->delay($randomDelay)->onQueue('hydrators-slave-low-priority');
             }
         }
     }

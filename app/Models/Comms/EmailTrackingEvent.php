@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $source_id
  * @property string|null $ip
  * @property string|null $device
+ * @property bool $is_scanner
  * @property-read \App\Models\Comms\DispatchedEmail $dispatchedEmail
  * @method static Builder<static>|EmailTrackingEvent newModelQuery()
  * @method static Builder<static>|EmailTrackingEvent newQuery()
@@ -36,8 +37,9 @@ class EmailTrackingEvent extends Model
     public $timestamps = false;
 
     protected $casts = [
-        'data'  => 'array',
-        'type'  => EmailTrackingEventTypeEnum::class
+        'data'       => 'array',
+        'type'       => EmailTrackingEventTypeEnum::class,
+        'is_scanner' => 'boolean',
     ];
 
     protected $attributes = [

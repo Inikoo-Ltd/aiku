@@ -22,9 +22,11 @@ use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
+use App\Actions\Traits\WithMarginData;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
+use App\Actions\Traits\HasBasketDetails;
 use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -34,10 +36,12 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\UI\NotesEnum;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\Accounting\PaymentsResource;
+use App\Http\Resources\Catalogue\ChargeResource;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
@@ -56,6 +60,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
+use App\Models\Accounting\Payment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\SysAdmin\Organisation;
@@ -69,6 +74,8 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowOrder extends OrgAction
 {
     use IsOrder;
+    use WithMarginData;
+    use HasBasketDetails;
     use WithOrderingAuthorisation;
     use WithOrderForbiddenCountryCheck;
     use WithBucketNavigation;
@@ -149,7 +156,7 @@ class ShowOrder extends OrgAction
         $timeline = [];
         foreach (OrderStateEnum::cases() as $state) {
             if ($state === OrderStateEnum::CREATING) {
-                $timestamp = $order->created_at;
+                $timestamp = $order->date;
             } else {
                 $timestamp = $order->{$state->snake().'_at'} ? $order->{$state->snake().'_at'} : null;
             }
@@ -181,37 +188,45 @@ class ShowOrder extends OrgAction
         return [
             "note_list" => [
                 [
-                    "label"       => __("Shipping label message") . ' ('  . __("Customer") . ')',
+                    "label"       => NotesEnum::SHIPPING_LABEL->label(),
                     "note"        => $order->shipping_notes ?? '',
                     "information" => __("Note from crm. First 34 char. Will be printed on the shipping label."),
                     "editable"    => true,
-                    "bgColor"     => "#38bdf8",
-                    "field"       => "shipping_notes"
+                    "field"       => "shipping_notes",
+                    ...NotesEnum::SHIPPING_LABEL->boilerPlate()
                 ],
                 [
-                    "label"       => __("Customer"),
+                    "label"       => NotesEnum::CUSTOMER->label(),
                     "note"        => $order->customer_notes ?? '',
                     "information" => __("This note is from customer in the platform. Not editable."),
                     "editable"    => false,
-                    "bgColor"     => "#FF7DBD",
-                    "field"       => "customer_notes"
+                    "field"       => "customer_notes",
+                    ...NotesEnum::CUSTOMER->boilerPlate()
                 ],
                 [
-                    "label"       => __("Public"),
+                    "label"       => NotesEnum::PUBLIC->label(),
                     "note"        => $order->public_notes ?? '',
                     "information" => __("This note will be visible to public, both staff and the customer can see."),
                     "editable"    => true,
                     "warning"     => __('Customer can see this note'),
-                    "bgColor"     => "#94DB84",
-                    "field"       => "public_notes"
+                    "field"       => "public_notes",
+                    ...NotesEnum::PUBLIC->boilerPlate()
                 ],
                 [
-                    "label"       => __("Order private note"),
+                    "label"       => NotesEnum::INTERNAL->label(),
                     "note"        => $order->internal_notes ?? '',
-                    "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
+                    "information" => __("This note is only visible to staff members in the order. It is not shown in the delivery note."),
                     "editable"    => true,
-                    "bgColor"     => "#FCF4A3",
-                    "field"       => "internal_notes"
+                    "field"       => "internal_notes",
+                    ...NotesEnum::INTERNAL->boilerPlate()
+                ],
+                [
+                    "label"       => NotesEnum::WAREHOUSE->label(),
+                    "note"        => $order->private_warehouse_note ?? '',
+                    "information" => __("This note is only visible to staff members and is shown in the delivery note."),
+                    "editable"    => true,
+                    "field"       => "private_warehouse_note",
+                    ...NotesEnum::WAREHOUSE->boilerPlate()
                 ]
             ]
         ];
@@ -220,6 +235,8 @@ class ShowOrder extends OrgAction
 
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
+        $withMargins = $this->canSeeMargins($order->shop);
+
         $wrapped_actions = [];
         $finalTimeline   = $this->getOrderTimeline($order);
 
@@ -232,6 +249,11 @@ class ShowOrder extends OrgAction
             GetDropshippingOrderActions::run($order, $this->canEdit)
             :
             GetEcomOrderActions::run($order, $this->canEdit);
+
+        $allowOrderModification = $this->canEdit
+            && $order->shop->type != ShopTypeEnum::EXTERNAL
+            && (!$order->platform || $order->platform->type == PlatformTypeEnum::MANUAL)
+            && !in_array($order->state, [OrderStateEnum::CANCELLED, OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED]);
 
         if ($order->state != OrderStateEnum::CANCELLED) {
             $wrapped_actions = [
@@ -281,6 +303,17 @@ class ShowOrder extends OrgAction
             $deliveryNoteResource = DeliveryNotesResource::make($firstDeliveryNote);
         }
 
+        $redispatchRoute = null;
+        if ($firstDeliveryNote && $firstDeliveryNote->state == DeliveryNoteStateEnum::FINALISED) {
+            $redispatchRoute = [
+                'method'     => 'patch',
+                'name'       => 'grp.models.delivery_note.state.dispatched',
+                'parameters' => [
+                    'deliveryNote' => $firstDeliveryNote->id
+                ]
+            ];
+        }
+
         $platform = $order->platform;
         if (!$platform && $this->shop->type === ShopTypeEnum::DROPSHIPPING) {
             $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
@@ -304,6 +337,8 @@ class ShowOrder extends OrgAction
                 'id'              => $payment->id,
                 'amount'          => $payment->amount,
                 'created_at'      => $payment->created_at,
+                'method'          => $payment->method,
+                'method_label'    => Payment::methodLabel($payment->method, $payment->sub_method),
                 'payment_account' => [
                     'type' => $payment->paymentAccount->type,
                     'code' => $payment->paymentAccount->code,
@@ -311,6 +346,8 @@ class ShowOrder extends OrgAction
                 ]
             ];
         }
+
+        $orderCharges = $this->getBasketCharges($order);
 
         return Inertia::render(
             'Org/Ordering/Order',
@@ -324,6 +361,11 @@ class ShowOrder extends OrgAction
                 'navigation'  => [
                     'previous' => $this->getPrevious($order, $request),
                     'next'     => $this->getNext($order, $request),
+                ],
+                'staff_chat'  => [
+                    'context_type' => 'Order',
+                    'context_id'   => $order->id,
+                    'audiences'    => [['key' => 'warehouse', 'label' => __('Ask warehouse')], ['key' => 'crm', 'label' => __('Ask CRM')]],
                 ],
                 'pageHead'    => [
                     'title'           => $order->reference,
@@ -341,6 +383,7 @@ class ShowOrder extends OrgAction
                         'icon'  => $platform->imageSources(24, 24),
                         'type'  => $platform->type,
                         'title' => __('Platform :platform', ['platform' => $platform->name]),
+                        'order_id' => $order->platform_order_id
                     ] : null,
                 ],
                 'tabs'        => [
@@ -368,6 +411,7 @@ class ShowOrder extends OrgAction
                             'order' => $order->id
                         ]
                     ],
+                    'redispatch'                 => $redispatchRoute,
                     'products_list'              => [
                         'name'       => 'grp.json.order.products',
                         'parameters' => [
@@ -376,6 +420,12 @@ class ShowOrder extends OrgAction
                     ],
                     'products_list_modification' => [
                         'name'       => 'grp.json.order.products_for_modify',
+                        'parameters' => [
+                            'order' => $order->id
+                        ]
+                    ],
+                    'services_list'              => [
+                        'name'       => 'grp.json.order.services',
                         'parameters' => [
                             'order' => $order->id
                         ]
@@ -407,8 +457,13 @@ class ShowOrder extends OrgAction
                 ] : null,
                 'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
                 'contact_address'             => $order->customer ? AddressResource::make($order->customer->address)->getArray() : null,
-                'box_stats'                   => $this->getOrderBoxStats($order),
+                'box_stats'                   => $this->getOrderBoxStatsWithMargins($order),
                 'currency'                    => CurrencyResource::make($order->currency)->toArray(request()),
+                'charges'                     => [
+                    'premium_dispatch' => $orderCharges['premium_dispatch'] ? ChargeResource::make($orderCharges['premium_dispatch'])->toArray(request()) : null,
+                    'extra_packing'    => $orderCharges['extra_packing'] ? ChargeResource::make($orderCharges['extra_packing'])->toArray(request()) : null,
+                    'insurance'        => $orderCharges['insurance'] ? ChargeResource::make($orderCharges['insurance'])->toArray(request()) : null,
+                ],
                 'data'                        => OrderResource::make($order),
                 'delivery_note'               => $deliveryNoteResource,
 
@@ -556,10 +611,15 @@ class ShowOrder extends OrgAction
                     'icon' => $order->salesChannel->type->icon()
                 ] : null,
                 'is_faire_order'    => $order->shop->engine == ShopEngineEnum::FAIRE,
+                'allow_order_modification'          => $allowOrderModification,
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
-                    fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
-                    : Inertia::optional(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
+                    fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value, withMargins: $withMargins))
+                    : Inertia::optional(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value, withMargins: $withMargins))),
+
+                OrderTabsEnum::MARKETING->value => $this->tab == OrderTabsEnum::MARKETING->value ?
+                    fn () => GetOrderMarketingJourney::run($order)
+                    : Inertia::optional(fn () => GetOrderMarketingJourney::run($order)),
 
                 OrderTabsEnum::DISPATCHED_EMAILS->value => $this->tab == OrderTabsEnum::DISPATCHED_EMAILS->value ?
                     fn () => DispatchedEmailsInOrderResource::collection(IndexDispatchedEmailsInOrder::run(parent: $order, prefix: OrderTabsEnum::DISPATCHED_EMAILS->value))
@@ -595,7 +655,8 @@ class ShowOrder extends OrgAction
                 IndexTransactions::make()->tableStructure(
                     parent: $order,
                     tableRows: $nonProductItems,
-                    prefix: OrderTabsEnum::TRANSACTIONS->value
+                    prefix: OrderTabsEnum::TRANSACTIONS->value,
+                    withMargins: $withMargins
                 )
             )
             ->table(
@@ -645,6 +706,58 @@ class ShowOrder extends OrgAction
 
         $this->set('canEdit', $request->user()->authTo('hr.edit'));
         $this->set('canViewUsers', $request->user()->authTo('users.view'));
+    }
+
+    /**
+     * Attaches margin info to the order summary rows: the after-discount margin on the
+     * Items net row, and what the discount cost in margin on the Discounts row. Grp only,
+     * the shared retina getOrderBoxStats stays margin-free.
+     *
+     * @return array<string, mixed>
+     */
+    private function getOrderBoxStatsWithMargins(Order $order): array
+    {
+        $boxStats = $this->getOrderBoxStats($order);
+        $summary  = $this->getMarginSummary($order);
+
+        if (!$summary) {
+            return $boxStats;
+        }
+
+        $symbol = $order->currency->symbol ?? $order->currency->code;
+
+        $marginRow = [
+            'margin_label'  => __('Margin').": {$summary['margin_pct']}%",
+            'status'        => $summary['margin_status'],
+            'thin'          => $summary['margin_status'] === 'warning' ? __('thin margin, careful with further discounts') : null,
+            'profit_label'  => $symbol.number_format($summary['profit_amount'], 2),
+            'tooltip'       => __(':amount is the item profit only: what the items sold for minus what the stock cost. HR, rent, shipping, marketing, payment fees and all other expenses still need to be subtracted, the real profit is much lower.', ['amount' => $symbol.number_format($summary['profit_amount'], 2)]),
+            'below'         => $summary['is_below_break_even'] ? __('below :pct% break-even', ['pct' => $summary['break_even_pct']]) : null,
+            'without_cost'  => $summary['lines_without_cost'] > 0 ? __(':count lines without cost excluded', ['count' => $summary['lines_without_cost']]) : null,
+        ];
+
+        $discountInfo = null;
+        if ($summary['before_discounts']) {
+            $points       = round($summary['before_discounts']['margin_pct'] - $summary['margin_pct'], 1);
+            $discountInfo = __('Margin cost').": {$points}pts";
+        }
+
+        foreach ($boxStats['order_summary'] ?? [] as $groupIndex => $group) {
+            foreach ($group as $rowIndex => $row) {
+                $label = $row['label'] ?? null;
+                if (in_array($label, [__('Items net'), __('Items')])) {
+                    $boxStats['order_summary'][$groupIndex][$rowIndex]['slot_name'] = 'items_margin';
+                    $boxStats['order_summary'][$groupIndex][$rowIndex]['margin']    = $marginRow;
+                    if ($summary['is_below_break_even']) {
+                        $boxStats['order_summary'][$groupIndex][$rowIndex]['label_class'] = 'text-red-600';
+                    }
+                } elseif ($label === __('Discounts') && $discountInfo) {
+                    $boxStats['order_summary'][$groupIndex][$rowIndex]['information'] = $discountInfo;
+                }
+            }
+        }
+
+        return $boxStats;
     }
 
     public function jsonResponse(Order $order): OrderResource

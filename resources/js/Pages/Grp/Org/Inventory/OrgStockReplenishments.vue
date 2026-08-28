@@ -10,6 +10,10 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TableOrgStockReplenishments from "@/Components/Tables/Grp/Org/Inventory/TableOrgStockReplenishments.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faDollyFlatbedEmpty, faShoppingBasket } from "@fas"
+
+library.add(faDollyFlatbedEmpty, faShoppingBasket)
 
 defineProps<{
     title: string

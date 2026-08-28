@@ -17,8 +17,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $name
  * @property mixed $quantity_in_locations
  * @property mixed $date
- * @property mixed $org_stock_value
- * @property mixed $grp_stock_value
+ * @property mixed $org_stock_lpp_value
+ * @property mixed $grp_stock_lpp_value
  * @property mixed $currency_code
  * @property mixed $sold_within_1y
  * @property mixed $last_sold_date
@@ -35,8 +35,12 @@ class OrgStockHistoryResource extends JsonResource
             'name'                  => $this->name,
             'date'                  => $this->date,
             'quantity_in_locations' => $this->quantity_in_locations,
-            'org_stock_value'       => $this->org_stock_value,
-            'grp_stock_value'       => $this->grp_stock_value,
+            'org_stock_lpp_value'       => $this->org_stock_lpp_value,
+            'grp_stock_lpp_value'       => $this->grp_stock_lpp_value,
+            'org_stock_wac_value'   => $this->org_stock_wac_value,
+            'grp_stock_wac_value'   => $this->grp_stock_wac_value,
+            'org_stock_fifo_value'  => $this->org_stock_fifo_value,
+            'grp_stock_fifo_value'  => $this->grp_stock_fifo_value,
             'currency_code'         => $this->currency_code,
             'sold_within_1y'        => [
                 'icon'    => $this->sold_within_1y ? 'fal fa-cash-register' : 'fal fa-ban',

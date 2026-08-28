@@ -10,13 +10,15 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
+use App\Actions\Masters\MasterAsset\TaxPresetBasketProgress;
+use App\Actions\Traits\WithLineTaxCategories;
+use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Database\Eloquent\Relations\MorphPivot;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Currency;
@@ -27,6 +29,8 @@ use App\Models\Masters\MasterShop;
 class EditMasterProduct extends OrgAction
 {
     use WithMasterProductNavigation;
+    use WithLineTaxCategories;
+    use WithUnitsChangeConfirmation;
 
     public function handle(MasterAsset $masterAsset): MasterAsset
     {
@@ -76,6 +80,22 @@ class EditMasterProduct extends OrgAction
      */
     public function htmlResponse(MasterAsset $masterAsset, ActionRequest $request): Response
     {
+        
+        $iconLinks = [];
+
+        if ($masterAsset->is_single_trade_unit && $masterAsset->tradeUnits->first()) {
+            $iconLinks[] = [
+                'icon'    => 'fal fa-atom',
+                'tooltip' => __('Go to Edit Trade Unit'),
+                'route'   => [
+                    'name'       => 'grp.trade_units.units.show',
+                    'parameters' => [
+                        'tradeUnit' => $masterAsset->tradeUnits->first()->slug,
+                    ]
+                ],
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
@@ -112,9 +132,9 @@ class EditMasterProduct extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ]
-                    ]
+                    ],
+                    'iconLinks' => $iconLinks,
                 ],
-
                 'formData' => [
                     'blueprint' => $this->getBlueprint($masterAsset),
                     'args'      => [
@@ -136,27 +156,19 @@ class EditMasterProduct extends OrgAction
      */
     public function getBlueprint(MasterAsset $masterProduct): array
     {
-        $packedIn = $masterProduct->getStockPackedInByTradeUnit();
+        $masterShop = $masterProduct->masterShop;
 
-        $tradeUnits = $masterProduct->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) {
+        $tradeUnits = $masterProduct->tradeUnits->map(function (TradeUnit $tradeUnit) {
             /** @var MorphPivot $pivot */
-            $pivot            = $tradeUnit->getRelationValue('pivot');
-            $quantity         = $pivot->getAttribute('quantity');
-            $packedInQuantity = Arr::get($packedIn, $tradeUnit->id, 1);
-            $fraction         = $quantity / $packedInQuantity;
+            $pivot = $tradeUnit->getRelationValue('pivot');
 
-            return array_merge(
-                [
-                    'quantity'        => (int)$quantity,
-                    'packed_in'       => $packedInQuantity,
-                    'fraction'        => $fraction,
-                    'pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($fraction)), $packedInQuantity),
-                ],
-                $tradeUnit->toArray()
-            );
+            return [
+                'quantity' => (int) $pivot->getAttribute('quantity'),
+                'code'     => $tradeUnit->code,
+            ];
         });
 
-        $currenciesRate = GetMasterShopCurrenciesRate::run($masterProduct->masterShop);
+        $currenciesRate = GetMasterShopCurrenciesRate::run($masterShop);
 
         $costs = null;
         if ($masterProduct->effective_cost !== null) {
@@ -189,18 +201,53 @@ class EditMasterProduct extends OrgAction
             ]
         ];
 
+        /*
+         * Price and composition are one decision: changing what the product physically is
+         * either scales the price (repackaging) or the composition was wrong and the price
+         * already fits. The price fields live in both sections so nobody saves one half.
+         */
+        $masterPricesField = [
+            'type'         => 'multiple_price_currency',
+            'label'        => __('Price').' / '.__('Outer'),
+            'required'     => true,
+            'currencies'   => $currenciesRate,
+            'value'        => $masterProduct->master_prices,
+            'masterAsset'  => $masterProduct->id,
+            'unitsReview'  => $unitsReview,
+            'updateRoute'  => $pricesUpdateRoute,
+            'noSaveButton' => true,
+            'costs'        => $costs,
+            'units'        => (float) $masterProduct->units,
+            'type_input'   => 'price'
+        ];
+
+        $masterRRPsField = [
+            'type'              => 'multiple_price_currency',
+            'label'             => __('RRP').' / '.__('Unit'),
+            'required'          => true,
+            'currencies'        => $currenciesRate,
+            'value'             => $masterProduct->master_rrps,
+            'masterAsset'       => $masterProduct->id,
+            'unitsReview'       => $unitsReview,
+            'updateRoute'       => $pricesUpdateRoute,
+            'noSaveButton'      => true,
+            'perUnits'          => (float) $masterProduct->units,
+            'counterpartRecord' => $masterProduct->master_prices,
+            'type_input'        => 'rrp'
+        ];
+
         return [
-            [
-                'label'  => __('Id'),
-                'icon'   => 'fa-light fa-fingerprint',
-                'fields' => [
-                    'code' => [
-                        'type'  => 'input',
-                        'label' => __('Code'),
-                        'value' => $masterProduct->code
-                    ],
-                ]
-            ],
+            // [
+            //     'label'  => __('Id'),
+            //     'icon'   => 'fa-light fa-fingerprint',
+            //     'fields' => [
+            //         'code' => [
+            //             'type'  => 'input',
+            //             'label' => __('Code'),
+            //             'value' => $masterProduct->code
+            //         ],
+            //     ]
+            // ],
             [
                 'label'  => __('Name/Description'),
                 'icon'   => 'fa-light fa-tag',
@@ -279,34 +326,8 @@ class EditMasterProduct extends OrgAction
                 'label'  => __('Pricing'),
                 'icon'   => 'fa-light fa-money-bill',
                 'fields' => [
-                    'master_prices'            => [
-                        'type'          => 'multiple_price_currency',
-                        'label'         => __('Price').' / '.__('Outer'),
-                        'required'      => true,
-                        'currencies'    => $currenciesRate,
-                        'value'         => $masterProduct->master_prices,
-                        'masterAsset'   => $masterProduct->id,
-                        'unitsReview'   => $unitsReview,
-                        'updateRoute'   => $pricesUpdateRoute,
-                        'noSaveButton'  => true,
-                        'costs'         => $costs,
-                        'units'         => (float) $masterProduct->units,
-                        'type_input'          => 'price'
-                    ],
-                    'master_rrps'            => [
-                        'type'          => 'multiple_price_currency',
-                        'label'         => __('RRP').' / '.__('Unit'),
-                        'required'      => true,
-                        'currencies'    => $currenciesRate,
-                        'value'         => $masterProduct->master_rrps,
-                        'masterAsset'   => $masterProduct->id,
-                        'unitsReview'   => $unitsReview,
-                        'updateRoute'   => $pricesUpdateRoute,
-                        'noSaveButton'  => true,
-                        'perUnits'      => (float) $masterProduct->units,
-                        'counterpartRecord' => $masterProduct->master_prices,
-                        'type_input'          => 'rrp'
-                    ],
+                    'master_prices' => $masterPricesField,
+                    'master_rrps'   => $masterRRPsField,
                 ]
             ],
             [
@@ -323,6 +344,33 @@ class EditMasterProduct extends OrgAction
                 ]
             ],
             [
+                'label'  => __('Tax'),
+                'icon'   => 'fa-light fa-percent',
+                'fields' => [
+                    'tax_preset' => [
+                        'type'             => 'tax_preset',
+                        'mode'             => 'card',
+                        'columns'          => 1,
+                        'valueProp'        => 'value',
+                        'label'            => __('Tax treatment'),
+                        'options'          => $this->getTaxPresetOptions($masterProduct->tax_category ?? []),
+                        'master_asset_id'  => $masterProduct->id,
+                        /** Only a sweep still running matters on load; a finished one is history. */
+                        'sweep'            => ($sweep = TaxPresetBasketProgress::get($masterProduct)) && $sweep['state'] != 'finished' ? $sweep : null,
+                        'affected_baskets' => $affectedBaskets = $this->getTaxChangeAffectedBasketCount($masterProduct),
+                        'saveConfirmation' => [
+                            'title'       => __('Change the tax treatment?'),
+                            'description' => trans_choice(
+                                '{0} No open basket holds this product right now. Orders already submitted keep the tax they were sold under.|{1} :count open basket holds this product and will be retaxed. Orders already submitted keep the tax they were sold under.|[2,*] :count open baskets hold this product and will be retaxed. Orders already submitted keep the tax they were sold under.',
+                                $affectedBaskets
+                            ),
+                            'yesLabel'    => __('Yes, change the tax'),
+                        ],
+                        'value'            => $masterProduct->tax_preset ?? 'custom',
+                    ],
+                ]
+            ],
+            [
                 'label'  => __('Master family'),
                 'icon'   => 'fal fa-folder',
                 'fields' => [
@@ -335,7 +383,7 @@ class EditMasterProduct extends OrgAction
                         'fetchRoute' => [
                             'name'       => 'grp.json.master-family.all-master-family',
                             'parameters' => [
-                                'masterShop'                    => $masterProduct->masterShop->slug,
+                                'masterShop'                    => $masterShop->slug,
                                 'withMasterProductCategoryStat' => true,
                             ]
                         ],
@@ -352,45 +400,25 @@ class EditMasterProduct extends OrgAction
                 'label'  => __('Trade units'),
                 'icon'   => 'fa-light fa-atom',
                 'fields' => [
-                    'trade_units' => [
-                        'label'        => __('Trade units'),
-                        'type'         => 'list-selector-trade-unit',
-                        'key_quantity' => 'quantity',
-                        'withQuantity' => true,
-                        'full'         => true,
+                    /*
+                     * Composition, per-warehouse packing and the price they imply are one
+                     * decision with too many controls for this form, so they live on their
+                     * own page. This is only the summary and the door.
+                     */
+                    'composition' => [
+                        'type'         => 'button',
                         'noSaveButton' => true,
-                        'use_confirm'  => true,
-                        'is_dropship'  => $masterProduct->masterShop->type == ShopTypeEnum::DROPSHIPPING,
-                        'tabs' => array_values(array_filter([
-                            $masterProduct->masterFamily ? [
-                                'label'      => __('To do'),
-                                'routeFetch' => [
-                                    'name'       => 'grp.json.master-product-category.recommended-trade-units',
-                                    'parameters' => [
-                                        'masterProductCategory' => $masterProduct->masterFamily->id,
-                                    ],
-                                ],
-                            ] : null,
-
-                            $masterProduct->masterFamily ? [
-                                'label'      => __('Done'),
-                                'routeFetch' => [
-                                    'name'       => 'grp.json.master-product-category.taken-trade-units',
-                                    'parameters' => [
-                                        'masterProductCategory' => $masterProduct->masterFamily->id,
-                                    ],
-                                ],
-                            ] : null,
-
-                            [
-                                'label'      => __('All'),
-                                'search'     => true,
-                                'routeFetch' => [
-                                    'name' => 'grp.json.master_product_category.all_trade_units',
-                                ],
-                            ],
-                        ])),
-                        'value'        => $tradeUnits,
+                        'label'        => $tradeUnits->map(fn ($tradeUnit) => trimDecimalZeros($tradeUnit['quantity']).' × '.$tradeUnit['code'])->implode(', '),
+                        'label_button' => __('Edit composition & packing'),
+                        'icon'         => 'fal fa-atom',
+                        'type_button'  => 'secondary',
+                        'route'        => [
+                            'name'       => 'grp.masters.master_shops.show.master_products.composition',
+                            'parameters' => [
+                                'masterShop'    => $masterShop->slug,
+                                'masterProduct' => $masterProduct->slug,
+                            ]
+                        ],
                     ],
                 ],
             ],
@@ -424,8 +452,21 @@ class EditMasterProduct extends OrgAction
                     ],
                 ],
             ],
-
-
+            $masterShop->type == ShopTypeEnum::DROPSHIPPING ? [] : [
+                'label'  => __('Offer Details'),
+                'icon'   => 'fa-light fa-badge-percent',
+                'fields'        => [
+                    'is_golden_product' => [
+                        'type'          => 'toggle',
+                        'label'         => __('Golden Product'),
+                        'value'         => $masterProduct->is_golden_product,
+                        'information'   => __("Would mark the product as Golden Product, which would apply Gold Reward offer to all siblings in basket when a customer added it"),
+                        'warningText'   => __('Modifying this setting would mark the product as Golden Product, which would apply Gold Reward offer to all siblings in basket when a customer added it').'. '.__('Are you sure you want to do this?'),
+                        'noSaveButton'    => true,
+                        'submitOnConfirm' => true,
+                    ],
+                ]
+            ],
         ];
     }
 

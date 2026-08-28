@@ -8,37 +8,35 @@
 
 namespace App\Actions\Procurement\OrgAgent\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Actions\SupplyChain\Agent\UI\WithAgentEditAction;
 use App\Enums\UI\Procurement\OrgAgentTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
 use App\Models\Procurement\OrgAgent;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrgAgent extends OrgAction
 {
+    use WithProcurementAuthorisation;
     use WithOrgAgentSubNavigation;
     use WithAgentOrganisation;
+    use WithAgentEditAction;
 
     public function handle(OrgAgent $orgAgent): OrgAgent
     {
         return $orgAgent;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-        $this->canDelete = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
     }
 
     public function asController(Organisation $organisation, OrgAgent $orgAgent, ActionRequest $request): RedirectResponse|OrgAgent
@@ -65,6 +63,7 @@ class ShowOrgAgent extends OrgAction
             [
                 'title'       => __('Agent'),
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
@@ -81,15 +80,10 @@ class ShowOrgAgent extends OrgAction
                     'subNavigation' => $this->getOrgAgentNavigation($orgAgent),
                     'title'         => $orgAgent->agent->organisation->name,
                     'actions'       => [
-                        $this->canEdit ? [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => __('Edit'),
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'show.edit', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ] : false,
+                        $this->agentEditAction(
+                            'grp.org.procurement.org_agents.show.edit',
+                            $request->route()->originalParameters()
+                        ),
                     ],
                     'create_direct' => $this->canEdit ? [
                         'route' => [
@@ -137,8 +131,8 @@ class ShowOrgAgent extends OrgAction
                     : Inertia::optional(fn () => GetOrgAgentShowcase::run($orgAgent)),
 
                 OrgAgentTabsEnum::HISTORY->value => $this->tab == OrgAgentTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($orgAgent))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgAgent)))
+                    fn () => HistoryResource::collection(IndexHistory::run($orgAgent, OrgAgentTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgAgent, OrgAgentTabsEnum::HISTORY->value)))
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: OrgAgentTabsEnum::HISTORY->value));
     }
@@ -149,76 +143,96 @@ class ShowOrgAgent extends OrgAction
         return new OrgAgentResource($orgAgent);
     }
 
-    public function getBreadcrumbs(array $routeParameters, $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = null): array
     {
-        $orgAgent = OrgAgent::where('slug', $routeParameters['orgAgent'])->first();
-
-        return array_merge(
-            (new ShowProcurementDashboard())->getBreadcrumbs($routeParameters),
-            [
+        $headCrumb = function (OrgAgent $orgAgent, array $routeParameters, $suffix) {
+            return [
                 [
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
-                            'route' => [
-                                'name'       => 'grp.org.procurement.org_agents.index',
-                                'parameters' => [
-                                    $routeParameters['organisation'],
-                                ]
-                            ],
+                            'route' => $routeParameters['index'],
                             'label' => __('Agents')
                         ],
                         'model' => [
-                            'route' => [
-                                'name'       => 'grp.org.procurement.org_agents.show',
-                                'parameters' => [
-                                    $routeParameters['organisation'],
-                                    $orgAgent->slug
-                                ]
-                            ],
+                            'route' => $routeParameters['model'],
                             'label' => $orgAgent->agent->code,
                         ],
                     ],
                     'suffix'         => $suffix,
-
                 ],
-            ]
-        );
+            ];
+        };
+
+        $orgAgent = OrgAgent::where('slug', $routeParameters['orgAgent'])->first();
+
+        return match ($routeName) {
+            'grp.org.procurement.org_agents.show',
+            'grp.org.procurement.org_agents.show.edit',
+            'grp.org.procurement.org_agents.show.org-stocks.index',
+            'grp.org.procurement.org_agents.show.purchase-orders.index',
+            'grp.org.procurement.org_agents.show.purchase-orders.show',
+            'grp.org.procurement.org_agents.show.stock-deliveries.index',
+            'grp.org.procurement.org_agents.show.supplier_products.index',
+            'grp.org.procurement.org_agents.show.supplier_products.show',
+            'grp.org.procurement.org_agents.show.suppliers.index',
+            'grp.org.procurement.org_agents.show.suppliers.show' =>
+            array_merge(
+                ShowProcurementDashboard::make()->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
+                $headCrumb(
+                    $orgAgent,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.procurement.org_agents.index',
+                            'parameters' => Arr::only($routeParameters, 'organisation')
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.procurement.org_agents.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'orgAgent'])
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            default => []
+        };
     }
 
     public function getPrevious(OrgAgent $orgAgent, ActionRequest $request): ?array
     {
-        $previous = OrgAgent::where('slug', '<', $orgAgent->slug)->orderBy('slug', 'desc')->first();
+        $previous = $this->siblings($orgAgent)->where('slug', '<', $orgAgent->slug)->orderBy('slug', 'desc')->first();
 
-        return $this->getNavigation($previous, $request->route()->getName());
+        return $this->getNavigation($previous, $request);
     }
 
     public function getNext(OrgAgent $orgAgent, ActionRequest $request): ?array
     {
-        $next = OrgAgent::where('slug', '>', $orgAgent->slug)->orderBy('slug')->first();
+        $next = $this->siblings($orgAgent)->where('slug', '>', $orgAgent->slug)->orderBy('slug')->first();
 
-        return $this->getNavigation($next, $request->route()->getName());
+        return $this->getNavigation($next, $request);
     }
 
-    private function getNavigation(?OrgAgent $orgAgent, string $routeName): ?array
+    private function siblings(OrgAgent $orgAgent): Builder
+    {
+        return OrgAgent::where('organisation_id', $orgAgent->organisation_id)->whereHas('agent');
+    }
+
+    private function getNavigation(?OrgAgent $orgAgent, ActionRequest $request): ?array
     {
         if (!$orgAgent) {
             return null;
         }
 
-        return match ($routeName) {
-            'grp.org.procurement.org_agents.show' => [
-                'label' => $orgAgent->organisation->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $orgAgent->organisation->slug,
-                        'orgAgent'     => $orgAgent->slug
-                    ]
-
-                ]
-            ]
-        };
+        return [
+            'label' => $orgAgent->agent->organisation->name,
+            'route' => [
+                'name'       => $request->route()->getName(),
+                'parameters' => array_merge(
+                    $request->route()->originalParameters(),
+                    ['orgAgent' => $orgAgent->slug]
+                ),
+            ],
+        ];
     }
 
 }

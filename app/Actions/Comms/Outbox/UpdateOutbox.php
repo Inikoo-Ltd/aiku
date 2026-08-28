@@ -21,6 +21,7 @@ use App\Models\Comms\Outbox;
 use App\Models\Fulfilment\Fulfilment;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOutbox extends OrgAction
@@ -66,18 +67,22 @@ class UpdateOutbox extends OrgAction
         $daysAfterRules = ['sometimes', 'required', 'integer', 'gt:0'];
         $intervalRules = ['sometimes', 'required', 'integer', 'gt:0'];
 
-        if (in_array($this->outbox->code, [
-            OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
-            OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
-            OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
-        ])) {
-            $daysAfterRules[] = 'max:30';
-        }
-
-        if (in_array($this->outbox->code, [
-            OutboxCodeEnum::PRICE_CHANGE
-        ])) {
-            $intervalRules = ['sometimes', 'required', 'integer', 'min:0'];
+        switch ($this->outbox->code) {
+            case OutboxCodeEnum::GOLD_REWARD_REMINDER_1:
+            case OutboxCodeEnum::GOLD_REWARD_REMINDER_2:
+            case OutboxCodeEnum::GOLD_REWARD_REMINDER_3:
+                $daysAfterRules[] = 'max:30';
+                break;
+            case OutboxCodeEnum::PROSPECT_CONVERTION_1:
+            case OutboxCodeEnum::PROSPECT_CONVERTION_2:
+            case OutboxCodeEnum::PROSPECT_CONVERTION_3:
+                $daysAfterRules = ['sometimes', 'required', 'integer', 'min:0'];
+                break;
+            case OutboxCodeEnum::PRICE_CHANGE:
+                $intervalRules = ['sometimes', 'required', 'integer', 'min:0'];
+                break;
+            default:
+                break;
         }
 
 
@@ -91,6 +96,28 @@ class UpdateOutbox extends OrgAction
             'state'      => ['sometimes', 'required', Rule::enum(OutboxStateEnum::class)],
             'is_applicable' => ['sometimes', 'required', 'boolean'],
         ];
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        $state = $this->get('state');
+        if (!$state instanceof OutboxStateEnum) {
+            $state = OutboxStateEnum::tryFrom((string) $state);
+        }
+
+        if ($state === OutboxStateEnum::ACTIVE
+            && $this->outbox->code->requiresDaysAfter()
+            && ($this->get('days_after') ?? $this->outbox->days_after) === null
+        ) {
+            $validator->errors()->add('days_after', __('Set "days after" before activating this outbox, otherwise it will never send.'));
+        }
+
+        if ($state === OutboxStateEnum::ACTIVE
+            && $this->outbox->code->requiresInterval()
+            && ($this->get('interval') ?? $this->outbox->interval) === null
+        ) {
+            $validator->errors()->add('interval', __('Set the reminder interval before activating this outbox, otherwise it will never send.'));
+        }
     }
 
     /** @noinspection PhpUnusedParameterInspection */

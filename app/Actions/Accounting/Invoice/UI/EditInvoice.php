@@ -153,6 +153,13 @@ class EditInvoice extends OrgAction
                                     'additional_instructions'   => __("You are required to add the Country Code as prefix"),
                                     'value'                     => $invoice->tax_number
                                 ],
+                                'is_re'                         => [
+                                    'type'                      => 'toggle',
+                                    'hidden'                    => $invoice->address->country_code != 'ES',
+                                    'label'                     => 'Recargo de equivalencia',
+                                    'information'               => __("Modifying this value would only affect this invoice and not the Customer's"),
+                                    'value'                     => $invoice->is_re
+                                ],
 
                             ],
                         ],

@@ -39,12 +39,17 @@ class ChatMessageResource extends JsonResource
 
             'message_type' => $chatMessage->message_type->value,
             'sender_type' => $chatMessage->sender_type->value,
+            'sender_name' => $chatMessage->sender_name,
             'is_agent' => $chatMessage->sender_type->value === ChatSenderTypeEnum::AGENT->value,
             'is_guest' => $chatMessage->sender_type->value === ChatSenderTypeEnum::GUEST->value,
             'is_user' => $chatMessage->sender_type->value === ChatSenderTypeEnum::USER->value,
             'is_system' => $chatMessage->sender_type->value === ChatSenderTypeEnum::SYSTEM->value,
             'is_ai' => $chatMessage->sender_type->value === ChatSenderTypeEnum::AI->value,
             'is_read' => $chatMessage->is_read,
+            'is_ai_generated' => $chatMessage->is_ai_generated,
+            'is_validated' => $chatMessage->is_validated,
+            'is_verifiable_image' => $chatMessage->isVerifiableCustomerImage(),
+            'ai_verification' => $chatMessage->metadata['ai_verification'] ?? null,
             'media_url' => $chatMessage->imageSources(0, 0, 'attachment'),
             'original_url' => $chatMessage->attachment ? $chatMessage->attachment->getUrl() : null,
             'file_name' => $chatMessage->attachment ? $chatMessage->attachment->file_name : null,
@@ -58,6 +63,20 @@ class ChatMessageResource extends JsonResource
                 'method'     => 'get',
                 'url'        => route('grp.api.chats.chat.attachment.download', ['ulid' => $chatMessage->attachment->ulid])
             ] : null,
+            'reactions' => $chatMessage->reactions
+                ->groupBy('emoji')
+                ->map(function ($group, $emoji) {
+                    return [
+                        'emoji'    => $emoji,
+                        'count'    => $group->count(),
+                        'reactors' => $group->map(function ($reaction) {
+                            return [
+                                'type' => $reaction->reactor_type,
+                                'id'   => $reaction->reactor_id,
+                            ];
+                        })->values(),
+                    ];
+                })->values(),
             'metadata' => $chatMessage->metadata,
             'is_offline_message' => $chatMessage->metadata['is_offline_message'] ?? false,
             'edited_at' => $chatMessage->edited_at,

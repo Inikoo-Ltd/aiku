@@ -34,6 +34,8 @@ class GetIrisProductsInRecommendation extends IrisAction
                     ->orWhere('products.is_variant_leader', true);
             });
 
+        $queryBuilder->where('products.price', '>', 0);
+
         $queryBuilder->select(
             $this->getSelect([
                 DB::raw('products.variant_id IS NOT NULL as is_variant'),

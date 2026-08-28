@@ -59,7 +59,7 @@ class WebBlockProductResource extends JsonResource
         if (is_array($product->offers_data)) {
             $productOffersData = $product->offers_data;
         } else {
-            $productOffersData = json_decode($product->offers_data, true);
+            $productOffersData = json_decode($product->offers_data ?? '', true);
         }
 
 
@@ -114,12 +114,14 @@ class WebBlockProductResource extends JsonResource
             'units'             => $units,
             'unit'              => $product->unit,
             'web_images'        => $product->web_images,
+            'audio'             => $product->audio ? '/audio/'.$product->audio->ulid : null,
             'created_at'        => $product->created_at,
             'updated_at'        => $product->updated_at,
             'images'            => $product->bucket_images ? $this->getImagesData($product, true, 800) : $this->getResizedMediaImages($product, 800),
             'tags'              => TagResource::collection($product->tags)->toArray($request),
             'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
             'is_on_demand'      => $product->is_on_demand,
+            'is_golden_product' => (bool)$product->is_golden_product,
             'is_back_in_stock'  => $product->backInStockReminders,
             'back_in_stock'     => $back_in_stock,
 
@@ -132,6 +134,14 @@ class WebBlockProductResource extends JsonResource
             'discounted_percentage'      => percentage($bestPercentageOff, 1),
 
             'is_single_trade_unit'       => $product->is_single_trade_unit,
+
+            'marketing_material_route'  => [
+                'name'          => 'iris.catalogue.feeds.product.download_img',
+                'parameters'    => [
+                    'product'   => $product->slug,
+                    'type'      => 'products_images'
+                ]
+            ],
         ];
     }
 
@@ -143,7 +153,8 @@ class WebBlockProductResource extends JsonResource
         return $product->images->map(fn ($media) => [
             'id'        => $media->id,
             'source'    => GetPictureSources::run($media->getImage()->resize($maxWidth, $maxWidth)),
-            'thumbnail' => GetPictureSources::run($media->getImage()->resize(0, 48)),
+            'thumbnail' => GetPictureSources::run($media->getImage()->resize(0, 192)),
+            'zoom'      => GetPictureSources::run($media->getImage()->resize(1600, 1600)),
             'alt'       => $media->pivot?->caption,
         ])->all();
     }

@@ -336,6 +336,16 @@ class Employee extends Model implements HasMedia, Auditable
         return $this->organisation->workSchedules()->shifts()->where('is_active', true);
     }
 
+    public function workSchedules(): MorphMany
+    {
+        return $this->morphMany(WorkSchedule::class, 'schedulable');
+    }
+
+    public function getDefaultWorkSchedule(): ?WorkSchedule
+    {
+        return $this->workSchedules()->where('type', 'default')->where('is_active', true)->first();
+    }
+
     public function tasks(): MorphMany
     {
         return $this->morphMany(Task::class, 'assigner');

@@ -57,6 +57,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $submitted_at
  * @property mixed $dispatched_at
  * @property mixed $is_customer_vip
+ * @property mixed $attribution_share
+ * @property mixed $last_touch_at
  */
 class OrdersResource extends JsonResource
 {
@@ -130,6 +132,9 @@ class OrdersResource extends JsonResource
             'with_replacement'            => $this->with_replacement,
             'platform_milestones'         => data_get($this->data, 'platform_milestones'),
             'is_customer_vip'             => $this->is_customer_vip,
+            /* Only present when the listing is scoped to a traffic source, which sums it in. */
+            'attribution_share'           => $this->attribution_share ?? null,
+            'last_touch_at'               => $this->last_touch_at ?? null,
         ];
     }
 }

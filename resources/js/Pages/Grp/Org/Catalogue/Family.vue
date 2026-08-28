@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBullhorn, faCameraRetro, faCube, faFolder, faMedal, faMoneyBillWave, faProjectDiagram, faStarfighter, faTag, faUser, faBrowser, faFolderDownload, faQuoteLeft} from "@fal"
+import { faBullhorn, faCameraRetro, faCube, faFolder, faMedal, faMoneyBillWave, faProjectDiagram, faStarfighter, faTag, faUser, faBrowser, faFolderDownload, faQuoteLeft, faAtomAlt} from "@fal"
 import { faExclamationTriangle, faThumbtack } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -49,7 +49,8 @@ library.add(
     faQuoteLeft,
     faThumbtack,
     faMedal,
-    faStarfighter
+    faStarfighter,
+    faAtomAlt
 )
 
 
@@ -70,6 +71,7 @@ const props = defineProps<{
     is_orphan?: boolean
     currency?: Object
     url_master?: routeType
+    url_master_tuf?: routeType
     shopsData?: any
     masterProductCategoryId?: number
     images?: object
@@ -142,7 +144,6 @@ const reviewRatingLabels = computed(() => {
 
 const showDialog = ref(false)
 
-
 </script>
 
 <template>
@@ -167,10 +168,18 @@ const showDialog = ref(false)
                     :color="pageHead.iconRight.color"
                     :rotation="pageHead?.iconRight?.icon_rotation" />
 
-                <Link v-if="url_master" :href="route(url_master.name,url_master.parameters)" v-tooltip="'Go to Master family'" :class="'opacity-70 hover:opacity-100'">
+                <Link v-if="url_master" :href="route(url_master.name, url_master.parameters)" v-tooltip="'Go to Master family'" :class="'opacity-70 hover:opacity-100'">
                     <FontAwesomeIcon
                         :icon="faOctopusDeploy"
                         color="#4B0082"
+                        fixed-width
+                    />
+
+                </Link>
+
+                <Link v-if="url_master_tuf" :href="route(url_master_tuf.name, url_master_tuf.parameters)" v-tooltip="'Go to Trade Unit Family'" :class="'opacity-70 hover:opacity-100'">
+                    <FontAwesomeIcon
+                        :icon="faAtomAlt"
                         fixed-width
                     />
 
@@ -211,7 +220,7 @@ const showDialog = ref(false)
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
-    <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
+    <div v-if="mini_breadcrumbs?.length" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">

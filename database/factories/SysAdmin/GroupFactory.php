@@ -25,7 +25,7 @@ class GroupFactory extends Factory
 
         return [
             'ulid'        => (string) \Illuminate\Support\Str::ulid(),
-            'code'        => fake()->lexify(),
+            'code'        => fake()->lexify('??????'),
             'name'        => fake()->company(),
             'country_id'  => $country->id,
             'language_id' => $language->id,

@@ -10,6 +10,7 @@
 
 namespace App\Actions\CRM\Prospect\UI;
 
+use App\Actions\Comms\Outbox\ProspectConversion\RunProspectConvertionEmailBulkRuns;
 use App\Actions\CRM\Prospect\StoreProspect;
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -27,10 +28,14 @@ class CreateProspectFromWebBlock extends IrisAction
      */
     public function handle(array $modelData): Prospect
     {
-        return StoreProspect::make()->action($this->shop, [
+        $prospect = StoreProspect::make()->action($this->shop, [
             'is_opt_in' => true,
             'email'     => Arr::get($modelData, 'email'),
         ]);
+
+        RunProspectConvertionEmailBulkRuns::dispatch($prospect?->id);
+
+        return $prospect;
     }
 
     public function rules(): array

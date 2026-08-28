@@ -12,6 +12,7 @@ namespace App\Http\Resources\HumanResources;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Resources\Json\JsonResource;
 use JsonSerializable;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
 
 /**
@@ -32,25 +33,21 @@ class TimesheetsResource extends JsonResource
 
 
         $jobPosition = null;
+        $subjectHasLeft = false;
         if ($this->resource->relationLoaded('subject') && $this->subject instanceof Employee) {
             $jobPosition = $this->subject->job_title ?? null;
+            $subjectHasLeft = $this->subject->state === EmployeeStateEnum::LEFT;
         }
-
-        $organisationCode = $this->organisation_code
-            ?? ($this->resource->relationLoaded('organisation') ? $this->organisation?->code : null);
 
         $startAt = $this->start_at;
         $endAt = $this->end_at;
-
-        if ($organisationCode === 'SK') {
-            $startAt = $startAt?->copy()->subHour();
-            $endAt = $endAt?->copy()->subHour();
-        }
 
         return [
             'id'                        => $this->id,
             'date'                      => $this->date,
             'subject_name'              => $this->subject_name,
+            'subject_slug'              => $this->subject_slug ?? null,
+            'subject_has_left'          => $subjectHasLeft,
             'start_at'                  => $startAt,
             'end_at'                    => $endAt,
             'working_duration'          => $this->working_duration,
@@ -62,6 +59,11 @@ class TimesheetsResource extends JsonResource
             'clock_in_count'            => $this->clock_in_count ?? $this->number_time_trackers,
             'clock_out_count'           => $this->clock_out_count ?? ($this->number_time_trackers - $this->number_open_time_trackers),
             'notes'                     => $this->notes ?? $this->first_clocking_notes,
+
+            'paid_duration'             => $this->paid_duration ?? 0,
+            'unpaid_overtime_duration'  => $this->unpaid_overtime_duration ?? 0,
+            'paid_overtime_duration'    => $this->paid_overtime_duration ?? 0,
+            'worked'                    => $this->worked ?? $this->working_duration,
 
             'organisation_name'         => $this->organisation_name ?? null,
             'organisation_slug'         => $this->organisation_slug ?? null,

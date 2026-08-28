@@ -17,6 +17,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $ends_at
  * @property mixed $duration
  * @property TimeTrackerStatusEnum $status
+ * @property int|null $start_clocking_id
+ * @property int|null $end_clocking_id
  */
 class TimeTrackersResource extends JsonResource
 {
@@ -24,11 +26,6 @@ class TimeTrackersResource extends JsonResource
     {
         $startsAt = $this->starts_at;
         $endsAt = $this->ends_at;
-
-        if (($this->organisation_code ?? null) === 'SK') {
-            $startsAt = $startsAt?->copy()->subHour();
-            $endsAt = $endsAt?->copy()->subHour();
-        }
 
         return [
             'id'           => $this->id,
@@ -38,6 +35,7 @@ class TimeTrackersResource extends JsonResource
             'status'       => $this->status->statusIcon()[$this->status->value],
             'status_value' => $this->status->value,
             'can_add_clock_out' => $this->status === TimeTrackerStatusEnum::OPEN,
+            'can_add_clock_in' => $this->start_clocking_id === null,
             'action'    => match (true) {
                 (bool) $this->starts_at => [
                     'tooltip' => __('Clock In'),
@@ -53,7 +51,20 @@ class TimeTrackersResource extends JsonResource
             },
             'clock_out_route' => $this->status === TimeTrackerStatusEnum::OPEN
                 ? route('grp.models.time-tracker.clock-out', ['timeTracker' => $this->id])
-                : null
+                : null,
+            'clock_in_route' => $this->start_clocking_id === null
+                ? route('grp.models.time-tracker.clock-in', ['timeTracker' => $this->id])
+                : null,
+            'edit_clock_in_route' => $this->start_clocking_id
+                ? route('grp.models.clocking-machine.clocking.notes.update', ['clocking' => $this->start_clocking_id])
+                : null,
+            'edit_clock_out_route' => $this->end_clocking_id
+                ? route('grp.models.clocking-machine.clocking.notes.update', ['clocking' => $this->end_clocking_id])
+                : null,
+            'delete_route' => [
+                'name'       => 'grp.models.time-tracker.delete',
+                'parameters' => ['timeTracker' => $this->id],
+            ],
         ];
     }
 }

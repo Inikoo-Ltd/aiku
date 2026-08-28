@@ -8,6 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDeliveryItem;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStockDeliveryItemCost extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
 
     private const COST_FIELDS = [
@@ -30,15 +32,6 @@ class UpdateStockDeliveryItemCost extends OrgAction
     ];
 
     private StockDeliveryItem $stockDeliveryItem;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-    }
 
     public function rules(): array
     {
