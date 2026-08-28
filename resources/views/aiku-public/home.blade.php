@@ -86,17 +86,6 @@
             <p>We believe AI is a tool to empower human ingenuity, not to replace it. aiku ships a permission‑scoped MCP server so assistants can answer questions about the business; the decisions stay with people. <a href="{{ route('aiku-public.blog.show', 'rag-is-dead-give-the-model-the-tools') }}">How we drew that line →</a></p>
         </section>
 
-        <section class="chapter">
-            <h2>Yes, it's real. It's in production right now.</h2>
-            <p style="color:var(--muted);max-width:40em">Some of the other screens, small on purpose.</p>
-            <div class="tease">
-                @foreach (['invoices','families','employees','marketing','delivery-notes','warehouse-inventory','departments','masters'] as $thumb)
-                    <img src="{{ url("art/readme/thumb-{$thumb}.jpg") }}" alt="Screenshot of the {{ str_replace('-', ' ', $thumb) }} screen" width="320" height="200" loading="lazy">
-                @endforeach
-            </div>
-            <p style="font-size:13px;color:var(--muted);margin-top:10px">A demo group seeded with generated data; nothing here belongs to a real customer.</p>
-        </section>
-
         @if ($posts->isNotEmpty())
             <section class="chapter">
                 <h2>Engineering notes</h2>

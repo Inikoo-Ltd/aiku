@@ -72,8 +72,6 @@
         .modules li { padding: 18px 0; border-bottom: 1px solid var(--rule); }
         .modules b { display: block; font-family: var(--serif); font-size: 21px; font-weight: 600; }
         .modules span { color: var(--muted); font-size: 15px; }
-        .tease { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin: 20px 0 8px; }
-        .tease img { width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 4px; filter: saturate(0.8); }
         .logos { display: flex; flex-wrap: wrap; gap: 28px 36px; align-items: center; margin: 28px 0; opacity: 0.85; }
         .logos img { height: 22px; width: auto; }
         @media (prefers-color-scheme: dark) { .logos img { filter: invert(1) hue-rotate(180deg); } }

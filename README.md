@@ -93,20 +93,6 @@ Employees, clocking machines, timesheets, leave, job positions and roles. A manu
 ### 📊 Analytics, search & AI
 Time-series metrics and dashboards, margins, exports. Group-wide instant search (Typesense / Meilisearch) and semantic search (pgvector). A first-party **MCP server** with permission-scoped tools so your AI assistants can answer questions about the business — safely.
 
-## Yes, it's real
-
-<p align="center">
-  <img src="public/art/readme/thumb-group-dashboard.jpg" width="150" alt="">
-  <img src="public/art/readme/thumb-orders.jpg" width="150" alt="">
-  <img src="public/art/readme/thumb-invoices.jpg" width="150" alt="">
-  <img src="public/art/readme/thumb-families.jpg" width="150" alt="">
-  <img src="public/art/readme/thumb-customers.jpg" width="150" alt="">
-  <img src="public/art/readme/thumb-employees.jpg" width="150" alt="">
-  <img src="public/art/readme/thumb-marketing.jpg" width="150" alt="">
-  <img src="public/art/readme/thumb-delivery-notes.jpg" width="150" alt="">
-</p>
-<p align="center"><sub>Screens from a demo group seeded with random data — regenerate with <code>devops/devel/readme_screenshots.sh</code>.</sub></p>
-
 ## The apps
 
 | App | For | Built with |
