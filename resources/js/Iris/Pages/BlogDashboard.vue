@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref } from "vue"
+import { computed, inject, ref } from "vue"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -12,6 +12,7 @@ import BlogCardIris from "@/Iris/Components/IrisBlocks/BlogCardIris.vue"
 import BlogCategoryCardIris from "@/Iris/Components/IrisBlocks/BlogCategoryCardIris.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import type { BlogPost, BlogCategory } from "@/types/Iris/Blog"
+import { getBlogCategoryDisplayName } from "@/Iris/Composables/useBlogCategoryDisplayName"
 
 library.add(faEnvelope, faCheckCircle)
 
@@ -22,10 +23,11 @@ type Panel = {
 	label?: string
 }
 
-withDefaults(
+const props = withDefaults(
 	defineProps<{
 		data: any
 		title?: string
+		blog_category?: string
 		subtitle?: string
 		categories?: BlogCategory[]
 		explore?: Panel
@@ -33,6 +35,7 @@ withDefaults(
 	}>(),
 	{
 		title: undefined,
+		blog_category: undefined,
 		subtitle: undefined,
 		categories: undefined,
 		explore: undefined,
@@ -41,6 +44,8 @@ withDefaults(
 )
 
 const layout = inject("layout", retinaLayoutStructure)
+
+const displayTitle = computed(() => getBlogCategoryDisplayName(props.blog_category, props.title))
 
 const isLoadingSubmit = ref(false)
 const currentState = ref("")
@@ -89,7 +94,7 @@ const onSubmitSubscribe = async () => {
 		<section>
 			<div class="mx-auto max-w-7xl px-4 pt-12 text-center sm:px-6 sm:pt-12 lg:px-8">
 				<h1 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl lg:text-5xl">
-					{{ title ?? trans('Our Blog') }}
+					{{ displayTitle ?? trans('Our Blog') }}
 				</h1>
 				<div v-if="subtitle" class="mx-auto mt-4  text-base text-gray-500">
 					{{ subtitle }}

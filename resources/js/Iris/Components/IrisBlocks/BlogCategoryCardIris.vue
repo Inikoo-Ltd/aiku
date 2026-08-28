@@ -1,17 +1,23 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPlaneDeparture, faBookOpen, faChartBar } from "@fal"
 import Image from "@common/Components/Image.vue"
 import type { BlogCategory } from "@/types/Iris/Blog"
+import { getBlogCategoryDisplayName } from "@/Iris/Composables/useBlogCategoryDisplayName"
 
 library.add(faPlaneDeparture, faBookOpen, faChartBar)
 
-defineProps<{
+const props = defineProps<{
 	category: BlogCategory
 	position: number
 }>()
+
+const displayLabel = computed(() =>
+	getBlogCategoryDisplayName(props.category.value, props.category.label)
+)
 </script>
 
 <template>
@@ -22,18 +28,18 @@ defineProps<{
 				<Image
 					v-if="category.image_src"
 					:src="category.image_src"
-					:alt="category.image_alt ?? category.label"
+					:alt="category.image_alt ?? displayLabel"
 					class="block h-full w-full transition duration-500 group-hover:scale-105"
 					:imageCover="true" />
 				<img
 					v-else-if="category.third_party_image_preview"
 					:src="category.third_party_image_preview"
-					:alt="category.image_alt ?? category.label"
+					:alt="category.image_alt ?? displayLabel"
 					class="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
 				<img
 					v-else-if="category.fallback_image"
 					:src="category.fallback_image"
-					:alt="category.label"
+					:alt="displayLabel"
 					class="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
 				<div v-else class="h-full w-full bg-gradient-to-br from-gray-100 to-gray-200" />
 			</div>
@@ -50,7 +56,7 @@ defineProps<{
 			</span>
 
 			<h2 class="!text-xl font-bold leading-snug text-gray-900">
-				{{ category.label }}
+				{{ displayLabel }}
 			</h2>
 
 			<p class="text-sm leading-relaxed text-gray-500">
@@ -72,7 +78,7 @@ defineProps<{
 		<a
 			:href="category.url"
 			class="absolute inset-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--theme-color-0)] focus-visible:ring-offset-2">
-			<span class="sr-only">{{ category.label }}</span>
+			<span class="sr-only">{{ displayLabel }}</span>
 		</a>
 	</article>
 </template>
