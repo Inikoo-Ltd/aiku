@@ -265,7 +265,7 @@ class ShowInvoice extends OrgAction
         ];
 
         return array_map(function (array $column) use ($savedColumns) {
-            $column['is_checked'] = (bool)Arr::get($savedColumns, $column['value'], false);
+            $column['is_checked'] = (bool)Arr::get($savedColumns, $column['value'], $column['value'] === 'separate_out_of_stock');
 
             return $column;
         }, $columns);

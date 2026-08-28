@@ -168,7 +168,7 @@ trait WithInvoicesExport
         $separateOutOfStock = (bool)Arr::get(
             $options,
             'separate_out_of_stock',
-            Arr::get($invoice->shop->settings, 'invoicing.download_pdf_columns.separate_out_of_stock', false)
+            Arr::get($invoice->shop->settings, 'invoicing.download_pdf_columns.separate_out_of_stock', true)
         );
 
         $outOfStockTransactions = collect();

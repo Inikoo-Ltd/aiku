@@ -525,7 +525,7 @@ class EditShop extends OrgAction
                                 return array_map(fn ($col) => [
                                     'label' => $col['label'],
                                     'key'   => $col['key'],
-                                    'value' => (bool)Arr::get($savedColumns, $col['key'], false),
+                                    'value' => (bool)Arr::get($savedColumns, $col['key'], $col['key'] === 'separate_out_of_stock'),
                                 ], $columns);
                             })(),
                         ],
