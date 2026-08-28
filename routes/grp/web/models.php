@@ -288,6 +288,7 @@ use App\Actions\Helpers\Brand\UpdateBrand;
 use App\Actions\Helpers\Dashboard\BreakDashboardTimeSeriesCache;
 use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
+use App\Actions\Helpers\Media\AttachImagesToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\Helpers\Snapshot\ApplyWebsiteMenuSnapshot;
 use App\Actions\Helpers\Snapshot\SetSnapshotAsLive;
@@ -643,6 +644,7 @@ Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(functi
 
 Route::prefix('master-product-category/{masterProductCategory:id}')->name('master_product_category.')->group(function () {
     Route::post('upload-images', UploadImagesToMasterProductCategory::class)->name('upload_images');
+    Route::post('attach-images', [AttachImagesToModel::class, 'inMasterProductCategory'])->name('attach_images');
     Route::patch('update-images', UpdateMasterProductCategoryImages::class)->name('update_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterProductCategory::class)->name('delete_images')->withoutScopedBindings();
     Route::post('master-collection', [StoreMasterCollection::class, 'inMasterProductCategory'])->name('master_collection.store');
@@ -658,6 +660,7 @@ Route::prefix('master-collection/{masterCollection:id}')->name('master_collectio
     Route::post('attach-parents', AttachMultipleParentsToAMasterCollection::class)->name('attach_parents');
 
     Route::post('upload-images', UploadImagesToMasterCollection::class)->name('upload_images');
+    Route::post('attach-images', [AttachImagesToModel::class, 'inMasterCollection'])->name('attach_images');
     Route::patch('update-images', UpdateMasterCollectionImages::class)->name('update_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterCollection::class)->name('delete_images')->withoutScopedBindings();
 });
