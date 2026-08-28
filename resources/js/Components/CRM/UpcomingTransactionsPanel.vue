@@ -329,7 +329,7 @@ const submitNote =  () => {
                     <span class="text-sm font-medium text-indigo-600">{{ trans("Add the first one") }}</span>
                 </button>
 
-                <div v-if="temporaryNote.field" class="pt-3 mt-3">
+                <div v-if="temporaryNote?.field" class="pt-3 mt-3">
                     <h2 class="flex flex-auto items-center gap-2 text-lg font-bold text-gray-900 mb-2">
                         <span class="grow">
                             {{ temporaryNote.label }}
