@@ -2342,19 +2342,35 @@ describe('staff messaging context shortcuts', function () {
 });
 
 describe('staff messaging audience mapping', function () {
-    test('configured recipients override role fallback', function () {
+    test('org crm list is ignored, shop crm list wins', function () {
         $product = Product::where('shop_id', $this->shop->id)->first() ?? createProduct($this->shop)[1];
         $order   = createOrder($this->customer, $product);
         $other   = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
             ?? User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
 
+        \Illuminate\Support\Facades\Cache::put('staff-last-active:'.$other->id, now()->timestamp);
         $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['staff_chat' => ['crm_user_ids' => [$other->id]]])]);
 
-        expect(\App\Actions\Chat\Staff\GetStaffAudience::run('crm', $order)->pluck('id')->all())->toBe([$other->id]);
-
-        $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['staff_chat' => ['crm_user_ids' => []]])]);
-
         expect(\App\Actions\Chat\Staff\GetStaffAudience::run('crm', $order)->pluck('id')->all())->not->toBe([$other->id]);
+
+        $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['staff_chat' => ['crm_user_ids' => [$other->id]]])]);
+
+        expect(\App\Actions\Chat\Staff\GetStaffAudience::run('crm', $order)->pluck('id')->all())->toBe([$other->id]);
+    });
+
+    test('org warehouse list is the fallback when shop has none', function () {
+        $product = Product::where('shop_id', $this->shop->id)->first() ?? createProduct($this->shop)[1];
+        $order   = createOrder($this->customer, $product);
+        $other   = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
+
+        $shopSettings = $this->shop->settings ?? [];
+        \Illuminate\Support\Arr::set($shopSettings, 'staff_chat.warehouse_user_ids', []);
+        $this->shop->update(['settings' => $shopSettings]);
+        \Illuminate\Support\Facades\Cache::put('staff-last-active:'.$other->id, now()->timestamp);
+        $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['staff_chat' => ['warehouse_user_ids' => [$other->id]]])]);
+
+        expect(\App\Actions\Chat\Staff\GetStaffAudience::run('warehouse', $order)->pluck('id')->all())->toBe([$other->id]);
     });
 });
 
