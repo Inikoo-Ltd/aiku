@@ -63,19 +63,10 @@ const familyOptions = computed(() => {
 const hasOptionData = (option: any) =>
 	Boolean(option?.available) || hasText(option?.moq) || hasText(option?.notes)
 
-const highlights = computed(() =>
-	familyOptions.value
-		.filter((option: any) => option?.available)
-		.map((option: any) => ({
-			key: option.key,
-			icon: option.icon,
-			label: option.label,
-		}))
-)
-
 const rows = computed(() =>
 	familyOptions.value.filter(hasOptionData).map((option: any) => ({
 		key: option.key,
+		icon: option.icon,
 		option: option.label,
 		available: Boolean(option.available),
 		moq: String(option.moq ?? "").trim(),
@@ -98,12 +89,18 @@ const contactButtonLabel = computed(() =>
 	String(customisation.value?.contact?.button?.text ?? "").trim()
 )
 
-const contactButtonUrl = computed(() =>
-	String(customisation.value?.contact?.button?.url ?? "").trim()
-)
+const contactButtonLink = computed(() => {
+	const value = customisation.value?.contact?.button?.url
+
+	return typeof value === "string"
+		? { type: "external", href: value, canonical_url: null, id: null, target: "_self" }
+		: (value ?? null)
+})
+
+const contactButtonHref = computed(() => String(contactButtonLink.value?.href ?? "").trim())
 
 const hasContactButton = computed(
-	() => hasText(contactButtonLabel.value) && hasText(contactButtonUrl.value)
+	() => hasText(contactButtonLabel.value) && hasText(contactButtonHref.value)
 )
 
 const hasContact = computed(
@@ -154,23 +151,6 @@ const isMobile = computed(() => props.screenType === "mobile")
 		</div>
 
 		<div
-			v-if="highlights.length"
-			class="mt-8 grid gap-3 sm:gap-4"
-			:class="isMobile ? 'grid-cols-2' : 'grid-cols-3 lg:grid-cols-6'">
-			<div v-for="highlight in highlights" :key="highlight.key ?? highlight.label">
-				<div
-					class="flex h-[72px] items-center justify-center rounded-[8px] bg-[#C0899B] text-white md:h-[80px] mb-4"
-					:style="getStyles(customisation?.highlight?.container?.properties)">
-					<FontAwesomeIcon :icon="highlight.icon" class="text-[30px] md:text-[34px]" />
-				</div>
-
-				<p class="mt-4 text-center text-[12px] leading-snug md:text-[16px]">
-					{{ highlight.label }}
-				</p>
-			</div>
-		</div>
-
-		<div
 			v-if="rows.length || hasContact"
 			class="mt-8 grid grid-cols-1 gap-8 lg:gap-12"
 			:class="rows.length && hasContact ? 'lg:grid-cols-[1.7fr_1fr]' : 'lg:grid-cols-1'">
@@ -178,7 +158,14 @@ const isMobile = computed(() => props.screenType === "mobile")
 				<div v-if="isMobile" class="customisation-cards">
 					<div v-for="row in rows" :key="row.key" class="customisation-card">
 						<div class="customisation-card__head">
-							<p class="customisation-card__title">{{ row.option }}</p>
+							<p class="customisation-card__title">
+								<FontAwesomeIcon
+									v-if="row.icon"
+									:icon="row.icon"
+									class="customisation-option-icon" />
+
+								<span>{{ row.option }}</span>
+							</p>
 
 							<FontAwesomeIcon
 								v-if="row.available"
@@ -221,7 +208,12 @@ const isMobile = computed(() => props.screenType === "mobile")
 						<tbody>
 							<tr v-for="row in rows" :key="row.key">
 								<td class="customisation-table__td customisation-table__td--option">
-									{{ row.option }}
+									<FontAwesomeIcon
+										v-if="row.icon"
+										:icon="row.icon"
+										class="customisation-option-icon" />
+
+									<span>{{ row.option }}</span>
 								</td>
 
 								<td class="customisation-table__td customisation-table__td--center">
@@ -254,9 +246,13 @@ const isMobile = computed(() => props.screenType === "mobile")
 					class="mt-3 text-[12px] leading-[1.8] md:text-[13px]"
 					v-html="contactDescription" />
 
-				<a
+				<LinkIris
 					v-if="hasContactButton"
-					:href="contactButtonUrl"
+					:href="contactButtonLink?.href"
+					:type="contactButtonLink?.type"
+					:canonical_url="contactButtonLink?.canonical_url"
+					:id="contactButtonLink?.id"
+					:target="contactButtonLink?.target ?? '_self'"
 					class="mt-5 inline-block w-full md:w-auto">
 					<button
 						class="inline-flex w-full items-center justify-between gap-6 rounded-[6px] bg-[#0F1E2E] px-5 py-3 text-[14px] text-white transition hover:bg-[#1c2f43] md:w-auto md:text-[15px]"
@@ -264,7 +260,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 						<span>{{ contactButtonLabel }}</span>
 						<span class="text-lg">›</span>
 					</button>
-				</a>
+				</LinkIris>
 			</div>
 		</div>
 	</div>
@@ -344,6 +340,21 @@ const isMobile = computed(() => props.screenType === "mobile")
 	white-space: nowrap !important;
 }
 
+.customisation-table td.customisation-table__td--option span {
+	vertical-align: middle !important;
+}
+
+.customisation-option-icon {
+	display: inline-block !important;
+	flex-shrink: 0 !important;
+	vertical-align: middle !important;
+	width: 16px !important;
+	font-size: 16px !important;
+	line-height: 1 !important;
+	margin-right: 8px !important;
+	color: #c0899b !important;
+}
+
 .customisation-table td.customisation-table__td--center {
 	text-align: center !important;
 	vertical-align: middle !important;
@@ -384,6 +395,8 @@ const isMobile = computed(() => props.screenType === "mobile")
 }
 
 .customisation-card__title {
+	display: flex;
+	align-items: center;
 	font-size: 13px;
 	font-weight: 600;
 	color: #c0899b;

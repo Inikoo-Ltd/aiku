@@ -50,8 +50,16 @@ const downloadUrl = computed(() => {
 	}
 })
 
+const buttonLink = computed(() => {
+	const value = labelingGuide.value?.card?.button?.url
+
+	return typeof value === "string"
+		? { type: "external", href: value, canonical_url: null, id: null, target: "_blank" }
+		: (value ?? null)
+})
+
 const buttonUrl = computed(
-	() => downloadUrl.value || String(labelingGuide.value?.card?.button?.url ?? "").trim()
+	() => downloadUrl.value || String(buttonLink.value?.href ?? "").trim()
 )
 
 const hasButton = computed(() => hasText(buttonLabel.value) && hasText(buttonUrl.value))
@@ -79,6 +87,8 @@ const note = computed(() => labelingGuide.value?.note ?? "")
 const hasSide = computed(
 	() => hasText(includesTitle.value) || includes.value.length > 0 || hasText(note.value)
 )
+
+console.log('aaa',props)
 </script>
 
 <template>
@@ -133,7 +143,7 @@ const hasSide = computed(
 						<a
 							v-if="hasButton"
 							:href="buttonUrl"
-							target="_blank"
+							:target="downloadUrl ? '_blank' : (buttonLink?.target ?? '_blank')"
 							class="inline-block !no-underline">
 							<button
 								class="mt-[18px] inline-flex cursor-pointer items-center gap-6 rounded-md border-0 bg-black px-[18px] py-[10px] text-[13px] leading-[1.2] text-white transition-colors duration-200 hover:bg-neutral-800 md:text-[14px] xl:px-5 xl:py-[11px] xl:text-[15px] 2xl:px-[22px] 2xl:py-3 2xl:text-[16px]"

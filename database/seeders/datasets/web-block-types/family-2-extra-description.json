@@ -15,11 +15,11 @@
 				"description": "<p>Make this range your own. We can adapt packaging, labelling and formulation to suit your brand and your market.</p>",
 				"link": {
 					"text": "More about bespoke made products",
-					"url": ""
-				},
-				"highlight": {
-					"container": {
-						"properties": null
+					"url": {
+						"id": null,
+						"url": "",
+						"href": "",
+						"type": "external"
 					}
 				},
 				"table": {
@@ -33,7 +33,12 @@
 					"description": "<p>Tell us what you need and our team will come back to you with options, lead times and minimum order quantities.</p>",
 					"button": {
 						"text": "Contact us",
-						"url": "",
+						"url": {
+							"id": null,
+							"url": "",
+							"href": "",
+							"type": "external"
+						},
 						"container": {
 							"properties": null
 						}
@@ -51,7 +56,12 @@
 					"description": "<p>Download the full guide with mandatory warnings, precautions, labeling requirements and reseller responsibilities.</p>",
 					"button": {
 						"text": "Download PDF",
-						"url": "#",
+						"url": {
+							"id": null,
+							"url": "",
+							"href": "",
+							"type": "external"
+						},
 						"container": {
 							"properties": null
 						}

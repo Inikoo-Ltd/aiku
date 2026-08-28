@@ -79,6 +79,21 @@ class EditMasterFamily extends OrgAction
             ];
         }
 
+        $iconLinks = [];
+        
+        if ($masterProductCategory->tradeUnitFamily) {
+            $iconLinks[] = [
+                'icon'    => 'fal fa-atom-alt',
+                'tooltip' => __('Go to Edit Trade Unit Family'),
+                'route'   => [
+                    'name'       => 'grp.trade_units.families.edit',
+                    'parameters' => [
+                        $masterProductCategory->tradeUnitFamily->slug
+                    ]
+                ],
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
@@ -109,7 +124,8 @@ class EditMasterFamily extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ]
-                    ]
+                    ],
+                    'iconLinks' => $iconLinks,
                 ],
                 'formData'    => [
                     'blueprint' => [

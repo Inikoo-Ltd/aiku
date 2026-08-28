@@ -132,6 +132,19 @@ class EditProduct extends OrgAction
                 'color'   => 'rgb(75, 0, 130)'
             ];
         }
+        
+        if ($product->is_single_trade_unit && $product->tradeUnits->first()) {
+            $iconLinks[] = [
+                'icon'    => 'fal fa-atom',
+                'tooltip' => __('Go to Edit Trade Unit'),
+                'route'   => [
+                    'name'       => 'grp.trade_units.units.show',
+                    'parameters' => [
+                        'tradeUnit' => $product->tradeUnits->first()->slug,
+                    ]
+                ],
+            ];
+        }
 
         return Inertia::render(
             'EditModel',

@@ -42,7 +42,8 @@ enum WebpageSubTypeEnum: string
     case ARTICLE = 'article';
     case MAILSHOT = 'mailshot';
 
-    /* case BLOG = 'blog'; */
+    /** Legacy catch all still stored on existing webpages, resolved by resolveBlogCategory. */
+    case BLOG = 'blog';
     case NEWSLETTERS    = 'newsletters';
     case PRODUCT_GUIDES = 'product_guides';
     case BUSINESS_TIPS  = 'business_tips';
@@ -58,7 +59,7 @@ enum WebpageSubTypeEnum: string
             'article'               => __('Article'),
             'content'               => __('Content'),
 
-            /* 'blog'                  => __('Blog'), */
+            'blog'                  => __('Blog'),
             'newsletters'           => __('Newsletters'),
             'product_guides'        => __('Product Guides'),
             'business_tips'         => __('Business Tips'),

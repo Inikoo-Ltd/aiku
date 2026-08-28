@@ -32,7 +32,15 @@ const cardDescription = computed(() => labelingGuide.value?.card?.description ??
 
 const buttonLabel = computed(() => labelingGuide.value?.card?.button?.text ?? "")
 
-const buttonUrl = computed(() => String(labelingGuide.value?.card?.button?.url ?? "").trim())
+const buttonLink = computed(() => {
+	const value = labelingGuide.value?.card?.button?.url
+
+	return typeof value === "string"
+		? { type: "external", href: value, canonical_url: null, id: null, target: "_blank" }
+		: (value ?? null)
+})
+
+const buttonUrl = computed(() => String(buttonLink.value?.href ?? "").trim())
 
 const hasButton = computed(() => hasText(buttonLabel.value))
 
