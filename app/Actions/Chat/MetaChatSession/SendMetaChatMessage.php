@@ -294,10 +294,7 @@ class SendMetaChatMessage
         string $language,
         array $manualParameters
     ): array {
-        $template = MetaMessageTemplate::where('name', $templateName)
-            ->where('language', $language)
-            ->when($metaChatSession->shop_id, fn ($query) => $query->where('shop_id', $metaChatSession->shop_id))
-            ->first();
+        $template = $this->findTemplate($metaChatSession, $templateName, $language);
 
         $tags = Arr::get($template?->data ?? [], 'merge_tags.body', []);
 
@@ -337,10 +334,20 @@ class SendMetaChatMessage
         string $phoneNumberId,
         string $accessToken
     ): array {
-        $record = MetaMessageTemplate::where('name', $name)
-            ->where('language', $language)
-            ->when($metaChatSession->shop_id, fn ($query) => $query->where('shop_id', $metaChatSession->shop_id))
-            ->first();
+        $record = $this->findTemplate($metaChatSession, $name, $language);
+
+        // Meta pauses or rejects templates on its own, and only an approved one can be
+        // sent. Catching it here explains why instead of leaving Meta's error code to.
+        if ($record && $record->status !== 'APPROVED') {
+            return [
+                'ok'      => false,
+                'message' => __(':name is :status on WhatsApp and cannot be sent.', [
+                    'name'   => $name,
+                    'status' => strtolower((string) $record->status),
+                ]),
+                'code'    => 422,
+            ];
+        }
 
         $components  = [];
         $headerMedia = null;
@@ -384,6 +391,16 @@ class SendMetaChatMessage
                 'template'          => $template,
             ],
         ];
+    }
+
+    protected function findTemplate(MetaChatSession $metaChatSession, string $name, string $language): ?MetaMessageTemplate
+    {
+        return MetaMessageTemplate::where('name', $name)
+            ->where('language', $language)
+            ->whereNotNull('template_id')
+            ->when($metaChatSession->shop_id, fn ($query) => $query->where('shop_id', $metaChatSession->shop_id))
+            ->orderByRaw("CASE WHEN status = 'APPROVED' THEN 0 ELSE 1 END")
+            ->first();
     }
 
     protected function headerMessageType(Media $media): ChatMessageTypeEnum
@@ -437,10 +454,7 @@ class SendMetaChatMessage
 
     protected function renderTemplateBody(MetaChatSession $metaChatSession, string $name, string $language, array $parameters): string
     {
-        $template = MetaMessageTemplate::where('name', $name)
-            ->where('language', $language)
-            ->when($metaChatSession->shop_id, fn ($query) => $query->where('shop_id', $metaChatSession->shop_id))
-            ->first();
+        $template = $this->findTemplate($metaChatSession, $name, $language);
 
         $body = Arr::get(
             collect(Arr::get($template?->data, 'components', []))->firstWhere('type', 'BODY') ?? [],

@@ -16,6 +16,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -31,7 +32,7 @@ class StoreWhatsappTemplateDraft extends StoreWhatsappMessageTemplate
     public function rules(): array
     {
         return [
-            'name'                   => ['required', 'string', 'max:512', 'regex:/^[a-z0-9_]+$/'],
+            'name'                   => ['required', 'string', 'max:512', 'regex:/^[a-z0-9_]+$/', $this->uniqueName()],
             'category'               => ['sometimes', Rule::in(self::CATEGORIES)],
             'language'               => ['sometimes', 'string', 'max:10'],
 
@@ -53,6 +54,14 @@ class StoreWhatsappTemplateDraft extends StoreWhatsappMessageTemplate
             'buttons.*.url_example'  => ['nullable', 'string', 'max:2000'],
             'buttons.*.phone_number' => ['nullable', 'string', 'max:20'],
         ];
+    }
+    protected function uniqueName(): Unique
+    {
+        $current = request()->route('metaMessageTemplate');
+
+        return Rule::unique('meta_message_templates', 'name')
+            ->where(fn ($query) => $query->where('shop_id', $this->shop->id)->whereNull('deleted_at'))
+            ->ignore($current instanceof MetaMessageTemplate ? $current->id : null);
     }
 
     /**
