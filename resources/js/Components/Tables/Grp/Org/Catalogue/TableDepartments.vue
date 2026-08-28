@@ -16,53 +16,19 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import routes from "../../../../../../../han/src/constants/Routes"
 import { RouteParams } from "@/types/route-params"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { computed, inject, ref, watch } from "vue"
+import { inject, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faTimesCircle, faCheckCircle, faSeedling, faBroadcastTower, faSkull, faDownload } from "@fal"
+import { faTimesCircle, faCheckCircle, faSeedling, faBroadcastTower, faSkull } from "@fal"
 import { faTriangle, faEquals, faMinus } from "@fas"
 import Image from "@common/Components/Image.vue"
 import { trans } from "laravel-vue-i18n"
-import { routeType } from "@/types/route"
-import Popover from "primevue/popover"
-import Checkbox from "primevue/checkbox"
 
 library.add(faSeedling, faOctopusDeploy)
 
-const props = defineProps<{
+defineProps<{
     data: {}
     tab?: string
-    websiteStructureExport?: {
-        fields: { key: string; label: string }[]
-        download_route: { xlsx: routeType; csv: routeType }
-    }
 }>()
-
-const exportPanel = ref()
-const exportFields = computed(() => props.websiteStructureExport?.fields ?? [])
-const selectedExportColumns = ref<string[]>([])
-
-const allExportColumnsSelected = computed({
-    get: () => !!exportFields.value.length && selectedExportColumns.value.length === exportFields.value.length,
-    set: (value: boolean) => {
-        selectedExportColumns.value = value ? exportFields.value.map(field => field.key) : []
-    }
-})
-
-watch(exportFields, (fields) => {
-    selectedExportColumns.value = fields.map(field => field.key)
-}, { immediate: true })
-
-const onExport = (type: 'csv' | 'xlsx') => {
-    const exportRoute = props.websiteStructureExport?.download_route?.[type]
-    if (!exportRoute?.name || !selectedExportColumns.value.length) return
-
-    const base = route(exportRoute.name, exportRoute.parameters) as unknown as string
-
-    const query = new URLSearchParams()
-    selectedExportColumns.value.forEach(column => query.append('columns[]', column))
-
-    window.open(base + (base.includes('?') ? '&' : '?') + query.toString(), '_blank')
-}
 
 const locale = inject("locale", aikuLocaleStructure)
 
@@ -213,35 +179,6 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-        <template v-if="exportFields.length" #add-on-button>
-            <Button :icon="faDownload" :label="trans('Export')" type="tertiary" size="xs"
-                @click="exportPanel.toggle($event)" />
-
-            <Popover ref="exportPanel">
-                <div class="w-72">
-                    <div class="flex items-center gap-2 pb-2 mb-2 border-b border-gray-200">
-                        <Button :icon="faDownload" label="XLSX" type="tertiary"
-                            :disabled="!selectedExportColumns.length" @click="onExport('xlsx')" />
-                        <Button :icon="faDownload" label="CSV" type="tertiary"
-                            :disabled="!selectedExportColumns.length" @click="onExport('csv')" />
-                    </div>
-
-                    <label class="flex items-center gap-2 px-1 py-1.5 font-medium cursor-pointer select-none">
-                        <Checkbox v-model="allExportColumnsSelected" :binary="true" />
-                        <span>{{ trans("Select all") }}</span>
-                    </label>
-
-                    <div class="max-h-72 overflow-y-auto">
-                        <label v-for="field in exportFields" :key="field.key"
-                            class="flex items-center gap-2 px-1 py-1.5 cursor-pointer select-none hover:bg-gray-50 rounded">
-                            <Checkbox v-model="selectedExportColumns" :value="field.key" />
-                            <span>{{ field.label }}</span>
-                        </label>
-                    </div>
-                </div>
-            </Popover>
-        </template>
-
         <template #cell(image_thumbnail)="{ item: product }">
             <div class="flex justify-center">
                 <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />

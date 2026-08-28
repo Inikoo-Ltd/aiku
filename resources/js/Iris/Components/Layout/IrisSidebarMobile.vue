@@ -12,7 +12,7 @@ import { faSignIn, faSignOut, faTimesCircle, faSpinnerThird } from '@fas'
 import { faChevronCircleDown } from '@fal'
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import SwitchLanguage from "../SwitchLanguage.vue"
+import SwitchLanguage from "@/Components/Iris/SwitchLanguage.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { router } from '@inertiajs/vue3'

@@ -6,12 +6,12 @@ import "@/../css/iris_styling.css"
 import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
-import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
 import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, computed, defineAsyncComponent } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
-import Modal from '@/Components/Utils/Modal.vue'
+const ScreenWarning = defineAsyncComponent(() => import('@/Components/Utils/ScreenWarning.vue'))
+const Modal = defineAsyncComponent(() => import('@/Components/Utils/Modal.vue'))
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
