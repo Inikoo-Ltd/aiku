@@ -40,6 +40,19 @@ const props = defineProps<{
     mergeTags: { name: string; value: string; example: string; group: string }[]
     mediaRules: Record<string, { mime_types: string[]; extensions: string[]; max_kb: number; accept: string }>
     submitRoute: { name: string; parameters: (string | number)[] | Record<string, any> }
+    draftRoute: { name: string; parameters: (string | number)[] | Record<string, any> }
+    draft?: {
+        id: number
+        name: string
+        category?: "MARKETING" | "UTILITY" | null
+        language?: string | null
+        header_format?: "NONE" | "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT" | null
+        header_text?: string | null
+        body?: string | null
+        footer?: string | null
+        buttons?: TemplateButton[] | null
+        header_media?: { name: string; url?: any } | null
+    } | null
     isConfigured: boolean
     canUploadMedia: boolean
     businessName: string
@@ -69,16 +82,16 @@ const form = useForm<{
     footer: string
     buttons: TemplateButton[]
 }>({
-    name: "",
-    category: "MARKETING",
-    language: props.languages[0]?.value ?? "en_GB",
-    header_format: "NONE",
-    header_text: "",
+    name: props.draft?.name ?? "",
+    category: props.draft?.category ?? "MARKETING",
+    language: props.draft?.language ?? props.languages[0]?.value ?? "en_GB",
+    header_format: props.draft?.header_format ?? "NONE",
+    header_text: props.draft?.header_text ?? "",
     header_example: "",
     header_media: null,
-    body: "",
-    footer: "",
-    buttons: [],
+    body: props.draft?.body ?? "",
+    footer: props.draft?.footer ?? "",
+    buttons: props.draft?.buttons ?? [],
 })
 
 const CATEGORIES = [
@@ -462,18 +475,40 @@ const canSubmit = computed(() =>
     )
 )
 
+const payload = (data: Record<string, any>) => ({
+    ...data,
+    header_text: data.header_format === "TEXT" ? data.header_text : "",
+    header_media: ["IMAGE", "VIDEO", "DOCUMENT"].includes(data.header_format) ? data.header_media : null,
+    buttons: data.buttons.map((button: TemplateButton) => ({
+        ...button,
+        type: button.type === "URL_DYNAMIC" ? "URL" : button.type,
+    })),
+})
+
+// Both buttons drive the same form, so `form.processing` alone cannot say which one is
+// running — each tracks its own flag to spin on its own.
+const isSubmitting = ref(false)
+const isSavingDraft = ref(false)
+
 const submit = () => {
-    form.transform((data) => ({
-        ...data,
-        header_text: data.header_format === "TEXT" ? data.header_text : "",
-        header_media: ["IMAGE", "VIDEO", "DOCUMENT"].includes(data.header_format) ? data.header_media : null,
-        buttons: data.buttons.map((button) => ({
-            ...button,
-            type: button.type === "URL_DYNAMIC" ? "URL" : button.type,
-        })),
-    })).post(route(props.submitRoute.name, props.submitRoute.parameters), {
+    isSubmitting.value = true
+
+    form.transform(payload).post(route(props.submitRoute.name, props.submitRoute.parameters), {
         preserveScroll: true,
         forceFormData: true,
+        onFinish: () => (isSubmitting.value = false),
+    })
+}
+
+// A draft never reaches Meta, so it is saved even when the builder is incomplete — only
+// the name is needed to tell one draft from another.
+const saveDraft = () => {
+    isSavingDraft.value = true
+
+    form.transform(payload).post(route(props.draftRoute.name, props.draftRoute.parameters), {
+        preserveScroll: true,
+        forceFormData: true,
+        onFinish: () => (isSavingDraft.value = false),
     })
 }
 
@@ -845,12 +880,17 @@ const doodleStyle = computed(() => {
                     <div v-for="(error, key) in form.errors" :key="key" class="text-xs">{{ error }}</div>
                 </Message>
 
-                <div class="mt-8 pt-5 border-t border-gray-100 flex items-center justify-end gap-4">
-                    <span class="text-xs text-gray-400">
-                        {{ trans("Meta reviews every template before it can be sent.") }}
+                <div class="mt-8 pt-5 border-t border-gray-100 flex items-center justify-end gap-3">
+                    <span class="mr-auto min-w-0 text-xs leading-relaxed text-gray-400">
+                        {{ trans("A draft stays in Aiku. Meta only sees the template once you submit it.") }}
                     </span>
-                    <Button :label="trans('Submit for review')" :loading="form.processing" :disabled="!canSubmit"
-                        @click="submit" />
+
+                    <Button type="tertiary" class="shrink-0 whitespace-nowrap" :label="trans('Save as draft')"
+                        :loading="isSavingDraft" :disabled="form.processing || !form.name || !!nameError"
+                        @click="saveDraft" />
+
+                    <Button class="shrink-0 whitespace-nowrap" :label="trans('Submit for review')"
+                        :loading="isSubmitting" :disabled="form.processing || !canSubmit" @click="submit" />
                 </div>
             </div>
 

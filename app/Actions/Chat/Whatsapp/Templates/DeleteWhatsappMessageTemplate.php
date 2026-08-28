@@ -31,6 +31,13 @@ class DeleteWhatsappMessageTemplate extends OrgAction
      */
     public function handle(Shop $shop, MetaMessageTemplate $metaMessageTemplate): array
     {
+        // A draft never reached Meta, so there is nothing upstream to delete.
+        if (blank($metaMessageTemplate->template_id)) {
+            $metaMessageTemplate->delete();
+
+            return ['ok' => true];
+        }
+
         $wabaId = (string) Arr::get($shop->settings, 'whatsapp.waba_id');
 
         ['access_token' => $accessToken] = $this->whatsappCredentials($shop);

@@ -38,6 +38,7 @@ class MetaMessageTemplatesResource extends JsonResource
             'label'          => Arr::get($this->data ?? [], 'label'),
             'language'       => $this->language,
             'status'         => $this->status,
+            'is_draft'       => blank($this->template_id),
             'category'       => $this->category,
             'synchronize_at' => $this->synchronize_at,
             'body'           => $body,

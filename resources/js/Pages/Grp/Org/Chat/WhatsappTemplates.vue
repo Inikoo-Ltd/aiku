@@ -26,6 +26,7 @@ interface TemplateRow {
     body: string
     variable_count: number
     merge_tags: string[]
+    is_draft?: boolean
 }
 
 const props = defineProps<{
@@ -37,6 +38,7 @@ const props = defineProps<{
     editRouteName: string
     deleteRouteName: string
     refreshRouteName: string
+    draftRouteName: string
     routeParameters: Record<string, any>
 }>()
 
@@ -124,14 +126,16 @@ const save = () => {
 
         <template #cell(actions)="{ item: template }">
             <div class="flex items-center justify-end gap-1">
-                <button type="button" @click="refreshStatus(template)" :disabled="refreshingId === template.id"
+                <button v-if="!template.is_draft" type="button" @click="refreshStatus(template)"
+                    :disabled="refreshingId === template.id"
                     v-tooltip="trans('Check status on WhatsApp')"
                     class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50">
                     <FontAwesomeIcon :icon="faSync" class="text-[10px]"
                         :class="refreshingId === template.id ? 'animate-spin' : ''" />
                 </button>
 
-                <a :href="rowRoute(editRouteName, template.id)" v-tooltip="trans('Edit')"
+                <a :href="rowRoute(template.is_draft ? draftRouteName : editRouteName, template.id)"
+                    v-tooltip="template.is_draft ? trans('Continue draft') : trans('Edit')"
                     class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600">
                     <FontAwesomeIcon :icon="faPen" class="text-[10px]" />
                 </a>
@@ -141,7 +145,9 @@ const save = () => {
                     parameters: { ...routeParameters, metaMessageTemplate: template.id },
                     method: 'delete',
                 }" :title="trans('Delete this template?')"
-                    :description="trans('It is removed from WhatsApp as well, and every language variant goes with it.')"
+                    :description="template.is_draft
+                        ? trans('This draft was never sent to Meta, so it only disappears from Aiku.')
+                        : trans('It is removed from WhatsApp as well, and every language variant goes with it.')"
                     :noLabel="trans('Delete template')" :noIcon="faTrash">
                     <template #default="{ changeModel }">
                         <button type="button" @click="changeModel" v-tooltip="trans('Delete')"

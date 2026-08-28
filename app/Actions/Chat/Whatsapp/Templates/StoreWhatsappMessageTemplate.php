@@ -205,7 +205,7 @@ class StoreWhatsappMessageTemplate extends OrgAction
     /**
      * @return array{ok: bool, message?: string, template?: MetaMessageTemplate}
      */
-    public function handle(Shop $shop, array $modelData): array
+    public function handle(Shop $shop, array $modelData, ?MetaMessageTemplate $draft = null): array
     {
         $wabaId = (string) Arr::get($shop->settings, 'whatsapp.waba_id');
 
@@ -215,7 +215,7 @@ class StoreWhatsappMessageTemplate extends OrgAction
             return ['ok' => false, 'message' => __('Set the WhatsApp WABA ID and access token before creating templates.')];
         }
 
-        $components = $this->buildComponents($modelData, $accessToken);
+        $components = $this->buildComponents($modelData, $accessToken, $shop->organisation);
 
         if (isset($components['error'])) {
             return ['ok' => false, 'message' => $components['error']];
@@ -239,7 +239,7 @@ class StoreWhatsappMessageTemplate extends OrgAction
             ];
         }
 
-        $template = $this->storeLocally($shop, $modelData, $components['components'], $response->json());
+        $template = $this->storeLocally($shop, $modelData, $components['components'], $response->json(), $draft);
 
         // Meta keeps only an upload handle for the review sample, and that handle cannot be
         // sent to a customer, so the file is kept here to be re-uploaded on every send.
@@ -253,7 +253,7 @@ class StoreWhatsappMessageTemplate extends OrgAction
     /**
      * @return array{components?: array<int, array<string, mixed>>, error?: string}
      */
-    protected function buildComponents(array $modelData, string $accessToken): array
+    protected function buildComponents(array $modelData, ?string $accessToken, ?Organisation $organisation = null): array
     {
         $components = [];
         $format     = Arr::get($modelData, 'header_format', 'NONE');
@@ -278,21 +278,33 @@ class StoreWhatsappMessageTemplate extends OrgAction
         if (in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'], true)) {
             $media = Arr::get($modelData, 'header_media');
 
-            if (!$media instanceof UploadedFile) {
-                return ['error' => __('Upload the sample file Meta will review.')];
+            // A draft never reaches a reviewer, so it records the format and waits for the
+            // sample file until the moment it is actually submitted.
+            if ($accessToken === null) {
+                $components[] = ['type' => 'HEADER', 'format' => $format];
+            } else {
+                // A submitted draft has already turned its stored file into a handle; a
+                // fresh submission still carries the upload itself.
+                $handle = Arr::get($modelData, 'header_handle');
+
+                if (!$handle) {
+                    if (!$media instanceof UploadedFile) {
+                        return ['error' => __('Upload the sample file Meta will review.')];
+                    }
+
+                    $handle = UploadWhatsappTemplateMedia::run($media, $accessToken, $organisation);
+                }
+
+                if (!$handle) {
+                    return ['error' => __('The sample file could not be uploaded to Meta.')];
+                }
+
+                $components[] = [
+                    'type'    => 'HEADER',
+                    'format'  => $format,
+                    'example' => ['header_handle' => [$handle]],
+                ];
             }
-
-            $handle = UploadWhatsappTemplateMedia::run($media, $accessToken);
-
-            if (!$handle) {
-                return ['error' => __('The sample file could not be uploaded to Meta.')];
-            }
-
-            $components[] = [
-                'type'    => 'HEADER',
-                'format'  => $format,
-                'example' => ['header_handle' => [$handle]],
-            ];
         }
 
         $compiledBody = $this->compileTags(Arr::get($modelData, 'body'), $tags);
@@ -378,13 +390,11 @@ class StoreWhatsappMessageTemplate extends OrgAction
         $template->update(['header_media_id' => $media->id]);
     }
 
-    protected function storeLocally(Shop $shop, array $modelData, array $components, array $response): MetaMessageTemplate
+    protected function storeLocally(Shop $shop, array $modelData, array $components, array $response, ?MetaMessageTemplate $draft = null): MetaMessageTemplate
     {
         $metaChannel = MetaChannel::where('code', 'whatsapp')->firstOrFail();
 
-        return MetaMessageTemplate::updateOrCreate(
-            ['template_id' => (string) Arr::get($response, 'id')],
-            [
+        $attributes = [
                 'group_id'        => $shop->group_id,
                 'organisation_id' => $shop->organisation_id,
                 'shop_id'         => $shop->id,
@@ -403,7 +413,19 @@ class StoreWhatsappMessageTemplate extends OrgAction
                     'components' => $components,
                 ],
                 'synchronize_at'  => now(),
-            ]
+        ];
+
+        // A submitted draft keeps its own row: its header file and any label live there,
+        // and a second row would leave the draft behind as a duplicate.
+        if ($draft) {
+            $draft->update(array_merge($attributes, ['template_id' => (string) Arr::get($response, 'id')]));
+
+            return $draft->fresh();
+        }
+
+        return MetaMessageTemplate::updateOrCreate(
+            ['template_id' => (string) Arr::get($response, 'id')],
+            $attributes
         );
     }
 
