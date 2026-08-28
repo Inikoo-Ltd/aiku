@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/art/logo-sketch.svg" alt="aiku" width="140">
+  <img src="public/art/invader-sketch.svg" alt="aiku" width="140">
 </p>
 
 <h1 align="center">aiku</h1>
