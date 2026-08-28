@@ -28,8 +28,12 @@ class GetEmailTemplateLayout extends InertiaAction
         return true;
     }
 
-    public function asController(EmailTemplate $emailTemplate): array
+    public function asController(EmailTemplate $emailTemplate, ActionRequest $request): array
     {
+        if ($request->boolean('preview')) {
+            return ['html' => $emailTemplate->compiled_layout];
+        }
+
         return $this->handle($emailTemplate);
     }
 }
