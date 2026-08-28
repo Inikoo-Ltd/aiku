@@ -39,6 +39,7 @@ import Breadcrumb from 'primevue/breadcrumb'
 import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
+import ButtonExportWebsiteStructure from "@/Components/Catalogue/ButtonExportWebsiteStructure.vue"
 
 library.add(
     faFolder,
@@ -117,6 +118,16 @@ const component = computed(() => {
 <template>
     <Head :title="title" />
     <PageHeading :data="pageHead">
+        <template #button-export="{ action }">
+            <ButtonExportWebsiteStructure
+                :fields="action.fields"
+                :downloadRoute="action.download_route"
+                :label="action.label"
+                :tooltip="action.tooltip"
+                :icon="action.icon"
+            />
+        </template>
+
         <template #button-delete="propx">
             <ModalConfirmationDelete
                 :routeDelete="{

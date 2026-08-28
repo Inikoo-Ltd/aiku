@@ -10,8 +10,10 @@ namespace App\Actions\Catalogue\ProductCategory\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\WithExportData;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\Export\ExportTypeEnum;
 use App\Exports\Catalogue\WebsiteStructureExport;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Validation\Rule;
@@ -29,18 +31,19 @@ class ExportWebsiteStructure extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Shop $shop, array $modelData): BinaryFileResponse|StreamedResponse
+    public function handle(ProductCategory $department, array $modelData): BinaryFileResponse|StreamedResponse
     {
         $type   = $modelData['type'];
         $fields = $modelData['columns'] ?? [];
 
-        $export = new WebsiteStructureExport($shop, $fields);
+        $export   = new WebsiteStructureExport($department, $fields);
+        $filename = 'website-structure-'.$department->code;
 
         if ($type === ExportTypeEnum::XLSX->value && $export->count() < self::STREAM_THRESHOLD) {
-            return $this->export($export, 'website-structure', $type);
+            return $this->export($export, $filename, $type);
         }
 
-        return $this->streamCsv($export->dataQuery(), $export->headings(), 'website-structure');
+        return $this->streamCsv($export->dataQuery(), $export->headings(), $filename);
     }
 
     public function rules(): array
@@ -55,10 +58,14 @@ class ExportWebsiteStructure extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): BinaryFileResponse|StreamedResponse
+    public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): BinaryFileResponse|StreamedResponse
     {
+        if ($department->type != ProductCategoryTypeEnum::DEPARTMENT) {
+            abort(404);
+        }
+
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop, $this->validatedData);
+        return $this->handle($department, $this->validatedData);
     }
 }

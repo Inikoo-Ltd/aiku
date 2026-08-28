@@ -18,7 +18,6 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
-use App\Exports\Catalogue\WebsiteStructureExport;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
@@ -280,41 +279,6 @@ class IndexDepartments extends OrgAction
         return DepartmentsResource::collection($departments);
     }
 
-    /**
-     * @return array<int, array{key: string, label: string}>
-     */
-    public function getExportFields(): array
-    {
-        $definitions = WebsiteStructureExport::fieldDefinitions();
-
-        return array_map(fn ($key) => [
-            'key'   => $key,
-            'label' => __($definitions[$key]['heading']),
-        ], array_keys($definitions));
-    }
-
-    public function getWebsiteStructureExport(Shop $shop): array
-    {
-        $parameters = [
-            'organisation' => $shop->organisation->slug,
-            'shop'         => $shop->slug,
-        ];
-
-        return [
-            'fields'         => $this->getExportFields(),
-            'download_route' => [
-                'xlsx' => [
-                    'name'       => 'grp.org.shops.show.catalogue.departments.export',
-                    'parameters' => array_merge($parameters, ['type' => 'xlsx']),
-                ],
-                'csv'  => [
-                    'name'       => 'grp.org.shops.show.catalogue.departments.export',
-                    'parameters' => array_merge($parameters, ['type' => 'csv']),
-                ],
-            ],
-        ];
-    }
-
     public function htmlResponse(LengthAwarePaginator $departments, ActionRequest $request): Response
     {
         $navigation = ProductCategoryTabsEnum::navigationExcept([ProductCategoryTabsEnum::MISSING_GR]);
@@ -429,7 +393,6 @@ class IndexDepartments extends OrgAction
                     'subNavigation' => $subNavigation,
                 ],
                 'routes'                              => $routes,
-                'website_structure_export'            => $this->parent instanceof Shop ? $this->getWebsiteStructureExport($this->parent) : null,
                 'data'                                => DepartmentsResource::collection($departments),
                 'tabs'                                => [
                     'current'    => $this->tab,

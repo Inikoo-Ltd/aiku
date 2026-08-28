@@ -258,7 +258,6 @@ Route::prefix('products')->as('products.')
 Route::name("departments.")->prefix('departments')
     ->group(function () {
         Route::get('', IndexDepartments::class)->name('index');
-        Route::get('export', [ExportWebsiteStructure::class, 'inShop'])->name('export');
         Route::get('sales', IndexDepartmentsSales::class)->name('sales');
         Route::get('create', CreateDepartment::class)->name('create');
 
@@ -266,6 +265,7 @@ Route::name("departments.")->prefix('departments')
         Route::get('{department}/edit', [EditDepartment::class, 'inShop'])->name('edit');
         Route::prefix('{department}')->name('show')->group(function () {
             Route::get('', ShowDepartment::class);
+            Route::get('export', ExportWebsiteStructure::class)->name('.export');
             Route::prefix('collection')->name('.collection.')->group(function () {
                 Route::get('index', [IndexCollectionsInProductCategory::class, 'inDepartment'])->name('index');
                 Route::get('create', [CreateCollection::class, 'inDepartment'])->name('create');
