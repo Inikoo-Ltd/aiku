@@ -86,6 +86,7 @@ const sectionStyle = computed(() => {
 })
 
 const isMobile = computed(() => props.screenType === "mobile")
+console.log('isMobile',props)
 </script>
 
 <template>

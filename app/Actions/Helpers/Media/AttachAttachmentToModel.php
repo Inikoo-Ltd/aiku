@@ -44,7 +44,7 @@ class AttachAttachmentToModel extends OrgAction
             SaveModelAttachment::make()->action($model, $attachmentData);
         }
 
-        if ($model instanceof TradeUnit || $model instanceof TradeUnitFamily) {
+        if (($model instanceof TradeUnit || $model instanceof TradeUnitFamily) && Arr::get($modelData, 'scope') !== 'labeling_guide') {
             if ($model instanceof TradeUnitFamily) {
                 foreach ($model->tradeUnits as $tradeUnit) {
                     foreach ($tradeUnit->products as $product) {
