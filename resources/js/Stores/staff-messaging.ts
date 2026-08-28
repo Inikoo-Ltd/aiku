@@ -10,6 +10,7 @@ import { usePage } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { useLayoutStore } from "@/Stores/layout"
 import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
+import { useMiniChats } from "@/Composables/useMiniChats"
 
 export interface StaffMessageReactions {
     [emoji: string]: number[]
@@ -130,6 +131,8 @@ export const useStaffMessaging = defineStore("staff-messaging", {
         },
 
         openConversation(ulid: string) {
+            useMiniChats().closeAllMiniChats()
+
             const existing = this.openWindows.find((w) => w.ulid === ulid)
             if (existing) {
                 existing.minimised = false
