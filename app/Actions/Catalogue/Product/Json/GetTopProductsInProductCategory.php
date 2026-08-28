@@ -60,6 +60,8 @@ class GetTopProductsInProductCategory extends OrgAction
                 'products.image_id',
                 'products.code',
                 'products.name',
+                'products.slug',
+                'products.url',
                 'products.available_quantity',
                 'products.price',
                 'products.rrp',

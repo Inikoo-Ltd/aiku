@@ -17,7 +17,10 @@ use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Events\BroadcastUpdateWeblocks;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Web\WebBlock;
+use App\Models\Web\Webpage;
 use App\Models\Web\Website;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -26,6 +29,24 @@ class UpdateDescriptionBlockToWebsiteAndChild
     use AsAction;
     use WithWebEditAuthorisation;
     use WithRepairWebpages;
+
+    private const SEE_ALSO_DEPARTMENT_TITLE = '<strong>Trending Now</strong> - Turn Proven Products into Your Own Range';
+
+    private const SEE_ALSO_REPLACEABLE_TITLES = ['', 'See Also'];
+
+    private const SEE_ALSO_DEPARTMENT_PER_ROW = [
+        'desktop' => 5,
+        'tablet'  => 4,
+        'mobile'  => 2,
+    ];
+
+    private const SEE_ALSO_DEPARTMENT_PADDING = [
+        'unit'   => '%',
+        'top'    => ['value' => 1],
+        'bottom' => ['value' => 1],
+        'left'   => ['value' => 8],
+        'right'  => ['value' => 8],
+    ];
 
     public function handle(Website $website, array $layouts, string $marginal): void
     {
@@ -83,6 +104,7 @@ class UpdateDescriptionBlockToWebsiteAndChild
                 $this->ensureDepartmentPageHasRequiredBlocks($webpage, collect(array_keys($layouts))->first(fn ($key) => !str_ends_with($key, '-extra-description')));
                 $webpage->refresh();
                 $this->reorderDepartmentPageBlocks($webpage, collect(array_keys($layouts))->first(fn ($key) => !str_ends_with($key, '-extra-description')));
+                $this->setDepartmentSeeAlsoDefaults($webpage);
             }
 
             $webpage->refresh();
@@ -110,5 +132,44 @@ class UpdateDescriptionBlockToWebsiteAndChild
         }
 
         BroadcastUpdateWeblocks::dispatch(100, $website);
+    }
+
+    /**
+     * Sets the editable defaults of the "See Also" block on a department page, the values
+     * stay editable in the workshop so only the ones never set are filled in.
+     */
+    private function setDepartmentSeeAlsoDefaults(Webpage $webpage): void
+    {
+        $seeAlsoBlock = $this->getWebpageBlocksByType($webpage, 'see-also-1')->first();
+
+        if (!$seeAlsoBlock) {
+            return;
+        }
+
+        $webBlock = WebBlock::find($seeAlsoBlock->id);
+
+        if (!$webBlock) {
+            return;
+        }
+
+        $layout = json_decode(json_encode($webBlock->layout), true);
+
+        $currentTitle = trim(strip_tags((string) data_get($layout, 'data.fieldValue.title')));
+
+        if (in_array($currentTitle, self::SEE_ALSO_REPLACEABLE_TITLES)) {
+            data_set($layout, 'data.fieldValue.title', self::SEE_ALSO_DEPARTMENT_TITLE);
+        }
+
+        if (!data_get($layout, 'data.fieldValue.settings.per_row')) {
+            data_set($layout, 'data.fieldValue.settings.per_row', self::SEE_ALSO_DEPARTMENT_PER_ROW);
+        }
+
+        $currentPadding = data_get($layout, 'data.fieldValue.container.properties.padding') ?? [];
+
+        if (!array_filter(Arr::flatten($currentPadding), fn ($value) => is_numeric($value) && $value > 0)) {
+            data_set($layout, 'data.fieldValue.container.properties.padding', self::SEE_ALSO_DEPARTMENT_PADDING);
+        }
+
+        $webBlock->update(['layout' => $layout]);
     }
 }
