@@ -358,6 +358,8 @@ function productRoute(product: Product) {
         case "grp.org.shops.show.catalogue.products.sales":
         case "grp.org.shops.show.catalogue.products.all_products.index":
         case "grp.org.shops.show.catalogue.collections.show":
+        case "grp.org.shops.show.catalogue.departments.show.collection.show":
+        case "grp.org.shops.show.catalogue.sub_departments.show.collection.show":
         case "grp.org.shops.show.catalogue.dashboard":
             return route(
                 "grp.org.shops.show.catalogue.products.all_products.show",
