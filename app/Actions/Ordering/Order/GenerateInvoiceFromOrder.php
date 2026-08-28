@@ -290,7 +290,12 @@ class GenerateInvoiceFromOrder extends OrgAction
             'submitted_quantity_ordered',
         ]);
 
-        $submittedQuantity = (float)($sale?->submitted_quantity_ordered ?? 0);
+        /**
+         * The submitted quantity is read the same way the picked quantity is built, ordered plus
+         * bonus. A bonus line submits with an ordered quantity of zero, so reading only the ordered
+         * quantity dropped it out of the read-back and priced the giveaway at list price.
+         */
+        $submittedQuantity = (float)($sale?->submitted_quantity_ordered ?? 0) + (float)$transaction->quantity_bonus;
 
         if ($sale?->submitted_net_amount !== null && $submittedQuantity > 0
             && (float)$sale->current_discount_factor === (float)$sale->submitted_discount_factor) {

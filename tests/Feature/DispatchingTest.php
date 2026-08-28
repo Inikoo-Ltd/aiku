@@ -1415,7 +1415,7 @@ test('short pick keeps submitted order amounts until the note is picked', functi
 
     expect($order->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::PICKED)
         ->and((float) $transaction->net_amount)->toBeLessThan($submittedNet)
-        ->and((float) $transaction->net_amount)->toBe(round($submittedNet / (float) $transaction->quantity_ordered * (float) $transaction->quantity_picked, 2))
+        ->and((float) $transaction->net_amount)->toBe(round($submittedNet / ((float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus) * (float) $transaction->quantity_picked, 2))
         ->and((float) $order->net_amount)->toBe((float) $transaction->net_amount);
 });
 
@@ -3759,4 +3759,25 @@ test('a box with no findable delivery note is logged to identify and later ident
     patch(route('grp.models.delivery_note.return.process', [$deliveryNote->id]), [
         'unidentified_return_id' => $unidentifiedReturn->id,
     ])->assertSessionHasErrors(['unidentified_return_id']);
+});
+
+test('a bonus line submitted at zero is not priced at list when it is picked', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $transaction = $item->transaction;
+    $transaction->update([
+        'quantity_ordered'           => 0,
+        'quantity_bonus'             => 1,
+        'is_gift'                    => false,
+        'submitted_quantity_ordered' => 0,
+        'submitted_net_amount'       => 0,
+        'submitted_discount_factor'  => 1,
+        'current_discount_factor'    => 1,
+    ]);
+
+    $totals = \App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()
+        ->recalculateTransactionTotals($transaction->refresh(), $deliveryNote);
+
+    expect((float)$totals['net_amount'])->toBe(0.0)
+        ->and((float)$totals['quantity'])->toBeGreaterThan(0.0);
 });
