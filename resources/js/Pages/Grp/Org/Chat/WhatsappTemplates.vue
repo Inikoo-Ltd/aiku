@@ -9,7 +9,7 @@ import { router } from "@inertiajs/vue3"
 import { Head } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faWandMagicSparkles, faPen, faTrash } from "@fortawesome/free-solid-svg-icons"
+import { faWandMagicSparkles, faPen, faTrash, faSync } from "@fortawesome/free-solid-svg-icons"
 import { Dialog, Message } from "primevue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -36,10 +36,21 @@ const props = defineProps<{
     variablesRoute: { name: string; parameters: Record<string, any> }
     editRouteName: string
     deleteRouteName: string
+    refreshRouteName: string
     routeParameters: Record<string, any>
 }>()
 
 const rowRoute = (name: string, id: number) => route(name, { ...props.routeParameters, metaMessageTemplate: id })
+
+const refreshingId = ref<number | null>(null)
+
+const refreshStatus = (template: TemplateRow) => {
+    refreshingId.value = template.id
+    router.post(rowRoute(props.refreshRouteName, template.id), {}, {
+        preserveScroll: true,
+        onFinish: () => (refreshingId.value = null),
+    })
+}
 
 const editing = ref<TemplateRow | null>(null)
 const mapping = ref<(string | null)[]>([])
@@ -113,6 +124,13 @@ const save = () => {
 
         <template #cell(actions)="{ item: template }">
             <div class="flex items-center justify-end gap-1">
+                <button type="button" @click="refreshStatus(template)" :disabled="refreshingId === template.id"
+                    v-tooltip="trans('Check status on WhatsApp')"
+                    class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50">
+                    <FontAwesomeIcon :icon="faSync" class="text-[10px]"
+                        :class="refreshingId === template.id ? 'animate-spin' : ''" />
+                </button>
+
                 <a :href="rowRoute(editRouteName, template.id)" v-tooltip="trans('Edit')"
                     class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600">
                     <FontAwesomeIcon :icon="faPen" class="text-[10px]" />

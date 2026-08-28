@@ -29,6 +29,7 @@ import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import { Textarea, Dialog, Message } from "primevue"
 import { capitalize } from "@/Composables/capitalize"
 import { useCopyText } from "@/Composables/useCopyText"
+import { notify } from "@kyvg/vue3-notification"
 
 const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
 
@@ -37,6 +38,7 @@ const props = defineProps<{
     pageHead: object
     languages: { value: string; label: string; flag?: string | null; is_active?: boolean }[]
     mergeTags: { name: string; value: string; example: string; group: string }[]
+    mediaRules: Record<string, { mime_types: string[]; extensions: string[]; max_kb: number; accept: string }>
     submitRoute: { name: string; parameters: (string | number)[] | Record<string, any> }
     isConfigured: boolean
     canUploadMedia: boolean
@@ -357,8 +359,42 @@ const removeButton = (index: number) => form.buttons.splice(index, 1)
 
 const mediaPreview = ref<string | null>(null)
 
+
+const headerMediaRule = computed(() => {
+    const key = form.header_format.toLowerCase()
+
+    return props.mediaRules?.[key === "document" ? "document" : key] ?? null
+})
+
+const headerAccept = computed(() => headerMediaRule.value?.accept ?? "")
+
 const onMediaSelect = (event: Event) => {
     const file = (event.target as HTMLInputElement)?.files?.[0] ?? null
+
+    if (file && headerMediaRule.value) {
+        const rule = headerMediaRule.value
+
+        if (!rule.mime_types.includes(file.type)) {
+            notify({
+                title: trans("Failed"),
+                text: trans("WhatsApp accepts :formats here.", { formats: rule.extensions.join(", ") }),
+                type: "error",
+            })
+            ;(event.target as HTMLInputElement).value = ""
+            return
+        }
+
+        if (file.size > rule.max_kb * 1024) {
+            notify({
+                title: trans("Failed"),
+                text: trans("Maximum size is :size MB.", { size: Math.round(rule.max_kb / 1024) }),
+                type: "error",
+            })
+            ;(event.target as HTMLInputElement).value = ""
+            return
+        }
+    }
+
     form.header_media = file
 
     if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value)
@@ -586,7 +622,7 @@ const doodleStyle = computed(() => {
                             <FontAwesomeIcon :icon="faUpload" class="text-sm" />
                             {{ form.header_media ? form.header_media.name : trans("Upload a sample file for Meta to review") }}
                             <input type="file" class="hidden" @change="onMediaSelect"
-                                :accept="form.header_format === 'IMAGE' ? 'image/*' : (form.header_format === 'VIDEO' ? 'video/*' : 'application/pdf')" />
+                                :accept="headerAccept" />
                         </label>
                         <p class="text-xs text-gray-400">
                             {{ trans("The real file is chosen when the template is sent.") }}

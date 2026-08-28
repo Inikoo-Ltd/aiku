@@ -9,6 +9,7 @@ namespace App\Actions\Chat\Whatsapp\Templates\UI;
 
 use App\Actions\Chat\Whatsapp\Templates\GetWhatsappTemplateTags;
 use App\Actions\OrgAction;
+use App\Enums\CRM\Livechat\WhatsappMediaTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\MetaMessageTemplate;
 use App\Models\SysAdmin\Organisation;
@@ -53,6 +54,10 @@ class EditWhatsappMessageTemplate extends OrgAction
                     'footer'        => Arr::get($components->firstWhere('type', 'FOOTER') ?? [], 'text'),
                     'buttons'       => Arr::get($components->firstWhere('type', 'BUTTONS') ?? [], 'buttons', []),
                     'merge_tags'    => Arr::get($metaMessageTemplate->data ?? [], 'merge_tags.body', []),
+                    'header_media'  => $metaMessageTemplate->headerMedia ? [
+                        'name' => $metaMessageTemplate->headerMedia->file_name,
+                        'url'  => $metaMessageTemplate->imageSources(0, 0, 'headerMedia'),
+                    ] : null,
                     'synchronize_at' => $metaMessageTemplate->synchronize_at,
                 ],
                 'mergeTags'    => GetWhatsappTemplateTags::run($shop),
@@ -60,6 +65,8 @@ class EditWhatsappMessageTemplate extends OrgAction
                 'updateRoute'  => $this->route('update', $shop, $metaMessageTemplate),
                 'variablesRoute' => $this->route('variables', $shop, $metaMessageTemplate),
                 'deleteRoute'  => $this->route('delete', $shop, $metaMessageTemplate),
+                'headerMediaRoute' => $this->route('header_media', $shop, $metaMessageTemplate),
+                'mediaRules'   => WhatsappMediaTypeEnum::forFrontend(),
             ]
         );
     }

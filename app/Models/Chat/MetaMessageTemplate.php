@@ -9,8 +9,12 @@ namespace App\Models\Chat;
 
 use App\Models\Catalogue\Shop;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Helpers\Media;
+use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * @property int $id
@@ -33,9 +37,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
  */
-class MetaMessageTemplate extends Model
+class MetaMessageTemplate extends Model implements HasMedia
 {
     use SoftDeletes;
+    use HasImage;
+    use InteractsWithMedia;
 
     protected $table = 'meta_message_templates';
 
@@ -51,6 +57,10 @@ class MetaMessageTemplate extends Model
     public function metaChannel(): BelongsTo
     {
         return $this->belongsTo(MetaChannel::class);
+    }
+    public function headerMedia(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'header_media_id');
     }
 
     public function shop(): BelongsTo

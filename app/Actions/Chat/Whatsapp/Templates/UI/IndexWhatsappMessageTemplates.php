@@ -146,6 +146,7 @@ class IndexWhatsappMessageTemplates extends OrgAction
                 'mergeTags'   => GetWhatsappTemplateTags::run($this->shop),
                 'editRouteName'  => 'grp.org.shops.show.chat.whatsapp_templates.edit',
                 'deleteRouteName' => 'grp.org.shops.show.chat.whatsapp_templates.delete',
+                'refreshRouteName' => 'grp.org.shops.show.chat.whatsapp_templates.refresh',
                 'routeParameters' => [
                     'organisation' => $this->organisation->slug,
                     'shop'         => $this->shop->slug,

@@ -12,6 +12,7 @@ use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappCredentials;
 use App\Actions\Chat\Whatsapp\Templates\ResolveWhatsappTemplateTags;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
+use App\Enums\CRM\Livechat\WhatsappMediaTypeEnum;
 use App\Http\Resources\CRM\Livechat\MetaChatMessageResource;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Events\BroadcastMetaChatListEvent;
@@ -20,6 +21,7 @@ use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatMessage;
 use App\Models\Chat\MetaChatSession;
 use App\Models\Chat\MetaMessageTemplate;
+use App\Models\Helpers\Media;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
@@ -47,13 +49,14 @@ class SendMetaChatMessage
             'image'                 => [
                 'sometimes',
                 'nullable',
-                File::image()->max(10 * 1024)
+                File::types(WhatsappMediaTypeEnum::IMAGE->extensions())
+                    ->max(WhatsappMediaTypeEnum::IMAGE->maxKilobytes())
             ],
             'file'                  => [
                 'sometimes',
                 'nullable',
-                File::types(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx'])
-                    ->max(10 * 1024)
+                File::types(WhatsappMediaTypeEnum::DOCUMENT->extensions())
+                    ->max(WhatsappMediaTypeEnum::DOCUMENT->maxKilobytes())
             ],
             'template_name'         => [
                 'sometimes',
@@ -101,7 +104,8 @@ class SendMetaChatMessage
             ];
         }
 
-        $metadata = [];
+        $metadata            = [];
+        $templateHeaderMedia = null;
 
         if ($templateName) {
             $resolved = $this->resolveTemplateParameters(
@@ -116,8 +120,24 @@ class SendMetaChatMessage
                 return $resolved;
             }
 
-            $parameters   = $resolved['parameters'];
-            $payload      = $this->templatePayload($to, $templateName, $modelData['template_language'], $parameters);
+            $parameters = $resolved['parameters'];
+
+            $built = $this->templatePayload(
+                $metaChatSession,
+                $to,
+                $templateName,
+                $modelData['template_language'],
+                $parameters,
+                $phoneNumberId,
+                $accessToken
+            );
+
+            if (!$built['ok']) {
+                return $built;
+            }
+
+            $payload            = $built['payload'];
+            $templateHeaderMedia = $built['header_media'] ?? null;
             $messageText  = $this->renderTemplateBody($metaChatSession, $templateName, $modelData['template_language'], $parameters);
             $metadata['template'] = $templateName;
             $metadata['template_parameters'] = $parameters;
@@ -168,16 +188,17 @@ class SendMetaChatMessage
 
         $metaMessageId = Arr::get($response->json(), 'messages.0.id');
 
-        // Meta's `sent` callback can beat this insert, and an unknown message id is
-        // dropped by the status handler, so the accepted send is recorded here.
         $metadata['wa_status'] = 'sent';
 
         $metaChatMessage = StoreMetaChatMessage::run($metaChatSession, [
             'meta_message_id' => $metaMessageId,
-            'message_type'    => ChatMessageTypeEnum::TEXT,
+            'message_type'    => $templateHeaderMedia
+                ? $this->headerMessageType($templateHeaderMedia)
+                : ChatMessageTypeEnum::TEXT,
             'sender_type'     => ChatSenderTypeEnum::AGENT,
             'sender_id'       => $agent->id,
             'message_text'    => $messageText ?: null,
+            'media_id'        => $templateHeaderMedia?->id,
             'replied_to_id'   => $repliedTo?->id,
             'metadata'        => $metadata,
         ]);
@@ -299,25 +320,118 @@ class SendMetaChatMessage
         return ['ok' => true, 'parameters' => $resolved['values']];
     }
 
-    protected function templatePayload(string $to, string $name, string $language, array $parameters): array
-    {
+    /**
+     * Meta matches the components sent against the ones the template was approved with,
+     * and answers `(#132012) Parameter format does not match format in the created
+     * template` when they differ. A template with a media header therefore has to carry a
+     * header component on every send, not just a body.
+     *
+     * @return array{ok: bool, payload?: array<string, mixed>, message?: string, code?: int}
+     */
+    protected function templatePayload(
+        MetaChatSession $metaChatSession,
+        string $to,
+        string $name,
+        string $language,
+        array $parameters,
+        string $phoneNumberId,
+        string $accessToken
+    ): array {
+        $record = MetaMessageTemplate::where('name', $name)
+            ->where('language', $language)
+            ->when($metaChatSession->shop_id, fn ($query) => $query->where('shop_id', $metaChatSession->shop_id))
+            ->first();
+
+        $components  = [];
+        $headerMedia = null;
+        $header      = collect(Arr::get($record?->data ?? [], 'components', []))->firstWhere('type', 'HEADER');
+        $format      = Arr::get($header ?? [], 'format', 'TEXT');
+
+        if ($header && in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'], true)) {
+            $headerComponent = $this->mediaHeaderComponent($record, $format, $phoneNumberId, $accessToken);
+
+            if (!$headerComponent['ok']) {
+                return $headerComponent;
+            }
+
+            $components[]  = $headerComponent['component'];
+            $headerMedia   = $headerComponent['media'];
+        }
+
+        if ($parameters) {
+            $components[] = [
+                'type'       => 'body',
+                'parameters' => array_map(fn (string $text) => ['type' => 'text', 'text' => $text], $parameters),
+            ];
+        }
+
         $template = [
             'name'     => $name,
             'language' => ['code' => $language],
         ];
 
-        if ($parameters) {
-            $template['components'] = [[
-                'type'       => 'body',
-                'parameters' => array_map(fn (string $text) => ['type' => 'text', 'text' => $text], $parameters),
-            ]];
+        if ($components) {
+            $template['components'] = $components;
         }
 
         return [
-            'messaging_product' => 'whatsapp',
-            'to'                => $to,
-            'type'              => 'template',
-            'template'          => $template,
+            'ok'           => true,
+            'header_media' => $headerMedia,
+            'payload'      => [
+                'messaging_product' => 'whatsapp',
+                'to'                => $to,
+                'type'              => 'template',
+                'template'          => $template,
+            ],
+        ];
+    }
+
+    protected function headerMessageType(Media $media): ChatMessageTypeEnum
+    {
+        return str_starts_with((string) $media->mime_type, 'image/')
+            ? ChatMessageTypeEnum::IMAGE
+            : ChatMessageTypeEnum::FILE;
+    }
+
+    /**
+     * The review sample Meta holds cannot be reused for sending, so the file kept in Aiku
+     * is uploaded again and referenced by its fresh media id.
+     *
+     * @return array{ok: bool, component?: array<string, mixed>, message?: string, code?: int}
+     */
+    protected function mediaHeaderComponent(?MetaMessageTemplate $record, string $format, string $phoneNumberId, string $accessToken): array
+    {
+        $media = $record?->headerMedia;
+
+        if (!$media) {
+            return [
+                'ok'      => false,
+                'message' => __('This template shows an image above the message, but no file is set for it. Add one on the template page first.'),
+                'code'    => 422,
+            ];
+        }
+
+        $upload = $this->uploadMediaFromPath($phoneNumberId, $accessToken, $media->getPath(), $media->mime_type, $media->file_name);
+
+        if (!$upload['ok']) {
+            return $upload;
+        }
+
+        $key = strtolower($format);
+
+        return [
+            'ok'        => true,
+            'media'     => $media,
+            'component' => [
+                'type'       => 'header',
+                'parameters' => [[
+                    'type' => $key,
+                    $key   => array_filter([
+                        'id'       => $upload['media_id'],
+                        'filename' => $format === 'DOCUMENT' ? $media->file_name : null,
+                    ]),
+                ]],
+            ],
         ];
     }
 
@@ -343,8 +457,30 @@ class SendMetaChatMessage
 
     protected function uploadMedia(string $phoneNumberId, string $accessToken, UploadedFile $file): array
     {
+        return $this->uploadMediaFromPath(
+            $phoneNumberId,
+            $accessToken,
+            $file->getPathName(),
+            $file->getMimeType(),
+            $file->getClientOriginalName()
+        );
+    }
+
+    /**
+     * @return array{ok: bool, media_id?: string, message?: string, code?: int}
+     */
+    protected function uploadMediaFromPath(string $phoneNumberId, string $accessToken, string $path, ?string $mimeType, string $fileName): array
+    {
+        if (!is_readable($path)) {
+            return [
+                'ok'      => false,
+                'message' => __('The file could not be read from storage.'),
+                'code'    => 422,
+            ];
+        }
+
         $response = Http::withToken($accessToken)
-            ->attach('file', file_get_contents($file->getPathName()), $file->getClientOriginalName(), ['Content-Type' => $file->getMimeType()])
+            ->attach('file', file_get_contents($path), $fileName, ['Content-Type' => $mimeType])
             ->post(
                 $this->whatsappEndpoint($phoneNumberId.'/media'),
                 ['messaging_product' => 'whatsapp']

@@ -10,6 +10,7 @@ namespace App\Actions\Chat\Whatsapp\Templates\UI;
 use App\Actions\Chat\Whatsapp\Templates\GetWhatsappTemplateLanguages;
 use App\Actions\Chat\Whatsapp\Templates\GetWhatsappTemplateTags;
 use App\Actions\OrgAction;
+use App\Enums\CRM\Livechat\WhatsappMediaTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -37,6 +38,7 @@ class CreateWhatsappMessageTemplate extends OrgAction
                 'canUploadMedia' => filled(config('meta.whatsapp.app_id')),
                 'languages'     => GetWhatsappTemplateLanguages::run(),
                 'mergeTags'     => GetWhatsappTemplateTags::run($shop),
+                'mediaRules'    => WhatsappMediaTypeEnum::forFrontend(),
                 'businessName'  => $shop->name,
                 'submitRoute'   => [
                     'name'       => 'grp.org.shops.show.chat.whatsapp_templates.store',

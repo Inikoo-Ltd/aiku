@@ -4,12 +4,14 @@ import { Head, useForm, router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
-import { faLock, faLink, faPhone, faReply, faImage, faVideo, faFilePdf, faTrash } from "@fortawesome/free-solid-svg-icons"
+import { faLock, faLink, faPhone, faReply, faImage, faVideo, faFilePdf, faTrash, faUpload } from "@fortawesome/free-solid-svg-icons"
 import { Message } from "primevue"
+import { notify } from "@kyvg/vue3-notification"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
+import Image from "@common/Components/Image.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { capitalize } from "@/Composables/capitalize"
 
@@ -26,6 +28,7 @@ const props = defineProps<{
     businessName: string
     template: {
         id: number
+        header_media?: { name: string; url?: any } | null
         name: string
         label: string
         language: string
@@ -43,6 +46,8 @@ const props = defineProps<{
     updateRoute: { name: string; parameters: Record<string, any> }
     variablesRoute: { name: string; parameters: Record<string, any> }
     deleteRoute: { name: string; parameters: Record<string, any> }
+    headerMediaRoute: { name: string; parameters: Record<string, any> }
+    mediaRules: Record<string, { mime_types: string[]; extensions: string[]; max_kb: number; accept: string }>
 }>()
 
 const form = useForm({ label: props.template.label ?? "" })
@@ -70,17 +75,55 @@ const tagOptions = computed(() =>
 
 const isMappingComplete = computed(() => mapping.value.length > 0 && mapping.value.every((tag) => !!tag))
 
-// The body is shown with its samples filled in, which reads far better than raw {{1}}.
-const previewBody = computed(() => {
-    let text = props.template.body
+type PreviewSegment = { kind: "text" | "tag"; value: string }
 
-    mapping.value.forEach((tag, index) => {
-        const example = props.mergeTags.find((entry) => entry.value === `[${tag}]`)?.example
 
-        if (example) text = text.replaceAll(`{{${index + 1}}}`, example)
-    })
+const toSegments = (text: string): PreviewSegment[] => {
+    const segments: PreviewSegment[] = []
+    const pattern = /\{\{(\d+)\}\}/g
 
-    return text
+    let cursor = 0
+    let match: RegExpExecArray | null
+
+    while ((match = pattern.exec(text)) !== null) {
+        if (match.index > cursor) {
+            segments.push({ kind: "text", value: text.slice(cursor, match.index) })
+        }
+
+        const mapped = mapping.value[Number(match[1]) - 1]
+        segments.push({ kind: "tag", value: mapped || match[0] })
+        cursor = match.index + match[0].length
+    }
+
+    if (cursor < text.length) {
+        segments.push({ kind: "text", value: text.slice(cursor) })
+    }
+
+    return segments
+}
+
+const previewBodySegments = computed(() => toSegments(props.template.body))
+
+const previewHeaderSegments = computed(() => toSegments(props.template.header_text ?? ""))
+
+const headerFormat = computed(() => props.template.header_format || "NONE")
+
+const headerFormatLabel = computed(() => {
+    const labels: Record<string, string> = {
+        NONE: trans("None"),
+        TEXT: trans("Text"),
+        IMAGE: trans("Image"),
+        VIDEO: trans("Video"),
+        DOCUMENT: trans("PDF"),
+    }
+
+    return labels[headerFormat.value] ?? headerFormat.value
+})
+
+const headerIcon = computed(() => {
+    const icons: Record<string, any> = { IMAGE: faImage, VIDEO: faVideo, DOCUMENT: faFilePdf }
+
+    return icons[headerFormat.value] ?? null
 })
 
 const statusTone = computed(() => {
@@ -92,6 +135,55 @@ const statusTone = computed(() => {
 
     return map[props.template.status] ?? "bg-gray-50 text-gray-600 border-gray-200"
 })
+
+
+const needsHeaderMedia = computed(() => ["IMAGE", "VIDEO", "DOCUMENT"].includes(headerFormat.value))
+
+const headerMediaRule = computed(() => props.mediaRules?.[headerFormat.value.toLowerCase()] ?? null)
+
+const headerMediaForm = useForm<{ header_media: File | null }>({ header_media: null })
+
+const onHeaderMediaSelect = (event: Event) => {
+    const input = event.target as HTMLInputElement
+    const file = input?.files?.[0] ?? null
+    const rule = headerMediaRule.value
+
+    if (!file || !rule) return
+
+    if (!rule.mime_types.includes(file.type)) {
+        notify({
+            title: trans("Failed"),
+            text: trans("WhatsApp accepts :formats here.", { formats: rule.extensions.join(", ") }),
+            type: "error",
+        })
+        input.value = ""
+        return
+    }
+
+    if (file.size > rule.max_kb * 1024) {
+        notify({
+            title: trans("Failed"),
+            text: trans("Maximum size is :size MB.", { size: Math.round(rule.max_kb / 1024) }),
+            type: "error",
+        })
+        input.value = ""
+        return
+    }
+
+    headerMediaForm.header_media = file
+    headerMediaForm.post(route(props.headerMediaRoute.name, props.headerMediaRoute.parameters), {
+        preserveScroll: true,
+        forceFormData: true,
+        onError: (errors) => {
+            notify({
+                title: trans("Failed"),
+                text: errors.header_media ?? trans("The server refused the file — it may be larger than the upload limit."),
+                type: "error",
+            })
+        },
+        onFinish: () => (input.value = ""),
+    })
+}
 
 const isSavingVariables = ref(false)
 
@@ -109,6 +201,12 @@ const save = () => form.patch(route(props.updateRoute.name, props.updateRoute.pa
 
 const buttonIcon = (type: string) =>
     type === "URL" ? faLink : type === "PHONE_NUMBER" ? faPhone : faReply
+
+const buttonTypeLabel = (type: string) =>
+    type === "URL" ? trans("Link") : type === "PHONE_NUMBER" ? trans("Call") : trans("Quick reply")
+
+// A quick reply has nowhere to go, so only links and calls carry a destination.
+const buttonDestination = (button: TemplateButton) => button.url || button.phone_number || ""
 
 const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
 
@@ -199,27 +297,101 @@ const doodleStyle = computed(() => {
                         </p>
                     </div>
 
-                    <div v-if="template.header_text"
-                        class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-500">
-                        {{ template.header_text }}
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs font-medium text-gray-600">{{ trans("Header") }}</span>
+                            <span
+                                class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2 py-0.5 text-[10px] text-gray-500">
+                                <FontAwesomeIcon v-if="headerIcon" :icon="headerIcon" class="text-[9px]" />
+                                {{ headerFormatLabel }}
+                            </span>
+                        </div>
+
+                        <div v-if="headerFormat === 'NONE'"
+                            class="rounded-lg border border-dashed border-gray-200 px-3 py-2 text-xs text-gray-400">
+                            {{ trans("This template was created without a header.") }}
+                        </div>
+
+                        <div v-else-if="headerFormat === 'TEXT'"
+                            class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-500">
+                            {{ template.header_text }}
+                        </div>
+
+                        <div v-else class="space-y-2">
+                            <div v-if="template.header_media"
+                                class="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-2">
+                                <div
+                                    class="w-16 h-16 shrink-0 rounded-md overflow-hidden bg-white border border-gray-200 flex items-center justify-center p-1">
+                                    <Image v-if="headerFormat === 'IMAGE' && template.header_media.url"
+                                        :src="template.header_media.url"
+                                        class="w-full h-full flex items-center justify-center"
+                                        :style="{ width: '100%', height: '100%', objectFit: 'contain' }" />
+                                    <FontAwesomeIcon v-else-if="headerIcon" :icon="headerIcon"
+                                        class="text-xl text-gray-300" />
+                                </div>
+                                <span class="min-w-0 flex-1 truncate text-xs text-gray-500">
+                                    {{ template.header_media.name }}
+                                </span>
+                            </div>
+
+                            <Message v-else severity="warn" :closable="false" class="text-xs">
+                                {{ trans("No file set — sending this template will fail until one is uploaded.") }}
+                            </Message>
+
+                            <label
+                                class="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-500 cursor-pointer hover:border-gray-400">
+                                <FontAwesomeIcon :icon="faUpload" class="text-[11px]" />
+                                {{ template.header_media ? trans("Replace file") : trans("Upload the file to send") }}
+                                <input type="file" class="hidden" :accept="headerMediaRule?.accept"
+                                    @change="onHeaderMediaSelect" />
+                            </label>
+                        </div>
                     </div>
 
-                    <div
-                        class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-500 whitespace-pre-line">
-                        {{ template.body }}
+                    <div>
+                        <div class="text-xs font-medium text-gray-600 mb-1">{{ trans("Body") }}</div>
+                        <div
+                            class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-500 whitespace-pre-line">
+                            {{ template.body }}
+                        </div>
                     </div>
 
-                    <div v-if="template.footer"
-                        class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-400">
-                        {{ template.footer }}
+                    <div>
+                        <div class="text-xs font-medium text-gray-600 mb-1">{{ trans("Footer") }}</div>
+                        <div v-if="template.footer"
+                            class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-400">
+                            {{ template.footer }}
+                        </div>
+                        <div v-else
+                            class="rounded-lg border border-dashed border-gray-200 px-3 py-2 text-xs text-gray-400">
+                            {{ trans("This template was created without a footer.") }}
+                        </div>
                     </div>
 
-                    <div v-if="template.buttons?.length" class="flex flex-wrap gap-2">
-                        <span v-for="(button, index) in template.buttons" :key="index"
-                            class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-500">
-                            <FontAwesomeIcon :icon="buttonIcon(button.type)" class="text-[10px]" />
-                            {{ button.text }}
-                        </span>
+                    <div>
+                        <div class="text-xs font-medium text-gray-600 mb-1">{{ trans("Buttons") }}</div>
+                        <div v-if="!template.buttons?.length"
+                            class="rounded-lg border border-dashed border-gray-200 px-3 py-2 text-xs text-gray-400">
+                            {{ trans("This template was created without buttons.") }}
+                        </div>
+                        <div v-else class="space-y-2">
+                        <div v-for="(button, index) in template.buttons" :key="index"
+                            class="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                            <FontAwesomeIcon :icon="buttonIcon(button.type)" class="text-[11px] text-gray-400 shrink-0" />
+
+                            <div class="min-w-0 flex-1">
+                                <div class="text-sm text-gray-600">{{ button.text }}</div>
+                                <div v-if="buttonDestination(button)"
+                                    class="text-[11px] text-gray-400 truncate">
+                                    {{ buttonDestination(button) }}
+                                </div>
+                            </div>
+
+                            <span class="shrink-0 text-[10px] uppercase tracking-wide text-gray-400">
+                                {{ buttonTypeLabel(button.type) }}
+                            </span>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -291,24 +463,37 @@ const doodleStyle = computed(() => {
 
                                 <div
                                     class="relative rounded-lg rounded-tl-none bg-white shadow-[0_1px_1px_rgba(0,0,0,0.12)] overflow-hidden">
-                                    <div v-if="template.header_format && template.header_format !== 'TEXT'"
-                                        class="p-1.5 pb-0">
-                                        <div class="h-32 rounded-md bg-gray-100 flex items-center justify-center">
-                                            <FontAwesomeIcon
-                                                :icon="template.header_format === 'VIDEO' ? faVideo : (template.header_format === 'DOCUMENT' ? faFilePdf : faImage)"
+                                    <div v-if="needsHeaderMedia" class="p-1.5 pb-0">
+                                        <div class="h-36 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
+                                            <Image v-if="headerFormat === 'IMAGE' && template.header_media?.url"
+                                                :src="template.header_media.url" image-cover
+                                                class="w-full h-full" />
+                                            <FontAwesomeIcon v-else :icon="headerIcon ?? faImage"
                                                 class="text-gray-300 text-3xl" />
                                         </div>
                                     </div>
 
                                     <div class="px-2.5 py-2 space-y-1">
-                                        <div v-if="template.header_text"
+                                        <div v-if="previewHeaderSegments.length"
                                             class="text-[14px] font-semibold text-[#111B21] leading-snug break-words">
-                                            {{ template.header_text }}
+                                            <template v-for="(segment, index) in previewHeaderSegments" :key="index">
+                                                <span v-if="segment.kind === 'text'">{{ segment.value }}</span>
+                                                <span v-else
+                                                    class="inline-block rounded-full bg-[#E7F3FF] text-[#0091EA] font-normal text-[12px] px-2 py-0.5 mx-0.5 align-middle">
+                                                    {{ segment.value }}
+                                                </span>
+                                            </template>
                                         </div>
 
                                         <div
                                             class="text-[14px] leading-[19px] text-[#111B21] whitespace-pre-wrap break-words">
-                                            {{ previewBody }}
+                                            <template v-for="(segment, index) in previewBodySegments" :key="index">
+                                                <span v-if="segment.kind === 'text'">{{ segment.value }}</span>
+                                                <span v-else
+                                                    class="inline-block rounded-full bg-[#E7F3FF] text-[#0091EA] text-[12px] px-2 py-0.5 mx-0.5 align-middle">
+                                                    {{ segment.value }}
+                                                </span>
+                                            </template>
                                         </div>
 
                                         <div v-if="template.footer" class="text-[12px] text-[#667781] break-words pt-0.5">

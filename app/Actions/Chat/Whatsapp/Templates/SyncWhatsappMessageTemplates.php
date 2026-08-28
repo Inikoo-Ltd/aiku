@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\Whatsapp\Templates;
 
+use App\Actions\Chat\Whatsapp\Templates\Concerns\WithWhatsappTemplateLocalData;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\MetaChannel;
@@ -19,6 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SyncWhatsappMessageTemplates extends OrgAction
 {
+    use WithWhatsappTemplateLocalData;
+
     public function handle(Shop $shop): int
     {
         $metaChannel = MetaChannel::where('code', 'whatsapp')->firstOrFail();
@@ -26,9 +29,12 @@ class SyncWhatsappMessageTemplates extends OrgAction
         $templates = GetWhatsappMessageTemplate::run($shop);
 
         foreach ($templates as $template) {
+            $templateId = (string) Arr::get($template, 'id');
+            $existing   = MetaMessageTemplate::where('template_id', $templateId)->first();
+
             MetaMessageTemplate::updateOrCreate(
                 [
-                    'template_id' => (string) Arr::get($template, 'id'),
+                    'template_id' => $templateId,
                 ],
                 [
                     'group_id'         => $shop->group_id,
@@ -40,7 +46,7 @@ class SyncWhatsappMessageTemplates extends OrgAction
                     'language'         => Arr::get($template, 'language'),
                     'status'           => Arr::get($template, 'status'),
                     'category'         => Arr::get($template, 'category'),
-                    'data'             => $template,
+                    'data'             => $this->mergeLocalData($template, $existing),
                     'synchronize_at'   => now(),
                 ]
             );

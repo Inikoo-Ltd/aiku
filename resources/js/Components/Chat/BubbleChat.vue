@@ -12,6 +12,7 @@ import { notify } from "@kyvg/vue3-notification"
 import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import AudioPlayer from "@/Components/Chat/AudioPlayer.vue"
+import { formatWhatsappMarkup } from "@/Composables/useWhatsappMarkup"
 
 type SenderType = "guest" | "user" | "agent" | "system"
 type MessageStatus = "sending" | "sent" | "failed"
@@ -93,6 +94,7 @@ const props = defineProps<{
     apiBase?: string
     viewerReactorId?: number | null
     canReply?: boolean
+    formatMarkup?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -332,6 +334,8 @@ const displayText = computed(() => {
 
     return activeMessage.value.original?.text || props.message.message_text
 })
+
+const formattedText = computed(() => formatWhatsappMarkup(displayText.value))
 
 const canTranslate = computed(() =>
     props.viewerType === "agent" &&
@@ -649,35 +653,31 @@ watch(selectedLanguage, async (val) => {
                 <div class="opacity-70 line-clamp-2 break-words">{{ quotedLabel }}</div>
             </div>
 
-            <p v-if="!isEditingMessage" class="whitespace-pre-wrap break-words">
-                {{ displayText }}
-            </p>
+            <AudioPlayer v-if="isAudio && audioUrl" :src="audioUrl"
+                :is-voice="!!message.metadata?.wa_payload?.voice" :label="audioLabel"
+                :download-url="message.download_route?.url" />
 
-            <div v-else class="flex flex-col gap-1.5 min-w-[220px]">
-                <textarea v-model="editText" rows="2"
-                    class="w-full text-sm rounded-md border border-gray-300 px-2 py-1.5 text-gray-800 bg-white focus:outline-none focus:ring-1 resize-y"
-                    @keydown.enter.exact.prevent="saveEditMessage" @keydown.esc="cancelEditMessage" />
-                <div class="flex items-center justify-end gap-2">
-                    <button type="button" class="text-[11px] underline opacity-80" @click="cancelEditMessage">
-                        {{ trans("Cancel") }}
-                    </button>
-                    <button type="button"
-                        class="text-[11px] font-semibold px-2 py-0.5 rounded bg-white text-gray-800 border border-gray-300 hover:bg-gray-50"
-                        @click="saveEditMessage">
-                        {{ trans("Save") }}
-                    </button>
+            <div v-if="isFile && !isAudio && message.media_url" @click="openFile"
+                class="mb-1 flex items-center gap-3 p-3 rounded-lg border bg-white max-w-xs transition" :class="isOpening
+                    ? 'opacity-60 cursor-not-allowed'
+                    : 'cursor-pointer hover:bg-gray-50'">
+                <div class="text-2xl">
+                    {{ fileIcon }}
                 </div>
-            </div>
-            <div v-if="
-                message?.is_offline_message &&
-                !(props.message.sender_type === 'guest' && props.viewerType === 'user')
-            " class="text-[10px] text-amber-600 mb-1 font-medium">
-                {{ trans('Offline message') }}
+
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium truncate text-gray-400">
+                        {{ message.file_name || message.media_url.name }}
+                    </div>
+                    <div class="text-xs opacity-60 text-red-600">
+                        {{ trans("Click to download") }}
+                    </div>
+                </div>
             </div>
 
             <Image v-if="message.message_type === 'image' && message.media_url" :src="message.media_url.webp" preview
                 imageClass="rounded-lg max-w-full max-h-64 min-h-[96px] min-w-[96px] object-contain cursor-pointer bg-gray-50"
-                class="mt-1 block" />
+                class="mb-1 block" />
 
             <div v-if="viewerType === 'agent' && message.message_type === 'image' && activeMessage.is_validated === true"
                 class="mt-1" :title="verificationReasoning">
@@ -702,26 +702,33 @@ watch(selectedLanguage, async (val) => {
                 </button>
             </div>
 
-            <AudioPlayer v-if="isAudio && audioUrl" :src="audioUrl"
-                :is-voice="!!message.metadata?.wa_payload?.voice" :label="audioLabel"
-                :download-url="message.download_route?.url" />
+            <p v-if="!isEditingMessage && formatMarkup" class="whitespace-pre-wrap break-words"
+                v-html="formattedText" />
 
-            <div v-if="isFile && !isAudio && message.media_url" @click="openFile"
-                class="mt-1 flex items-center gap-3 p-3 rounded-lg border bg-white max-w-xs transition" :class="isOpening
-                    ? 'opacity-60 cursor-not-allowed'
-                    : 'cursor-pointer hover:bg-gray-50'">
-                <div class="text-2xl">
-                    {{ fileIcon }}
-                </div>
+            <p v-else-if="!isEditingMessage" class="whitespace-pre-wrap break-words">
+                {{ displayText }}
+            </p>
 
-                <div class="flex-1 min-w-0">
-                    <div class="text-sm font-medium truncate text-gray-400">
-                        {{ message.file_name || message.media_url.name }}
-                    </div>
-                    <div class="text-xs opacity-60 text-red-600">
-                        {{ trans("Click to download") }}
-                    </div>
+            <div v-else class="flex flex-col gap-1.5 min-w-[220px]">
+                <textarea v-model="editText" rows="2"
+                    class="w-full text-sm rounded-md border border-gray-300 px-2 py-1.5 text-gray-800 bg-white focus:outline-none focus:ring-1 resize-y"
+                    @keydown.enter.exact.prevent="saveEditMessage" @keydown.esc="cancelEditMessage" />
+                <div class="flex items-center justify-end gap-2">
+                    <button type="button" class="text-[11px] underline opacity-80" @click="cancelEditMessage">
+                        {{ trans("Cancel") }}
+                    </button>
+                    <button type="button"
+                        class="text-[11px] font-semibold px-2 py-0.5 rounded bg-white text-gray-800 border border-gray-300 hover:bg-gray-50"
+                        @click="saveEditMessage">
+                        {{ trans("Save") }}
+                    </button>
                 </div>
+            </div>
+            <div v-if="
+                message?.is_offline_message &&
+                !(props.message.sender_type === 'guest' && props.viewerType === 'user')
+            " class="text-[10px] text-amber-600 mb-1 font-medium">
+                {{ trans('Offline message') }}
             </div>
 
             <div v-if="canShowTranslation && (latestTranslation || isTranslating)"

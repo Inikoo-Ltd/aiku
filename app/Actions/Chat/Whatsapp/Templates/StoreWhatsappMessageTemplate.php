@@ -8,7 +8,9 @@
 namespace App\Actions\Chat\Whatsapp\Templates;
 
 use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappCredentials;
+use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\OrgAction;
+use App\Enums\CRM\Livechat\WhatsappMediaTypeEnum;
 use App\Enums\CRM\Livechat\WhatsappTemplateTagEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\MetaChannel;
@@ -24,11 +26,6 @@ use Illuminate\Validation\Validator;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
-/**
- * Submits a template to Meta for review. Meta owns the approval, so the local row is
- * written with whatever status the API returns (normally PENDING) and later corrected
- * by the `message_template_status_update` webhook.
- */
 class StoreWhatsappMessageTemplate extends OrgAction
 {
     use WithWhatsappCredentials;
@@ -52,7 +49,7 @@ class StoreWhatsappMessageTemplate extends OrgAction
             'header_media'          => [
                 'required_if:header_format,IMAGE,VIDEO,DOCUMENT',
                 'nullable',
-                File::default()->max(16 * 1024),
+                $this->headerMediaRule(),
             ],
 
             'body'                  => ['required', 'string', 'max:1024'],
@@ -68,6 +65,16 @@ class StoreWhatsappMessageTemplate extends OrgAction
             'buttons.*.url_example' => ['nullable', 'string', 'max:2000'],
             'buttons.*.phone_number' => ['required_if:buttons.*.type,PHONE_NUMBER', 'nullable', 'string', 'max:20'],
         ];
+    }
+    protected function headerMediaRule(): File
+    {
+        $type = WhatsappMediaTypeEnum::fromHeaderFormat((string) request('header_format'));
+
+        if (!$type) {
+            return File::default()->max(WhatsappMediaTypeEnum::IMAGE->maxKilobytes());
+        }
+
+        return File::types($type->extensions())->max($type->maxKilobytes());
     }
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
@@ -232,7 +239,15 @@ class StoreWhatsappMessageTemplate extends OrgAction
             ];
         }
 
-        return ['ok' => true, 'template' => $this->storeLocally($shop, $modelData, $components['components'], $response->json())];
+        $template = $this->storeLocally($shop, $modelData, $components['components'], $response->json());
+
+        // Meta keeps only an upload handle for the review sample, and that handle cannot be
+        // sent to a customer, so the file is kept here to be re-uploaded on every send.
+        if (($modelData['header_media'] ?? null) instanceof UploadedFile) {
+            $this->storeHeaderMedia($template, $modelData['header_media']);
+        }
+
+        return ['ok' => true, 'template' => $template];
     }
 
     /**
@@ -344,6 +359,23 @@ class StoreWhatsappMessageTemplate extends OrgAction
         }
 
         return $urlButton;
+    }
+
+    protected function storeHeaderMedia(MetaMessageTemplate $template, UploadedFile $file): void
+    {
+        $media = StoreMediaFromFile::run(
+            $template,
+            [
+                'path'         => $file->getPathName(),
+                'originalName' => $file->getClientOriginalName(),
+                'extension'    => $file->getClientOriginalExtension(),
+                'checksum'     => md5_file($file->getPathName()),
+            ],
+            'template_header',
+            str_starts_with((string) $file->getMimeType(), 'image/') ? 'image' : 'file'
+        );
+
+        $template->update(['header_media_id' => $media->id]);
     }
 
     protected function storeLocally(Shop $shop, array $modelData, array $components, array $response): MetaMessageTemplate

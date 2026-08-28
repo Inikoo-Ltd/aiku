@@ -145,20 +145,24 @@ const imageInput = ref<HTMLInputElement>()
 const fileInput = ref<HTMLInputElement>()
 
 const IMAGE_TYPES = [
-    "image/webp",
     "image/jpeg",
     "image/jpg",
     "image/png",
-    "image/avif",
 ]
 
 const FILE_TYPES = [
     "application/pdf",
+    "text/plain",
+    "application/msword",
     "application/vnd.ms-excel",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 ]
 
-const MAX_SIZE = 10 * 1024 * 1024
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024
+const MAX_FILE_SIZE = 100 * 1024 * 1024
 
 const isLoadingMore = ref(false)
 const canLoadMore = ref(false)
@@ -174,11 +178,15 @@ const handleImageSelect = (e: Event) => {
     if (!file) return
 
     if (!IMAGE_TYPES.includes(file.type)) {
-        notify({ title: trans("Failed"), text: trans("Image format not supported"), type: "error" })
+        notify({
+            title: trans("Failed"),
+            text: trans("WhatsApp only accepts JPG and PNG images."),
+            type: "error",
+        })
         return
     }
 
-    if (file.size > MAX_SIZE) {
+    if (file.size > MAX_IMAGE_SIZE) {
         notify({ title: trans("Failed"), text: trans("Maximum image size 10MB"), type: "error" })
         return
     }
@@ -193,12 +201,16 @@ const handleDocSelect = (e: Event) => {
     if (!file) return
 
     if (!FILE_TYPES.includes(file.type)) {
-        notify({ title: trans("Failed"), text: trans("File format not supported"), type: "error" })
+        notify({
+            title: trans("Failed"),
+            text: trans("WhatsApp accepts PDF, Word, Excel, PowerPoint and plain text."),
+            type: "error",
+        })
         return
     }
 
-    if (file.size > MAX_SIZE) {
-        notify({ title: trans("Failed"), text: trans("Maximum file size 10MB"), type: "error" })
+    if (file.size > MAX_FILE_SIZE) {
+        notify({ title: trans("Failed"), text: trans("Maximum file size 100MB"), type: "error" })
         return
     }
 
@@ -790,6 +802,7 @@ onUnmounted(() => {
                             reactionUrlBase="/app/api/chats/meta/messages"
                             :viewerReactorId="layout?.user?.id"
                             :canReply="!isClosed && !templateOnly"
+                            format-markup
                             @reply="startReply" />
                     </div>
                 </template>
@@ -878,9 +891,9 @@ onUnmounted(() => {
 
         <!-- Footer: composer -->
         <footer v-else class="px-3 py-2 bg-white">
-            <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" class="hidden"
+            <input ref="imageInput" type="file" accept=".jpg,.jpeg,.png" class="hidden"
                 @change="handleImageSelect" />
-            <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden" @change="handleDocSelect" />
+            <input ref="fileInput" type="file" accept=".pdf,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx" class="hidden" @change="handleDocSelect" />
 
             <div v-if="templateOnly && !hasTemplate"
                 class="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-[11px]">
