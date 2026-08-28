@@ -12,6 +12,8 @@ import { trans } from 'laravel-vue-i18n'
 import { router } from '@inertiajs/vue3'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { notify } from '@kyvg/vue3-notification'
+import PureRadio from './Pure/PureRadio.vue'
+import Toggle from './Pure/Toggle.vue'
 
 library.add(faCheck, faTimes, faPencil)
 
@@ -82,16 +84,17 @@ const toggleEditEmailSubscriptions = () => {
     isEditingEmailSubscriptions.value = !isEditingEmailSubscriptions.value
 }
 
-// Function to handle individual subscription toggle
-const toggleSubscription = async (subscriptionKey: string, value: boolean) => {
-    if (!props.editable) return
-    
-    localSubscriptions.value[subscriptionKey] = value
-    
-    // Get the field name for the subscription
+const loadingSubscriptions = ref<Record<string, boolean>>({})
+
+// Optimistic toggle: the switch flips immediately, then a failed or cancelled request
+// reverts it to the previous value in onFinish and reports the error
+// (router.patch returns void, so awaiting it would notify before the server answers)
+const toggleSubscription = (subscriptionKey: string, value: boolean) => {
+    if (!props.editable || loadingSubscriptions.value[subscriptionKey]) return
+    if (localSubscriptions.value[subscriptionKey] === value) return
+
     const subscription = props.emailSubscriptions?.subscriptions[subscriptionKey]
     if (!subscription || !props.emailSubscriptions?.update_route) {
-        console.error('Subscription or update route not found')
         notify({
             title: trans('Error'),
             text: trans('Subscription configuration not found'),
@@ -99,42 +102,46 @@ const toggleSubscription = async (subscriptionKey: string, value: boolean) => {
         })
         return
     }
-    
+
     const updateRoute = props.emailSubscriptions.update_route
-    const fieldName = subscription.field
-    
-    try {
-        // Make API call to update subscription status
-        await router.patch(
-            route(updateRoute.name, updateRoute.parameters),
-            {
-                [fieldName]: value
+
+    const previousValue = localSubscriptions.value[subscriptionKey]
+    localSubscriptions.value[subscriptionKey] = value
+
+    loadingSubscriptions.value[subscriptionKey] = true
+    let isUpdateSuccessful = false
+
+    router.patch(
+        route(updateRoute.name, updateRoute.parameters),
+        {
+            [subscription.field]: value
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                isUpdateSuccessful = true
+                notify({
+                    title: trans('Success'),
+                    text: value
+                        ? trans('Successfully subscribed to :subscription', { subscription: subscription.label })
+                        : trans('Successfully unsubscribed from :subscription', { subscription: subscription.label }),
+                    type: 'success'
+                })
+            },
+            onFinish: () => {
+                loadingSubscriptions.value[subscriptionKey] = false
+                if (!isUpdateSuccessful) {
+                    localSubscriptions.value[subscriptionKey] = previousValue
+                    notify({
+                        title: trans('Error'),
+                        text: trans('Failed to update email subscription. Please try again.'),
+                        type: 'error'
+                    })
+                }
             }
-        )
-        
-        // Show success toast
-        notify({
-            title: trans('Success'),
-            text: value 
-                ? trans('Successfully subscribed to :subscription', { subscription: subscription.label })
-                : trans('Successfully unsubscribed from :subscription', { subscription: subscription.label }),
-            type: 'success'
-        })
-        
-        console.log(`Subscription ${subscriptionKey} updated successfully to:`, value)
-    } catch (error) {
-        console.error('Failed to update subscription:', error)
-        
-        // Revert the local state on error
-        localSubscriptions.value[subscriptionKey] = !value
-        
-        // Show error toast
-        notify({
-            title: trans('Error'),
-            text: trans('Failed to update email subscription. Please try again.'),
-            type: 'error'
-        })
-    }
+        }
+    )
 }
 
 // Expose methods for parent component if needed
@@ -185,14 +192,22 @@ defineExpose({
 
                 <!-- Edit Mode: Toggle Switch -->
                 <div v-if="isEditingEmailSubscriptions && editable" class="flex items-center shrink-0 ml-2">
-                    <ToggleSwitch
+                    <!-- <ToggleSwitch
                         :modelValue="localSubscriptions[key]"
                         @update:modelValue="(value) => toggleSubscription(key, value)"
-                        :class="{
+                        xclass="{
                             'toggle-switch-active': localSubscriptions[key],
                             'toggle-switch-inactive': !localSubscriptions[key]
                         }"
                         v-tooltip="localSubscriptions[key] ? trans('Subscribed') : trans('Unsubscribed')"
+                    /> -->
+                    <Toggle
+                        size="md"
+                        :modelValue="localSubscriptions[key]"
+                        :loading="loadingSubscriptions[key]"
+                        :disabled="loadingSubscriptions[key]"
+                        @update:modelValue="(value) => toggleSubscription(key, value)"
+                        v-tooltip="loadingSubscriptions[key] ? trans('Saving...') : localSubscriptions[key] ? trans('Subscribed') : trans('Unsubscribed')"
                     />
                 </div>
 
