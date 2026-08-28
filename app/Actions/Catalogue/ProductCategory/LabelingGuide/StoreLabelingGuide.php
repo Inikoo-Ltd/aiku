@@ -13,18 +13,19 @@ use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Goods\TradeUnitFamily;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rules\File;
 
 class StoreLabelingGuide extends OrgAction
 {
-    public function handle(ProductCategory $productCategory, array $modelData): void
+    public function handle(ProductCategory|TradeUnitFamily $parent, array $modelData): void
     {
-        foreach ($productCategory->attachments()->where('scope', 'labeling_guide')->get() as $previousAttachment) {
-            DetachAttachmentFromModel::make()->action($productCategory, $previousAttachment);
+        foreach ($parent->attachments()->where('scope', 'labeling_guide')->get() as $previousAttachment) {
+            DetachAttachmentFromModel::make()->action($parent, $previousAttachment);
         }
 
-        AttachAttachmentToModel::make()->action($productCategory, [
+        AttachAttachmentToModel::make()->action($parent, [
             'attachments'   => [
                 Arr::pull($modelData, 'labeling_guide_file')
             ],
@@ -40,13 +41,12 @@ class StoreLabelingGuide extends OrgAction
         ];
     }
 
-    public function action(ProductCategory $productCategory, array $modelData): void
+    public function action(ProductCategory|TradeUnitFamily $parent, array $modelData): void
     {
         $this->asAction = true;
-        $this->productCategory = $productCategory;
 
-        $this->initialisation($productCategory->organisation, $modelData);
+        $this->initialisationFromGroup(group(), $modelData);
 
-        $this->handle($productCategory, $modelData);
+        $this->handle($parent, $modelData);
     }
 }

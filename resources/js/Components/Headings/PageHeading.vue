@@ -269,9 +269,9 @@ const setError = (e) => {
 								<FontAwesomeIcon
 									:icon="iconLink.icon"
 									class="text-gray-400 hover:text-gray-600"
-									:style="{
-										color: iconLink.color,
-									}"
+									:style="[
+										iconLink.color ? `color: ${iconLink.color}` : ''
+									]"
 									fixed-width
 									aria-hidden="true" />
 							</Link>

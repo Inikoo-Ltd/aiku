@@ -81,6 +81,23 @@ class EditSubDepartment extends OrgAction
             ];
         }
 
+        $iconLinks = [];
+
+        if ($subDepartment->masterProductCategory) {
+            $iconLinks[] = [
+                'icon'    => 'fab fa-octopus-deploy',
+                'tooltip' => __('Go to Edit Master Sub Department'),
+                'route'   => [
+                    'name'       => 'grp.masters.master_shops.show.master_sub_departments.edit',
+                    'parameters' => [
+                        'masterShop'    => $subDepartment->shop->masterShop->slug,
+                        'masterSubDepartment' => $subDepartment->masterProductCategory->slug,
+                    ]
+                ],
+                'color'   => 'rgb(75, 0, 130)'
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
@@ -113,7 +130,8 @@ class EditSubDepartment extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ]
-                    ]
+                    ],
+                    'iconLinks' => $iconLinks
                 ],
                 'formData' => [
                     'blueprint' => array_filter(
