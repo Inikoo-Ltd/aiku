@@ -73,10 +73,13 @@ onMounted(() => {
             aria-hidden="true"
         />
         <div v-if="appVersion" class="hidden lg:flex w-full bg-black justify-center items-center h-4">
-            <span class="text-slate-400 text-[10px] leading-none tabular-nums">
-                <template v-if="shopName">{{ shopName }} · </template>
-                <a href="https://aiku.io/" target="_blank" rel="noopener" aria-label="Made with love using aiku.io" class="hover:text-white">
-                    <img src="/art/invader.svg" alt="" aria-hidden="true" class="h-3 w-auto inline-block align-middle mr-1 select-none" />{{ appVersion }}</a>
+            <span class="inline-flex items-center gap-x-2 text-slate-400 text-[10px] leading-none tabular-nums">
+                <template v-if="shopName">
+                    <span>{{ shopName }}</span>
+                    <span aria-hidden="true">·</span>
+                </template>
+                <a href="https://aiku.io/" target="_blank" rel="noopener" aria-label="Made with love using aiku.io" class="inline-flex items-center gap-x-1 hover:text-white">
+                    <img src="/art/invader.svg" alt="" aria-hidden="true" class="h-1.5 w-auto select-none" />{{ appVersion }}</a>
             </span>
         </div>
     </div>
