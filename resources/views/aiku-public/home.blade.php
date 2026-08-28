@@ -3,7 +3,7 @@
         <script type="application/ld+json">{!! json_encode([
             '@context' => 'https://schema.org',
             '@graph' => [
-                ['@type' => 'Organization', 'name' => 'aiku', 'url' => route('aiku-public.home'), 'logo' => url('art/logo-sketch.svg'), 'sameAs' => ['https://github.com/Inikoo-Ltd/aiku']],
+                ['@type' => 'Organization', 'name' => 'aiku', 'url' => route('aiku-public.home'), 'logo' => url('art/invader-sketch.svg'), 'sameAs' => ['https://github.com/Inikoo-Ltd/aiku']],
                 ['@type' => 'WebSite', 'name' => 'aiku', 'url' => route('aiku-public.home')],
             ],
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>

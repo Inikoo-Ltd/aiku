@@ -10,14 +10,14 @@
     <meta property="og:title" content="{{ $title ?? 'aiku' }}">
     <meta property="og:description" content="{{ $description ?? 'aiku is an open source operating system for commerce.' }}">
     <meta property="og:url" content="{{ $canonical ?? url()->current() }}">
-    <meta property="og:image" content="{{ url('favicon.png') }}">
+    <meta property="og:image" content="{{ url('favicon-180.png?v=2') }}">
     <meta name="twitter:card" content="summary_large_image">
     @if (config('app.env') === 'staging')
         <meta name="robots" content="noindex">
     @endif
-    <link rel="icon" href="{{ url('favicon.svg') }}" type="image/svg+xml">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url('favicon-32.png') }}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url('favicon-180.png') }}">
+    <link rel="icon" href="{{ url('favicon.svg?v=2') }}" type="image/svg+xml">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url('favicon-32.png?v=2') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url('favicon-180.png?v=2') }}">
     <link rel="alternate" type="application/xml" title="Sitemap" href="{{ route('aiku-public.sitemap') }}">
     <link rel="alternate" type="application/rss+xml" title="aiku — engineering notes" href="{{ route('aiku-public.feed') }}">
     <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
@@ -152,7 +152,7 @@
 <body>
 <div class="wrap">
     <header class="site">
-        <a class="brand" href="{{ route('aiku-public.home') }}">{!! str_replace('style="color:#1f1e2a" ', '', file_get_contents(public_path('art/logo-sketch.svg'))) !!}aiku</a>
+        <a class="brand" href="{{ route('aiku-public.home') }}">{!! str_replace('style="color:#1f1e2a" ', '', file_get_contents(public_path('art/invader-sketch.svg'))) !!}aiku</a>
         <nav>
             <a href="{{ route('aiku-public.home') }}" @if(request()->routeIs('aiku-public.home')) aria-current="page" @endif>What it is</a>
             <a href="{{ route('aiku-public.blog.index') }}" @if(request()->routeIs('aiku-public.blog.*')) aria-current="page" @endif>Engineering notes</a>
