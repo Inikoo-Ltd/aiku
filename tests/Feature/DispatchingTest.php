@@ -3782,17 +3782,30 @@ test('a bonus line submitted at zero is not priced at list when it is picked', f
         ->and((float)$totals['quantity'])->toBeGreaterThan(0.0);
 });
 
-test('UI dispatch hub pickers/packers stats accept date range', function () {
+test('UI dispatch hub pickers/packers live view', function () {
     $response = get(route('grp.org.warehouses.show.dispatching.backlog', [
         $this->organisation->slug,
         $this->warehouse->slug,
-    ]).'?tab=pickers&between[date]=20260801-20260828');
+    ]).'?tab=pickers');
     $response->assertOk();
     $response->assertInertia(
         fn (AssertableInertia $page) => $page
-            ->where('pickers.metrics.3.key', 'skos')
-            ->where('pickers.metrics.5.key', 'items_per_hour')
-            ->where('packers.metrics.3.key', 'skos')
+            ->has('pickers_current.data')
+            ->has('packers_current.data')
+            ->etc()
+    );
+});
+
+test('UI dispatch reports accept date range and channel', function () {
+    $response = get(route('grp.org.warehouses.show.dispatching.reports', [
+        $this->organisation->slug,
+        $this->warehouse->slug,
+    ]).'?between[date]=20260801-20260828&channel=wholesale');
+    $response->assertOk();
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('pickers.data')
+            ->has('packers.data')
             ->etc()
     );
 });

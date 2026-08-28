@@ -33,9 +33,11 @@ use App\Actions\Dispatching\Trolley\UI\EditTrolley;
 use App\Actions\Dispatching\Trolley\UI\IndexTrolleys;
 use App\Actions\Dispatching\Trolley\UI\ShowTrolley;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
+use App\Actions\UI\Dispatch\ShowDispatchReports;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowDispatchHub::class)->name('backlog');
+Route::get('/reports', ShowDispatchReports::class)->name('reports');
 
 Route::get('/waiting_items', IndexWaitingDeliveryNoteItems::class)->name('waiting_items');
 Route::get('/waiting_items/shop/{shopType}', [IndexWaitingDeliveryNoteItems::class, 'inShopTypes'])->name('waiting_items.shop');
