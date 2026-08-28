@@ -286,6 +286,17 @@ class Webpage extends Model implements Auditable, HasMedia
     }
 
 
+    public function getBlogCategory(bool $withAmbiguousFallback = true): ?WebpageSubTypeEnum
+    {
+        return WebpageSubTypeEnum::resolveBlogCategory(
+            $this->getRawOriginal('sub_type'),
+            $this->code,
+            $this->url,
+            $this->title,
+            $withAmbiguousFallback
+        );
+    }
+
     public function getUrl($withWWW = false): string
     {
         $domain = $this->website->domain;

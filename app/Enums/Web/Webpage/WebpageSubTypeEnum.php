@@ -42,11 +42,10 @@ enum WebpageSubTypeEnum: string
     case ARTICLE = 'article';
     case MAILSHOT = 'mailshot';
 
-    case BLOG = 'blog';
+    /* case BLOG = 'blog'; */
     case NEWSLETTERS    = 'newsletters';
     case PRODUCT_GUIDES = 'product_guides';
     case BUSINESS_TIPS  = 'business_tips';
-    case INSIGHT        = 'insight';
 
     public static function labels(): array
     {
@@ -59,8 +58,7 @@ enum WebpageSubTypeEnum: string
             'article'               => __('Article'),
             'content'               => __('Content'),
 
-            'blog'                  => __('Blog'),
-            'insight'               => __('Industry & Retail Insights'),
+            /* 'blog'                  => __('Blog'), */
             'newsletters'           => __('Newsletters'),
             'product_guides'        => __('Product Guides'),
             'business_tips'         => __('Business Tips'),
@@ -73,24 +71,24 @@ enum WebpageSubTypeEnum: string
     public static function blogCategories(): array
     {
         return [
-            self::BLOG,
+         /*    self::BLOG, */
             self::NEWSLETTERS,
             self::PRODUCT_GUIDES,
             self::BUSINESS_TIPS,
-            self::INSIGHT,
         ];
     }
 
     public static function blogCategoriesWithLabel(): array
     {
         return [
-            [
+           /*  [
                 'value' => self::BLOG->value,
                 'label' => __("Blog"),
-            ],
+            ], */
             [
-                'value' => self::NEWSLETTERS->value,
-                'label' => __('Newsletters'),
+                'value'       => self::NEWSLETTERS->value,
+                'label'       => __('Newsletters'),
+                'description' => __("David's Travel Blog"),
             ],
             [
                 'value' => self::PRODUCT_GUIDES->value,
@@ -100,11 +98,155 @@ enum WebpageSubTypeEnum: string
                 'value' => self::BUSINESS_TIPS->value,
                 'label' => __("Business Tips"),
             ],
-            [
-                'value' => self::INSIGHT->value,
-                'label' => __("Industry & Retail's Insight"),
+        ];
+    }
+
+    /**
+     * Iris path of the dashboard listing each blog category.
+     *
+     * @return array<string, string>
+     */
+    public static function blogCategoryUrls(): array
+    {
+        return [
+            self::NEWSLETTERS->value    => '/david-aw-news',
+            self::PRODUCT_GUIDES->value => '/product-guides',
+            self::BUSINESS_TIPS->value  => '/business-tips',
+        ];
+    }
+
+    public function blogCategoryUrl(): ?string
+    {
+        return self::blogCategoryUrls()[$this->value] ?? null;
+    }
+
+    /**
+     * Sub types no longer backed by an enum case but still stored on existing webpages,
+     * mapped to the blog category they are read as.
+     *
+     * @return array<string, self>
+     */
+    public static function legacyBlogCategoryAliases(): array
+    {
+        return [
+            'blog'               => self::PRODUCT_GUIDES,
+            'insight'            => self::BUSINESS_TIPS,
+            'tips'               => self::BUSINESS_TIPS,
+            'davids_travel_blog' => self::NEWSLETTERS,
+            'david_aw_news'      => self::NEWSLETTERS,
+        ];
+    }
+
+    /**
+     * Legacy sub types that were used as a catch all and therefore do not identify a blog
+     * category on their own; the webpage code and url are read before falling back to the alias.
+     *
+     * @return array<int, string>
+     */
+    public static function ambiguousBlogSubTypes(): array
+    {
+        return ['blog'];
+    }
+
+    /**
+     * Case insensitive code, url and title fragments identifying a blog category, read when the
+     * stored sub type is ambiguous. Underscores are normalised to hyphens before matching.
+     *
+     * @return array<string, array<int, string>>
+     */
+    public static function blogCategoryCodePatterns(): array
+    {
+        return [
+            self::NEWSLETTERS->value => [
+                'david-blog',
+                'david-aw-news',
+                'davids-aw-news',
+                'david-nl',
+                'davids-travel',
+                'newsletter',
             ],
         ];
+    }
+
+    /**
+     * Resolves the blog category of a webpage. When the stored sub type is a catch all and neither
+     * the code, url nor title identify a category, the alias is used unless $withAmbiguousFallback
+     * is disabled, which callers persisting the result use to leave undecidable webpages alone.
+     */
+    public static function resolveBlogCategory(?string $subType, ?string $code = null, ?string $url = null, ?string $title = null, bool $withAmbiguousFallback = true): ?self
+    {
+        if ($subType === null) {
+            return null;
+        }
+
+        $aliases = self::legacyBlogCategoryAliases();
+
+        if (!in_array($subType, self::ambiguousBlogSubTypes(), true)) {
+            $category = self::tryFrom($subType);
+
+            if ($category && in_array($category, self::blogCategories(), true)) {
+                return $category;
+            }
+
+            return $aliases[$subType] ?? null;
+        }
+
+        $haystack = str_replace('_', '-', strtolower(($code ?? '').' '.($url ?? '').' '.($title ?? '')));
+
+        foreach (self::blogCategoryCodePatterns() as $categoryValue => $patterns) {
+            foreach ($patterns as $pattern) {
+                if (str_contains($haystack, $pattern)) {
+                    return self::from($categoryValue);
+                }
+            }
+        }
+
+        return $withAmbiguousFallback ? ($aliases[$subType] ?? null) : null;
+    }
+
+    /**
+     * SQL expression resolving the blog category of a webpage row, applying the same rules as
+     * resolveBlogCategory so queries and counts never read the stored sub type on its own.
+     */
+    public static function blogCategorySqlExpression(string $table = 'webpages'): string
+    {
+        $quote = fn (string $value): string => "'".str_replace("'", "''", $value)."'";
+        $list  = fn (array $values): string => implode(', ', array_map($quote, $values));
+
+        $ambiguous = self::ambiguousBlogSubTypes();
+        $aliases   = self::legacyBlogCategoryAliases();
+        $branches  = [];
+
+        foreach (self::blogCategories() as $category) {
+            $storedValues = [$category->value];
+
+            foreach ($aliases as $legacyValue => $aliasedCategory) {
+                if ($aliasedCategory === $category && !in_array($legacyValue, $ambiguous, true)) {
+                    $storedValues[] = $legacyValue;
+                }
+            }
+
+            $branches[] = "WHEN $table.sub_type IN ({$list($storedValues)}) THEN {$quote($category->value)}";
+        }
+
+        $haystack = "lower(replace(coalesce($table.code, '') || ' ' || coalesce($table.url, '') || ' ' || coalesce($table.title, ''), '_', '-'))";
+
+        foreach (self::blogCategoryCodePatterns() as $categoryValue => $patterns) {
+            $matches = implode(' OR ', array_map(
+                fn (string $pattern) => "$haystack like {$quote('%'.$pattern.'%')}",
+                $patterns
+            ));
+
+            $branches[] = "WHEN $table.sub_type IN ({$list($ambiguous)}) AND ($matches) THEN {$quote($categoryValue)}";
+        }
+
+        foreach ($ambiguous as $legacyValue) {
+            if (isset($aliases[$legacyValue])) {
+                $branches[] = "WHEN $table.sub_type = {$quote($legacyValue)} THEN {$quote($aliases[$legacyValue]->value)}";
+            }
+        }
+
+        return 'CASE '.implode(' ', $branches).' END';
     }
 
     /**
