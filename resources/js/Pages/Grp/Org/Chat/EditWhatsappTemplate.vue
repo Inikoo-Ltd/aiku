@@ -3,8 +3,7 @@ import { computed, ref } from "vue"
 import { Head, useForm, router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
-import { faLock, faLink, faPhone, faReply, faImage, faVideo, faFilePdf, faTrash, faUpload } from "@fortawesome/free-solid-svg-icons"
+import { faLock, faLink, faPhone, faReply, faTrash, faUpload } from "@fortawesome/free-solid-svg-icons"
 import { Message } from "primevue"
 import { notify } from "@kyvg/vue3-notification"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -13,6 +12,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import Image from "@common/Components/Image.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import WhatsappTemplatePreview from "@/Components/Chat/WhatsappTemplatePreview.vue"
 import { capitalize } from "@/Composables/capitalize"
 
 interface TemplateButton {
@@ -208,29 +208,6 @@ const buttonTypeLabel = (type: string) =>
 // A quick reply has nowhere to go, so only links and calls carry a destination.
 const buttonDestination = (button: TemplateButton) => button.url || button.phone_number || ""
 
-const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-
-const doodleStyle = computed(() => {
-    const doodle = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
-        <g fill="none" stroke="#D9CFC4" stroke-width="1.4" stroke-linecap="round" opacity="0.55">
-            <circle cx="18" cy="22" r="7"/>
-            <path d="M44 14h16v11H52l-4 5v-5h-4z"/>
-            <path d="M78 18c4-5 11-5 14 0"/>
-            <path d="M100 40v12M94 46h12"/>
-            <circle cx="30" cy="62" r="5"/>
-            <path d="M54 58l7 7-7 7-7-7z"/>
-            <path d="M84 66h18M84 72h12"/>
-            <path d="M14 96c5-6 13-6 18 0"/>
-            <circle cx="62" cy="100" r="6"/>
-            <path d="M92 94h14v10H98l-3 4v-4h-3z"/>
-        </g>
-    </svg>`
-
-    return {
-        backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(doodle)}")`,
-        backgroundSize: "120px 120px",
-    }
-})
 </script>
 
 <template>

@@ -25,6 +25,12 @@ class IndexWhatsappCampaigns extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
+        $this->canEdit = $request->user()->authTo([
+            "crm.{$this->shop->id}.edit",
+            "marketing.{$this->shop->id}.edit",
+            "supervisor-marketing.{$this->shop->id}"
+        ]);
+
         return $request->user()->authTo("marketing.{$this->shop->id}.view");
     }
 
@@ -110,14 +116,18 @@ class IndexWhatsappCampaigns extends OrgAction
                         'title' => $title,
                     ],
                     'subNavigation' => $this->getSubNavigation($request),
-                    'actions'       => [
+                    'actions'       => $this->canEdit ? [
                         [
-                            // ponytail: no route yet, the create action lands later
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => __('Campaign'),
+                            'route' => [
+                                'method'     => 'post',
+                                'name'       => 'grp.org.shops.show.marketing.whatsapp_campaigns.store',
+                                'parameters' => $request->route()->originalParameters(),
+                            ],
                         ],
-                    ],
+                    ] : [],
                 ],
                 'data' => WhatsappCampaignsResource::collection($campaigns),
             ]
