@@ -131,6 +131,8 @@ export const useComparisonFamilies = (
         () => loadingOptions.value || (loadingDetails.value && !Object.keys(details.value).length)
     )
 
+    const hasComparableFamilies = computed(() => fetchedFamilies.value.length > 1)
+
     const toggleFamily = (slug: string) => {
         if (selectedSlugs.value.includes(slug)) {
             selectedSlugs.value = selectedSlugs.value.filter(selected => selected !== slug)
@@ -163,6 +165,7 @@ export const useComparisonFamilies = (
         numberOfComparedFamilies,
         toggleFamily,
         loading,
+        hasComparableFamilies,
         loadFamilies,
         loadDetails,
     }

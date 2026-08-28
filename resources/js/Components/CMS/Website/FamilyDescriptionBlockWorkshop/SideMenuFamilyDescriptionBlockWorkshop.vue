@@ -70,6 +70,10 @@ watch(tabsWithPanels, (tabs) => {
 
 
 
+const editorBlueprint = computed(() =>
+  getBlueprint(props.selectedBlock?.code, { organisation: props.organisation })
+)
+
 function changeTab(i: number) {
   selectedTab.value = i
 }
@@ -164,7 +168,7 @@ function onUpdateFieldValue(e: any) {
 
           <!-- EDITOR -->
           <template v-else-if="tab.type === 'editor'">
-            <SideEditor :modelValue="selectedBlock?.fieldValue" :blueprint="getBlueprint(selectedBlock?.code, { organisation })"
+            <SideEditor :modelValue="selectedBlock?.fieldValue" :blueprint="editorBlueprint"
               @update:modelValue="onUpdateFieldValue" :uploadImageRoute="null" />
           </template>
         </TabPanel>

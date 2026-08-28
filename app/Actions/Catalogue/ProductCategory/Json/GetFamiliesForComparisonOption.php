@@ -25,7 +25,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class GetFamiliesForComparisonOption extends IrisAction
 {
-    public function handle(ProductCategory $family, Website $website): LengthAwarePaginator
+    public function handle(ProductCategory $family, Website $website): LengthAwarePaginator|array
     {
         $template = request()->input('template') ?: Arr::get($family->category_comparison, 'template');
 
@@ -73,6 +73,8 @@ class GetFamiliesForComparisonOption extends IrisAction
                 '=',
                 "$template"
             );
+        } else {
+            return [];
         }
 
         return $query
@@ -83,14 +85,14 @@ class GetFamiliesForComparisonOption extends IrisAction
             ->withQueryString();
     }
 
-    public function asController(ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator
+    public function asController(ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator|array
     {
         $this->initialisation($request);
 
         return $this->handle($productCategory, $this->website);
     }
 
-    public function inWebsite(Website $website, ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator
+    public function inWebsite(Website $website, ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator|array
     {
         $request->merge(['website' => $website]);
 
@@ -99,7 +101,7 @@ class GetFamiliesForComparisonOption extends IrisAction
         return $this->handle($productCategory, $website);
     }
 
-    public function jsonResponse(LengthAwarePaginator $familyList): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator|array $familyList): AnonymousResourceCollection
     {
         return FamiliesForCategoryComparison::collection($familyList);
     }

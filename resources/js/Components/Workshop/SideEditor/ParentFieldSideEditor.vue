@@ -7,7 +7,7 @@ import AccordionContent from 'primevue/accordioncontent'
 import Icon from '@/Components/Icon.vue'
 import RenderFields from './RenderFields.vue'
 import ChildFieldSideEditor from '@/Components/Workshop/SideEditor/ChildFieldSideEditor.vue'
-import { getFormValue, setFormValue } from '@/Composables/SideEditorHelper'
+import { getFormValue, setFormValue, getFieldKey } from '@/Composables/SideEditorHelper'
 import { routeType } from '@/types/route'
 
 // FontAwesome setup
@@ -56,13 +56,7 @@ const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
     emits('update:modelValue', setValue);
 }
 
-const accordionKey = computed(() => {
-    if (Array.isArray(props.blueprint.key)) {
-        return props.blueprint.key.join('-')
-    }
-
-    return props.blueprint.key
-})
+const accordionKey = computed(() => getFieldKey(props.blueprint.key, props.blueprint.name))
 
 // Method: Check if the future date has passed
 const isFutureDatePassed = (futureDate: string) => {

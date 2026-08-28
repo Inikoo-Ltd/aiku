@@ -49,7 +49,7 @@ class FamiliesForCategoryComparison extends JsonResource
         data_set($categoryComparison, 'items.product_count.value', $this->product_count ?? 0);
         data_set($categoryComparison, 'items.packaging.value', json_decode($this->packaging));
         data_set($categoryComparison, 'items.dimensions.value', [
-            'average_weight'    => trimDecimalZeros($this->average_marketing_weight),
+            'average_weight'    => trimDecimalZeros(round(floatval($this->average_marketing_weights), 2)),
             'dimensions'        => $this->dimensions
         ]);
         data_set($categoryComparison, 'items.customization.value', count($this->customize_option ?? []) > 0);

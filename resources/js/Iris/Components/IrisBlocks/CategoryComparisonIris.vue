@@ -27,6 +27,7 @@ const {
     numberOfComparedFamilies,
     toggleFamily,
     loading,
+    hasComparableFamilies,
 } = useComparisonFamilies(
     "iris.json.website.category.comparison_option",
     "iris.json.website.category.comparison_detail",
@@ -38,6 +39,7 @@ const {
 
 <template>
     <CategoryComparisonRender
+        v-if="loading || hasComparableFamilies"
         :fieldValue="fieldValue"
         :screenType="screenType"
         :indexBlock="indexBlock"
