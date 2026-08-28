@@ -152,6 +152,21 @@ class ShowDispatchHub extends OrgAction
         ];
     }
 
+    private function dateRange(): array
+    {
+        $range = request()->input('between.date');
+        $timezone = resolveTimezoneHeader();
+
+        if ($range && count($parts = explode('-', $range)) === 2) {
+            return [
+                Carbon::createFromFormat('Ymd', trim($parts[0]), $timezone)->startOfDay()->setTimezone('UTC'),
+                Carbon::createFromFormat('Ymd', trim($parts[1]), $timezone)->endOfDay()->setTimezone('UTC'),
+            ];
+        }
+
+        return [Carbon::today($timezone)->setTimezone('UTC'), Carbon::today($timezone)->endOfDay()->setTimezone('UTC')];
+    }
+
     private function getPickersStats(Warehouse $warehouse): array
     {
         $routeParams = ['organisation' => $this->organisation->slug, 'warehouse' => $warehouse->slug];
@@ -165,12 +180,12 @@ class ShowDispatchHub extends OrgAction
             ->orderBy('users.contact_name')
             ->get();
 
-        $todayTotals    = $this->pickerTodayTotals($warehouse);
-        $userTotals     = $this->pickerAllTotals($warehouse);
+        $rangeStats     = $this->pickerRangeStats($warehouse);
+        $skosByUser     = $this->pickerSkos($warehouse);
         $ordersByUser   = $this->pickerActiveOrders($warehouse, $routeParams);
         $trolleysByUser = $this->pickerTrolleys($warehouse, $routeParams);
 
-        return $this->buildDashboardData($pickers, $todayTotals, $userTotals, $ordersByUser, $trolleysByUser, 'Picker');
+        return $this->buildDashboardData($pickers, $rangeStats, $skosByUser, $ordersByUser, $trolleysByUser, 'Picker');
     }
 
     private function getPackersStats(Warehouse $warehouse): array
@@ -186,35 +201,45 @@ class ShowDispatchHub extends OrgAction
             ->orderBy('users.contact_name')
             ->get();
 
-        $todayTotals    = $this->packerTodayTotals($warehouse);
-        $userTotals     = $this->packerAllTotals($warehouse);
+        $rangeStats     = $this->packerRangeStats($warehouse);
+        $skosByUser     = $this->packerSkos($warehouse);
         $ordersByUser   = $this->packerActiveOrders($warehouse, $routeParams);
         $trolleysByUser = $this->packerTrolleys($warehouse, $routeParams);
 
-        return $this->buildDashboardData($packers, $todayTotals, $userTotals, $ordersByUser, $trolleysByUser, 'Packer');
+        return $this->buildDashboardData($packers, $rangeStats, $skosByUser, $ordersByUser, $trolleysByUser, 'Packer');
     }
 
-    private function pickerTodayTotals(Warehouse $warehouse): \Illuminate\Support\Collection
+    private function pickerRangeStats(Warehouse $warehouse): \Illuminate\Support\Collection
     {
+        [$start, $end] = $this->dateRange();
+
         return DB::table('delivery_notes')
-            ->select(['picker_user_id as user_id', DB::raw('COUNT(id) as total_today')])
+            ->select([
+                'picker_user_id as user_id',
+                DB::raw('COUNT(id) as dns'),
+                DB::raw('COALESCE(SUM(number_items),0) as items'),
+                DB::raw('SUM(EXTRACT(EPOCH FROM (picked_at - handling_at))) as work_seconds'),
+            ])
             ->where('warehouse_id', $warehouse->id)
             ->whereNotNull('picker_user_id')
-            ->whereIn('state', ['picked', 'packing', 'packed', 'finalised', 'dispatched'])
-            ->whereDate('updated_at', Carbon::today())
+            ->whereBetween('picked_at', [$start, $end])
             ->groupBy('picker_user_id')
-            ->pluck('total_today', 'user_id');
+            ->get()
+            ->keyBy('user_id');
     }
 
-    private function pickerAllTotals(Warehouse $warehouse): \Illuminate\Support\Collection
+    private function pickerSkos(Warehouse $warehouse): \Illuminate\Support\Collection
     {
-        return DB::table('delivery_notes')
-            ->select(['picker_user_id as user_id', DB::raw('COUNT(id) as user_total')])
-            ->where('warehouse_id', $warehouse->id)
-            ->whereNotNull('picker_user_id')
-            ->whereIn('state', ['picked', 'packing', 'packed', 'finalised', 'dispatched'])
-            ->groupBy('picker_user_id')
-            ->pluck('user_total', 'user_id');
+        [$start, $end] = $this->dateRange();
+
+        return DB::table('pickings')
+            ->select(['pickings.picker_user_id as user_id', DB::raw('COUNT(DISTINCT pickings.org_stock_id) as skos')])
+            ->join('delivery_notes', 'delivery_notes.id', '=', 'pickings.delivery_note_id')
+            ->where('delivery_notes.warehouse_id', $warehouse->id)
+            ->whereNotNull('pickings.picker_user_id')
+            ->whereBetween('pickings.last_picked_at', [$start, $end])
+            ->groupBy('pickings.picker_user_id')
+            ->pluck('skos', 'user_id');
     }
 
     private function pickerActiveOrders(Warehouse $warehouse, array $routeParams): \Illuminate\Support\Collection
@@ -249,27 +274,37 @@ class ShowDispatchHub extends OrgAction
             ])->values()->all());
     }
 
-    private function packerTodayTotals(Warehouse $warehouse): \Illuminate\Support\Collection
+    private function packerRangeStats(Warehouse $warehouse): \Illuminate\Support\Collection
     {
+        [$start, $end] = $this->dateRange();
+
         return DB::table('delivery_notes')
-            ->select(['packer_user_id as user_id', DB::raw('COUNT(id) as total_today')])
+            ->select([
+                'packer_user_id as user_id',
+                DB::raw('COUNT(id) as dns'),
+                DB::raw('COALESCE(SUM(number_items),0) as items'),
+                DB::raw('SUM(EXTRACT(EPOCH FROM (packed_at - packing_at))) as work_seconds'),
+            ])
             ->where('warehouse_id', $warehouse->id)
             ->whereNotNull('packer_user_id')
-            ->whereIn('state', ['packed', 'finalised', 'dispatched'])
-            ->whereDate('updated_at', Carbon::today())
+            ->whereBetween('packed_at', [$start, $end])
             ->groupBy('packer_user_id')
-            ->pluck('total_today', 'user_id');
+            ->get()
+            ->keyBy('user_id');
     }
 
-    private function packerAllTotals(Warehouse $warehouse): \Illuminate\Support\Collection
+    private function packerSkos(Warehouse $warehouse): \Illuminate\Support\Collection
     {
-        return DB::table('delivery_notes')
-            ->select(['packer_user_id as user_id', DB::raw('COUNT(id) as user_total')])
-            ->where('warehouse_id', $warehouse->id)
-            ->whereNotNull('packer_user_id')
-            ->whereIn('state', ['packed', 'finalised', 'dispatched'])
-            ->groupBy('packer_user_id')
-            ->pluck('user_total', 'user_id');
+        [$start, $end] = $this->dateRange();
+
+        return DB::table('delivery_note_items')
+            ->select(['delivery_notes.packer_user_id as user_id', DB::raw('COUNT(DISTINCT delivery_note_items.org_stock_id) as skos')])
+            ->join('delivery_notes', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+            ->where('delivery_notes.warehouse_id', $warehouse->id)
+            ->whereNotNull('delivery_notes.packer_user_id')
+            ->whereBetween('delivery_notes.packed_at', [$start, $end])
+            ->groupBy('delivery_notes.packer_user_id')
+            ->pluck('skos', 'user_id');
     }
 
     private function packerActiveOrders(Warehouse $warehouse, array $routeParams): \Illuminate\Support\Collection
@@ -306,8 +341,8 @@ class ShowDispatchHub extends OrgAction
 
     private function buildDashboardData(
         \Illuminate\Support\Collection $users,
-        \Illuminate\Support\Collection $todayTotals,
-        \Illuminate\Support\Collection $userTotals,
+        \Illuminate\Support\Collection $rangeStats,
+        \Illuminate\Support\Collection $skosByUser,
         \Illuminate\Support\Collection $ordersByUser,
         \Illuminate\Support\Collection $trolleysByUser,
         string $dimensionLabel
@@ -315,25 +350,41 @@ class ShowDispatchHub extends OrgAction
         $dimensionItems = [];
         $dataRows       = [];
         $rowTotals      = [];
-        $totalToday     = 0;
-        $grandUserTotal = 0;
+        $totalDns       = 0;
+        $totalItems     = 0;
+        $totalSkos      = 0;
+        $totalSeconds   = 0.0;
 
         foreach ($users as $user) {
-            $key       = 'user_' . $user->user_id;
-            $today     = round((float) ($todayTotals[$user->user_id] ?? 0), 2);
-            $userTotal = round((float) ($userTotals[$user->user_id] ?? 0), 2);
+            $stats = $rangeStats[$user->user_id] ?? null;
+            $dns   = (int) ($stats->dns ?? 0);
 
-            $dimensionItems[]  = ['key' => $key, 'label' => $user->contact_name];
-            $rowTotals[$key]   = ['value' => $userTotal];
+            if ($dns === 0 && empty($ordersByUser[$user->user_id]) && empty($trolleysByUser[$user->user_id])) {
+                continue;
+            }
+
+            $items   = (int) ($stats->items ?? 0);
+            $seconds = (float) ($stats->work_seconds ?? 0);
+            $skos    = (int) ($skosByUser[$user->user_id] ?? 0);
+
+            $key = 'user_' . $user->user_id;
+
+            $dimensionItems[] = ['key' => $key, 'label' => $user->contact_name];
+            $rowTotals[$key]  = ['value' => $dns];
 
             $dataRows[$key] = [
-                'orders' => ['value' => count($ordersByUser[$user->user_id] ?? []), 'items' => $ordersByUser[$user->user_id] ?? []],
+                'orders'        => ['value' => count($ordersByUser[$user->user_id] ?? []), 'items' => $ordersByUser[$user->user_id] ?? []],
                 'trolleys'      => ['value' => count($trolleysByUser[$user->user_id] ?? []), 'items' => $trolleysByUser[$user->user_id] ?? []],
-                'total_today'   => ['value' => $today],
+                'items'         => ['value' => $items],
+                'skos'          => ['value' => $skos],
+                'avg_minutes'   => ['value' => $dns > 0 ? round($seconds / $dns / 60) : 0],
+                'items_per_hour' => ['value' => $seconds > 0 ? round($items / ($seconds / 3600), 1) : 0],
             ];
 
-            $totalToday     += $today;
-            $grandUserTotal += $userTotal;
+            $totalDns     += $dns;
+            $totalItems   += $items;
+            $totalSkos    += $skos;
+            $totalSeconds += $seconds;
         }
 
         return [
@@ -343,21 +394,27 @@ class ShowDispatchHub extends OrgAction
                 'items' => $dimensionItems,
             ],
             'metrics' => [
-                ['key' => 'orders',      'label' => __('Orders'),      'type' => 'refs', 'icon' => ['fal', 'fa-file-alt'],    'tooltip' => __('Active orders currently being processed')],
-                ['key' => 'trolleys',    'label' => __('Trolleys'),    'type' => 'refs', 'icon' => ['fal', 'fa-dolly'],       'tooltip' => __('Trolleys assigned to active orders')],
-                ['key' => 'total_today', 'label' => __('Total Today'), 'type' => 'stat', 'icon' => ['fal', 'fa-check-double'], 'tooltip' => __('Orders completed today by this user')],
+                ['key' => 'orders',         'label' => __('Orders'),      'type' => 'refs', 'icon' => ['fal', 'fa-file-alt'],     'tooltip' => __('Active orders currently being processed')],
+                ['key' => 'trolleys',       'label' => __('Trolleys'),    'type' => 'refs', 'icon' => ['fal', 'fa-dolly'],        'tooltip' => __('Trolleys assigned to active orders')],
+                ['key' => 'items',          'label' => __('Items'),       'type' => 'stat', 'icon' => ['fal', 'fa-box'],          'tooltip' => __('Items completed in the selected period')],
+                ['key' => 'skos',           'label' => __('SKOs'),        'type' => 'stat', 'icon' => ['fal', 'fa-barcode'],      'tooltip' => __('Different SKOs handled in the selected period')],
+                ['key' => 'avg_minutes',    'label' => __('Avg min/DN'),  'type' => 'stat', 'icon' => ['fal', 'fa-clock'],        'tooltip' => __('Average minutes to complete a delivery note')],
+                ['key' => 'items_per_hour', 'label' => __('Items/hour'),  'type' => 'stat', 'icon' => ['fal', 'fa-chart-line'],   'tooltip' => __('Items completed per working hour')],
             ],
             'data'       => $dataRows,
             'row_totals' => $rowTotals,
             'totals' => [
-                'orders' => ['value' => collect($dataRows)->sum(fn ($r) => $r['orders']['value'])],
-                'trolleys'      => ['value' => collect($dataRows)->sum(fn ($r) => $r['trolleys']['value'])],
-                'total_today'   => ['value' => round($totalToday, 2)],
+                'orders'         => ['value' => collect($dataRows)->sum(fn ($r) => $r['orders']['value'])],
+                'trolleys'       => ['value' => collect($dataRows)->sum(fn ($r) => $r['trolleys']['value'])],
+                'items'          => ['value' => $totalItems],
+                'skos'           => ['value' => $totalSkos],
+                'avg_minutes'    => ['value' => $totalDns > 0 ? round($totalSeconds / $totalDns / 60) : 0],
+                'items_per_hour' => ['value' => $totalSeconds > 0 ? round($totalItems / ($totalSeconds / 3600), 1) : 0],
             ],
             'grand_total' => [
-                'value'   => round($grandUserTotal, 2),
+                'value'   => $totalDns,
                 'icon'    => ['fal', 'fa-check-double'],
-                'tooltip' => __('All-time total orders completed by this user'),
+                'tooltip' => __('Delivery notes completed in the selected period'),
             ],
         ];
     }

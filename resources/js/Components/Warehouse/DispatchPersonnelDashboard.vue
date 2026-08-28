@@ -3,10 +3,10 @@ import { computed } from "vue"
 import { Link } from "@inertiajs/vue3"
 import Icon from "../Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faClock, faList, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine, faFileAlt, faDolly, faPersonCarry, faCheckDouble } from "@fal"
+import { faClock, faList, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine, faFileAlt, faDolly, faPersonCarry, faCheckDouble, faBarcode } from "@fal"
 import { faExclamationSquare } from "@fas"
 
-library.add(faClock, faList, faExclamationSquare, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine, faFileAlt, faDolly, faPersonCarry, faCheckDouble)
+library.add(faClock, faList, faExclamationSquare, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine, faFileAlt, faDolly, faPersonCarry, faCheckDouble, faBarcode)
 
 interface RouteTarget {
     name: string

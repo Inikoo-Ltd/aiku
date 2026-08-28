@@ -16,6 +16,7 @@ import { faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry } 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import DispatchDashboard from "@/Components/Warehouse/DispatchDashboard.vue"
 import DispatchPersonnelDashboard from "@/Components/Warehouse/DispatchPersonnelDashboard.vue"
+import TableBetweenFilter from "@/Components/Table/TableBetweenFilter.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
 library.add(faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry)
@@ -61,5 +62,8 @@ const tabData = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+    <div v-if="currentTab === 'pickers' || currentTab === 'packers'" class="flex justify-end px-4 pt-2">
+        <TableBetweenFilter :optionsList="['date']" :tableName="currentTab" />
+    </div>
     <component :is="component" :tab="currentTab" :data="tabData"></component>
 </template>
