@@ -18,8 +18,9 @@ class WebsiteStructureExport implements FromArray, ShouldAutoSize, WithHeadings
 {
     /**
      * @param array<int, string> $fields Selected field keys; empty means all fields.
+     * @param array<int, string> $states Selected states; empty means every state.
      */
-    public function __construct(public ProductCategory $department, public array $fields = [])
+    public function __construct(public ProductCategory $department, public array $fields = [], public array $states = [])
     {
     }
 
@@ -246,6 +247,7 @@ class WebsiteStructureExport implements FromArray, ShouldAutoSize, WithHeadings
                     ->orWhere('product_categories.department_id', $this->department->id);
             })
             ->whereNull('product_categories.deleted_at')
+            ->when($this->states, fn ($query) => $query->whereIn('product_categories.state', $this->states))
             ->select($this->selects('product_category', self::productCategorySortExpression()));
     }
 
@@ -268,6 +270,7 @@ class WebsiteStructureExport implements FromArray, ShouldAutoSize, WithHeadings
             ->leftJoin('websites', 'websites.id', '=', 'webpages.website_id')
             ->where('collection_departments.id', $this->department->id)
             ->whereNull('collections.deleted_at')
+            ->when($this->states, fn ($query) => $query->whereIn('collections.state', $this->states))
             ->select($this->selects('collection', self::collectionSortExpression()));
     }
 

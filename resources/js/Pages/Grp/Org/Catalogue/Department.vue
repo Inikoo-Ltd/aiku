@@ -121,6 +121,7 @@ const component = computed(() => {
         <template #button-export="{ action }">
             <ButtonExportWebsiteStructure
                 :fields="action.fields"
+                :states="action.states"
                 :downloadRoute="action.download_route"
                 :label="action.label"
                 :tooltip="action.tooltip"

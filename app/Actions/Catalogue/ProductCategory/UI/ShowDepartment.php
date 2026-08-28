@@ -16,6 +16,7 @@ use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Exports\Catalogue\WebsiteStructureExport;
@@ -66,11 +67,12 @@ class ShowDepartment extends OrgAction
     }
 
     /**
-     * @return array{type: string, key: string, label: string, tooltip: string, icon: array<int, string>, fields: array<int, array{key: string, label: string}>, download_route: array<string, array{name: string, parameters: array<string, string>}>}
+     * @return array{type: string, key: string, label: string, tooltip: string, icon: array<int, string>, fields: array<int, array{key: string, label: string}>, states: array<int, array{key: string, label: string}>, download_route: array<string, array{name: string, parameters: array<string, string>}>}
      */
     public function getWebsiteStructureExportAction(ProductCategory $department): array
     {
         $definitions = WebsiteStructureExport::fieldDefinitions();
+        $stateLabels = ProductCategoryStateEnum::labels();
 
         $parameters = [
             'organisation' => $department->organisation->slug,
@@ -93,6 +95,10 @@ class ShowDepartment extends OrgAction
                 'key'   => $key,
                 'label' => __($definitions[$key]['heading']),
             ], array_keys($definitions)),
+            'states'         => array_map(fn (ProductCategoryStateEnum $state) => [
+                'key'   => $state->value,
+                'label' => $stateLabels[$state->value],
+            ], ProductCategoryStateEnum::cases()),
             'download_route' => [
                 'xlsx' => $downloadRoute('xlsx'),
                 'csv'  => $downloadRoute('csv'),

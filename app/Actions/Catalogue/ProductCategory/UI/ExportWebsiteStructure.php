@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\ProductCategory\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\WithExportData;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\Export\ExportTypeEnum;
 use App\Exports\Catalogue\WebsiteStructureExport;
@@ -35,8 +36,9 @@ class ExportWebsiteStructure extends OrgAction
     {
         $type   = $modelData['type'];
         $fields = $modelData['columns'] ?? [];
+        $states = $modelData['states'] ?? [];
 
-        $export   = new WebsiteStructureExport($department, $fields);
+        $export   = new WebsiteStructureExport($department, $fields, $states);
         $filename = 'website-structure-'.$department->code;
 
         if ($type === ExportTypeEnum::XLSX->value && $export->count() < self::STREAM_THRESHOLD) {
@@ -52,6 +54,8 @@ class ExportWebsiteStructure extends OrgAction
             'type'      => ['required', 'string', Rule::in('csv', 'xlsx')],
             'columns'   => ['sometimes', 'nullable', 'array'],
             'columns.*' => ['string', Rule::in(array_keys(WebsiteStructureExport::fieldDefinitions()))],
+            'states'    => ['sometimes', 'nullable', 'array'],
+            'states.*'  => ['string', Rule::enum(ProductCategoryStateEnum::class)],
         ];
     }
 
