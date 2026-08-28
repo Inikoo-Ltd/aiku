@@ -66,7 +66,7 @@ const buttonSection = (name: string, key: string[], withUrl = false) => ({
 					{
 						key: ["url"],
 						label: "Url",
-						type: "text",
+						type: "link",
 					},
 				]
 			: []),
@@ -155,11 +155,6 @@ export const customisationSection = () => ({
 					type: "link",
 				},
 			],
-		},
-		{
-			name: "Highlight Style",
-			key: ["highlight", "container", "properties"],
-			replaceForm: layoutProperties(),
 		},
 		{
 			name: "Table Headers",
