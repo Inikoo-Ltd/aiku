@@ -13,8 +13,8 @@
         <link href="https://fonts.bunny.net/css?family=fira-sans:100,200,300,400,500,600,700,800,900|inter:100,200,300,400,500,600,700,800,900&display=swap" rel="stylesheet" />
 
         <!-- Favicon -->
-        <link rel="icon" type="image/png" href="{{ url('favicon.png?v=2') }}">
-        <link rel="icon" href="{{ url('favicon.svg?v=2') }}" type="image/svg+xml">
+        <link rel="icon" type="image/png" href="{{ url('favicon.png?v=3') }}">
+        <link rel="icon" href="{{ url('favicon.svg?v=3') }}" type="image/svg+xml">
 
         @if (config('app.env', 'production') === 'staging')
         <!-- == -->

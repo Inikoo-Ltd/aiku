@@ -10,14 +10,14 @@
     <meta property="og:title" content="{{ $title ?? 'aiku' }}">
     <meta property="og:description" content="{{ $description ?? 'aiku is an open source operating system for commerce.' }}">
     <meta property="og:url" content="{{ $canonical ?? url()->current() }}">
-    <meta property="og:image" content="{{ url('favicon-180.png?v=2') }}">
+    <meta property="og:image" content="{{ url('favicon-180.png?v=3') }}">
     <meta name="twitter:card" content="summary_large_image">
     @if (config('app.env') === 'staging')
         <meta name="robots" content="noindex">
     @endif
-    <link rel="icon" href="{{ url('favicon.svg?v=2') }}" type="image/svg+xml">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url('favicon-32.png?v=2') }}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url('favicon-180.png?v=2') }}">
+    <link rel="icon" href="{{ url('favicon.svg?v=3') }}" type="image/svg+xml">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url('favicon-32.png?v=3') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url('favicon-180.png?v=3') }}">
     <link rel="alternate" type="application/xml" title="Sitemap" href="{{ route('aiku-public.sitemap') }}">
     <link rel="alternate" type="application/rss+xml" title="aiku — engineering notes" href="{{ route('aiku-public.feed') }}">
     <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
