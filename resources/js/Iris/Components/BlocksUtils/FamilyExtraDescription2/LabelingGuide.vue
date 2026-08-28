@@ -87,6 +87,8 @@ const note = computed(() => labelingGuide.value?.note ?? "")
 const hasSide = computed(
 	() => hasText(includesTitle.value) || includes.value.length > 0 || hasText(note.value)
 )
+
+console.log('aaa',props)
 </script>
 
 <template>

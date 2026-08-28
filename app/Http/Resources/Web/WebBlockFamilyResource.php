@@ -51,7 +51,15 @@ class WebBlockFamilyResource extends JsonResource
 
     public static function getTabsData(ProductCategory $family): array
     {
-        $labelingGuide = $family->labelingGuide();
+        $labelingGuide = null;
+
+        $tradeUnitFamily = $family->tradeUnitFamily;
+
+        if ($family->follow_tuf_labeling_guide && $family->tradeUnitFamily) {
+            $labelingGuide = $tradeUnitFamily->labelingGuide();
+        } else {
+            $labelingGuide = $family->labelingGuide();
+        }
 
         return [
             'customize_option'          => FamilyCustomizeEnum::rows($family->customize_option),

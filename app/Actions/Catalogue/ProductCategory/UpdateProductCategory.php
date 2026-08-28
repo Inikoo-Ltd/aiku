@@ -225,6 +225,8 @@ class UpdateProductCategory extends OrgAction
             'description_extra',
             'customize_option',
             'storage_option',
+            'follow_tuf_labeling_guide',
+            'labeling_guide_file',
         ])) {
             $this->productCategoryHydrators($productCategory);
 
@@ -385,6 +387,7 @@ class UpdateProductCategory extends OrgAction
             'storage_guidelines'            => ['sometimes', 'array'],
             'storage_guidelines.*.text'     => ['sometimes', 'string', 'max:250'],
             // labeling_guide_file
+            'follow_tuf_labeling_guide'     => ['sometimes', 'boolean'],
             'labeling_guide_file'           => ['sometimes', 'nullable', File::types(['pdf'])->max(64000)], // 64mb max, following server max (prod on php.ini max file size upload)
             // category_comparison
             'category_comparison'                   => ['sometimes', 'array'],

@@ -55,6 +55,7 @@ import {
     faExchange,
     faBoxes,
     faAtom,
+    faAtomAlt,
     faMoneyBill,
     faTags,
     faUserTag,
@@ -78,7 +79,7 @@ import {
     faCameraRetro,
     faTemperatureLow,
     faBalanceScale,
-    faNotEqual
+    faNotEqual,
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -101,6 +102,7 @@ library.add(
     faOctopusDeploy,
     faExclamationTriangle,
     faAtom,
+    faAtomAlt,
     faTag,
     faMicrophoneAltSlash,
     faImage,
@@ -159,7 +161,7 @@ library.add(
     faBusinessTime,
     faChessClock,
     faCameraRetro,
-    faBalanceScale
+    faBalanceScale,
 )
 
 const props = defineProps<{

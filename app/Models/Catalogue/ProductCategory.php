@@ -210,6 +210,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'customize_option'              => 'array',
         'storage_option'                => 'array',
         'category_comparison'           => 'array',
+        'follow_tuf_labeling_guide'     => 'boolean',
     ];
 
     protected $attributes = [

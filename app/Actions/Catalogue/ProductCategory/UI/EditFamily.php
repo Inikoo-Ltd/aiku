@@ -116,17 +116,41 @@ class EditFamily extends OrgAction
             ];
         }
 
+        $iconLinks = [];
+
+        if ($family->masterProductCategory) {
+            $iconLinks[] = [
+                'icon'    => 'fab fa-octopus-deploy',
+                'tooltip' => __('Go to Edit Master Family'),
+                'route'   => [
+                    'name'       => 'grp.masters.master_shops.show.master_families.edit',
+                    'parameters' => [
+                        'masterShop'    => $family->shop->masterShop->slug,
+                        'masterFamily' => $family->masterProductCategory->slug,
+                    ]
+                ],
+                'color'   => 'rgb(75, 0, 130)'
+            ];
+        }
+
+        if ($family->tradeUnitFamily) {
+            $iconLinks[] = [
+                'icon'    => 'fal fa-atom-alt',
+                'tooltip' => __('Go to Edit Trade Unit Family'),
+                'route'   => [
+                    'name'       => 'grp.trade_units.families.edit',
+                    'parameters' => [
+                        $family->tradeUnitFamily->slug
+                    ]
+                ],
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
                 'title'       => __('Family'),
                 ...$warning,
-                'iconRight'   => $urlMaster ? [
-                    'icon'  => "fab fa-octopus-deploy",
-                    'color' => "#4B0082",
-                    'class' => 'opacity-70 hover:opacity-100',
-                    'url'   => $urlMaster
-                ] : [],
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $family,
                     $request->route()->getName(),
@@ -149,7 +173,8 @@ class EditFamily extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ]
-                    ]
+                    ],
+                    'iconLinks' => $iconLinks
                 ],
                 'formData' => [
                     'blueprint' => array_filter(
@@ -364,8 +389,14 @@ class EditFamily extends OrgAction
                             $family->shop->masterShop?->slug == 'aroma' ? [
                                 'label'  => __('Labeling Guide'),
                                 'icon'   => 'fa-light fa-file-pdf',
-                                'fields' => [
-                                    'labeling_guide_file' => [
+                                'fields' => array_filter([
+                                    'follow_tuf_labeling_guide' => [
+                                        'type'              => 'toggle',
+                                        'label'             => __('Follow Trade Unit Family Labeling Guide'),
+                                        'value'             => $family->follow_tuf_labeling_guide,
+                                        'information'       => __('Enabling this would use the Trade Unit Family labeling guide'),
+                                    ],
+                                    'labeling_guide_file' => ($family->tradeUnitFamily && $family->follow_tuf_labeling_guide) ? null : [
                                         'type'              => 'file_upload',
                                         'label'             => __('Labeling guide'),
                                         'placeholder'       => __('Upload a PDF file'),
@@ -375,7 +406,7 @@ class EditFamily extends OrgAction
                                         'information'       => __('Downloadable labeling & compliance guide shown on the family page.'),
                                         'media_ulid'        => $family->labelingGuide()?->ulid
                                     ],
-                                ],
+                                ]),
                             ] : [],
                             $family->shop->masterShop?->slug == 'aroma' ? [
                                 'label'  => __('Storage & Shelf Life'),
