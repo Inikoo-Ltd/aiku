@@ -205,7 +205,10 @@ const onSubmitSubscribe = async () => {
 				name="blogs"
 				:label="trans('blog')"
 				:preserve-scroll="true"
-				:gridClass="'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4'">
+				:gridClass="'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4'"
+				:hideDefault="true"
+				:selectedColumn="'-last_published_at'"
+			>
 				<template #card="{ item: post }">
 					<BlogCardIris :post="(post as unknown as BlogPost)" />
 				</template>
