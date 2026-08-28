@@ -452,7 +452,7 @@
 <br>
 
 @if($invoice->payments->count() >0)
-    <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
+    <table class="items" width="100%" style="font-size: 7pt; border-collapse: collapse;" cellpadding="4">
         <tr class="title">
             <td colspan="5">{{ __('Payments') }}</td>
         </tr>
@@ -472,11 +472,11 @@
                     @if($payment->paymentAccount->type == \App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum::ACCOUNT)
                         {{ __('Credit Balance') }}
                     @else
-                        {{ $payment->paymentAccount['name'] }}
+                        {{ \App\Models\Accounting\Payment::methodLabel($payment->sub_method ?: $payment->method) ?: $payment->paymentAccount['name'] }}
                     @endif
                 </td>
                 <td style="text-align:right">
-                    {{ $payment->updated_at?->copy()->setTimezone($shop->timezone->name)->format('F j, Y H:i a') }}
+                    {{ $payment->updated_at?->copy()->setTimezone($shop->timezone->name)->format('M j, Y H:i') }}
                 </td>
                 <td style="text-align:left">{{ $payment->state->labels()[$payment->state->value] }}</td>
                 <td style="text-align:left">{{ $payment->reference }}</td>
@@ -486,7 +486,7 @@
         </tbody>
         @if($invoice->payments->contains(fn ($payment) => $payment->paymentAccount->type == \App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum::ACCOUNT && $payment->amount < 0))
             <tr>
-                <td colspan="5" style="text-align:left; font-size: 8pt;">{{ __('Any outstanding balance has been applied to your customer account balance unless otherwise requested. Please contact Customer Service if you require any assistance.') }}</td>
+                <td colspan="5" style="text-align:left; font-size: 7pt;">{{ __('Any outstanding balance has been applied to your customer account balance unless otherwise requested. Please contact Customer Service if you require any assistance.') }}</td>
             </tr>
         @endif
 
