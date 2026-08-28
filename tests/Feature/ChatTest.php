@@ -2542,3 +2542,28 @@ describe('staff messaging chat theme', function () {
             ->assertStatus(422);
     });
 });
+
+describe('staff chat audience seeding', function () {
+    test('seed fills an empty shop list from role holders and leaves a curated one alone', function () {
+        $roleHolder = User::factory()->create(['group_id' => $this->user->group_id]);
+        setPermissionsTeamId($this->user->group_id);
+        $roleHolder->assignRole(\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+        $settings = $this->shop->settings ?? [];
+        \Illuminate\Support\Arr::set($settings, 'staff_chat.crm_user_ids', []);
+        $this->shop->update(['settings' => $settings]);
+
+        \App\Actions\Chat\Staff\SeedStaffChatAudiences::run();
+
+        expect(\Illuminate\Support\Arr::get($this->shop->fresh()->settings, 'staff_chat.crm_user_ids'))->toContain($roleHolder->id);
+
+        $curated  = User::factory()->create(['group_id' => $this->user->group_id]);
+        $settings = $this->shop->fresh()->settings ?? [];
+        \Illuminate\Support\Arr::set($settings, 'staff_chat.crm_user_ids', [$curated->id]);
+        $this->shop->update(['settings' => $settings]);
+
+        \App\Actions\Chat\Staff\SeedStaffChatAudiences::run();
+
+        expect(\Illuminate\Support\Arr::get($this->shop->fresh()->settings, 'staff_chat.crm_user_ids'))->toBe([$curated->id]);
+    });
+});

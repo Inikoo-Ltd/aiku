@@ -210,6 +210,22 @@ class EditShop extends OrgAction
                             'valueProp' => 'id',
                             'value' => Arr::get($shop->settings, 'staff_chat.crm_backup_user_ids', []),
                         ],
+                        'staff_chat_warehouse_user_ids' => [
+                            'type' => 'multiselect-tags',
+                            'label' => __('Ask warehouse goes to'),
+                            'options' => User::where('group_id', $shop->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])->map(fn ($user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                            'labelProp' => 'name',
+                            'valueProp' => 'id',
+                            'value' => Arr::get($shop->settings, 'staff_chat.warehouse_user_ids', []),
+                        ],
+                        'staff_chat_warehouse_backup_user_ids' => [
+                            'type' => 'multiselect-tags',
+                            'label' => __('Ask warehouse backup'),
+                            'options' => User::where('group_id', $shop->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])->map(fn ($user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                            'labelProp' => 'name',
+                            'valueProp' => 'id',
+                            'value' => Arr::get($shop->settings, 'staff_chat.warehouse_backup_user_ids', []),
+                        ],
                     ],
                 ],
                 [
