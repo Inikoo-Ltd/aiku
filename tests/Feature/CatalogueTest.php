@@ -216,7 +216,12 @@ test('create product category webpage', function (ProductCategory $department) {
 
     expect($webpage)->toBeInstanceOf(Webpage::class)
         ->and($webpage->model_type)->toBe('ProductCategory')
-        ->and(intval($webpage->model_id))->toBe($department->id);
+        ->and(intval($webpage->model_id))->toBe($department->id)
+        ->and($department->webpage->id)->toBe($webpage->id);
+
+    UpdateProductCategory::make()->action($department, ['url' => 'a-nice-url']);
+    $department->refresh();
+    expect($department->webpage->id)->toBe($webpage->id);
 
     return $department;
 })->depends('create department');

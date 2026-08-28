@@ -37,7 +37,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Arr;
@@ -178,7 +177,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
     use HasTranslations;
     use HasSearch;
     use HasAttachments;
-    
+
     protected static function booted(): void
     {
         static::saved(function (ProductCategory $productCategory) {
@@ -378,15 +377,9 @@ class ProductCategory extends Model implements Auditable, HasMedia
             ->withTimestamps();
     }
 
-    public function webpage(): MorphOne
+    public function webpage(): BelongsTo
     {
-        $relation = $this->morphOne(Webpage::class, 'model');
-
-        if ($this->type === ProductCategoryTypeEnum::DEPARTMENT) {
-            $relation->where('url', $this->url);
-        }
-
-        return $relation;
+        return $this->belongsTo(Webpage::class, 'webpage_id');
     }
 
     public function webpages(): MorphMany
