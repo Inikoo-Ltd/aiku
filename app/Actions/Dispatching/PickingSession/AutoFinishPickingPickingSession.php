@@ -24,6 +24,8 @@ class AutoFinishPickingPickingSession extends OrgAction
 
     public function handle(PickingSession $pickingSession): PickingSession
     {
+        $oldState = $pickingSession->state;
+
         $numberItems = DeliveryNoteItem::where('picking_session_id', $pickingSession->id)->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)->count();
 
         $numberHandled = DeliveryNoteItem::where('picking_session_id', $pickingSession->id)
@@ -31,11 +33,20 @@ class AutoFinishPickingPickingSession extends OrgAction
             ->where('is_handled', true)
             ->count();
 
+        $hasWaitingItems = DeliveryNoteItem::where('picking_session_id', $pickingSession->id)
+            ->where('state', DeliveryNoteItemStateEnum::HANDLING_BLOCKED)
+            ->exists();
 
         if ($numberHandled == $numberItems) {
-            $this->update($pickingSession, [
-                'state' => PickingSessionStateEnum::PICKING_FINISHED
-            ]);
+            $updatedData = [
+                'state' => $hasWaitingItems ? PickingSessionStateEnum::HANDLING_BLOCKED : PickingSessionStateEnum::PICKING_FINISHED
+            ];
+
+            if ($oldState == PickingSessionStateEnum::HANDLING_BLOCKED && !$hasWaitingItems) {
+                data_set($updatedData, 'is_done_waiting', true);
+            }
+
+            $this->update($pickingSession, $updatedData);
             WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);
         }
 

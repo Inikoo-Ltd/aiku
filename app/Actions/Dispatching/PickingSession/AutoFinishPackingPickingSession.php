@@ -27,11 +27,16 @@ class AutoFinishPackingPickingSession extends OrgAction
 
         $totalNumberDeliveryNotes = $pickingSession->deliveryNotes->where('state', '!=', DeliveryNoteStateEnum::CANCELLED)->count();
 
+        if ($pickingSession->is_done_waiting) {
+            $this->update($pickingSession, [
+                'is_done_waiting'   => false,
+            ]);
+        }
 
         if ($numberPacked == $totalNumberDeliveryNotes) {
             $this->update($pickingSession, [
-                'state'  => PickingSessionStateEnum::PACKING_FINISHED,
-                'end_at' => now()
+                'state'             => PickingSessionStateEnum::PACKING_FINISHED,
+                'end_at'            => now(),
             ]);
             WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);
         }

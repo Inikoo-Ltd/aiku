@@ -12,9 +12,10 @@ import { PageHeadingTypes } from "@/types/PageHeading";
 import Icon from "@/Components/Icon.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChair, faHandPaper, faBoxCheck} from "@fal";
+import { faChair, faHandPaper, faBoxCheck, faExclamationTriangle } from "@fal";
 import { computed, ref, watch } from "vue";
 import type { Tabs as TSTabs } from "@/types/Tabs";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(faChair, faHandPaper, faBoxCheck);
 
@@ -84,6 +85,13 @@ function referenceRoute(item: any) {
       <Link v-if="item.reference" :href="referenceRoute(item)" class="secondaryLink">
         {{ item.reference }}
       </Link>
+
+      <FontAwesomeIcon 
+        v-if="item.is_done_waiting"
+        v-tooltip='ctrans("This picking session is just finished from Waiting")'
+        :icon="faExclamationTriangle"
+        class="text-red-400 ml-1"
+      />
     </template>
   </Table>
 </template>
