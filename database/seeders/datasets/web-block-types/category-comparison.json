@@ -18,8 +18,8 @@
 				"mobile": 2
 			},
 			"settings": {
-				"highlight_color": "black",
-				"label_color": "#8a7b3d",
+				"highlight_color": "#eeede3",
+				"label_color": "#black",
 				"link_color": "#black",
 				"value_color": "#black"
 			},

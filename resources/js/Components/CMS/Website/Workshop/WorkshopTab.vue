@@ -188,6 +188,7 @@ const autosave = () => {
     { layout: payload },
     {
       preserveScroll: true,
+      preserveState: true,
       onStart: () => { isSaving.value = true },
       onFinish: () => { isSaving.value = false },
       onSuccess: () => emit('update:layout', payload),
