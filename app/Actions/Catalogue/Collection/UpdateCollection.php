@@ -16,6 +16,8 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Catalogue\CollectionResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Shop;
+use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateCollections;
+use App\Models\Masters\MasterCollection;
 use App\Models\Inventory\Location;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
@@ -33,7 +35,8 @@ class UpdateCollection extends OrgAction
 
     public function handle(Collection $collection, array $modelData): Collection
     {
-        $originalImageId = $collection->image_id;
+        $originalImageId            = $collection->image_id;
+        $originalMasterCollectionId = $collection->master_collection_id;
 
         if (Arr::has($modelData, 'image')) {
             $imageData = ['image' => Arr::pull($modelData, 'image')];
@@ -73,6 +76,15 @@ class UpdateCollection extends OrgAction
                     'description_extra' => [$collection->shop->language->code => Arr::pull($modelData, 'description_extra')]
                 ]
             ]);
+        }
+
+        if (Arr::has($changes, 'master_collection_id')) {
+            foreach (array_filter([$collection->master_collection_id, $originalMasterCollectionId]) as $masterCollectionID) {
+                $masterCollection = MasterCollection::find($masterCollectionID);
+                if ($masterCollection) {
+                    MasterCollectionHydrateCollections::dispatch($masterCollection);
+                }
+            }
         }
 
         if (Arr::hasAny($changes, ['code', 'name'])) {
