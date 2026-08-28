@@ -16,13 +16,13 @@
 
 
     @if (config('app.env') === 'local')
-        <link rel="icon" href="{{ url('favicon_local.svg') }}" type="image/svg+xml">
-        <link rel="icon" type="image/png" sizes="32x32" href="{{ url('favicon_local-32.png') }}">
-        <link rel="apple-touch-icon" sizes="180x180" href="{{ url('favicon_local-180.png') }}">
+        <link rel="icon" href="{{ url('favicon_local.svg?v=2') }}" type="image/svg+xml">
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ url('favicon_local-32.png?v=2') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ url('favicon_local-180.png?v=2') }}">
     @else
-        <link rel="icon" href="{{ url('favicon.svg') }}" type="image/svg+xml">
-        <link rel="icon" type="image/png" sizes="32x32" href="{{ url('favicon-32.png') }}">
-        <link rel="apple-touch-icon" sizes="180x180" href="{{ url('favicon-180.png') }}">
+        <link rel="icon" href="{{ url('favicon.svg?v=2') }}" type="image/svg+xml">
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ url('favicon-32.png?v=2') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ url('favicon-180.png?v=2') }}">
     @endif
 
     @if (config('app.env') === 'staging')
