@@ -434,6 +434,9 @@ test('web hydrator', function () {
 test('store redirect', function (Webpage $webpage) {
     $homepage = $webpage->website->storefront;
 
+    $pathCacheKey = config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.$webpage->url;
+    cache()->put($pathCacheKey, $webpage->id, 60);
+
     $redirect = StoreRedirect::make()->action($webpage, [
         'type'          => RedirectTypeEnum::PERMANENT,
         'to_webpage_id' => $homepage->id
@@ -442,7 +445,8 @@ test('store redirect', function (Webpage $webpage) {
     expect($redirect)->toBeInstanceOf(Redirect::class)
         ->and($redirect->type)->toBe(RedirectTypeEnum::PERMANENT)
         ->and($redirect->from_path)->toBe($webpage->url)
-        ->and($redirect->from_url)->toBe('https://www.'.$redirect->website->domain.'/'.$webpage->url);
+        ->and($redirect->from_url)->toBe('https://www.'.$redirect->website->domain.'/'.$webpage->url)
+        ->and(cache()->has($pathCacheKey))->toBeFalse();
 
     return $redirect;
 })->depends('create webpage');
