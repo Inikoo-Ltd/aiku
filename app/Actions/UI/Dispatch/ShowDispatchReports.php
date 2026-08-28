@@ -126,8 +126,7 @@ class ShowDispatchReports extends OrgAction
                 DB::raw('COALESCE(SUM(delivery_notes.number_items),0)::int as items'),
                 DB::raw('COALESCE(sk.skos,0)::int as skos'),
                 DB::raw('ROUND(COALESCE(SUM(delivery_notes.effective_weight),0)/1000.0, 1) as weight'),
-                DB::raw('COALESCE(ROUND(SUM(EXTRACT(EPOCH FROM (delivery_notes.picked_at - delivery_notes.handling_at))) / NULLIF(COUNT(delivery_notes.id),0) / 60), 0) as avg_minutes'),
-                DB::raw('COALESCE(ROUND((COALESCE(SUM(delivery_notes.number_items),0) / NULLIF(SUM(EXTRACT(EPOCH FROM (delivery_notes.picked_at - delivery_notes.handling_at))) / 3600.0, 0))::numeric, 1), 0) as items_per_hour'),
+                DB::raw($this->timedMetricsSql('delivery_notes.picked_at - delivery_notes.handling_at')),
             ]);
 
         return $this->personnelPaginator($base, $prefix, ['name', 'dns', 'items', 'skos', 'weight', 'avg_minutes', 'items_per_hour']);
@@ -162,11 +161,24 @@ class ShowDispatchReports extends OrgAction
                 DB::raw('COALESCE(sk.skos,0)::int as skos'),
                 DB::raw('ROUND(COALESCE(SUM(delivery_notes.effective_weight),0)/1000.0, 1) as weight'),
                 DB::raw("COALESCE(SUM(CASE WHEN jsonb_typeof(delivery_notes.parcels)='array' THEN jsonb_array_length(delivery_notes.parcels) ELSE 0 END),0)::int as parcels"),
-                DB::raw('COALESCE(ROUND(SUM(EXTRACT(EPOCH FROM (delivery_notes.packed_at - delivery_notes.packing_at))) / NULLIF(COUNT(delivery_notes.id),0) / 60), 0) as avg_minutes'),
-                DB::raw('COALESCE(ROUND((COALESCE(SUM(delivery_notes.number_items),0) / NULLIF(SUM(EXTRACT(EPOCH FROM (delivery_notes.packed_at - delivery_notes.packing_at))) / 3600.0, 0))::numeric, 1), 0) as items_per_hour'),
+                DB::raw($this->timedMetricsSql('delivery_notes.packed_at - delivery_notes.packing_at')),
             ]);
 
         return $this->personnelPaginator($base, $prefix, ['name', 'dns', 'items', 'skos', 'weight', 'parcels', 'avg_minutes', 'items_per_hour']);
+    }
+
+    /**
+     * Notes whose state window is under a minute were confirmed in one burst after the physical
+     * work was done (e.g. one-click set-as-packed), so their timestamps measure nothing: they
+     * count towards volumes but are excluded from the time-based metrics.
+     */
+    private function timedMetricsSql(string $intervalExpr): string
+    {
+        $epoch = "EXTRACT(EPOCH FROM ($intervalExpr))";
+        $timed = "FILTER (WHERE $epoch >= 60)";
+
+        return "COALESCE(ROUND(SUM($epoch) $timed / NULLIF(COUNT(delivery_notes.id) $timed, 0) / 60), 0) as avg_minutes, "
+            ."COALESCE(ROUND((COALESCE(SUM(delivery_notes.number_items) $timed, 0) / NULLIF(SUM($epoch) $timed / 3600.0, 0))::numeric, 1), 0) as items_per_hour";
     }
 
     private function performanceTableStructure(string $prefix, string $dimensionLabel, bool $withParcels): Closure
