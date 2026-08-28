@@ -1067,3 +1067,27 @@ if (!function_exists('refundQuantityLabel')) {
         return null;
     }
 }
+
+if (!function_exists('discountPercentageLabel')) {
+    /**
+     * Percentage label for an invoice line's discount, derived from the amounts on the document
+     * itself so the printed figure can never disagree with the printed money.
+     */
+    function discountPercentageLabel(int|float|string|null $grossAmount, int|float|string|null $netAmount): ?string
+    {
+        $grossAmount = (float) $grossAmount;
+        $netAmount   = (float) $netAmount;
+
+        if ($grossAmount <= 0 || $netAmount >= $grossAmount) {
+            return null;
+        }
+
+        $percentage = (1 - $netAmount / $grossAmount) * 100;
+
+        if (abs($percentage - round($percentage)) <= 0.2) {
+            $percentage = round($percentage);
+        }
+
+        return trimDecimalZeros(round($percentage, 1)).'%';
+    }
+}

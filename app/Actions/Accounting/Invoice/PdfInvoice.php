@@ -46,6 +46,7 @@ class PdfInvoice extends OrgAction
             'show_dispatch_totals' => ['sometimes', 'boolean'],
             'show_batch_code'      => ['sometimes', 'boolean'],
             'separate_out_of_stock' => ['sometimes', 'boolean'],
+            'show_discounts'        => ['sometimes', 'boolean'],
         ];
     }
 

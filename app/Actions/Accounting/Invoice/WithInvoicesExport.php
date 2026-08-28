@@ -176,6 +176,23 @@ trait WithInvoicesExport
             [$outOfStockTransactions, $transactions] = $this->splitOutOfStockTransactions($transactions);
         }
 
+        $showDiscounts = (bool)Arr::get(
+            $options,
+            'show_discounts',
+            Arr::get($invoice->shop->settings, 'invoicing.download_pdf_columns.show_discounts', true)
+        );
+
+        $discountOfferNames = collect();
+        if ($showDiscounts) {
+            $discountOfferNames = DB::table('invoice_transaction_has_offer_allowances')
+                ->leftJoin('offers', 'offers.id', '=', 'invoice_transaction_has_offer_allowances.offer_id')
+                ->where('invoice_transaction_has_offer_allowances.invoice_id', $invoice->id)
+                ->select('invoice_transaction_has_offer_allowances.invoice_transaction_id', 'offers.name')
+                ->get()
+                ->groupBy('invoice_transaction_id')
+                ->map(fn ($rows) => $rows->pluck('name')->filter()->unique()->implode(', '));
+        }
+
         $orderData     = $invoice->order?->data ?? [];
         $recipientName = null;
         if (!empty($orderData['shipping_address']['name'])) {
@@ -264,6 +281,8 @@ trait WithInvoicesExport
             'group_by_tariff_code'    => Arr::get($options, 'group_by_tariff_code', false),
             'show_dispatch_totals'    => Arr::get($options, 'show_dispatch_totals', false),
             'show_batch_code'         => Arr::get($options, 'show_batch_code', false),
+            'show_discounts'          => $showDiscounts,
+            'discountOfferNames'      => $discountOfferNames,
             'dispatch_total_skos'     => $deliveryNote?->total_skos > 0 ? $deliveryNote->total_skos : null,
             'dispatch_total_units'    => $deliveryNote?->total_units > 0 ? $deliveryNote->total_units : null,
             'dispatch_total_quantity' => $transactions->sum(fn ($t) => $t->quantity ?? 0),

@@ -262,10 +262,14 @@ class ShowInvoice extends OrgAction
                 'label' => __('Out of stock items in a separate block'),
                 'value' => 'separate_out_of_stock',
             ],
+            [
+                'label' => __('Discounts'),
+                'value' => 'show_discounts',
+            ],
         ];
 
         return array_map(function (array $column) use ($savedColumns) {
-            $column['is_checked'] = (bool)Arr::get($savedColumns, $column['value'], $column['value'] === 'separate_out_of_stock');
+            $column['is_checked'] = (bool)Arr::get($savedColumns, $column['value'], in_array($column['value'], ['separate_out_of_stock', 'show_discounts']));
 
             return $column;
         }, $columns);

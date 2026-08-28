@@ -520,12 +520,13 @@ class EditShop extends OrgAction
                                     ['label' => __('Group by Tariff Code'), 'key' => 'group_by_tariff_code'],
                                     ['label' => __('Show Dispatch Totals (SKO & Units)'), 'key' => 'show_dispatch_totals'],
                                     ['label' => __('Out of stock items in a separate block'), 'key' => 'separate_out_of_stock'],
+                                    ['label' => __('Discounts'), 'key' => 'show_discounts'],
                                 ];
 
                                 return array_map(fn ($col) => [
                                     'label' => $col['label'],
                                     'key'   => $col['key'],
-                                    'value' => (bool)Arr::get($savedColumns, $col['key'], $col['key'] === 'separate_out_of_stock'),
+                                    'value' => (bool)Arr::get($savedColumns, $col['key'], in_array($col['key'], ['separate_out_of_stock', 'show_discounts'])),
                                 ], $columns);
                             })(),
                         ],

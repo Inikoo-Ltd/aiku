@@ -49,4 +49,18 @@ class InvoiceOutOfStockLineTest extends TestCase
         $this->assertFalse($this->subject->isFullyOutOfStockLine($this->line(10, '0.00', '4.16'), [10]));
         $this->assertFalse($this->subject->isFullyOutOfStockLine($this->line(10, '4.16', '0.00'), [10]));
     }
+
+    public function testDiscountPercentageLabel(): void
+    {
+        $this->assertSame('10%', discountPercentageLabel('125.84', '113.26'));
+        $this->assertSame('5%', discountPercentageLabel('49.56', '47.08'));
+        $this->assertSame('12.5%', discountPercentageLabel('100.00', '87.50'));
+        $this->assertSame('15%', discountPercentageLabel('6.64', '5.64'));
+        $this->assertSame('10%', discountPercentageLabel('5.86', '5.27'));
+        $this->assertSame('100%', discountPercentageLabel('15.00', '0.00'));
+        $this->assertNull(discountPercentageLabel('20.00', '20.00'));
+        $this->assertNull(discountPercentageLabel('0.00', '0.00'));
+        $this->assertNull(discountPercentageLabel(null, '5.00'));
+        $this->assertNull(discountPercentageLabel('10.00', '12.00'));
+    }
 }
