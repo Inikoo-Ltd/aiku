@@ -1858,7 +1858,7 @@ test('pick whole pallet in return by scanning its reference', function (PalletRe
     SendPalletReturnNotification::shouldRun()
         ->andReturn();
 
-    $pallet = $palletReturn->pallets->first();
+    $pallet = $palletReturn->pallets->firstWhere('reference', '!=', null);
 
     $scan = fn (string $barcode) => \App\Actions\Fulfilment\PalletReturnItem\PickPalletReturnItemByScan::make()
         ->handle($palletReturn->refresh(), $this->user, ['barcode' => $barcode]);

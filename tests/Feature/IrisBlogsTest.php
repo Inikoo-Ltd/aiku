@@ -50,7 +50,7 @@ function publishedLayoutWithDate(?string $publishedDate): array
     ];
 }
 
-test('iris blogs ascending sort lists the newest published layout date first', function () {
+test('iris blogs ascending sort lists the oldest published layout date first', function () {
     $oldest = createBlogWebpage($this->website, 'Oldest published blog', [
         'live_at'          => '2026-03-01 10:00:00',
         'published_layout' => publishedLayoutWithDate('2012-08-31T14:01:00.004Z'),
@@ -66,14 +66,14 @@ test('iris blogs ascending sort lists the newest published layout date first', f
         'published_layout' => publishedLayoutWithDate('2021-09-17T12:09:00.001Z'),
     ]);
 
-    request()->merge(['sort' => 'last_published_at']);
+    request()->query->set('sort', 'last_published_at');
     $ascending = IndexIrisBlogs::make()->handle($this->website)->pluck('id')->all();
 
-    request()->merge(['sort' => '-last_published_at']);
+    request()->query->set('sort', '-last_published_at');
     $descending = IndexIrisBlogs::make()->handle($this->website)->pluck('id')->all();
 
-    expect($ascending)->toBe([$newest->id, $middle->id, $oldest->id])
-        ->and($descending)->toBe([$oldest->id, $middle->id, $newest->id]);
+    expect($ascending)->toBe([$oldest->id, $middle->id, $newest->id])
+        ->and($descending)->toBe([$newest->id, $middle->id, $oldest->id]);
 });
 
 test('iris blogs without a published date in the layout fall back to the webpage dates', function () {
@@ -88,8 +88,8 @@ test('iris blogs without a published date in the layout fall back to the webpage
         'published_layout'  => publishedLayoutWithDate(null),
     ]);
 
-    request()->merge(['sort' => 'last_published_at']);
+    request()->query->set('sort', 'last_published_at');
 
     expect(IndexIrisBlogs::make()->handle($this->website)->pluck('id')->all())
-        ->toBe([$withoutLayoutDate->id, $withLayoutDate->id]);
+        ->toBe([$withLayoutDate->id, $withoutLayoutDate->id]);
 });
