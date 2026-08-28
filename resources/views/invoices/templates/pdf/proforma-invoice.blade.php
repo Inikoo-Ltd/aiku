@@ -427,7 +427,11 @@
         @foreach($order->payments as $payment)
             <tr class="@if($loop->last) last @endif">
                 <td style="text-align:left">
-                    {{ $payment->paymentAccount['name'] }}
+                    @if($payment->paymentAccount->type == \App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum::ACCOUNT)
+                        {{ __('Credit Balance') }}
+                    @else
+                        {{ $payment->paymentAccount['name'] }}
+                    @endif
                 </td>
                 <td style="text-align:right">
                     {{ $payment->updated_at?->copy()->setTimezone($shop->timezone->name)->format('F j, Y H:i a') }}
@@ -438,6 +442,11 @@
             </tr>
         @endforeach
         </tbody>
+        @if($order->payments->contains(fn ($payment) => $payment->paymentAccount->type == \App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum::ACCOUNT && $payment->amount < 0))
+            <tr>
+                <td colspan="5" style="text-align:left; font-size: 8pt;">{{ __('Any outstanding balance has been applied to your customer account balance unless otherwise requested. Please contact Customer Service if you require any assistance.') }}</td>
+            </tr>
+        @endif
 
     </table>
 @endif

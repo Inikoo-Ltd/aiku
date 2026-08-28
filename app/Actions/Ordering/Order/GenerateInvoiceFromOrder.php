@@ -157,6 +157,7 @@ class GenerateInvoiceFromOrder extends OrgAction
                     'reference'               => 'cu-'.Str::ulid(),
                     'amount'                  => -$amountToCredit,
                     'status'                  => PaymentStatusEnum::SUCCESS,
+                    'state'                   => PaymentStateEnum::COMPLETED,
                     'type'                    => PaymentTypeEnum::REFUND,
                     'payment_account_shop_id' => $paymentAccountShop->id
                 ];
