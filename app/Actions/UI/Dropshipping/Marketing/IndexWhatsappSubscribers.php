@@ -2,7 +2,6 @@
 
 namespace App\Actions\UI\Dropshipping\Marketing;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithWhatsappCampaignsSubNavigation;
 use App\Models\Catalogue\Shop;
@@ -11,7 +10,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class IndexWhatsappCampaigns extends OrgAction
+class IndexWhatsappSubscribers extends OrgAction
 {
     use WithWhatsappCampaignsSubNavigation;
 
@@ -29,17 +28,17 @@ class IndexWhatsappCampaigns extends OrgAction
 
     public function htmlResponse(ActionRequest $request): Response
     {
-        $title = __('Whatsapp Campaigns');
+        $title = __('Subscribers');
 
         return Inertia::render(
-            'Org/Marketing/WhatsappCampaigns',
+            'Org/Marketing/WhatsappSubscribers',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => $title,
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => [
-                        'icon'  => ['fab', 'fa-whatsapp'],
+                        'icon'  => ['fal', 'fa-users'],
                         'title' => $title,
                     ],
                     'subNavigation' => $this->getSubNavigation($request),
@@ -51,17 +50,17 @@ class IndexWhatsappCampaigns extends OrgAction
     public function getBreadcrumbs(array $routeParameters): array
     {
         return array_merge(
-            ShowShop::make()->getBreadcrumbs($routeParameters),
+            IndexWhatsappCampaigns::make()->getBreadcrumbs($routeParameters),
             [
                 [
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.shops.show.marketing.whatsapp_campaigns.index',
+                            'name'       => 'grp.org.shops.show.marketing.whatsapp_campaigns.subscribers.index',
                             'parameters' => $routeParameters
                         ],
-                        'label' => __('Whatsapp Campaigns'),
-                        'icon'  => 'fab fa-whatsapp'
+                        'label' => __('Subscribers'),
+                        'icon'  => 'fal fa-users'
                     ],
                 ],
             ],
