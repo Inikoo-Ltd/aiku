@@ -13,7 +13,6 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { computed, ref } from "vue"
-import { routeType } from "@/types/route"
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -26,10 +25,6 @@ const props = defineProps<{
     index?: {}
     sales?: {}
     need_review?: {}
-    website_structure_export?: {
-        fields: { key: string; label: string }[]
-        download_route: { xlsx: routeType; csv: routeType }
-    }
 }>()
 
 const currentTab = ref<string>(props.tabs.current)
@@ -51,12 +46,6 @@ const component = computed(() => {
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead"/>
     <Tabs v-if="Object.keys(tabs.navigation ?? {}).length" :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <component
-        :is="component"
-        :key="currentTab"
-        :tab="currentTab"
-        :data="props[currentTab]"
-        :websiteStructureExport="currentTab === 'index' ? website_structure_export : undefined"
-    />
+    <component :is="component" :key="currentTab" :tab="currentTab" :data="props[currentTab]"></component>
 </template>
 

@@ -7,7 +7,7 @@
 
 namespace App\Exports\Catalogue;
 
-use App\Models\Catalogue\Shop;
+use App\Models\Catalogue\ProductCategory;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromArray;
@@ -18,8 +18,9 @@ class WebsiteStructureExport implements FromArray, ShouldAutoSize, WithHeadings
 {
     /**
      * @param array<int, string> $fields Selected field keys; empty means all fields.
+     * @param array<int, string> $states Selected states; empty means every state.
      */
-    public function __construct(public Shop $shop, public array $fields = [])
+    public function __construct(public ProductCategory $department, public array $fields = [], public array $states = [])
     {
     }
 
@@ -241,8 +242,12 @@ class WebsiteStructureExport implements FromArray, ShouldAutoSize, WithHeadings
             ->leftJoin('product_category_stats', 'product_category_stats.product_category_id', '=', 'product_categories.id')
             ->leftJoin('webpages', 'webpages.id', '=', 'product_categories.webpage_id')
             ->leftJoin('websites', 'websites.id', '=', 'webpages.website_id')
-            ->where('product_categories.shop_id', $this->shop->id)
+            ->where(function ($query) {
+                $query->where('product_categories.id', $this->department->id)
+                    ->orWhere('product_categories.department_id', $this->department->id);
+            })
             ->whereNull('product_categories.deleted_at')
+            ->when($this->states, fn ($query) => $query->whereIn('product_categories.state', $this->states))
             ->select($this->selects('product_category', self::productCategorySortExpression()));
     }
 
@@ -263,8 +268,9 @@ class WebsiteStructureExport implements FromArray, ShouldAutoSize, WithHeadings
             ->leftJoin('collection_stats', 'collection_stats.collection_id', '=', 'collections.id')
             ->leftJoin('webpages', 'webpages.id', '=', 'collections.webpage_id')
             ->leftJoin('websites', 'websites.id', '=', 'webpages.website_id')
-            ->where('collections.shop_id', $this->shop->id)
+            ->where('collection_departments.id', $this->department->id)
             ->whereNull('collections.deleted_at')
+            ->when($this->states, fn ($query) => $query->whereIn('collections.state', $this->states))
             ->select($this->selects('collection', self::collectionSortExpression()));
     }
 
