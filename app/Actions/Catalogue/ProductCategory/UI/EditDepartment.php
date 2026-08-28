@@ -110,12 +110,6 @@ class EditDepartment extends OrgAction
                 ],
                 'pageHead'    => [
                     'title'     => $department->name,
-                    'iconRight' => $urlMaster ? [
-                        'icon'  => "fab fa-octopus-deploy",
-                        'color' => "#4B0082",
-                        'class' => 'opacity-70 hover:opacity-100',
-                        'url'   => $urlMaster
-                    ] : [],
                     'icon'      =>
                         [
                             'icon'  => ['fal', 'fa-folder-tree'],

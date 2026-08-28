@@ -115,12 +115,6 @@ class EditSubDepartment extends OrgAction
                 'pageHead'    => [
                     'title'     => $subDepartment->code,
                     'model'     => __('Sub-department'),
-                    'iconRight' => $urlMaster ? [
-                        'icon'  => "fab fa-octopus-deploy",
-                        'color' => "#4B0082",
-                        'class' => 'opacity-70 hover:opacity-100',
-                        'url'   => $urlMaster
-                    ] : [],
                     'actions'   => [
                         [
                             'type'  => 'button',

@@ -151,12 +151,6 @@ class EditFamily extends OrgAction
             [
                 'title'       => __('Family'),
                 ...$warning,
-                'iconRight'   => $urlMaster ? [
-                    'icon'  => "fab fa-octopus-deploy",
-                    'color' => "#4B0082",
-                    'class' => 'opacity-70 hover:opacity-100',
-                    'url'   => $urlMaster
-                ] : [],
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $family,
                     $request->route()->getName(),

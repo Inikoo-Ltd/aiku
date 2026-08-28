@@ -43,7 +43,7 @@ class DetachAttachmentFromModel extends OrgAction
     }
 
 
-    public function action(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|ProductCategory $model, Media $attachment, int $hydratorsDelay = 0, bool $strict = true): Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|ProductCategory
+    public function action(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|ProductCategory|TradeUnitFamily $model, Media $attachment, int $hydratorsDelay = 0, bool $strict = true): Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|ProductCategory
     {
         $this->asAction       = true;
         $this->strict         = $strict;
