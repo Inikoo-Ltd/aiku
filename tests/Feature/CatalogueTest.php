@@ -23,6 +23,8 @@ use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\StoreProductVariant;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\ProductCategory\AttachFamiliesToSubDepartment;
+use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\HydrateDepartments;
 use App\Actions\Catalogue\ProductCategory\HydrateFamilies;
 use App\Actions\Catalogue\ProductCategory\HydrateSubDepartments;
@@ -288,6 +290,23 @@ test('create family', function ($department) {
 
     return $family;
 })->depends('update department');
+
+
+test('attach and detach family to sub department', function (ProductCategory $family, ProductCategory $subDepartment) {
+    AttachFamiliesToSubDepartment::make()->action($subDepartment, ['families_id' => [$family->id]]);
+    $family->refresh();
+
+    expect($family->sub_department_id)->toBe($subDepartment->id)
+        ->and($family->parent_id)->toBe($subDepartment->id)
+        ->and($family->department_id)->toBe($subDepartment->department_id);
+
+    DetachFamilyToSubDepartment::make()->handle($family);
+    $family->refresh();
+
+    expect($family->sub_department_id)->toBeNull()
+        ->and($family->department_id)->toBe($subDepartment->department_id)
+        ->and($family->parent_id)->toBe($subDepartment->department_id);
+})->depends('create family', 'create sub department');
 
 
 test('create product', function (ProductCategory $family) {

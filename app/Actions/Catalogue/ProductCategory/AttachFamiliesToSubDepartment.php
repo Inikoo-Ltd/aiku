@@ -10,12 +10,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
-use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateProducts;
-use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateFamilies;
-use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateProducts;
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithActionUpdate;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Catalogue\SubDepartmentResource;
@@ -23,54 +18,14 @@ use App\Models\Catalogue\ProductCategory;
 
 class AttachFamiliesToSubDepartment extends OrgAction
 {
-    use WithActionUpdate;
-
     public function handle(ProductCategory $subDepartment, array $modelData): ProductCategory
     {
-        $departmentsToHydrate    = [];
-        $subDepartmentsToHydrate = [];
-
-        $departmentsToHydrate[$subDepartment->department_id] = $subDepartment->department_id;
-        $subDepartmentsToHydrate[$subDepartment->id]         = $subDepartment->id;
-
-
         foreach ($modelData['families_id'] as $familyID) {
             $family = ProductCategory::find($familyID);
-            if ($family->department_id) {
-                $departmentsToHydrate[$family->department_id] = $family->department_id;
-            }
-            if ($family->sub_department_id) {
-                $subDepartmentsToHydrate[$family->sub_department_id] = $family->sub_department_id;
-            }
-
-            $family->update([
-                'parent_id'         => $subDepartment->id,
-                'department_id'     => $subDepartment->department_id,
-                'sub_department_id' => $subDepartment->id,
-            ]);
-
-            DB::table('products')->where('family_id', $family->id)->update([
-                'department_id'     => $subDepartment->department_id,
+            UpdateFamilySubDepartment::make()->action($family, [
                 'sub_department_id' => $subDepartment->id,
             ]);
         }
-
-        foreach ($departmentsToHydrate as $departmentID) {
-            $department = ProductCategory::find($departmentID);
-            if ($department) {
-                DepartmentHydrateProducts::dispatch($departmentID)->delay(2);
-                ProductCategoryHydrateFamilies::dispatch($department);
-            }
-        }
-
-        foreach ($subDepartmentsToHydrate as $subDepartmentsToHydrateID) {
-            $subDepartment = ProductCategory::find($subDepartmentsToHydrateID);
-            if ($subDepartment) {
-                ProductCategoryHydrateFamilies::dispatch($subDepartment);
-                SubDepartmentHydrateProducts::dispatch($subDepartmentsToHydrateID)->delay(2);
-            }
-        }
-
 
         return $subDepartment;
     }
