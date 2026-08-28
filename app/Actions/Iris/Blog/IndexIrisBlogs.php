@@ -125,7 +125,7 @@ class IndexIrisBlogs extends IrisAction
             );
         }
 
-        $orderBy = request()->query('sort');
+        $orderBy = request()->query('blogs_sort');
 
         if (!$orderBy) {
             $queryBuilder->orderByRaw($this->getPublishedAtSortExpression().' desc nulls last');
