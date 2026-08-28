@@ -43,6 +43,7 @@ class ShowIrisNewslettersDashboard
             [
                 'breadcrumbs' => $this->getIrisBlogDashboardBreadcrumbs(WebpageSubTypeEnum::NEWSLETTERS),
                 'title'       => __('Newsletters'),
+                'blog_category' => WebpageSubTypeEnum::NEWSLETTERS->value,
                 'data'  => BlogsIrisResource::collection($blogs),
             ]
         )->table(IndexIrisBlogs::make()->tableStructure($website, IndexIrisBlogs::PREFIX, self::SUB_TYPES));

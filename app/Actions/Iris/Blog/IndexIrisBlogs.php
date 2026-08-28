@@ -107,9 +107,7 @@ class IndexIrisBlogs extends IrisAction
         });
 
         $publishedAtSort = AllowedSort::callback('last_published_at', function ($query, bool $descending) {
-            $newestFirst = !$descending;
-
-            $query->orderByRaw($this->getPublishedAtSortExpression().' '.($newestFirst ? 'desc' : 'asc').' nulls last');
+            $query->orderByRaw($this->getPublishedAtSortExpression().' '.($descending ? 'desc' : 'asc').' nulls last');
         });
 
         if ($prefix) {
@@ -125,6 +123,12 @@ class IndexIrisBlogs extends IrisAction
                 engine: $elementGroup['engine'],
                 prefix: $prefix
             );
+        }
+
+        $orderBy = request()->query('blogs_sort');
+
+        if (!$orderBy) {
+            $queryBuilder->orderByRaw($this->getPublishedAtSortExpression().' desc nulls last');
         }
 
         return $queryBuilder
@@ -143,8 +147,7 @@ class IndexIrisBlogs extends IrisAction
                 'webpages.live_snapshot_id',
             ])
             ->with('liveSnapshot:id,published_at')
-            ->defaultSort('-webpages.live_at')
-            ->allowedSorts(['title', $publishedAtSort])
+            ->allowedSorts([$publishedAtSort, 'title'])
             ->allowedFilters([$globalSearch, $subTypeFilter])
             ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();

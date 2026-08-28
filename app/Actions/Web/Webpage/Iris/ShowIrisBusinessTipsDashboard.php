@@ -43,6 +43,7 @@ class ShowIrisBusinessTipsDashboard
             [
                 'breadcrumbs' => $this->getIrisBlogDashboardBreadcrumbs(WebpageSubTypeEnum::BUSINESS_TIPS),
                 'title'       => __('Business Tips'),
+                'blog_category' => WebpageSubTypeEnum::BUSINESS_TIPS->value,
                 'data'  => BlogsIrisResource::collection($blogs),
             ]
         )->table(IndexIrisBlogs::make()->tableStructure($website, IndexIrisBlogs::PREFIX, self::SUB_TYPES));

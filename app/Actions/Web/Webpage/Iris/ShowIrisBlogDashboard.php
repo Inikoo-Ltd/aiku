@@ -112,7 +112,7 @@ class ShowIrisBlogDashboard
     {
         return [
             WebpageSubTypeEnum::NEWSLETTERS->value    => [
-                'label'          => __("David's Travel Blog (Newsletter)"),
+                'label'          => __('Newsletters'),
                 'description'    => __('Stories from the road, lessons learned, and places that leave a mark. Subscribe to get new travel stories and reflections straight to your inbox.'),
                 'url'            => WebpageSubTypeEnum::NEWSLETTERS->blogCategoryUrl(),
                 'icon'           => 'fal fa-plane-departure',
