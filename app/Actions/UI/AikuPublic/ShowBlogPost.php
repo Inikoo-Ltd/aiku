@@ -31,7 +31,19 @@ class ShowBlogPost
 
         return view('aiku-public.blog.show', [
             'post' => $post,
-            'more' => BlogPosts::all()->where('slug', '!=', $slug)->take(3),
+            'more' => $this->relatedPosts($post),
         ]);
+    }
+
+    /**
+     * @param  array{slug:string,tags:array<int,string>}  $post
+     */
+    private function relatedPosts(array $post): \Illuminate\Support\Collection
+    {
+        return BlogPosts::all()
+            ->where('slug', '!=', $post['slug'])
+            ->sortByDesc(fn (array $other) => count(array_intersect($other['tags'], $post['tags'])) * 1e12 + $other['date']->timestamp)
+            ->take(3)
+            ->values();
     }
 }
