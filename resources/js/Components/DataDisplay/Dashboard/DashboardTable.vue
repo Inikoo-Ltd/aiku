@@ -9,7 +9,9 @@ import TabList from "primevue/tablist"
 import Tab from "primevue/tab"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faYinYang, faShoppingBasket, faSitemap, faStore } from "@fal"
+import { Link } from "@inertiajs/vue3"
+import { route } from "ziggy-js"
+import { faYinYang, faShoppingBasket, faSitemap, faStore, faArrowRight } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import axios from "axios"
@@ -18,7 +20,7 @@ import DashboardCell from "./DashboardCell.vue"
 import { formatInTimeZone } from "date-fns-tz"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { Intervals, Settings } from "@/types/Components/Dashboard"
-library.add(faYinYang, faShoppingBasket, faSitemap, faStore)
+library.add(faYinYang, faShoppingBasket, faSitemap, faStore, faArrowRight)
 
 interface Column {
 	formatted_value: string  // "€0.00"
@@ -172,15 +174,25 @@ const updateTab = (value: string) => {
 			<!-- Section: Tabs -->
 			<Tabs v-if="showTabs" :value="localCurrentTab" class="overflow-x-auto text-xs md:text-base pb-2">
 				<TabList>
-					<Tab
-						v-for="(tab, tabSlug) in tableData.tabs"
-						@click="() => updateTab(tabSlug)"
-						:key="tabSlug"
-						:value="tabSlug"
-					>
-						<FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" class="" fixed-width aria-hidden="true" />
-						{{ tab.title }}
-					</Tab>
+					<template v-for="(tab, tabSlug) in tableData.tabs" :key="tabSlug">
+						<Link
+							v-if="tab.route"
+							:href="route(tab.route.name, tab.route.parameters)"
+							class="p-tab inline-flex items-center gap-1 opacity-60 hover:opacity-100"
+						>
+							<FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" class="" fixed-width aria-hidden="true" />
+							{{ tab.title }}
+							<FontAwesomeIcon icon="fal fa-arrow-right" class="text-xs" fixed-width aria-hidden="true" />
+						</Link>
+						<Tab
+							v-else
+							@click="() => updateTab(tabSlug)"
+							:value="tabSlug"
+						>
+							<FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" class="" fixed-width aria-hidden="true" />
+							{{ tab.title }}
+						</Tab>
+					</template>
 				</TabList>
 			</Tabs>
 

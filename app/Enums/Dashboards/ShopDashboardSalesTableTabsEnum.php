@@ -61,17 +61,41 @@ enum ShopDashboardSalesTableTabsEnum: string
         ];
     }
 
+    /**
+     * On dropshipping dashboards Brands is a link, not a tab: nobody works from it day to day,
+     * so it lives on its own page and the dashboard just points there. Other shop types keep
+     * the tab - it is the only sales table they have.
+     */
+    private static function isBuriedBrands(self $case, Shop $shop): bool
+    {
+        return $case === self::BRANDS && $shop->type->value === 'dropshipping';
+    }
+
     public static function navigation(Shop $shop): array
     {
-        return collect(self::cases())
+        $navigation = collect(self::cases())
             ->filter(function ($case) use ($shop) {
                 if ($case === self::DS_PLATFORMS) {
                     return $shop->type->value === 'dropshipping';
                 }
-                return true;
+                return !self::isBuriedBrands($case, $shop);
             })
             ->mapWithKeys(fn ($case) => [$case->value => $case->blueprint()])
             ->all();
+
+        if ($shop->type->value === 'dropshipping') {
+            $navigation['brands_link'] = array_merge(
+                self::BRANDS->blueprint(),
+                [
+                    'route' => [
+                        'name'       => 'grp.org.shops.show.dashboard.brands',
+                        'parameters' => [$shop->organisation->slug, $shop->slug],
+                    ],
+                ]
+            );
+        }
+
+        return $navigation;
     }
 
     public static function tables(Shop $shop, array $timeSeriesData = []): array
@@ -81,7 +105,7 @@ enum ShopDashboardSalesTableTabsEnum: string
                 if ($case === self::DS_PLATFORMS) {
                     return $shop->type->value === 'dropshipping';
                 }
-                return true;
+                return !self::isBuriedBrands($case, $shop);
             })
             ->mapWithKeys(fn ($case) => [$case->value => $case->table($shop, $timeSeriesData)])
             ->all();

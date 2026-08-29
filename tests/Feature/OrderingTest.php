@@ -2933,3 +2933,25 @@ test('UI order channels report groups by platform and sales channel', function (
     expect($apiRow)->not->toBeNull()
         ->and($apiRow['number_held_unpaid'])->toBeGreaterThanOrEqual(1);
 });
+
+test('UI shop dashboard buries brands as a link and brands page renders', function () {
+    $this->withoutExceptionHandling();
+
+    if ($this->shop->type->value === 'dropshipping') {
+        $dashboard = get(route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug]));
+        $dashboard->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->where('dashboard.super_blocks.0.blocks.0.tabs.brands_link.route.name', 'grp.org.shops.show.dashboard.brands')
+                ->missing('dashboard.super_blocks.0.blocks.0.tables.brands')
+                ->etc()
+        );
+    }
+
+    $brandsPage = get(route('grp.org.shops.show.dashboard.brands', [$this->organisation->slug, $this->shop->slug]));
+    $brandsPage->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->component('Org/Catalogue/Shop')
+            ->has('dashboard.super_blocks.0.blocks.0.tables.brands')
+            ->etc()
+    );
+});
