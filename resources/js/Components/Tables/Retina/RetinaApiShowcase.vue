@@ -7,6 +7,7 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import CountUp from 'vue-countup-v3'
 
 import { faArrowRight } from "@far"
+import { faFlask } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Link } from '@inertiajs/vue3'
@@ -14,7 +15,7 @@ import { capitalize, inject } from 'vue'
 import StatsBox from '@/Components/Stats/StatsBox.vue'
 import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-library.add(faArrowRight)
+library.add(faArrowRight, faFlask)
 
 const props = defineProps<{
 }>()
@@ -92,9 +93,13 @@ const layout = inject('layout', aikuLocaleStructure)
 
                 <!-- Section: Sandbox -->
                 <div class="mt-6 max-w-2xl rounded-lg border border-gray-300 bg-gray-50 p-4">
-                    <div class="text-sm font-semibold mb-1">{{ trans("Test safely in our staging environment") }}</div>
+                    <div class="flex items-center gap-x-2 text-sm font-semibold mb-1">
+                        <FontAwesomeIcon icon="fal fa-flask" fixed-width aria-hidden="true" />
+                        {{ trans("Staging") }}
+                    </div>
+                    <div class="text-sm text-gray-600 mb-2">{{ trans("Test safely without affecting your real data.") }}</div>
                     <ul class="list-disc pl-5 space-y-1 text-sm text-gray-600 mb-3">
-                        <li>{{ trans("Staging is a separate copy of the site where you can experiment without affecting your real data. Log in with the same email and password as here.") }}</li>
+                        <li>{{ trans("Staging is a separate copy of the site. Log in with the same email and password as here.") }}</li>
                         <li>{{ trans("Every Sunday at 03:00 UTC staging is reset with a fresh copy of production. Anything you created in staging is erased, so start your tests over after each reset.") }}</li>
                         <li>{{ trans("Production API tokens do not work in staging. Generate a separate token in staging for your tests — it will stop working at the next reset, so generate a new one each week.") }}</li>
                         <li>{{ trans("The API documentation applies to staging unchanged — the only difference is the base URL:") }} <code class="bg-gray-200 px-1 rounded">https://api.aiku-sandbox.uk</code></li>
