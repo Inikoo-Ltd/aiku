@@ -134,9 +134,12 @@ use App\Enums\Helpers\Import\UploadRecordStatusEnum;
 use App\Imports\Ordering\TransactionImport;
 use App\Models\Helpers\Upload;
 use App\Models\Helpers\TaxCategory;
+use App\Actions\SysAdmin\Group\Seeders\SeedSalesChannels;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\PurgedOrder;
+use App\Models\Ordering\SalesChannel;
 use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\Permission;
@@ -2859,4 +2862,38 @@ describe('order state element group', function () {
         expect($elements['picked'][1])->toBe(0)
             ->and($elements['packing'][1])->toBe(0);
     });
+});
+
+test('UI show order flags unpaid API orders as auto-held', function () {
+    $this->withoutExceptionHandling();
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order      = StoreOrder::make()->action($this->customer, $modelData);
+    SeedSalesChannels::run($this->organisation->group);
+    $apiChannel = SalesChannel::where('type', SalesChannelTypeEnum::API)->first();
+    $order->update([
+        'sales_channel_id' => $apiChannel->id,
+        'state'            => OrderStateEnum::SUBMITTED,
+        'pay_status'       => OrderPayStatusEnum::UNPAID,
+        'submitted_at'     => now(),
+    ]);
+
+    $response = get(route('grp.org.shops.show.ordering.orders.show', [$this->organisation->slug, $this->shop->slug, $order->slug]));
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('pageHead.api_order.label', 'API order')
+            ->where('pageHead.api_order.held_unpaid', true)
+            ->etc()
+    );
+
+    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+    $paid = get(route('grp.org.shops.show.ordering.orders.show', [$this->organisation->slug, $this->shop->slug, $order->slug]));
+    $paid->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('pageHead.api_order.held_unpaid', false)
+            ->etc()
+    );
 });

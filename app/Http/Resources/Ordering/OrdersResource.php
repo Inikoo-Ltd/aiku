@@ -104,6 +104,8 @@ class OrdersResource extends JsonResource
             'net_amount'                  => $this->net_amount,
             'payment_amount'              => $this->payment_amount,
             'platform'                    => $this->getPlatformLogo($this->platform ?? ''),
+            'sales_channel_type'          => $this->sales_channel_type,
+            'sales_channel_name'          => $this->sales_channel_name,
             'total_amount'                => $this->total_amount,
             'customer_name'               => $this->customer_name,
             'customer_slug'               => $this->customer_slug,
