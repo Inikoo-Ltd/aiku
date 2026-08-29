@@ -134,6 +134,7 @@ use App\Enums\Helpers\Import\UploadRecordStatusEnum;
 use App\Imports\Ordering\TransactionImport;
 use App\Models\Helpers\Upload;
 use App\Models\Helpers\TaxCategory;
+use App\Actions\Ordering\Order\UI\IndexOrderChannels;
 use App\Actions\SysAdmin\Group\Seeders\SeedSalesChannels;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Models\Ordering\Order;
@@ -2896,4 +2897,39 @@ test('UI show order flags unpaid API orders as auto-held', function () {
             ->where('pageHead.api_order.held_unpaid', false)
             ->etc()
     );
+});
+
+test('UI order channels report groups by platform and sales channel', function () {
+    $this->withoutExceptionHandling();
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    SeedSalesChannels::run($this->organisation->group);
+    $apiChannel = SalesChannel::where('type', SalesChannelTypeEnum::API)->first();
+    $order->update([
+        'sales_channel_id' => $apiChannel->id,
+        'state'            => OrderStateEnum::SUBMITTED,
+        'pay_status'       => OrderPayStatusEnum::UNPAID,
+        'submitted_at'     => now(),
+    ]);
+
+    $response = get(route('grp.org.shops.show.ordering.channels.index', [$this->organisation->slug, $this->shop->slug]));
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->component('Org/Ordering/OrderChannels')
+            ->has('data.rows')
+            ->where('data.currency_code', $this->shop->currency->code)
+            ->where('pageHead.title', 'Order Channels')
+            ->etc()
+    );
+
+    $rows = collect(IndexOrderChannels::make()->handle($this->shop)['rows']);
+    expect($rows)->not->toBeEmpty();
+
+    $apiRow = $rows->first(fn ($row) => $row['sales_channel_type'] === 'api');
+    expect($apiRow)->not->toBeNull()
+        ->and($apiRow['number_held_unpaid'])->toBeGreaterThanOrEqual(1);
 });
