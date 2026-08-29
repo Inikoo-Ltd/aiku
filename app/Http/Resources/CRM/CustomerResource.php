@@ -53,43 +53,6 @@ class CustomerResource extends JsonResource
 
         $shop = $customer->shop;
 
-        // if ($shop?->type == ShopTypeEnum::B2B) {
-        //     $subscriptions['abandoned_cart'] = [
-        //         'label'           => __('Abandoned Cart'),
-        //         'field'           => 'is_subscribed_to_abandoned_cart',
-        //         'is_subscribed'   => $comms->is_subscribed_to_abandoned_cart,
-        //         'unsubscribed_at' => $comms->abandoned_cart_unsubscribed_at
-        //     ];
-
-
-        //     $subscriptions['reorder_reminder'] = [
-        //         'label'           => __('Reorder Reminder'),
-        //         'field'           => 'is_subscribed_to_reorder_reminder',
-        //         'is_subscribed'   => $comms->is_subscribed_to_reorder_reminder,
-        //         'unsubscribed_at' => $comms->reorder_reminder_unsubscribed_at
-        //     ];
-
-        //     $subscriptions['gold_reward_reminder'] = [
-        //         'label'           => __('Gold Reward Reminder'),
-        //         'field'           => 'is_subscribed_to_gold_reward_reminder',
-        //         'is_subscribed'   => $comms->is_subscribed_to_gold_reward_reminder,
-        //         'unsubscribed_at' => $comms->gold_reward_reminder_unsubscribed_at
-        //     ];
-
-        //     $subscriptions['basket_low_stock'] = [
-        //         'label'           => __('Basket Low Stock'),
-        //         'field'           => 'is_subscribed_to_basket_low_stock',
-        //         'is_subscribed'   => $comms->is_subscribed_to_basket_low_stock,
-        //         'unsubscribed_at' => $comms->basket_low_stock_unsubscribed_at
-        //     ];
-
-        //     $subscriptions['to_basket_reminder'] = [
-        //         'label'           => __('To Basket Reminder'),
-        //         'field'           => 'is_subscribed_to_basket_reminder',
-        //         'is_subscribed'   => $comms->is_subscribed_to_basket_reminder,
-        //         'unsubscribed_at' => $comms->basket_reminder_unsubscribed_at
-        //     ];
-        // }
 
         if ($shop?->type == ShopTypeEnum::DROPSHIPPING) {
             $subscriptions['price_change_notification'] = [
