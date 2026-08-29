@@ -17,12 +17,15 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 
 type CategoryCard = { id: number, slug: string, code: string, name: string, image: object | null, number_current_products?: number, type?: string }
 type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_slug: string | null }
+type MiniCartItem = { id: number, quantity: number, org_stock_code: string | null, org_stock_name: string | null }
+type MiniCart = { count: number, total: number, items: MiniCartItem[], listRoute: { name: string, parameters: (string | number)[] } }
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
     orgPartner: { id: number, slug: string, currency: string }
     addRoute: { name: string, parameters: (string | number)[] }
+    miniCart: MiniCart
     filters: { q?: string, department?: string, sub_department?: string, family?: string, collection?: string }
     filterNames: Record<string, string>
     level: "root" | "department" | "sub_department" | "family" | "collection" | "search"
@@ -40,7 +43,7 @@ watch(searchTerm, (value) => {
     }
 
     searchTimeout = setTimeout(() => {
-        router.get(route(route().current() as string, route().params), { q: value || undefined }, { only: ["level", "categories", "collections", "products", "filters", "filterNames"], preserveState: true, replace: true })
+        router.get(route(route().current() as string, route().params), { q: value || undefined }, { only: ["level", "categories", "collections", "products", "filters", "filterNames", "miniCart"], preserveState: true, replace: true })
     }, 350)
 })
 
@@ -62,7 +65,7 @@ function drillInto(category: { slug: string, type?: string }) {
 }
 
 function goTo(params: Record<string, string | number>) {
-    router.get(route(route().current() as string, route().params), params, { only: ["level", "categories", "collections", "products", "filters", "filterNames"], preserveState: true })
+    router.get(route(route().current() as string, route().params), params, { only: ["level", "categories", "collections", "products", "filters", "filterNames", "miniCart"], preserveState: true })
 }
 
 const quantities = ref<Record<number, number>>({})
@@ -82,6 +85,8 @@ function addToShoppingList(product: ProductCard) {
         { quantity: quantityFor(product.id) },
         {
             preserveScroll: true,
+            preserveState: true,
+            only: ["miniCart"],
             onSuccess: () => {
                 justAdded.value[product.id] = true
                 setTimeout(() => { justAdded.value[product.id] = false }, 1500)
@@ -96,13 +101,38 @@ function addToShoppingList(product: ProductCard) {
     <PageHeading :data="pageHead" />
 
     <div class="p-6 space-y-6">
-        <div class="max-w-md">
-            <input
-                v-model="searchTerm"
-                type="text"
-                :placeholder="trans('Search products')"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            />
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="max-w-md w-full">
+                <input
+                    v-model="searchTerm"
+                    type="text"
+                    :placeholder="trans('Search products')"
+                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+            </div>
+
+            <div class="w-full rounded-lg border border-gray-200 p-3 sm:w-72">
+                <div class="flex items-center gap-2 text-sm font-medium text-gray-800">
+                    <font-awesome-icon icon="fal fa-shopping-basket" class="text-gray-400" />
+                    <span>{{ miniCart.count }} {{ trans("items") }} · {{ useLocaleStore().currencyFormat(orgPartner.currency, miniCart.total) }}</span>
+                </div>
+
+                <ul v-if="miniCart.count" class="mt-2 space-y-1">
+                    <li v-for="item in miniCart.items" :key="item.id" class="flex items-center justify-between text-xs text-gray-500">
+                        <span class="truncate">{{ item.org_stock_code }} · {{ item.org_stock_name }}</span>
+                        <span class="ml-2 shrink-0">{{ useLocaleStore().number(item.quantity) }}</span>
+                    </li>
+                </ul>
+                <p v-else class="mt-2 text-xs text-gray-400">{{ trans("Empty") }}</p>
+
+                <Button
+                    class="mt-3 w-full justify-center"
+                    size="xs"
+                    type="tertiary"
+                    :label="trans('Go to Shopping list')"
+                    @click="router.visit(route(miniCart.listRoute.name, miniCart.listRoute.parameters))"
+                />
+            </div>
         </div>
 
         <nav v-if="level !== 'search'" class="flex flex-wrap items-center gap-2 text-sm">

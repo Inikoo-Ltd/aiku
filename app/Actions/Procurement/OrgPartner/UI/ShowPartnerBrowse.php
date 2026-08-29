@@ -15,13 +15,16 @@ use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Procurement\OrgPartner;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -223,6 +226,46 @@ class ShowPartnerBrowse extends OrgAction
         ];
     }
 
+    private function miniCart(): array
+    {
+        $estimatedTotal = (float) DB::table('partner_shopping_list_items')
+            ->where('org_partner_id', $this->orgPartner->id)
+            ->where('state', ShoppingListItemStateEnum::OPEN->value)
+            ->whereNull('deleted_at')
+            ->selectRaw("coalesce(sum(quantity * coalesce((select pr.price / nullif(phos.quantity, 0)
+                from product_has_org_stocks phos
+                join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."'
+                join org_stocks sos on sos.id = phos.org_stock_id
+                where sos.stock_id = partner_shopping_list_items.stock_id
+                    and sos.organisation_id = partner_shopping_list_items.partner_organisation_id
+                limit 1), 0)), 0) as total")
+            ->value('total');
+
+        $items = PartnerShoppingListItem::query()
+            ->leftJoin('org_stocks', 'org_stocks.id', 'partner_shopping_list_items.org_stock_id')
+            ->where('partner_shopping_list_items.org_partner_id', $this->orgPartner->id)
+            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN->value)
+            ->select([
+                'partner_shopping_list_items.id',
+                'partner_shopping_list_items.quantity',
+                'org_stocks.code as org_stock_code',
+                'org_stocks.name as org_stock_name',
+            ])
+            ->orderByDesc('partner_shopping_list_items.created_at')
+            ->limit(4)
+            ->get();
+
+        return [
+            'count'      => $this->orgPartner->stats->number_open_shopping_list_items,
+            'total'      => $estimatedTotal,
+            'items'      => $items,
+            'listRoute'  => [
+                'name'       => 'grp.org.procurement.org_partners.show.shopping_list.index',
+                'parameters' => [$this->orgPartner->organisation->slug, $this->orgPartner->id],
+            ],
+        ];
+    }
+
     /**
      * @return array<string, string>
      */
@@ -273,6 +316,7 @@ class ShowPartnerBrowse extends OrgAction
                     'name'       => 'grp.org.procurement.org_partners.show.shopping_list.store',
                     'parameters' => [$this->orgPartner->organisation->slug, $this->orgPartner->id],
                 ],
+                'miniCart'    => $this->miniCart(),
                 'filters'     => $request->only(['q', 'department', 'sub_department', 'family', 'collection']),
                 'filterNames' => $this->filterNames($request->only(['department', 'sub_department', 'family', 'collection'])),
                 'level'       => $data['level'],

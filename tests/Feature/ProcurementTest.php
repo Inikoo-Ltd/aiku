@@ -2816,7 +2816,11 @@ describe('partner browse', function () {
                 ->has('title')
                 ->has('level')
                 ->has('categories')
-                ->has('collections');
+                ->has('collections')
+                ->has('miniCart.count')
+                ->has('miniCart.total')
+                ->has('miniCart.items')
+                ->has('miniCart.listRoute');
         });
 
         $seller->update(['settings' => $originalSettings]);
