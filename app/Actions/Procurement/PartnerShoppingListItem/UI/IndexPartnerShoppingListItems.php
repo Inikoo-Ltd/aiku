@@ -10,7 +10,7 @@ namespace App\Actions\Procurement\PartnerShoppingListItem\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
-use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
+use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
@@ -31,7 +31,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexPartnerShoppingListItems extends OrgAction
 {
     use WithProcurementAuthorisation;
-    use WithOrgPartnerSubNavigation;
+    use WithPartnerShoppingSubNavigation;
 
     private OrgPartner $orgPartner;
 
@@ -169,7 +169,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                     ],
                     'model'         => $this->orgPartner->partner->name,
                     'title'         => __('Shopping list'),
-                    'subNavigation' => $this->getOrgPartnerNavigation($this->orgPartner),
+                    'subNavigation' => $this->getPartnerShoppingNavigation($this->orgPartner),
                 ],
                 'orgPartner'         => [
                     'id'       => $this->orgPartner->id,

@@ -10,7 +10,6 @@
 namespace App\Actions\Procurement\OrgPartner;
 
 use App\Models\Procurement\OrgPartner;
-use Illuminate\Support\Arr;
 
 trait WithOrgPartnerSubNavigation
 {
@@ -29,28 +28,15 @@ trait WithOrgPartnerSubNavigation
                 ],
                 "isAnchor" => true,
             ],
-            ...(Arr::get($parent->partner->settings, 'procurement.shop_id') ? [
-                [
-                    "label"    => __("Browse"),
-                    "route"    => [
-                        "name"       => "grp.org.procurement.org_partners.show.browse.index",
-                        "parameters" => [$parent->organisation->slug, $parent->id],
-                    ],
-                    "leftIcon" => [
-                        "icon"    => ["fal", "fa-store"],
-                        "tooltip" => __("Browse"),
-                    ],
-                ],
-            ] : []),
             [
-                "label"    => __("Shopping List"),
+                "label"    => __("Shopping"),
                 "route"    => [
-                    "name"       => "grp.org.procurement.org_partners.show.shopping_list.index",
+                    "name"       => "grp.org.procurement.org_partners.show.shopping.dashboard",
                     "parameters" => [$parent->organisation->slug, $parent->id],
                 ],
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-shopping-basket"],
-                    "tooltip" => __("Shopping List"),
+                    "tooltip" => __("Shopping"),
                 ],
                 "number"   => $parent->stats->number_open_shopping_list_items,
             ],
@@ -61,7 +47,7 @@ trait WithOrgPartnerSubNavigation
                     "parameters" => [$parent->organisation->slug, $parent->id],
                 ],
                 "leftIcon" => [
-                    "icon"    => ["fal", "fa-clipboard"],
+                    "icon"    => ["fal", "fa-clipboard-list"],
                     "tooltip" => __("Purchase Orders"),
                 ],
             ],

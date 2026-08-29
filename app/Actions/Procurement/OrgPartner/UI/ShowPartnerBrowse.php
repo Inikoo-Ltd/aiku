@@ -9,7 +9,7 @@
 namespace App\Actions\Procurement\OrgPartner\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
+use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
 use App\Actions\Search\SearchCatalogue;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
@@ -29,7 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowPartnerBrowse extends OrgAction
 {
     use WithProcurementAuthorisation;
-    use WithOrgPartnerSubNavigation;
+    use WithPartnerShoppingSubNavigation;
 
     private OrgPartner $orgPartner;
     private ?int $shopId;
@@ -262,7 +262,7 @@ class ShowPartnerBrowse extends OrgAction
                     ],
                     'model'         => $this->orgPartner->partner->name,
                     'title'         => __('Browse'),
-                    'subNavigation' => $this->getOrgPartnerNavigation($this->orgPartner),
+                    'subNavigation' => $this->getPartnerShoppingNavigation($this->orgPartner),
                 ],
                 'orgPartner' => [
                     'id'       => $this->orgPartner->id,

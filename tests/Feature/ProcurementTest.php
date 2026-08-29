@@ -2821,6 +2821,18 @@ describe('partner browse', function () {
 
         $seller->update(['settings' => $originalSettings]);
     });
+
+    test('UI partner shopping dashboard renders', function () {
+        $response = $this->get(route('grp.org.procurement.org_partners.show.shopping.dashboard', [$this->organisation->slug, $this->orgPartner->id]));
+
+        $response->assertInertia(function (AssertableInertia $page) {
+            $page
+                ->component('Procurement/PartnerShoppingDashboard')
+                ->has('title')
+                ->has('stats')
+                ->has('recentItems');
+        });
+    });
 });
 
 test('UI partner shopping list index', function () {
