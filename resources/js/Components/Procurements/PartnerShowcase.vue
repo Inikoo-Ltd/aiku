@@ -1,7 +1,6 @@
 <script setup lang='ts'>
 import ShowcaseContactCard from "@/Components/ShowcaseContactCard.vue"
-import { Link } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import PartnerMiniShoppingList from "@/Components/Procurement/PartnerMiniShoppingList.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useLocaleStore } from "@/Stores/locale"
 import { Agent } from '@/types/Grp/Agent'
@@ -46,25 +45,8 @@ const props = defineProps<{
                 </div>
             </div>
 
-            <div class="mt-4 max-w-sm rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-                <div class="flex items-center gap-2 text-sm font-medium text-gray-700">
-                    <FontAwesomeIcon icon="fal fa-shopping-basket" class="text-gray-400" fixed-width aria-hidden="true" />
-                    {{ useLocaleStore().number(data.miniCart.count) }} {{ trans("items") }} ·
-                    {{ useLocaleStore().currencyFormat(data.miniCart.currency, data.miniCart.total) }}
-                </div>
-                <div v-if="data.miniCart.items.length" class="mt-2 space-y-1 text-xs text-gray-500 tabular-nums">
-                    <div v-for="item in data.miniCart.items" :key="item.id" class="flex justify-between gap-2">
-                        <span class="truncate">{{ item.org_stock_code }} · {{ item.org_stock_name }}</span>
-                        <span>{{ useLocaleStore().number(item.quantity) }}</span>
-                    </div>
-                </div>
-                <div v-else class="mt-2 text-xs text-gray-400">{{ trans("Empty") }}</div>
-                <Link
-                    :href="route(data.miniCart.listRoute.name, data.miniCart.listRoute.parameters)"
-                    class="mt-3 block w-full rounded-md bg-indigo-600 px-3 py-1.5 text-center text-sm font-medium text-white hover:bg-indigo-500"
-                >
-                    {{ trans("Go to Shopping list") }}
-                </Link>
+            <div class="mt-4">
+                <PartnerMiniShoppingList :miniCart="data.miniCart" />
             </div>
         </div>
     </div>
