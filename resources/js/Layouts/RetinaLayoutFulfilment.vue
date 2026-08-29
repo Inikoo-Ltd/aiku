@@ -64,10 +64,7 @@ const isStaging = layout.app.environment === 'staging'
                 <!-- Section: Breadcrumbs -->
                 <div class="mt-1">
                     <Breadcrumbs
-                        class="bg-white w-full transition-all duration-200 ease-in-out"
-                        :class="[
-                            layout.leftSidebar.show ? 'left-0 md:left-48' : 'left-0 md:left-12',
-                        ]"
+                        class="bg-white w-full"
                         :breadcrumbs="usePage().props.breadcrumbs ?? []"
                         :navigation="usePage().props.navigation ?? []"
                         :layout="layout"    
