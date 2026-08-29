@@ -46,7 +46,7 @@ const groupedItems = computed(() => {
             </colgroup>
             <tbody v-for="[family, items] in groupedItems" :key="family">
                 <tr>
-                    <td colspan="3" class="pt-2 pb-0.5 uppercase tracking-wide text-[10px] text-gray-400">
+                    <td colspan="3" class="pt-2 pb-0.5 uppercase tracking-wide text-[10px] font-semibold text-indigo-500">
                         {{ family || trans("Other") }}
                     </td>
                 </tr>
@@ -58,8 +58,13 @@ const groupedItems = computed(() => {
             </tbody>
             <tbody v-if="miniCart.count > miniCart.items.length">
                 <tr>
-                    <td colspan="3" class="pt-1 text-gray-400">
-                        + {{ useLocaleStore().number(miniCart.count - miniCart.items.length) }} {{ trans("more") }}…
+                    <td colspan="3" class="pt-1">
+                        <Link
+                            :href="route(miniCart.listRoute.name, miniCart.listRoute.parameters)"
+                            class="text-gray-400 underline decoration-dotted underline-offset-2 hover:text-indigo-600"
+                        >
+                            … + {{ useLocaleStore().number(miniCart.count - miniCart.items.length) }} {{ trans("more, see full list") }}
+                        </Link>
                     </td>
                 </tr>
             </tbody>
