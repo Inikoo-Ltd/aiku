@@ -78,10 +78,10 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
         return Inertia::render(
             'Dropshipping/Api/RetinaApiDropshippingDashboard',
             [
-                'title'       => __('API Token'),
+                'title'       => __('API'),
                 'pageHead'    => [
                     'model'       => $this->customerSalesChannel->platform->name,
-                    'title'     => 'API Token',
+                    'title'     => __('API'),
                     'icon'      => 'fal fa-key',
                     'noCapitalise'  => true,
 

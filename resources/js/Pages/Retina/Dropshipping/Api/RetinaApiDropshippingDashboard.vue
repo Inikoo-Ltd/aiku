@@ -143,7 +143,7 @@ const component = computed(() => {
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" @generate-token="() => isModalApiToken = true"></component>
 
 
 	<!-- <RetinaTableApiKey

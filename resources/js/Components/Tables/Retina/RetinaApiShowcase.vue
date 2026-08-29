@@ -19,6 +19,10 @@ library.add(faArrowRight)
 const props = defineProps<{
 }>()
 
+const emit = defineEmits<{
+    generateToken: []
+}>()
+
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', aikuLocaleStructure)
 
@@ -65,6 +69,13 @@ const layout = inject('layout', aikuLocaleStructure)
                         <li>{{ trans("Send it with every request as a header:") }} <code class="bg-purple-100 px-1 rounded">Authorization: Bearer &lt;your token&gt;</code></li>
                         <li>{{ trans("Base URL:") }} <code class="bg-purple-100 px-1 rounded">https://api.aiku.io</code></li>
                     </ul>
+                    <Button
+                        @click="emit('generateToken')"
+                        :label="trans('Generate API token')"
+                        icon="fal fa-key"
+                        type="secondary"
+                        class="mt-3"
+                    />
                 </div>
 
                 <!-- Section: See Documentation -->

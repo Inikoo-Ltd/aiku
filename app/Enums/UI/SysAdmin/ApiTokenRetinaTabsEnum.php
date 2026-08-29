@@ -27,7 +27,7 @@ enum ApiTokenRetinaTabsEnum: string
     {
         return match ($this) {
             ApiTokenRetinaTabsEnum::SHOWCASE => [
-                'title' => __('Showcase'),
+                'title' => __('Overview'),
                 'icon'  => 'fas fa-info-circle',
             ],
 
