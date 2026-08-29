@@ -135,8 +135,12 @@ use App\Imports\Ordering\TransactionImport;
 use App\Models\Helpers\Upload;
 use App\Models\Helpers\TaxCategory;
 use App\Actions\Ordering\Order\UI\IndexOrderChannels;
+use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
+use App\Actions\Dropshipping\Platform\ProcessPlatformTimeSeriesRecords;
 use App\Actions\SysAdmin\Group\Seeders\SeedSalesChannels;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
+use App\Models\Dropshipping\PlatformSalesChannelTimeSeriesRecord;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\PurgedOrder;
@@ -2954,4 +2958,20 @@ test('UI shop dashboard buries brands as a link and brands page renders', functi
             ->has('dashboard.super_blocks.0.blocks.0.tables.brands')
             ->etc()
     );
+});
+
+test('channel import never submits an order with no transactions', function () {
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    expect($order->transactions()->count())->toBe(0);
+
+    $action = new class () {
+        use \App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
+    };
+    $result = $action->payAndSubmitOrder($order);
+
+    expect($result->state)->toBe(OrderStateEnum::CREATING)
+        ->and($result->submitted_at)->toBeNull();
 });
