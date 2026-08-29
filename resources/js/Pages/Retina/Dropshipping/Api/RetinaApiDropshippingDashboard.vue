@@ -114,13 +114,7 @@ const component = computed(() => {
 
 <template>
 	<Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead">
-		<template #otherBefore>
-			<Button @click="() => isModalApiToken = true" label="Generate API Token" type="tertiary">
-
-            </Button>
-		</template>
-	</PageHeading>
+    <PageHeading :data="pageHead" />
 	
 	<!-- Section: warning to add card -->
 	<div v-if="is_need_to_add_card" class="bg-yellow-100 border border-yellow-500 mx-4 my-2 px-4 py-1 rounded">
