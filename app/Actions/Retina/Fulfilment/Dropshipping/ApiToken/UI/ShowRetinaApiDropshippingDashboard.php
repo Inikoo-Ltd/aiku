@@ -81,7 +81,7 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                 'title'       => __('API'),
                 'pageHead'    => [
                     'title'     => __('API'),
-                    'icon'      => 'fal fa-key',
+                    'icon'      => 'fal fa-plug',
                     'noCapitalise'  => true,
                     // 'actions'   => [
                     //     [

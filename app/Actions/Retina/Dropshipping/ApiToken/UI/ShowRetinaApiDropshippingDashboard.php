@@ -82,7 +82,7 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                 'pageHead'    => [
                     'model'       => $this->customerSalesChannel->platform->name,
                     'title'     => __('API'),
-                    'icon'      => 'fal fa-key',
+                    'icon'      => 'fal fa-plug',
                     'noCapitalise'  => true,
 
 
