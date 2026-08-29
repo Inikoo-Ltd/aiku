@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\Invoice;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithExportData;
 use App\Models\Accounting\Invoice;
+use Illuminate\Support\Arr;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -27,7 +28,13 @@ class PdfInvoice extends OrgAction
 
     public function handle(Invoice $invoice, array $options = []): Response
     {
-        return $this->processDataExportPdf($invoice, $options);
+        if ($options) {
+            $data                = $invoice->data;
+            $data['pdf_columns'] = $options + Arr::get($data, 'pdf_columns', []);
+            $invoice->updateQuietly(['data' => $data]);
+        }
+
+        return $this->processDataExportPdf($invoice);
     }
 
     public function rules(): array

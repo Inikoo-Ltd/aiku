@@ -24,13 +24,13 @@ use Sentry;
 
 trait WithInvoicesExport
 {
-    public function getInvoicePdfContent(Invoice $invoice, array $options = []): string
+    public function getInvoicePdfContent(Invoice $invoice): string
     {
         $locale = $invoice->shop->language->code;
         app()->setLocale($locale);
 
         try {
-            [$pdf] = $this->buildInvoicePdf($invoice, $options);
+            [$pdf] = $this->buildInvoicePdf($invoice);
 
             return $pdf->output();
         } catch (Exception $e) {
@@ -40,13 +40,13 @@ trait WithInvoicesExport
         }
     }
 
-    public function processDataExportPdf(Invoice $invoice, array $options = []): \Symfony\Component\HttpFoundation\Response
+    public function processDataExportPdf(Invoice $invoice): \Symfony\Component\HttpFoundation\Response
     {
         $locale = $invoice->shop->language->code;
         app()->setLocale($locale);
 
         try {
-            [$pdf, $filename] = $this->buildInvoicePdf($invoice, $options);
+            [$pdf, $filename] = $this->buildInvoicePdf($invoice);
 
             $isAttachIsdocToPdf = Arr::get($invoice->organisation->settings, "invoice_export.attach_isdoc_to_pdf", false);
 
@@ -100,6 +100,7 @@ trait WithInvoicesExport
         return $transactions->partition(fn ($transaction) => $this->isFullyOutOfStockLine($transaction, $outOfStockTransactionIds))->all();
     }
 
+
     /**
      * Quantity ordered but never supplied, in the invoice's own units.
      *
@@ -139,7 +140,7 @@ trait WithInvoicesExport
     /**
      * @return array{0: \Mccarlosen\LaravelMpdf\LaravelMpdf, 1: string}
      */
-    private function buildInvoicePdf(Invoice $invoice, array $options = []): array
+    private function buildInvoicePdf(Invoice $invoice): array
     {
         $totalItemsNet = $invoice->total_amount;
         $totalShipping = $invoice->order?->shipping_amount ?? 0;
@@ -178,11 +179,9 @@ trait WithInvoicesExport
             return $transaction;
         })->sortBy(fn ($transaction) => strtolower($transaction->historicAsset?->code ?? ''));
 
-        $separateOutOfStock = (bool)Arr::get(
-            $options,
-            'separate_out_of_stock',
-            Arr::get($invoice->shop->settings, 'invoicing.download_pdf_columns.separate_out_of_stock', true)
-        );
+        $pdfColumns = GetInvoicePdfColumns::run($invoice);
+
+        $separateOutOfStock = $pdfColumns['separate_out_of_stock'];
 
         $outOfStockTransactions = collect();
         if ($separateOutOfStock && $invoice->type == InvoiceTypeEnum::INVOICE) {
@@ -197,11 +196,7 @@ trait WithInvoicesExport
                 ->values();
         }
 
-        $showDiscounts = (bool)Arr::get(
-            $options,
-            'show_discounts',
-            Arr::get($invoice->shop->settings, 'invoicing.download_pdf_columns.show_discounts', true)
-        );
+        $showDiscounts = $pdfColumns['show_discounts'];
 
         $discountOfferNames = collect();
         if ($showDiscounts) {
@@ -290,19 +285,7 @@ trait WithInvoicesExport
             'outOfStockTransactions'  => $outOfStockTransactions,
             'totalNet'                => number_format($totalNet, 2, '.', ''),
             'refunds'                 => $refundData,
-            'pro_mode'                => Arr::get($options, 'pro_mode', false),
-            'country_of_origin'       => Arr::get($options, 'country_of_origin', false),
-            'rrp'                     => Arr::get($options, 'rrp', false),
-            'parts'                   => Arr::get($options, 'parts', false),
-            'commodity_codes'         => Arr::get($options, 'commodity_codes', false),
-            'weight'                  => Arr::get($options, 'weight', false),
-            'barcode'                 => Arr::get($options, 'barcode', false),
-            'cpnp'                    => Arr::get($options, 'cpnp', false),
-            'hide_payment_status'     => Arr::get($options, 'hide_payment_status', false),
-            'group_by_tariff_code'    => Arr::get($options, 'group_by_tariff_code', false),
-            'show_dispatch_totals'    => Arr::get($options, 'show_dispatch_totals', false),
-            'show_batch_code'         => Arr::get($options, 'show_batch_code', false),
-            'show_discounts'          => $showDiscounts,
+            ...$pdfColumns,
             'discountOfferNames'      => $discountOfferNames,
             'dispatch_total_skos'     => $deliveryNote?->total_skos > 0 ? $deliveryNote->total_skos : null,
             'dispatch_total_units'    => $deliveryNote?->total_units > 0 ? $deliveryNote->total_units : null,
