@@ -38,7 +38,6 @@ class BackfillPlatformSalesChannelTimeSeries
         foreach (Platform::where('type', PlatformTypeEnum::MANUAL)->get() as $platform) {
             $shops = DB::connection('aiku_no_sticky')->table('invoices')
                 ->where('platform_id', $platform->id)
-                ->whereNotNull('sales_channel_id')
                 ->whereNull('deleted_at')
                 ->groupBy('shop_id')
                 ->select('shop_id', DB::raw('min(date) as first_date'), DB::raw('count(*) as invoice_count'))
