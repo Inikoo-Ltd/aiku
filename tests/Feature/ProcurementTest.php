@@ -2781,6 +2781,48 @@ describe('partner shopping list', function () {
     });
 });
 
+describe('partner browse', function () {
+    test('UI partner browse index requires procurement shop_id', function () {
+        $partner = $this->orgPartner->partner;
+        $originalSettings = $partner->settings;
+        $partner->update(['settings' => Arr::except($originalSettings, 'procurement.shop_id')]);
+
+        $response = $this->get(route('grp.org.procurement.org_partners.show.browse.index', [$this->organisation->slug, $this->orgPartner->id]));
+        $response->assertNotFound();
+
+        $partner->update(['settings' => $originalSettings]);
+    });
+
+    test('UI partner browse index returns catalogue tree when shop_id set', function () {
+        $seller = $this->orgPartner->partner;
+        $sellerShop = $seller->shops()->first();
+        if (!$sellerShop) {
+            $sellerShop = StoreShop::run($seller, Shop::factory()->definition());
+        }
+
+        [, $sellerProduct] = createProduct($sellerShop);
+        createOrgStocks($this->orgPartner->organisation, [$sellerProduct->orgStocks()->first()->stock]);
+
+        $originalSettings = $seller->settings;
+        $settings = $originalSettings;
+        data_set($settings, 'procurement.shop_id', $sellerShop->id);
+        $seller->update(['settings' => $settings]);
+
+        $response = $this->get(route('grp.org.procurement.org_partners.show.browse.index', [$this->organisation->slug, $this->orgPartner->id]));
+
+        $response->assertInertia(function (AssertableInertia $page) {
+            $page
+                ->component('Procurement/PartnerBrowse')
+                ->has('title')
+                ->has('level')
+                ->has('categories')
+                ->has('collections');
+        });
+
+        $seller->update(['settings' => $originalSettings]);
+    });
+});
+
 test('UI partner shopping list index', function () {
     $response = $this->get(route('grp.org.procurement.org_partners.show.shopping_list.index', [$this->organisation->slug, $this->orgPartner->id]));
 

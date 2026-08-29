@@ -10,6 +10,7 @@
 namespace App\Actions\Procurement\OrgPartner;
 
 use App\Models\Procurement\OrgPartner;
+use Illuminate\Support\Arr;
 
 trait WithOrgPartnerSubNavigation
 {
@@ -28,6 +29,19 @@ trait WithOrgPartnerSubNavigation
                 ],
                 "isAnchor" => true,
             ],
+            ...(Arr::get($parent->partner->settings, 'procurement.shop_id') ? [
+                [
+                    "label"    => __("Browse"),
+                    "route"    => [
+                        "name"       => "grp.org.procurement.org_partners.show.browse.index",
+                        "parameters" => [$parent->organisation->slug, $parent->id],
+                    ],
+                    "leftIcon" => [
+                        "icon"    => ["fal", "fa-store"],
+                        "tooltip" => __("Browse"),
+                    ],
+                ],
+            ] : []),
             [
                 "label"    => __("Shopping List"),
                 "route"    => [
@@ -41,7 +55,7 @@ trait WithOrgPartnerSubNavigation
                 "number"   => $parent->stats->number_open_shopping_list_items,
             ],
             [
-                "label"    => __("Purchase Orders"),
+                "align"    => "right",
                 "route"    => [
                     "name"       => "grp.org.procurement.org_partners.show.purchase-orders.index",
                     "parameters" => [$parent->organisation->slug, $parent->id],
@@ -50,7 +64,6 @@ trait WithOrgPartnerSubNavigation
                     "icon"    => ["fal", "fa-clipboard"],
                     "tooltip" => __("Purchase Orders"),
                 ],
-                "number"   => $parent->partner->procurementStats->number_purchase_orders,
             ],
             [
                 "label"    => __("Org Stocks"),

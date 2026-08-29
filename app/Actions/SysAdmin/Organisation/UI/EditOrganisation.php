@@ -46,6 +46,11 @@ class EditOrganisation extends OrgAction
             ->get(['id', 'contact_name', 'username', 'nickname'])
             ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->chatName()]);
 
+        $shopOptions = $organisation->shops()
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->mapWithKeys(fn ($shop) => [$shop->id => ['id' => $shop->id, 'label' => $shop->name]]);
+
         return Inertia::render("EditModel", [
             "title"       => __("Organisation"),
             "breadcrumbs" => $this->getBreadcrumbs(
@@ -124,6 +129,20 @@ class EditOrganisation extends OrgAction
                                 "label"       => __("Break-even margin (%)"),
                                 "information" => __("Orders with a margin below this are flagged as unprofitable once staff, rent and other running costs are counted. Industry guideline for this kind of shop is around 30%."),
                                 "value"       => Arr::get($organisation->settings, 'margins.break_even_pct', 30),
+                            ],
+                        ],
+                    ],
+                    [
+                        "label"  => __("Procurement"),
+                        "icon"   => "fal fa-box-usd",
+                        "fields" => [
+                            "procurement_shop_id" => [
+                                "type"        => "select",
+                                "label"       => __("Procurement shop"),
+                                "information" => __("Shop whose catalogue partner organisations browse when buying intercompany. Leave empty to disable the Browse tab."),
+                                "placeholder" => __("Select a shop"),
+                                "options"     => $shopOptions,
+                                "value"       => Arr::get($organisation->settings, "procurement.shop_id"),
                             ],
                         ],
                     ],
