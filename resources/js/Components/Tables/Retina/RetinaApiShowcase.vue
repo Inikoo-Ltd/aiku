@@ -61,6 +61,18 @@ const layout = inject('layout', aikuLocaleStructure)
                     {{ trans("Connect your own systems directly to your account: browse the product catalogue with live prices, build your portfolio, manage your clients, create and submit orders, follow their progress, and download your product data as CSV or JSON feeds — everything you can do here, automated from your side.") }}
                 </p>
 
+                <!-- Section: See Documentation -->
+                <div class="mt-6 flex flex-col gap-x-6">
+                    <div class="mb-2 text-sm text-gray-500">{{ trans("Full reference of the available endpoints, parameters and examples:") }}</div>
+                    <a :href="layout?.retina?.type === 'fulfilment' ? 'https://documenter.getpostman.com/view/28816137/2sBY4WmwBA' : 'https://documenter.getpostman.com/view/28816137/2sB34Zrjrp'" target="_blank" rel="noopener noreferrer" class="w-fit">
+                        <Button
+                            :label="trans('API documentation')"
+                            iconRight="fal fa-external-link"
+                        >
+                        </Button>
+                    </a>
+                </div>
+
                 <!-- Section: How to use your token -->
                 <div class="mt-6 max-w-2xl rounded-lg border border-purple-300 bg-purple-50 p-4 text-purple-900">
                     <div class="text-sm font-semibold mb-1">{{ trans("To use the API you need a token") }}</div>
@@ -76,18 +88,6 @@ const layout = inject('layout', aikuLocaleStructure)
                         type="secondary"
                         class="mt-3"
                     />
-                </div>
-
-                <!-- Section: See Documentation -->
-                <div class="mt-6 flex flex-col gap-x-6">
-                    <div class="mb-2 text-sm text-gray-500">{{ trans("Full reference of the available endpoints, parameters and examples:") }}</div>
-                    <a :href="layout?.retina?.type === 'fulfilment' ? 'https://documenter.getpostman.com/view/28816137/2sBY4WmwBA' : 'https://documenter.getpostman.com/view/28816137/2sB34Zrjrp'" target="_blank" rel="noopener noreferrer" class="w-fit">
-                        <Button
-                            :label="trans('API documentation')"
-                            iconRight="fal fa-external-link"
-                        >
-                        </Button>
-                    </a>
                 </div>
 
                 <!-- Section: Sandbox -->
