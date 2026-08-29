@@ -235,6 +235,7 @@
             <a href="{{ route('aiku-public.blog.index') }}">Engineering notes</a>
             <a href="{{ route('aiku-public.feed') }}">RSS</a>
             <a href="{{ route('aiku-public.sitemap') }}">Sitemap</a>
+            <a href="mailto:hello@aiku.io">hello@aiku.io</a>
         </div>
         <div>aiku is open source software (<a href="https://github.com/Inikoo-Ltd/aiku/blob/main/LICENSE" rel="noopener" style="margin:0">AGPL-3.0</a>).</div>
     </footer>
