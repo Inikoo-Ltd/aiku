@@ -158,6 +158,15 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
+                                'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.index',
+                            ],
+                            'label' => __('Channels'),
+                        ]
+                    ],
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
                                 'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.show',
                                 'parameters' => [$this->customerSalesChannel->slug]
                             ],
