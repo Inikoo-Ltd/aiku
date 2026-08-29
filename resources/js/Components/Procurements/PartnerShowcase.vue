@@ -45,7 +45,7 @@ const props = defineProps<{
                 </div>
             </div>
 
-            <div class="mt-4">
+            <div class="mt-4 max-w-md xl:max-w-lg">
                 <PartnerMiniShoppingList :miniCart="data.miniCart" />
             </div>
         </div>

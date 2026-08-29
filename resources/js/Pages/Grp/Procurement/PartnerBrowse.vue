@@ -113,7 +113,7 @@ function addToShoppingList(product: ProductCard) {
                 />
             </div>
 
-            <div class="w-full sm:w-80">
+            <div class="w-full sm:w-96 xl:w-[28rem]">
                 <PartnerMiniShoppingList :miniCart="miniCart" />
             </div>
         </div>

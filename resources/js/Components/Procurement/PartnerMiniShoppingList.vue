@@ -30,7 +30,7 @@ const groupedItems = computed(() => {
 </script>
 
 <template>
-    <div class="w-full max-w-sm rounded-sm border border-gray-200 bg-white px-5 py-4 font-mono text-xs text-gray-700 shadow-md">
+    <div class="w-full rounded-sm border border-gray-200 bg-white px-5 py-4 font-mono text-xs text-gray-700 shadow-md">
         <div class="text-center">
             <div class="text-sm font-semibold tracking-widest uppercase">{{ miniCart.partner_name }}</div>
             <div class="mt-1 text-gray-400">{{ trans("Shopping list") }}</div>
