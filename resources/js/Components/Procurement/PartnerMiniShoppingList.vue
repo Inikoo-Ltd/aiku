@@ -38,19 +38,32 @@ const groupedItems = computed(() => {
 
         <div class="my-3 border-t border-dashed border-gray-300" />
 
-        <div v-if="miniCart.items.length" class="tabular-nums">
-            <template v-for="[family, items] in groupedItems" :key="family">
-                <div class="mt-2 first:mt-0 uppercase tracking-wide text-[10px] text-gray-400">{{ family || trans("Other") }}</div>
-                <div v-for="item in items" :key="item.id" class="flex items-baseline gap-2 py-0.5">
-                    <span class="shrink-0 text-gray-400">{{ item.org_stock_code }}</span>
-                    <span class="truncate">{{ item.org_stock_name }}</span>
-                    <span class="ml-auto shrink-0">{{ useLocaleStore().number(item.quantity) }}</span>
-                </div>
-            </template>
-            <div v-if="miniCart.count > miniCart.items.length" class="mt-1 text-gray-400">
-                + {{ useLocaleStore().number(miniCart.count - miniCart.items.length) }} {{ trans("more") }}…
-            </div>
-        </div>
+        <table v-if="miniCart.items.length" class="w-full table-fixed tabular-nums">
+            <colgroup>
+                <col class="w-24" />
+                <col />
+                <col class="w-12" />
+            </colgroup>
+            <tbody v-for="[family, items] in groupedItems" :key="family">
+                <tr>
+                    <td colspan="3" class="pt-2 pb-0.5 uppercase tracking-wide text-[10px] text-gray-400">
+                        {{ family || trans("Other") }}
+                    </td>
+                </tr>
+                <tr v-for="item in items" :key="item.id">
+                    <td class="py-0.5 pr-2 align-baseline text-gray-400">{{ item.org_stock_code }}</td>
+                    <td class="py-0.5 align-baseline"><div class="truncate">{{ item.org_stock_name }}</div></td>
+                    <td class="py-0.5 pl-2 text-right align-baseline">{{ useLocaleStore().number(item.quantity) }}</td>
+                </tr>
+            </tbody>
+            <tbody v-if="miniCart.count > miniCart.items.length">
+                <tr>
+                    <td colspan="3" class="pt-1 text-gray-400">
+                        + {{ useLocaleStore().number(miniCart.count - miniCart.items.length) }} {{ trans("more") }}…
+                    </td>
+                </tr>
+            </tbody>
+        </table>
         <div v-else class="text-center text-gray-400">{{ trans("Empty") }}</div>
 
         <div class="my-3 border-t border-dashed border-gray-300" />
