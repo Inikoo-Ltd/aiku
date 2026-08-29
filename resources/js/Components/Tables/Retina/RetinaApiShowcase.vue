@@ -63,7 +63,7 @@ const layout = inject('layout', aikuLocaleStructure)
 
                 <!-- Section: How to use your token -->
                 <div class="mt-6 max-w-2xl rounded-lg border border-purple-300 bg-purple-50 p-4 text-purple-900">
-                    <div class="text-sm font-semibold mb-1">{{ trans("Important: how to use your token") }}</div>
+                    <div class="text-sm font-semibold mb-1">{{ trans("To use the API you need a token") }}</div>
                     <ul class="list-disc pl-5 space-y-1 text-sm">
                         <li>{{ trans("Copy the full token from the popup when you generate it — it is shown only once. The shortened label in the token list is just a reference, not the token itself.") }}</li>
                         <li>{{ trans("Send it with every request as a header:") }} <code class="bg-purple-100 px-1 rounded">Authorization: Bearer &lt;your token&gt;</code></li>
