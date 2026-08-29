@@ -54,7 +54,7 @@ class StoreCustomerToken extends RetinaAction
             'api_token' => ''
         ];
         $customerSalesChannel->customer->auditCustomNew = [
-            'api_token' => __('Api token created').' ('.$tokenName.')'
+            'api_token' => __('API token created').' ('.$tokenName.')'
         ];
 
         Event::dispatch(new AuditCustom($customerSalesChannel->customer));

@@ -78,7 +78,7 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
         return Inertia::render(
             'Dropshipping/Api/RetinaApiDropshippingDashboard',
             [
-                'title'       => __('Api Token'),
+                'title'       => __('API Token'),
                 'pageHead'    => [
                     'title'     => 'API Token',
                     'icon'      => 'fal fa-key',
@@ -161,7 +161,7 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                                 'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.api.dashboard',
                                 'parameters' => $routeParameters
                             ],
-                            'label' => __('Api Token'),
+                            'label' => __('API Token'),
                         ]
                     ]
                 ]

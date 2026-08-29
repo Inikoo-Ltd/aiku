@@ -38,7 +38,7 @@ enum ApiTokenRetinaTabsEnum: string
                 'align' => 'right',
             ],
             ApiTokenRetinaTabsEnum::API_TOKENS => [
-                'title' => __('Api tokens'),
+                'title' => __('API tokens'),
                 'icon'  => 'fal fa-key',
                 'type'  => 'icon',
             ],
