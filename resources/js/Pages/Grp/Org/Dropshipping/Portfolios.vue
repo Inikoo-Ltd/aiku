@@ -19,7 +19,9 @@ import ProductsSelector from "@/Components/Dropshipping/ProductsSelector.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { Customer } from "@/types/customer"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBookmark, faDownload, faEllipsisV } from "@fal"
+import { faBookmark, faDownload, faEllipsisV, faUpload } from "@fal"
+import UploadExcel from "@/Components/Upload/UploadExcel.vue"
+import { UploadPallet } from "@/types/Pallet"
 import { Popover } from "primevue"
 import { routeType } from "@/types/route"
 import { ulid } from "ulid"
@@ -27,7 +29,7 @@ import {debounce} from "lodash-es"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 
-library.add(faBookmark, faDownload, faEllipsisV)
+library.add(faBookmark, faDownload, faEllipsisV, faUpload)
 
 const props = defineProps<{
     data: {}
@@ -40,10 +42,19 @@ const props = defineProps<{
     customerSalesChannel: {}
     routes:{}
     download_route?: Record<string, routeType>
+    bulk_import_product?: {
+        title: {
+            label: string
+            information: string
+        }
+        progressDescription: string
+        upload_spreadsheet: UploadPallet
+    }
 }>()
 
 
 const isOpenModalPortfolios = ref(false)
+const isOpenModalImport = ref(false)
 
 
 // Method: Submit the selected item
@@ -231,6 +242,8 @@ const submitPortfolioAction = async (action: any) => {
     <PageHeading :data="pageHead">
         <template #other>
             <div class="flex items-center gap-x-3">
+                <Button v-if="bulk_import_product" @click="isOpenModalImport = true" :icon="faUpload"
+                    :label="trans('Bulk Import')" type="tertiary" class="h-9" />
                 <div v-if="download_route"
                     class="inline-flex items-center rounded-md border overflow-hidden">
                     <a :href="csvDownloadUrl" target="_blank" rel="noopener">
@@ -367,4 +380,12 @@ const submitPortfolioAction = async (action: any) => {
             @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id), customerSalesChannelId)">
         </ProductsSelector>
     </Modal>
+
+    <UploadExcel
+        v-if="bulk_import_product"
+        v-model="isOpenModalImport"
+        :title="bulk_import_product.title"
+        :progressDescription="bulk_import_product.progressDescription"
+        :upload_spreadsheet="bulk_import_product.upload_spreadsheet"
+        :propsRefreshAfterFinish="['data']" />
 </template>

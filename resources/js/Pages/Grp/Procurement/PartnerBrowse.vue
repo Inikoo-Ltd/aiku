@@ -17,8 +17,10 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 
 type CategoryCard = { id: number, slug: string, code: string, name: string, image: object | null, number_current_products?: number, type?: string }
 type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_slug: string | null }
-type MiniCartItem = { id: number, quantity: number, org_stock_code: string | null, org_stock_name: string | null }
-type MiniCart = { count: number, total: number, items: MiniCartItem[], listRoute: { name: string, parameters: (string | number)[] } }
+import PartnerMiniShoppingList from "@/Components/Procurement/PartnerMiniShoppingList.vue"
+
+type MiniCartItem = { id: number, quantity: number, org_stock_code: string | null, org_stock_name: string | null, family_name: string | null }
+type MiniCart = { partner_name: string, count: number, total: number, currency: string, items: MiniCartItem[], listRoute: { name: string, parameters: (string | number)[] } }
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -111,27 +113,8 @@ function addToShoppingList(product: ProductCard) {
                 />
             </div>
 
-            <div class="w-full rounded-lg border border-gray-200 p-3 sm:w-72">
-                <div class="flex items-center gap-2 text-sm font-medium text-gray-800">
-                    <font-awesome-icon icon="fal fa-shopping-basket" class="text-gray-400" />
-                    <span>{{ miniCart.count }} {{ trans("items") }} · {{ useLocaleStore().currencyFormat(orgPartner.currency, miniCart.total) }}</span>
-                </div>
-
-                <ul v-if="miniCart.count" class="mt-2 space-y-1">
-                    <li v-for="item in miniCart.items" :key="item.id" class="flex items-center justify-between text-xs text-gray-500">
-                        <span class="truncate">{{ item.org_stock_code }} · {{ item.org_stock_name }}</span>
-                        <span class="ml-2 shrink-0">{{ useLocaleStore().number(item.quantity) }}</span>
-                    </li>
-                </ul>
-                <p v-else class="mt-2 text-xs text-gray-400">{{ trans("Empty") }}</p>
-
-                <Button
-                    class="mt-3 w-full justify-center"
-                    size="xs"
-                    type="tertiary"
-                    :label="trans('Go to Shopping list')"
-                    @click="router.visit(route(miniCart.listRoute.name, miniCart.listRoute.parameters))"
-                />
+            <div class="w-full sm:w-96 xl:w-[28rem]">
+                <PartnerMiniShoppingList :miniCart="miniCart" />
             </div>
         </div>
 

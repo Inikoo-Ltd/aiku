@@ -155,13 +155,16 @@ class StoreOrderFromWooCommerce extends OrgAction
             $portfolioData = DB::table('portfolios')->select('item_id')->where('item_type', 'Product')->where('customer_sales_channel_id', $wooCommerceUser->customer_sales_channel_id)
                 ->where('platform_product_id', $item['product_id'])->first();
             if ($portfolioData && $portfolioData->item_id) {
-                $product = Product::find($portfolioData->item_id);
-                if ($product) {
+                $product       = Product::find($portfolioData->item_id);
+                $historicAsset = $product?->currentHistoricProduct;
+                if ($historicAsset) {
                     $orderedProducts[] = [
-                        'historicAsset'           => $product->currentHistoricProduct,
+                        'historicAsset'           => $historicAsset,
                         'quantity_ordered'        => $item['quantity'],
                         'platform_transaction_id' => $item['id']
                     ];
+                } else {
+                    Sentry::captureMessage('Woo order item '.$item['id'].' matched portfolio for product '.$portfolioData->item_id.' but could not resolve a '.($product ? 'historic asset' : 'product').', item dropped');
                 }
             }
         }

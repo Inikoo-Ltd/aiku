@@ -78,10 +78,10 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
         return Inertia::render(
             'Dropshipping/Api/RetinaApiDropshippingDashboard',
             [
-                'title'       => __('Api Token'),
+                'title'       => __('API'),
                 'pageHead'    => [
-                    'title'     => 'API Token',
-                    'icon'      => 'fal fa-key',
+                    'title'     => __('API'),
+                    'icon'      => 'fal fa-plug',
                     'noCapitalise'  => true,
                     // 'actions'   => [
                     //     [
@@ -158,10 +158,29 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
+                                'name' => 'retina.fulfilment.dropshipping.customer_sales_channels.index',
+                            ],
+                            'label' => __('Channels'),
+                        ]
+                    ],
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.show',
+                                'parameters' => [$this->customerSalesChannel->slug]
+                            ],
+                            'label' => $this->customerSalesChannel->name.' ('.$this->customerSalesChannel->platform->type->labels()[$this->customerSalesChannel->platform->type->value].')',
+                        ]
+                    ],
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
                                 'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.api.dashboard',
                                 'parameters' => $routeParameters
                             ],
-                            'label' => __('Api Token'),
+                            'label' => __('API'),
                         ]
                     ]
                 ]
@@ -179,7 +198,7 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
-                ->column(key: 'name', label: __('Token ID'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Label'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'created_at', label: __('Created At'), canBeHidden: false, sortable: true, type: 'date_hms')
                 ->column(key: 'last_used_at', label: __('Last Used'), canBeHidden: false, sortable: true, type: 'date_hms')
                 ->column(key: 'expires_at', label: __('Expires At'), sortable: true, type: 'date_hms')

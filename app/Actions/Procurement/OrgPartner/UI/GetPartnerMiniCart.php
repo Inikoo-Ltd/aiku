@@ -44,11 +44,17 @@ class GetPartnerMiniCart
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
             ])
+            ->selectRaw("(select pc.name from product_has_org_stocks phos
+                join products pr on pr.id = phos.product_id
+                join product_categories pc on pc.id = pr.family_id
+                where phos.org_stock_id = org_stocks.id
+                limit 1) as family_name")
             ->orderByDesc('partner_shopping_list_items.created_at')
-            ->limit(4)
+            ->limit(10)
             ->get();
 
         return [
+            'partner_name' => $orgPartner->partner->name,
             'count'      => $orgPartner->stats->number_open_shopping_list_items,
             'total'      => $estimatedTotal,
             'currency'   => $orgPartner->partner->currency->code,

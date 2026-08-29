@@ -22,7 +22,7 @@
         </article>
         @if ($more->isNotEmpty())
             <section class="chapter">
-                <h2 style="font-size:26px">More notes</h2>
+                <h2 style="font-size:26px">Related notes</h2>
                 <ul class="posts">
                     @foreach ($more as $other)
                         <li>
