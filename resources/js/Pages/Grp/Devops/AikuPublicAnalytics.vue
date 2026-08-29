@@ -65,7 +65,7 @@ const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const shortDate = (value?: string) => value ? new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "—"
 
-const maxDailyViews = computed(() => Math.max(...props.overview?.daily ?? [].map(d => Number(d.views)), 1))
+const maxDailyViews = computed(() => Math.max(...(props.overview?.daily ?? []).map(d => Number(d.views)), 1))
 
 const sections = computed(() => [
     { label: trans("Pages"), key: "path", rows: props.overview?.pages ?? [] },
