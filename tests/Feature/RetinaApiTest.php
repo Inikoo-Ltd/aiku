@@ -97,6 +97,7 @@ test('retina api get profile', function () {
 test('retina api get profile unauthenticated', function () {
     $response = getJson(route('retina.api.profile'));
     $response->assertUnauthorized();
+    expect($response->json('message'))->toContain('Authorization: Bearer');
 });
 
 test('retina api dropshipping images rejects non integer id with validation error', function () {
@@ -475,4 +476,9 @@ test('retina api fulfilment portfolio flow', function () {
 
     $response = deleteJson(route('retina.api.fulfilment.portfolios.delete', $portfolioId));
     $response->assertOk();
+});
+test('retina api real bearer token authenticates', function () {
+    $plain = \App\Actions\Retina\Dropshipping\ApiToken\StoreCustomerToken::make()->handle($this->dropshippingChannel);
+
+    getJson(route('retina.api.profile'), ['Authorization' => 'Bearer '.$plain])->assertOk();
 });

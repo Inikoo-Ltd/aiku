@@ -40,7 +40,7 @@ class StoreCustomerToken extends RetinaAction
 
         $tokenPrefix = substr($tokenValue, 0, 3);
 
-        $tokenName = $tokenParts[0].'|'.$tokenPrefix.'...-'.$customerSalesChannel->slug.($readOnly ? ' (read only)' : '');
+        $tokenName = $tokenPrefix.'… '.$customerSalesChannel->slug.($readOnly ? ' (read only)' : '');
 
         if (!empty($tokenPrefix)) {
             DB::table('personal_access_tokens')->where('id', $tokenParts[0])->update([
