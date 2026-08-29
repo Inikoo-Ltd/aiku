@@ -29,7 +29,7 @@ const layout = inject('layout', aikuLocaleStructure)
 </script>
 
 <template>
-    <div class="relative isolate overflow-hidden">
+    <div class="relative">
         <!-- <pre>{{ data }}</pre> -->
         <!-- <svg class="absolute inset-0 -z-10 size-full stroke-gray-200 [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]"
             aria-hidden="true">
@@ -101,7 +101,7 @@ const layout = inject('layout', aikuLocaleStructure)
                     </ul>
                     <a href="https://canary.aw-dropship.com/app" target="_blank" rel="noopener noreferrer" class="w-fit">
                         <Button
-                            :label="trans('Test in staging')"
+                            :label="trans('Open staging mirror')"
                             iconRight="fal fa-external-link"
                             type="rainbow"
                         >
