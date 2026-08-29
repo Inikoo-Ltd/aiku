@@ -51,10 +51,10 @@ const layout = inject('layout', aikuLocaleStructure)
                 </div> -->
 
                 <h1 class="text-pretty text-2xl font-semibold tracking-tight">
-                    {{ trans("Manage your API Tokens") }}
+                    {{ trans("Connect to the API") }}
                 </h1>
                 <p class="mt-3 max-w-2xl text-sm text-gray-500">
-                    {{ trans("API Tokens are used to authenticate requests to the API. You can create, view, and manage your API tokens here. With API Tokens, you can create order, add products, add client, etc by using Web API.") }}
+                    {{ trans("Use the API to create orders, add products and manage clients from your own systems. Requests are authenticated with an API token, which you can generate and manage in the API tokens tab.") }}
                 </p>
 
                 <!-- Section: How to use your token -->
