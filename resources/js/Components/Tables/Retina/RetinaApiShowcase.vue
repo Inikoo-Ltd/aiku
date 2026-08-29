@@ -58,7 +58,7 @@ const layout = inject('layout', aikuLocaleStructure)
                     {{ trans("Connect to the API") }}
                 </h1>
                 <p class="mt-3 max-w-2xl text-sm text-gray-500">
-                    {{ trans("Use the API to create orders, add products and manage clients from your own systems. Requests are authenticated with an API token, which you can generate and manage in the API tokens tab.") }}
+                    {{ trans("Connect your own systems directly to your account: browse the product catalogue with live prices, build your portfolio, manage your clients, create and submit orders, follow their progress, and download your product data as CSV or JSON feeds — everything you can do here, automated from your side.") }}
                 </p>
 
                 <!-- Section: How to use your token -->
