@@ -69,7 +69,7 @@ class Handler extends ExceptionHandler
     {
         if ($request->routeIs('retina.api.*')) {
             return response()->json([
-                'message' => 'Unauthenticated. Send your API token in the Authorization header: "Authorization: Bearer <token>". The base URL is '.url('app/re-api').'. Tokens are generated in your sales channel\'s API section; make sure you copy the whole token including the digits and "|" at the start.',
+                'message' => 'Unauthenticated. Send your API token in the Authorization header: "Authorization: Bearer <token>". The base URL is https://api.'.config('app.domain').'. Tokens are generated in your sales channel\'s API section; make sure you copy the whole token including the digits and "|" at the start.',
             ], 401);
         }
 

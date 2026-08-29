@@ -38,10 +38,10 @@ const layout = inject('layout', aikuLocaleStructure)
             <rect width="100%" height="100%" stroke-width="0" fill="url(#0787a7c5-978c-4f66-83c7-11c213f99cb7)" />
         </svg> -->
 
-        <div class="mx-auto px-12 pb-12 pt-10 lg:flex lg:px-14 ">
+        <div class="mx-auto px-6 py-6 lg:flex lg:px-8">
 
 
-            <div xv-else class="xmx-auto max-w-2xl lg:mx-0 lg:shrink-0 lg:pt-8">
+            <div xv-else class="xmx-auto max-w-2xl lg:mx-0 lg:shrink-0">
                 <!-- <div class="">
                     <a href="#" class="inline-flex space-x-6">
                         <span class="rounded-full bg-indigo-600/10 px-3 py-1 text-sm/6 font-semibold text-indigo-600 ring-1 ring-inset ring-indigo-600/10">
@@ -50,16 +50,26 @@ const layout = inject('layout', aikuLocaleStructure)
                     </a>
                 </div> -->
 
-                <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
+                <h1 class="text-pretty text-2xl font-semibold tracking-tight">
                     {{ trans("Manage your API Tokens") }}
                 </h1>
-                <p class="mt-8 text-pretty text-lg font-medium text-gray-500 sm:text-xl/8">
+                <p class="mt-3 max-w-2xl text-sm text-gray-500">
                     {{ trans("API Tokens are used to authenticate requests to the API. You can create, view, and manage your API tokens here. With API Tokens, you can create order, add products, add client, etc by using Web API.") }}
                 </p>
 
+                <!-- Section: How to use your token -->
+                <div class="mt-6 max-w-2xl rounded-lg border border-purple-300 bg-purple-50 p-4 text-purple-900">
+                    <div class="text-sm font-semibold mb-1">{{ trans("Important: how to use your token") }}</div>
+                    <ul class="list-disc pl-5 space-y-1 text-sm">
+                        <li>{{ trans("Copy the full token from the popup when you generate it — it is shown only once. The shortened label in the token list is just a reference, not the token itself.") }}</li>
+                        <li>{{ trans("Send it with every request as a header:") }} <code class="bg-purple-100 px-1 rounded">Authorization: Bearer &lt;your token&gt;</code></li>
+                        <li>{{ trans("Base URL:") }} <code class="bg-purple-100 px-1 rounded">https://api.aiku.io</code></li>
+                    </ul>
+                </div>
+
                 <!-- Section: See Documentation -->
-                <div class="mt-10 flex xitems-center flex-col justify-center gap-x-6">
-                    <div class="mb-2 text-gray-500">{{ trans("Wanna learn more about API Tokens?") }}</div>
+                <div class="mt-6 flex flex-col gap-x-6">
+                    <div class="mb-2 text-sm text-gray-500">{{ trans("Wanna learn more about API Tokens?") }}</div>
                     <a :href="layout?.retina?.type === 'fulfilment' ? 'https://documenter.getpostman.com/view/28816137/2sBY4WmwBA' : 'https://documenter.getpostman.com/view/28816137/2sB34Zrjrp'" target="_blank" rel="noopener noreferrer" class="w-fit">
                         <Button
                             :label="trans('See documentation')"
@@ -70,8 +80,8 @@ const layout = inject('layout', aikuLocaleStructure)
                 </div>
 
                 <!-- Section: Sandbox -->
-                <div class="mt-10 flex xitems-center flex-col justify-center gap-x-6">
-                    <div class="mb-2 text-gray-500">
+                <div class="mt-6 flex flex-col gap-x-6">
+                    <div class="mb-2 text-sm text-gray-500">
                         {{ trans("Wanna test the API Tokens in safe mode? You can test it in our staging. Enter the same credential as your current account.") }}
                     </div>
                     <a href="https://canary.aw-dropship.com/app" target="_blank" rel="noopener noreferrer" class="w-fit">
