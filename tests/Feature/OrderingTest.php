@@ -128,6 +128,7 @@ use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Actions\Ordering\Order\WriteOffOrderShortfall;
+use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Models\Ordering\Adjustment;
 use App\Enums\Helpers\Import\UploadRecordStatusEnum;
@@ -2601,6 +2602,56 @@ test('write off settles an overpaid order with a positive adjustment', function 
         ->and((float)$order->total_amount)->toBe((float)$order->payment_amount)
         ->and($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
         ->and((float)$adjustmentTransaction->net_amount)->toBeGreaterThan(0);
+});
+
+test('paid then refunded order reads refunded not unpaid', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $orderData = Order::factory()->definition();
+    data_set($orderData, 'billing_address', $billingAddress);
+    data_set($orderData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $orderData);
+
+    StoreTransaction::make()->action($order, $this->product->historicAsset, [
+        'quantity_ordered' => 1,
+    ]);
+
+    $order->refresh();
+    $total = (float)$order->total_amount;
+
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        [
+            'code' => 'RF'.mt_rand(1000, 9999),
+            'name' => 'Cash Account',
+        ]
+    );
+
+    PayOrder::make()->action($order, $paymentAccount, [
+        'amount'    => $total,
+        'reference' => 'PAY-'.uniqid(),
+        'status'    => PaymentStatusEnum::SUCCESS,
+        'state'     => PaymentStateEnum::COMPLETED,
+    ]);
+    $order->refresh();
+
+    expect($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and($order->pay_detailed_status)->toBe(OrderPayDetailedStatusEnum::PAID);
+
+    PayOrder::make()->action($order, $paymentAccount, [
+        'amount'    => -$total,
+        'reference' => 'REFUND-'.uniqid(),
+        'status'    => PaymentStatusEnum::SUCCESS,
+        'state'     => PaymentStateEnum::COMPLETED,
+    ]);
+    $order->refresh();
+
+    expect($order->pay_status)->toBe(OrderPayStatusEnum::UNPAID)
+        ->and($order->pay_detailed_status)->toBe(OrderPayDetailedStatusEnum::REFUNDED)
+        ->and((float)$order->payment_amount)->toBe(0.0);
 });
 
 test('service only order sent to warehouse skips delivery note', function () {
