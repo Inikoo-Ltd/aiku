@@ -15,8 +15,8 @@ import { useLocaleStore } from "@/Stores/locale"
 import { trans } from "laravel-vue-i18n"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
-type CategoryCard = { id: number, slug: string, code: string, name: string, image: object | null, number_current_products?: number }
-type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_id: number | null }
+type CategoryCard = { id: number, slug: string, code: string, name: string, image: object | null, number_current_products?: number, type?: string }
+type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_slug: string | null }
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -43,6 +43,23 @@ watch(searchTerm, (value) => {
     }, 350)
 })
 
+function drillInto(category: { slug: string, type?: string }) {
+    if (category.type === "department") {
+        return goTo({ department: category.slug })
+    }
+    if (category.type === "family") {
+        return goTo({
+            ...(props.filters.department ? { department: props.filters.department } : {}),
+            ...(props.filters.sub_department ? { sub_department: props.filters.sub_department } : {}),
+            family: category.slug,
+        })
+    }
+    return goTo({
+        ...(props.filters.department ? { department: props.filters.department } : {}),
+        sub_department: category.slug,
+    })
+}
+
 function goTo(params: Record<string, string | number>) {
     router.get(route(route().current() as string, route().params), params, { only: ["level", "categories", "collections", "products", "filters"], preserveState: true })
 }
@@ -55,12 +72,12 @@ function quantityFor(productId: number): number {
 }
 
 function addToShoppingList(product: ProductCard) {
-    if (!product.org_stock_id) {
+    if (!product.org_stock_slug) {
         return
     }
 
     router.post(
-        route(props.addRoute.name, [...props.addRoute.parameters, product.org_stock_id]),
+        route(props.addRoute.name, [...props.addRoute.parameters, product.org_stock_slug]),
         { quantity: quantityFor(product.id) },
         {
             preserveScroll: true,
@@ -139,7 +156,7 @@ function addToShoppingList(product: ProductCard) {
                     v-for="category in categories"
                     :key="'category-' + category.id"
                     class="group flex flex-col overflow-hidden rounded-lg border border-gray-200 text-left hover:shadow-md"
-                    @click="goTo(level === 'root' ? { department: category.slug } : { sub_department: category.slug })"
+                    @click="drillInto(category)"
                 >
                     <div class="aspect-square w-full bg-gray-50">
                         <Image :src="category.image" imageCover />
@@ -169,7 +186,7 @@ function addToShoppingList(product: ProductCard) {
                         </p>
                         <p class="text-xs text-gray-400">{{ trans("Available") }}: {{ useLocaleStore().number(product.available_quantity) }}</p>
 
-                        <div v-if="product.org_stock_id" class="mt-auto flex items-center gap-2 pt-2">
+                        <div v-if="product.org_stock_slug" class="mt-auto flex items-center gap-2 pt-2">
                             <input
                                 type="number"
                                 min="0.01"

@@ -101,6 +101,7 @@ class ShowPartnerBrowse extends OrgAction
                 'product_categories.code',
                 'product_categories.name',
                 'product_categories.web_images',
+                'product_categories.type',
                 'product_category_stats.number_current_products',
             ]);
 
@@ -179,6 +180,7 @@ class ShowPartnerBrowse extends OrgAction
             'code'                   => $category->code,
             'name'                   => $category->name,
             'image'                  => Arr::get($category->web_images, 'main.thumbnail'),
+            'type'                   => $category->type->value,
             'number_current_products' => $category->number_current_products,
         ])->values();
 
@@ -193,12 +195,12 @@ class ShowPartnerBrowse extends OrgAction
         $products = $data['products'];
         if ($products) {
             $productIds = collect($products->items())->pluck('id');
-            $orgStockIds = Product::whereIn('id', $productIds)
+            $orgStockSlugs = Product::whereIn('id', $productIds)
                 ->with(['orgStocks' => fn ($query) => $query->where('org_stocks.organisation_id', $this->orgPartner->partner_id)])
                 ->get()
-                ->mapWithKeys(fn (Product $product) => [$product->id => $product->orgStocks->first()?->id]);
+                ->mapWithKeys(fn (Product $product) => [$product->id => $product->orgStocks->first()?->slug]);
 
-            $products->getCollection()->transform(function (Product $product) use ($orgStockIds) {
+            $products->getCollection()->transform(function (Product $product) use ($orgStockSlugs) {
                 return [
                     'id'                => $product->id,
                     'slug'              => $product->slug,
@@ -208,7 +210,7 @@ class ShowPartnerBrowse extends OrgAction
                     'price'             => $product->price,
                     'available_quantity' => $product->available_quantity,
                     'units'             => $product->units,
-                    'org_stock_id'      => $orgStockIds[$product->id] ?? null,
+                    'org_stock_slug'    => $orgStockSlugs[$product->id] ?? null,
                 ];
             });
         }
