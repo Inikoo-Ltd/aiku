@@ -1,0 +1,62 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 29 Aug 2026 Malaga, Spain
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Procurement\OrgPartner\UI;
+
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Models\Procurement\OrgPartner;
+use App\Models\Procurement\PartnerShoppingListItem;
+use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\Concerns\AsObject;
+
+class GetPartnerMiniCart
+{
+    use AsObject;
+
+    public function handle(OrgPartner $orgPartner): array
+    {
+        $estimatedTotal = (float) DB::table('partner_shopping_list_items')
+            ->where('org_partner_id', $orgPartner->id)
+            ->where('state', ShoppingListItemStateEnum::OPEN->value)
+            ->whereNull('deleted_at')
+            ->selectRaw("coalesce(sum(quantity * coalesce((select pr.price / nullif(phos.quantity, 0)
+                from product_has_org_stocks phos
+                join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."'
+                join org_stocks sos on sos.id = phos.org_stock_id
+                where sos.stock_id = partner_shopping_list_items.stock_id
+                    and sos.organisation_id = partner_shopping_list_items.partner_organisation_id
+                limit 1), 0)), 0) as total")
+            ->value('total');
+
+        $items = PartnerShoppingListItem::query()
+            ->leftJoin('org_stocks', 'org_stocks.id', 'partner_shopping_list_items.org_stock_id')
+            ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
+            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN->value)
+            ->select([
+                'partner_shopping_list_items.id',
+                'partner_shopping_list_items.quantity',
+                'org_stocks.code as org_stock_code',
+                'org_stocks.name as org_stock_name',
+            ])
+            ->orderByDesc('partner_shopping_list_items.created_at')
+            ->limit(4)
+            ->get();
+
+        return [
+            'count'      => $orgPartner->stats->number_open_shopping_list_items,
+            'total'      => $estimatedTotal,
+            'currency'   => $orgPartner->partner->currency->code,
+            'items'      => $items,
+            'listRoute'  => [
+                'name'       => 'grp.org.procurement.org_partners.show.shopping_list.index',
+                'parameters' => [$orgPartner->organisation->slug, $orgPartner->id],
+            ],
+        ];
+    }
+}

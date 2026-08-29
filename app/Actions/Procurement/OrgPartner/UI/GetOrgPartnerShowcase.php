@@ -30,6 +30,7 @@ class GetOrgPartnerShowcase
                 // 'address'  => AddressResource::make($agent->organisation->address)->getArray(),
                 'photo'    => $partner->imageSources()
             ],
+            'miniCart'    => GetPartnerMiniCart::run($orgPartner),
             'stats'       => [
                 [
                     'label' => __('Shopping list'),
