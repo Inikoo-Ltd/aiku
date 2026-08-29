@@ -223,6 +223,20 @@ class ShowPartnerBrowse extends OrgAction
         ];
     }
 
+    /**
+     * @return array<string, string>
+     */
+    private function filterNames(array $filters): array
+    {
+        $categorySlugs = Arr::only($filters, ['department', 'sub_department', 'family']);
+        $names         = ProductCategory::whereIn('slug', $categorySlugs)->pluck('name', 'slug');
+        if ($collection = Arr::get($filters, 'collection')) {
+            $names[$collection] = Collection::where('slug', $collection)->value('name');
+        }
+
+        return collect($filters)->map(fn ($slug) => $names[$slug] ?? $slug)->all();
+    }
+
     public function asController(Organisation $organisation, OrgPartner $orgPartner, ActionRequest $request): array
     {
         $this->orgPartner = $orgPartner;
@@ -260,6 +274,7 @@ class ShowPartnerBrowse extends OrgAction
                     'parameters' => [$this->orgPartner->organisation->slug, $this->orgPartner->id],
                 ],
                 'filters'     => $request->only(['q', 'department', 'sub_department', 'family', 'collection']),
+                'filterNames' => $this->filterNames($request->only(['department', 'sub_department', 'family', 'collection'])),
                 'level'       => $data['level'],
                 'categories'  => $data['categories'],
                 'collections' => $data['collections'],

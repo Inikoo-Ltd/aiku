@@ -24,6 +24,7 @@ const props = defineProps<{
     orgPartner: { id: number, slug: string, currency: string }
     addRoute: { name: string, parameters: (string | number)[] }
     filters: { q?: string, department?: string, sub_department?: string, family?: string, collection?: string }
+    filterNames: Record<string, string>
     level: "root" | "department" | "sub_department" | "family" | "collection" | "search"
     categories: CategoryCard[]
     collections: CategoryCard[]
@@ -39,7 +40,7 @@ watch(searchTerm, (value) => {
     }
 
     searchTimeout = setTimeout(() => {
-        router.get(route(route().current() as string, route().params), { q: value || undefined }, { only: ["level", "categories", "collections", "products", "filters"], preserveState: true, replace: true })
+        router.get(route(route().current() as string, route().params), { q: value || undefined }, { only: ["level", "categories", "collections", "products", "filters", "filterNames"], preserveState: true, replace: true })
     }, 350)
 })
 
@@ -61,7 +62,7 @@ function drillInto(category: { slug: string, type?: string }) {
 }
 
 function goTo(params: Record<string, string | number>) {
-    router.get(route(route().current() as string, route().params), params, { only: ["level", "categories", "collections", "products", "filters"], preserveState: true })
+    router.get(route(route().current() as string, route().params), params, { only: ["level", "categories", "collections", "products", "filters", "filterNames"], preserveState: true })
 }
 
 const quantities = ref<Record<number, number>>({})
@@ -111,22 +112,22 @@ function addToShoppingList(product: ProductCard) {
             <template v-if="filters.department">
                 <span class="text-gray-300">/</span>
                 <button class="rounded-full px-3 py-1" :class="!filters.sub_department && !filters.family ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'" @click="goTo({ department: filters.department })">
-                    {{ filters.department }}
+                    {{ filterNames.department ?? filters.department }}
                 </button>
             </template>
             <template v-if="filters.sub_department">
                 <span class="text-gray-300">/</span>
                 <button class="rounded-full px-3 py-1 bg-indigo-100 text-indigo-700" @click="goTo({ sub_department: filters.sub_department })">
-                    {{ filters.sub_department }}
+                    {{ filterNames.sub_department ?? filters.sub_department }}
                 </button>
             </template>
             <template v-if="filters.family && level === 'family'">
                 <span class="text-gray-300">/</span>
-                <span class="rounded-full px-3 py-1 bg-indigo-100 text-indigo-700">{{ filters.family }}</span>
+                <span class="rounded-full px-3 py-1 bg-indigo-100 text-indigo-700">{{ filterNames.family ?? filters.family }}</span>
             </template>
             <template v-if="filters.collection && level === 'collection'">
                 <span class="text-gray-300">/</span>
-                <span class="rounded-full px-3 py-1 bg-indigo-100 text-indigo-700">{{ filters.collection }}</span>
+                <span class="rounded-full px-3 py-1 bg-indigo-100 text-indigo-700">{{ filterNames.collection ?? filters.collection }}</span>
             </template>
         </nav>
 
