@@ -31,10 +31,6 @@ class IrisPdfInvoice extends OrgAction
 
     public function asController(Invoice $invoice): Response
     {
-        return $this->handle($invoice, [
-            'country_of_origin' => true,
-            'weight'            => true,
-            'commodity_codes'   => true,
-        ]);
+        return $this->handle($invoice);
     }
 }

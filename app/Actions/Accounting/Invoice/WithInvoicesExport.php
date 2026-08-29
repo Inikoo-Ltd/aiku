@@ -101,6 +101,21 @@ trait WithInvoicesExport
     }
 
     /**
+     * A PDF column is whatever this download asked for, else what the shop configured, else the default.
+     *
+     * Only the download dialog passes options, so every automated PDF — the invoice paid email, the
+     * customer's own download from iris or retina — resolves to the shop setting.
+     */
+    public function resolvePdfColumn(Invoice $invoice, array $options, string $key, bool $default = false): bool
+    {
+        return (bool)Arr::get(
+            $options,
+            $key,
+            Arr::get($invoice->shop->settings, "invoicing.download_pdf_columns.$key", $default)
+        );
+    }
+
+    /**
      * Quantity ordered but never supplied, in the invoice's own units.
      *
      * Covers the short shipped lines too: a line that was ordered 12 and supplied 8.5 is missing 3.5
@@ -178,11 +193,7 @@ trait WithInvoicesExport
             return $transaction;
         })->sortBy(fn ($transaction) => strtolower($transaction->historicAsset?->code ?? ''));
 
-        $separateOutOfStock = (bool)Arr::get(
-            $options,
-            'separate_out_of_stock',
-            Arr::get($invoice->shop->settings, 'invoicing.download_pdf_columns.separate_out_of_stock', true)
-        );
+        $separateOutOfStock = $this->resolvePdfColumn($invoice, $options, 'separate_out_of_stock', true);
 
         $outOfStockTransactions = collect();
         if ($separateOutOfStock && $invoice->type == InvoiceTypeEnum::INVOICE) {
@@ -197,11 +208,7 @@ trait WithInvoicesExport
                 ->values();
         }
 
-        $showDiscounts = (bool)Arr::get(
-            $options,
-            'show_discounts',
-            Arr::get($invoice->shop->settings, 'invoicing.download_pdf_columns.show_discounts', true)
-        );
+        $showDiscounts = $this->resolvePdfColumn($invoice, $options, 'show_discounts', true);
 
         $discountOfferNames = collect();
         if ($showDiscounts) {
@@ -290,18 +297,18 @@ trait WithInvoicesExport
             'outOfStockTransactions'  => $outOfStockTransactions,
             'totalNet'                => number_format($totalNet, 2, '.', ''),
             'refunds'                 => $refundData,
-            'pro_mode'                => Arr::get($options, 'pro_mode', false),
-            'country_of_origin'       => Arr::get($options, 'country_of_origin', false),
-            'rrp'                     => Arr::get($options, 'rrp', false),
-            'parts'                   => Arr::get($options, 'parts', false),
-            'commodity_codes'         => Arr::get($options, 'commodity_codes', false),
-            'weight'                  => Arr::get($options, 'weight', false),
-            'barcode'                 => Arr::get($options, 'barcode', false),
-            'cpnp'                    => Arr::get($options, 'cpnp', false),
-            'hide_payment_status'     => Arr::get($options, 'hide_payment_status', false),
-            'group_by_tariff_code'    => Arr::get($options, 'group_by_tariff_code', false),
-            'show_dispatch_totals'    => Arr::get($options, 'show_dispatch_totals', false),
-            'show_batch_code'         => Arr::get($options, 'show_batch_code', false),
+            'pro_mode'                => $this->resolvePdfColumn($invoice, $options, 'pro_mode'),
+            'country_of_origin'       => $this->resolvePdfColumn($invoice, $options, 'country_of_origin'),
+            'rrp'                     => $this->resolvePdfColumn($invoice, $options, 'rrp'),
+            'parts'                   => $this->resolvePdfColumn($invoice, $options, 'parts'),
+            'commodity_codes'         => $this->resolvePdfColumn($invoice, $options, 'commodity_codes'),
+            'weight'                  => $this->resolvePdfColumn($invoice, $options, 'weight'),
+            'barcode'                 => $this->resolvePdfColumn($invoice, $options, 'barcode'),
+            'cpnp'                    => $this->resolvePdfColumn($invoice, $options, 'cpnp'),
+            'hide_payment_status'     => $this->resolvePdfColumn($invoice, $options, 'hide_payment_status'),
+            'group_by_tariff_code'    => $this->resolvePdfColumn($invoice, $options, 'group_by_tariff_code'),
+            'show_dispatch_totals'    => $this->resolvePdfColumn($invoice, $options, 'show_dispatch_totals'),
+            'show_batch_code'         => $this->resolvePdfColumn($invoice, $options, 'show_batch_code'),
             'show_discounts'          => $showDiscounts,
             'discountOfferNames'      => $discountOfferNames,
             'dispatch_total_skos'     => $deliveryNote?->total_skos > 0 ? $deliveryNote->total_skos : null,
