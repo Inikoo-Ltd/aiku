@@ -9,11 +9,14 @@ namespace App\Actions\Dropshipping\Platform;
 
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformTimeSeriesHydrateNumberRecords;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\PlatformTimeSeries;
+use App\Models\Ordering\SalesChannel;
 use App\Traits\BuildsInvoiceTimeSeriesQuery;
 use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -51,6 +54,10 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
         }
 
         $this->processTimeSeries($timeSeries, $shop, $from, $to);
+
+        if ($platform->type === PlatformTypeEnum::MANUAL) {
+            $this->processSalesChannelTimeSeries($timeSeries, $shop, $from, $to);
+        }
 
         PlatformTimeSeriesHydrateNumberRecords::run($timeSeries->id);
     }
@@ -100,6 +107,72 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
         $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $shop, $metricsByPeriod, $processedPeriods)];
 
         $this->syncTimeSeriesRecords($timeSeries, $rows, ['platform_time_series_id', 'shop_id', 'period', 'frequency'], $from, $to, ['shop_id' => $shop->id]);
+    }
+
+    /**
+     * Only the manual platform splits by sales channel (Web vs API): marketplace platforms have a
+     * single channel by construction. Every invoice that is not explicitly on the API channel
+     * counts as Web - historic invoices have no sales_channel_id at all - so Web + API always
+     * adds up to the Manual total. Rows only exist for periods with invoices, so the sync is a
+     * plain delete-window-then-upsert instead of the sparse bookkeeping the main records need.
+     */
+    protected function processSalesChannelTimeSeries(PlatformTimeSeries $timeSeries, Shop $shop, string $from, string $to): void
+    {
+        $apiChannelId = SalesChannel::where('group_id', $shop->group_id)->where('type', SalesChannelTypeEnum::API)->value('id');
+        $webChannelId = SalesChannel::where('group_id', $shop->group_id)->where('type', SalesChannelTypeEnum::WEBSITE)->value('id');
+
+        if (!$apiChannelId || !$webChannelId) {
+            return;
+        }
+
+        $channelBucket = "CASE WHEN invoices.sales_channel_id = $apiChannelId THEN $apiChannelId ELSE $webChannelId END";
+
+        $query = DB::connection('aiku_no_sticky')->table('invoices')
+            ->where('invoices.platform_id', $timeSeries->platform_id)
+            ->where('invoices.shop_id', $shop->id)
+            ->where('invoices.in_process', false)
+            ->where('invoices.date', '>=', $from)
+            ->where('invoices.date', '<=', $to)
+            ->whereNull('invoices.deleted_at');
+
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, customSelects: $this->platformInvoiceSelects())
+            ->addSelect(DB::raw("$channelBucket as sales_channel_id"))
+            ->groupBy(DB::raw($channelBucket))
+            ->get();
+
+        $rows = [];
+        foreach ($results as $result) {
+            ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
+
+            $rows[] = [
+                'platform_time_series_id'     => $timeSeries->id,
+                'shop_id'                     => $shop->id,
+                'sales_channel_id'            => $result->sales_channel_id,
+                'period'                      => $period,
+                'frequency'                   => $timeSeries->frequency->singleLetter(),
+                'organisation_id'             => $shop->organisation_id,
+                'from'                        => $periodFrom,
+                'to'                          => $periodTo,
+                'sales_external'              => $result->sales_external,
+                'sales_org_currency_external' => $result->sales_org_currency_external,
+                'sales_grp_currency_external' => $result->sales_grp_currency_external,
+                'invoices'                    => $result->invoices,
+            ];
+        }
+
+        $timeSeries->salesChannelRecords()
+            ->where('frequency', $timeSeries->frequency->singleLetter())
+            ->where('shop_id', $shop->id)
+            ->where('from', '>=', $from)
+            ->where('from', '<=', $to)
+            ->delete();
+
+        $this->upsertTimeSeriesRecords(
+            $timeSeries,
+            $rows,
+            ['platform_time_series_id', 'shop_id', 'sales_channel_id', 'period', 'frequency'],
+            'salesChannelRecords'
+        );
     }
 
     protected function periodsWithoutInvoicesRows(PlatformTimeSeries $timeSeries, Shop $shop, array $metricsByPeriod, array $processedPeriods): array

@@ -94,6 +94,7 @@ class ShowShop extends OrgAction
 
         if ($shop->type->value === 'dropshipping') {
             $dashboard['super_blocks'][0]['channel_health'] = $this->getChannelHealthStats($shop);
+            $dashboard['super_blocks'][0]['brands_link']    = ShopDashboardSalesTableTabsEnum::brandsLink($shop);
         }
 
         $currentTabEnum = ShopDashboardSalesTableTabsEnum::from($currentTab);

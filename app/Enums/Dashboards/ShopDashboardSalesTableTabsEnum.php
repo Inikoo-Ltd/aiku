@@ -49,9 +49,13 @@ enum ShopDashboardSalesTableTabsEnum: string
             ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardPlatformSalesResource::collection($platformTimeSeriesStats)->toJson(), true),
         };
 
+        $platformRowsWithoutChannelChildren = array_values(
+            array_filter($platformTimeSeriesStats, fn ($row) => empty($row['is_sales_channel']))
+        );
+
         $totals = match ($this) {
             ShopDashboardSalesTableTabsEnum::BRANDS       => json_decode(DashboardTotalBrandSalesResource::make($brandTimeSeriesStats)->toJson(), true),
-            ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardTotalPlatformSalesResource::make($platformTimeSeriesStats)->toJson(), true),
+            ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardTotalPlatformSalesResource::make($platformRowsWithoutChannelChildren)->toJson(), true),
         };
 
         return [
@@ -73,7 +77,7 @@ enum ShopDashboardSalesTableTabsEnum: string
 
     public static function navigation(Shop $shop): array
     {
-        $navigation = collect(self::cases())
+        return collect(self::cases())
             ->filter(function ($case) use ($shop) {
                 if ($case === self::DS_PLATFORMS) {
                     return $shop->type->value === 'dropshipping';
@@ -82,20 +86,27 @@ enum ShopDashboardSalesTableTabsEnum: string
             })
             ->mapWithKeys(fn ($case) => [$case->value => $case->blueprint()])
             ->all();
+    }
 
-        if ($shop->type->value === 'dropshipping') {
-            $navigation['brands_link'] = array_merge(
-                self::BRANDS->blueprint(),
-                [
-                    'route' => [
-                        'name'       => 'grp.org.shops.show.dashboard.brands',
-                        'parameters' => [$shop->organisation->slug, $shop->slug],
-                    ],
-                ]
-            );
+    /**
+     * The buried Brands page link, shown next to the channel health badges instead of in the
+     * tab bar. Only dropshipping shops bury Brands; the rest keep it as a tab.
+     */
+    public static function brandsLink(Shop $shop): ?array
+    {
+        if ($shop->type->value !== 'dropshipping') {
+            return null;
         }
 
-        return $navigation;
+        return array_merge(
+            self::BRANDS->blueprint(),
+            [
+                'route' => [
+                    'name'       => 'grp.org.shops.show.dashboard.brands',
+                    'parameters' => [$shop->organisation->slug, $shop->slug],
+                ],
+            ]
+        );
     }
 
     public static function tables(Shop $shop, array $timeSeriesData = []): array

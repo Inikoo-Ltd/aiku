@@ -2996,7 +2996,7 @@ test('UI shop dashboard buries brands as a link and brands page renders', functi
         $dashboard = get(route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug]));
         $dashboard->assertInertia(
             fn (AssertableInertia $page) => $page
-                ->where('dashboard.super_blocks.0.blocks.0.tabs.brands_link.route.name', 'grp.org.shops.show.dashboard.brands')
+                ->where('dashboard.super_blocks.0.brands_link.route.name', 'grp.org.shops.show.dashboard.brands')
                 ->missing('dashboard.super_blocks.0.blocks.0.tables.brands')
                 ->etc()
         );
@@ -3009,6 +3009,80 @@ test('UI shop dashboard buries brands as a link and brands page renders', functi
             ->has('dashboard.super_blocks.0.blocks.0.tables.brands')
             ->etc()
     );
+});
+
+test('manual platform time series splits sales by channel', function () {
+    SeedSalesChannels::run($this->organisation->group);
+    $platform   = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+    $webChannel = SalesChannel::where('type', SalesChannelTypeEnum::WEBSITE)->first();
+    $apiChannel = SalesChannel::where('type', SalesChannelTypeEnum::API)->first();
+
+    StoreInvoice::make()->action($this->customer, array_merge(Invoice::factory()->definition(), [
+        'platform_id'      => $platform->id,
+        'sales_channel_id' => $webChannel->id,
+    ]));
+    StoreInvoice::make()->action($this->customer, array_merge(Invoice::factory()->definition(), [
+        'platform_id'      => $platform->id,
+        'sales_channel_id' => $apiChannel->id,
+        'gross_amount'     => 20,
+        'net_amount'       => 20,
+        'total_amount'     => 20,
+    ]));
+    StoreInvoice::make()->action($this->customer, array_merge(Invoice::factory()->definition(), [
+        'platform_id'  => $platform->id,
+        'gross_amount' => 5,
+        'net_amount'   => 5,
+        'total_amount' => 5,
+    ]));
+
+    ProcessPlatformTimeSeriesRecords::run($platform->id, $this->shop->id, TimeSeriesFrequencyEnum::DAILY, now()->toDateString(), now()->toDateString());
+
+    $records = PlatformSalesChannelTimeSeriesRecord::where('shop_id', $this->shop->id)->where('frequency', 'D')->get();
+    expect($records)->toHaveCount(2)
+        ->and((float) $records->firstWhere('sales_channel_id', $webChannel->id)->sales_external)->toBe(15.0)
+        ->and((int) $records->firstWhere('sales_channel_id', $webChannel->id)->invoices)->toBe(2)
+        ->and((float) $records->firstWhere('sales_channel_id', $apiChannel->id)->sales_external)->toBe(20.0)
+        ->and((int) $records->firstWhere('sales_channel_id', $apiChannel->id)->invoices)->toBe(1)
+        ->and((float) $records->sum('sales_external'))->toBe(35.0);
+
+    $stats    = collect(GetPlatformTimeSeriesStats::run($this->shop));
+    $children = $stats->filter(fn ($row) => !empty($row['is_sales_channel']))->values();
+    expect($stats->firstWhere('slug', $platform->slug))->not->toBeNull()
+        ->and($children)->toHaveCount(2)
+        ->and($children->pluck('name')->all())->toContain('Web', $apiChannel->name)
+        ->and($children->pluck('parent_slug')->unique()->all())->toBe([$platform->slug])
+        ->and($stats->search(fn ($row) => !empty($row['is_sales_channel'])))
+        ->toBeGreaterThan($stats->search(fn ($row) => ($row['slug'] ?? null) === $platform->slug));
+});
+
+test('platforms:backfill_sales_channel_time_series is dry run by default and backfills with --commit', function () {
+    SeedSalesChannels::run($this->organisation->group);
+    $platform   = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+    $webChannel = SalesChannel::where('type', SalesChannelTypeEnum::WEBSITE)->first();
+
+    StoreInvoice::make()->action($this->customer, array_merge(Invoice::factory()->definition(), [
+        'platform_id'      => $platform->id,
+        'sales_channel_id' => $webChannel->id,
+    ]));
+
+    PlatformSalesChannelTimeSeriesRecord::query()->delete();
+
+    $this->artisan('platforms:backfill_sales_channel_time_series')->assertSuccessful();
+    expect(PlatformSalesChannelTimeSeriesRecord::count())->toBe(0);
+
+    $this->artisan('platforms:backfill_sales_channel_time_series', ['--commit' => true])->assertSuccessful();
+
+    $apiChannel       = SalesChannel::where('type', SalesChannelTypeEnum::API)->first();
+    $expectedWebSales = (float) Invoice::where('platform_id', $platform->id)
+        ->where(fn ($query) => $query->whereNull('sales_channel_id')->orWhere('sales_channel_id', '!=', $apiChannel->id))
+        ->where('in_process', false)
+        ->sum('net_amount');
+
+    $records    = PlatformSalesChannelTimeSeriesRecord::where('shop_id', $this->shop->id)->get();
+    $webRecords = $records->where('sales_channel_id', $webChannel->id);
+    expect($webRecords->where('frequency', 'D'))->toHaveCount(1)
+        ->and($records->pluck('frequency')->unique()->sort()->values()->all())->toBe(['D', 'M', 'Q', 'W', 'Y'])
+        ->and((float) $webRecords->firstWhere('frequency', 'Y')->sales_external)->toBe($expectedWebSales);
 });
 
 test('channel import never submits an order with no transactions', function () {
