@@ -2,7 +2,6 @@
 
 namespace App\Actions\Catalogue\Shop\External\Shopify;
 
-use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
@@ -20,7 +19,7 @@ class GetShopifyStore extends OrgAction
         $shop = $shopifyUser->externalShop;
 
         if ($domain && $shop) {
-            UpdateShop::make()->action($shop, [
+            $shop->update([
                 'data' => array_merge($shop->data ?? [], [
                     'external_domain' => preg_replace('#^https?://#', '', $domain)
                 ])
