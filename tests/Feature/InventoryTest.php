@@ -2862,6 +2862,12 @@ test('stock history archiver keeps a monthly snapshot and the readers read the a
         ->and(DB::connection('archive')->table('org_stocks')->where('id', $orgStock->id)->exists())->toBeTrue()
         ->and(DB::connection('archive')->table('locations')->where('id', $location->id)->exists())->toBeTrue();
 
+    $archivedDayExport = new \App\Exports\Inventory\ShowOrganisationStockHistoryExport(
+        \App\Models\Inventory\OrganisationStockHistory::find($days['archived']['organisation_stock_history_id'])
+    );
+
+    expect($archivedDayExport->query()->count())->toBe(1);
+
     $reader = new class () {
         use \App\Actions\Traits\WithStockHistoryArchiveRead;
 
