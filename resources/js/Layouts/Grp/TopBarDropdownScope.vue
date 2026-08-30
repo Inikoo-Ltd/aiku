@@ -364,7 +364,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                         :key="shop.id"
                         @click="navigateToSubOrg(shop, 'shop')"
                         :class="[
-                            'flex gap-x-2 w-full justify-between items-center rounded pl-2 pr-2 py-1.5 text-sm cursor-pointer transition-colors',
+                            'flex gap-x-2 w-full min-h-[3rem] justify-between items-center rounded pl-2 pr-2 py-1.5 text-sm cursor-pointer transition-colors',
                             shop.slug === layout.organisationsState?.[hoveredOrgSlug]?.currentShop && layout.organisationsState?.[hoveredOrgSlug]?.currentType === 'shop'
                                 ? ''
                                 : 'text-slate-600 hover:bg-slate-200/75',

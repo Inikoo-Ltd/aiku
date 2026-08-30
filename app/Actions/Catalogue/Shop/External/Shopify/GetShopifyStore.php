@@ -2,9 +2,11 @@
 
 namespace App\Actions\Catalogue\Shop\External\Shopify;
 
+use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 
 class GetShopifyStore extends OrgAction
 {
@@ -12,7 +14,20 @@ class GetShopifyStore extends OrgAction
 
     public function handle(ShopifyUser $shopifyUser): array
     {
-        return $shopifyUser->getShopifyShop();
+        $response = $shopifyUser->getShopifyShop();
+
+        $domain = Arr::get($response, 'data.shop.primaryDomain.url');
+        $shop = $shopifyUser->externalShop;
+
+        if ($domain && $shop) {
+            UpdateShop::make()->action($shop, [
+                'data' => array_merge($shop->data ?? [], [
+                    'external_domain' => preg_replace('#^https?://#', '', $domain)
+                ])
+            ]);
+        }
+
+        return $response;
     }
 
     public function asCommand(Command $command): void
