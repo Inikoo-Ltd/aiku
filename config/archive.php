@@ -42,6 +42,14 @@ return [
     'stock_history_retention_months' => (int) env('STOCK_HISTORY_RETENTION_MONTHS', 36),
 
     /*
+     * The nightly stock history downsample stays off until the first pass over the historic
+     * backlog has been run by hand: the same command serves both, and one new day a night is a
+     * two minute tick while nineteen years of backlog is hours of unattended deletes against
+     * production. Turned on with an environment variable rather than a deploy once that is done.
+     */
+    'stock_history_nightly' => (bool) env('STOCK_HISTORY_NIGHTLY_ARCHIVE', false),
+
+    /*
      * Every archiver pauses between delete batches while any replica is further behind than this,
      * so archiving can never build up the WAL backlog that once filled boro's disk.
      */
