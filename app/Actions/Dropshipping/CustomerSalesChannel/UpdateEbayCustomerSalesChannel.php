@@ -58,6 +58,10 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
             data_set($modelData, 'settings.do_not_update_prices', (bool) Arr::pull($modelData, 'do_not_update_prices'));
         }
 
+        if (Arr::has($modelData, 'upload_as_draft')) {
+            data_set($modelData, 'settings.upload_as_draft', (bool) Arr::pull($modelData, 'upload_as_draft'));
+        }
+
         if (Arr::has($modelData, 'is_vat_adjustment')) {
             data_set($modelData, 'settings.tax_category.checked', Arr::get($modelData, 'is_vat_adjustment'));
         }
@@ -181,6 +185,7 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
             'is_vat_adjustment' => ['sometimes', 'boolean'],
             'do_not_update_prices' => ['sometimes', 'boolean'],
             'prices_follow_rrp' => ['sometimes', 'boolean'],
+            'upload_as_draft' => ['sometimes', 'boolean'],
             'pricing_type' => ['sometimes', Rule::in(['percent', 'fixed', 'not_follow'])],
             'pricing_value' => ['sometimes', 'numeric', 'gte:-100'],
             'pricing_reset_all' => ['sometimes', 'boolean'],

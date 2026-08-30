@@ -110,6 +110,7 @@ use App\Actions\Retina\Ebay\CreateRetinaNewBulkPortfoliosToEbay;
 use App\Actions\Retina\Dropshipping\Portfolio\MatchRetinaBulkPortfoliosToPlatform;
 use App\Actions\Retina\Ebay\MatchRetinaBulkNewProductToCurrentEbay;
 use App\Actions\Retina\Ebay\MatchRetinaPortfolioToCurrentEbayProduct;
+use App\Actions\Retina\Ebay\PublishRetinaEbayPortfolio;
 use App\Actions\Retina\Ebay\StoreRetinaNewProductToCurrentEbay;
 use App\Actions\Retina\Ecom\Basket\RetinaDeleteBasketTransaction;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
@@ -461,6 +462,7 @@ Route::post('portfolio/{portfolio:id}/store-new-woo-product', StoreRetinaNewProd
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-ebay-product', MatchRetinaPortfolioToCurrentEbayProduct::class)->name('portfolio.match_to_existing_ebay_product')->whereNumber('portfolio');
 Route::post('portfolio/{portfolio:id}/store-new-ebay-product', StoreRetinaNewProductToCurrentEbay::class)->name('portfolio.store_new_ebay_product')->whereNumber('portfolio');
+Route::post('portfolio/{portfolio:id}/publish-ebay-product', PublishRetinaEbayPortfolio::class)->name('portfolio.publish_ebay_product')->whereNumber('portfolio');
 Route::post('portfolio/{portfolio:id}/update-new-product', UpdateAndUploadRetinaPortfolioToCurrentChannel::class)->name('portfolio.update_new_product.publish')->whereNumber('portfolio');
 Route::post('portfolio/{portfolio:id}/update-new-product/draft', [UpdateAndUploadRetinaPortfolioToCurrentChannel::class, 'asDraft'])->name('portfolio.update_new_product.draft')->whereNumber('portfolio');
 

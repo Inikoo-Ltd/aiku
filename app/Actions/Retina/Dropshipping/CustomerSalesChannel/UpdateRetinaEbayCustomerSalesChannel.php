@@ -64,6 +64,7 @@ class UpdateRetinaEbayCustomerSalesChannel extends RetinaAction
             'is_vat_adjustment' => ['sometimes', 'required', 'boolean'],
             'do_not_update_prices' => ['sometimes', 'boolean'],
             'prices_follow_rrp' => ['sometimes', 'boolean'],
+            'upload_as_draft' => ['sometimes', 'boolean'],
             'tax_category_id'   => ['sometimes', 'nullable', 'integer', Rule::exists('tax_categories', 'id')],
             'status'       => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'name' => ['sometimes', 'string', 'max:255'],

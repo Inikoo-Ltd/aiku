@@ -77,6 +77,29 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
         $ebayUser->updateOffer($offerId, $offerData);
 
         if (! Arr::has($listing, 'offers.0.listing.listingId')) {
+            if (Arr::get($portfolio->customerSalesChannel->settings, 'upload_as_draft')) {
+                UpdatePortfolio::make()->action($portfolio, [
+                    'platform_product_id' => $offerId,
+                    'upload_warning'      => null,
+                    'errors_response'     => null,
+                    'data'                => ['is_platform_draft' => true]
+                ]);
+
+                $portfolio->update([
+                    'has_valid_platform_product_id' => true,
+                    'exist_in_platform'             => true,
+                    'platform_status'               => false
+                ]);
+
+                UpdatePlatformPortfolioLog::dispatch($logs, [
+                    'status' => PlatformPortfolioLogsStatusEnum::OK
+                ]);
+
+                UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio->refresh());
+
+                return;
+            }
+
             $publishedOffer = $ebayUser->publishListing($offerId);
         } else {
             $publishedOffer = Arr::get($listing, 'offers.0.listing');
@@ -90,7 +113,8 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
         if (Arr::get($publishedOffer, 'listingId')) {
             UpdatePortfolio::make()->action($portfolio, [
                 'upload_warning'  => null,
-                'errors_response' => null
+                'errors_response' => null,
+                'data'            => ['is_platform_draft' => false]
             ]);
 
             UpdatePlatformPortfolioLog::dispatch($logs, [
