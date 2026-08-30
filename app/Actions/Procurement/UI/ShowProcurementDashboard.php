@@ -12,14 +12,15 @@ use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\UI\GetPartnerMiniCart;
-use App\Actions\Procurement\ShoppingListItem\UI\ShowShoppingListBoard;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Search\GetSearchDemandOpportunities;
 use App\Actions\UI\WithInertia;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Dispatching\Shipper;
 use App\Models\GoodsIn\StockDelivery;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgAgent;
+use App\Models\Procurement\ShoppingListItem;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
@@ -195,53 +196,44 @@ class ShowProcurementDashboard extends OrgAction
             ];
         }
 
-        $agent = $this->getOrganisationAgent($this->organisation);
+        foreach (OrgAgent::where('organisation_id', $this->organisation->id)->where('status', true)->with('agent')->get() as $orgAgent) {
+            $openItems = ShoppingListItem::query()
+                ->join('supplier_products', 'supplier_products.id', 'shopping_list_items.supplier_product_id')
+                ->where('shopping_list_items.organisation_id', $this->organisation->id)
+                ->where('shopping_list_items.agent_id', $orgAgent->agent_id)
+                ->where('shopping_list_items.state', ShoppingListItemStateEnum::OPEN->value)
+                ->select([
+                    'shopping_list_items.id',
+                    'shopping_list_items.quantity_units',
+                    'supplier_products.code',
+                    'supplier_products.name',
+                ])
+                ->orderByDesc('shopping_list_items.created_at')
+                ->get();
 
-        if ($agent) {
-            $agentGroups = ShowShoppingListBoard::make()->handle($agent)['agents'];
-
-            if ($agentGroups === []) {
+            if ($openItems->isEmpty()) {
                 $empty[] = [
-                    'name'  => $agent->code,
-                    'route' => $this->dashboardRoute('grp.org.procurement.shopping_list.board'),
+                    'name'  => $orgAgent->agent->name,
+                    'route' => $this->dashboardRoute('grp.org.procurement.shopping_list.index'),
                 ];
+
+                continue;
             }
 
-            foreach ($agentGroups as $agentData) {
-                $agentHasItems = false;
-
-                foreach ($agentData['suppliers'] as $supplier) {
-                    $count = collect($supplier['products'])->sum(fn (array $product) => count($product['orgs']));
-
-                    if ($count === 0) {
-                        continue;
-                    }
-
-                    $agentHasItems = true;
-
-                    $withItems[] = [
-                        'partner_name' => $supplier['code'],
-                        'count'        => $count,
-                        'total'        => 0,
-                        'currency'     => $this->organisation->currency->code,
-                        'items'        => collect($supplier['products'])->take(10)->map(fn (array $product) => [
-                            'id'             => $product['supplier_product_id'],
-                            'quantity'       => $product['total_units'],
-                            'org_stock_code' => $product['code'],
-                            'org_stock_name' => $product['name'],
-                            'family_name'    => null,
-                        ])->values()->all(),
-                        'listRoute'    => $this->dashboardRoute('grp.org.procurement.shopping_list.board'),
-                    ];
-                }
-
-                if (!$agentHasItems) {
-                    $empty[] = [
-                        'name'  => $agentData['code'],
-                        'route' => $this->dashboardRoute('grp.org.procurement.shopping_list.board'),
-                    ];
-                }
-            }
+            $withItems[] = [
+                'partner_name' => $orgAgent->agent->name,
+                'count'        => $openItems->count(),
+                'total'        => 0,
+                'currency'     => $this->organisation->currency->code,
+                'items'        => $openItems->take(10)->map(fn (ShoppingListItem $item) => [
+                    'id'             => $item->id,
+                    'quantity'       => $item->quantity_units,
+                    'org_stock_code' => $item->code,
+                    'org_stock_name' => $item->name,
+                    'family_name'    => null,
+                ])->values()->all(),
+                'listRoute'    => $this->dashboardRoute('grp.org.procurement.shopping_list.index'),
+            ];
         }
 
         return [
