@@ -1090,3 +1090,70 @@ test('audit archiver moves Aurora loop noise but keeps genuinely busy history', 
         ->and(DB::connection('archive')->table('audits')->where('auditable_id', $loopingId)->count())->toBe(1200)
         ->and(DB::table('audits')->where('auditable_id', $busyId)->count())->toBe(1200);
 });
+
+test('audit archiver moves transactional trails older than the age cutoff', function () {
+    config()->set(
+        'database.connections.archive',
+        array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'archive'])
+    );
+    DB::purge('archive');
+    DB::statement('create schema if not exists archive');
+
+    $insert = function (string $auditableType, int $auditableId, $createdAt) {
+        DB::table('audits')->insert([
+            'auditable_type' => $auditableType,
+            'auditable_id'   => $auditableId,
+            'event'          => 'updated',
+            'tags'           => '[]',
+            'old_values'     => json_encode(['state' => 'a']),
+            'new_values'     => json_encode(['state' => 'b']),
+            'source_id'      => 'aged-test-'.$auditableType.'-'.$auditableId,
+            'created_at'     => $createdAt,
+            'updated_at'     => $createdAt,
+        ]);
+    };
+
+    $insert('Order', 988001, now()->subDays(120));
+    $insert('Invoice', 988002, now()->subDays(91));
+    $insert('Payment', 988003, now()->subDays(10));
+    $insert('Product', 988004, now()->subDays(400));
+
+    $archived = \App\Actions\Helpers\History\ArchiveAudits::make()
+        ->handle(closedShops: false, discontinued: false, aged: true);
+
+    expect($archived)->toBe(2)
+        ->and(DB::table('audits')->whereIn('auditable_id', [988001, 988002])->exists())->toBeFalse()
+        ->and(DB::connection('archive')->table('audits')->whereIn('auditable_id', [988001, 988002])->count())->toBe(2)
+        ->and(DB::table('audits')->whereIn('auditable_id', [988003, 988004])->count())->toBe(2);
+});
+
+test('noise audit purge deletes flag only audits and keeps real history', function () {
+    $insert = function (string $auditableType, int $auditableId, array $newValues) {
+        DB::table('audits')->insert([
+            'auditable_type' => $auditableType,
+            'auditable_id'   => $auditableId,
+            'event'          => 'updated',
+            'tags'           => '[]',
+            'old_values'     => json_encode([]),
+            'new_values'     => json_encode($newValues),
+            'source_id'      => 'noise-test-'.$auditableType.'-'.$auditableId,
+            'created_at'     => now(),
+            'updated_at'     => now(),
+        ]);
+    };
+
+    $insert('Portfolio', 989001, ['platform_status' => false, 'exist_in_platform' => false]);
+    $insert('Portfolio', 989002, ['status' => false]);
+    $insert('Portfolio', 989003, ['platform_status' => false, 'status' => false]);
+    $insert('EbayUser', 989004, ['settings.credentials.ebay_access_token' => '*********']);
+    $insert('CustomerSalesChannel', 989005, ['number_portfolios' => 3, 'number_portfolio_broken' => 1]);
+    $insert('CustomerSalesChannel', 989006, ['state' => 'card_saved']);
+
+    expect(\App\Actions\Helpers\History\PurgeNoiseAudits::make()->handle(dryRun: true))->toBe(3);
+
+    $deleted = \App\Actions\Helpers\History\PurgeNoiseAudits::make()->handle();
+
+    expect($deleted)->toBe(3)
+        ->and(DB::table('audits')->whereIn('auditable_id', [989001, 989004, 989005])->exists())->toBeFalse()
+        ->and(DB::table('audits')->whereIn('auditable_id', [989002, 989003, 989006])->count())->toBe(3);
+});
