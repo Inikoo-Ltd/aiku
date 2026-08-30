@@ -98,7 +98,7 @@ return [
         'redis-long-running' => [
             'driver'       => 'redis',
             'connection'   => 'horizon',
-            'queue'        => 'default-long',
+            'queue'        => 'long-running',
             'retry_after'  => 10850,
             'block_for'    => null,
             'after_commit' => true,
