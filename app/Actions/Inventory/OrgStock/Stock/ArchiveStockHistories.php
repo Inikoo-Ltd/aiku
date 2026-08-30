@@ -12,6 +12,7 @@ use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -33,6 +34,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
  *
  * The organisation and group level daily series is never touched, so dashboards and valuation
  * totals keep full daily history for every year regardless of the retention window.
+ *
+ * Telemetry is dropped for the run: thousands of queries a second buffer into multi megabyte
+ * writes the ingest agent cannot take, and it dies mid run with a broken pipe. Done here rather
+ * than with NIGHTWATCH_ENABLED, which a cached config ignores.
  */
 class ArchiveStockHistories
 {
@@ -82,6 +87,8 @@ class ArchiveStockHistories
         bool $dryRun = false,
         ?Command $command = null
     ): int {
+        Nightwatch::dontSample();
+
         $cutoff = $this->cutoff($months);
         $dates  = $this->eligibleDates($cutoff, $from, $until);
 
