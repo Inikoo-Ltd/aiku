@@ -2716,6 +2716,7 @@ describe('partner shopping list', function () {
         $item->refresh();
 
         expect($order->state)->toBe(OrderStateEnum::CREATING)
+            ->and($order->at_gate_at)->not->toBeNull()
             ->and($order->shop_id)->toBe($this->sellerShop->id)
             ->and($order->salesChannel->code)->toBe('intercompany')
             ->and($item->state)->toBe(ShoppingListItemStateEnum::ORDERED)

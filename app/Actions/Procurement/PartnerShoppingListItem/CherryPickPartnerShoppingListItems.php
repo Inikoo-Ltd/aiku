@@ -134,6 +134,12 @@ class CherryPickPartnerShoppingListItems extends OrgAction
             $picked++;
         }
 
+        foreach ($orders as $order) {
+            if (!$order->at_gate_at) {
+                $order->update(['at_gate_at' => now()]);
+            }
+        }
+
         foreach ($touchedOrgPartners as $touchedOrgPartner) {
             OrgPartnerHydrateShoppingListItems::dispatch($touchedOrgPartner);
         }

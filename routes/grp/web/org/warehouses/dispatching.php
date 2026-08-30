@@ -9,6 +9,8 @@
 use App\Actions\Dispatching\Box\UI\CreateBox;
 use App\Actions\Dispatching\Box\UI\IndexBoxes;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
+use App\Actions\Dispatching\FulfilmentGate\StoreJobOrderFromShortfall;
+use App\Actions\Dispatching\FulfilmentGate\UI\IndexOrdersAtGate;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingCrmDeliveryNoteItems;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingCrmDeliveryNoteItemsStillInPicking;
@@ -38,6 +40,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowDispatchHub::class)->name('backlog');
 Route::get('/reports', ShowDispatchReports::class)->name('reports');
+Route::get('/gate', IndexOrdersAtGate::class)->name('gate');
+Route::post('/gate/job-order', StoreJobOrderFromShortfall::class)->name('gate.job_order');
 
 Route::get('/waiting_items', IndexWaitingDeliveryNoteItems::class)->name('waiting_items');
 Route::get('/waiting_items/shop/{shopType}', [IndexWaitingDeliveryNoteItems::class, 'inShopTypes'])->name('waiting_items.shop');

@@ -32,6 +32,7 @@ const props = defineProps<{
     pickers_current?: {}
     packers_current?: {}
     reports_route?: { name: string; parameters: Record<string, string> }
+    gate_route?: { name: string; parameters: Record<string, string> } | null
     intervals: any
     settings: any
 }>()
@@ -64,7 +65,14 @@ const trolleyRoute = (trolley: { slug: string }) =>
 
     <template v-if="isPersonnelTab">
         <div class="px-4 pt-2">
-            <div class="flex justify-end">
+            <div class="flex justify-end gap-4">
+                <Link
+                    v-if="gate_route"
+                    :href="route(gate_route.name, gate_route.parameters)"
+                    class="text-sm text-indigo-600 hover:underline"
+                >
+                    {{ trans("The gate") }} →
+                </Link>
                 <Link
                     v-if="reports_route"
                     :href="route(reports_route.name, reports_route.parameters)"

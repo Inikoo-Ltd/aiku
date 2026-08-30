@@ -86,6 +86,10 @@ class ShowDispatchHub extends OrgAction
                 'picking_session' => $this->getPickingSessionStats($warehouse),
                 'pickers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'picker_user_id', ['handling', 'handling_blocked'], 'pickers_current')),
                 'packers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'packer_user_id', ['packing'], 'packers_current')),
+                'gate_route'      => $this->organisation->hasFulfilmentGate() ? [
+                    'name'       => 'grp.org.warehouses.show.dispatching.gate',
+                    'parameters' => $request->route()->originalParameters(),
+                ] : null,
                 'reports_route'   => [
                     'name'       => 'grp.org.warehouses.show.dispatching.reports',
                     'parameters' => $request->route()->originalParameters(),

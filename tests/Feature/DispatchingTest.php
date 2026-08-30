@@ -3809,3 +3809,17 @@ test('UI dispatch reports accept date range and channel', function () {
             ->etc()
     );
 });
+
+test('UI orders at gate index', function () {
+    $response = get(route('grp.org.warehouses.show.dispatching.gate', [
+        $this->organisation->slug,
+        $this->warehouse->slug,
+    ]));
+    $response->assertOk();
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->component('Org/Dispatching/OrdersAtGate')
+            ->has('data.data')
+            ->etc()
+    );
+});

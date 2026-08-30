@@ -3100,3 +3100,111 @@ test('channel import never submits an order with no transactions', function () {
     expect($result->state)->toBe(OrderStateEnum::CREATING)
         ->and($result->submitted_at)->toBeNull();
 });
+
+test('fulfilment gate holds order from warehouse until released', function () {
+    $settings = $this->organisation->settings ?? [];
+    $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    StoreTransaction::make()->action($order, $this->product->historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 2]
+    ));
+
+    SubmitOrder::make()->action($order);
+    $held = SendOrderToWarehouse::make()->action($order, []);
+    $order->refresh();
+
+    expect($held)->toBeNull()
+        ->and($order->state)->toEqual(OrderStateEnum::SUBMITTED)
+        ->and($order->at_gate_at)->not->toBeNull()
+        ->and($order->deliveryNotes()->count())->toBe(0);
+
+    $deliveryNote = \App\Actions\Ordering\Order\UpdateState\ReleaseOrderFromGate::make()->action($order);
+    $order->refresh();
+
+    expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
+        ->and($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->at_gate_at)->toBeNull()
+        ->and(\App\Models\Dispatching\FulfilmentGateRelease::where('order_id', $order->id)->count())->toBe(1);
+
+    $this->organisation->update(['settings' => $settings]);
+});
+
+test('fulfilment gate lets paid fully coverable order straight to warehouse', function () {
+    $settings = $this->organisation->settings ?? [];
+    $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    StoreTransaction::make()->action($order, $this->product->historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 2]
+    ));
+
+    if (!$this->product->orgStocks()->count()) {
+        $orgStock = \App\Models\Inventory\OrgStock::where('organisation_id', $this->organisation->id)->firstOrFail();
+        $this->product->orgStocks()->attach($orgStock->id, ['quantity' => 1]);
+    }
+    $this->product->orgStocks()->update(['quantity_available' => 100000]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    $order->refresh();
+
+    expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
+        ->and($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->at_gate_at)->toBeNull();
+
+    $this->product->orgStocks()->update(['quantity_available' => 0]);
+    $this->organisation->update(['settings' => $settings]);
+});
+
+test('fulfilment gate auto releases paid order when stock arrives', function () {
+    $settings = $this->organisation->settings ?? [];
+    $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    StoreTransaction::make()->action($order, $this->product->historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 2]
+    ));
+
+    if (!$this->product->orgStocks()->count()) {
+        $orgStock = \App\Models\Inventory\OrgStock::where('organisation_id', $this->organisation->id)->firstOrFail();
+        $this->product->orgStocks()->attach($orgStock->id, ['quantity' => 1]);
+    }
+    $this->product->orgStocks()->update(['quantity_available' => 0]);
+
+    $order->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
+    SubmitOrder::make()->action($order);
+    $order->refresh();
+
+    expect($order->at_gate_at)->not->toBeNull()
+        ->and($order->state)->toEqual(OrderStateEnum::SUBMITTED);
+
+    $this->product->orgStocks()->update(['quantity_available' => 100000]);
+    \App\Actions\Dispatching\FulfilmentGate\ReleaseCoverableOrdersAtGate::run($this->organisation->id);
+    $order->refresh();
+
+    expect($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->at_gate_at)->toBeNull()
+        ->and($order->deliveryNotes()->count())->toBe(1);
+
+    $this->product->orgStocks()->update(['quantity_available' => 0]);
+    $this->organisation->update(['settings' => $settings]);
+});
