@@ -86,5 +86,6 @@ jobs:
         with:
           ignore_missing: true
           environment: production
+          set_commits: 'skip'
           projects: 'aiku'
           release: ${{ steps.semver.outputs.next }}

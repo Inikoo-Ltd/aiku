@@ -63,5 +63,6 @@ jobs:
           SENTRY_ORG: 'inikoo-ltd'
         with:
           environment: staging
+          set_commits: 'skip'
           projects: 'aiku'
           release: ${{ steps.date.outputs.date }}
