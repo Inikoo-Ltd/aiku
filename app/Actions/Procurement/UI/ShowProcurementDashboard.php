@@ -198,13 +198,26 @@ class ShowProcurementDashboard extends OrgAction
         $agent = $this->getOrganisationAgent($this->organisation);
 
         if ($agent) {
-            foreach (ShowShoppingListBoard::make()->handle($agent)['agents'] as $agentData) {
+            $agentGroups = ShowShoppingListBoard::make()->handle($agent)['agents'];
+
+            if ($agentGroups === []) {
+                $empty[] = [
+                    'name'  => $agent->code,
+                    'route' => $this->dashboardRoute('grp.org.procurement.shopping_list.board'),
+                ];
+            }
+
+            foreach ($agentGroups as $agentData) {
+                $agentHasItems = false;
+
                 foreach ($agentData['suppliers'] as $supplier) {
                     $count = collect($supplier['products'])->sum(fn (array $product) => count($product['orgs']));
 
                     if ($count === 0) {
                         continue;
                     }
+
+                    $agentHasItems = true;
 
                     $withItems[] = [
                         'partner_name' => $supplier['code'],
@@ -219,6 +232,13 @@ class ShowProcurementDashboard extends OrgAction
                             'family_name'    => null,
                         ])->values()->all(),
                         'listRoute'    => $this->dashboardRoute('grp.org.procurement.shopping_list.board'),
+                    ];
+                }
+
+                if (!$agentHasItems) {
+                    $empty[] = [
+                        'name'  => $agentData['code'],
+                        'route' => $this->dashboardRoute('grp.org.procurement.shopping_list.board'),
                     ];
                 }
             }

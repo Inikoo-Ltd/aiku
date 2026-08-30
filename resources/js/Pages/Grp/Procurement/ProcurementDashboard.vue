@@ -49,14 +49,7 @@ library.add(
 	<div v-if="shoppingLists?.withItems?.length || shoppingLists?.empty?.length" class="mx-4 mt-6">
 		<h2 class="text-sm font-semibold text-gray-600">{{ trans("Shopping lists") }}</h2>
 
-		<div v-if="shoppingLists.withItems.length" class="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-			<PartnerMiniShoppingList
-				v-for="miniCart in shoppingLists.withItems"
-				:key="miniCart.partner_name + miniCart.listRoute.name"
-				:miniCart="miniCart" />
-		</div>
-
-		<div v-if="shoppingLists.empty.length" class="mt-4 flex flex-wrap items-center gap-2">
+		<div v-if="shoppingLists.empty.length" class="mt-2 flex flex-wrap items-center gap-2">
 			<span class="text-xs text-gray-400">{{ trans("Empty lists:") }}</span>
 			<Link
 				v-for="list in shoppingLists.empty"
@@ -66,6 +59,13 @@ library.add(
 				<FontAwesomeIcon icon="fal fa-shopping-basket" fixed-width aria-hidden="true" />
 				{{ list.name }}
 			</Link>
+		</div>
+
+		<div v-if="shoppingLists.withItems.length" class="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+			<PartnerMiniShoppingList
+				v-for="miniCart in shoppingLists.withItems"
+				:key="miniCart.partner_name + miniCart.listRoute.name"
+				:miniCart="miniCart" />
 		</div>
 	</div>
 
