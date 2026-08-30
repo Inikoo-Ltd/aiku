@@ -47,6 +47,8 @@ class ArchiveStockHistories
 
     private const ADVISORY_LOCK_KEY = 826_041_503;
 
+    private const DRY_RUN_SAMPLES = 12;
+
     private const HISTORY_TABLES = ['location_org_stock_histories', 'org_stock_histories'];
 
     private const MIRRORED_TABLES = ['org_stocks', 'locations', 'organisation_stock_histories'];
@@ -254,21 +256,51 @@ class ArchiveStockHistories
     }
 
     /**
+     * Sampled across the whole range rather than extrapolated from the newest day: a 2023 day holds
+     * roughly three times the rows of a 2014 one, so measuring the top of the range and multiplying
+     * by every day overstates the run by about half.
+     *
      * @param array<int, string> $dates
      */
     private function reportDryRun(array $dates, Carbon $cutoff, ?Command $command): int
     {
-        $sample     = end($dates);
+        $samples   = $this->sampleDates($dates);
         $sampleRows = 0;
-        foreach (self::HISTORY_TABLES as $table) {
-            $sampleRows += DB::table($table)->where('date', $sample)->count();
+
+        foreach ($samples as $sample) {
+            foreach (self::HISTORY_TABLES as $table) {
+                $sampleRows += DB::table($table)->where('date', $sample)->count();
+            }
         }
+
+        $estimate = (int) round($sampleRows / count($samples) * count($dates));
 
         $command?->info('Retention cutoff '.$cutoff->format('Y-m-d'));
         $command?->info(count($dates).' days eligible, one snapshot per month stays');
-        $command?->info("Newest eligible day $sample holds $sampleRows rows; the whole run is of the order of ".number_format(count($dates) * $sampleRows).' rows (older days are smaller)');
+        $command?->info(
+            'Sampled '.count($samples).' days across the range at '.number_format((int) round($sampleRows / count($samples))).
+            ' rows a day: roughly '.number_format($estimate).' rows to move'
+        );
 
         return count($dates);
+    }
+
+    /**
+     * @param array<int, string> $dates
+     *
+     * @return array<int, string>
+     */
+    private function sampleDates(array $dates): array
+    {
+        $wanted = min(self::DRY_RUN_SAMPLES, count($dates));
+        $step   = (count($dates) - 1) / max($wanted - 1, 1);
+
+        $samples = [];
+        for ($i = 0; $i < $wanted; $i++) {
+            $samples[] = $dates[(int) round($i * $step)];
+        }
+
+        return array_values(array_unique($samples));
     }
 
     public function asCommand(Command $command): int
