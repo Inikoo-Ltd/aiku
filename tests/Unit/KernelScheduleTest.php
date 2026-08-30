@@ -84,8 +84,10 @@ test('neither master nor slave schedules register when both flags are disabled',
         ->toEqualCanonicalizing(
             [
                 'cloudflare:reload',
+                'comms:archive_dispatched_emails',
                 'horizon:snapshot',
                 'nightowl:prune',
+                'prune-fetch-stacks',
                 'prune-traffic-source-clicks',
                 'search:propose-synonyms',
                 'traffic-source:collect-visits',
