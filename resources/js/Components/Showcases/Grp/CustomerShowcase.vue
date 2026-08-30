@@ -506,7 +506,7 @@ const submitNote = async () => {
     <!-- Quick Actions Bar -->
     <div class="px-4 pt-6 md:px-6 lg:px-8">
         <div class="flex flex-wrap items-center gap-3">
-            <BoxNote :noteData="data.internal_note" :updateRoute="data.update_route" :alternativeStyle="true" class="h-full">
+            <BoxNote v-if="data.shop.type !== 'external'" :noteData="data.internal_note" :updateRoute="data.update_route" :alternativeStyle="true" class="h-full">
                 <template #mainIcon>
                     <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" />
                     {{ trans("Add Note") }}
@@ -529,7 +529,7 @@ const submitNote = async () => {
                 {{ trans("Full Timeline") }}
             </button>
             <a
-                v-if="data.customer.email"
+                v-if="data.customer.email && data.shop.type !== 'external'"
                 :href="`mailto:${data.customer.email}`"
                 class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
             >
@@ -546,7 +546,7 @@ const submitNote = async () => {
             </button>
 
             <UpcomingTransactionsPanel
-                v-if="data.upcoming_transaction_route"
+                v-if="data.upcoming_transaction_route && data.shop.type !== 'external'"
                 :routes="data.upcoming_transaction_route"
                 :shopSlug="data.shop.slug"
                 :temporaryNote="temporaryNote"
@@ -1166,7 +1166,8 @@ const submitNote = async () => {
 
             <!-- Email Subscriptions -->
             <EmailSubscription v-if="data?.customer?.email_subscriptions"
-                               :emailSubscriptions="data.customer.email_subscriptions" />
+                               :emailSubscriptions="data.customer.email_subscriptions"
+                               :showEditButton="data.shop.type !== 'external'" />
         </div>
     </div>
 

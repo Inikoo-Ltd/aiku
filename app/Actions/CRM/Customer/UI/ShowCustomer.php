@@ -85,6 +85,13 @@ class ShowCustomer extends OrgAction
     {
         $tabs         = $customer->shop->type == ShopTypeEnum::DROPSHIPPING ? CustomerDropshippingTabsEnum::class : CustomerTabsEnum::class;
         $navigation   = $tabs::navigation();
+        if ($customer->shop->type == ShopTypeEnum::EXTERNAL) {
+            $navigation = Arr::only($navigation, [
+                CustomerTabsEnum::SHOWCASE->value,
+                CustomerTabsEnum::TIMELINE->value,
+                CustomerTabsEnum::HISTORY->value,
+            ]);
+        }
         $webUsersMeta = $this->getWebUserMeta($customer, $request);
 
         $shopMeta      = [];
@@ -141,7 +148,7 @@ class ShowCustomer extends OrgAction
                         $webUsersMeta
                     ]),
                     'actions'       => array_values(array_filter([
-                        [
+                        $customer->shop->type !== ShopTypeEnum::EXTERNAL ? [
                             'key'     => 'edit_customer',
                             'type'    => 'button',
                             'style'   => 'edit',
@@ -150,8 +157,8 @@ class ShowCustomer extends OrgAction
                                 'name'       => 'grp.org.shops.show.crm.customers.edit',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
-                        ],
-                        $this->isSupervisor && DeleteCustomer::canBeDeleted($customer) ? [
+                        ] : false,
+                        $customer->shop->type !== ShopTypeEnum::EXTERNAL && $this->isSupervisor && DeleteCustomer::canBeDeleted($customer) ? [
                             'key'     => 'delete_customer',
                             'type'    => 'button',
                             'style'   => 'delete',
