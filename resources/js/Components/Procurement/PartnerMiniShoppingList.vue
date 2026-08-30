@@ -75,7 +75,7 @@ const groupedItems = computed(() => {
 
         <div class="flex items-baseline justify-between text-sm font-semibold tabular-nums">
             <span>{{ trans("Total") }} · {{ useLocaleStore().number(miniCart.count) }} {{ trans("items") }}</span>
-            <span>{{ useLocaleStore().currencyFormat(miniCart.currency, miniCart.total) }}</span>
+            <span v-if="miniCart.total">{{ useLocaleStore().currencyFormat(miniCart.currency, miniCart.total) }}</span>
         </div>
 
         <Link

@@ -1038,7 +1038,8 @@ test('UI show procurement dashboard', function () {
                 fn (AssertableInertia $page) => $page
                     ->where('title', 'Procurement')
                     ->etc()
-            );
+            )
+            ->has('shoppingLists');
     });
 });
 
