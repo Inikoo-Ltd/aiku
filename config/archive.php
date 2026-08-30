@@ -19,6 +19,15 @@ return [
     'email_retention_days' => (int) env('EMAIL_RETENTION_DAYS', 90),
 
     /*
+     * How old a transactional record (order, delivery note, invoice, payment) must be before its
+     * whole audit trail is archived. The record's own age decides, not the age of each audit row:
+     * old records still collect machine audits from backfills, history imports and hydrators, and
+     * the History tab falls back to the archive per record, so a split trail would hide its older
+     * half. Kept separate from the email retention, which is pinned to the SES reporting window.
+     */
+    'audit_retention_days' => (int) env('AUDIT_RETENTION_DAYS', 120),
+
+    /*
      * Every archiver pauses between delete batches while any replica is further behind than this,
      * so archiving can never build up the WAL backlog that once filled boro's disk.
      */

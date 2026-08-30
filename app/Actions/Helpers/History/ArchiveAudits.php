@@ -21,7 +21,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * Moves dead audit trails to the archive database: everything belonging to a closed shop
  * (audits.shop_id covers every audited model of that shop), the audits of discontinued
  * products and org stocks in live shops, the Aurora loop noise (see auroraLoopObjects) and the
- * transactional trails (order, delivery note, invoice, payment) older than the age cutoff.
+ * whole trails of the transactional records (order, delivery note, invoice, payment) that are
+ * themselves older than the age cutoff. The record's own age decides, not the age of each audit
+ * row: a two year old order still collects machine audits from backfills, history imports and
+ * hydrators, and the History tab falls back to the archive only for a record with no live audits
+ * at all, so archiving half of one record's trail would hide that half behind a footer note.
  * The History tab falls back to the archive when the operational database has no rows for a
  * record, so the trail stays readable.
  *
@@ -35,7 +39,7 @@ class ArchiveAudits
     use AsAction;
     use WithArchiveOperations;
 
-    public string $commandSignature = 'helpers:archive_audits {--c|chunk=5000} {--l|limit=} {--d|dry-run} {--closed-shops} {--discontinued} {--aurora-loops} {--aged} {--age-days=90}';
+    public string $commandSignature = 'helpers:archive_audits {--c|chunk=5000} {--l|limit=} {--d|dry-run} {--closed-shops} {--discontinued} {--aurora-loops} {--aged} {--age-days=}';
 
     public string $commandDescription = 'Copy audits of closed shops, discontinued products/org stocks, Aurora loop noise and aged transactional trails to the archive database and delete them';
 
@@ -51,7 +55,12 @@ class ArchiveAudits
 
     private const AURORA_LOOP_TYPES = ['Product', 'TradeUnit', 'OrgStock', 'Barcode', 'StockDelivery'];
 
-    private const AGED_TYPES = ['Order', 'DeliveryNote', 'Invoice', 'Payment'];
+    private const AGED_TYPES = [
+        'Order'        => 'orders',
+        'DeliveryNote' => 'delivery_notes',
+        'Invoice'      => 'invoices',
+        'Payment'      => 'payments',
+    ];
 
     /** @var array<string, array<int, int>>|null */
     private ?array $auroraLoopObjects = null;
@@ -63,7 +72,7 @@ class ArchiveAudits
         bool $discontinued = true,
         bool $auroraLoops = false,
         bool $aged = false,
-        int $ageDays = 90,
+        ?int $ageDays = null,
         bool $dryRun = false,
         ?Command $command = null
     ): int {
@@ -151,7 +160,7 @@ class ArchiveAudits
      *
      * @return array<int, callable(): Builder>
      */
-    private function selectors(bool $closedShops, bool $discontinued, bool $auroraLoops, bool $aged = false, int $ageDays = 90): array
+    private function selectors(bool $closedShops, bool $discontinued, bool $auroraLoops, bool $aged = false, ?int $ageDays = null): array
     {
         $selectors = [];
 
@@ -171,11 +180,14 @@ class ArchiveAudits
         }
 
         if ($aged) {
-            $cutoff = now()->subDays($ageDays);
-            foreach (self::AGED_TYPES as $auditableType) {
+            $cutoff = now()->subDays($ageDays ?? config('archive.audit_retention_days'));
+            foreach (self::AGED_TYPES as $auditableType => $table) {
                 $selectors[] = fn (): Builder => DB::table('audits')
                     ->where('auditable_type', $auditableType)
-                    ->where('created_at', '<', $cutoff);
+                    ->whereIn(
+                        'auditable_id',
+                        DB::table($table)->select('id')->where('created_at', '<', $cutoff)
+                    );
             }
         }
 
@@ -268,7 +280,7 @@ class ArchiveAudits
             discontinued: $all || $onlyDiscontinued,
             auroraLoops: $all || $onlyAuroraLoops,
             aged: $all || $onlyAged,
-            ageDays: (int) $command->option('age-days'),
+            ageDays: $command->option('age-days') ? (int) $command->option('age-days') : null,
             dryRun: (bool) $command->option('dry-run'),
             command: $command
         );

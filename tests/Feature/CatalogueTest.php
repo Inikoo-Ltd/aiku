@@ -1091,7 +1091,7 @@ test('audit archiver moves Aurora loop noise but keeps genuinely busy history', 
         ->and(DB::table('audits')->where('auditable_id', $busyId)->count())->toBe(1200);
 });
 
-test('audit archiver moves transactional trails older than the age cutoff', function () {
+test('audit archiver moves the whole trail of records older than the age cutoff', function () {
     config()->set(
         'database.connections.archive',
         array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'archive'])
@@ -1099,32 +1099,38 @@ test('audit archiver moves transactional trails older than the age cutoff', func
     DB::purge('archive');
     DB::statement('create schema if not exists archive');
 
-    $insert = function (string $auditableType, int $auditableId, $createdAt) {
-        DB::table('audits')->insert([
-            'auditable_type' => $auditableType,
-            'auditable_id'   => $auditableId,
-            'event'          => 'updated',
-            'tags'           => '[]',
-            'old_values'     => json_encode(['state' => 'a']),
-            'new_values'     => json_encode(['state' => 'b']),
-            'source_id'      => 'aged-test-'.$auditableType.'-'.$auditableId,
-            'created_at'     => $createdAt,
-            'updated_at'     => $createdAt,
-        ]);
-    };
+    $shop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    [, $product] = createProduct($shop);
+    $order = createOrder(createCustomer($shop), $product);
 
-    $insert('Order', 988001, now()->subDays(120));
-    $insert('Invoice', 988002, now()->subDays(91));
-    $insert('Payment', 988003, now()->subDays(10));
-    $insert('Product', 988004, now()->subDays(400));
+    DB::table('audits')->insert([
+        'auditable_type' => 'Order',
+        'auditable_id'   => $order->id,
+        'event'          => 'updated',
+        'tags'           => '[]',
+        'old_values'     => json_encode(['state' => 'a']),
+        'new_values'     => json_encode(['state' => 'b']),
+        'source_id'      => 'aged-test-backfill',
+        'created_at'     => now()->subDay(),
+        'updated_at'     => now()->subDay(),
+    ]);
 
-    $archived = \App\Actions\Helpers\History\ArchiveAudits::make()
-        ->handle(closedShops: false, discontinued: false, aged: true);
+    $orderAudits = fn (): int => DB::table('audits')->where('auditable_type', 'Order')->where('auditable_id', $order->id)->count();
 
-    expect($archived)->toBe(2)
-        ->and(DB::table('audits')->whereIn('auditable_id', [988001, 988002])->exists())->toBeFalse()
-        ->and(DB::connection('archive')->table('audits')->whereIn('auditable_id', [988001, 988002])->count())->toBe(2)
-        ->and(DB::table('audits')->whereIn('auditable_id', [988003, 988004])->count())->toBe(2);
+    DB::table('orders')->where('id', $order->id)->update(['created_at' => now()->subDays(5)]);
+    $liveAudits = $orderAudits();
+
+    expect($liveAudits)->toBeGreaterThan(1)
+        ->and(\App\Actions\Helpers\History\ArchiveAudits::make()->handle(closedShops: false, discontinued: false, aged: true))->toBe(0)
+        ->and($orderAudits())->toBe($liveAudits);
+
+    DB::table('orders')->where('id', $order->id)->update(['created_at' => now()->subDays(150)]);
+
+    $archived = \App\Actions\Helpers\History\ArchiveAudits::make()->handle(closedShops: false, discontinued: false, aged: true);
+
+    expect($archived)->toBe($liveAudits)
+        ->and($orderAudits())->toBe(0)
+        ->and(DB::connection('archive')->table('audits')->where('auditable_type', 'Order')->where('auditable_id', $order->id)->count())->toBe($liveAudits);
 });
 
 test('noise audit purge deletes flag only audits and keeps real history', function () {
