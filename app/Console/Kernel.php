@@ -87,8 +87,9 @@ class Kernel extends ConsoleKernel
         $schedule->command('search:propose-synonyms')->weeklyOn(1, '03:00')->onOneServer();
         $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
         $schedule->command('comms:archive_dispatched_emails')->dailyAt('03:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
-        $schedule->command('inventory:archive_stock_histories --dates=5')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping(60)
-            ->when(fn () => config('archive.stock_history_nightly'));
+        // Off until the historic backlog has been archived by hand, see config/archive.php:
+        // $schedule->command('inventory:archive_stock_histories --dates=5')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping(60)
+        //     ->when(fn () => config('archive.stock_history_nightly'));
         $schedule->call(fn () => \Illuminate\Support\Facades\DB::table('fetch_stacks')->where('state', 'success')->where('created_at', '<', now()->subDays(7))->delete())
             ->name('prune-fetch-stacks')->dailyAt('04:15')->timezone('UTC')->onOneServer();
 
