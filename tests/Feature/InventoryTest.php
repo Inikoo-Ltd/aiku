@@ -2790,3 +2790,150 @@ describe('packing change guard', function () {
         expect((float) $orgStock->refresh()->tradeUnits->first()->pivot->quantity)->toBe(12.0);
     });
 });
+
+test('stock history archiver keeps a monthly snapshot and the readers read the archived days back', function () {
+    config()->set(
+        'database.connections.archive',
+        array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'archive'])
+    );
+    DB::purge('archive');
+    DB::statement('create schema if not exists archive');
+    DB::statement('drop table if exists archive.org_stock_histories, archive.location_org_stock_histories, archive.org_stocks, archive.locations, archive.organisation_stock_histories');
+
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, $stocks);
+    $orgStock  = $orgStocks[0];
+    $warehouse = createWarehouse();
+    $location  = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+
+    $retention = config('archive.stock_history_retention_months');
+
+    $days = [
+        'recent'   => now()->subMonth()->startOfDay(),
+        'keeper'   => now()->subMonths($retention + 4)->startOfMonth()->addDays(27),
+        'archived' => now()->subMonths($retention + 4)->startOfMonth()->addDays(6),
+    ];
+
+    foreach ($days as $key => $date) {
+        $organisationStockHistoryId = DB::table('organisation_stock_histories')->insertGetId([
+            'group_id'        => $this->group->id,
+            'organisation_id' => $this->organisation->id,
+            'date'            => $date->format('Y-m-d'),
+            'number_org_stocks'              => 1,
+            'number_out_of_stock_org_stocks' => 0,
+            'number_location_org_stocks'     => 1,
+        ]);
+
+        $orgStockHistoryId = DB::table('org_stock_histories')->insertGetId([
+            'organisation_stock_history_id' => $organisationStockHistoryId,
+            'organisation_id'               => $this->organisation->id,
+            'org_stock_id'                  => $orgStock->id,
+            'date'                          => $date->format('Y-m-d'),
+            'quantity_in_locations'         => 10,
+            'org_stock_lpp_value'           => 100,
+        ]);
+
+        DB::table('location_org_stock_histories')->insert([
+            'org_stock_history_id'          => $orgStockHistoryId,
+            'organisation_stock_history_id' => $organisationStockHistoryId,
+            'org_stock_id'                  => $orgStock->id,
+            'location_id'                   => $location->id,
+            'date'                          => $date->format('Y-m-d'),
+            'actual_quantity_in_locations'  => 10,
+            'quantity_in_locations'         => 10,
+        ]);
+
+        $days[$key] = ['date' => $date, 'organisation_stock_history_id' => $organisationStockHistoryId];
+    }
+
+    $archivedRows = \App\Actions\Inventory\OrgStock\Stock\ArchiveStockHistories::run();
+
+    $liveOn   = fn (string $table, array $day) => DB::table($table)->where('date', $day['date']->format('Y-m-d'))->where('org_stock_id', $orgStock->id)->exists();
+    $archiveOn = fn (string $table, array $day) => DB::connection('archive')->table($table)->where('date', $day['date']->format('Y-m-d'))->where('org_stock_id', $orgStock->id)->exists();
+
+    expect($archivedRows)->toBe(2)
+        ->and($liveOn('org_stock_histories', $days['recent']))->toBeTrue()
+        ->and($liveOn('org_stock_histories', $days['keeper']))->toBeTrue()
+        ->and($liveOn('org_stock_histories', $days['archived']))->toBeFalse()
+        ->and($liveOn('location_org_stock_histories', $days['archived']))->toBeFalse()
+        ->and($archiveOn('org_stock_histories', $days['archived']))->toBeTrue()
+        ->and($archiveOn('location_org_stock_histories', $days['archived']))->toBeTrue()
+        ->and($archiveOn('org_stock_histories', $days['keeper']))->toBeFalse()
+        ->and(DB::connection('archive')->table('org_stocks')->where('id', $orgStock->id)->exists())->toBeTrue()
+        ->and(DB::connection('archive')->table('locations')->where('id', $location->id)->exists())->toBeTrue();
+
+    $reader = new class () {
+        use \App\Actions\Traits\WithStockHistoryArchiveRead;
+
+        public function connectionFor(int $organisationStockHistoryId): ?string
+        {
+            return $this->stockHistoryDayConnection(\App\Models\Inventory\OrganisationStockHistory::find($organisationStockHistoryId));
+        }
+
+        public function datesNewestFirst(int $orgStockId, array $dates): array
+        {
+            $rows = $this->stockHistoryRowsNewestFirst(
+                fn (?string $connection) => DB::connection($connection)->table('org_stock_histories')
+                    ->where('org_stock_id', $orgStockId)
+                    ->whereIn('date', $dates)
+                    ->select(['date', 'quantity_in_locations'])
+                    ->orderBy('date', 'desc'),
+                null
+            );
+
+            return array_map(fn ($row) => \Illuminate\Support\Carbon::parse($row->date)->format('Y-m-d'), iterator_to_array($rows, false));
+        }
+    };
+
+    expect(\App\Actions\Inventory\OrgStock\Stock\GetStockHistories::run(
+        fn ($query) => $query->where('org_stock_id', $orgStock->id)->select(['date', 'quantity_in_locations'])
+    )->pluck('date')->map(fn ($date) => \Illuminate\Support\Carbon::parse($date)->format('Y-m-d'))->all())
+        ->toContain($days['archived']['date']->format('Y-m-d'), $days['keeper']['date']->format('Y-m-d'), $days['recent']['date']->format('Y-m-d'));
+
+    DB::connection('archive')->table('org_stock_histories')
+        ->where('organisation_stock_history_id', $days['archived']['organisation_stock_history_id'])
+        ->update(['org_stock_wac_value' => 77, 'wac_per_sku' => 7.7, 'non_moving_1y' => 0]);
+
+    \App\Actions\Inventory\OrganisationStockHistory\Hydrators\OrganisationStockHistoryHydrateFromOrgStockHistories::run(
+        $days['archived']['organisation_stock_history_id']
+    );
+
+    $rolledUp = DB::table('organisation_stock_histories')->find($days['archived']['organisation_stock_history_id']);
+
+    expect((float) $rolledUp->org_stock_wac_value)->toBe(77.0)
+        ->and($rolledUp->number_org_stocks)->toBe(1)
+        ->and($rolledUp->number_locations)->toBe(1);
+
+    expect($reader->connectionFor($days['recent']['organisation_stock_history_id']))->toBeNull()
+        ->and($reader->connectionFor($days['keeper']['organisation_stock_history_id']))->toBeNull()
+        ->and($reader->connectionFor($days['archived']['organisation_stock_history_id']))->toBe('archive')
+        ->and($reader->datesNewestFirst($orgStock->id, array_map(fn ($day) => $day['date']->format('Y-m-d'), $days)))->toBe([
+            $days['recent']['date']->format('Y-m-d'),
+            $days['keeper']['date']->format('Y-m-d'),
+            $days['archived']['date']->format('Y-m-d'),
+        ]);
+});
+
+test('stock history sweeps refuse to rewrite only the live years when the archive is unreachable', function () {
+    config()->set('database.connections.archive', array_merge(
+        config('database.connections.'.config('database.default')),
+        ['host' => '127.0.0.1', 'port' => 1, 'database' => 'aiku_archive_unreachable', 'connect_timeout' => 1]
+    ));
+    DB::purge('archive');
+
+    $sweep = new class () {
+        use \App\Actions\Traits\WithStockHistoryArchiveWrite;
+
+        public function connection(): ?string
+        {
+            return $this->stockHistoryWriteConnection();
+        }
+    };
+
+    expect(fn () => $sweep->connection())->toThrow(\Exception::class, 'refusing to rewrite only the recent years');
+
+    config()->set('database.connections.archive.database', null);
+    DB::purge('archive');
+
+    expect($sweep->connection())->toBeNull();
+});

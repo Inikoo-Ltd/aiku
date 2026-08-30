@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStockHistory\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithStockHistoryArchiveRead;
 use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrganisationStockHistory;
@@ -22,6 +23,8 @@ use Spatie\QueryBuilder\AllowedSort;
 
 class IndexOrgStockHistories extends OrgAction
 {
+    use WithStockHistoryArchiveRead;
+
     public function handle(OrganisationStockHistory $organisationStockHistory, $prefix = null, ?string $filter = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -35,7 +38,9 @@ class IndexOrgStockHistories extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(OrgStockHistory::class);
+        $connection = $this->stockHistoryDayConnection($organisationStockHistory);
+
+        $queryBuilder = QueryBuilder::for($connection ? OrgStockHistory::on($connection) : OrgStockHistory::query());
 
         $queryBuilder->leftJoin('org_stocks', 'org_stock_histories.org_stock_id', '=', 'org_stocks.id');
         $queryBuilder->where('org_stock_histories.organisation_stock_history_id', $organisationStockHistory->id);

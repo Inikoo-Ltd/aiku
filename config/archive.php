@@ -28,6 +28,20 @@ return [
     'audit_retention_days' => (int) env('AUDIT_RETENTION_DAYS', 120),
 
     /*
+     * How far back per SKU and per location stock history is kept at daily granularity in the
+     * operational database. Beyond it only the last snapshot of each month stays local; every
+     * other day is moved to the archive database, where the UI reads it back transparently.
+     *
+     * Three years rather than two is an engineering choice: BackfillStockValuations and the cost
+     * repairs rewrite everything from organisations.wac_calculations_start_date, and they only
+     * ever touch the operational database, so a window that ends inside a range those sweeps
+     * still rewrite would leave archived rows disagreeing with recomputed ones. The org and group
+     * level daily series (organisation_stock_histories, group_stock_histories) is never archived,
+     * so every dashboard and valuation total keeps its full history whatever this is set to.
+     */
+    'stock_history_retention_months' => (int) env('STOCK_HISTORY_RETENTION_MONTHS', 36),
+
+    /*
      * Every archiver pauses between delete batches while any replica is further behind than this,
      * so archiving can never build up the WAL backlog that once filled boro's disk.
      */

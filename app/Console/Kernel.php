@@ -87,6 +87,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('search:propose-synonyms')->weeklyOn(1, '03:00')->onOneServer();
         $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
         $schedule->command('comms:archive_dispatched_emails')->dailyAt('03:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
+        $schedule->command('inventory:archive_stock_histories')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping(360);
         $schedule->call(fn () => \Illuminate\Support\Facades\DB::table('fetch_stacks')->where('state', 'success')->where('created_at', '<', now()->subDays(7))->delete())
             ->name('prune-fetch-stacks')->dailyAt('04:15')->timezone('UTC')->onOneServer();
 
