@@ -21,8 +21,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * Moves dead audit trails to the archive database: everything belonging to a closed shop
  * (audits.shop_id covers every audited model of that shop), the audits of discontinued
  * products and org stocks in live shops, the Aurora loop noise (see auroraLoopObjects) and the
- * whole trails of the transactional records (order, delivery note, invoice, payment) that are
- * themselves older than the age cutoff. The record's own age decides, not the age of each audit
+ * whole trails of the closed records (order, delivery note, invoice, payment, stock delivery,
+ * purchase order, historic asset, mailshot) that are themselves older than the age cutoff. The record's own age decides, not the age of each audit
  * row: a two year old order still collects machine audits from backfills, history imports and
  * hydrators, and the History tab falls back to the archive only for a record with no live audits
  * at all, so archiving half of one record's trail would hide that half behind a footer note.
@@ -60,6 +60,10 @@ class ArchiveAudits
         'DeliveryNote' => 'delivery_notes',
         'Invoice'      => 'invoices',
         'Payment'      => 'payments',
+        'StockDelivery' => 'stock_deliveries',
+        'PurchaseOrder' => 'purchase_orders',
+        'HistoricAsset' => 'historic_assets',
+        'Mailshot'      => 'mailshots',
     ];
 
     /** @var array<string, array<int, int>>|null */
