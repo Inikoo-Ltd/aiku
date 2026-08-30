@@ -3208,3 +3208,48 @@ test('fulfilment gate auto releases paid order when stock arrives', function () 
     $this->product->orgStocks()->update(['quantity_available' => 0]);
     $this->organisation->update(['settings' => $settings]);
 });
+
+test('make queue ranks paid blocked stock with suggested quantity', function () {
+    $settings = $this->organisation->settings ?? [];
+    $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $transaction = StoreTransaction::make()->action($order, $this->product->historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 5]
+    ));
+    $transaction->update(['net_amount' => 250]);
+
+    if (!$this->product->orgStocks()->count()) {
+        $orgStock = \App\Models\Inventory\OrgStock::where('organisation_id', $this->organisation->id)->firstOrFail();
+        $this->product->orgStocks()->attach($orgStock->id, ['quantity' => 1]);
+    }
+    $orgStock = $this->product->orgStocks()->first();
+    $this->product->orgStocks()->update(['quantity_available' => 0]);
+
+    $production = $this->organisation->productions()->first()
+        ?? \App\Actions\Production\Production\StoreProduction::make()->action($this->organisation, ['code' => 'MKQ', 'name' => 'MKQ']);
+    $artefact = \App\Models\Production\Artefact::firstOrCreate(
+        ['organisation_id' => $this->organisation->id, 'org_stock_id' => $orgStock->id],
+        ['group_id' => $this->organisation->group_id, 'production_id' => $production->id, 'code' => 'MKQ-ART', 'name' => 'MKQ artefact']
+    );
+
+    $order->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
+    SubmitOrder::make()->action($order);
+    $order->refresh();
+    expect($order->at_gate_at)->not->toBeNull();
+
+    $queue = \App\Actions\Dispatching\FulfilmentGate\GetMakeQueue::make()->handle($this->organisation);
+    $row = collect($queue->items())->firstWhere('org_stock_id', $orgStock->id);
+
+    expect($row)->not->toBeNull()
+        ->and((float) $row->blocked_paid_amount)->toBe(250.0)
+        ->and((int) $row->suggested_quantity)->toBeGreaterThanOrEqual(5)
+        ->and((float) $row->score)->toBeGreaterThan(0);
+
+    $this->organisation->update(['settings' => $settings]);
+});

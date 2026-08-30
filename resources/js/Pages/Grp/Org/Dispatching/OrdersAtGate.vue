@@ -22,14 +22,15 @@ const props = defineProps<{
     title: string
     data: object
     shortfall: object
+    make_queue: object
     currency_code: string
 }>()
 
-const currentTab = ref<"queue" | "shortfall">(
-    new URLSearchParams(window.location.search).get("gateTab") === "shortfall" ? "shortfall" : "queue"
+const currentTab = ref<"queue" | "shortfall" | "make">(
+    (["shortfall", "make"].find(t => t === new URLSearchParams(window.location.search).get("gateTab")) as "shortfall" | undefined) ?? "queue"
 )
 
-function switchTab(tab: "queue" | "shortfall") {
+function switchTab(tab: "queue" | "shortfall" | "make") {
     currentTab.value = tab
     const url = new URL(window.location.href)
     url.searchParams.set("gateTab", tab)
@@ -38,6 +39,14 @@ function switchTab(tab: "queue" | "shortfall") {
 
 const releasing = ref<number | null>(null)
 const selectedShortfall = reactive<Record<number, number>>({})
+
+function toggleMakeQueue(item: { org_stock_id: number, suggested_quantity: number }) {
+    if (item.org_stock_id in selectedShortfall) {
+        delete selectedShortfall[item.org_stock_id]
+    } else {
+        selectedShortfall[item.org_stock_id] = Math.ceil(Number(item.suggested_quantity))
+    }
+}
 
 function toggleShortfall(item: { org_stock_id: number, quantity_short: number }) {
     if (item.org_stock_id in selectedShortfall) {
@@ -110,10 +119,18 @@ function release(item: { id: number }) {
         >
             {{ trans("Shortfall") }}
         </button>
+        <button
+            type="button"
+            class="px-4 py-2 text-sm font-medium"
+            :class="currentTab === 'make' ? 'border-b-2 border-indigo-600 text-indigo-700' : 'text-gray-500 hover:text-gray-700'"
+            @click="switchTab('make')"
+        >
+            {{ trans("Make queue") }}
+        </button>
     </div>
 
     <div
-        v-if="currentTab === 'shortfall' && Object.keys(selectedShortfall).length"
+        v-if="(currentTab === 'shortfall' || currentTab === 'make') && Object.keys(selectedShortfall).length"
         class="sticky top-0 z-10 mx-4 mt-2 flex items-center justify-between rounded-lg bg-indigo-600 px-4 py-2 text-white"
     >
         <span>{{ Object.keys(selectedShortfall).length }} {{ trans("stocks selected") }}</span>
@@ -126,6 +143,51 @@ function release(item: { id: number }) {
             @click="createJobOrder"
         />
     </div>
+
+    <Table v-show="currentTab === 'make'" :resource="make_queue" name="make_queue" class="mt-2">
+        <template #cell(make)="{ item }">
+            <div class="flex items-center gap-2">
+                <input
+                    type="checkbox"
+                    :checked="item.org_stock_id in selectedShortfall"
+                    @change="toggleMakeQueue(item)"
+                />
+                <input
+                    v-if="item.org_stock_id in selectedShortfall"
+                    v-model.number="selectedShortfall[item.org_stock_id]"
+                    type="number"
+                    step="1"
+                    min="1"
+                    class="w-20 rounded border-gray-300"
+                />
+            </div>
+        </template>
+        <template #cell(quantity_available)="{ item }">
+            <span class="tabular-nums text-gray-500">{{ useLocaleStore().number(Number(item.quantity_available)) }}</span>
+        </template>
+        <template #cell(days_cover)="{ item }">
+            <span class="tabular-nums" :class="item.days_cover !== null && Number(item.days_cover) < 14 ? 'font-semibold text-red-600' : ''">
+                {{ item.days_cover !== null ? useLocaleStore().number(Number(item.days_cover)) : "—" }}
+            </span>
+        </template>
+        <template #cell(suggested_quantity)="{ item }">
+            <span class="tabular-nums font-semibold">{{ useLocaleStore().number(Number(item.suggested_quantity)) }}</span>
+        </template>
+        <template #cell(reasons)="{ item }">
+            <div class="flex flex-wrap gap-1">
+                <span
+                    v-for="reason in item.reasons"
+                    :key="reason"
+                    class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                >
+                    {{ reason }}
+                </span>
+            </div>
+        </template>
+        <template #cell(score)="{ item }">
+            <span class="tabular-nums text-gray-500">{{ useLocaleStore().number(Number(item.score)) }}</span>
+        </template>
+    </Table>
 
     <Table v-show="currentTab === 'shortfall'" :resource="shortfall" name="shortfall" class="mt-2">
         <template #cell(make)="{ item }">

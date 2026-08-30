@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\FulfilmentGate\UI;
 
 use App\Actions\Dispatching\FulfilmentGate\GetGateCoverage;
+use App\Actions\Dispatching\FulfilmentGate\GetMakeQueue;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
@@ -122,6 +123,28 @@ class IndexOrdersAtGate extends OrgAction
         };
     }
 
+    public function makeQueueTableStructure(): Closure
+    {
+        return function (InertiaTable $table) {
+            $table
+                ->name('make_queue')
+                ->pageName('makeQueuePage')
+                ->withLabelRecord([__('Suggestion'), __('Suggestions')])
+                ->withEmptyState([
+                    'title' => __('Nothing to make — demand is covered and stock cover is healthy'),
+                ])
+                ->column(key: 'make', label: '', canBeHidden: false)
+                ->column(key: 'org_stock_code', label: __('Stock'), canBeHidden: false, sortable: true)
+                ->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false)
+                ->column(key: 'quantity_available', label: __('Available'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'days_cover', label: __('Cover (days)'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'suggested_quantity', label: __('Make'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'reasons', label: __('Why'), canBeHidden: false)
+                ->column(key: 'score', label: __('Score'), canBeHidden: false, sortable: true, align: 'right')
+                ->defaultSort('-score');
+        };
+    }
+
     public function tableStructure(): Closure
     {
         return function (InertiaTable $table) {
@@ -153,6 +176,30 @@ class IndexOrdersAtGate extends OrgAction
     {
         $coverage = GetGateCoverage::make()->handle($orders->getCollection()->pluck('id')->all());
 
+        $makeQueue = GetMakeQueue::make()->handle($this->organisation);
+        $currency  = $this->organisation->currency->code;
+        $makeQueue->getCollection()->transform(function ($row) use ($currency) {
+            $reasons = [];
+            if ($row->blocked_paid_amount > 0) {
+                $reasons[] = __('blocks :amount of paid orders', ['amount' => $currency.' '.number_format((float) $row->blocked_paid_amount, 2)]);
+            }
+            if ($row->shortfall_quantity > 0) {
+                $reasons[] = __(':quantity short for orders at the gate', ['quantity' => 0 + $row->shortfall_quantity]);
+            }
+            if ($row->partner_quantity > 0) {
+                $reasons[] = __('partners waiting for :quantity', ['quantity' => 0 + $row->partner_quantity]);
+            }
+            if ($row->days_cover !== null) {
+                $reasons[] = __(':days days of cover left', ['days' => 0 + $row->days_cover]);
+            }
+            if ($row->shelf_life_days) {
+                $reasons[] = __('shelf life :days days', ['days' => $row->shelf_life_days]);
+            }
+            $row->reasons = $reasons;
+
+            return $row;
+        });
+
         $orders->getCollection()->transform(function ($order) use ($coverage) {
             $orderCoverage         = $coverage[$order->id] ?? ['ready_lines' => 0, 'total_lines' => 0];
             $order->ready_lines    = $orderCoverage['ready_lines'];
@@ -175,10 +222,11 @@ class IndexOrdersAtGate extends OrgAction
                     ],
                 ],
                 'data'      => $orders,
-                'shortfall' => $this->shortfall($this->organisation),
+                'shortfall'  => $this->shortfall($this->organisation),
+                'make_queue' => $makeQueue,
                 'currency_code' => $this->organisation->currency->code,
             ]
-        )->table($this->tableStructure())->table($this->shortfallTableStructure());
+        )->table($this->tableStructure())->table($this->shortfallTableStructure())->table($this->makeQueueTableStructure());
     }
 
     public function getBreadcrumbs(array $routeParameters): array
