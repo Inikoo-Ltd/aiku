@@ -582,6 +582,7 @@ const isOffersData = (offersData: any): boolean => {
                                 (item.quantity_ordered_fractional[0] * item.quantity_ordered_fractional[1][1]) + item.quantity_ordered_fractional[1][0]
                             ) : item.quantity_ordered" 
                             @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e, proxyItem.is_cut_view)"
+                            :disabled="loadingsaveModify"
                             inputId="horizontal-buttons" 
                             showButtons 
                             buttonLayout="horizontal"
@@ -715,7 +716,7 @@ const isOffersData = (offersData: any): boolean => {
                             <span
                                 xv-if="layout.app.environment == 'local'"
                                 v-if="Number(item.product_units) !== 1"
-                                @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
+                                @click="() => loadingsaveModify ? {} : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
                                 v-tooltip="ctrans('Cut view')"
                                 class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"
                                 :class="proxyItem.is_cut_view ? 'text-orange-500' : ''"
