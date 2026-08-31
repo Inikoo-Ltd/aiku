@@ -254,7 +254,7 @@ const onSaveUnidentifiedReturn = () => {
             v-model="searchQuery"
             type="text"
             autofocus
-            :placeholder="trans('Search by delivery note, tracking number, customer or order reference')"
+            :placeholder="trans('Search by delivery note, tracking number, customer or order reference') + ' ' + ctrans('(use ref:awd123 for exact search)')"
             class="w-full rounded-md border border-gray-300 px-4 py-3 text-base focus:border-indigo-500 focus:ring-indigo-500"
             @input="onSearchInput"
         />
