@@ -129,6 +129,7 @@ use App\Actions\Masters\MasterCollection\UI\GetMasterFamilies;
 use App\Actions\Masters\MasterCollection\UI\GetMasterProductsNotAttachedToAMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\GetMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\Json\GetFamiliesInMasterProductCategory;
+use App\Actions\Masters\MasterProductCategory\Json\GetShopsContentInMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\Json\GetMasterDepartmentAndMasterSubDepartments;
 use App\Actions\Ordering\Order\GetChargesInOrder;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
@@ -218,6 +219,7 @@ Route::get('organisation/{organisation}/employees/picker-users', GetPickerUsers:
 
 Route::get('product-category/{productCategory}/families', GetFamiliesInProductCategory::class)->name('product_category.families.index');
 Route::get('master-product-category/{masterProductCategory}/families', GetFamiliesInMasterProductCategory::class)->name('master_product_category.families.index');
+Route::get('master-product-category/{masterProductCategory:id}/shops-content', GetShopsContentInMasterProductCategory::class)->name('master_product_category.shops_content.index')->withoutScopedBindings();
 Route::get('org-partner/{orgPartner}/shopping-list-org-stocks', IndexPartnerShoppingListOrgStocks::class)->name('org_partner.shopping_list_org_stocks');
 Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgAgent'])->name('org-agent.org-supplier-products');
 Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
