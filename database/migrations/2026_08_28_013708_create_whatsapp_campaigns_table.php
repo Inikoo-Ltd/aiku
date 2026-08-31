@@ -35,6 +35,7 @@ return new class () extends Migration {
             $table->dateTimeTz('stopped_at')->nullable();
 
             $table->jsonb('recipients_recipe')->nullable();
+            $table->jsonb('recipients_list')->nullable()->index();
             $table->unsignedInteger('recipients_count')->default(0);
 
             $table->unsignedSmallInteger('publisher_id')->nullable();
