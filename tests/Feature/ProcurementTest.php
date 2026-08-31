@@ -111,6 +111,9 @@ use App\Models\Helpers\Address;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
+use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
+use App\Enums\Catalogue\HealthRankEnum;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
 use App\Actions\Procurement\OrgPartner\UpdatePartnerLeadTimeEstimate;
 use App\Models\Inventory\OrgStock;
@@ -2942,7 +2945,6 @@ describe('partner browse', function () {
                 ->component('Procurement/PartnerShoppingDashboard')
                 ->has('title')
                 ->has('stats')
-                ->has('recentItems')
                 ->has('coverBuckets', 8)
                 ->where('coverBuckets.0.bucket', 'out')
                 ->where('coverBuckets.7.bucket', 'never')
@@ -2965,6 +2967,66 @@ describe('partner browse', function () {
             ->and(GetPartnerLeadTime::run($updated))->toMatchArray(['days' => 21, 'source' => 'estimate']);
 
         $this->orgPartner->update(['data' => $original]);
+    });
+
+    test('partner order capacity bootstraps deterministically from forecast', function () {
+        DB::table('org_stock_stats')
+            ->whereIn('org_stock_id', DB::table('org_stocks')->where('organisation_id', $this->organisation->id)->pluck('id'))
+            ->update(['predicted_daily_usage' => 0]);
+
+        $capacity = GetPartnerOrderCapacity::run($this->orgPartner);
+        expect($capacity['partner_capacity'])
+            ->toMatchArray(['delivers_to_us_per_30d' => null, 'source' => 'none'])
+            ->and($capacity['warehouse'])->toHaveKeys([
+                'total_locations',
+                'empty_locations',
+                'free_ratio',
+                'inbound_open_po_lines',
+                'partner_share_used',
+                'partner_share_limit',
+            ])
+            ->and($capacity['blocked'])->toHaveKeys(['at_capacity', 'warehouse_full']);
+    });
+
+    test('capacity guard blocks non-exempt adds and lets A-rank or out-of-stock through', function () {
+        $seller = $this->orgPartner->partner;
+        $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
+        [, $sellerProduct] = createProduct($sellerShop);
+        $buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerProduct->orgStocks()->first()->stock])[0];
+        $this->buyerOrgStock = $buyerOrgStock;
+
+        $this->buyerOrgStock->update(['quantity_available' => 10, 'health_rank' => null]);
+        DB::table('org_stock_stats')
+            ->whereIn('org_stock_id', DB::table('org_stocks')->where('organisation_id', $this->organisation->id)->pluck('id'))
+            ->update(['predicted_daily_usage' => 0]);
+        $this->buyerOrgStock->stats->update(['predicted_daily_usage' => 0.001]);
+
+        $firstItem = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 5,
+        ]);
+
+        expect(GetPartnerOrderCapacity::run($this->orgPartner->refresh())['blocked']['at_capacity'])->toBeTrue()
+            ->and(fn () => StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+                'quantity' => 1,
+            ]))->toThrow(HttpException::class);
+
+        $this->buyerOrgStock->update(['quantity_available' => 0]);
+        $outOfStockItem = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 1,
+        ]);
+        expect($outOfStockItem)->toBeInstanceOf(PartnerShoppingListItem::class);
+
+        $this->buyerOrgStock->update(['quantity_available' => 10, 'health_rank' => HealthRankEnum::A]);
+        $aRankItem = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 1,
+        ]);
+        expect($aRankItem)->toBeInstanceOf(PartnerShoppingListItem::class);
+
+        $this->buyerOrgStock->update(['health_rank' => null]);
+        $this->buyerOrgStock->stats->update(['predicted_daily_usage' => 0]);
+        foreach ([$firstItem, $outOfStockItem, $aRankItem] as $item) {
+            DeletePartnerShoppingListItem::make()->action($item);
+        }
     });
 
     test('browse card shows the component that runs out first', function () {

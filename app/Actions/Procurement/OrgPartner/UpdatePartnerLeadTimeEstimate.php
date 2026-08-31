@@ -22,7 +22,7 @@ class UpdatePartnerLeadTimeEstimate extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        return $request->user()->authTo("org-supervisor.{$this->organisation->id}.procurement");
     }
 
     public function handle(OrgPartner $orgPartner, array $modelData): OrgPartner

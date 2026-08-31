@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import Modal from "@/Components/Utils/Modal.vue"
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import axios from "axios"
 import { router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -30,6 +30,9 @@ interface ProposalLine {
 const props = defineProps<{
     orgPartnerId: number
     currency: string
+    bucket?: string | null
+    rank?: string | null
+    scopeLabel?: string | null
 }>()
 
 const model = defineModel()
@@ -39,6 +42,13 @@ const instruction = ref("")
 const isGenerating = ref(false)
 const isCommitting = ref(false)
 const proposal = ref<ProposalLine[] | null>(null)
+
+watch(model, (open) => {
+    if (open && props.bucket) {
+        proposal.value = null
+        generate()
+    }
+})
 
 const closeModal = () => {
     model.value = false
@@ -63,7 +73,7 @@ async function generate() {
                 route().params["organisation"],
                 props.orgPartnerId,
             ]),
-            { budget: budget.value, instruction: instruction.value.trim() || null }
+            { budget: budget.value, instruction: instruction.value.trim() || null, bucket: props.bucket ?? null, rank: props.rank ?? null }
         )
         proposal.value = (response.data.lines ?? []).map((line: ProposalLine) => ({ ...line, selected: true }))
     } catch (error: any) {
@@ -119,6 +129,9 @@ async function commit() {
         <div class="flex flex-col h-[600px] px-4">
             <div class="flex justify-center py-2 text-gray-600 font-medium mb-3">
                 <h2>{{ trans("Auto-fill shopping list") }}</h2>
+            </div>
+            <div v-if="scopeLabel" class="mb-2 text-center text-sm text-gray-500">
+                {{ trans("Limited to") }}: <span class="font-medium text-gray-700">{{ scopeLabel }}</span>
             </div>
 
             <div class="flex items-end gap-3">

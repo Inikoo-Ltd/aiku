@@ -5,10 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
+import { ref, computed } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import ProcurementOverviewCard from "@/Components/DataDisplay/Dashboard/Widget/ProcurementOverviewCard.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { trans } from "laravel-vue-i18n"
 import { useLocaleStore } from "@/Stores/locale"
@@ -18,15 +17,21 @@ import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faExclamationTriangle } from "@fal"
+import ModalAutoFillShoppingList from "@/Components/Procurement/ModalAutoFillShoppingList.vue"
 
 library.add(faExclamationTriangle)
 
 type PriorityBreakdown = { priority: string, label: string, count: number }
 type RankBreakdown = { rank: string, count: number, on_list: number }
 type CoverBucket = { bucket: string, label: string, tone: keyof typeof toneClasses, count: number, on_list: number, on_the_way: number, untouched: number, stock_value: number, ranks: RankBreakdown[] }
-type OpenStockDelivery = { id: number, slug: string, reference: string, state: string, items: number, days_in_transit: number | null }
+type OrderCapacity = {
+    partner_capacity: { delivers_to_us_per_30d: number | null, source: "measured" | "estimate", samples: number }
+    list: { value: number, lines: number }
+    warehouse: { total_locations: number, empty_locations: number, free_ratio: number | null, inbound_open_po_lines: number, partner_share_used: number, partner_share_limit: number }
+    blocked: { at_capacity: boolean, warehouse_full: boolean }
+}
+type OpenStockDelivery = { id: number, slug: string, reference: string, state: string, items: number, days_in_transit: number | null, date: string, days_old: number }
 type LatePurchaseOrder = { id: number, slug: string, reference: string, state: string, days_late: number, no_eta: boolean }
-type RecentItem = { id: number, quantity: number, created_at: string, org_stock_code: string | null, org_stock_name: string | null, added_by_name: string | null }
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -36,7 +41,6 @@ const props = defineProps<{
     shoppingListRoute: routeType
     canBrowse: boolean
     stats: { open_items_count: number, estimated_total: number, priority_breakdown: PriorityBreakdown[] }
-    recentItems: RecentItem[]
     coverBuckets: CoverBucket[]
     coverTotal: number
     leadTime: { days: number, source: "measured" | "estimate", samples: number }
@@ -44,21 +48,64 @@ const props = defineProps<{
     latePurchaseOrders: LatePurchaseOrder[]
     openStockDeliveries: OpenStockDelivery[]
     stockDeliveriesRoute: routeType
+    orderCapacity: OrderCapacity
+
 }>()
 
 const toneClasses = {
-    "red-deep": "border-red-300 bg-red-100 text-red-800 hover:bg-red-200",
-    red: "border-red-200 bg-red-50 text-red-700 hover:bg-red-100",
-    orange: "border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100",
-    amber: "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100",
-    yellow: "border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100",
-    green: "border-green-200 bg-green-50 text-green-700 hover:bg-green-100",
-    violet: "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100",
-    gray: "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100",
+    "red-deep": "text-red-800",
+    red: "text-red-600",
+    orange: "text-orange-600",
+    amber: "text-amber-600",
+    yellow: "text-yellow-600",
+    green: "text-green-700",
+    violet: "text-violet-700",
+    gray: "text-gray-600",
 }
 
-const inTransit = () => props.openStockDeliveries.filter((sd) => ["ready_to_ship", "dispatched"].includes(sd.state))
-const inPreparation = () => props.openStockDeliveries.filter((sd) => ["in_process", "confirmed"].includes(sd.state))
+const capacityShare = () => {
+    const cap = props.orderCapacity.partner_capacity.delivers_to_us_per_30d
+    return cap ? Math.min(props.orderCapacity.list.value / cap, 1) : null
+}
+
+const problemThreshold = () => Math.max(props.leadTime.days * 2, 14)
+
+const isProblemOrder = (sd: OpenStockDelivery) => sd.days_old > problemThreshold()
+
+const ageClasses = (daysOld: number) => (daysOld > 21 ? "text-red-600" : daysOld > 10 ? "text-amber-600" : "text-gray-400")
+
+const dashboardReload = { only: ["coverBuckets", "coverTotal", "orderCapacity", "stats"], preserveScroll: true }
+
+const removeMisplaced = (bucket: string) => {
+    if (confirm(trans("Remove these items from the shopping list?"))) {
+        router.delete(
+            route("grp.org.procurement.org_partners.show.shopping.misplaced.destroy", [route().params.organisation, orgPartner.id]),
+            { data: { bucket }, ...dashboardReload }
+        )
+    }
+}
+
+const autoFillOpen = ref(false)
+const autoFillScope = ref<{ bucket: string, rank: string | null, label: string } | null>(null)
+
+const openAutoFill = (bucket: { bucket: string, label: string }, rank: string | null = null) => {
+    autoFillScope.value = { bucket: bucket.bucket, rank, label: rank ? `${bucket.label} · ${rank}` : bucket.label }
+    autoFillOpen.value = true
+}
+
+const warehouseSegment = (part: number) => `${(part / Math.max(props.orderCapacity.warehouse.total_locations, 1)) * 100}%`
+
+const meterTone = (share: number) => (share >= 1 ? "bg-red-500" : share >= 0.8 ? "bg-amber-500" : "bg-green-500")
+
+const stockDeliveryColumns = computed(() => [
+    { key: "being_prepared", label: trans("Being prepared"), states: ["in_process", "confirmed"], card: "bg-white", dot: "bg-indigo-200", badge: "bg-indigo-50 text-indigo-600" },
+    { key: "ready_to_ship", label: trans("Ready to ship"), states: ["ready_to_ship"], card: "bg-white", dot: "bg-indigo-300", badge: "bg-indigo-50 text-indigo-600" },
+    { key: "in_transit", label: trans("In transit"), states: ["dispatched"], card: "bg-white", dot: "bg-indigo-500", badge: "bg-indigo-100 text-indigo-700" },
+    { key: "arrived", label: trans("Arrived, booking in"), states: ["received", "checked", "booking_in"], card: "bg-white", dot: "bg-indigo-700", badge: "bg-indigo-100 text-indigo-700" },
+].map((column) => ({
+    ...column,
+    deliveries: props.openStockDeliveries.filter((sd) => column.states.includes(sd.state)),
+})))
 
 const shouldNotBeOrdered = (bucket: CoverBucket) => ["ok", "dead"].includes(bucket.bucket) && bucket.on_list > 0
 
@@ -69,66 +116,118 @@ const needsAction = (bucket: CoverBucket) => !["ok", "dead", "never"].includes(b
 const bucketRoute = (bucket: string, rank?: string) => `${route(props.browseRoute.name, props.browseRoute.parameters)}?cover=${bucket}${rank ? `&rank=${rank}` : ""}`
 
 const rankClasses: Record<string, string> = {
-    A: "text-green-700",
-    B: "text-blue-700",
+    A: "",
+    B: "",
     C: "",
-    D: "text-gray-500",
-    Z: "text-gray-500",
+    D: "opacity-50",
+    Z: "opacity-50",
 }
 
-const overviewCard = {
-    label: trans("Shopping list"),
-    description: trans("Items waiting to be ordered"),
-    icon: "fal fa-list",
-    value: props.stats.open_items_count,
-    tone: "amber" as const,
-    route: props.shoppingListRoute,
-    metrics: props.stats.priority_breakdown
-        .filter((priority) => priority.count > 0)
-        .map((priority) => ({ label: priority.label, value: priority.count, route: props.shoppingListRoute })),
-}
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
 
-    <div class="mx-4 mt-3 flex flex-wrap gap-3">
-        <Link v-if="canBrowse" :href="route(browseRoute.name, browseRoute.parameters)">
-            <Button icon="fal fa-store" :label="trans('Browse catalogue')" type="primary" />
-        </Link>
-        <Link :href="route(shoppingListRoute.name, shoppingListRoute.parameters)">
-            <Button icon="fal fa-list" :label="trans('Shopping list')" />
-        </Link>
+    <div class="mx-4 mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div class="rounded-lg border border-gray-200 bg-white p-4">
+            <div class="flex items-baseline justify-between text-sm text-gray-500">
+                <span>{{ trans("Order budget used") }}</span>
+                <span v-if="orderCapacity.blocked.at_capacity" class="font-medium text-red-600">{{ trans("at capacity") }}</span>
+            </div>
+            <div class="mt-1 text-2xl font-semibold text-gray-900">
+                {{ useLocaleStore().currencyFormat(orgPartner.currency, stats.estimated_total) }}
+                <span v-if="orderCapacity.partner_capacity.delivers_to_us_per_30d" class="text-sm font-normal text-gray-400">
+                    / {{ useLocaleStore().currencyFormat(orgPartner.currency, orderCapacity.partner_capacity.delivers_to_us_per_30d) }}
+                </span>
+            </div>
+            <template v-if="capacityShare() !== null">
+                <div class="mt-2 h-1.5 w-full rounded-full bg-gray-100">
+                    <div class="h-1.5 rounded-full" :class="meterTone(capacityShare()!)" :style="{ width: `${capacityShare()! * 100}%` }" />
+                </div>
+                <div class="mt-1 text-xs text-gray-500">
+                    <template v-if="orderCapacity.partner_capacity.source === 'measured'">
+                        {{ trans("what they historically deliver to us per month, measured from :n deliveries", { n: orderCapacity.partner_capacity.samples }) }}
+                    </template>
+                    <template v-else>
+                        {{ trans("budget = 30 days of our sales of their products (no delivery history yet)") }}
+                    </template>
+                </div>
+            </template>
+            <div v-else class="mt-2 text-xs text-gray-500">
+                {{ trans("No budget: no delivery history and no forecast data yet — the list is uncapped.") }}
+            </div>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-white p-4">
+            <div class="flex items-baseline justify-between text-sm text-gray-500">
+                <span>{{ trans("Warehouse space") }}</span>
+                <span v-if="orderCapacity.blocked.warehouse_full" class="font-medium text-red-600">{{ trans("full") }}</span>
+            </div>
+            <div class="mt-1 text-2xl font-semibold text-gray-900">
+                {{ orderCapacity.warehouse.empty_locations.toLocaleString() }}
+                <span class="text-sm font-normal text-gray-400">/ {{ orderCapacity.warehouse.total_locations.toLocaleString() }} {{ trans("locations free") }}</span>
+            </div>
+            <div class="mt-2 flex h-1.5 w-full gap-px overflow-hidden rounded-full bg-gray-100">
+                <div class="h-1.5 bg-gray-400" :style="{ width: warehouseSegment(orderCapacity.warehouse.total_locations - orderCapacity.warehouse.empty_locations) }" />
+                <div class="h-1.5 bg-indigo-400" :style="{ width: warehouseSegment(orderCapacity.warehouse.inbound_open_po_lines) }" />
+                <div class="h-1.5 bg-violet-400" :style="{ width: warehouseSegment(orderCapacity.list.lines) }" />
+            </div>
+            <div class="mt-1 flex flex-wrap gap-x-3 text-xs tabular-nums text-gray-500">
+                <span><span class="mr-1 inline-block h-2 w-2 rounded-full bg-gray-400" />{{ (orderCapacity.warehouse.total_locations - orderCapacity.warehouse.empty_locations).toLocaleString() }} {{ trans("in use") }}</span>
+                <span><span class="mr-1 inline-block h-2 w-2 rounded-full bg-indigo-400" />{{ orderCapacity.warehouse.inbound_open_po_lines.toLocaleString() }} {{ trans("inbound PO/SD lines") }}</span>
+                <span><span class="mr-1 inline-block h-2 w-2 rounded-full bg-violet-400" />{{ orderCapacity.list.lines }} {{ trans("this shopping list") }}</span>
+            </div>
+            <div class="mt-1 text-xs text-gray-500">
+                {{ trans("new products from this partner: :used of :limit free slots (their fair share)", { used: orderCapacity.warehouse.partner_share_used, limit: orderCapacity.warehouse.partner_share_limit }) }}
+            </div>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-white p-4">
+            <div class="flex items-baseline justify-between text-sm text-gray-500">
+                <span>{{ trans("Lead time") }}</span>
+                <span v-if="latePurchaseOrders.length" class="font-medium text-red-600">{{ latePurchaseOrders.length }} {{ trans("late") }}</span>
+            </div>
+            <div class="mt-1 text-2xl font-semibold text-gray-900">
+                {{ leadTime.days }} <span class="text-sm font-normal text-gray-400">{{ trans("days order → booked in") }}</span>
+            </div>
+            <div class="mt-2 text-xs text-gray-500">
+                <template v-if="leadTime.source === 'measured'">
+                    {{ trans("measured from :samples deliveries", { samples: leadTime.samples }) }}
+                </template>
+                <template v-else>
+                    {{ trans("estimate — set per product in supplier settings") }}
+                </template>
+            </div>
+            <div v-if="latePurchaseOrders.length" class="mt-1 text-xs text-red-600">
+                {{ trans("worst delay :days days", { days: latePurchaseOrders[0].days_late }) }}
+            </div>
+        </div>
     </div>
+
 
     <div v-if="canBrowse" class="mx-4 mt-4">
         <h3 class="text-sm font-semibold text-gray-700">
             {{ trans("Stock at risk") }}
             <span class="ml-1 font-normal text-gray-400">{{ trans(":total products this partner sells", { total: coverTotal.toLocaleString() }) }}</span>
-            <span class="ml-2 font-normal text-gray-400">
-                ·
-                <template v-if="leadTime.source === 'measured'">
-                    {{ trans("~:days-day lead time, measured from :samples deliveries", { days: leadTime.days, samples: leadTime.samples }) }}
-                </template>
-                <template v-else>
-                    {{ trans(":days-day lead time (estimate — set per product in supplier settings)", { days: leadTime.days }) }}
-                </template>
-            </span>
         </h3>
         <div class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Link
                 v-for="bucket in coverBuckets"
                 :key="bucket.bucket"
                 :href="bucketRoute(bucket.bucket)"
-                class="rounded-lg border px-3 py-2"
+                class="flex flex-col rounded-lg border border-gray-200 bg-white px-3 py-2 hover:border-gray-300 hover:bg-gray-50"
                 :class="toneClasses[bucket.tone]"
             >
                 <div class="flex items-baseline gap-1.5">
                     <span class="text-2xl font-semibold tabular-nums">{{ bucket.count }}</span>
+                    <span v-if="bucket.bucket === 'dead'" class="ml-auto text-xs tabular-nums opacity-70">
+                        {{ useLocaleStore().currencyFormat(orgPartner.currency, bucket.stock_value) }}
+                    </span>
                     <span v-if="shouldNotBeOrdered(bucket)" class="text-xs font-medium tabular-nums text-red-600" :title="trans('On the shopping list but not short of stock')">
                         <FontAwesomeIcon :icon="faExclamationTriangle" aria-hidden="true" />
                         {{ bucket.on_list }} {{ trans("on list") }}
+                        <button type="button" class="ml-0.5 rounded border border-red-300 px-1 text-[10px] hover:bg-red-100" @click.prevent.stop="removeMisplaced(bucket.bucket)">
+                            {{ trans("remove") }}
+                        </button>
                     </span>
                     <span v-else-if="needsAction(bucket)" class="text-xs font-medium tabular-nums">
                         {{ trans(":count need action", { count: bucket.untouched.toLocaleString() }) }}
@@ -138,7 +237,7 @@ const overviewCard = {
                     </span>
                 </div>
                 <div class="text-xs leading-4">{{ bucket.label }}</div>
-                <div v-if="bucket.count && !['ok', 'dead', 'never'].includes(bucket.bucket)" class="mt-1.5 flex h-1 w-full gap-px overflow-hidden rounded-full bg-white/70">
+                <div v-if="(bucket.on_the_way || bucket.on_list) && !['ok', 'dead', 'never'].includes(bucket.bucket)" class="mt-1.5 flex h-1 w-full gap-px overflow-hidden rounded-full bg-gray-100">
                     <div v-if="bucket.on_the_way" class="h-1 bg-current" :style="{ width: segmentWidth(bucket, bucket.on_the_way) }" :title="trans('on the way')" />
                     <div v-if="bucket.on_list" class="h-1 bg-current opacity-40" :style="{ width: segmentWidth(bucket, bucket.on_list) }" :title="trans('on the shopping list')" />
                 </div>
@@ -147,7 +246,7 @@ const overviewCard = {
                     <span v-if="bucket.on_the_way && bucket.on_list"> · </span>
                     <span v-if="bucket.on_list">{{ bucket.on_list }} {{ trans("on list") }}</span>
                 </div>
-                <div v-if="bucket.bucket !== 'never'" class="mt-1 flex gap-2 text-xs tabular-nums">
+                <div v-if="bucket.bucket !== 'never'" class="mt-auto flex gap-2 pt-1.5 text-xs tabular-nums">
                     <Link
                         v-for="rank in bucket.ranks.filter((rank) => rank.count > 0)"
                         :key="rank.rank"
@@ -158,53 +257,69 @@ const overviewCard = {
                     >
                         <span class="font-bold">{{ rank.rank }}</span> {{ rank.count }} <span class="text-[10px] opacity-60">{{ rank.on_list }}</span>
                     </Link>
-                </div>
-                <div v-if="bucket.bucket === 'dead'" class="mt-0.5 text-xs opacity-70 tabular-nums">
-                    {{ useLocaleStore().currencyFormat(orgPartner.currency, bucket.stock_value) }}
+                    <button
+                        v-if="!['ok', 'dead', 'never'].includes(bucket.bucket) && bucket.ranks.some((rank) => rank.count > rank.on_list)"
+                        type="button"
+                        class="ml-auto rounded border border-current px-1 text-[10px] opacity-60 hover:opacity-100"
+                        :title="trans('Auto-fill the shopping list from this bucket')"
+                        @click.prevent.stop="openAutoFill(bucket)"
+                    >
+                        + {{ trans("fill") }}
+                    </button>
                 </div>
             </Link>
         </div>
     </div>
 
-    <div class="mx-4 mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-        <ProcurementOverviewCard :card="overviewCard" />
-        <div class="rounded-lg border border-gray-200 bg-white p-4">
-            <div class="text-sm text-gray-500">{{ trans("Shopping list value") }}</div>
-            <div class="mt-1 text-2xl font-semibold text-gray-900">
-                {{ useLocaleStore().currencyFormat(orgPartner.currency, stats.estimated_total) }}
-            </div>
-        </div>
-    </div>
-
-    <div v-if="openStockDeliveries.length" class="mx-4 mt-6 grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-2">
-        <div>
-            <h3 class="text-sm font-semibold text-gray-700">
-                <Link class="hover:underline" :href="route(stockDeliveriesRoute.name, stockDeliveriesRoute.parameters)">
-                    {{ trans("Deliveries in transit") }}
+    <div class="mx-4 mt-6 max-w-6xl">
+        <h3 class="text-sm font-semibold text-gray-700">
+            <Link class="hover:underline" :href="route(stockDeliveriesRoute.name, stockDeliveriesRoute.parameters)">
+                {{ trans("Order pipeline") }}
+            </Link>
+        </h3>
+        <div class="mt-2 grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <div class="rounded-lg bg-gray-50 p-2">
+                <div class="mb-2 flex items-center justify-between px-1">
+                    <span class="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
+                        <span class="h-2 w-2 rounded-full bg-indigo-100 ring-1 ring-indigo-300" />
+                        {{ trans("On shopping list") }}
+                    </span>
+                    <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium tabular-nums text-indigo-600">{{ stats.open_items_count }}</span>
+                </div>
+                <Link :href="route(shoppingListRoute.name, shoppingListRoute.parameters)" class="block rounded-md bg-white p-2 shadow-sm hover:bg-indigo-50">
+                    <div class="text-sm font-bold text-gray-900">{{ stats.open_items_count }} {{ trans("items") }}</div>
+                    <div class="text-xs text-gray-500">{{ useLocaleStore().currencyFormat(orgPartner.currency, stats.estimated_total) }} {{ trans("waiting to be ordered") }}</div>
+                    <div v-if="stats.oldest_item_at" class="mt-1 text-xs text-gray-500">
+                        {{ trans("oldest since") }} {{ useFormatTime(stats.oldest_item_at, { formatTime: "mdy" }) }}
+                    </div>
                 </Link>
-            </h3>
-            <ul class="mt-2 divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
-                <li v-for="sd in inTransit()" :key="sd.id" class="flex items-center justify-between gap-3 px-4 py-3">
-                    <div>
-                        <div class="text-sm font-medium text-gray-900">{{ sd.reference }}</div>
+            </div>
+            <div v-for="column in stockDeliveryColumns" :key="column.key" class="rounded-lg bg-gray-50 p-2">
+                <div class="mb-2 flex items-center justify-between px-1">
+                    <span class="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
+                        <span class="h-2 w-2 rounded-full" :class="column.dot" />
+                        {{ column.label }}
+                    </span>
+                    <span class="rounded-full px-2 py-0.5 text-xs font-medium tabular-nums" :class="column.badge">{{ column.deliveries.length }}</span>
+                </div>
+                <div class="flex max-h-80 flex-col gap-2 overflow-y-auto">
+                    <div v-for="sd in column.deliveries" :key="sd.id" class="rounded-md border-l-2 p-2 shadow-sm" :class="isProblemOrder(sd) ? 'border-red-400 bg-red-50' : [column.card, sd.days_old > 10 ? 'border-amber-400' : 'border-transparent']">
+                        <div class="flex items-baseline justify-between gap-2">
+                            <span class="text-sm font-bold" :class="isProblemOrder(sd) ? 'text-red-700' : 'text-gray-900'">{{ sd.reference }}</span>
+                            <span class="whitespace-nowrap text-xs tabular-nums" :class="ageClasses(sd.days_old)">{{ useFormatTime(sd.date, { formatTime: "mdy" }) }}</span>
+                        </div>
                         <div class="text-xs text-gray-500">{{ sd.items }} {{ trans("items") }} · {{ sd.state.replace("_", " ") }}</div>
+                        <div
+                            v-if="column.key === 'in_transit' && sd.days_in_transit !== null"
+                            class="mt-1 text-xs font-semibold tabular-nums"
+                            :class="sd.days_in_transit > 14 ? 'text-amber-600' : 'text-gray-600'"
+                        >
+                            {{ sd.days_in_transit }} {{ trans("days in transit") }}
+                        </div>
                     </div>
-                    <div v-if="sd.days_in_transit !== null" class="text-right text-sm font-semibold tabular-nums" :class="sd.days_in_transit > 14 ? 'text-amber-600' : 'text-gray-600'">
-                        {{ sd.days_in_transit }} {{ trans("days in transit") }}
-                    </div>
-                </li>
-                <li v-if="!inTransit().length" class="px-4 py-3 text-sm text-gray-400">{{ trans("Nothing on the way") }}</li>
-            </ul>
-        </div>
-        <div>
-            <h3 class="text-sm font-semibold text-gray-700">{{ trans("Being prepared by the partner") }}</h3>
-            <ul class="mt-2 divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
-                <li v-for="sd in inPreparation()" :key="sd.id" class="flex items-center justify-between gap-3 px-4 py-3">
-                    <div class="text-sm font-medium text-gray-900">{{ sd.reference }}</div>
-                    <div class="text-xs text-gray-500">{{ sd.items }} {{ trans("items") }} · {{ sd.state.replace("_", " ") }}</div>
-                </li>
-                <li v-if="!inPreparation().length" class="px-4 py-3 text-sm text-gray-400">{{ trans("Nothing in preparation") }}</li>
-            </ul>
+                    <div v-if="!column.deliveries.length" class="px-1 py-2 text-xs text-gray-400">—</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -229,22 +344,13 @@ const overviewCard = {
         </ul>
     </div>
 
-    <div class="mx-4 mt-6 max-w-3xl">
-        <h3 class="text-sm font-semibold text-gray-700">{{ trans("Recently added") }}</h3>
-        <ul class="mt-2 divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
-            <li v-for="item in recentItems" :key="item.id" class="flex items-center justify-between gap-3 px-4 py-3">
-                <div>
-                    <div class="text-sm font-medium text-gray-900">{{ item.org_stock_name ?? item.org_stock_code }}</div>
-                    <div class="text-xs text-gray-500">{{ item.org_stock_code }} · {{ trans("Qty") }} {{ item.quantity }}</div>
-                </div>
-                <div class="text-right text-xs text-gray-500">
-                    <div>{{ item.added_by_name }}</div>
-                    <div>{{ useFormatTime(item.created_at, { formatTime: "mdy" }) }}</div>
-                </div>
-            </li>
-            <li v-if="recentItems.length === 0" class="px-4 py-3 text-sm text-gray-500">
-                {{ trans("No open items yet") }}
-            </li>
-        </ul>
-    </div>
+
+    <ModalAutoFillShoppingList
+        v-model="autoFillOpen"
+        :orgPartnerId="orgPartner.id"
+        :currency="orgPartner.currency"
+        :bucket="autoFillScope?.bucket"
+        :rank="autoFillScope?.rank"
+        :scopeLabel="autoFillScope?.label"
+    />
 </template>
