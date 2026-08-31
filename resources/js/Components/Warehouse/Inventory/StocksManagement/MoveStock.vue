@@ -39,17 +39,29 @@ const props = defineProps<{
 
 const emits = defineEmits(['close'])
 
+type MoveTarget = {
+    location: any
+    quantity: number
+    wholeQuantity: number
+    fractionQuantity: number
+}
+
 // Move stock state
 const moveStock = ref<{
     from: any
-    to: any
-    quantity: number
+    targets: MoveTarget[]
     isActive: boolean
 }>({
     from: null,
-    to: null,
-    quantity: 0,
+    targets: [],
     isActive: false
+})
+
+const makeTargetEntry = (location: any): MoveTarget => ({
+    location,
+    quantity: 0,
+    wholeQuantity: 0,
+    fractionQuantity: 0
 })
 
 const form = useForm({
@@ -60,14 +72,15 @@ const form = useForm({
         isAudited: item.isAudited,
         audited_at: item.audited_at
     })),
-    moveStock: null as null | { from: string, to: string, quantity: number }
+    moveStock: null as null | { from: string, targets: { to: string, quantity: number }[] }
 })
 
 const selectedReason = ref('')
 const note = ref('')
 
 const isSource = (location: any) => moveStock.value.from?.id === location.id
-const isTarget = (location: any) => moveStock.value.to?.id === location.id
+const getTargetEntry = (location: any) => moveStock.value.targets.find((entry) => entry.location.id === location.id)
+const isTarget = (location: any) => !!getTargetEntry(location)
 
 const stickyRowHeights = ref<Record<number, number>>({})
 let stickyRowResizeObserver: ResizeObserver | null = null
@@ -117,27 +130,34 @@ const stickyRowStyle = (location: any) => {
         .filter((row) => isSource(row) || isTarget(row))
         .map((row) => row.id)
 
-    if (stickyLocationIds.indexOf(location.id) <= 0) {
+    const position = stickyLocationIds.indexOf(location.id)
+    if (position <= 0) {
         return { top: '0px' }
     }
 
-    return { top: `${stickyRowHeights.value[stickyLocationIds[0]] ?? 0}px` }
+    const offset = stickyLocationIds
+        .slice(0, position)
+        .reduce((sum, id) => sum + (stickyRowHeights.value[id] ?? 0), 0)
+
+    return { top: `${offset}px` }
 }
 
 const canSave = computed(() => {
     return !!moveStock.value.from
-        && !!moveStock.value.to
+        && moveStock.value.targets.length > 0
         // && !!selectedReason.value
-        && Number(moveStock.value.quantity) > 0
-        && Number(moveStock.value.quantity) <= Number(moveStock.value.from?.stock ?? 0)
+        && moveStock.value.targets.every((entry) => Number(entry.quantity) > 0)
+        && totalMoveQuantity.value <= Number(moveStock.value.from?.stock ?? 0)
 })
 
 const syncForm = () => {
-    if (moveStock.value.from && moveStock.value.to) {
+    if (moveStock.value.from && moveStock.value.targets.length > 0) {
         form.moveStock = {
             from: moveStock.value.from.name,
-            to: moveStock.value.to.name,
-            quantity: moveStock.value.quantity
+            targets: moveStock.value.targets.map((entry) => ({
+                to: entry.location.name,
+                quantity: entry.quantity
+            }))
         }
     } else {
         form.moveStock = null
@@ -148,7 +168,7 @@ const selectSource = (location: any) => {
     if (isSource(location)) {
         moveStock.value.from = null
         moveStock.value.isActive = false
-        resetMoveQuantity()
+        resetAllTargetQuantities()
         syncForm()
         return
     }
@@ -162,30 +182,35 @@ const selectSource = (location: any) => {
         return
     }
 
+    const previousSource = moveStock.value.from
+
     if (isTarget(location)) {
-        moveStock.value.to = moveStock.value.from
+        moveStock.value.targets = moveStock.value.targets.filter((entry) => entry.location.id !== location.id)
+
+        if (previousSource) {
+            moveStock.value.targets.push(makeTargetEntry(previousSource))
+        }
     }
 
     moveStock.value.from = location
     moveStock.value.isActive = true
-    resetMoveQuantity()
+    resetAllTargetQuantities()
     syncForm()
 }
 
 const selectTarget = (location: any) => {
     if (isTarget(location)) {
-        moveStock.value.to = null
-        resetMoveQuantity()
+        moveStock.value.targets = moveStock.value.targets.filter((entry) => entry.location.id !== location.id)
         syncForm()
         return
     }
 
     if (isSource(location)) {
-        const swappedSource = moveStock.value.to
-
-        if (!swappedSource) {
+        if (moveStock.value.targets.length !== 1) {
             return
         }
+
+        const swappedSource = moveStock.value.targets[0].location
 
         if (!swappedSource.stock || swappedSource.stock <= 0) {
             notify({
@@ -197,27 +222,23 @@ const selectTarget = (location: any) => {
         }
 
         moveStock.value.from = swappedSource
-        moveStock.value.to = location
+        moveStock.value.targets = [makeTargetEntry(location)]
         moveStock.value.isActive = true
-        resetMoveQuantity()
+        resetAllTargetQuantities()
         syncForm()
         return
     }
 
-    moveStock.value.to = location
-    // moveStock.value.quantity = 0
+    moveStock.value.targets.push(makeTargetEntry(location))
     syncForm()
 }
 
 const closeMoveStock = () => {
     moveStock.value = {
         from: null,
-        to: null,
-        quantity: 0,
+        targets: [],
         isActive: false
     }
-    wholeQuantity.value = 0
-    fractionQuantity.value = 0
     inputKey.value++
     form.moveStock = null
 }
@@ -252,11 +273,6 @@ const toFractionData = (value: number): [number, [number, number]] => {
     return [sign * whole, [sign * (units - whole * packedIn.value), packedIn.value]]
 }
 
-// A packed stock is moved with two inputs: whole units, plus the fraction of a unit on top of
-// them. Both are bound as real quantities, so 3/8 is held as 0.375.
-const wholeQuantity = ref(0)
-const fractionQuantity = ref(0)
-
 const snapToFraction = (value: number) => {
     return roundQuantity(Math.round(Number(value || 0) * packedIn.value) / packedIn.value)
 }
@@ -275,117 +291,146 @@ const maxQuantity = computed(() => {
     return moveStock.value.from ? roundQuantity(Number(moveStock.value.from.stock ?? 0)) : 0
 })
 
-// Whole units already asked for leave less room for the fraction, and the other way around.
-const maxWholeQuantity = computed(() => {
-    return Math.max(0, Math.floor(roundQuantity(maxQuantity.value - fractionQuantity.value)))
+const totalMoveQuantity = computed(() => {
+    return roundQuantity(moveStock.value.targets.reduce((sum, entry) => sum + Number(entry.quantity || 0), 0))
 })
+
+// Each target can take at most what the other targets leave from the source stock.
+const availableForTarget = (entry: MoveTarget | undefined) => {
+    if (!entry) {
+        return 0
+    }
+
+    const otherTargetsTotal = moveStock.value.targets.reduce((sum, other) => {
+        return other === entry ? sum : sum + Number(other.quantity || 0)
+    }, 0)
+
+    return Math.max(0, roundQuantity(maxQuantity.value - otherTargetsTotal))
+}
+
+// Whole units already asked for leave less room for the fraction, and the other way around.
+const maxWholeQuantityFor = (entry: MoveTarget | undefined) => {
+    if (!entry) {
+        return 0
+    }
+
+    return Math.max(0, Math.floor(roundQuantity(availableForTarget(entry) - entry.fractionQuantity)))
+}
 
 // A packed stock can always be broken open, so a location holding 4 whole units can still give
 // away 3/8: the cap is what is left after the whole units, never a full unit.
-const maxFractionQuantity = computed(() => {
+const maxFractionQuantityFor = (entry: MoveTarget | undefined) => {
+    if (!entry) {
+        return 0
+    }
+
     const largestFraction = (packedIn.value - 1) / packedIn.value
-    const availableForFraction = maxQuantity.value - wholeQuantity.value
+    const availableForFraction = availableForTarget(entry) - entry.wholeQuantity
 
     return Math.max(0, snapDownToFraction(Math.min(largestFraction, availableForFraction)))
-})
-
-const storeQuantity = (value: number) => {
-    moveStock.value.quantity = value
-
-    if (form.moveStock) {
-        form.moveStock.quantity = value
-    }
 }
 
-const splitQuantityIntoInputs = (value: number) => {
+const splitQuantityIntoInputs = (entry: MoveTarget, value: number) => {
     if (!isPackedStock.value) {
-        wholeQuantity.value = Math.round(value)
-        fractionQuantity.value = 0
+        entry.wholeQuantity = Math.round(value)
+        entry.fractionQuantity = 0
         return
     }
 
     const units = Math.round(value * packedIn.value)
     const whole = Math.trunc(units / packedIn.value)
 
-    wholeQuantity.value = whole
-    fractionQuantity.value = roundQuantity(value - whole)
+    entry.wholeQuantity = whole
+    entry.fractionQuantity = roundQuantity(value - whole)
 }
 
 // The edited input is clamped to what the other one leaves available, and remounted when it
 // asked for more than that so the box never shows a quantity we did not keep.
-const updateWholeQuantity = (value: number) => {
+const updateTargetWholeQuantity = (entry: MoveTarget | undefined, value: number) => {
+    if (!entry) {
+        return
+    }
+
     const requested = Math.max(0, Math.floor(Number(value || 0)))
-    const validValue = Math.min(requested, maxWholeQuantity.value)
+    const validValue = Math.min(requested, maxWholeQuantityFor(entry))
 
-    wholeQuantity.value = validValue
-    storeQuantity(roundQuantity(validValue + fractionQuantity.value))
+    entry.wholeQuantity = validValue
+    entry.quantity = roundQuantity(validValue + entry.fractionQuantity)
+    syncForm()
 
     if (validValue !== requested) {
         inputKey.value++
     }
 }
 
-const updateFractionQuantity = (value: number) => {
+const updateTargetFractionQuantity = (entry: MoveTarget | undefined, value: number) => {
+    if (!entry) {
+        return
+    }
+
     const requested = Math.max(0, snapToFraction(value))
-    const validValue = Math.min(requested, maxFractionQuantity.value)
+    const validValue = Math.min(requested, maxFractionQuantityFor(entry))
 
-    fractionQuantity.value = validValue
-    storeQuantity(roundQuantity(wholeQuantity.value + validValue))
+    entry.fractionQuantity = validValue
+    entry.quantity = roundQuantity(entry.wholeQuantity + validValue)
+    syncForm()
 
     if (validValue !== requested) {
         inputKey.value++
     }
 }
 
-const setMoveQuantity = (value: number) => {
-    const validValue = Math.min(Math.max(roundQuantity(Number(value || 0)), 0), maxQuantity.value)
+const setTargetQuantity = (entry: MoveTarget | undefined, value: number) => {
+    if (!entry) {
+        return
+    }
 
-    storeQuantity(validValue)
-    splitQuantityIntoInputs(validValue)
+    const validValue = Math.min(Math.max(roundQuantity(Number(value || 0)), 0), availableForTarget(entry))
+
+    entry.quantity = validValue
+    splitQuantityIntoInputs(entry, validValue)
+    inputKey.value++
+    syncForm()
+}
+
+const resetAllTargetQuantities = () => {
+    for (const entry of moveStock.value.targets) {
+        entry.quantity = 0
+        entry.wholeQuantity = 0
+        entry.fractionQuantity = 0
+    }
     inputKey.value++
 }
 
-const resetMoveQuantity = () => {
-    setMoveQuantity(0)
+// Clicking the source chip with a single target keeps the old move-all shortcut; clicking a
+// target chip fills that target with everything the other targets left available.
+const onStockChipClick = (location: any) => {
+    if (isSource(location) && moveStock.value.targets.length === 1) {
+        setTargetQuantity(moveStock.value.targets[0], maxQuantity.value)
+        return
+    }
+
+    const entry = getTargetEntry(location)
+    if (entry) {
+        setTargetQuantity(entry, availableForTarget(entry))
+    }
 }
 
 const getCalculatedStock = (warehouse: { stock: number; id: any }) => {
-    if (!moveStock.value.isActive || moveStock.value.quantity <= 0) {
+    if (!moveStock.value.isActive || totalMoveQuantity.value <= 0) {
         return warehouse.stock
     }
-    
-    // If this is the source warehouse, subtract the quantity
+
     if (moveStock.value.from?.id === warehouse.id) {
-        const result = roundQuantity(warehouse.stock - moveStock.value.quantity)
-
-        return result
+        return roundQuantity(warehouse.stock - totalMoveQuantity.value)
     }
 
-    if (moveStock.value.to?.id === warehouse.id) {
-        const result = roundQuantity(warehouse.stock + moveStock.value.quantity)
-
-        return result
+    const entry = getTargetEntry(warehouse)
+    if (entry) {
+        return roundQuantity(warehouse.stock + Number(entry.quantity || 0))
     }
-    
+
     return warehouse.stock
-}
-
-const getStockChangeIndicator = (warehouse: { id: any }) => {
-    if (!moveStock.value.isActive || moveStock.value.quantity <= 0) {
-        return null
-    }
-    
-    // If this is the source warehouse, show negative change
-    if (moveStock.value.from && moveStock.value.from.id === warehouse.id) {
-        return -moveStock.value.quantity
-    }
-    
-    // If this is the destination warehouse, show positive change
-    if (moveStock.value.to && moveStock.value.to.id === warehouse.id) {
-        return moveStock.value.quantity
-    }
-    
-    return null
 }
 
 const isLoadingSubmit = ref(false);
@@ -393,11 +438,13 @@ const isLoadingSubmit = ref(false);
 const submitCheckStock = () => {
     if (!canSave.value) return;
 
-    router.patch(route('grp.models.location_org_stock.move', {
-        locationOrgStock: moveStock.value.from.id,
-        targetLocationOrgStock: moveStock.value.to.id
+    router.patch(route('grp.models.location_org_stock.multi_move', {
+        locationOrgStock: moveStock.value.from.id
     }), {
-        quantity: moveStock.value.quantity,
+        targets: moveStock.value.targets.map((entry) => ({
+            location_org_stock_id: entry.location.id,
+            quantity: entry.quantity
+        })),
         // reason: selectedReason.value,
         // note: note.value
     }, {
@@ -431,14 +478,15 @@ const submitCheckStock = () => {
 }
 
 const applyReplenishment = (location: any) => {
-    if (!isTarget(location)) {
+    const entry = getTargetEntry(location)
+
+    if (!entry) {
         return
     }
 
     const replenishment = props.replenishment_data?.[location.id]?.replenishment_stock ?? 0
-    const nextValue = Number(moveStock.value.quantity) + Number(replenishment)
 
-    setMoveQuantity(Math.min(nextValue, maxQuantity.value))
+    setTargetQuantity(entry, Number(entry.quantity) + Number(replenishment))
 }
 
 onMounted(() => {
@@ -451,14 +499,14 @@ onMounted(() => {
         // tentukan source = yang punya stock > 0
         if (loc1.stock > 0) {
             moveStock.value.from = loc1
-            moveStock.value.to = loc2
+            moveStock.value.targets = [makeTargetEntry(loc2)]
         } else if (loc2.stock > 0) {
             moveStock.value.from = loc2
-            moveStock.value.to = loc1
+            moveStock.value.targets = [makeTargetEntry(loc1)]
         }
 
         // aktifkan mode
-        if (moveStock.value.from && moveStock.value.to) {
+        if (moveStock.value.from && moveStock.value.targets.length > 0) {
             moveStock.value.isActive = true
         }
     }
@@ -480,7 +528,7 @@ onMounted(() => {
         <!-- Section: Move summary + instructions -->
         <div class="shrink-0 border border-gray-200 rounded p-3 bg-gray-50 relative">
             <button
-                v-if="moveStock.from || moveStock.to"
+                v-if="moveStock.from || moveStock.targets.length > 0"
                 @click="closeMoveStock"
                 v-tooltip="trans('Reset selection')"
                 class="absolute top-2 right-2 text-gray-400 hover:text-red-500 underline text-xs"
@@ -508,7 +556,7 @@ onMounted(() => {
                         <span v-tooltip="trans('Current stock in this location')" class="text-gray-500">
                             <FractionDisplay :fractionData="toFractionData(moveStock.from.stock)" />
                         </span>
-                        <template v-if="moveStock.quantity > 0">
+                        <template v-if="totalMoveQuantity > 0">
                             <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
                             <span v-tooltip="trans('Stock preview after move')" class="font-semibold text-green-700">
                                 <FractionDisplay :fractionData="toFractionData(getCalculatedStock(moveStock.from))" />
@@ -522,7 +570,7 @@ onMounted(() => {
                 <div class="text-center">
                     <div class="font-bold text-xs uppercase tracking-wide text-gray-500">{{ trans('Quantity') }}</div>
                     <div class="font-medium tabular-nums text-gray-700 flex justify-center">
-                        <FractionDisplay v-if="moveStock.quantity" :fractionData="toFractionData(moveStock.quantity)" />
+                        <FractionDisplay v-if="totalMoveQuantity" :fractionData="toFractionData(totalMoveQuantity)" />
                         <template v-else>......</template>
                     </div>
                 </div>
@@ -531,29 +579,36 @@ onMounted(() => {
 
                 <div
                     class="group text-center border rounded-lg px-4 py-2 transition"
-                    :class="moveStock.to ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'"
+                    :class="moveStock.targets.length ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'"
                 >
                     <div
                         class="font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-x-1.5 transition"
-                        :class="moveStock.to ? 'text-blue-600' : 'text-blue-500'"
+                        :class="moveStock.targets.length ? 'text-blue-600' : 'text-blue-500'"
                     >
                         <FontAwesomeIcon icon="fas fa-forklift" fixed-width />
                         {{ trans('Destination') }}
                     </div>
-                    <div class="font-medium" :class="moveStock.to ? 'text-blue-700' : 'text-gray-400 italic'">
-                        {{ moveStock.to?.name || '—' }}
-                    </div>
-                    <div v-if="moveStock.to" class="mt-0.5 tabular-nums text-xs flex items-center justify-center gap-x-1">
-                        <span v-tooltip="trans('Current stock in this location')" class="text-gray-500">
-                            <FractionDisplay :fractionData="toFractionData(moveStock.to.stock)" />
-                        </span>
-                        <template v-if="moveStock.quantity > 0">
-                            <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
-                            <span v-tooltip="trans('Stock preview after move')" class="font-semibold text-blue-700">
-                                <FractionDisplay :fractionData="toFractionData(getCalculatedStock(moveStock.to))" />
+                    <template v-if="moveStock.targets.length">
+                        <div
+                            v-for="entry in moveStock.targets"
+                            :key="entry.location.id"
+                            class="flex items-center justify-center gap-x-2"
+                        >
+                            <span class="font-medium text-blue-700">{{ entry.location.name }}</span>
+                            <span class="tabular-nums text-xs flex items-center gap-x-1">
+                                <span v-tooltip="trans('Current stock in this location')" class="text-gray-500">
+                                    <FractionDisplay :fractionData="toFractionData(entry.location.stock)" />
+                                </span>
+                                <template v-if="entry.quantity > 0">
+                                    <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
+                                    <span v-tooltip="trans('Stock preview after move')" class="font-semibold text-blue-700">
+                                        <FractionDisplay :fractionData="toFractionData(getCalculatedStock(entry.location))" />
+                                    </span>
+                                </template>
                             </span>
-                        </template>
-                    </div>
+                        </div>
+                    </template>
+                    <div v-else class="font-medium text-gray-400 italic">—</div>
                 </div>
             </div>
             <!-- <div class="text-yellow-600 text-xs text-center mt-2 h-[16px]">
@@ -651,46 +706,53 @@ onMounted(() => {
 
                     <!-- Preview: original + change -> result -->
                     <span
-                        v-if="isSource(location) || getStockChangeIndicator(location) !== null"
+                        v-if="isSource(location) || isTarget(location)"
                         class="tabular-nums text-xs flex items-center gap-x-1"
                     >
                         <span
-                            v-tooltip="isSource(location) ? trans('Click to move all stock (empties this location)') : trans('Current stock in this location')"
+                            v-tooltip="isSource(location)
+                                ? (moveStock.targets.length === 1 ? ctrans('Click to move all stock (empties this location)') : ctrans('Current stock in this location'))
+                                : ctrans('Click to receive all remaining stock')"
                             :class="[
                                 'border rounded px-1.5 py-0.5 border-gray-300 text-gray-600',
-                                isSource(location) ? 'cursor-pointer hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition' : ''
+                                isSource(location) && moveStock.targets.length === 1
+                                    ? 'cursor-pointer hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition' :
+                                isTarget(location)
+                                    ? 'cursor-pointer hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition' : ''
                             ]"
-                            @click="isSource(location) && setMoveQuantity(maxQuantity)"
+                            @click="onStockChipClick(location)"
                         ><FractionDisplay :fractionData="toFractionData(location.stock)" /></span>
-                        <span v-if="isSource(location)" class="text-red-500 font-semibold">−</span>
-                        <div v-if="isSource(location)" class="shrink-0 flex items-center gap-x-1">
+                        <template v-if="isSource(location)">
+                            <span class="text-red-500 font-semibold">−</span>
+                            <span class="flex items-center text-red-500">
+                                <FractionDisplay :fractionData="toFractionData(totalMoveQuantity)" />
+                            </span>
+                        </template>
+                        <div v-else class="shrink-0 flex items-center gap-x-1">
+                            <span class="text-green-600 font-semibold">+</span>
                             <NumberWithButtonSave
-                                :key="`whole-${inputKey}`"
-                                v-tooltip="ctrans('Whole units to move')"
-                                :modelValue="wholeQuantity"
-                                @update:modelValue="(val: number) => updateWholeQuantity(val)"
+                                :key="`whole-${location.id}-${inputKey}`"
+                                v-tooltip="ctrans('Whole units to move to this location')"
+                                :modelValue="getTargetEntry(location)?.wholeQuantity ?? 0"
+                                @update:modelValue="(val: number) => updateTargetWholeQuantity(getTargetEntry(location), val)"
                                 :min="0"
-                                :max="maxWholeQuantity"
+                                :max="maxWholeQuantityFor(getTargetEntry(location))"
                                 noSaveButton
                                 noUndoButton
                             />
                             <NumberWithButtonSave
                                 v-if="isPackedStock"
-                                :key="`fraction-${inputKey}`"
+                                :key="`fraction-${location.id}-${inputKey}`"
                                 v-tooltip="ctrans('Fraction of a unit to move (:packedIn per unit)', { packedIn: packedIn })"
-                                :modelValue="fractionQuantity"
-                                @update:modelValue="(val: number) => updateFractionQuantity(val)"
+                                :modelValue="getTargetEntry(location)?.fractionQuantity ?? 0"
+                                @update:modelValue="(val: number) => updateTargetFractionQuantity(getTargetEntry(location), val)"
                                 :min="0"
-                                :max="maxFractionQuantity"
+                                :max="maxFractionQuantityFor(getTargetEntry(location))"
                                 :denominator="packedIn"
                                 noSaveButton
                                 noUndoButton
                             />
                         </div>
-                        <span v-else class="flex items-center" :class="getStockChangeIndicator(location) > 0 ? 'text-green-600' : 'text-red-500'">
-                            {{ getStockChangeIndicator(location) > 0 ? '+' : '−' }}
-                            <FractionDisplay :fractionData="toFractionData(Math.abs(getStockChangeIndicator(location)))" />
-                        </span>
                         <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
                         <span
                             v-tooltip="trans('Stock preview after move')"
@@ -733,14 +795,14 @@ onMounted(() => {
                 <!-- Right: Target forklift -->
                 <FontAwesomeIcon
                     icon="fas fa-forklift"
-                    v-tooltip="isTarget(location) ? trans('Unset as destination') : trans('Set as destination location')"
+                    v-tooltip="isTarget(location) ? ctrans('Unset as destination') : ctrans('Add as destination location')"
                     :class="[
                         'text-xl transition shrink-0',
                         isTarget(location)
                             ? 'cursor-pointer text-blue-600 scale-110' :
                         isSource(location)
                             ? 'text-gray-300 opacity-20 cursor-not-allowed' :
-                        moveStock.to
+                        moveStock.targets.length
                             ? 'cursor-pointer text-gray-400 opacity-30 hover:opacity-80' :
                         'cursor-pointer opacity-50 hover:opacity-100 text-blue-600'
                     ]"
