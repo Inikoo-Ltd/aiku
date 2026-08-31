@@ -13,6 +13,8 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\ShoppingListItem;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -50,6 +52,11 @@ class UpdateShoppingListItem extends OrgAction
             'needed_by'      => ['sometimes', 'nullable', 'date'],
             'notes'          => ['sometimes', 'nullable', 'string'],
         ];
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return Redirect::back();
     }
 
     public function asController(ShoppingListItem $shoppingListItem, ActionRequest $request): ShoppingListItem

@@ -3240,3 +3240,126 @@ test('org stock lead time hydrator measures from delivery history', function () 
 
     expect($orgStock->refresh()->estimated_lead_time_days)->toBe(21);
 });
+function independentOrgSupplierFixture($test): array
+{
+    $supplier = StoreSupplier::make()->action(
+        parent: $test->group,
+        modelData: Supplier::factory()->definition()
+    );
+
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $test->organisation->id)->first();
+
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, [
+        'code'                     => 'IND-'.$supplier->id,
+        'name'                     => 'Independent supplier product',
+        'cost'                     => 5,
+        'stock_id'                 => $test->stock->id,
+        'units_per_pack'           => 10,
+        'units_per_carton'         => 100,
+    ]);
+
+    $supplierProduct->update(['estimated_lead_time_days' => 9]);
+
+    $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+
+    return [$orgSupplier, $supplierProduct, $orgSupplierProduct];
+}
+
+test('UI supplier shopping dashboard renders', function () {
+    [$orgSupplier] = independentOrgSupplierFixture($this);
+
+    $response = $this->get(route('grp.org.procurement.org_suppliers.show.shopping.dashboard', [$this->organisation->slug, $orgSupplier->slug]));
+    $response->assertOk();
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/SupplierShoppingDashboard')
+            ->has('title')
+            ->has('stats')
+            ->has('coverBuckets', 8)
+            ->where('coverBuckets.0.bucket', 'out')
+            ->where('coverBuckets.7.bucket', 'never')
+            ->where('coverTotal', fn ($total) => $total === collect($page->toArray()['props']['coverBuckets'])->sum('count'))
+            ->has('coverBuckets.0.ranks')
+            ->has('leadTime.days')
+            ->where('leadTime.source', 'estimate')
+            ->has('orderCapacity.warehouse')
+            ->has('latePurchaseOrders')
+            ->has('openStockDeliveries')
+            ->has('shoppingListRoute.name')
+            ->has('stockDeliveriesRoute.name');
+    });
+});
+
+test('supplier shopping dashboard is only for suppliers we buy from directly', function () {
+    expect($this->orgSupplier->org_agent_id)->not->toBeNull();
+
+    $this->get(route('grp.org.procurement.org_suppliers.show.shopping.dashboard', [$this->organisation->slug, $this->orgSupplier->slug]))
+        ->assertNotFound();
+});
+
+test('supplier lead time is read from the products, never editable on the relationship', function () {
+    [$orgSupplier, $supplierProduct] = independentOrgSupplierFixture($this);
+
+    expect(App\Actions\Procurement\OrgSupplier\GetSupplierLeadTime::run($orgSupplier))
+        ->toMatchArray(['days' => 9, 'source' => 'estimate', 'measured_products' => 0]);
+
+    $supplierProduct->update(['measured_lead_time_days' => 21, 'lead_time_samples' => 4]);
+
+    expect(App\Actions\Procurement\OrgSupplier\GetSupplierLeadTime::run($orgSupplier))
+        ->toMatchArray(['days' => 21, 'source' => 'measured']);
+});
+
+test('UI supplier cover bucket items index', function () {
+    [$orgSupplier] = independentOrgSupplierFixture($this);
+
+    $response = $this->get(route('grp.org.procurement.org_suppliers.show.shopping.items.index', [$this->organisation->slug, $orgSupplier->slug]).'?cover=never');
+    $response->assertOk();
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/SupplierCoverBucketItems')
+            ->where('bucket', 'never')
+            ->where('bucketLabel', 'We never stocked')
+            ->has('items.data')
+            ->has('orgSupplier.currency');
+    });
+});
+
+test('supplier misplaced shopping list cleanup only accepts non-orderable buckets', function () {
+    [$orgSupplier] = independentOrgSupplierFixture($this);
+
+    expect(fn () => App\Actions\Procurement\OrgSupplier\RemoveMisplacedSupplierShoppingListItems::make()->handle($orgSupplier, 'out'))
+        ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
+
+    expect(App\Actions\Procurement\OrgSupplier\RemoveMisplacedSupplierShoppingListItems::make()->handle($orgSupplier, 'ok'))
+        ->toBeInt();
+});
+
+test('supplier capacity cap blocks non-exempt adds to the shopping list', function () {
+    [$orgSupplier, , $orgSupplierProduct] = independentOrgSupplierFixture($this);
+
+    Cache::put("supplier-order-capacity:{$orgSupplier->id}", [
+        ['delivers_to_us_per_30d' => 0.01, 'source' => 'sales', 'samples' => 0],
+        [
+            'total_locations'       => 100,
+            'empty_locations'       => 50,
+            'free_ratio'            => 0.5,
+            'inbound_open_po_lines' => 0,
+            'supplier_share_used'   => 0,
+            'supplier_share_limit'  => 10,
+        ],
+    ], now()->addMinutes(15));
+
+    $linkedOrgStock = App\Actions\Procurement\OrgSupplier\GetSupplierOrderCapacity::linkedOrgStock($orgSupplierProduct);
+    $linkedOrgStock?->update(['quantity_available' => 10, 'health_rank' => null]);
+
+    $first = StoreShoppingListItem::make()->action($orgSupplierProduct, ['quantity_units' => 5]);
+
+    expect(App\Actions\Procurement\OrgSupplier\GetSupplierOrderCapacity::run($orgSupplier)['blocked']['at_capacity'])->toBeTrue()
+        ->and(fn () => StoreShoppingListItem::make()->action($orgSupplierProduct, ['quantity_units' => 1]))
+        ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
+
+    DeleteShoppingListItem::make()->action($first);
+    Cache::forget("supplier-order-capacity:{$orgSupplier->id}");
+});

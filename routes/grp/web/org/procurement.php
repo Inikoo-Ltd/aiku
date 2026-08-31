@@ -38,7 +38,12 @@ use App\Actions\Procurement\OrgSupplier\UI\CreateOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UI\EditOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UI\IndexOrgAgentSuppliers;
 use App\Actions\Procurement\OrgSupplier\UI\IndexOrgSuppliers;
+use App\Actions\Procurement\OrgSupplier\UI\IndexSupplierCoverBucketItems;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
+use App\Actions\Procurement\OrgSupplier\UI\ShowSupplierShoppingDashboard;
+use App\Actions\Procurement\OrgSupplier\RemoveMisplacedSupplierShoppingListItems;
+use App\Actions\Procurement\ShoppingListItem\StoreShoppingListItems;
+use App\Actions\Procurement\ShoppingListItem\SuggestSupplierShoppingList;
 use App\Actions\SupplyChain\Supplier\UI\CreateSupplier;
 use App\Actions\Procurement\OrgSupplierProducts\UI\EditOrgSupplierProduct;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\EditAgentSupplierPurchaseOrder;
@@ -99,7 +104,14 @@ Route::prefix('suppliers')->as('org_suppliers.')->group(function () {
     Route::get('{orgSupplier}/purchase-orders', [IndexPurchaseOrders::class, 'inOrgSupplier'])->name('show.purchase_orders.index');
     Route::get('{orgSupplier}/purchase-orders/create', CreatePurchaseOrder::class)->name('show.purchase_orders.create');
     Route::get('{orgSupplier}/stock-deliveries', [IndexStockDeliveries::class, 'inOrgSupplier'])->name('show.stock_deliveries.index');
+    Route::get('{orgSupplier}/shopping-list', [IndexShoppingListItems::class, 'inOrgSupplier'])->name('show.shopping_list.index');
 
+    Route::prefix('{orgSupplier}/shopping')->as('show.shopping.')->group(function () {
+        Route::get('', ShowSupplierShoppingDashboard::class)->name('dashboard');
+        Route::get('items', IndexSupplierCoverBucketItems::class)->name('items.index');
+        Route::post('suggest', SuggestSupplierShoppingList::class)->name('suggest');
+        Route::delete('misplaced', RemoveMisplacedSupplierShoppingListItems::class)->name('misplaced.destroy');
+    });
 });
 
 Route::prefix('partners')->as('org_partners.')->group(function () {
@@ -149,6 +161,7 @@ Route::prefix('supplier-products')->as('org_supplier_products.')->group(function
 
 Route::prefix('shopping-list')->as('shopping_list.')->group(function () {
     Route::get('', IndexShoppingListItems::class)->name('index');
+    Route::post('bulk', StoreShoppingListItems::class)->name('bulk_store');
     Route::get('board', ShowShoppingListBoard::class)->name('board');
     Route::post('cherry-pick', [CherryPickShoppingListItems::class, 'inOrganisation'])->name('cherry_pick');
     Route::post('{orgSupplierProduct}', StoreShoppingListItem::class)->name('store');
