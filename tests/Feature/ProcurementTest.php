@@ -47,6 +47,7 @@ use App\Actions\Procurement\OrgPartner\StoreOrgPartner;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydrateOrgSupplierProducts;
 use App\Actions\Procurement\OrgSupplierProducts\StoreOrgSupplierProduct;
+use App\Actions\Procurement\OrgSupplierProducts\RepairOrgSupplierProductsSupplierDrift;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\RevertPurchaseOrderToSubmitted;
@@ -3239,4 +3240,78 @@ test('org stock lead time hydrator measures from delivery history', function () 
     UpdateOrgStock::make()->action($orgStock, ['estimated_lead_time_days' => 21]);
 
     expect($orgStock->refresh()->estimated_lead_time_days)->toBe(21);
+});
+
+test('repair supplier drift repoints org supplier products to the right org supplier', function () {
+    $supplierA = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $supplierB = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+
+    $orgSupplierA = $supplierA->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $orgSupplierB = $supplierB->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $supplierProduct = StoreSupplierProduct::make()->action($supplierA, [
+        'code'             => 'DRIFT-1',
+        'name'             => 'Drifted Asset',
+        'cost'             => 100,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100
+    ]);
+
+    $drifted = OrgSupplierProduct::where('org_supplier_id', $orgSupplierA->id)
+        ->where('supplier_product_id', $supplierProduct->id)
+        ->firstOrFail();
+
+    $supplierProduct->updateQuietly(['supplier_id' => $supplierB->id]);
+    expect($drifted->org_supplier_id)->toBe($orgSupplierA->id);
+
+    $dryRun = RepairOrgSupplierProductsSupplierDrift::make()->handle();
+    expect($dryRun['repointed'])->toBeGreaterThan(0)
+        ->and($drifted->refresh()->org_supplier_id)->toBe($orgSupplierA->id);
+
+    RepairOrgSupplierProductsSupplierDrift::make()->handle(fix: true);
+
+    expect($drifted->refresh()->org_supplier_id)->toBe($orgSupplierB->id);
+});
+
+test('repair supplier drift leaves rows whose correct twin already exists', function () {
+    $supplierA = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $supplierB = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+
+    $orgSupplierA = $supplierA->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $orgSupplierB = $supplierB->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $supplierProduct = StoreSupplierProduct::make()->action($supplierB, [
+        'code'             => 'DRIFT-2',
+        'name'             => 'Drifted Asset 2',
+        'cost'             => 100,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100
+    ]);
+
+    expect(OrgSupplierProduct::where('org_supplier_id', $orgSupplierB->id)
+        ->where('supplier_product_id', $supplierProduct->id)
+        ->exists())->toBeTrue();
+
+    $baseline = RepairOrgSupplierProductsSupplierDrift::make()->handle();
+
+    $drifted = StoreOrgSupplierProduct::make()->action($orgSupplierA, $supplierProduct);
+
+    $result = RepairOrgSupplierProductsSupplierDrift::make()->handle(fix: true);
+
+    expect($result['collisions'])->toBe($baseline['collisions'] + 1)
+        ->and($drifted->refresh()->org_supplier_id)->toBe($orgSupplierA->id);
 });
