@@ -9,6 +9,7 @@ use App\Models\SysAdmin\User;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -30,6 +31,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $cancelled_at
  * @property \Illuminate\Support\Carbon|null $stopped_at
  * @property array|null $recipients_recipe
+ * @property array|null $recipients_list
  * @property int $recipients_count
  * @property int|null $publisher_id
  * @property array|null $data
@@ -42,6 +44,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read MetaMessageTemplate|null $metaMessageTemplate
  * @property-read User|null $publisher
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, WhatsappRecipient> $recipients
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, WhatsappDeliveryChannel> $deliveryChannels
  */
 class WhatsappCampaign extends Model
 {
@@ -57,6 +61,7 @@ class WhatsappCampaign extends Model
         'state'             => WhatsappCampaignStateEnum::class,
         'type'              => WhatsappCampaignTypeEnum::class,
         'recipients_recipe' => 'array',
+        'recipients_list'   => 'array',
         'data'              => 'array',
         'ready_at'          => 'datetime',
         'scheduled_at'      => 'datetime',
@@ -69,6 +74,7 @@ class WhatsappCampaign extends Model
     protected $attributes = [
         'data'              => '{}',
         'recipients_recipe' => '{}',
+        'recipients_list'   => '[]',
     ];
 
     public function getRouteKeyName(): string
@@ -93,5 +99,15 @@ class WhatsappCampaign extends Model
     public function publisher(): BelongsTo
     {
         return $this->belongsTo(User::class, 'publisher_id');
+    }
+
+    public function recipients(): HasMany
+    {
+        return $this->hasMany(WhatsappRecipient::class);
+    }
+
+    public function deliveryChannels(): HasMany
+    {
+        return $this->hasMany(WhatsappDeliveryChannel::class);
     }
 }
