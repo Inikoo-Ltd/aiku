@@ -948,6 +948,11 @@ class EditShop extends OrgAction
                                     'label' => __('WABA ID'),
                                     'value' => Arr::get($shop->settings, 'whatsapp.waba_id', ''),
                                 ],
+                                'whatsapp_phone_number'    => [
+                                    'type'  => 'phone',
+                                    'label' => __('Phone Number'),
+                                    'value' => Arr::get($shop->settings, 'whatsapp.phone_number', ''),
+                                ],
                             ],
                         ],
                     ],
