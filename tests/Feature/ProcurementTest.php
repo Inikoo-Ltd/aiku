@@ -108,7 +108,11 @@ use App\Models\GoodsIn\StockDeliveryCost;
 use App\Models\Helpers\Address;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
+use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
+use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
+use App\Actions\Procurement\OrgPartner\UpdatePartnerLeadTimeEstimate;
 use App\Models\Inventory\OrgStock;
+use App\Models\Inventory\OrgStockStats;
 use App\Models\Inventory\Warehouse;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Procurement\OrgAgent;
@@ -2936,8 +2940,78 @@ describe('partner browse', function () {
                 ->component('Procurement/PartnerShoppingDashboard')
                 ->has('title')
                 ->has('stats')
-                ->has('recentItems');
+                ->has('recentItems')
+                ->has('coverBuckets', 8)
+                ->where('coverBuckets.0.bucket', 'out')
+                ->where('coverBuckets.7.bucket', 'never')
+                ->where('coverTotal', fn ($total) => $total === collect($page->toArray()['props']['coverBuckets'])->sum('count'))
+                ->has('latePurchaseOrders')
+                ->has('leadTime.days')
+                ->where('leadTime.source', 'estimate');
         });
+    });
+
+    test('partner lead time estimate is editable until history exists', function () {
+        $original = $this->orgPartner->data;
+
+        $updated = UpdatePartnerLeadTimeEstimate::make()->action($this->orgPartner, ['lead_time_days' => 21]);
+
+        expect(Arr::get($updated->data, 'shopping.lead_time_days'))->toBe(21)
+            ->and(GetPartnerLeadTime::run($updated))->toMatchArray(['days' => 21, 'source' => 'estimate']);
+
+        $this->orgPartner->update(['data' => $original]);
+    });
+
+    test('browse card shows the component that runs out first', function () {
+        $components = collect([1, 2])->map(function (int $stockId) {
+            $orgStock = new OrgStock(['stock_id' => $stockId]);
+            $orgStock->stock_id = $stockId;
+
+            return $orgStock;
+        });
+
+        $buyerOrgStocks = collect([1, 2])->mapWithKeys(function (int $stockId) {
+            $orgStock = new OrgStock();
+            $orgStock->setRelation('stats', new OrgStockStats(['days_of_cover' => $stockId === 1 ? 700 : 4]));
+
+            return [$stockId => $orgStock];
+        });
+
+        $tightest = ShowPartnerBrowse::make()->tightestComponent($components, $buyerOrgStocks);
+
+        expect($tightest->stock_id)->toBe(2);
+    });
+
+    test('UI partner browse filters by stock cover bucket', function () {
+        $seller     = $this->orgPartner->partner;
+        $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
+        [, $sellerProduct] = createProduct($sellerShop);
+        createOrgStocks($this->orgPartner->organisation, [$sellerProduct->orgStocks()->first()->stock]);
+
+        $originalSettings = $seller->settings;
+        $settings         = $originalSettings;
+        data_set($settings, 'procurement.shop_id', $sellerShop->id);
+        $seller->update(['settings' => $settings]);
+
+        $response = $this->get(route('grp.org.procurement.org_partners.show.browse.index', [$this->organisation->slug, $this->orgPartner->id]).'?cover=out');
+        $response->assertOk();
+
+        $response->assertInertia(function (AssertableInertia $page) {
+            $page
+                ->component('Procurement/PartnerBrowse')
+                ->where('level', 'cover')
+                ->where('coverLabel', 'Out of stock')
+                ->has('products.data');
+        });
+
+        $neverStocked = $this->get(route('grp.org.procurement.org_partners.show.browse.index', [$this->organisation->slug, $this->orgPartner->id]).'?cover=never');
+        $neverStocked->assertOk();
+        $neverStocked->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('level', 'cover')
+            ->where('coverLabel', 'We never stocked')
+            ->has('products.data'));
+
+        $seller->update(['settings' => $originalSettings]);
     });
 });
 

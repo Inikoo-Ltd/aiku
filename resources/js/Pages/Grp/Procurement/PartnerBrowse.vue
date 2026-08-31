@@ -30,7 +30,8 @@ const props = defineProps<{
     miniCart: MiniCart
     filters: { q?: string, department?: string, sub_department?: string, family?: string, collection?: string }
     filterNames: Record<string, string>
-    level: "root" | "department" | "sub_department" | "family" | "collection" | "search"
+    level: "root" | "department" | "sub_department" | "family" | "collection" | "search" | "cover"
+    coverLabel?: string
     categories: CategoryCard[]
     collections: CategoryCard[]
     products: { data: ProductCard[], links: object, meta: object } | null
@@ -147,7 +148,7 @@ function commitQuantity(product: ProductCard) {
             />
         </div>
 
-        <nav v-if="level !== 'search'" class="flex flex-wrap items-center gap-2 text-sm">
+        <nav v-if="level !== 'search' && level !== 'cover'" class="flex flex-wrap items-center gap-2 text-sm">
             <button class="rounded-full px-3 py-1" :class="level === 'root' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'" @click="goTo({})">
                 {{ trans("All") }} · {{ useLocaleStore().number(browseStats.products) }}
             </button>
@@ -235,6 +236,7 @@ function commitQuantity(product: ProductCard) {
 
         <div v-if="products" class="space-y-3">
             <h3 v-if="level === 'search'" class="text-sm font-medium text-gray-500">{{ trans("Search results") }}</h3>
+            <h3 v-else-if="level === 'cover'" class="text-sm font-medium text-gray-500">{{ coverLabel }}</h3>
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
                 <div v-for="product in products.data" :key="product.id" class="flex flex-col overflow-hidden rounded-lg border border-gray-200">
                     <div class="aspect-square w-full bg-gray-50">
@@ -252,6 +254,14 @@ function commitQuantity(product: ProductCard) {
                             </span>
                         </div>
                         <div class="grid grid-cols-[auto_1fr] gap-x-3 text-xs leading-5">
+                            <template v-if="product.our_stock === null && product.their_daily_usage">
+                                <span class="text-gray-400">{{ trans("They sell") }}</span>
+                                <span class="text-right font-medium tabular-nums">~{{ useLocaleStore().number(Math.round(product.their_daily_usage * 91)) }} / {{ trans("quarter") }}</span>
+                            </template>
+                            <template v-if="product.our_stock === null">
+                                <span class="text-gray-400">{{ trans("Our stock") }}</span>
+                                <span class="text-right font-medium text-violet-600">{{ trans("never stocked") }}</span>
+                            </template>
                             <template v-if="product.our_stock !== null">
                                 <span class="text-gray-400">{{ trans("Our stock") }}</span>
                                 <span class="text-right font-medium tabular-nums">{{ useLocaleStore().number(Math.floor(product.our_stock)) }}</span>

@@ -20,6 +20,7 @@ use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgPartner\UI\IndexOrgPartners;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerShoppingDashboard;
+use App\Actions\Procurement\OrgPartner\UpdatePartnerLeadTimeEstimate;
 use App\Actions\Procurement\PartnerShoppingListItem\CherryPickPartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexPartnerShippingList;
@@ -118,6 +119,7 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
         });
         Route::prefix('shopping')->as('.shopping.')->group(function () {
             Route::get('', ShowPartnerShoppingDashboard::class)->name('dashboard');
+            Route::patch('lead-time', UpdatePartnerLeadTimeEstimate::class)->name('lead_time.update');
         });
         Route::prefix('browse')->as('.browse.')->group(function () {
             Route::get('', ShowPartnerBrowse::class)->name('index');

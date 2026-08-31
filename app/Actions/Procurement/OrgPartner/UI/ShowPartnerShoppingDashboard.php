@@ -9,10 +9,13 @@
 namespace App\Actions\Procurement\OrgPartner\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -39,6 +42,43 @@ class ShowPartnerShoppingDashboard extends OrgAction
             where sos.stock_id = partner_shopping_list_items.stock_id
                 and sos.organisation_id = partner_shopping_list_items.partner_organisation_id
             limit 1)";
+    }
+
+    /**
+     * Purchase orders the partner still owes us, worst delay first.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function latePurchaseOrders(OrgPartner $orgPartner): array
+    {
+        return DB::table('purchase_orders')
+            ->where('parent_type', 'OrgPartner')
+            ->where('parent_id', $orgPartner->id)
+            ->whereIn('state', [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value])
+            ->whereNotIn('delivery_state', [
+                PurchaseOrderDeliveryStateEnum::RECEIVED->value,
+                PurchaseOrderDeliveryStateEnum::CHECKED->value,
+                PurchaseOrderDeliveryStateEnum::PLACED->value,
+                PurchaseOrderDeliveryStateEnum::CANCELLED->value,
+                PurchaseOrderDeliveryStateEnum::NOT_RECEIVED->value,
+            ])
+            ->whereNull('deleted_at')
+            ->selectRaw("id, slug, reference, state, delivery_state, estimated_received_at, submitted_at,
+                extract(day from now() - coalesce(estimated_received_at, submitted_at))::int as days_late,
+                estimated_received_at is null as no_eta")
+            ->whereRaw('coalesce(estimated_received_at, submitted_at) < now()')
+            ->orderByRaw('coalesce(estimated_received_at, submitted_at)')
+            ->limit(10)
+            ->get()
+            ->map(fn ($purchaseOrder) => [
+                'id'         => $purchaseOrder->id,
+                'slug'       => $purchaseOrder->slug,
+                'reference'  => $purchaseOrder->reference,
+                'state'      => $purchaseOrder->state,
+                'days_late'  => (int) $purchaseOrder->days_late,
+                'no_eta'     => (bool) $purchaseOrder->no_eta,
+            ])
+            ->all();
     }
 
     public function handle(OrgPartner $orgPartner): array
@@ -75,6 +115,8 @@ class ShowPartnerShoppingDashboard extends OrgAction
             ->get();
 
         return [
+            'cover'              => GetPartnerStockCoverBuckets::run($orgPartner),
+            'late_purchase_orders' => $this->latePurchaseOrders($orgPartner),
             'open_items_count'   => $orgPartner->stats->number_open_shopping_list_items,
             'estimated_total'    => $estimatedTotal,
             'priority_breakdown' => collect(ShoppingListItemPriorityEnum::cases())->map(fn ($priority) => [
@@ -130,6 +172,14 @@ class ShowPartnerShoppingDashboard extends OrgAction
                     'priority_breakdown' => $data['priority_breakdown'],
                 ],
                 'recentItems'       => $data['recent_items'],
+                'coverBuckets'      => $data['cover']['buckets'],
+                'coverTotal'        => $data['cover']['total'],
+                'leadTime'          => $data['cover']['lead_time'],
+                'leadTimeRoute'     => [
+                    'name'       => 'grp.org.procurement.org_partners.show.shopping.lead_time.update',
+                    'parameters' => [$this->orgPartner->organisation->slug, $this->orgPartner->id],
+                ],
+                'latePurchaseOrders' => $data['late_purchase_orders'],
             ]
         );
     }
