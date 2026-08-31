@@ -38,6 +38,8 @@ use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\UpsertStockDeliveryItemPlaced;
 use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateOutOfStockForecast;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLeadTime;
+use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
@@ -2947,7 +2949,10 @@ describe('partner browse', function () {
                 ->where('coverTotal', fn ($total) => $total === collect($page->toArray()['props']['coverBuckets'])->sum('count'))
                 ->has('latePurchaseOrders')
                 ->has('leadTime.days')
-                ->where('leadTime.source', 'estimate');
+                ->where('leadTime.source', 'estimate')
+                ->has('coverBuckets.0.ranks')
+                ->has('openStockDeliveries')
+                ->has('stockDeliveriesRoute.name');
         });
     });
 
@@ -3155,4 +3160,19 @@ test('org partner shopping list stats hydrate', function () {
     OrgPartnerHydrateShoppingListItems::run($this->orgPartner);
 
     expect($this->orgPartner->stats->refresh()->number_open_shopping_list_items)->toBe(0);
+});
+
+test('org stock lead time hydrator measures from delivery history', function () {
+    $orgStock = OrgStock::first();
+    expect($orgStock)->not->toBeNull();
+
+    OrgStockHydrateLeadTime::run($orgStock);
+    $orgStock->refresh();
+
+    expect($orgStock->lead_time_samples)->toBe(0)
+        ->and($orgStock->measured_lead_time_days)->toBeNull();
+
+    UpdateOrgStock::make()->action($orgStock, ['estimated_lead_time_days' => 21]);
+
+    expect($orgStock->refresh()->estimated_lead_time_days)->toBe(21);
 });

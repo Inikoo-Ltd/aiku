@@ -14,6 +14,7 @@ use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
@@ -68,7 +69,7 @@ class ShowPartnerShoppingDashboard extends OrgAction
                 estimated_received_at is null as no_eta")
             ->whereRaw('coalesce(estimated_received_at, submitted_at) < now()')
             ->orderByRaw('coalesce(estimated_received_at, submitted_at)')
-            ->limit(10)
+            ->limit(20)
             ->get()
             ->map(fn ($purchaseOrder) => [
                 'id'         => $purchaseOrder->id,
@@ -77,6 +78,37 @@ class ShowPartnerShoppingDashboard extends OrgAction
                 'state'      => $purchaseOrder->state,
                 'days_late'  => (int) $purchaseOrder->days_late,
                 'no_eta'     => (bool) $purchaseOrder->no_eta,
+            ])
+            ->all();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function openStockDeliveries(OrgPartner $orgPartner): array
+    {
+        return DB::table('stock_deliveries')
+            ->where('organisation_id', $orgPartner->organisation_id)
+            ->where('partner_id', $orgPartner->partner_id)
+            ->whereIn('state', [
+                StockDeliveryStateEnum::IN_PROCESS->value,
+                StockDeliveryStateEnum::CONFIRMED->value,
+                StockDeliveryStateEnum::READY_TO_SHIP->value,
+                StockDeliveryStateEnum::DISPATCHED->value,
+            ])
+            ->whereNull('deleted_at')
+            ->selectRaw("id, slug, reference, state, dispatched_at, number_stock_delivery_items_except_cancelled as items,
+                extract(day from now() - dispatched_at)::int as days_in_transit")
+            ->orderByRaw('dispatched_at nulls last')
+            ->limit(20)
+            ->get()
+            ->map(fn ($stockDelivery) => [
+                'id'              => $stockDelivery->id,
+                'slug'            => $stockDelivery->slug,
+                'reference'       => $stockDelivery->reference,
+                'state'           => $stockDelivery->state,
+                'items'           => (int) $stockDelivery->items,
+                'days_in_transit' => $stockDelivery->dispatched_at !== null ? (int) $stockDelivery->days_in_transit : null,
             ])
             ->all();
     }
@@ -117,6 +149,7 @@ class ShowPartnerShoppingDashboard extends OrgAction
         return [
             'cover'              => GetPartnerStockCoverBuckets::run($orgPartner),
             'late_purchase_orders' => $this->latePurchaseOrders($orgPartner),
+            'open_stock_deliveries' => $this->openStockDeliveries($orgPartner),
             'open_items_count'   => $orgPartner->stats->number_open_shopping_list_items,
             'estimated_total'    => $estimatedTotal,
             'priority_breakdown' => collect(ShoppingListItemPriorityEnum::cases())->map(fn ($priority) => [
@@ -180,6 +213,11 @@ class ShowPartnerShoppingDashboard extends OrgAction
                     'parameters' => [$this->orgPartner->organisation->slug, $this->orgPartner->id],
                 ],
                 'latePurchaseOrders' => $data['late_purchase_orders'],
+                'openStockDeliveries' => $data['open_stock_deliveries'],
+                'stockDeliveriesRoute' => [
+                    'name'       => 'grp.org.procurement.org_partners.show.stock-deliveries.index',
+                    'parameters' => [$this->orgPartner->organisation->slug, $this->orgPartner->id],
+                ],
             ]
         );
     }

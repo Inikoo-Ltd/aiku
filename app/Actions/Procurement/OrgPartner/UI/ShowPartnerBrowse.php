@@ -48,13 +48,14 @@ class ShowPartnerBrowse extends OrgAction
         $family         = Arr::get($filters, 'family');
         $collection     = Arr::get($filters, 'collection');
         $cover          = Arr::get($filters, 'cover');
+        $rank           = Arr::get($filters, 'rank');
 
         if ($cover && array_key_exists($cover, GetPartnerStockCoverBuckets::BUCKETS)) {
             return [
                 'level'       => 'cover',
                 'categories'  => [],
                 'collections' => [],
-                'products'    => $this->coverProducts($orgPartner, $shopId, $cover),
+                'products'    => $this->coverProducts($orgPartner, $shopId, $cover, in_array($rank, ['A', 'B', 'C', 'D', 'Z'], true) ? $rank : null),
             ];
         }
 
@@ -183,7 +184,12 @@ class ShowPartnerBrowse extends OrgAction
                 where phos.product_id = products.id) desc nulls last";
         }
 
-        return "(select min(bs.days_of_cover)
+        return "(select min(case bo.health_rank when 'A' then 1 when 'B' then 2 when 'C' then 3 when 'D' then 4 when 'Z' then 5 end)
+            from product_has_org_stocks phos
+            join org_stocks po on po.id = phos.org_stock_id and po.organisation_id = ".(int) $orgPartner->partner_id."
+            join org_stocks bo on bo.stock_id = po.stock_id and bo.organisation_id = ".(int) $orgPartner->organisation_id."
+            where phos.product_id = products.id) asc nulls last,
+            (select min(bs.days_of_cover)
             from product_has_org_stocks phos
             join org_stocks po on po.id = phos.org_stock_id and po.organisation_id = ".(int) $orgPartner->partner_id."
             join org_stocks bo on bo.stock_id = po.stock_id and bo.organisation_id = ".(int) $orgPartner->organisation_id."
@@ -191,9 +197,9 @@ class ShowPartnerBrowse extends OrgAction
             where phos.product_id = products.id) asc nulls last";
     }
 
-    private function coverProducts(OrgPartner $orgPartner, int $shopId, string $cover): LengthAwarePaginator
+    private function coverProducts(OrgPartner $orgPartner, int $shopId, string $cover, ?string $rank = null): LengthAwarePaginator
     {
-        $stockIds = GetPartnerStockCoverBuckets::make()->stockIdsInBucket($orgPartner, $cover);
+        $stockIds = GetPartnerStockCoverBuckets::make()->stockIdsInBucket($orgPartner, $cover, $rank);
 
         return $this->productsQuery($shopId, null, null)
             ->whereIn('products.id', function ($query) use ($orgPartner, $stockIds) {
@@ -367,7 +373,7 @@ class ShowPartnerBrowse extends OrgAction
 
         $this->initialisation($organisation, $request);
 
-        return $this->withOrgStock($this->handle($orgPartner, $this->shopId, $request->only(['q', 'department', 'sub_department', 'family', 'collection', 'cover'])));
+        return $this->withOrgStock($this->handle($orgPartner, $this->shopId, $request->only(['q', 'department', 'sub_department', 'family', 'collection', 'cover', 'rank'])));
     }
 
     public function htmlResponse(array $data, ActionRequest $request): Response
@@ -397,7 +403,7 @@ class ShowPartnerBrowse extends OrgAction
                 ],
                 'miniCart'    => $this->miniCart(),
                 'browseStats' => $this->browseStats(),
-                'filters'     => $request->only(['q', 'department', 'sub_department', 'family', 'collection', 'cover']),
+                'filters'     => $request->only(['q', 'department', 'sub_department', 'family', 'collection', 'cover', 'rank']),
                 'filterNames' => $this->filterNames($request->only(['department', 'sub_department', 'family', 'collection'])),
                 'coverLabel'  => __(Arr::get(GetPartnerStockCoverBuckets::BUCKETS, $request->input('cover', '').'.label', '')),
                 'level'       => $data['level'],

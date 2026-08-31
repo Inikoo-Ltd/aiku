@@ -5,8 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link, router } from "@inertiajs/vue3"
-import { ref } from "vue"
+import { Head, Link } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ProcurementOverviewCard from "@/Components/DataDisplay/Dashboard/Widget/ProcurementOverviewCard.vue"
@@ -23,7 +22,9 @@ import { faExclamationTriangle } from "@fal"
 library.add(faExclamationTriangle)
 
 type PriorityBreakdown = { priority: string, label: string, count: number }
-type CoverBucket = { bucket: string, label: string, tone: keyof typeof toneClasses, count: number, on_list: number, on_the_way: number, stock_value: number }
+type RankBreakdown = { rank: string, count: number, on_list: number }
+type CoverBucket = { bucket: string, label: string, tone: keyof typeof toneClasses, count: number, on_list: number, on_the_way: number, untouched: number, stock_value: number, ranks: RankBreakdown[] }
+type OpenStockDelivery = { id: number, slug: string, reference: string, state: string, items: number, days_in_transit: number | null }
 type LatePurchaseOrder = { id: number, slug: string, reference: string, state: string, days_late: number, no_eta: boolean }
 type RecentItem = { id: number, quantity: number, created_at: string, org_stock_code: string | null, org_stock_name: string | null, added_by_name: string | null }
 
@@ -41,6 +42,8 @@ const props = defineProps<{
     leadTime: { days: number, source: "measured" | "estimate", samples: number }
     leadTimeRoute: routeType
     latePurchaseOrders: LatePurchaseOrder[]
+    openStockDeliveries: OpenStockDelivery[]
+    stockDeliveriesRoute: routeType
 }>()
 
 const toneClasses = {
@@ -54,37 +57,24 @@ const toneClasses = {
     gray: "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100",
 }
 
-const editingLeadTime = ref(false)
-const leadTimeDraft = ref(props.leadTime.days)
-
-const saveLeadTime = () => {
-    editingLeadTime.value = false
-    if (leadTimeDraft.value !== props.leadTime.days) {
-        router.patch(
-            route(props.leadTimeRoute.name, props.leadTimeRoute.parameters),
-            { lead_time_days: leadTimeDraft.value },
-            { only: ["coverBuckets", "coverTotal", "leadTime"], preserveScroll: true }
-        )
-    }
-}
+const inTransit = () => props.openStockDeliveries.filter((sd) => ["ready_to_ship", "dispatched"].includes(sd.state))
+const inPreparation = () => props.openStockDeliveries.filter((sd) => ["in_process", "confirmed"].includes(sd.state))
 
 const shouldNotBeOrdered = (bucket: CoverBucket) => ["ok", "dead"].includes(bucket.bucket) && bucket.on_list > 0
 
-const handledShare = (bucket: CoverBucket) => (bucket.count ? bucket.on_list / bucket.count : 0)
+const segmentWidth = (bucket: CoverBucket, part: number) => (bucket.count ? `${Math.max((part / bucket.count) * 100, part ? 1.5 : 0)}%` : "0%")
 
-const handledPercent = (bucket: CoverBucket) => {
-    const share = handledShare(bucket) * 100
+const needsAction = (bucket: CoverBucket) => !["ok", "dead", "never"].includes(bucket.bucket) && bucket.untouched > 0
 
-    if (share > 0 && share < 1) {
-        return "<1%"
-    }
+const bucketRoute = (bucket: string, rank?: string) => `${route(props.browseRoute.name, props.browseRoute.parameters)}?cover=${bucket}${rank ? `&rank=${rank}` : ""}`
 
-    return `${Math.round(share)}%`
+const rankClasses: Record<string, string> = {
+    A: "text-green-700",
+    B: "text-blue-700",
+    C: "",
+    D: "text-gray-500",
+    Z: "text-gray-500",
 }
-
-const handledWidth = (bucket: CoverBucket) => `${Math.max(handledShare(bucket) * 100, bucket.on_list ? 2 : 0)}%`
-
-const bucketRoute = (bucket: string) => `${route(props.browseRoute.name, props.browseRoute.parameters)}?cover=${bucket}`
 
 const overviewCard = {
     label: trans("Shopping list"),
@@ -121,24 +111,8 @@ const overviewCard = {
                 <template v-if="leadTime.source === 'measured'">
                     {{ trans("~:days-day lead time, measured from :samples deliveries", { days: leadTime.days, samples: leadTime.samples }) }}
                 </template>
-                <template v-else-if="editingLeadTime">
-                    <input
-                        v-model.number="leadTimeDraft"
-                        type="number"
-                        min="1"
-                        max="365"
-                        class="w-16 rounded border-gray-300 px-1 py-0 text-xs"
-                        autofocus
-                        @keyup.enter="saveLeadTime"
-                        @blur="saveLeadTime"
-                    />
-                    {{ trans("days") }}
-                </template>
                 <template v-else>
-                    {{ trans(":days-day lead time", { days: leadTime.days }) }}
-                    <button type="button" class="italic text-indigo-500 hover:underline" @click="editingLeadTime = true">
-                        {{ trans("estimate, no delivery history yet — edit") }}
-                    </button>
+                    {{ trans(":days-day lead time (estimate — set per product in supplier settings)", { days: leadTime.days }) }}
                 </template>
             </span>
         </h3>
@@ -152,19 +126,38 @@ const overviewCard = {
             >
                 <div class="flex items-baseline gap-1.5">
                     <span class="text-2xl font-semibold tabular-nums">{{ bucket.count }}</span>
-                    <span
-                        v-if="bucket.count"
-                        class="text-xs tabular-nums"
-                        :class="shouldNotBeOrdered(bucket) ? 'font-medium text-red-600' : 'opacity-70'"
-                        :title="shouldNotBeOrdered(bucket) ? trans('On the shopping list but not short of stock') : undefined"
-                    >
-                        <FontAwesomeIcon v-if="shouldNotBeOrdered(bucket)" :icon="faExclamationTriangle" aria-hidden="true" />
-                        {{ bucket.on_list }}/{{ bucket.count }} ({{ handledPercent(bucket) }})
+                    <span v-if="shouldNotBeOrdered(bucket)" class="text-xs font-medium tabular-nums text-red-600" :title="trans('On the shopping list but not short of stock')">
+                        <FontAwesomeIcon :icon="faExclamationTriangle" aria-hidden="true" />
+                        {{ bucket.on_list }} {{ trans("on list") }}
+                    </span>
+                    <span v-else-if="needsAction(bucket)" class="text-xs font-medium tabular-nums">
+                        {{ trans(":count need action", { count: bucket.untouched.toLocaleString() }) }}
+                    </span>
+                    <span v-else-if="bucket.count && bucket.bucket !== 'ok' && bucket.bucket !== 'dead' && bucket.bucket !== 'never'" class="text-xs tabular-nums opacity-70">
+                        {{ trans("all handled") }}
                     </span>
                 </div>
                 <div class="text-xs leading-4">{{ bucket.label }}</div>
-                <div v-if="bucket.count" class="mt-1.5 h-1 w-full rounded-full bg-white/70">
-                    <div class="h-1 rounded-full opacity-70" :class="shouldNotBeOrdered(bucket) ? 'bg-red-500' : 'bg-current'" :style="{ width: handledWidth(bucket) }" />
+                <div v-if="bucket.count && !['ok', 'dead', 'never'].includes(bucket.bucket)" class="mt-1.5 flex h-1 w-full gap-px overflow-hidden rounded-full bg-white/70">
+                    <div v-if="bucket.on_the_way" class="h-1 bg-current" :style="{ width: segmentWidth(bucket, bucket.on_the_way) }" :title="trans('on the way')" />
+                    <div v-if="bucket.on_list" class="h-1 bg-current opacity-40" :style="{ width: segmentWidth(bucket, bucket.on_list) }" :title="trans('on the shopping list')" />
+                </div>
+                <div v-if="(bucket.on_the_way || bucket.on_list) && !['ok', 'dead', 'never'].includes(bucket.bucket)" class="mt-0.5 text-[10px] tabular-nums opacity-70">
+                    <span v-if="bucket.on_the_way">{{ bucket.on_the_way }} {{ trans("on the way") }}</span>
+                    <span v-if="bucket.on_the_way && bucket.on_list"> · </span>
+                    <span v-if="bucket.on_list">{{ bucket.on_list }} {{ trans("on list") }}</span>
+                </div>
+                <div v-if="bucket.bucket !== 'never'" class="mt-1 flex gap-2 text-xs tabular-nums">
+                    <Link
+                        v-for="rank in bucket.ranks.filter((rank) => rank.count > 0)"
+                        :key="rank.rank"
+                        :href="bucketRoute(bucket.bucket, rank.rank)"
+                        class="hover:underline"
+                        :class="rankClasses[rank.rank]"
+                        @click.stop
+                    >
+                        <span class="font-bold">{{ rank.rank }}</span> {{ rank.count }} <span class="text-[10px] opacity-60">{{ rank.on_list }}</span>
+                    </Link>
                 </div>
                 <div v-if="bucket.bucket === 'dead'" class="mt-0.5 text-xs opacity-70 tabular-nums">
                     {{ useLocaleStore().currencyFormat(orgPartner.currency, bucket.stock_value) }}
@@ -180,6 +173,38 @@ const overviewCard = {
             <div class="mt-1 text-2xl font-semibold text-gray-900">
                 {{ useLocaleStore().currencyFormat(orgPartner.currency, stats.estimated_total) }}
             </div>
+        </div>
+    </div>
+
+    <div v-if="openStockDeliveries.length" class="mx-4 mt-6 grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+            <h3 class="text-sm font-semibold text-gray-700">
+                <Link class="hover:underline" :href="route(stockDeliveriesRoute.name, stockDeliveriesRoute.parameters)">
+                    {{ trans("Deliveries in transit") }}
+                </Link>
+            </h3>
+            <ul class="mt-2 divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
+                <li v-for="sd in inTransit()" :key="sd.id" class="flex items-center justify-between gap-3 px-4 py-3">
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">{{ sd.reference }}</div>
+                        <div class="text-xs text-gray-500">{{ sd.items }} {{ trans("items") }} · {{ sd.state.replace("_", " ") }}</div>
+                    </div>
+                    <div v-if="sd.days_in_transit !== null" class="text-right text-sm font-semibold tabular-nums" :class="sd.days_in_transit > 14 ? 'text-amber-600' : 'text-gray-600'">
+                        {{ sd.days_in_transit }} {{ trans("days in transit") }}
+                    </div>
+                </li>
+                <li v-if="!inTransit().length" class="px-4 py-3 text-sm text-gray-400">{{ trans("Nothing on the way") }}</li>
+            </ul>
+        </div>
+        <div>
+            <h3 class="text-sm font-semibold text-gray-700">{{ trans("Being prepared by the partner") }}</h3>
+            <ul class="mt-2 divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
+                <li v-for="sd in inPreparation()" :key="sd.id" class="flex items-center justify-between gap-3 px-4 py-3">
+                    <div class="text-sm font-medium text-gray-900">{{ sd.reference }}</div>
+                    <div class="text-xs text-gray-500">{{ sd.items }} {{ trans("items") }} · {{ sd.state.replace("_", " ") }}</div>
+                </li>
+                <li v-if="!inPreparation().length" class="px-4 py-3 text-sm text-gray-400">{{ trans("Nothing in preparation") }}</li>
+            </ul>
         </div>
     </div>
 
