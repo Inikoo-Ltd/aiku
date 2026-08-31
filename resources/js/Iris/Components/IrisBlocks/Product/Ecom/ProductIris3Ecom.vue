@@ -626,7 +626,7 @@ onMounted(async () => {
 
                         <div v-if="countriesOfOrigin.length" class="spec-row">
                             <div class="spec-label">{{ trans('Origin Country') }}</div>
-                            <div class="spec-value flex flex-col gap-1 justify-end align-end">
+                            <div class="spec-value flex  gap-1 justify-end align-end">
                                 <div v-for="country in countriesOfOrigin" :key="country.code" class="flex items-center gap-2">
                                     <img :src="'/flags/' + country.code.toLowerCase() + '.png'" :alt="country.name"
                                         :title="country.name" class="h-4 w-auto" />
