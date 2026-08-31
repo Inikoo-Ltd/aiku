@@ -682,7 +682,9 @@ const isOffersData = (offersData: any): boolean => {
                                 :model-value="proxyItem.is_cut_view ? (
                                     (createNewQty[item.id].quantity_ordered_fractional[0] * createNewQty[item.id].quantity_ordered_fractional[1][1]) + createNewQty[item.id].quantity_ordered_fractional[1][0]
                                 ) : createNewQty[item.id].quantity_ordered"
-                                @update:modelValue="(e: number) => {createNewQty[item.id].amount_modified = e; console.log(createNewQty[item.id])}"
+                                @update:modelValue="(e: number) => {
+                                    createNewQty[item.id].amount_modified = e; console.log(createNewQty[item.id])
+                                }"
                                 inputId="horizontal-buttons" 
                                 showButtons 
                                 buttonLayout="horizontal"
@@ -716,7 +718,13 @@ const isOffersData = (offersData: any): boolean => {
                             <span
                                 xv-if="layout.app.environment == 'local'"
                                 v-if="Number(item.product_units) !== 1"
-                                @click="() => loadingsaveModify ? {} : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
+                                @click="() => {
+                                    if (loadingsaveModify) return; 
+                                    onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)
+                                    createNewQty[item.id].amount_modified = !proxyItem.is_cut_view ? (
+                                        (item.quantity_ordered_fractional[0] * item.quantity_ordered_fractional[1][1]) + item.quantity_ordered_fractional[1][0]
+                                    ) : item.quantity_ordered
+                                }"
                                 v-tooltip="ctrans('Cut view')"
                                 class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"
                                 :class="proxyItem.is_cut_view ? 'text-orange-500' : ''"
