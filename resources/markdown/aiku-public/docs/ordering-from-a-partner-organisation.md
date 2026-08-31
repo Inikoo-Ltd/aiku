@@ -10,7 +10,7 @@ order: 1
 ---
 
 <aside class="tldr">
-When you buy from a sister organisation you don't raise a purchase order. You add what you need to a shopping list; the selling organisation picks it when they can ship it. From there everything flows on its own: their warehouse picks and packs it, and an incoming stock delivery appears on your side, ready to book in when the goods arrive. If you <em>place</em> these orders, read <a href="/docs/buying-from-a-partner">Buying from a partner</a>; if you <em>fulfil</em> them, read <a href="/docs/fulfilling-partner-orders">Fulfilling partner orders</a>.
+When you buy from a sister organisation you don't raise a purchase order. You add what you need to a shopping list; the selling organisation picks it when they can ship it. From there everything flows on its own: their warehouse picks and packs it, and an incoming stock delivery appears on your side, ready to book in when the goods arrive. If you <em>place</em> these orders, start at the <a href="/docs/reading-the-partner-shopping-dashboard">shopping dashboard</a> and read <a href="/docs/buying-from-a-partner">Buying from a partner</a>; if you <em>fulfil</em> them, read <a href="/docs/fulfilling-partner-orders">Fulfilling partner orders</a>.
 </aside>
 
 <figure><img src="/art/docs/draw-partner-shopping.svg" alt="Watercolor sketch: the buyer's shopping list card (Procurement › Partners › Shopping list, with Auto-fill) and the seller's shipping list card with ticked lines and a Send to warehouse button, a dashed arrow between them, and a truck carrying the goods to a box labelled as the incoming stock delivery" width="1200" height="750" loading="eager"><figcaption>You write the list, they pick and ship it, a stock delivery rolls in on your side.</figcaption></figure>
@@ -23,10 +23,14 @@ So the flow is turned around. The **buyer says what they need**, the **seller de
 
 ## The loop, end to end
 
-1. The buyer [adds what they need to the shopping list](/docs/buying-from-a-partner) — by hand, from the partner's catalogue, or with an auto-fill proposal.
+1. The buyer opens the [shopping dashboard](/docs/reading-the-partner-shopping-dashboard) to see what is running out and how much room there is, then [adds what they need to the shopping list](/docs/buying-from-a-partner) — by hand, from the partner's catalogue, or with an auto-fill proposal.
 2. The seller [cherry-picks lines they can ship and sends the shipment to their warehouse](/docs/fulfilling-partner-orders). It is picked, packed and dispatched like any other order.
 3. The moment the shipment enters the seller's warehouse, an incoming **stock delivery** appears on the buyer's side. It follows the seller's progress on its own — the seller is the source of truth until the goods arrive.
 4. When the goods physically arrive, the buyer receives, checks and places them into locations exactly like any supplier delivery.
+
+## The list is capped on purpose
+
+The buyer's list is not a wish box. It is limited to roughly one order cycle of what the partner actually delivers to us, and new products are limited by free warehouse space and by a fair share of it per partner. A list nobody can flood is a list the seller can read: when everything is on it, nothing is urgent. Out-of-stock and A-rank items are exempt from the cap, so a genuine crisis is never queued behind the limit.
 
 ## Money, invoices and problems
 

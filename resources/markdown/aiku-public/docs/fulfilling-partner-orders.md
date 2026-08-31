@@ -6,7 +6,7 @@ tags: procurement, intercompany, dispatch
 category: procurement
 help_routes: grp.org.procurement.org_partners.shipping_list
 series: Ordering from partners
-order: 3
+order: 4
 ---
 
 <aside class="tldr">
@@ -20,7 +20,7 @@ For the people who <em>ship</em> to sister organisations. Partners list what the
 - Tick the lines you can ship. Adjust the quantity for a **partial pick** — the remainder stays open for a later shipment, nothing is lost.
 - **Pick into order** gathers your ticks into a pending shipment per buying organisation. You can keep adding to it over the day; it stays open until you send it.
 
-Urgent lines deserve a look first: sort by priority, that is what the buyer set it for.
+Urgent lines deserve a look first: sort by priority, that is what the buyer set it for. You can trust the list to be short for a reason — a buyer's open list is capped at about one order cycle of what you historically deliver to them, so what reaches you is a filtered request, not a catalogue dump. If a line looks strange, ask; the buyer had to give something up to put it there.
 
 ## Send to warehouse
 
