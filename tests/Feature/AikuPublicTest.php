@@ -23,7 +23,7 @@ test('home renders server side with drawings and latest notes', function () {
     $response->assertOk()
         ->assertSee('open source operating system for commerce', false)
         ->assertSee('draw-dashboard.svg', false)
-        ->assertSee(BlogPosts::all()->first()['title'], false);
+        ->assertSee(BlogPosts::all()->first()['title']);
 });
 
 test('blog index paginates twenty per page, newest first', function () {
@@ -236,4 +236,18 @@ test('blog post shows related notes ranked by shared tags', function () {
         ->assertOk()
         ->assertSee('Related notes', false)
         ->assertSee(route('aiku-public.blog.show', $bestMatch['slug']), false);
+});
+
+test('docs index and article render with layout nav', function () {
+    $docs = BlogPosts::all('docs');
+    expect($docs)->not->toBeEmpty();
+
+    get($this->host.'/docs')->assertOk()
+        ->assertSee('Documentation', false)
+        ->assertSee(route('aiku-public.docs.show', $docs->first()['slug']), false);
+
+    get($this->host.'/docs/'.$docs->first()['slug'])->assertOk()
+        ->assertSee($docs->first()['title'], false);
+
+    get($this->host.'/docs/does-not-exist')->assertNotFound();
 });

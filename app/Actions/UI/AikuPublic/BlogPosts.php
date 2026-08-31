@@ -17,18 +17,18 @@ class BlogPosts
     /**
      * @return Collection<int, array{slug:string,title:string,summary:string,date:Carbon,tags:array<int,string>,body:string,html:string}>
      */
-    public static function all(): Collection
+    public static function all(string $dir = 'blog'): Collection
     {
-        return collect(glob(resource_path('markdown/aiku-public/blog/*.md')))
+        return collect(glob(resource_path("markdown/aiku-public/{$dir}/*.md")))
             ->map(fn (string $path) => self::parse($path))
             ->reject(fn (array $post) => $post['date']->isFuture())
             ->sortByDesc('date')
             ->values();
     }
 
-    public static function find(string $slug): ?array
+    public static function find(string $slug, string $dir = 'blog'): ?array
     {
-        $path = resource_path("markdown/aiku-public/blog/{$slug}.md");
+        $path = resource_path("markdown/aiku-public/{$dir}/{$slug}.md");
 
         $post = preg_match('/^[a-z0-9-]+$/', $slug) && is_file($path) ? self::parse($path) : null;
 
@@ -52,7 +52,10 @@ class BlogPosts
             'summary' => $meta['summary'],
             'date' => Carbon::parse($meta['date']),
             'tags' => array_map('trim', explode(',', $meta['tags'] ?? '')),
+            'series' => $meta['series'] ?? null,
+            'series_order' => (int) ($meta['order'] ?? 0),
             'body' => $matches[2],
+            'reading_minutes' => max(1, (int) round(str_word_count(strip_tags($matches[2])) / 220)),
             'html' => Str::markdown($matches[2]),
         ];
     }

@@ -1,0 +1,34 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 31 Aug 2026 Malaga, Spain
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\UI\AikuPublic;
+
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
+use Lorisleiva\Actions\Concerns\AsController;
+
+class ShowDocs
+{
+    use AsController;
+
+    public function handle(Request $request): View
+    {
+        $docs = BlogPosts::all('docs');
+        $tags = $docs->flatMap(fn (array $doc) => $doc['tags'])->countBy()->sortKeys();
+        $tag = $request->query('tag');
+        $tag = $tags->has($tag) ? $tag : null;
+
+        $filtered = $tag ? $docs->filter(fn (array $doc) => in_array($tag, $doc['tags'], true))->values() : $docs;
+
+        return view('aiku-public.docs.index', [
+            'docs' => $filtered,
+            'tags' => $tags,
+            'tag' => $tag,
+        ]);
+    }
+}

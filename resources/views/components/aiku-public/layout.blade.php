@@ -169,6 +169,10 @@
         article.post .body aside.technical li { line-height: 1.7; }
         article.post .body aside.technical a { word-break: break-all; }
         article.post .body aside.technical code { background: none; padding: 0; }
+        article.post .body aside.wayfinder { margin: 2.5em 0 0; padding: 18px 22px; border: 1px solid var(--accent); background: var(--accent-soft); border-radius: 8px; font-size: 15.5px; line-height: 1.7; }
+        article.post .body aside.wayfinder strong { display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+        article.post .body aside.wayfinder ul { margin: 0; padding-left: 1.1em; }
+        article.post .body aside.wayfinder b { font-weight: 600; }
         article.post .body img { max-width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 8px; }
         footer.site { margin-top: 96px; padding: 40px 0 64px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 14px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
         footer.site a { color: var(--muted); margin-right: 20px; }
@@ -185,12 +189,12 @@
     <header class="site">
         <a class="brand" href="{{ route('aiku-public.home') }}">{!! str_replace('style="color:#1f1e2a" ', '', file_get_contents(public_path('art/invader-sketch.svg'))) !!}aiku</a>
         <nav>
-            <a href="{{ route('aiku-public.home') }}" @if(request()->routeIs('aiku-public.home')) aria-current="page" @endif>What it is</a>
             <a href="{{ route('aiku-public.blog.index') }}" @if(request()->routeIs('aiku-public.blog.*')) aria-current="page" @endif>Engineering notes</a>
+            <a href="{{ route('aiku-public.docs.index') }}" @if(request()->routeIs('aiku-public.docs.*')) aria-current="page" @endif>Documentation</a>
             <a href="https://github.com/Inikoo-Ltd/aiku" rel="noopener"><svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Source</a>
         </nav>
         <form class="search-header" method="get" action="{{ route('aiku-public.blog.index') }}" role="search">
-            <input type="search" name="q" placeholder="Search notes…" aria-label="Search the engineering notes" id="header-search-input">
+            <input type="search" name="q" placeholder="Search…" aria-label="Search the notes and documentation" id="header-search-input">
             <ul class="search-results floating" id="header-search-results" hidden></ul>
         </form>
     </header>
@@ -266,6 +270,7 @@
         <div>
             <a href="https://github.com/Inikoo-Ltd/aiku" rel="noopener"><svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
             <a href="{{ route('aiku-public.blog.index') }}">Engineering notes</a>
+            <a href="{{ route('aiku-public.docs.index') }}">Documentation</a>
             <a href="{{ route('aiku-public.feed') }}">RSS</a>
             <a href="{{ route('aiku-public.sitemap') }}">Sitemap</a>
             <a href="mailto:hello@aiku.io">hello@aiku.io</a>

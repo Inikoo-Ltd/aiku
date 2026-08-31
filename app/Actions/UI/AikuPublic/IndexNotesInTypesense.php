@@ -17,20 +17,23 @@ class IndexNotesInTypesense
     use WithTypesenseApi;
 
     public string $commandSignature = 'aiku-public:index-notes';
-    public string $commandDescription = 'Index the engineering notes blog posts into Typesense';
+    public string $commandDescription = 'Index the engineering notes and documentation into Typesense';
 
-    public const string COLLECTION = 'aiku_public_notes';
+    public const string COLLECTION = 'aiku_public_notes_v2';
 
     public function handle(): int
     {
         $this->ensureCollection();
 
-        $posts = BlogPosts::all();
-        foreach ($posts as $post) {
-            $this->indexPost($post);
+        $count = 0;
+        foreach (['blog' => 'aiku-public.blog.show', 'docs' => 'aiku-public.docs.show'] as $section => $routeName) {
+            foreach (BlogPosts::all($section) as $post) {
+                $this->indexPost($post, $section, route($routeName, $post['slug']));
+                $count++;
+            }
         }
 
-        return $posts->count();
+        return $count;
     }
 
     public function asCommand(Command $command): int
@@ -41,13 +44,15 @@ class IndexNotesInTypesense
         return 0;
     }
 
-    protected function indexPost(array $post): void
+    protected function indexPost(array $post, string $section, string $url): void
     {
         $this->typesenseClient()->post(
             $this->typesenseUrl().'/collections/'.self::COLLECTION.'/documents?action=upsert',
             [
-                'id'      => $post['slug'],
+                'id'      => $section.':'.$post['slug'],
                 'slug'    => $post['slug'],
+                'section' => $section,
+                'url'     => $url,
                 'title'   => $post['title'],
                 'summary' => $post['summary'],
                 'body'    => $post['body'],
@@ -68,6 +73,8 @@ class IndexNotesInTypesense
             'name'                  => self::COLLECTION,
             'fields'                => [
                 ['name' => 'slug', 'type' => 'string'],
+                ['name' => 'section', 'type' => 'string', 'facet' => true],
+                ['name' => 'url', 'type' => 'string'],
                 ['name' => 'title', 'type' => 'string'],
                 ['name' => 'summary', 'type' => 'string'],
                 ['name' => 'body', 'type' => 'string'],

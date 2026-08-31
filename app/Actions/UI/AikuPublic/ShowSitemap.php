@@ -20,10 +20,16 @@ class ShowSitemap
         $urls = collect([
             ['loc' => route('aiku-public.home'), 'lastmod' => BlogPosts::all()->first()['date'] ?? now()],
             ['loc' => route('aiku-public.blog.index'), 'lastmod' => BlogPosts::all()->first()['date'] ?? now()],
+            ['loc' => route('aiku-public.docs.index'), 'lastmod' => BlogPosts::all('docs')->first()['date'] ?? now()],
         ])->concat(
             BlogPosts::all()->map(fn (array $post) => [
                 'loc' => route('aiku-public.blog.show', $post['slug']),
                 'lastmod' => $post['date'],
+            ])
+        )->concat(
+            BlogPosts::all('docs')->map(fn (array $doc) => [
+                'loc' => route('aiku-public.docs.show', $doc['slug']),
+                'lastmod' => $doc['date'],
             ])
         );
 
