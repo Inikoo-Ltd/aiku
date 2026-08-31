@@ -194,7 +194,9 @@ test('import portfolios in customer sales channel from file, unknown sku fails i
         ->and($upload->number_success)->toBe(1)
         ->and($upload->number_fails)->toBe(1)
         ->and($customerSalesChannel->portfolios()->count())->toBe(1)
-        ->and($customerSalesChannel->portfolios()->first()->item_id)->toBe($product->id);
+        ->and($customerSalesChannel->portfolios()->first()->item_id)->toBe($product->id)
+        ->and($upload->records()->where('status', UploadRecordStatusEnum::FAILED)->first()->errors)
+        ->toContain('SKU not found in this shop.');
 });
 
 test('import portfolios reports a sku belonging to another shop instead of a null error', function () {
@@ -226,4 +228,33 @@ test('import portfolios reports a sku belonging to another shop instead of a nul
         ->and($upload->number_fails)->toBe(1)
         ->and($customerSalesChannel->portfolios()->count())->toBe(0)
         ->and($record->errors)->toContain('SKU not found in this shop.');
+});
+
+test('bulk import portfolios route is authorised for a crm user', function () {
+    Storage::fake('local');
+
+    $customer = createCustomer($this->shop);
+
+    list(, $product) = createProduct($this->shop);
+
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::MANUAL)->firstOrFail();
+
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+        $customer,
+        $platform,
+        ['reference' => 'test_portfolio_import_route_reference']
+    );
+
+    $file = csvUpload('portfolios-route.csv', [
+        ['Sku', 'Title'],
+        [$product->code, $product->name],
+    ]);
+
+    $response = actingAs($this->user)->post(
+        route('grp.models.customer_sales_channel.portfolios.bulk_import', $customerSalesChannel->id),
+        ['file' => $file]
+    );
+
+    $response->assertStatus(201);
+    expect($customerSalesChannel->portfolios()->count())->toBe(1);
 });
