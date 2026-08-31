@@ -9,7 +9,7 @@ import { router } from "@inertiajs/vue3"
 import { Head } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faWandMagicSparkles, faPen, faTrash, faSync } from "@fortawesome/free-solid-svg-icons"
+import { faWandMagicSparkles, faPen, faTrash, faSync, faLanguage } from "@fortawesome/free-solid-svg-icons"
 import { Dialog, Message } from "primevue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -39,6 +39,7 @@ const props = defineProps<{
     deleteRouteName: string
     refreshRouteName: string
     draftRouteName: string
+    languageRouteName: string
     routeParameters: Record<string, any>
 }>()
 
@@ -126,6 +127,12 @@ const save = () => {
 
         <template #cell(actions)="{ item: template }">
             <div class="flex items-center justify-end gap-1">
+                <a v-if="!template.is_draft" :href="rowRoute(languageRouteName, template.id)"
+                    v-tooltip="trans('Add another language')"
+                    class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+                    <FontAwesomeIcon :icon="faLanguage" class="text-[11px]" />
+                </a>
+
                 <button v-if="!template.is_draft" type="button" @click="refreshStatus(template)"
                     :disabled="refreshingId === template.id"
                     v-tooltip="trans('Check status on WhatsApp')"

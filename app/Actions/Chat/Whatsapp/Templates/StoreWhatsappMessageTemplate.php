@@ -40,6 +40,7 @@ class StoreWhatsappMessageTemplate extends OrgAction
     {
         return [
             'name'                  => ['required', 'string', 'max:512', 'regex:/^[a-z0-9_]+$/'],
+            'source_template_id'    => ['sometimes', 'nullable', 'integer', 'exists:meta_message_templates,id'],
             'category'              => ['required', Rule::in(self::CATEGORIES)],
             'language'              => ['required', 'string', 'max:10'],
 
@@ -215,6 +216,26 @@ class StoreWhatsappMessageTemplate extends OrgAction
             return ['ok' => false, 'message' => __('Set the WhatsApp WABA ID and access token before creating templates.')];
         }
 
+        // A new language of an existing template reuses its sample file: Meta wants a fresh
+        // handle per template, but there is no reason to make someone upload the same
+        // picture again for every language.
+        $source = filled(Arr::get($modelData, 'source_template_id'))
+            ? MetaMessageTemplate::find($modelData['source_template_id'])
+            : null;
+
+        if ($source?->headerMedia && !(($modelData['header_media'] ?? null) instanceof UploadedFile)) {
+            $modelData['header_handle'] = UploadWhatsappTemplateMedia::make()->fromPath(
+                $source->headerMedia->getPath(),
+                (string) $source->headerMedia->mime_type,
+                $accessToken,
+                $shop->organisation
+            );
+
+            if (!$modelData['header_handle']) {
+                return ['ok' => false, 'message' => __('The sample file could not be uploaded to Meta.')];
+            }
+        }
+
         $components = $this->buildComponents($modelData, $accessToken, $shop->organisation);
 
         if (isset($components['error'])) {
@@ -245,6 +266,8 @@ class StoreWhatsappMessageTemplate extends OrgAction
         // sent to a customer, so the file is kept here to be re-uploaded on every send.
         if (($modelData['header_media'] ?? null) instanceof UploadedFile) {
             $this->storeHeaderMedia($template, $modelData['header_media']);
+        } elseif ($source?->header_media_id) {
+            $template->update(['header_media_id' => $source->header_media_id]);
         }
 
         return ['ok' => true, 'template' => $template];

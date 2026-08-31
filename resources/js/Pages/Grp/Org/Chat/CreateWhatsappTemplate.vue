@@ -41,6 +41,14 @@ const props = defineProps<{
     mediaRules: Record<string, { mime_types: string[]; extensions: string[]; max_kb: number; accept: string }>
     submitRoute: { name: string; parameters: (string | number)[] | Record<string, any> }
     draftRoute: { name: string; parameters: (string | number)[] | Record<string, any> }
+    sourceTemplateId?: number | null
+    variantOf?: {
+        name: string
+        language: string
+        languages: string[]
+        input: Record<string, any>
+        header_media?: { name: string; url?: any } | null
+    } | null
     draft?: {
         id: number
         name: string
@@ -70,6 +78,12 @@ interface TemplateButton {
     phone_number?: string
 }
 
+// A draft carries the builder input it was saved with; a language variant carries the
+// wording of the template it copies, minus the language itself.
+const reusedHeaderMedia = computed(() => props.variantOf?.header_media ?? null)
+
+const seed: Record<string, any> = props.draft ?? (props.variantOf ? { name: props.variantOf.name, ...props.variantOf.input } : {})
+
 const form = useForm<{
     name: string
     category: "MARKETING" | "UTILITY"
@@ -81,17 +95,19 @@ const form = useForm<{
     body: string
     footer: string
     buttons: TemplateButton[]
+    source_template_id: number | null
 }>({
-    name: props.draft?.name ?? "",
-    category: props.draft?.category ?? "MARKETING",
+    name: seed.name ?? "",
+    category: seed.category ?? "MARKETING",
     language: props.draft?.language ?? props.languages[0]?.value ?? "en_GB",
-    header_format: props.draft?.header_format ?? "NONE",
-    header_text: props.draft?.header_text ?? "",
+    header_format: seed.header_format ?? "NONE",
+    header_text: seed.header_text ?? "",
     header_example: "",
     header_media: null,
-    body: props.draft?.body ?? "",
-    footer: props.draft?.footer ?? "",
-    buttons: props.draft?.buttons ?? [],
+    body: seed.body ?? "",
+    footer: seed.footer ?? "",
+    buttons: seed.buttons ?? [],
+    source_template_id: props.sourceTemplateId ?? null,
 })
 
 const CATEGORIES = [
@@ -505,12 +521,20 @@ const themeActiveCard = {
             <div class="flex-1 min-w-0 lg:max-w-[600px]">
                 <!-- Basics -->
                 <section class="space-y-6">
+                    <Message v-if="variantOf" severity="info" :closable="false" class="text-xs">
+                        {{ trans("Writing the :language version of :name. The wording below was copied from it — translate it, keep the same variables.", {
+                            language: variantOf.language, name: variantOf.name,
+                        }) }}
+                    </Message>
+
                     <div>
                         <label class="block text-sm font-semibold text-gray-800">{{ trans("Template name") }}</label>
                         <p class="text-xs text-gray-400 mt-0.5 mb-2">
-                            {{ trans("The name is used for internal purposes only") }}
+                            {{ variantOf
+                                ? trans("Every language of a template shares one name.")
+                                : trans("The name is used for internal purposes only") }}
                         </p>
-                        <PureInput v-model="templateName" placeholder="birthday_30_percent" />
+                        <PureInput v-model="templateName" placeholder="birthday_30_percent" :disabled="!!variantOf" />
                         <p v-if="nameError" class="mt-1.5 text-xs text-red-500">{{ nameError }}</p>
                     </div>
 
@@ -589,10 +613,20 @@ const themeActiveCard = {
                         <label
                             class="flex items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 px-4 py-6 text-xs text-gray-500 cursor-pointer hover:border-gray-400 hover:text-gray-600 transition">
                             <FontAwesomeIcon :icon="faUpload" class="text-sm" />
-                            {{ form.header_media ? form.header_media.name : trans("Upload a sample file for Meta to review") }}
+                            {{ form.header_media
+                                ? form.header_media.name
+                                : reusedHeaderMedia
+                                    ? trans("Replace :file", { file: reusedHeaderMedia.name })
+                                    : trans("Upload a sample file for Meta to review") }}
                             <input type="file" class="hidden" @change="onMediaSelect"
                                 :accept="headerAccept" />
                         </label>
+
+                        <p v-if="reusedHeaderMedia && !form.header_media" class="text-[11px] text-gray-400">
+                            {{ trans("The file from :language is reused unless you pick another one.", {
+                                language: variantOf!.language,
+                            }) }}
+                        </p>
                         <p class="text-xs text-gray-400">
                             {{ trans("The real file is chosen when the template is sent.") }}
                         </p>

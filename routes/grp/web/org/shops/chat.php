@@ -33,6 +33,7 @@ Route::get('/whatsapp-templates/create', CreateWhatsappMessageTemplate::class)->
 Route::post('/whatsapp-templates', StoreWhatsappMessageTemplate::class)->name('whatsapp_templates.store');
 Route::post('/whatsapp-templates/draft', StoreWhatsappTemplateDraft::class)->name('whatsapp_templates.draft.store');
 Route::get('/whatsapp-templates/{metaMessageTemplate}/draft', [CreateWhatsappMessageTemplate::class, 'inDraft'])->name('whatsapp_templates.draft.edit');
+Route::get('/whatsapp-templates/{metaMessageTemplate}/language', [CreateWhatsappMessageTemplate::class, 'inLanguage'])->name('whatsapp_templates.language');
 Route::post('/whatsapp-templates/{metaMessageTemplate}/draft', [StoreWhatsappTemplateDraft::class, 'inTemplate'])->name('whatsapp_templates.draft.update');
 Route::post('/whatsapp-templates/{metaMessageTemplate}/submit', [SubmitWhatsappTemplateDraft::class, 'inTemplate'])->name('whatsapp_templates.draft.submit');
 Route::get('/whatsapp-templates/{metaMessageTemplate}/edit', EditWhatsappMessageTemplate::class)->name('whatsapp_templates.edit');
