@@ -83,7 +83,17 @@
         .narrow { max-width: 720px; margin: 0 auto; padding: 0 24px; }
         header.site { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 20px; padding: 28px 0; border-bottom: 1px solid var(--rule); }
         header.site .brand { display: flex; align-items: center; gap: 12px; color: var(--ink); font-family: var(--serif); font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
-        header.site .brand svg { width: 34px; height: 37px; color: var(--ink); }
+        header.site .brand svg { width: 34px; height: 37px; color: var(--ink); transform-box: fill-box; transform-origin: 50% 85%; animation: aiku-logo-dance 14s ease-in-out infinite; }
+        @keyframes aiku-logo-dance {
+            0%, 4%, 11%, 100% { transform: translate(0, 0) rotate(0) scale(1); }
+            5% { transform: translate(0, -1px) rotate(-3deg) scale(1.01); }
+            7% { transform: translate(1px, -3px) rotate(3deg) scale(1.03); }
+            9% { transform: translate(-1px, -1px) rotate(-2deg) scale(1.01); }
+            10% { transform: translate(0, 0) rotate(1deg) scale(1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            header.site .brand svg { animation: none; }
+        }
         header.site nav { display: flex; gap: 28px; font-size: 15px; font-weight: 500; }
         header.site nav a { color: var(--muted); }
         header.site nav a[aria-current] { color: var(--ink); }
