@@ -99,16 +99,10 @@ function deleteItem(item: { id: number }) {
             </div>
         </template>
         <template #cell(quantity)="{ item }">
-            <span class="inline-grid grid-cols-[3.5rem_1rem_3.5rem_1rem_3.5rem] items-center tabular-nums whitespace-nowrap">
-                <span class="text-right text-gray-400">{{ useLocaleStore().number(Math.floor(Number(item.buyer_available ?? 0))) }}</span>
-                <span class="text-center text-gray-300">+</span>
-                <span class="text-right font-medium text-gray-700">{{ useLocaleStore().number(Number(item.quantity)) }}</span>
-                <span class="text-center text-gray-300">&rArr;</span>
-                <span class="text-right text-gray-400">{{ useLocaleStore().number(Math.floor(Number(item.buyer_available ?? 0) + Number(item.quantity))) }}</span>
-            </span>
+            <span class="block text-right font-medium tabular-nums">{{ useLocaleStore().number(Number(item.quantity)) }}</span>
         </template>
         <template #cell(amount)="{ item }">
-            <span class="tabular-nums">
+            <span class="block text-right tabular-nums">
                 {{ item.price_per_sko ? useLocaleStore().currencyFormat(orgPartner.currency, amountOf(item)) : "-" }}
             </span>
         </template>
