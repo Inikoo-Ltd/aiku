@@ -81,6 +81,9 @@ class UpdatePurchaseOrder extends OrgAction
             'estimated_production_date' => ['sometimes', 'nullable', 'date'],
             'estimated_receiving_date'  => ['sometimes', 'nullable', 'date'],
             'estimated_delivery_days'   => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'deposit_amount'            => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'deposit_paid_at'           => ['sometimes', 'nullable', 'date'],
+            'balance_paid_at'           => ['sometimes', 'nullable', 'date'],
         ];
 
         if ($this->strict) {

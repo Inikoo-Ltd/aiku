@@ -618,6 +618,18 @@ test('update purchase order', function ($purchaseOrder) {
     $this->assertModelExists($purchaseOrder);
 })->depends('create purchase order independent supplier');
 
+test('update purchase order deposit retrospectively', function ($purchaseOrder) {
+    $purchaseOrder = UpdatePurchaseOrder::make()->action($purchaseOrder, [
+        'deposit_amount'  => 1500.50,
+        'deposit_paid_at' => '2025-01-15',
+        'balance_paid_at' => null,
+    ]);
+
+    expect($purchaseOrder->deposit_amount)->toBe('1500.50')
+        ->and($purchaseOrder->deposit_paid_at->toDateString())->toBe('2025-01-15')
+        ->and($purchaseOrder->balance_paid_at)->toBeNull();
+})->depends('create purchase order independent supplier');
+
 test('create purchase order by agent', function () {
     $purchaseOrder = StorePurchaseOrder::make()->action($this->orgAgent, PurchaseOrder::factory()->definition());
     $this->assertModelExists($purchaseOrder);
