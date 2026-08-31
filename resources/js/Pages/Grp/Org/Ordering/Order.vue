@@ -129,7 +129,6 @@ interface UploadSection {
 const props = defineProps<{
     title: string
     tabs: TSTabs
-
     products?: TableTS
     marketing?: InstanceType<typeof OrderMarketingJourney>['$props']['data']
     shop_type: 'b2b' | 'dropshipping'
