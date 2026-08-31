@@ -16,6 +16,11 @@ use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
 use App\Actions\Procurement\OrgAgent\ExportOrgAgents;
 use App\Actions\Procurement\OrgAgent\UI\EditOrgAgent;
 use App\Actions\Procurement\OrgAgent\UI\IndexOrgAgents;
+use App\Actions\Procurement\OrgAgent\RemoveMisplacedAgentShoppingListItems;
+use App\Actions\Procurement\OrgAgent\StoreAgentShoppingListItems;
+use App\Actions\Procurement\OrgAgent\SuggestAgentShoppingList;
+use App\Actions\Procurement\OrgAgent\UI\IndexAgentCoverBucketItems;
+use App\Actions\Procurement\OrgAgent\UI\ShowAgentShoppingDashboard;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgPartner\UI\IndexOrgPartners;
 use App\Actions\Procurement\OrgPartner\UI\IndexPartnerCoverBucketItems;
@@ -86,6 +91,13 @@ Route::prefix('agents')->as('org_agents.')->group(function () {
         Route::get('supplier-products', [IndexOrgSupplierProducts::class, 'inOrgAgent'])->name('.supplier_products.index');
         Route::get('supplier-products/{orgSupplierProduct}', [ShowOrgSupplierProduct::class, 'inOrgAgent'])->name('.supplier_products.show');
         Route::get('agent-supplier-purchase-orders', [IndexAgentSupplierPurchaseOrders::class, 'inOrgAgent'])->name('.agent_supplier_purchase_orders.index');
+        Route::prefix('shopping')->as('.shopping.')->group(function () {
+            Route::get('', ShowAgentShoppingDashboard::class)->name('dashboard');
+            Route::get('items', IndexAgentCoverBucketItems::class)->name('items.index');
+            Route::post('suggest', SuggestAgentShoppingList::class)->name('suggest');
+            Route::post('bulk', StoreAgentShoppingListItems::class)->name('bulk_store');
+            Route::delete('misplaced', RemoveMisplacedAgentShoppingListItems::class)->name('misplaced.destroy');
+        });
     });
 });
 

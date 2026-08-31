@@ -3240,6 +3240,133 @@ test('org stock lead time hydrator measures from delivery history', function () 
 
     expect($orgStock->refresh()->estimated_lead_time_days)->toBe(21);
 });
+
+test('agent lead times roll up per sub-supplier', function () {
+    $leadTimes = App\Actions\Procurement\OrgAgent\GetAgentLeadTimes::run($this->orgAgent);
+
+    expect($leadTimes['agent'])->toHaveKeys(['days', 'source', 'samples'])
+        ->and($leadTimes['agent']['days'])->toBeGreaterThan(0)
+        ->and($leadTimes['suppliers'])->toBeArray();
+
+    foreach ($leadTimes['suppliers'] as $supplier) {
+        expect($supplier)->toHaveKeys(['supplier_id', 'code', 'name', 'days', 'source', 'samples'])
+            ->and($supplier['days'])->toBeGreaterThan(0);
+    }
+});
+
+test('agent cover buckets count each supplier product exactly once', function () {
+    $cover = App\Actions\Procurement\OrgAgent\GetAgentStockCoverBuckets::run($this->orgAgent);
+
+    $distinct = App\Actions\Procurement\OrgAgent\GetAgentStockCoverBuckets::make()
+        ->scopedQuery($this->orgAgent)
+        ->distinct()
+        ->count('osp.id');
+
+    expect($cover['buckets'])->toHaveCount(9)
+        ->and($cover['buckets'][0]['bucket'])->toBe('out')
+        ->and(collect($cover['buckets'])->pluck('bucket')->all())->toContain('gone')
+        ->and($cover['total'])->toBe($distinct);
+});
+
+test('agent order capacity is deterministic and reported in the organisation currency', function () {
+    Cache::forget("agent-order-capacity:{$this->orgAgent->id}");
+
+    $capacity = App\Actions\Procurement\OrgAgent\GetAgentOrderCapacity::run($this->orgAgent);
+
+    expect($capacity['agent_capacity'])->toHaveKeys(['lands_for_us_per_30d', 'source', 'samples'])
+        ->and($capacity['currency'])->toBe($this->organisation->currency->code)
+        ->and($capacity['warehouse'])->toHaveKeys([
+            'total_locations',
+            'empty_locations',
+            'free_ratio',
+            'inbound_open_po_lines',
+            'agent_share_used',
+            'agent_share_limit',
+        ])
+        ->and($capacity['blocked'])->toHaveKeys(['at_capacity', 'warehouse_full'])
+        ->and($capacity['list'])->toHaveKeys(['value', 'lines', 'units']);
+});
+
+test('agent supplier performance surfaces per sub-supplier lateness', function () {
+    $suppliers = App\Actions\Procurement\OrgAgent\GetAgentSupplierPerformance::run($this->orgAgent);
+
+    expect($suppliers)->toBeArray();
+
+    foreach ($suppliers as $supplier) {
+        expect($supplier)->toHaveKeys([
+            'supplier_id',
+            'code',
+            'days',
+            'source',
+            'open_orders',
+            'late_orders',
+            'worst_days_late',
+            'open_deliveries',
+            'list_lines',
+        ])
+            ->and($supplier['late_orders'])->toBeLessThanOrEqual($supplier['open_orders']);
+    }
+});
+
+test('agent shopping list proposal orders whole cartons and respects the carton minimum', function () {
+    $proposal = App\Actions\Procurement\OrgAgent\SuggestAgentShoppingList::make()
+        ->handle($this->orgAgent, ['budget' => 100000, 'bucket' => 'out']);
+
+    expect($proposal['currency'])->toBe($this->organisation->currency->code);
+
+    foreach ($proposal['lines'] as $line) {
+        expect($line['cartons'])->toBeGreaterThanOrEqual(1)
+            ->and($line['quantity_units'])->toBe($line['cartons'] * $line['units_per_carton']);
+    }
+
+    expect(collect($proposal['lines'])->sum('cost'))->toBeLessThanOrEqual($proposal['budget']);
+});
+
+test('UI agent shopping dashboard renders', function () {
+    $response = $this->get(route('grp.org.procurement.org_agents.show.shopping.dashboard', [$this->organisation->slug, $this->orgAgent->slug]));
+    $response->assertOk();
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/AgentShoppingDashboard')
+            ->has('title')
+            ->has('stats')
+            ->has('coverBuckets', 9)
+            ->where('coverBuckets.0.bucket', 'out')
+            ->where('coverBuckets.8.bucket', 'never')
+            ->where('coverTotal', fn ($total) => $total === collect($page->toArray()['props']['coverBuckets'])->sum('count'))
+            ->has('leadTime.days')
+            ->has('suppliers')
+            ->has('openSupplierPurchaseOrders')
+            ->has('openStockDeliveries')
+            ->has('orderCapacity.warehouse')
+            ->has('stockDeliveriesRoute.name')
+            ->has('supplierPurchaseOrdersRoute.name');
+    });
+});
+
+test('UI agent cover bucket items index', function () {
+    $response = $this->get(route('grp.org.procurement.org_agents.show.shopping.items.index', [$this->organisation->slug, $this->orgAgent->slug]).'?cover=out');
+    $response->assertOk();
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/AgentCoverBucketItems')
+            ->where('bucket', 'out')
+            ->where('bucketLabel', 'Out of stock')
+            ->has('items.data')
+            ->has('addRoute.name');
+    });
+});
+
+test('agent misplaced shopping list cleanup only accepts non-orderable buckets', function () {
+    expect(fn () => App\Actions\Procurement\OrgAgent\RemoveMisplacedAgentShoppingListItems::make()->handle($this->orgAgent, 'out'))
+        ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
+
+    expect(App\Actions\Procurement\OrgAgent\RemoveMisplacedAgentShoppingListItems::make()->handle($this->orgAgent, 'ok'))
+        ->toBeInt();
+});
+
 function independentOrgSupplierFixture($test): array
 {
     $supplier = StoreSupplier::make()->action(
@@ -3362,4 +3489,79 @@ test('supplier capacity cap blocks non-exempt adds to the shopping list', functi
 
     DeleteShoppingListItem::make()->action($first);
     Cache::forget("supplier-order-capacity:{$orgSupplier->id}");
+});
+
+test('agent capacity guard blocks non-exempt adds and lets A-rank or out-of-stock through', function () {
+    $this->orgSupplier->update(['org_agent_id' => $this->orgAgent->id, 'agent_id' => $this->orgAgent->agent_id]);
+    $this->orgSupplierProduct->update(['org_agent_id' => $this->orgAgent->id]);
+
+    $stock    = $this->supplierProduct->stocks()->first() ?? $this->stock;
+    $orgStock = OrgStock::where('organisation_id', $this->organisation->id)->where('stock_id', $stock->id)->first()
+        ?? createOrgStocks($this->organisation, [$stock])[0];
+
+    if (!$this->supplierProduct->stocks()->where('stocks.id', $stock->id)->exists()) {
+        $this->supplierProduct->stocks()->attach($stock->id, ['available' => true, 'priority' => 1]);
+    }
+
+    $stockHasSupplierProduct = App\Models\Goods\StockHasSupplierProduct::where('stock_id', $stock->id)
+        ->where('supplier_product_id', $this->supplierProduct->id)
+        ->first();
+
+    if (!OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)
+        ->where('org_supplier_product_id', $this->orgSupplierProduct->id)->exists()) {
+        App\Actions\Inventory\OrgStockHasOrgSupplierProduct\StoreOrgStockHasOrgSupplierProduct::make()->action(
+            stockHasSupplierProduct: $stockHasSupplierProduct,
+            orgStock: $orgStock,
+            orgSupplierProduct: $this->orgSupplierProduct,
+            modelData: ['status' => true, 'local_priority' => 1],
+            strict: false
+        );
+    }
+
+    expect(App\Actions\Procurement\OrgAgent\GetAgentOrderCapacity::linkedOrgStock($this->orgSupplierProduct)?->id)
+        ->toBe($orgStock->id);
+
+    $this->supplierProduct->update(['cost' => 10, 'currency_id' => $this->organisation->currency_id]);
+
+    Cache::put("agent-order-capacity:{$this->orgAgent->id}", [
+        ['lands_for_us_per_30d' => 5, 'source' => 'sales', 'samples' => 0],
+        [
+            'total_locations'       => 100,
+            'empty_locations'       => 50,
+            'free_ratio'            => 0.5,
+            'inbound_open_po_lines' => 0,
+            'agent_share_used'      => 0,
+            'agent_share_limit'     => 10,
+        ],
+    ], now()->addMinutes(15));
+
+    $orgStock->update(['quantity_available' => 10, 'health_rank' => null]);
+
+    $firstItem = App\Actions\Procurement\ShoppingListItem\StoreShoppingListItem::make()
+        ->action($this->orgSupplierProduct, ['quantity_units' => 1]);
+
+    expect(App\Actions\Procurement\OrgAgent\GetAgentOrderCapacity::run($this->orgAgent)['blocked']['at_capacity'])->toBeTrue();
+
+    expect(fn () => App\Actions\Procurement\ShoppingListItem\StoreShoppingListItem::make()
+        ->action($this->orgSupplierProduct, ['quantity_units' => 1]))
+        ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
+
+    $orgStock->update(['quantity_available' => 0]);
+
+    $outOfStockItem = App\Actions\Procurement\ShoppingListItem\StoreShoppingListItem::make()
+        ->action($this->orgSupplierProduct, ['quantity_units' => 1]);
+
+    expect($outOfStockItem->agent_id)->toBe($this->orgAgent->agent_id);
+    $outOfStockItem->forceDelete();
+
+    $orgStock->update(['quantity_available' => 10, 'health_rank' => HealthRankEnum::A]);
+
+    $aRankItem = App\Actions\Procurement\ShoppingListItem\StoreShoppingListItem::make()
+        ->action($this->orgSupplierProduct, ['quantity_units' => 1]);
+
+    expect($aRankItem->agent_id)->toBe($this->orgAgent->agent_id);
+    $aRankItem->forceDelete();
+    $firstItem->forceDelete();
+
+    Cache::forget("agent-order-capacity:{$this->orgAgent->id}");
 });

@@ -29,6 +29,17 @@ trait WithOrgAgentSubNavigation
                 "isAnchor" => true,
             ],
             [
+                "label"    => __("Shopping"),
+                "route"    => [
+                    "name"       => "grp.org.procurement.org_agents.show.shopping.dashboard",
+                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-shopping-basket"],
+                    "tooltip" => __("Shopping"),
+                ],
+            ],
+            [
                 "label"    => __("Suppliers"),
                 "route"    => [
                     "name"       => "grp.org.procurement.org_agents.show.suppliers.index",
