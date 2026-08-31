@@ -28,7 +28,7 @@ class UploadProductImageToTiktok extends RetinaAction
             $imageUrl = GetImgProxyUrl::run($media->getImage()
                 ->resize(480, 480));
 
-            $tempPath = tempnam(sys_get_temp_dir(), 'tiktok_') . '.png';
+            $tempPath = $this->temporaryPngPath();
             file_put_contents($tempPath, file_get_contents($imageUrl));
 
             $productData = [
@@ -45,7 +45,7 @@ class UploadProductImageToTiktok extends RetinaAction
             ];
         } catch (\Exception $e) {
             $fallbackUrl = "https://sf-static.tiktokcdn.com/obj/eden-sg/uhtyvueh7nulogpoguhm/tiktok-icon2.png";
-            $tempPath = tempnam(sys_get_temp_dir(), 'tiktok_') . '.png';
+            $tempPath = $this->temporaryPngPath();
             file_put_contents($tempPath, file_get_contents($fallbackUrl));
 
             $productData = [
@@ -62,6 +62,22 @@ class UploadProductImageToTiktok extends RetinaAction
             ];
         }
 
-        return $tiktokUser->uploadProductImageToTiktok($productData);
+        try {
+            return $tiktokUser->uploadProductImageToTiktok($productData);
+        } finally {
+            @unlink($tempPath);
+        }
+    }
+
+    /**
+     * tempnam creates the file it names, so appending an extension to it leaves that first file
+     * behind as well: the name is only reserved, never used. Reserve it, drop it, keep the path.
+     */
+    private function temporaryPngPath(): string
+    {
+        $reserved = tempnam(sys_get_temp_dir(), 'tiktok_');
+        @unlink($reserved);
+
+        return $reserved.'.png';
     }
 }
