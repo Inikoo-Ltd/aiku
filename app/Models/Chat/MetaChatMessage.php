@@ -94,4 +94,9 @@ class MetaChatMessage extends Model implements HasMedia
     {
         return $this->belongsTo(Language::class, 'original_language_id');
     }
+
+    public function translations(): HasMany
+    {
+        return $this->hasMany(MetaChatMessageTranslation::class);
+    }
 }

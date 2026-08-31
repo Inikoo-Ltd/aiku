@@ -31,6 +31,24 @@ class MetaChatMessageResource extends JsonResource
                 'file_name'    => $repliedTo->attachment?->file_name,
             ] : null,
             'message_text'   => $metaChatMessage->message_text,
+            'original'       => [
+                'text'          => $metaChatMessage->original_text,
+                'language_name' => $metaChatMessage->originalLanguage?->name,
+                'language_code' => $metaChatMessage->originalLanguage?->code,
+                'language_flag' => $metaChatMessage->originalLanguage?->flag
+                    ? asset('flags/'.$metaChatMessage->originalLanguage->flag)
+                    : null,
+            ],
+            'translations'   => $metaChatMessage->translations->map(fn ($translation) => [
+                'chat_translation_id' => $translation->id,
+                'language_id'         => $translation->targetLanguage?->id,
+                'translated_text'     => $translation->translated_text,
+                'language_name'       => $translation->targetLanguage?->name,
+                'language_code'       => $translation->targetLanguage?->code,
+                'language_flag'       => $translation->targetLanguage?->flag
+                    ? asset('flags/'.$translation->targetLanguage->flag)
+                    : null,
+            ]),
             'message_type'   => $metaChatMessage->message_type->value,
             'sender_type'    => $metaChatMessage->sender_type->value,
             'is_agent'       => $metaChatMessage->sender_type->value === ChatSenderTypeEnum::AGENT->value,

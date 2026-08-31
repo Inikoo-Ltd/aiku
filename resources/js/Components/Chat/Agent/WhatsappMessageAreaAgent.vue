@@ -800,6 +800,7 @@ onUnmounted(() => {
                             :contactName="session?.contact_name || session?.guest_identifier"
                             :canEdit="false"
                             reactionUrlBase="/app/api/chats/meta/messages"
+                            translateUrlBase="/app/api/chats/meta/messages"
                             :viewerReactorId="layout?.user?.id"
                             :canReply="!isClosed && !templateOnly"
                             format-markup

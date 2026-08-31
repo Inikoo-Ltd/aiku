@@ -30,6 +30,7 @@ use App\Actions\Chat\ChatSession\UpdateChatAgent;
 use App\Actions\Chat\ChatSession\UpdateChatSession;
 use App\Actions\Chat\GetCrossChannelSessions;
 use App\Actions\Chat\Whatsapp\SendWhatsappReaction;
+use App\Actions\Chat\Whatsapp\TranslateSingleMetaChatMessage;
 use App\Actions\Chat\MetaChatSession\GetMetaChatMessages;
 use App\Actions\Chat\MetaChatSession\MarkMetaChatMessagesAsRead;
 use App\Actions\Chat\MetaChatSession\GetMetaMessageTemplates;
@@ -70,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/meta/sessions/{metaChatSession:ulid}/read', MarkMetaChatMessagesAsRead::class)->name('meta.sessions.read');
     Route::get('/meta/templates', GetMetaMessageTemplates::class)->name('meta.templates.index');
     Route::post('/meta/messages/{metaChatMessage}/reactions', SendWhatsappReaction::class)->name('meta.messages.reactions');
+    Route::post('/meta/messages/{metaChatMessage}/translate', TranslateSingleMetaChatMessage::class)->name('meta.messages.translate');
     Route::get('/sessions/{chatSession:ulid}/activity', GetChatActivity::class)->name('sessions.activity')->withTrashed();
     Route::get('/sessions/{chatSession:ulid}/customer-profile', GetChatCustomerProfile::class)->name('sessions.customer_profile')->withTrashed();
     Route::get('/sessions/{chatSession:ulid}/customer-timeline', GetChatCustomerTimeline::class)->name('sessions.customer_timeline')->withTrashed();

@@ -96,6 +96,7 @@ const props = defineProps<{
     viewerReactorId?: number | null
     canReply?: boolean
     formatMarkup?: boolean
+    translateUrlBase?: string
 }>()
 
 const emit = defineEmits<{
@@ -459,7 +460,7 @@ const translateMessage = async () => {
 
     try {
         const { data } = await axios.post(
-            `${baseUrl}/app/api/chats/messages/${props.message.id}/translate`,
+            `${baseUrl}${props.translateUrlBase ?? "/app/api/chats/messages"}/${props.message.id}/translate`,
             {
                 target_language_id: selectedLanguageId.value,
             }
