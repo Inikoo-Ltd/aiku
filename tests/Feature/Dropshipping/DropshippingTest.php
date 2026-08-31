@@ -922,3 +922,29 @@ test('bulk price rule prices each product from its own rrp', function () {
         ->and((float) $portfolioB->refresh()->customer_price)->toBe(18.0)
         ->and(\Illuminate\Support\Arr::get($portfolioA->settings, 'pricing_opt_out'))->toBeTrue();
 });
+
+test('platform portfolio logs are only reachable through the retina portfolios logs tab', function () {
+    expect(\Illuminate\Support\Facades\Route::has('retina.dropshipping.customer_sales_channels.platform_portfolio_logs.index'))->toBeFalse();
+
+    $platform             = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'test_ebay_logs']);
+    $portfolio            = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+
+    \App\Models\Dropshipping\PlatformPortfolioLogs::create([
+        'group_id'                  => $customerSalesChannel->group_id,
+        'organisation_id'           => $customerSalesChannel->organisation_id,
+        'shop_id'                   => $customerSalesChannel->shop_id,
+        'customer_id'               => $customerSalesChannel->customer_id,
+        'customer_sales_channel_id' => $customerSalesChannel->id,
+        'portfolio_id'              => $portfolio->id,
+        'platform_id'               => $platform->id,
+        'platform_type'             => $platform->type->value,
+        'type'                      => \App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum::UPLOAD,
+        'status'                    => \App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum::OK,
+    ]);
+
+    $logs = \App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs::run($customerSalesChannel);
+
+    expect($logs->total())->toBe(1)
+        ->and($logs->first()->item_code)->toBe($portfolio->item_code);
+});

@@ -60,7 +60,6 @@ use App\Actions\Retina\Dropshipping\Orders\UpdateCustomerOrderTaxCategory;
 use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfoliosCSV;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\ShowRetinaDropshippingPortfolio;
-use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
 use App\Actions\Dropshipping\Shopify\Fulfilment\UI\SyncOrderCancellationToShopify;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaFilteredProducts;
 use App\Actions\Retina\Ebay\StoreRetinaEbayUser;
@@ -156,10 +155,6 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
 
     Route::prefix('api')->as('api.')->group(function () {
         Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
-    });
-
-    Route::prefix('platform-portfolio-logs')->as('platform_portfolio_logs.')->group(function () {
-        Route::get('', IndexPlatformPortfolioLogs::class)->name('index');
     });
 
     Route::get('reconnect', ReconnectRetinaCustomerSalesChannel::class)->name('reconnect');
