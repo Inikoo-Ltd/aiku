@@ -59,13 +59,15 @@ class GetStaffAudience
             }
         }
 
-        $organisation = Organisation::find($context->organisation_id);
-        $users        = $this->pickFromLists(
-            Arr::get($organisation?->settings ?? [], "staff_chat.{$audience}_user_ids", []),
-            Arr::get($organisation?->settings ?? [], "staff_chat.{$audience}_backup_user_ids", []),
-        );
-        if ($users->isNotEmpty()) {
-            return $users;
+        if ($audience === 'warehouse') {
+            $organisation = Organisation::find($context->organisation_id);
+            $users        = $this->pickFromLists(
+                Arr::get($organisation?->settings ?? [], "staff_chat.{$audience}_user_ids", []),
+                Arr::get($organisation?->settings ?? [], "staff_chat.{$audience}_backup_user_ids", []),
+            );
+            if ($users->isNotEmpty()) {
+                return $users;
+            }
         }
 
         if ($context instanceof PickingSession) {

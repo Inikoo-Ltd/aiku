@@ -1,117 +1,90 @@
-/*
- * author Louis Perez
- * created on 07-05-2026-15h-09m
- * github: https://github.com/louis-perez
- * copyright 2026
-*/
+<style>
+    .root {
+        width: 100%;
+        height: 100%;
+        font-size: 10mm;
+        padding: 0;
+        margin: 0;
+        font-family: "Arial", "Helvetica Neue", Helvetica, sans-serif;
+    }
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Stored Items (SKU) List - {{ $customer->company_name }}</title>
-    <style>
-        body { font-family: sans-serif; font-size: 10pt; }
-        h1 { font-size: 14pt; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        td, th { padding: 8px; border: 0.1mm solid #000; }
-        .header, .footer { font-size: 9pt; text-align: center; }
-        .address { font-size: 9pt; color: #555; }
-        .items td { border: 0.1mm solid #000; }
-        .items thead td { background-color: #EEEEEE; text-align: center; }
-        .totals td { text-align: right; border: 0.1mm solid #000; }
-        .total-row td { font-weight: bold; text-align: right; border-top: 0.3mm solid #000; }
-    </style>
-</head>
-<body>
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
 
-<!-- Header Section -->
-<div class="header">
-    <h1> Stored Items (SKU) List </h1>
-</div>
+    .labels td {
+        font-size: 4mm;
+        color: #000;
+        text-align: center;
+        padding: 4mm 2mm;
+        border-top: 0.2mm solid #000;
+    }
 
-<!-- Company and Customer Details -->
-<table>
-    <tr>
-        <td style="width: 50%;">
-            Company: {{ $customer->company_name  }}
-            <br>
-            Phone: {{ $customer->phone ?? '-' }} 
-            <br>
-            Email: {{ $customer->email ?? '-' }}
-        </td>
-    </tr>
-</table>
-<!-- Delivery Details -->
-<table>
-    <tr>
-        <td style='width: 50%'>
-            <strong>Issuer:</strong> {{ $user->contact_name }}
-        </td>
-        <td style='width: 50%; text-align:right'>
-            <strong>Issued Date:</strong> {{ now()->format('Y-m-d') }}
-        </td>
-    </tr>
-</table>
+    .data td {
+        text-align: center;
+        font-size: 15mm;
+        font-weight: bold;
+        padding: 2mm 1mm;
+        border-bottom: 0.2mm solid #000;
+    }
 
-<!-- Items Section -->
-<table class="items">
-    <thead>
-        <tr>
-            <td style='width:max-content'>
-                {{ __("Reference") }}
-            </td>
-            <td>
-                {{ __("Name") }}
-            </td>
-            <td>
-                {{ __("Pallet Locations") }}
-            </td>
-            <td style='width:150px'>
-                {{ __("Current Quantity") }}
-            </td>
-            <td style='width:max-content'>
-                {{ __("Status") }}
-            </td>
+    .barcode {
+        text-align: center;
+        margin: 10mm 4mm;
+        padding: 4mm 2mm;
+    }
+
+    .footer td {
+        font-size: 3mm;
+        color: #000;
+        text-align: center;
+        padding-top: 10mm;
+    }
+
+    body, html {
+        width: 297mm;
+        height: 210mm;
+        margin: 0;
+        padding: 0;
+    }
+
+</style>
+
+<div class="root">
+    <table>
+        <tr class="labels">
+            <td colspan="2">{{ __('Customer') }}</td>
         </tr>
-    </thead>
-    <tbody>
-        @foreach ($stored_items as $item)
-            <tr>
-                <td style='width:max-content'>
-                    {{ $item->reference }}
-                </td>
-                <td>
-                    {{ $item->name ?? '-'}}
-                </td>
-                <td style='text-align: right;'>
-                    <div style='column-gap: 20px; display: flex'>
-                        @forelse($item->pallets as $pallet)
-                            <div style='border: 1px solid black; margin-bottom: 2rem;'>
-                                &nbsp; {{ $pallet->reference }} | {{ $pallet->pivot->quantity }} Qty &nbsp;
-                            </div>
-                            @unless($loop->last)
-                                &nbsp;
-                            @endunless
-                        @empty
-                            -
-                        @endforelse
-                    </div>
-                </td>
-                <td style='width:150px; text-align: right'>
-                    {{ (float) $item->total_quantity }}
-                </td>
-                <td style='width:100px; text-align: right'>
-                    {{ $item->state->labelGenerated() }}
-                </td>
+        <tr class="data">
+            <td colspan="2">{{ $customer->name }} ({{ $customer->id }})</td>
+        </tr>
+
+        <tr class="labels">
+            <td colspan="2">{{ __('Stored item reference') }}</td>
+        </tr>
+        <tr class="data">
+            <td colspan="2">{{ $storedItem->reference }}</td>
+        </tr>
+
+        <div class="barcode">
+            <barcode code="{{ $storedItem->reference }}" type="C128B"></barcode>
+        </div>
+
+        @if($storedItem->name)
+            <tr class="labels">
+                <td colspan="2">{{ __('Name') }}</td>
             </tr>
-        @endforeach
-    </tbody>
-</table>
+            <tr class="data">
+                <td colspan="2">{{ $storedItem->name }}</td>
+            </tr>
+        @endif
+    </table>
 
-<!-- Footer Section -->
-<div class="footer"> <p>Thank you for your hard work and attention to detail!</p> 
-<p>If you have any questions or need further information about your stored items, please don't hesitate to contact us at {{$shop->phone}} or  <a href="mailto:{{$shop->email}}">{{$shop->email}}</a>.</p> </div>
-
-</body>
-</html>
+    <table>
+        <tr class="footer">
+            <td colspan="2">{{ __('Stored by') }} {{ $shop->name }}</td>
+        </tr>
+    </table>
+</div>

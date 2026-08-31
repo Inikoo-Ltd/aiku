@@ -83,8 +83,8 @@ class GetRetinaFulfilmentCustomerSalesChannelNavigation
 
         if ($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $platformNavigation['api_token'] = [
-                'label' => __('Api'),
-                'icon'  => ['fal', 'fa-key'],
+                'label' => __('API'),
+                'icon'  => ['fal', 'fa-plug'],
                 'root'  => 'retina.fulfilment.dropshipping.customer_sales_channels.api.',
                 'route' => [
                     'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.api.dashboard',

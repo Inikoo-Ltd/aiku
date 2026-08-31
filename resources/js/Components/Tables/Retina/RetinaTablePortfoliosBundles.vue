@@ -537,15 +537,22 @@ const fetchEditMediaGallery = async () => {
 		editMediaGallery.value = data
 
 		if (data.current_images) {
+			const mainImageId = data.main_image_id ? Number(data.main_image_id) : null
+
 			selectedMedia.value = Object.entries(data.current_images).map(
-				([image_id, img]: any, index) => ({
+				([image_id, img]: any) => ({
 					key: String(image_id),
 					image_id: Number(image_id),
 					image: img,
 					url: img.original,
-					is_main: index === 0 // default first jadi main
+					is_main: mainImageId === Number(image_id)
 				})
 			)
+
+			if (selectedMedia.value.length && !selectedMedia.value.some(m => m.is_main)) {
+				selectedMedia.value[0].is_main = true
+			}
+
 			selectedMediaIds.value = selectedMedia.value.map(m => m.image_id)
 		}
 		if (data.items) {

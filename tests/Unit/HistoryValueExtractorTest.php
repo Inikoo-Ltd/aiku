@@ -59,6 +59,8 @@ it('extracts era-B legacy table markup', function () {
         'action' => 'Changed',
         'old'    => 'preosc',
         'new'    => 'Smellacloud 50ml Essential Oils',
+        'old_html' => 'preosc',
+        'new_html' => 'Smellacloud 50ml Essential Oils',
     ]);
 });
 
@@ -77,6 +79,8 @@ it('extracts era-C div table markup with the xx artifact present', function () {
         'action' => 'Changed',
         'old'    => 'preosc',
         'new'    => 'Smellacloud 50ml Essential Oils',
+        'old_html' => 'preosc',
+        'new_html' => 'Smellacloud 50ml Essential Oils',
     ]);
 });
 
@@ -94,6 +98,8 @@ it('matches localized labels, slovak and polish', function () {
         'action' => 'Changed',
         'old'    => '1',
         'new'    => '2',
+        'old_html' => '1',
+        'new_html' => '2',
     ]);
 
     $polish = '<div class="table">'
@@ -109,6 +115,8 @@ it('matches localized labels, slovak and polish', function () {
         'action' => 'Changed',
         'old'    => '1',
         'new'    => '2',
+        'old_html' => '1',
+        'new_html' => '2',
     ]);
 });
 
@@ -175,4 +183,18 @@ it('redacts credential values but leaves already masked ones alone', function ()
         ->and(HistoryValueExtractor::redactCredential('password_hash', '********'))->toBe('********')
         ->and(HistoryValueExtractor::redactCredential('email', 'someone@example.com'))->toBe('someone@example.com')
         ->and(HistoryValueExtractor::redactCredential('password', null))->toBeNull();
+});
+
+it('strips Aurora UI markup out of extracted values', function () {
+    expect(HistoryValueExtractor::normalize('<img src="/art/flags/gb.png" title="GBR"> United Kingdom'))
+        ->toBe('United Kingdom')
+        ->and(HistoryValueExtractor::normalize('<span onCLick="change_view(\'material/628\')" class="link">Sodium Palmitate</span>'))
+        ->toBe('Sodium Palmitate')
+        ->and(HistoryValueExtractor::normalize('<img src="/art/x.png">'))->toBeNull();
+
+    $details = '<table><tr><td>Old value</td><td><img src="/art/flags/gb.png" title="GBR"> United Kingdom</td></tr>'
+        .'<tr><td>New value</td><td><img src="/art/flags/de.png" title="DEU"> Germany</td></tr></table>';
+
+    expect(HistoryValueExtractor::extractTable($details))
+        ->toMatchArray(['old' => 'United Kingdom', 'new' => 'Germany']);
 });

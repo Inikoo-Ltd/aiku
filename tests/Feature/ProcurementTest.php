@@ -57,6 +57,14 @@ use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderTransactionQuantity
 use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
+use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
+use App\Actions\Procurement\PartnerShoppingListItem\CherryPickPartnerShoppingListItems;
+use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
+use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
+use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
+use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
+use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
 use App\Actions\Procurement\ShoppingListItem\CherryPickShoppingListItems;
 use App\Actions\Procurement\ShoppingListItem\DeleteShoppingListItem;
 use App\Actions\Procurement\ShoppingListItem\ProposeDismissShoppingListItem;
@@ -66,7 +74,10 @@ use App\Actions\Procurement\ShoppingListItem\UpdateShoppingListItem;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Goods\StockHasSupplierProduct;
 use App\Models\Inventory\OrgStockHasOrgSupplierProduct;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Procurement\ShoppingListItem;
+use App\Models\Catalogue\Shop;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\SupplyChain\Agent\HydrateAgents;
 use App\Actions\SupplyChain\Agent\Search\ReindexAgentSearch;
 use App\Actions\SupplyChain\Agent\StoreAgent;
@@ -107,6 +118,7 @@ use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Testing\AssertableInertia;
@@ -1026,7 +1038,8 @@ test('UI show procurement dashboard', function () {
                 fn (AssertableInertia $page) => $page
                     ->where('title', 'Procurement')
                     ->etc()
-            );
+            )
+            ->has('shoppingLists');
     });
 });
 
@@ -2241,7 +2254,7 @@ describe('shopping list', function () {
         expect(ShoppingListItem::find($item->id))->toBeNull();
     });
 
-    test('cherry pick full quantity creates or reuses purchase order and marks item ordered', function () {
+    test('cherry pick full quantity_units creates or reuses purchase order and marks item ordered', function () {
         $item = StoreShoppingListItem::make()->action($this->orgSupplierProduct, ['quantity_units' => 60]);
 
         $result = CherryPickShoppingListItems::make()->action($this->agent, [
@@ -2267,7 +2280,7 @@ describe('shopping list', function () {
             ->and((float) $transaction->quantity_ordered)->toBe(60.0);
     });
 
-    test('cherry pick partial quantity splits the line and keeps parent created_at', function () {
+    test('cherry pick partial quantity_units splits the line and keeps parent created_at', function () {
         $item = StoreShoppingListItem::make()->action($this->orgSupplierProduct, ['quantity_units' => 100]);
         $originalCreatedAt = $item->created_at;
 
@@ -2638,4 +2651,329 @@ describe('org supplier sub pages navigation', function () {
                     ->etc());
         }
     });
+});
+
+describe('partner shopping list', function () {
+    beforeEach(function () {
+        $seller = $this->orgPartner->partner;
+
+        $sellerShop = $seller->shops()->first();
+        if (!$sellerShop) {
+            $sellerShop = StoreShop::run($seller, Shop::factory()->definition());
+        }
+        $this->sellerShop = $sellerShop;
+
+        [, $this->sellerProduct] = createProduct($sellerShop);
+
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $this->buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+    });
+
+    test('store partner shopping list item denormalises', function () {
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 40,
+        ]);
+
+        expect($item)->toBeInstanceOf(PartnerShoppingListItem::class)
+            ->and($item->group_id)->toBe($this->orgPartner->group_id)
+            ->and($item->organisation_id)->toBe($this->orgPartner->organisation_id)
+            ->and($item->org_partner_id)->toBe($this->orgPartner->id)
+            ->and($item->partner_organisation_id)->toBe($this->orgPartner->partner_id)
+            ->and($item->org_stock_id)->toBe($this->buyerOrgStock->id)
+            ->and($item->stock_id)->toBe($this->buyerOrgStock->stock_id)
+            ->and((float) $item->quantity)->toBe(40.0)
+            ->and($item->state)->toBe(ShoppingListItemStateEnum::OPEN);
+    });
+
+    test('update and delete partner shopping list item while open', function () {
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 10,
+        ]);
+
+        $item = UpdatePartnerShoppingListItem::make()->action($item, ['quantity' => 15, 'notes' => 'for production']);
+        expect((float) $item->quantity)->toBe(15.0)
+            ->and($item->notes)->toBe('for production');
+
+        DeletePartnerShoppingListItem::make()->action($item);
+        expect(PartnerShoppingListItem::find($item->id))->toBeNull();
+    });
+
+    test('cherry pick creates hidden intercompany order and marks item ordered', function () {
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 25,
+        ]);
+
+        $result = CherryPickPartnerShoppingListItems::make()->action(
+            $this->orgPartner->partner,
+            [['id' => $item->id]]
+        );
+
+        expect($result['picked'])->toBe(1)
+            ->and($result['skipped'])->toBeEmpty()
+            ->and($result['orders'])->toHaveCount(1);
+
+        $order = $result['orders'][0];
+        $item->refresh();
+
+        expect($order->state)->toBe(OrderStateEnum::CREATING)
+            ->and($order->at_gate_at)->not->toBeNull()
+            ->and($order->shop_id)->toBe($this->sellerShop->id)
+            ->and($order->salesChannel->code)->toBe('intercompany')
+            ->and($item->state)->toBe(ShoppingListItemStateEnum::ORDERED)
+            ->and($item->transaction_id)->not->toBeNull()
+            ->and((float) $item->transaction->quantity_ordered)->toBe(25.0)
+            ->and($item->transaction->order_id)->toBe($order->id);
+
+        $customerId = data_get($this->orgPartner->refresh()->data, "intercompany_customers.{$this->sellerShop->id}");
+        expect($customerId)->toBe($order->customer_id);
+    });
+
+    test('cherry pick partial quantity splits remainder to open child', function () {
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 30,
+        ]);
+
+        $result = CherryPickPartnerShoppingListItems::make()->action(
+            $this->orgPartner->partner,
+            [['id' => $item->id, 'quantity' => 12]]
+        );
+
+        expect($result['picked'])->toBe(1);
+
+        $item->refresh();
+        $child = $item->children()->first();
+
+        expect((float) $item->quantity)->toBe(12.0)
+            ->and($item->state)->toBe(ShoppingListItemStateEnum::ORDERED)
+            ->and($child)->not->toBeNull()
+            ->and((float) $child->quantity)->toBe(18.0)
+            ->and($child->state)->toBe(ShoppingListItemStateEnum::OPEN);
+    });
+
+    test('cherry pick reuses in-process intercompany order across picks', function () {
+        $itemA = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 5,
+        ]);
+        $itemB = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 7,
+        ]);
+
+        $resultA = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $itemA->id]]);
+        $resultB = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $itemB->id]]);
+
+        expect($resultA['orders'][0]->id)->toBe($resultB['orders'][0]->id);
+    });
+
+    test('cherry pick skips item with no seller product for the stock', function () {
+        $orphanStock = collect($this->stocks)->first(fn ($stock) => $stock->id !== $this->buyerOrgStock->stock_id);
+        $orphanOrgStock = createOrgStocks($this->orgPartner->organisation, [$orphanStock])[0];
+
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $orphanOrgStock, [
+            'quantity' => 3,
+        ]);
+
+        $result = CherryPickPartnerShoppingListItems::make()->action(
+            $this->orgPartner->partner,
+            [['id' => $item->id]]
+        );
+
+        expect($result['picked'])->toBe(0)
+            ->and($result['skipped'])->toHaveCount(1)
+            ->and($item->refresh()->state)->toBe(ShoppingListItemStateEnum::OPEN);
+    });
+});
+
+describe('partner browse', function () {
+    test('UI partner browse index requires procurement shop_id', function () {
+        $partner = $this->orgPartner->partner;
+        $originalSettings = $partner->settings;
+        $partner->update(['settings' => Arr::except($originalSettings, 'procurement.shop_id')]);
+
+        $response = $this->get(route('grp.org.procurement.org_partners.show.browse.index', [$this->organisation->slug, $this->orgPartner->id]));
+        $response->assertNotFound();
+
+        $partner->update(['settings' => $originalSettings]);
+    });
+
+    test('UI partner browse index returns catalogue tree when shop_id set', function () {
+        $seller = $this->orgPartner->partner;
+        $sellerShop = $seller->shops()->first();
+        if (!$sellerShop) {
+            $sellerShop = StoreShop::run($seller, Shop::factory()->definition());
+        }
+
+        [, $sellerProduct] = createProduct($sellerShop);
+        createOrgStocks($this->orgPartner->organisation, [$sellerProduct->orgStocks()->first()->stock]);
+
+        $originalSettings = $seller->settings;
+        $settings = $originalSettings;
+        data_set($settings, 'procurement.shop_id', $sellerShop->id);
+        $seller->update(['settings' => $settings]);
+
+        $response = $this->get(route('grp.org.procurement.org_partners.show.browse.index', [$this->organisation->slug, $this->orgPartner->id]));
+
+        $response->assertInertia(function (AssertableInertia $page) {
+            $page
+                ->component('Procurement/PartnerBrowse')
+                ->has('title')
+                ->has('level')
+                ->has('categories')
+                ->has('collections')
+                ->has('miniCart.count')
+                ->has('miniCart.total')
+                ->has('miniCart.items')
+                ->has('miniCart.listRoute');
+        });
+
+        $seller->update(['settings' => $originalSettings]);
+    });
+
+    test('UI partner shopping dashboard renders', function () {
+        $response = $this->get(route('grp.org.procurement.org_partners.show.shopping.dashboard', [$this->organisation->slug, $this->orgPartner->id]));
+
+        $response->assertInertia(function (AssertableInertia $page) {
+            $page
+                ->component('Procurement/PartnerShoppingDashboard')
+                ->has('title')
+                ->has('stats')
+                ->has('recentItems');
+        });
+    });
+});
+
+test('UI partner shopping list index', function () {
+    $response = $this->get(route('grp.org.procurement.org_partners.show.shopping_list.index', [$this->organisation->slug, $this->orgPartner->id]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/PartnerShoppingList')
+            ->has('title')
+            ->has('data')
+            ->has('orgStockFetchRoute');
+    });
+});
+
+test('UI partner shipping list index', function () {
+    $response = $this->get(route('grp.org.procurement.org_partners.shipping_list.index', [$this->organisation->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/PartnerShippingList')
+            ->has('title')
+            ->has('data');
+    });
+});
+
+test('partner shopping list org stocks json feed', function () {
+    $seller = $this->orgPartner->partner;
+
+    $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
+    [, $sellerProduct] = createProduct($sellerShop);
+    $sellerOrgStock = $sellerProduct->orgStocks()->first();
+
+    PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
+        ->where('state', ShoppingListItemStateEnum::OPEN)
+        ->delete();
+
+    $response = $this->getJson(route('grp.json.org_partner.shopping_list_org_stocks', [$this->orgPartner->id]));
+
+    $response->assertOk();
+    $row = collect($response->json('data'))->firstWhere('id', $sellerOrgStock->id);
+
+    expect($row)->not->toBeNull()
+        ->and($row['code'])->toBe($sellerOrgStock->code)
+        ->and($row['saveRoute']['name'])->toBe('grp.org.procurement.org_partners.show.shopping_list.store')
+        ->and($row['deleteRoute'])->toBeNull();
+
+    StorePartnerShoppingListItem::make()->action($this->orgPartner, $sellerOrgStock, ['quantity' => 5]);
+
+    $response = $this->getJson(route('grp.json.org_partner.shopping_list_org_stocks', [$this->orgPartner->id]));
+    $row = collect($response->json('data'))->firstWhere('id', $sellerOrgStock->id);
+
+    expect((float) $row['quantity_ordered'])->toBe(5.0)
+        ->and($row['saveRoute']['name'])->toBe('grp.org.procurement.org_partners.show.shopping_list.update')
+        ->and($row['deleteRoute']['name'])->toBe('grp.org.procurement.org_partners.show.shopping_list.destroy');
+});
+
+test('auto-fill suggests shopping list within budget from usage history', function () {
+    $seller = $this->orgPartner->partner;
+    $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
+    [, $sellerProduct] = createProduct($sellerShop);
+    $sellerOrgStock = $sellerProduct->orgStocks()->first();
+    $sellerOrgStock->update(['quantity_available' => 50]);
+
+    $buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+
+    PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
+        ->where('state', ShoppingListItemStateEnum::OPEN)
+        ->delete();
+
+    $seriesId = DB::table('org_stock_time_series')->insertGetId([
+        'org_stock_id' => $buyerOrgStock->id,
+        'frequency'    => 'quarterly',
+        'created_at'   => now(),
+        'updated_at'   => now(),
+    ]);
+    foreach ([1, 2] as $quartersAgo) {
+        $quarter = now()->subQuarters($quartersAgo);
+        DB::table('org_stock_time_series_records')->insert([
+            'org_stock_time_series_id' => $seriesId,
+            'frequency'                => 'Q',
+            'sales_external'           => 500,
+            'sales_internal'           => 0,
+            'from'                     => $quarter->copy()->startOfQuarter(),
+            'to'                       => $quarter->copy()->endOfQuarter(),
+            'period'                   => $quarter->year.'Q'.$quarter->quarter,
+            'created_at'               => now(),
+            'updated_at'               => now(),
+        ]);
+    }
+
+    $proposal = SuggestPartnerShoppingList::make()->action($this->orgPartner, 1000);
+
+    $line = collect($proposal['lines'])->firstWhere('org_stock_id', $sellerOrgStock->id);
+
+    expect($line)->not->toBeNull()
+        ->and($proposal['total'])->toBeLessThanOrEqual(1000)
+        ->and((float) $line['quantity'])->toBeGreaterThanOrEqual(1.0)
+        ->and((float) $line['cost'])->toBe(round($line['quantity'] * $line['price_per_sko'], 2))
+        ->and($line['reason'])->toContain('/quarter');
+
+    $result = StorePartnerShoppingListItems::make()->action($this->orgPartner, [
+        ['org_stock_id' => $sellerOrgStock->id, 'quantity' => $line['quantity'], 'notes' => $line['reason']],
+    ]);
+
+    expect($result['created'])->toBe(1);
+
+    $item = PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
+        ->where('state', ShoppingListItemStateEnum::OPEN)
+        ->where('stock_id', $sellerOrgStock->stock_id)
+        ->first();
+
+    expect($item)->not->toBeNull()
+        ->and((float) $item->quantity)->toBe((float) $line['quantity'])
+        ->and($item->notes)->toBe($line['reason']);
+});
+
+test('org partner shopping list stats hydrate', function () {
+    $seller = $this->orgPartner->partner;
+    $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
+    [, $sellerProduct] = createProduct($sellerShop);
+    $sellerOrgStock = $sellerProduct->orgStocks()->first();
+
+    PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
+    OrgPartnerHydrateShoppingListItems::run($this->orgPartner);
+
+    expect($this->orgPartner->stats->refresh()->number_open_shopping_list_items)->toBe(0);
+
+    $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $sellerOrgStock, ['quantity' => 3]);
+    OrgPartnerHydrateShoppingListItems::run($this->orgPartner);
+
+    expect($this->orgPartner->stats->refresh()->number_open_shopping_list_items)->toBe(1)
+        ->and($this->orgPartner->stats->number_shopping_list_items)->toBe(1);
+
+    DeletePartnerShoppingListItem::make()->action($item);
+    OrgPartnerHydrateShoppingListItems::run($this->orgPartner);
+
+    expect($this->orgPartner->stats->refresh()->number_open_shopping_list_items)->toBe(0);
 });

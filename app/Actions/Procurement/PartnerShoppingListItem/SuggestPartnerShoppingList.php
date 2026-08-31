@@ -1,0 +1,325 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 27 Aug 2026 Malaga, Spain
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Procurement\PartnerShoppingListItem;
+
+use App\Actions\OrgAction;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Models\Procurement\OrgPartner;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Lorisleiva\Actions\ActionRequest;
+use Throwable;
+
+class SuggestPartnerShoppingList extends OrgAction
+{
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+    }
+
+    /**
+     * @return array{currency: string, budget: float, total: float, lines: array<int, array{org_stock_id: int, code: string, name: string, quantity: float, price_per_sko: float, cost: float, reason: string}>}
+     */
+    public function handle(OrgPartner $orgPartner, float $budget, ?string $instruction = null): array
+    {
+        $candidates = $this->candidates($orgPartner);
+
+        $lines = $instruction && config('services.openai.api_key')
+            ? $this->aiPick($candidates, $budget, $instruction)
+            : [];
+
+        if (empty($lines)) {
+            $lines = $this->greedyFill($candidates, $budget);
+        }
+
+        return [
+            'currency' => $orgPartner->partner->currency->code,
+            'budget'   => $budget,
+            'total'    => round(array_sum(array_column($lines, 'cost')), 2),
+            'lines'    => $lines,
+        ];
+    }
+
+    /**
+     * Candidate partner SKOs with price, availability, buyer stock and average quarterly usage.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function candidates(OrgPartner $orgPartner): array
+    {
+        $rows = DB::table('org_stocks')
+            ->leftJoin('org_stocks as buyer_org_stocks', function ($join) use ($orgPartner) {
+                $join->on('buyer_org_stocks.stock_id', 'org_stocks.stock_id')
+                    ->where('buyer_org_stocks.organisation_id', $orgPartner->organisation_id);
+            })
+            ->join('product_has_org_stocks', 'product_has_org_stocks.org_stock_id', 'org_stocks.id')
+            ->join('products', 'products.id', 'product_has_org_stocks.product_id')
+            ->leftJoin('partner_shopping_list_items', function ($join) use ($orgPartner) {
+                $join->on('partner_shopping_list_items.stock_id', 'org_stocks.stock_id')
+                    ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
+                    ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN->value)
+                    ->whereNull('partner_shopping_list_items.deleted_at');
+            })
+            ->where('org_stocks.organisation_id', $orgPartner->partner_id)
+            ->where('org_stocks.state', OrgStockStateEnum::ACTIVE->value)
+            ->where('products.state', ProductStateEnum::ACTIVE->value)
+            ->whereNull('partner_shopping_list_items.id')
+            ->where('org_stocks.quantity_available', '>', 0)
+            ->select([
+                'org_stocks.id',
+                'org_stocks.stock_id',
+                'org_stocks.code',
+                'org_stocks.name',
+                'org_stocks.quantity_available as partner_available',
+                'buyer_org_stocks.id as buyer_org_stock_id',
+                'buyer_org_stocks.quantity_available as buyer_available',
+                'products.price as product_price',
+                'product_has_org_stocks.quantity as skos_per_product_unit',
+            ])
+            ->orderBy('org_stocks.id')
+            ->get()
+            ->unique('id')
+            ->values();
+
+        $usage = $this->buyerQuarterlyUsage($rows->pluck('buyer_org_stock_id')->filter()->all());
+
+        return $rows->map(function ($row) use ($usage) {
+            $skosPerProductUnit = (float) $row->skos_per_product_unit > 0 ? (float) $row->skos_per_product_unit : 1;
+
+            return [
+                'org_stock_id'      => $row->id,
+                'code'              => $row->code,
+                'name'              => $row->name,
+                'partner_available' => (float) $row->partner_available,
+                'buyer_available'   => (float) ($row->buyer_available ?? 0),
+                'quarterly_usage'   => $usage[$row->buyer_org_stock_id] ?? 0.0,
+                'price_per_sko'     => round((float) $row->product_price / $skosPerProductUnit, 4),
+            ];
+        })->all();
+    }
+
+    /**
+     * @param array<int, int> $buyerOrgStockIds
+     *
+     * @return array<int, float> average quarterly SKO usage per buyer org stock
+     */
+    protected function buyerQuarterlyUsage(array $buyerOrgStockIds): array
+    {
+        if (empty($buyerOrgStockIds)) {
+            return [];
+        }
+
+        $fromDispatches = DB::table('delivery_note_items')
+            ->whereIn('org_stock_id', $buyerOrgStockIds)
+            ->where('quantity_dispatched', '>', 0)
+            ->where('created_at', '>=', now()->subMonths(12))
+            ->selectRaw('org_stock_id, sum(quantity_dispatched) / 4.0 as avg_usage')
+            ->groupBy('org_stock_id')
+            ->pluck('avg_usage', 'org_stock_id')
+            ->map(fn ($value) => (float) $value)
+            ->all();
+
+        $missing = array_diff($buyerOrgStockIds, array_keys($fromDispatches));
+        if (empty($missing)) {
+            return $fromDispatches;
+        }
+
+        return $fromDispatches + $this->usageFromTimeSeries(array_values($missing));
+    }
+
+    /**
+     * @param array<int, int> $buyerOrgStockIds
+     *
+     * @return array<int, float>
+     */
+    protected function usageFromTimeSeries(array $buyerOrgStockIds): array
+    {
+        return DB::table('org_stock_time_series')
+            ->join('org_stock_time_series_records', 'org_stock_time_series_records.org_stock_time_series_id', 'org_stock_time_series.id')
+            ->whereIn('org_stock_time_series.org_stock_id', $buyerOrgStockIds)
+            ->where('org_stock_time_series.frequency', TimeSeriesFrequencyEnum::QUARTERLY->value)
+            ->where('org_stock_time_series_records.from', '>=', now()->subMonths(15))
+            ->selectRaw('org_stock_time_series.org_stock_id, avg(org_stock_time_series_records.sales_external + org_stock_time_series_records.sales_internal) as avg_usage')
+            ->groupBy('org_stock_time_series.org_stock_id')
+            ->pluck('avg_usage', 'org_stock_id')
+            ->map(fn ($value) => (float) $value)
+            ->all();
+    }
+
+    /**
+     * Lowest stock cover first, top up to one quarter of usage, until the budget runs out.
+     *
+     * @param array<int, array<string, mixed>> $candidates
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function greedyFill(array $candidates, float $budget): array
+    {
+        $ranked = collect($candidates)
+            ->filter(fn ($candidate) => $candidate['quarterly_usage'] > 0 && $candidate['price_per_sko'] > 0)
+            ->sortBy(fn ($candidate) => $candidate['buyer_available'] / $candidate['quarterly_usage']);
+
+        $lines     = [];
+        $remaining = $budget;
+
+        foreach ($ranked as $candidate) {
+            $target   = max(0.0, ceil($candidate['quarterly_usage'] - $candidate['buyer_available']));
+            $quantity = min($target, $candidate['partner_available'], floor($remaining / $candidate['price_per_sko']));
+
+            if ($quantity < 1) {
+                continue;
+            }
+
+            $cost       = round($quantity * $candidate['price_per_sko'], 2);
+            $remaining -= $cost;
+
+            $lines[] = $this->line($candidate, $quantity, sprintf(
+                'You use ~%s/quarter and hold %s',
+                rtrim(rtrim(number_format($candidate['quarterly_usage'], 1), '0'), '.'),
+                rtrim(rtrim(number_format($candidate['buyer_available'], 1), '0'), '.'),
+            ));
+
+            if ($remaining < 1) {
+                break;
+            }
+        }
+
+        return $lines;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $candidates
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function aiPick(array $candidates, float $budget, string $instruction): array
+    {
+        $catalogue = collect($candidates)->map(fn ($candidate) => [
+            'id'                => $candidate['org_stock_id'],
+            'code'              => $candidate['code'],
+            'name'              => $candidate['name'],
+            'price_per_sko'     => $candidate['price_per_sko'],
+            'partner_available' => $candidate['partner_available'],
+            'you_hold'          => $candidate['buyer_available'],
+            'quarterly_usage'   => $candidate['quarterly_usage'],
+        ])->values()->all();
+
+        $prompt = 'You are a purchasing assistant building an inter-company replenishment shopping list.'
+            ."\nBudget: {$budget}. Instruction from the purchaser: {$instruction}"
+            ."\nPick lines from this catalogue (quantities are whole SKOs, never exceed partner_available, total cost must stay within budget)."
+            ."\nPrefer items with low cover (you_hold vs quarterly_usage) unless the instruction says otherwise."
+            ."\nReturn ONLY a JSON array: [{\"id\": <org_stock_id>, \"quantity\": <int>, \"reason\": \"<max 12 words>\"}]"
+            ."\n\nCatalogue: ".json_encode($catalogue, JSON_UNESCAPED_UNICODE);
+
+        $byId = collect($candidates)->keyBy('org_stock_id');
+
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            try {
+                $content = Http::withToken(config('services.openai.api_key'))
+                    ->timeout(300)
+                    ->post('https://api.openai.com/v1/chat/completions', [
+                        'model'            => 'gpt-5-nano',
+                        'reasoning_effort' => 'low',
+                        'messages'         => [['role' => 'user', 'content' => $prompt]],
+                    ])
+                    ->json('choices.0.message.content') ?? '';
+
+                $start = strpos($content, '[');
+                $end   = strrpos($content, ']');
+                if ($start === false || $end === false) {
+                    continue;
+                }
+
+                $items = json_decode(substr($content, $start, $end - $start + 1), true);
+                if (!is_array($items)) {
+                    continue;
+                }
+
+                $lines     = [];
+                $remaining = $budget;
+                foreach ($items as $item) {
+                    $candidate = $byId->get($item['id'] ?? null);
+                    if (!$candidate) {
+                        continue;
+                    }
+                    $quantity = min(
+                        floor((float) ($item['quantity'] ?? 0)),
+                        $candidate['partner_available'],
+                        floor($remaining / max($candidate['price_per_sko'], 0.0001))
+                    );
+                    if ($quantity < 1) {
+                        continue;
+                    }
+                    $cost       = round($quantity * $candidate['price_per_sko'], 2);
+                    $remaining -= $cost;
+                    $lines[]    = $this->line($candidate, $quantity, (string) ($item['reason'] ?? ''));
+                }
+
+                return $lines;
+            } catch (Throwable) {
+                sleep(3);
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * @param array<string, mixed> $candidate
+     *
+     * @return array<string, mixed>
+     */
+    protected function line(array $candidate, float $quantity, string $reason): array
+    {
+        return [
+            'org_stock_id'  => $candidate['org_stock_id'],
+            'code'          => $candidate['code'],
+            'name'          => $candidate['name'],
+            'quantity'      => $quantity,
+            'price_per_sko' => $candidate['price_per_sko'],
+            'cost'          => round($quantity * $candidate['price_per_sko'], 2),
+            'reason'        => $reason,
+        ];
+    }
+
+    public function rules(): array
+    {
+        return [
+            'budget'      => ['required', 'numeric', 'min:1'],
+            'instruction' => ['sometimes', 'nullable', 'string', 'max:500'],
+        ];
+    }
+
+    public function asController(Organisation $organisation, OrgPartner $orgPartner, ActionRequest $request): array
+    {
+        $this->initialisation($organisation, $request);
+
+        return $this->handle(
+            $orgPartner,
+            (float) $this->validatedData['budget'],
+            $this->validatedData['instruction'] ?? null
+        );
+    }
+
+    public function action(OrgPartner $orgPartner, float $budget, ?string $instruction = null): array
+    {
+        $this->asAction = true;
+        $this->initialisation($orgPartner->organisation, ['budget' => $budget, 'instruction' => $instruction]);
+
+        return $this->handle($orgPartner, $budget, $instruction);
+    }
+}

@@ -1,5 +1,8 @@
 <?php
 
+if (($_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? null) === 'production') {
+    error_reporting(E_ALL & ~E_DEPRECATED);
+}
 
 $app = new Illuminate\Foundation\Application(dirname(__DIR__));
 

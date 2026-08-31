@@ -45,7 +45,7 @@ class TrackWebsiteVisitorActivity
     public const int PAUSE_SECONDS = 300;
 
     /**
-     * @param  array{user_agent?: string|null, referer?: string|null, page?: string|null, page_title?: string|null, country?: string|null, city?: string|null, region?: string|null, web_user_id?: int|null}  $hit
+     * @param  array{user_agent?: string|null, referer?: string|null, page?: string|null, page_title?: string|null, country?: string|null, city?: string|null, region?: string|null, webpage_id?: mixed, web_user_id?: int|null}  $hit
      */
     public function handle(Website $website, string $sessionId, array $hit): void
     {
@@ -212,9 +212,14 @@ class TrackWebsiteVisitorActivity
         return $samePage && !empty($previous[1]) ? (int) $previous[1] : $now;
     }
 
-    protected function pageType(?int $webpageId): ?string
+    /**
+     * The id arrives from the public hit endpoint, so it is whatever the request body held.
+     */
+    protected function pageType(mixed $webpageId): ?string
     {
-        if (!$webpageId) {
+        $webpageId = is_numeric($webpageId) ? (int) $webpageId : 0;
+
+        if ($webpageId <= 0) {
             return null;
         }
 

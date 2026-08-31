@@ -16,8 +16,10 @@ use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
+use App\Exports\Catalogue\WebsiteStructureExport;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
@@ -62,6 +64,46 @@ class ShowDepartment extends OrgAction
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
         return $this->handle($department);
+    }
+
+    /**
+     * @return array{type: string, key: string, label: string, tooltip: string, icon: array<int, string>, fields: array<int, array{key: string, label: string}>, states: array<int, array{key: string, label: string}>, download_route: array<string, array{name: string, parameters: array<string, string>}>}
+     */
+    public function getWebsiteStructureExportAction(ProductCategory $department): array
+    {
+        $definitions = WebsiteStructureExport::fieldDefinitions();
+        $stateLabels = ProductCategoryStateEnum::labels();
+
+        $parameters = [
+            'organisation' => $department->organisation->slug,
+            'shop'         => $department->shop->slug,
+            'department'   => $department->slug,
+        ];
+
+        $downloadRoute = fn (string $type) => [
+            'name'       => 'grp.org.shops.show.catalogue.departments.show.export',
+            'parameters' => array_merge($parameters, ['type' => $type]),
+        ];
+
+        return [
+            'type'           => 'button',
+            'key'            => 'export',
+            'label'          => __('Export Structure'),
+            'tooltip'        => __('Export the website structure of this department: its sub departments, families and collections, with their SEO fields'),
+            'icon'           => ['fal', 'fa-sitemap'],
+            'fields'         => array_map(fn ($key) => [
+                'key'   => $key,
+                'label' => __($definitions[$key]['heading']),
+            ], array_keys($definitions)),
+            'states'         => array_map(fn (ProductCategoryStateEnum $state) => [
+                'key'   => $state->value,
+                'label' => $stateLabels[$state->value],
+            ], ProductCategoryStateEnum::cases()),
+            'download_route' => [
+                'xlsx' => $downloadRoute('xlsx'),
+                'csv'  => $downloadRoute('csv'),
+            ],
+        ];
     }
 
     public function htmlResponse(ProductCategory $department, ActionRequest $request): Response
@@ -115,6 +157,7 @@ class ShowDepartment extends OrgAction
                     ],
                     'iconRight' => $department->state->stateIcon()[$department->state->value],
                     'actions'       => [
+                        $this->getWebsiteStructureExportAction($department),
                         $this->getWebpageActions($department),
                         $this->canEdit ? [
                             'type'  => 'button',

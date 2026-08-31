@@ -116,9 +116,7 @@ const component = computed(() => {
 	<Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
 		<template #otherBefore>
-			<Button @click="() => isModalApiToken = true" label="Generate API Token" type="tertiary">
-
-            </Button>
+			<Button v-if="currentTab === 'api_tokens'" @click="() => isModalApiToken = true" :label="trans('Generate API token')" type="tertiary" />
 		</template>
 	</PageHeading>
 	
@@ -143,7 +141,7 @@ const component = computed(() => {
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" @generate-token="() => isModalApiToken = true"></component>
 
 
 	<!-- <RetinaTableApiKey

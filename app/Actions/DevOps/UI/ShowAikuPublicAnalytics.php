@@ -11,10 +11,12 @@ namespace App\Actions\DevOps\UI;
 use App\Actions\OrgAction;
 use App\Actions\UI\AikuPublic\BlogPosts;
 use App\Actions\UI\WithInertia;
+use App\Enums\UI\DevOps\AikuPublicAnalyticsTabsEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\SysAdmin\Group;
 use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
 use Inertia\Inertia;
@@ -27,7 +29,7 @@ class ShowAikuPublicAnalytics extends OrgAction
 
     public function asController(ActionRequest $request): Group
     {
-        $this->initialisationFromGroup(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request)->withTab(AikuPublicAnalyticsTabsEnum::values());
 
         return $this->group;
     }
@@ -48,31 +50,122 @@ class ShowAikuPublicAnalytics extends OrgAction
                         'title' => $title,
                     ],
                 ],
-                'stats'       => $this->handle(),
-                'articles'    => $this->getArticlesPaginator(),
+                'tabs'        => [
+                    'current'    => $this->tab,
+                    'navigation' => AikuPublicAnalyticsTabsEnum::navigation(),
+                ],
+
+                AikuPublicAnalyticsTabsEnum::OVERVIEW->value => $this->tab == AikuPublicAnalyticsTabsEnum::OVERVIEW->value ?
+                    fn () => $this->handle()
+                    : Inertia::optional(fn () => $this->handle()),
+
+                AikuPublicAnalyticsTabsEnum::ARTICLES->value => $this->tab == AikuPublicAnalyticsTabsEnum::ARTICLES->value ?
+                    fn () => $this->getArticlesPaginator()
+                    : Inertia::optional(fn () => $this->getArticlesPaginator()),
+
+                AikuPublicAnalyticsTabsEnum::HASHTAGS->value => $this->tab == AikuPublicAnalyticsTabsEnum::HASHTAGS->value ?
+                    fn () => $this->getHashtagsPaginator()
+                    : Inertia::optional(fn () => $this->getHashtagsPaginator()),
             ]
-        )->table($this->articlesTableStructure());
+        )->table($this->articlesTableStructure())
+            ->table($this->hashtagsTableStructure());
     }
 
     private function getArticlesPaginator(): LengthAwarePaginator
     {
-        $rows = collect($this->getArticleStats());
+        $rows = $this->sortRows(collect($this->getArticleStats()), AikuPublicAnalyticsTabsEnum::ARTICLES->value, '-committed_at', ['title', 'committed_at', 'visitors', 'views', 'last_visited_at']);
 
         return new LengthAwarePaginator($rows, $rows->count(), max($rows->count(), 1), 1, ['path' => request()->url()]);
+    }
+
+    /**
+     * @param  Collection<int, array<string, mixed>>  $rows
+     * @param  array<int, string>  $sortableKeys
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function sortRows(Collection $rows, string $tableName, string $defaultSort, array $sortableKeys): Collection
+    {
+        $sort = (string) request()->query($tableName.'_sort', $defaultSort);
+        $descending = str_starts_with($sort, '-');
+        $key = ltrim($sort, '-');
+
+        if (!in_array($key, $sortableKeys)) {
+            return $rows;
+        }
+
+        return $rows->sortBy($key, SORT_NATURAL | SORT_FLAG_CASE, $descending)->values();
+    }
+
+    private function getHashtagsPaginator(): LengthAwarePaginator
+    {
+        $rows = $this->sortRows($this->getHashtagStats(), AikuPublicAnalyticsTabsEnum::HASHTAGS->value, '-views', ['hashtag', 'articles', 'visitors', 'views', 'last_visited_at']);
+
+        return new LengthAwarePaginator($rows, $rows->count(), max($rows->count(), 1), 1, ['path' => request()->url()]);
+    }
+
+    /** @return Collection<int, array<string, mixed>> */
+    public function getHashtagStats(): Collection
+    {
+        $articles = collect($this->getArticleStats());
+        $visitorHashes = $this->getArticleVisitorHashes();
+
+        return BlogPosts::all()
+            ->flatMap(fn (array $post) => array_map(fn (string $tag) => ['tag' => $tag, 'slug' => $post['slug']], array_filter($post['tags'])))
+            ->groupBy('tag')
+            ->map(function (Collection $group, string $tag) use ($articles, $visitorHashes) {
+                $rows = $articles->whereIn('slug', $group->pluck('slug'));
+
+                return [
+                    'hashtag'         => $tag,
+                    'articles'        => $rows->count(),
+                    'visitors'        => $rows->pluck('slug')->flatMap(fn (string $slug) => $visitorHashes[$slug] ?? [])->unique()->count(),
+                    'views'           => (int) $rows->sum('views'),
+                    'last_visited_at' => $rows->pluck('last_visited_at')->filter()->max(),
+                ];
+            })
+            ->values();
+    }
+
+    /** @return array<string, array<int, string>> */
+    private function getArticleVisitorHashes(): array
+    {
+        return DB::table('aiku_public_visits')->where('path', 'like', '/blog/%')
+            ->selectRaw('substr(path, 7) as slug, visitor_hash')
+            ->distinct()->get()
+            ->groupBy('slug')
+            ->map(fn (Collection $rows) => $rows->pluck('visitor_hash')->all())
+            ->all();
+    }
+
+    public function hashtagsTableStructure(): Closure
+    {
+        return function (InertiaTable $table) {
+            $table
+                ->name(AikuPublicAnalyticsTabsEnum::HASHTAGS->value)
+                ->pageName(AikuPublicAnalyticsTabsEnum::HASHTAGS->value.'Page')
+                ->withLabelRecord([__('hashtag'), __('hashtags')])
+                ->defaultSort('-views')
+                ->column(key: 'hashtag', label: __('Hashtag'), canBeHidden: false, sortable: true)
+                ->column(key: 'articles', label: __('Articles'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'visitors', label: __('Visitors'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'views', label: __('Views'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'last_visited_at', label: __('Last visit'), canBeHidden: false, sortable: true, align: 'right');
+        };
     }
 
     public function articlesTableStructure(): Closure
     {
         return function (InertiaTable $table) {
             $table
-                ->name('articles')
-                ->pageName('articlesPage')
+                ->name(AikuPublicAnalyticsTabsEnum::ARTICLES->value)
+                ->pageName(AikuPublicAnalyticsTabsEnum::ARTICLES->value.'Page')
                 ->withLabelRecord([__('article'), __('articles')])
-                ->column(key: 'title', label: __('Article'), canBeHidden: false)
-                ->column(key: 'committed_at', label: __('Published'), canBeHidden: false, align: 'right')
-                ->column(key: 'visitors', label: __('Visitors'), canBeHidden: false, align: 'right')
-                ->column(key: 'views', label: __('Views'), canBeHidden: false, align: 'right')
-                ->column(key: 'last_visited_at', label: __('Last visit'), canBeHidden: false, align: 'right');
+                ->defaultSort('-committed_at')
+                ->column(key: 'title', label: __('Article'), canBeHidden: false, sortable: true)
+                ->column(key: 'committed_at', label: __('Published'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'visitors', label: __('Visitors'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'views', label: __('Views'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'last_visited_at', label: __('Last visit'), canBeHidden: false, sortable: true, align: 'right');
         };
     }
 

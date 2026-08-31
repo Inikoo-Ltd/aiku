@@ -1415,7 +1415,7 @@ test('short pick keeps submitted order amounts until the note is picked', functi
 
     expect($order->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::PICKED)
         ->and((float) $transaction->net_amount)->toBeLessThan($submittedNet)
-        ->and((float) $transaction->net_amount)->toBe(round($submittedNet / (float) $transaction->quantity_ordered * (float) $transaction->quantity_picked, 2))
+        ->and((float) $transaction->net_amount)->toBe(round($submittedNet / ((float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus) * (float) $transaction->quantity_picked, 2))
         ->and((float) $order->net_amount)->toBe((float) $transaction->net_amount);
 });
 
@@ -3074,23 +3074,29 @@ test('a redefined pack does not change what an already sold box means', function
     expect($required())->toBe($beforeRedefinition);
 });
 
-test('scan matches sko vs unit barcode kind and warns only when it disagrees with the shop type', function () {
+test('scan matches only the sko barcode, never the unit ean, and never a dropshipping item', function () {
     $matcher = new class () {
         use \App\Actions\Dispatching\DeliveryNoteItem\WithScannedDeliveryNoteItemMatching;
 
-        public function kind($item, $scanned): string
+        public function match($items, $scanned)
         {
-            return $this->matchedKind($item, $scanned);
+            return $this->matchItems($items, $scanned);
         }
 
-        public function warning($item, $kind): ?string
+        public function dropshipping($items, $scanned)
         {
-            return $this->scanKindWarning($item, $kind);
+            return $this->dropshippingMatches($items, $scanned);
+        }
+
+        public function scannableNote($deliveryNote): bool
+        {
+            return $this->isScannableDeliveryNote($deliveryNote);
         }
     };
 
     $orgStock = new \App\Models\Inventory\OrgStock();
     $orgStock->forceFill([
+        'code'         => 'ABC-1',
         'barcode'      => 'SKO123',
         'unit_barcode' => '5055796528387',
         'packed_in'    => 6,
@@ -3104,17 +3110,29 @@ test('scan matches sko vs unit barcode kind and warns only when it disagrees wit
 
     $item = new \App\Models\Dispatching\DeliveryNoteItem();
     $item->setRelation('orgStock', $orgStock);
-    $item->setRelation('shop', $dropshippingShop);
-
-    expect($matcher->kind($item, 'SKO123'))->toBe('sko')
-        ->and($matcher->kind($item, '5055796528387'))->toBe('unit')
-        ->and($matcher->warning($item, 'sko'))->toContain('outer packing')
-        ->and($matcher->warning($item, 'unit'))->toBeNull();
-
     $item->setRelation('shop', $b2cShop);
 
-    expect($matcher->warning($item, 'sko'))->toBeNull()
-        ->and($matcher->warning($item, 'unit'))->toContain('1 SKO = 6 units');
+    $items = collect([$item]);
+
+    expect($matcher->match($items, 'SKO123'))->toHaveCount(1)
+        ->and($matcher->match($items, 'ABC-1'))->toHaveCount(1)
+        ->and($matcher->match($items, '5055796528387'))->toBeEmpty()
+        ->and($matcher->dropshipping($items, 'SKO123'))->toBeEmpty();
+
+    $item->setRelation('shop', $dropshippingShop);
+
+    expect($matcher->match($items, 'SKO123'))->toBeEmpty()
+        ->and($matcher->match($items, 'ABC-1'))->toBeEmpty()
+        ->and($matcher->dropshipping($items, 'SKO123'))->toHaveCount(1);
+
+    $dropshippingNote = new \App\Models\Dispatching\DeliveryNote();
+    $dropshippingNote->setRelation('shop', $dropshippingShop);
+
+    $wholesaleNote = new \App\Models\Dispatching\DeliveryNote();
+    $wholesaleNote->setRelation('shop', $b2cShop);
+
+    expect($matcher->scannableNote($dropshippingNote))->toBeFalse()
+        ->and($matcher->scannableNote($wholesaleNote))->toBeTrue();
 });
 
 test('tariff codes table surfaces items with no tariff code or origin', function () {
@@ -3658,12 +3676,18 @@ test('the return delivery note dropdown label shows what the operator can check 
     ]));
     $response->assertOk();
 
-    $label = collect($response->json("data"))->firstWhere('id', $deliveryNote->id)['label'];
+    $row   = collect($response->json("data"))->firstWhere('id', $deliveryNote->id);
+    $label = $row['label'];
 
     expect($label)->toContain($deliveryNote->reference)
         ->and($label)->toContain('Woodhouse Stores')
         ->and($label)->toContain('r_labelcheck')
-        ->and($label)->toContain('TRACK-99001');
+        ->and($label)->toContain('TRACK-99001')
+        ->and($row['reference'])->toBe($deliveryNote->reference)
+        ->and($row['customer_name'])->toBe('Woodhouse Stores')
+        ->and($row['customer_reference'])->toBe('r_labelcheck')
+        ->and($row['tracking_number'])->toBe('TRACK-99001')
+        ->and($row['date'])->toBe($deliveryNote->date->format('Y-m-d'));
 });
 
 test('the return delivery note lookup leads with the search index hits and still falls back to sql', function () {
@@ -3691,4 +3715,111 @@ test('the return delivery note lookup leads with the search index hits and still
     ]));
     $response->assertOk();
     expect(collect($response->json('data'))->pluck('id'))->toContain($deliveryNote->id);
+});
+
+test('a box with no findable delivery note is logged to identify and later identified into a return', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'is_returned' => false]);
+    $this->shop->update(['is_aiku' => true]);
+
+    post(route('grp.models.warehouse.unidentified_return.store', [$this->warehouse->id]), [
+        'notes' => "handwritten: B. Winder, tracking starts XQ57",
+    ])->assertRedirect();
+
+    $unidentifiedReturn = \App\Models\GoodsIn\UnidentifiedReturn::latest('id')->first();
+    expect($unidentifiedReturn->warehouse_id)->toBe($this->warehouse->id)
+        ->and($unidentifiedReturn->notes)->toContain('B. Winder')
+        ->and($unidentifiedReturn->identified_at)->toBeNull();
+
+    post(route('grp.models.warehouse.unidentified_return.store', [$this->warehouse->id]), [])
+        ->assertSessionHasErrors(['notes', 'image']);
+
+    $indexResponse = get(route('grp.org.warehouses.show.incoming.return_delivery_notes.index', [
+        $this->organisation->slug,
+        $this->warehouse->slug,
+    ]));
+    $indexResponse->assertOk();
+    $indexResponse->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->where('warehouseId', $this->warehouse->id)
+            ->where('unidentifiedReturns.data.0.id', $unidentifiedReturn->id)
+            ->etc()
+    );
+
+    patch(route('grp.models.delivery_note.return.process', [$deliveryNote->id]), [
+        'unidentified_return_id' => $unidentifiedReturn->id,
+    ])->assertRedirect();
+
+    $unidentifiedReturn->refresh();
+    expect($unidentifiedReturn->identified_at)->not->toBeNull()
+        ->and($unidentifiedReturn->delivery_note_id)->toBe($deliveryNote->id)
+        ->and($unidentifiedReturn->returnDeliveryNote->delivery_note_id)->toBe($deliveryNote->id)
+        ->and($deliveryNote->refresh()->is_returned)->toBeTrue();
+
+    patch(route('grp.models.delivery_note.return.process', [$deliveryNote->id]), [
+        'unidentified_return_id' => $unidentifiedReturn->id,
+    ])->assertSessionHasErrors(['unidentified_return_id']);
+});
+
+test('a bonus line submitted at zero is not priced at list when it is picked', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $transaction = $item->transaction;
+    $transaction->update([
+        'quantity_ordered'           => 0,
+        'quantity_bonus'             => 1,
+        'is_gift'                    => false,
+        'submitted_quantity_ordered' => 0,
+        'submitted_net_amount'       => 0,
+        'submitted_discount_factor'  => 1,
+        'current_discount_factor'    => 1,
+    ]);
+
+    $totals = \App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()
+        ->recalculateTransactionTotals($transaction->refresh(), $deliveryNote);
+
+    expect((float)$totals['net_amount'])->toBe(0.0)
+        ->and((float)$totals['quantity'])->toBeGreaterThan(0.0);
+});
+
+test('UI dispatch hub pickers/packers live view', function () {
+    $response = get(route('grp.org.warehouses.show.dispatching.backlog', [
+        $this->organisation->slug,
+        $this->warehouse->slug,
+    ]).'?tab=pickers');
+    $response->assertOk();
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('pickers_current.data')
+            ->has('packers_current.data')
+            ->etc()
+    );
+});
+
+test('UI dispatch reports accept date range and channel', function () {
+    $response = get(route('grp.org.warehouses.show.dispatching.reports', [
+        $this->organisation->slug,
+        $this->warehouse->slug,
+    ]).'?between[date]=20260801-20260828&channel=wholesale');
+    $response->assertOk();
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('pickers.data')
+            ->has('packers.data')
+            ->etc()
+    );
+});
+
+test('UI orders at gate index', function () {
+    $response = get(route('grp.org.warehouses.show.dispatching.gate', [
+        $this->organisation->slug,
+        $this->warehouse->slug,
+    ]));
+    $response->assertOk();
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->component('Org/Dispatching/OrdersAtGate')
+            ->has('data.data')
+            ->etc()
+    );
 });

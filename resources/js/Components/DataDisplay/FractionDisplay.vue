@@ -74,7 +74,7 @@ export default {
           Array.isArray(value[1]) && 
           value[1].length === 2 && 
           typeof value[1][0] === 'number' && 
-          typeof value[1][1] === 'number'
+          !isNaN(Number(value[1][1]))
         );
       }
     },
@@ -130,11 +130,12 @@ export default {
      * Get the remaining divisor (denominator) of the fraction
      */
     remainingDivisor() {
+      const divisor = Number(this.fractionData[1][1]);
       if (this.simplify) {
-        const gcd = this.findGCD(Math.abs(this.fractionData[1][0]), Math.abs(this.fractionData[1][1]));
-        return this.fractionData[1][1] / gcd;
+        const gcd = this.findGCD(Math.abs(this.fractionData[1][0]), Math.abs(divisor));
+        return divisor / gcd;
       }
-      return this.fractionData[1][1];
+      return divisor;
     }
   },
 

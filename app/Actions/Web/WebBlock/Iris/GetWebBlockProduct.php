@@ -8,18 +8,22 @@
 
 namespace App\Actions\Web\WebBlock\Iris;
 
+use App\Actions\Web\WebBlock\Concerns\HasWebBlockLayoutData;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Http\Resources\Helpers\Attachment\IrisAttachmentsResource;
+use App\Http\Resources\Web\WebBlockFamilyResource;
 use App\Http\Resources\Web\WebBlockProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Models\Catalogue\Variant;
+use Illuminate\Support\Arr;
 
 class GetWebBlockProduct
 {
     use AsObject;
+    use HasWebBlockLayoutData;
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
@@ -50,7 +54,23 @@ class GetWebBlockProduct
         $variant     = $product->is_variant_leader ? Variant::where('leader_id', $product->id)->first() : null;
 
         $resourceWebBlockProduct = WebBlockProductResource::make($webpage->model)->toArray(request());
-        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['product']['data']['fieldValue'] ?? []);
+
+        $webPublishedLayout = $webpage->website->published_layout;
+
+        $tabs = [
+            'description'       => $product->description,
+            'marketing_material_route'  => [
+                'name'          => 'iris.catalogue.feeds.product.download_img',
+                'parameters'    => [
+                    'product'   => $product->slug,
+                ]
+            ],
+            ...Arr::except(($product?->family ? WebBlockFamilyResource::getTabsData($product->family) : []), 'marketing_material_route'),
+        ];
+
+        data_set($webBlock, 'web_block.layout.data.fieldValue', data_get($webPublishedLayout, 'product.data.fieldValue', []));
+        data_set($webBlock, 'web_block.layout.data.fieldValue.tabs', $tabs);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.tabs_style', $this->getFamilyExtraDescriptionLayoutData($webPublishedLayout));
         data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
 
@@ -61,6 +81,7 @@ class GetWebBlockProduct
             data_set($variant, 'data.products', $excludedProducts);
             data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant);
         }
+
 
         return [
            'type' => data_get($webBlock, 'type'),

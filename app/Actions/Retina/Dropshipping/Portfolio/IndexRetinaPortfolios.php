@@ -316,6 +316,29 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
             ];
         }
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::EBAY) {
+            $countDraftPortfolios = $this->customerSalesChannel->portfolios()
+                ->where('portfolios.status', true)
+                ->where('data->is_platform_draft', true)
+                ->count();
+
+            if ($countDraftPortfolios > 0) {
+                $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'primary',
+                    'tooltip' => __('Publish all draft listings on eBay so they go live'),
+                    'label'   => trans_choice('Publish :count draft|Publish :count drafts', $countDraftPortfolios, ['count' => $countDraftPortfolios]),
+                    'icon'    => ['fal', 'fa-upload'],
+                    'route'   => [
+                        'method'     => 'post',
+                        'name'       => 'retina.models.dropshipping.ebay.publish_drafts',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                ];
+            }
+        }
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $actions[] = [
                 'type'    => 'button',

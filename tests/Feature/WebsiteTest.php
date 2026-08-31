@@ -84,6 +84,10 @@ use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Helpers\Snapshot;
 use App\Models\Helpers\SnapshotStats;
 use App\Models\Web\Announcement;
+use App\Actions\Web\Announcement\ResumeSupersededAnnouncement;
+use App\Enums\Announcement\AnnouncementStatusEnum;
+use App\Http\Middleware\HandleIrisInertiaRequests;
+use Illuminate\Validation\ValidationException;
 use App\Models\Web\Banner;
 use App\Models\Web\Crawl;
 use App\Models\Web\ExternalLink;
@@ -430,6 +434,9 @@ test('web hydrator', function () {
 test('store redirect', function (Webpage $webpage) {
     $homepage = $webpage->website->storefront;
 
+    $pathCacheKey = config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.$webpage->url;
+    cache()->put($pathCacheKey, $webpage->id, 60);
+
     $redirect = StoreRedirect::make()->action($webpage, [
         'type'          => RedirectTypeEnum::PERMANENT,
         'to_webpage_id' => $homepage->id
@@ -438,7 +445,8 @@ test('store redirect', function (Webpage $webpage) {
     expect($redirect)->toBeInstanceOf(Redirect::class)
         ->and($redirect->type)->toBe(RedirectTypeEnum::PERMANENT)
         ->and($redirect->from_path)->toBe($webpage->url)
-        ->and($redirect->from_url)->toBe('https://www.'.$redirect->website->domain.'/'.$webpage->url);
+        ->and($redirect->from_url)->toBe('https://www.'.$redirect->website->domain.'/'.$webpage->url)
+        ->and(cache()->has($pathCacheKey))->toBeFalse();
 
     return $redirect;
 })->depends('create webpage');
@@ -1553,6 +1561,104 @@ test('publish announcement', function (Website $website) {
     expect($announcement->live_snapshot_id)->not->toBeNull();
 })->depends('create b2b website');
 
+function publishAnnouncementInPosition(Website $website, $user, string $name, string $position, array $modelData = []): Announcement
+{
+    $announcement = StoreAnnouncement::make()->action($website, ['name' => $name]);
+    UpdateAnnouncement::make()->handle($announcement, [
+        'fields'   => ['title' => 'hi'],
+        'settings' => ['position' => $position]
+    ]);
+    $announcement->refresh();
+
+    request()->setUserResolver(fn () => $user);
+    PublishAnnouncement::make()->handle($announcement, [
+        'text'                 => 'hello world',
+        'container_properties' => [],
+        ...$modelData
+    ]);
+
+    return $announcement->refresh();
+}
+
+test('publishing on top of an overlapping announcement is refused', function (Website $website) {
+    $running = publishAnnouncementInPosition($website, $this->user, 'running', 'refused-spot');
+
+    $challenger = StoreAnnouncement::make()->action($website, ['name' => 'challenger']);
+    UpdateAnnouncement::make()->handle($challenger, [
+        'fields'   => ['title' => 'hi'],
+        'settings' => ['position' => 'refused-spot']
+    ]);
+    $challenger->refresh();
+    request()->setUserResolver(fn () => $this->user);
+
+    expect(fn () => PublishAnnouncement::make()->handle($challenger, [
+        'text'                 => 'hello world',
+        'container_properties' => [],
+    ]))->toThrow(ValidationException::class);
+
+    $running->refresh();
+    $challenger->refresh();
+
+    expect($running->status)->toBe(AnnouncementStatusEnum::ACTIVE)
+        ->and($running->paused_by_announcement_id)->toBeNull()
+        ->and($challenger->live_snapshot_id)->toBeNull();
+})->depends('create b2b website');
+
+test('superseding pauses the other announcement and it comes back by itself', function (Website $website) {
+    $running = publishAnnouncementInPosition($website, $this->user, 'running', 'shared-spot');
+
+    Queue::fake();
+    $finishAt = now()->addHours(2);
+
+    $challenger = publishAnnouncementInPosition($website, $this->user, 'challenger', 'shared-spot', [
+        'schedule_finish_at' => $finishAt,
+        'supersede'          => true
+    ]);
+
+    $running->refresh();
+
+    expect($challenger->status)->toBe(AnnouncementStatusEnum::ACTIVE)
+        ->and($running->status)->toBe(AnnouncementStatusEnum::INACTIVE)
+        ->and($running->paused_by_announcement_id)->toBe($challenger->id)
+        ->and($running->paused_until->timestamp)->toBe($finishAt->timestamp);
+
+    $this->travelTo($finishAt->copy()->addSecond());
+
+    ResumeSupersededAnnouncement::run($running, $challenger->id);
+    $running->refresh();
+
+    $this->travelBack();
+
+    expect($running->status)->toBe(AnnouncementStatusEnum::ACTIVE)
+        ->and($running->paused_by_announcement_id)->toBeNull()
+        ->and($running->paused_until)->toBeNull();
+})->depends('create b2b website');
+
+test('announcements in the same position but different dates do not clash', function (Website $website) {
+    $first = publishAnnouncementInPosition($website, $this->user, 'first', 'queued-spot', [
+        'schedule_finish_at' => now()->addDay()
+    ]);
+
+    $second = publishAnnouncementInPosition($website, $this->user, 'second', 'queued-spot', [
+        'schedule_at' => now()->addDays(2)
+    ]);
+
+    $first->refresh();
+
+    expect($first->status)->toBe(AnnouncementStatusEnum::ACTIVE)
+        ->and($first->paused_by_announcement_id)->toBeNull()
+        ->and($second->live_snapshot_id)->not->toBeNull();
+})->depends('create b2b website');
+
+test('storefront cache expires at the next scheduled change', function (Website $website) {
+    publishAnnouncementInPosition($website, $this->user, 'timed', 'cache-spot', [
+        'schedule_finish_at' => now()->addMinutes(10)
+    ]);
+
+    $ttl = (new HandleIrisInertiaRequests())->getAnnouncementsCacheTtl($website->refresh());
+
+    expect($ttl)->toBeLessThanOrEqual(600)->toBeGreaterThan(0);
+})->depends('create b2b website');
 // Cloudflare: mutate website slugs, so keep last to avoid stale slugs in UI tests above
 
 it('correctly picks zone kind ruleset when multiple exist', function () {

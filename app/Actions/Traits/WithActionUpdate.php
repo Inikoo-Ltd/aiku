@@ -74,13 +74,11 @@ trait WithActionUpdate
         foreach ($this->dotJsonLeaves(Arr::only($modelData, $jsonFields)) as $dottedKey => $newValue) {
             $oldValue = data_get($model, $dottedKey);
             if (json_encode($oldValue) !== json_encode($newValue)) {
-                if (preg_match('/password|secret|token|pin|access_id|\w*key$/i', $dottedKey)) {
-                    $auditOld[$dottedKey] = $oldValue === null ? null : PasswordRedactor::redact($oldValue);
-                    $auditNew[$dottedKey] = $newValue === null ? null : PasswordRedactor::redact($newValue);
-                } else {
-                    $auditOld[$dottedKey] = $oldValue;
-                    $auditNew[$dottedKey] = $newValue;
+                if (preg_match(PasswordRedactor::SECRET_KEY_PATTERN, $dottedKey)) {
+                    continue;
                 }
+                $auditOld[$dottedKey] = $oldValue;
+                $auditNew[$dottedKey] = $newValue;
             }
         }
 

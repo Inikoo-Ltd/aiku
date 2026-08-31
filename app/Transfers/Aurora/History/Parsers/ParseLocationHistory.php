@@ -226,7 +226,7 @@ class ParseLocationHistory
         }
 
         if ($field === 'flag') {
-            return self::extractFlagValues($old, $new);
+            return self::extractFlagValues($table['old_html'] ?? $old, $table['new_html'] ?? $new);
         }
 
         if (in_array($field, self::MEASURE_FIELDS, true)) {

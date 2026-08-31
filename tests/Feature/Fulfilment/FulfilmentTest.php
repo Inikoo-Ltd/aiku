@@ -1854,6 +1854,27 @@ test('picking pallet to return', function (PalletReturn $submittedPalletReturn) 
     return $pickingPalletReturn;
 })->depends('submit pallet return');
 
+test('pick whole pallet in return by scanning its reference', function (PalletReturn $palletReturn) {
+    SendPalletReturnNotification::shouldRun()
+        ->andReturn();
+
+    $pallet = $palletReturn->pallets->firstWhere('reference', '!=', null);
+
+    $scan = fn (string $barcode) => \App\Actions\Fulfilment\PalletReturnItem\PickPalletReturnItemByScan::make()
+        ->handle($palletReturn->refresh(), $this->user, ['barcode' => $barcode]);
+
+    $picked = $scan($pallet->reference);
+    expect($picked['status'])->toBe('picked')
+        ->and($picked['item']['type'])->toBe('Pallet')
+        ->and($picked['item']['quantity_to_pick'])->toBe(0.0)
+        ->and($pallet->refresh()->state)->toBe(PalletStateEnum::PICKED);
+
+    $pickedAgain = $scan($pallet->reference);
+    expect($pickedAgain['status'])->toBe('already_picked');
+
+    return $palletReturn;
+})->depends('picking pallet to return');
+
 test('picked pallet to return', function (PalletReturn $pickingPalletReturn) {
     SendPalletReturnNotification::shouldRun()
         ->andReturn();
@@ -2642,6 +2663,38 @@ test('picking second pallet to return', function (PalletReturn $submittedPalletR
 
     return $pickingPalletReturn;
 })->depends('submit second pallet return');
+
+test('pick stored item in return by scanning its reference', function (PalletReturn $palletReturn) {
+    SendPalletReturnNotification::shouldRun()
+        ->andReturn();
+
+    $palletReturnItem = PalletReturnItem::where('pallet_return_id', $palletReturn->id)->first();
+    $reference        = $palletReturnItem->storedItem->reference;
+
+    $scan = fn (string $barcode) => \App\Actions\Fulfilment\PalletReturnItem\PickPalletReturnItemByScan::make()
+        ->handle($palletReturn->refresh(), $this->user, ['barcode' => $barcode]);
+
+    $missed = $scan('NOT-A-REFERENCE');
+    expect($missed['status'])->toBe('not_found');
+
+    $picked = $scan($reference);
+    expect($picked['status'])->toBe('picked')
+        ->and($picked['item']['reference'])->toBe($reference)
+        ->and($picked['item']['quantity_picked'])->toBe(1.0)
+        ->and((float) $palletReturnItem->refresh()->quantity_picked)->toBe(1.0);
+
+    $pickedAgain = $scan($reference);
+    expect($pickedAgain['status'])->toBe('picked')
+        ->and((float) $palletReturnItem->refresh()->quantity_picked)->toBe(2.0);
+
+    $palletReturnItem->storedItem->update(['barcode' => '5051234567890']);
+
+    $pickedByEan = $scan('5051234567890');
+    expect($pickedByEan['status'])->toBe('picked')
+        ->and((float) $palletReturnItem->refresh()->quantity_picked)->toBe(3.0);
+
+    return $palletReturn;
+})->depends('picking second pallet to return');
 
 test('pick pallet return item', function (PalletReturn $palletReturn) {
     SendPalletReturnNotification::shouldRun()

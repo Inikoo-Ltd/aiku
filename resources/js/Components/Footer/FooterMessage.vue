@@ -19,6 +19,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import MiniChatWindow from '@/Components/Chat/MiniChatWindow.vue'
 import { playNotificationSoundFile, buildStorageUrl, fetchUnreadCount, totalUnread } from "@/Composables/useNotificationSound"
 import { useMiniChats } from "@/Composables/useMiniChats"
+import { useStaffMessaging } from "@/Stores/staff-messaging"
 
 library.add(faMessage, faUser, faEdit, faChevronDown, faSearch, faSlidersH, faPaperclip, faStoreAlt, faCommentAltLines)
 
@@ -163,6 +164,7 @@ const positionRailPopover = () => {
 const togglePopover = async () => {
     showPopover.value = !showPopover.value
     if (showPopover.value) {
+        useStaffMessaging().openWindows = []
         positionRailPopover()
         await Promise.all([fetchSessions(), fetchTabCounts()])
     }

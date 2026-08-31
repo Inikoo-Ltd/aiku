@@ -19,6 +19,7 @@ use App\Models\Web\Website;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -42,7 +43,7 @@ class GetBlogWebpages extends OrgAction
             ->where('webpages.website_id', $website->id)
             ->where('webpages.type', WebpageTypeEnum::BLOG)
             ->where('webpages.state', WebpageStateEnum::LIVE)
-            ->whereIn('webpages.sub_type', WebpageSubTypeEnum::blogCategoryValues())
+            ->whereIn(DB::raw(WebpageSubTypeEnum::blogCategorySqlExpression()), WebpageSubTypeEnum::blogCategoryValues())
             ->select([
                 'webpages.id',
                 'webpages.slug',

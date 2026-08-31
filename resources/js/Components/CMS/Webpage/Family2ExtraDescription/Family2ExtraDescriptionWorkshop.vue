@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref } from "vue"
+import { computed, inject, ref, watch } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCube, faLink, faInfoCircle } from "@fal"
 import { faStar, faCircle, faBadgePercent } from "@fas"
@@ -9,6 +9,9 @@ import { getStyles } from "@/Composables/styles"
 import About from "@/Components/CMS/Webpage/Family2ExtraDescription/AboutWorkshop.vue"
 import FaqWorkshop from "./FaqWorkshop.vue"
 import MarketingMaterialsWorkshop from "./MarketingMaterialsWorkshop.vue"
+import CustomisationWorkshop from "./CustomisationWorkshop.vue"
+import LabelingGuideWorkshop from "./LabelingGuideWorkshop.vue"
+import StorageWorkshop from "./StorageWorkshop.vue"
 
 library.add(
   faCube,
@@ -30,14 +33,42 @@ const props = defineProps<{
 }>()
 
 const layout = inject("layout", {}) as any
-const activeTab = ref("about")
+
+
+const isLoggedIn = computed(() => layout?.iris?.is_logged_in ?? true)
+
+const isAromaOrganisation = computed(() =>
+  Boolean(props.modelValue?.family?.is_aroma_organisation)
+)
+
+const aromaOnlyTabs = ["customisation", "labeling guide", "storage_and_shelf_life"]
 
 const tabs = computed(() =>
   [
     { key: "about", label: ctrans("About the Range") },
     { key: "marketing", label: ctrans("Marketing Materials") },
     { key: "faq", label: ctrans("FAQ") },
-  ])
+    { key: "customisation", label: ctrans("Customisation") },
+    { key: "labeling guide", label: ctrans("Labeling Guide") },
+    { key: "storage_and_shelf_life", label: ctrans("Storage & Shelf Life") },
+  ].filter(tab => {
+
+
+    if (aromaOnlyTabs.includes(tab.key)) {
+      return isAromaOrganisation.value
+    }
+
+    return true
+  })
+)
+
+const activeTab = ref(tabs.value[0]?.key ?? "")
+
+watch(tabs, (visibleTabs) => {
+  if (!visibleTabs.some(tab => tab.key === activeTab.value)) {
+    activeTab.value = visibleTabs[0]?.key ?? ""
+  }
+})
 
 const sectionId = computed(
   () => props.modelValue?.id ?? `family-1-iris-${props.indexBlock}`
@@ -60,6 +91,12 @@ const component = (tab: string) => {
       return MarketingMaterialsWorkshop
     case "faq":
       return FaqWorkshop
+    case "customisation":
+      return CustomisationWorkshop
+    case "labeling guide":
+      return LabelingGuideWorkshop
+    case "storage_and_shelf_life":
+      return StorageWorkshop
     default:
       return null
   }
@@ -123,6 +160,7 @@ const sectionStyle = computed(() => {
 
 <template>
   <section
+    v-if="tabs.length"
     class="w-full bg-[#D8D9DB] "
     :id="sectionId"
      :style="sectionStyle"
@@ -160,7 +198,7 @@ const sectionStyle = computed(() => {
         :is="component(activeTab)"
         :field-value="modelValue"
         :screen-type="screenType"
-        :faqs="modelValue.family.faq"
+        :faqs="modelValue?.family?.faq"
       />
     </div>
   </section>

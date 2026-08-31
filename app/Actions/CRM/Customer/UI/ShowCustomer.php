@@ -39,12 +39,13 @@ use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
-use Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\SalesChannel\GetSalesChannelOptions;
 use App\Actions\Traits\HasGrData;
+use App\Enums\UI\NotesEnum;
+use Illuminate\Support\Arr;
 
 class ShowCustomer extends OrgAction
 {
@@ -84,6 +85,13 @@ class ShowCustomer extends OrgAction
     {
         $tabs         = $customer->shop->type == ShopTypeEnum::DROPSHIPPING ? CustomerDropshippingTabsEnum::class : CustomerTabsEnum::class;
         $navigation   = $tabs::navigation();
+        if ($customer->shop->type == ShopTypeEnum::EXTERNAL) {
+            $navigation = Arr::only($navigation, [
+                CustomerTabsEnum::SHOWCASE->value,
+                CustomerTabsEnum::TIMELINE->value,
+                CustomerTabsEnum::HISTORY->value,
+            ]);
+        }
         $webUsersMeta = $this->getWebUserMeta($customer, $request);
 
         $shopMeta      = [];
@@ -140,7 +148,7 @@ class ShowCustomer extends OrgAction
                         $webUsersMeta
                     ]),
                     'actions'       => array_values(array_filter([
-                        [
+                        $customer->shop->type !== ShopTypeEnum::EXTERNAL ? [
                             'key'     => 'edit_customer',
                             'type'    => 'button',
                             'style'   => 'edit',
@@ -149,8 +157,8 @@ class ShowCustomer extends OrgAction
                                 'name'       => 'grp.org.shops.show.crm.customers.edit',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
-                        ],
-                        $this->isSupervisor && DeleteCustomer::canBeDeleted($customer) ? [
+                        ] : false,
+                        $customer->shop->type !== ShopTypeEnum::EXTERNAL && $this->isSupervisor && DeleteCustomer::canBeDeleted($customer) ? [
                             'key'     => 'delete_customer',
                             'type'    => 'button',
                             'style'   => 'delete',
@@ -260,7 +268,7 @@ class ShowCustomer extends OrgAction
         ->table(IndexDispatchedEmails::make()->tableStructure($customer, $tabs::DISPATCHED_EMAILS->value))
         ->table(IndexCreditTransactions::make()->tableStructure($customer, $tabs::CREDIT_TRANSACTIONS->value))
         ->table(IndexOffers::make()->tableStructure(parent: $customer, prefix: $tabs::OFFERS->value))
-        ->table(IndexHistory::make()->tableStructure($tabs::HISTORY->value));
+        ->table(IndexHistory::make()->tableStructure($tabs::HISTORY->value, model: $customer));
     }
 
 
@@ -275,21 +283,35 @@ class ShowCustomer extends OrgAction
         return [
             "note_list" => [
                 [
-                    "label"       => __("Private"),
+                    "label"       => NotesEnum::INTERNAL->label(),
                     "note"        => $customer->internal_notes ?? '',
                     "information" => __("This note is only visible to staff members. Staff can communicate with each other about the customer."),
                     "editable"    => true,
-                    "bgColor"     => "#FF7DBD",
-                    "field"       => "internal_notes"
+                    "field"       => "internal_notes",
+                    ...NotesEnum::INTERNAL->boilerPlate()
                 ],
                 [
-                    "label"       => __("Sticky Note For Delivery Notes").' ('.__("Private").')',
+                    "label"       => __("Warehouse Note (Permanent)"),
                     "note"        => $customer->warehouse_internal_notes ?? '',
-                    "information" => __("Will be put as Order private note everytime the Order submitted. Visible only to customer service and warehouse's staff."),
+                    "information" => __("Will be put on every Order private note. Visible only to customer service and warehouse's staff."),
                     "editable"    => true,
-                    "bgColor"     => "#FCF4A3",
-                    "field"       => "warehouse_internal_notes"
+                    "field"       => "warehouse_internal_notes",
+                    ...NotesEnum::WAREHOUSE->boilerPlate()
                 ]
+            ],
+            "temporary_note"   => [
+                "label"         => NotesEnum::WAREHOUSE_TEMPORARY->label(),
+                "note"          => $customer->warehouse_temporary_notes ?? '',
+                "information"   => __("Will be put on the next Order private note"),
+                "editable"      => true,
+                "field"         => "warehouse_temporary_notes",
+                "updateRoute"   => [
+                    'name'       => 'grp.models.customer.update',
+                    'parameters' => [
+                        'customer' => $customer->id
+                    ]
+                ],
+                ...NotesEnum::WAREHOUSE_TEMPORARY->boilerPlate()
             ]
         ];
     }

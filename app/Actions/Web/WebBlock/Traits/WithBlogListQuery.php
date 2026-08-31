@@ -96,7 +96,7 @@ trait WithBlogListQuery
                 ->take($numberOfPosts)
                 ->values();
         } else {
-            $blogs = $query->whereIn('sub_type', $this->getCategories($webBlock))
+            $blogs = $query->whereIn(DB::raw(WebpageSubTypeEnum::blogCategorySqlExpression()), $this->getCategories($webBlock))
                 ->latest('live_at')
                 ->limit($numberOfPosts)
                 ->get();

@@ -10,6 +10,7 @@ namespace App\Actions\Inventory\OrgStock\Stock;
 
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
+use App\Actions\Traits\WithStockHistoryArchiveWrite;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use App\Models\SysAdmin\Organisation;
@@ -22,6 +23,7 @@ class BackfillStockValuations
 {
     use AsAction;
     use CalculatesOrgStockHistories;
+    use WithStockHistoryArchiveWrite;
 
     public string $jobQueue = 'sales_slave_historic';
 
@@ -63,13 +65,7 @@ class BackfillStockValuations
 
         $wacStartDate = Carbon::parse($organisation->wac_calculations_start_date);
 
-        $orgStockIds = DB::table('org_stock_histories')
-            ->join('org_stocks', 'org_stocks.id', '=', 'org_stock_histories.org_stock_id')
-            ->where('org_stock_histories.organisation_id', $organisation->id)
-            ->where('org_stock_histories.date', '>=', $wacStartDate->format('Y-m-d'))
-            ->groupBy('org_stock_histories.org_stock_id')
-            ->orderByRaw('max(org_stock_histories.org_stock_lpp_value) DESC NULLS LAST')
-            ->pluck('org_stock_histories.org_stock_id');
+        $orgStockIds = $this->orgStockIdsToBackfill($organisation, $wacStartDate);
 
         if (!$command->option('sync')) {
             foreach ($orgStockIds as $orgStockId) {
@@ -96,6 +92,32 @@ class BackfillStockValuations
         return 0;
     }
 
+    /**
+     * Ordered by peak value so the money is right first, and taken from both databases: a SKU whose
+     * whole history is older than the retention window exists only in the archive, and skipping it
+     * would leave it valued by whatever the last sweep wrote.
+     *
+     * @return \Illuminate\Support\Collection<int, int>
+     */
+    private function orgStockIdsToBackfill(Organisation $organisation, Carbon $wacStartDate): \Illuminate\Support\Collection
+    {
+        $ids = collect();
+
+        foreach ($this->stockHistoryWriteConnections() as $connection) {
+            $ids = $ids->concat(
+                DB::connection($connection)->table('org_stock_histories')
+                    ->join('org_stocks', 'org_stocks.id', '=', 'org_stock_histories.org_stock_id')
+                    ->where('org_stock_histories.organisation_id', $organisation->id)
+                    ->where('org_stock_histories.date', '>=', $wacStartDate->format('Y-m-d'))
+                    ->groupBy('org_stock_histories.org_stock_id')
+                    ->orderByRaw('max(org_stock_histories.org_stock_lpp_value) DESC NULLS LAST')
+                    ->pluck('org_stock_histories.org_stock_id')
+            );
+        }
+
+        return $ids->unique()->values();
+    }
+
     private function backfillOrgStock(OrgStock $orgStock, Carbon $wacStartDate): void
     {
         $state = $this->initValuationState($orgStock, $wacStartDate);
@@ -108,13 +130,11 @@ class BackfillStockValuations
             ->orderBy('id')
             ->get()->all();
 
-        $histories = DB::connection('aiku_no_sticky')->table('org_stock_histories')
-            ->select(['id', 'date', 'quantity_in_locations', 'org_stock_lpp_value', 'grp_stock_lpp_value'])
-            ->where('org_stock_id', $orgStock->id)
-            ->where('date', '>=', $wacStartDate->format('Y-m-d'))
-            ->orderBy('date')
-            ->orderBy('id')
-            ->get();
+        $histories = $this->stockHistoriesAcrossArchive(
+            $orgStock->id,
+            $wacStartDate->format('Y-m-d'),
+            ['id', 'date', 'quantity_in_locations', 'org_stock_lpp_value', 'grp_stock_lpp_value']
+        );
 
         $movementIndex = 0;
         foreach ($histories as $history) {
@@ -129,7 +149,7 @@ class BackfillStockValuations
             $effectiveFifo = $this->fifoPerSkuFromLayers($state['layers']) ?? $this->getLppPerSku($orgStock, Carbon::parse($history->date));
             $exchangeRate  = $this->getExchangeRate($orgStock, $history);
 
-            DB::table('org_stock_histories')->where('id', $history->id)->update([
+            DB::connection($history->write_connection)->table('org_stock_histories')->where('id', $history->id)->update([
                 'wac_per_sku'          => $effectiveWac,
                 'org_stock_wac_value'  => $history->quantity_in_locations * $effectiveWac,
                 'grp_stock_wac_value'  => $history->quantity_in_locations * $effectiveWac * $exchangeRate,
@@ -138,7 +158,7 @@ class BackfillStockValuations
                 'grp_stock_fifo_value' => $history->quantity_in_locations * $effectiveFifo * $exchangeRate,
             ]);
 
-            DB::table('location_org_stock_histories')
+            DB::connection($history->write_connection)->table('location_org_stock_histories')
                 ->where('org_stock_history_id', $history->id)
                 ->update([
                     'org_stock_wac_value'  => DB::raw("quantity_in_locations * $effectiveWac"),

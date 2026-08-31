@@ -188,9 +188,14 @@ class StoreWebpage extends OrgAction
                                 $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
                             }
 
-                            $this->createWebBlock($webpage, 'top-families');
-                            $this->createWebBlock($webpage, 'luigi-trends-1');
-                            $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
+                            if (in_array($usedDepartmentDescriptionTemplateCode, ['department-description-1', 'department-description-2'])) {
+                                $this->createWebBlock($webpage, 'top-families');
+                                $this->createWebBlock($webpage, 'luigi-trends-1');
+                                $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
+                            } elseif ($usedDepartmentDescriptionTemplateCode == 'department-description-3') {
+                                $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
+                                $this->createWebBlock($webpage, 'see-also-1');
+                            }
 
                             $this->createWebBlock($webpage, 'faq-department');
                         }
@@ -198,6 +203,11 @@ class StoreWebpage extends OrgAction
                         foreach ($usedFamilyDescriptionTemplateCode as $code) {
                             $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILY_DESCRIPTION, $code);
                         }
+
+                        if (in_array('family-2', $usedFamilyDescriptionTemplateCode) && $parent->shop->masterShop->slug == 'aroma') {
+                            $this->createWebBlock($webpage, 'category-comparison');
+                        }
+
                         $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
 
                         $this->createWebBlock($webpage, 'recommendation-from-master');
@@ -382,7 +392,6 @@ class StoreWebpage extends OrgAction
         $this->parent  = $website;
         $this->website = $website;
         $this->set('type', WebpageTypeEnum::BLOG);
-        $this->set('sub_type', WebpageSubTypeEnum::BLOG);
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($website, $this->validatedData);

@@ -46,6 +46,10 @@ class PickDeliveryNoteItemByScan extends OrgAction
             return false;
         }
 
+        if (!$this->isScannableDeliveryNote($this->deliveryNote)) {
+            return false;
+        }
+
         return $this->canHandleDeliveryNote($this->deliveryNote);
     }
 
@@ -105,8 +109,7 @@ class PickDeliveryNoteItemByScan extends OrgAction
         }
 
         $location       = $this->pickingLocation($itemToPick, $requestedLocation);
-        $quantityWanted = $this->scannedQuantityInStockUnits($itemToPick, $scanned, $requestedQuantity);
-        $quantityToPick = $location ? $this->storeScannedPicking($itemToPick, $user, $location, $quantityWanted) : 0;
+        $quantityToPick = $location ? $this->storeScannedPicking($itemToPick, $user, $location, $requestedQuantity) : 0;
 
         if ($quantityToPick <= 0) {
             return $this->outcome(
@@ -159,19 +162,15 @@ class PickDeliveryNoteItemByScan extends OrgAction
         ?object $location = null
     ): array {
         $row     = null;
-        $warning = null;
 
         if ($deliveryNoteItem && $status === 'picked') {
             $row = FetchDeliveryNoteItemRow::run($deliveryNoteItem, $tab);
             $row = $row?->toArray(request());
-
-            $warning = $this->scanKindWarning($deliveryNoteItem, $this->matchedKind($deliveryNoteItem, $scanned));
         }
 
         return [
             'status'              => $status,
             'message'             => $message,
-            'warning'             => $warning,
             'scanned'             => $scanned,
             'item'                => $deliveryNoteItem ? [
                 'id'                    => $deliveryNoteItem->id,

@@ -14,6 +14,7 @@ use App\Models\Chat\MetaChatSession;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Masters\MasterAsset;
+use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
@@ -73,6 +74,10 @@ Broadcast::channel('grp.master-shop.{masterShopId}', function (User $user, int $
 
 Broadcast::channel('grp.master-asset.{masterAssetId}', function (User $user, int $masterAssetId) {
     return MasterAsset::where('id', $masterAssetId)->value('group_id') === $user->group_id;
+});
+
+Broadcast::channel('grp.master-product-category.{masterProductCategoryId}', function (User $user, int $masterProductCategoryId) {
+    return MasterProductCategory::where('id', $masterProductCategoryId)->value('group_id') === $user->group_id;
 });
 
 Broadcast::channel('grp.download-progress.{userID}', function (User $user, int $userID) {

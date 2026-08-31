@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ColorPicker } from 'vue-color-kit'
-import 'vue-color-kit/dist/vue-color-kit.css'
+import ColorPickerPanel from '@/Components/Utils/ColorPickerPanel.vue'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 import { ref, watch } from 'vue'
 
@@ -78,11 +77,9 @@ const changeScheme = (value:string) => {
           class="absolute bottom-full left-1/2 z-10 mb-3 -translate-x-1/2 transform px-4 sm:px-0"
           :style="stylePanel">
 
-          <ColorPicker
-            theme="light"
-            v-model="color"
-            @changeColor="changeColor"
-            style="width:225px"/>
+          <div class="rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+            <ColorPickerPanel :color="color" @changeColor="changeColor" />
+          </div>
         </PopoverPanel>
       </Transition>
     </div>
@@ -147,11 +144,3 @@ const changeScheme = (value:string) => {
   </Popover>
 </div>
 </template>
-
-<style scoped>
-.hu-color-picker{
-  position:absolute;
-  left:0;
-  bottom:0;
-}
-</style>

@@ -229,6 +229,41 @@ trait WithShopifyShopApiCollection
                 }
             }
         ',
+        'customers' => '
+            query ($first: Int!, $after: String) {
+                customers(first: $first, after: $after) {
+                    edges {
+                        cursor
+                        node {
+                            id
+                            email
+                            firstName
+                            lastName
+                            phone
+                            defaultAddress {
+                                address1
+                                address2
+                                city
+                                province
+                                provinceCode
+                                country
+                                countryCodeV2
+                                zip
+                                phone
+                                company
+                                firstName
+                                lastName
+                            }
+                        }
+                    }
+                    pageInfo {
+                        endCursor
+                        hasNextPage
+                        hasPreviousPage
+                    }
+                }
+            }
+        ',
         'shop' => '
             query {
                 shop {
@@ -440,6 +475,17 @@ trait WithShopifyShopApiCollection
     public function getShopifyOrders(array $variables = ['first' => 10]): array
     {
         return $this->executeGraphQLQuery('orders', $variables);
+    }
+
+    /**
+     * Get customers with optional variables
+     *
+     * @param array $variables
+     * @return array
+     */
+    public function getShopifyCustomers(array $variables = ['first' => 10]): array
+    {
+        return $this->executeGraphQLQuery('customers', $variables);
     }
 
     /**

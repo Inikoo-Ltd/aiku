@@ -26,6 +26,10 @@ class GetMailshotTemplate extends OrgAction
 
     public function jsonResponse(Mailshot $mailshot): JsonResponse
     {
+        if (request()->boolean('preview')) {
+            return response()->json(['html' => $mailshot->email?->liveSnapshot?->compiled_layout]);
+        }
+
         return response()->json($mailshot->email?->liveSnapshot?->layout);
     }
 }

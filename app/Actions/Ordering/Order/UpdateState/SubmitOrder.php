@@ -12,6 +12,7 @@ use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTrafficSource;
+use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\HasOrderHydrators;
@@ -69,7 +70,7 @@ class SubmitOrder extends OrgAction
         $modelData = [
             'state'          => OrderStateEnum::SUBMITTED,
             'status'         => OrderStatusEnum::PROCESSING,
-            'private_warehouse_note' => collect([$order->private_warehouse_note, $order->customer->warehouse_internal_notes])
+            'private_warehouse_note' => collect([$order->private_warehouse_note, $order->customer->warehouse_internal_notes, $order->customer->warehouse_temporary_notes])
                 ->filter()
                 ->unique()
                 ->implode(' — ') ?: null,
@@ -113,6 +114,12 @@ class SubmitOrder extends OrgAction
         }
 
         $this->update($order, $modelData);
+        
+        if ($order->customer->warehouse_temporary_notes) {
+            UpdateCustomer::make()->action($order->customer, [
+                'warehouse_temporary_notes' => null
+            ]);
+        }
 
         if ($order->shop->masterShop) {
             $order->shop->masterShop->orderingStats->update(

@@ -100,7 +100,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 'title'       => __('Manual/API order management'),
                 'description' => '<p><span>First, add desired products to your </span><strong>My Products</strong><span> using the </span><strong>Add Products</strong><span> button. When an order comes in, find the client under the </span><strong>Clients</strong><span> tab (add them if new), then click </span><strong>Create Order.</strong><span> Finally, enter product codes and quantities to complete the order.</span></p>'
             ],
-            'portfolios_count'        => $customerSalesChannel->portfolios->count(),
+            'portfolios_count'        => $customerSalesChannel->number_portfolios,
             'customer_sales_channel'  => RetinaCustomerSalesChannelResource::make($customerSalesChannel)->toArray(request()),
             'platform'                => $customerSalesChannel->platform,
             'platform_logo'           => $this->getPlatformLogo($customerSalesChannel->platform->code),
@@ -118,6 +118,31 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                     ]
                 ]
             ],
+            'ebay_seller_notice'      => $customerSalesChannel->platform->type == PlatformTypeEnum::EBAY && !in_array('ebay_seller', Arr::get($customerSalesChannel->settings, 'dismissed_notices', [])) ? [
+                'dismiss_route' => [
+                    'name'       => 'retina.models.customer_sales_channel.dismiss_notice',
+                    'parameters' => [
+                        'customerSalesChannel' => $customerSalesChannel->id
+                    ]
+                ]
+            ] : null,
+            'pricing_notice'          => $customerSalesChannel->platform->type == PlatformTypeEnum::EBAY ? [
+                'mode' => Arr::get($customerSalesChannel->settings, 'do_not_update_prices')
+                    ? 'manual'
+                    : (in_array(Arr::get($customerSalesChannel->settings, 'pricing.type'), ['percent', 'fixed'])
+                        ? 'all_products'
+                        : 'none'),
+                'pricing_type'  => Arr::get($customerSalesChannel->settings, 'pricing.type'),
+                'pricing_value' => Arr::get($customerSalesChannel->settings, 'pricing.value'),
+                'number_not_following' => $customerSalesChannel->portfolios()->where('status', true)->where('settings->pricing_opt_out', true)->count(),
+                'edit_route' => [
+                    'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.edit' : 'retina.dropshipping.customer_sales_channels.edit',
+                    'parameters' => [
+                        'customerSalesChannel' => $customerSalesChannel->slug,
+                        'section'              => '2'
+                    ]
+                ]
+            ] : null,
             'ebay_warehouse_policy_msg'    => [
                 'show_msg' => $this->customerSalesChannel->platform->type == PlatformTypeEnum::EBAY ? EbayOverseasWarehousePolicy::isAffected($this->customer->deliveryAddress->country_code) : false,
                 'customer_country' => $this->customer->deliveryAddress->country->name

@@ -250,7 +250,7 @@ class ShowWebpage extends OrgAction
         }
 
 
-        if ($webpage->sub_type == WebpageSubTypeEnum::BLOG) {
+        if (in_array($webpage->getBlogCategory(), WebpageSubTypeEnum::blogCategories(), true)) {
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'create',

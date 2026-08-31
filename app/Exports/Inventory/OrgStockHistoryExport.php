@@ -9,28 +9,53 @@
 namespace App\Exports\Inventory;
 
 use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
+use App\Actions\Traits\WithStockHistoryArchiveRead;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Maatwebsite\Excel\Concerns\FromQuery;
+use Generator;
+use Maatwebsite\Excel\Concerns\FromGenerator;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class OrgStockHistoryExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSize, WithColumnFormatting
+class OrgStockHistoryExport implements FromGenerator, WithMapping, WithHeadings, ShouldAutoSize, WithColumnFormatting
 {
+    use WithStockHistoryArchiveRead;
+
     public function __construct(
         protected OrgStock $orgStock,
         protected array $filters = []
     ) {
     }
 
-    public function query(): Builder
+    public function generator(): Generator
     {
-        $query = DB::table('org_stock_histories')
+        return $this->stockHistoryRowsNewestFirst(
+            fn (?string $connection): Builder => $this->query($connection),
+            $this->fromDate()
+        );
+    }
+
+    private function fromDate(): ?string
+    {
+        $between = $this->filters['between'] ?? [];
+
+        if (!isset($between['date'])) {
+            return null;
+        }
+
+        $parts = explode('-', $between['date']);
+
+        return count($parts) === 2 ? Carbon::createFromFormat('Ymd', trim($parts[0]))->toDateString() : null;
+    }
+
+    public function query(?string $connection = null): Builder
+    {
+        $query = DB::connection($connection)->table('org_stock_histories')
             ->where('org_stock_id', $this->orgStock->id)
             ->select([
                 'date',

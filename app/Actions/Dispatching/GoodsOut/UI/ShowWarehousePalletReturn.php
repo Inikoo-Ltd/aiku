@@ -38,6 +38,7 @@ class ShowWarehousePalletReturn extends OrgAction
 {
     use WithFulfilmentWarehouseAuthorisation;
     use WithPalletReturnBucketNavigation;
+    use WithPalletReturnScanToPick;
 
     private bool $requireShipping = true;
 
@@ -219,6 +220,8 @@ class ShowWarehousePalletReturn extends OrgAction
                 ],
 
                 'warning' => $warning,
+
+                'scan_to_pick' => $this->getScanToPick($palletReturn),
 
 
                 'tabs' => [

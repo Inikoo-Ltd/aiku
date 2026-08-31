@@ -88,6 +88,14 @@ test('create shopify channel', function () {
     return $customerSalesChannel;
 });
 
+test('channel platform user survives eager loading', function (CustomerSalesChannel $customerSalesChannel) {
+    $customerSalesChannel->user()->associate($customerSalesChannel->customer)->save();
+
+    $eager = CustomerSalesChannel::with('user')->find($customerSalesChannel->id);
+
+    expect($eager->user?->id)->toBe($customerSalesChannel->customer->id);
+})->depends('create shopify channel');
+
 test('create customer client', function (CustomerSalesChannel $customerSalesChannel) {
     $customerClient = StoreCustomerClient::make()->action($customerSalesChannel, CustomerClient::factory()->definition());
     expect($customerClient)->toBeInstanceOf(CustomerClient::class);

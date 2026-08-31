@@ -9,10 +9,10 @@
 namespace App\Actions\Web\Webpage\Iris;
 
 use App\Actions\Web\RefreshGrpAssetUrls;
+use App\Actions\Web\Webpage\Traits\WithIrisBlogBreadcrumbs;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -29,6 +29,7 @@ class ShowIrisWebpage
 {
     use AsAction;
     use WithIrisGetWebpageWebBlocks;
+    use WithIrisBlogBreadcrumbs;
 
 
     public function getCanonicalUrl($webpageID): ?string
@@ -446,34 +447,7 @@ class ShowIrisWebpage
 
     private function getIrisBlogBreadcrumbs(Webpage $webpage): array
     {
-        $breadcrumbs = [
-            [
-                'type'   => 'simple',
-                'simple' => [
-                    'icon' => 'fal fa-home',
-                    'url'  => '/'
-                ]
-            ],
-            [
-                'type'   => 'simple',
-                'simple' => [
-                    'short_label' => __('blog'),
-                    'label'       => __('Blog'),
-                    'url'         => '/blog'
-                ]
-            ],
-        ];
-
-        if ($webpage->sub_type && $webpage->sub_type != WebpageSubTypeEnum::BLOG) {
-            $subTypeLabel  = Arr::get(WebpageSubTypeEnum::labels(), $webpage->sub_type->value, $webpage->sub_type->value);
-            $breadcrumbs[] = [
-                'type'   => 'simple',
-                'simple' => [
-                    'short_label' => $subTypeLabel,
-                    'label'       => $subTypeLabel,
-                ]
-            ];
-        }
+        $breadcrumbs = $this->getIrisBlogDashboardBreadcrumbs($webpage->getBlogCategory());
 
         $breadcrumbs[] = [
             'type'   => 'simple',

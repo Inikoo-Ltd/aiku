@@ -38,8 +38,13 @@ class DeliveryNotesForSelectResource extends JsonResource
         ]);
 
         return [
-            'id'    => $this->id,
-            'label' => implode(' | ', $parts).' ('.$this->date->format('Y-m-d').')',
+            'id'                 => $this->id,
+            'label'              => implode(' | ', $parts).' ('.$this->date->format('Y-m-d').')',
+            'reference'          => $this->reference,
+            'customer_name'      => $name,
+            'customer_reference' => $this->customer_reference,
+            'tracking_number'    => $this->tracking_number,
+            'date'               => $this->date->format('Y-m-d'),
         ];
     }
 }

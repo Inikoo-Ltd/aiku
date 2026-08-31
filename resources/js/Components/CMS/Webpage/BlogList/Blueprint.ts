@@ -34,11 +34,9 @@ const categoriesField = {
 		mode: "multiple",
 		placeholder: "All blog categories",
 		options: [
-			{ label: "Blog", value: "blog" },
 			{ label: "Newsletters", value: "newsletters" },
 			{ label: "Product Guides", value: "product_guides" },
 			{ label: "Business Tips", value: "business_tips" },
-			{ label: "Industry & Retail's Insight", value: "insight" },
 		],
 	},
 	information: "Only posts in the selected categories are listed. Leave empty to show them all.",

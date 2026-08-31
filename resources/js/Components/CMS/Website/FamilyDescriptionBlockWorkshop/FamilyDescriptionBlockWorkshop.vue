@@ -48,6 +48,7 @@ const props = defineProps<{
     layout: any
     family: any[]
     update_family_route: routeType
+    organisation?: { id?: number; slug?: string } | null
   }
   layout_theme: Array<any>
 }>()
@@ -188,6 +189,7 @@ const sidebarOpen = ref(true)
         lg:max-h-full
       ">
           <SideMenuFamilyDescriptionBlockWorkshop :data="layoutState" :webBlockTypes="props.data.web_block_types"
+            :organisation="props.data.organisation"
             :selectedBlock="selectedBlock" @update:data="layoutState = $event"
             @update:selectedBlock="selectedBlock = $event" @set-up-template="onPickTemplate"
             @auto-save="debouncedAutosave" />

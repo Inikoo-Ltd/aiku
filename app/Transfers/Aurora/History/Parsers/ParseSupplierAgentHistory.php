@@ -213,8 +213,8 @@ class ParseSupplierAgentHistory
 
         if ($old !== null || $new !== null) {
             return [
-                'old_values' => [$field => $old === null ? '' : self::resolveValue($field, $old)],
-                'new_values' => [$field => $new === null ? '' : self::resolveValue($field, $new)],
+                'old_values' => [$field => $old === null ? '' : self::resolveValue($field, $table['old_html'] ?? $old)],
+                'new_values' => [$field => $new === null ? '' : self::resolveValue($field, $table['new_html'] ?? $new)],
                 'data' => [],
             ];
         }

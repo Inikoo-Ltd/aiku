@@ -8,6 +8,7 @@
 
 namespace App\Actions\Traits;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -21,12 +22,12 @@ trait HasGrData
             'shop_has_gr_armistice' => false,
             'customer_is_gr'        => false,
             'is_gift_opted_out'     => (bool) Arr::get($customer->settings, 'is_gift_opted_out', false),
-            'route_gift_opt_out'    => [
+            'route_gift_opt_out'    => $customer->shop->type !== ShopTypeEnum::EXTERNAL ? [
                 'name'       => 'grp.models.customer.update',
                 'parameters' => [
                     'customer' => $customer->id,
                 ],
-            ],
+            ] : null,
         ];
 
         if (Arr::get($this->shop->offers_data, 'gr.active')) {

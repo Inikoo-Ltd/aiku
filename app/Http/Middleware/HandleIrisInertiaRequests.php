@@ -8,13 +8,11 @@
 
 namespace App\Http\Middleware;
 
-use App\Enums\Announcement\AnnouncementStatusEnum;
+use App\Actions\Web\Announcement\UI\GetIrisAnnouncements;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
-use App\Models\Web\Announcement;
 use App\Models\Web\Website;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
@@ -106,32 +104,11 @@ class HandleIrisInertiaRequests extends Middleware
 
     public function getAnnouncements(Website $website): array
     {
-        $cacheKey = "irisData:website:$website->id:announcements";
+        return GetIrisAnnouncements::run($website);
+    }
 
-        return Cache::remember(
-            $cacheKey,
-            now()->addMinutes(120),
-            function () use ($website) {
-                $announcements = [];
-                /** @var Announcement $announcement */
-                foreach ($website->announcements()->where('status', AnnouncementStatusEnum::ACTIVE)->get() as $announcement) {
-                    $extractedSettings = $announcement->extractSettings($announcement->settings);
-
-                    $announcements[] = [
-                        'name'                 => $announcement->name,
-                        'show_pages'           => $extractedSettings['show_pages'],
-                        'hide_pages'           => $extractedSettings['hide_pages'],
-                        'container_properties' => $announcement->container_properties,
-                        'fields'               => $announcement->fields,
-                        'schedule_at'          => $announcement->schedule_at,
-                        'schedule_finish_at'   => $announcement->schedule_finish_at,
-                        'settings'             => $announcement->settings,
-                        'template_code'        => $announcement->template_code,
-                    ];
-                }
-
-                return $announcements;
-            }
-        );
+    public function getAnnouncementsCacheTtl(Website $website): int
+    {
+        return GetIrisAnnouncements::make()->getCacheTtl($website);
     }
 }

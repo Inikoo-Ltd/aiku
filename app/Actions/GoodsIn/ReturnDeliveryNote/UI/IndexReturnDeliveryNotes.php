@@ -16,11 +16,13 @@ use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithReturnDeliveryNotesSubNavi
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
+use App\Http\Resources\GoodsIn\UnidentifiedReturnsResource;
 use App\Http\Resources\Procurement\ReturnDeliveryNotesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\GoodsIn\ReturnDeliveryNote;
+use App\Models\GoodsIn\UnidentifiedReturn;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
@@ -204,6 +206,15 @@ class IndexReturnDeliveryNotes extends OrgAction
                     'actions'       => $actions
                 ],
                 'data'          => ReturnDeliveryNotesResource::collection($returnDeliveryNote),
+                'warehouseId'         => $this->parent instanceof Warehouse ? $this->parent->id : null,
+                'unidentifiedReturns' => $this->parent instanceof Warehouse
+                    ? UnidentifiedReturnsResource::collection(
+                        UnidentifiedReturn::where('warehouse_id', $this->parent->id)
+                            ->whereNull('identified_at')
+                            ->latest()
+                            ->get()
+                    )
+                    : null,
             ]
         )
         ->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket));

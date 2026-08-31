@@ -9,6 +9,7 @@
 namespace App\Actions\Maintenance\Inventory\OrgStockMovement;
 
 use App\Actions\Inventory\OrganisationStockHistory\Hydrators\OrganisationStockHistoryHydrateFromOrgStockHistories;
+use App\Actions\Traits\WithStockHistoryArchiveWrite;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
@@ -17,11 +18,14 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * The per SKU recalculation writes org_stock_histories directly, so the organisation and group
- * rollups stay stale until they are hydrated again from the corrected rows.
+ * rollups stay stale until they are hydrated again from the corrected rows. Days beyond the
+ * retention window are named by the archive rather than the operational database, and the
+ * hydrator sums each day from wherever it lives.
  */
 class RollUpOrgStockHistoriesPostCostFix
 {
     use AsAction;
+    use WithStockHistoryArchiveWrite;
 
     public function handle(Organisation $organisation, ?Command $command = null): int
     {
@@ -34,12 +38,18 @@ class RollUpOrgStockHistoriesPostCostFix
             return 0;
         }
 
-        $organisationStockHistoryIds = DB::table('org_stock_histories')
-            ->where('organisation_id', $organisation->id)
-            ->where('date', '>=', $earliestRepaired)
-            ->whereNotNull('organisation_stock_history_id')
-            ->distinct()
-            ->pluck('organisation_stock_history_id');
+        $organisationStockHistoryIds = collect();
+        foreach ($this->stockHistoryWriteConnections() as $connection) {
+            $organisationStockHistoryIds = $organisationStockHistoryIds->concat(
+                DB::connection($connection)->table('org_stock_histories')
+                    ->where('organisation_id', $organisation->id)
+                    ->where('date', '>=', $earliestRepaired)
+                    ->whereNotNull('organisation_stock_history_id')
+                    ->distinct()
+                    ->pluck('organisation_stock_history_id')
+            );
+        }
+        $organisationStockHistoryIds = $organisationStockHistoryIds->unique()->values();
 
         $progressBar = $command?->getOutput()->createProgressBar(count($organisationStockHistoryIds));
         $progressBar?->start();

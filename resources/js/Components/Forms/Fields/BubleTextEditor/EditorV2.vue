@@ -38,6 +38,7 @@ import FontSize from 'tiptap-extension-font-size'
 import FontFamily from '@tiptap/extension-font-family'
 import Highlight from '@tiptap/extension-highlight'
 import UtilsColorPicker from '@/Components/Utils/ColorPicker.vue'
+import EditorColorPicker from '@/Components/Forms/Fields/BubleTextEditor/EditorColorPicker.vue'
 import {CustomImage} from './CustomResizeImage/CustomImageSetting'
 import Dialog from 'primevue/dialog';
 import Placeholder from "@tiptap/extension-placeholder"
@@ -142,6 +143,9 @@ const tippyOptions = {
 const key = ref(ulid())
 const isPickingColor = ref(false)
 const colorSelection = ref<{ from: number; to: number } | null>(null)
+const pickedTextColor = ref<string | null>(null)
+const pickedHighlightColor = ref<string | null>(null)
+const openColorPickers = ref(0)
 const editorInstance = useEditor({
     content: props.modelValue,
     editable: props.editable,
@@ -570,42 +574,69 @@ const shouldShowBubble = ({ editor }: any) => {
 }
 
 const startPickingColor = () => {
+  if (isPickingColor.value) return
+
   const selection = editorInstance.value?.state.selection
   colorSelection.value = selection ? { from: selection.from, to: selection.to } : null
   isPickingColor.value = true
 }
 
-const applyTextColor = (color: string) => {
+const chainOnPickedSelection = () => {
   const chain = editorInstance.value?.chain()
-  if (!chain) return
+  if (!chain) return null
 
   if (colorSelection.value) {
     chain.setTextSelection(colorSelection.value)
   }
 
-  chain.setColor(color).run()
+  return chain
+}
+
+const applyTextColor = (color: string) => {
+  pickedTextColor.value = color
+  chainOnPickedSelection()?.setColor(color).run()
+}
+
+const applyHighlightColor = (color: string) => {
+  pickedHighlightColor.value = color
+  chainOnPickedSelection()?.setHighlight({ color }).run()
+}
+
+const textColorValue = computed(
+  () => pickedTextColor.value || editorInstance.value?.getAttributes('textStyle').color || '#000000'
+)
+
+const highlightColorValue = computed(
+  () => pickedHighlightColor.value || editorInstance.value?.getAttributes('highlight').color || '#000000'
+)
+
+const onColorPickerOpen = () => {
+  openColorPickers.value += 1
+  startPickingColor()
+}
+
+const onColorPickerClose = () => {
+  openColorPickers.value = Math.max(0, openColorPickers.value - 1)
+
+  if (openColorPickers.value > 0) return
+
+  finishPickingColor()
 }
 
 const finishPickingColor = () => {
   if (!isPickingColor.value) return
 
-  editorInstance.value?.commands.focus()
   isPickingColor.value = false
   colorSelection.value = null
-}
+  pickedTextColor.value = null
+  pickedHighlightColor.value = null
 
-const cancelPickingColor = () => {
-  if (!isPickingColor.value) return
+  if (editorInstance.value?.isFocused) return
 
-  isPickingColor.value = false
-  colorSelection.value = null
-
-  if (!editorInstance.value?.isFocused) {
-    showBubble.value = false
-    lastSelection.value = null
-    key.value = ulid()
-    emits('blur')
-  }
+  showBubble.value = false
+  lastSelection.value = null
+  key.value = ulid()
+  emits('blur')
 }
 
 
@@ -840,32 +871,29 @@ onMounted(async () => {
                             </TiptapToolbarButton>
 
                             <TiptapToolbarButton v-if="toggle.includes('color')" label="Text Color" :preserve-selection="false">
-                                <div class="relative h-5 w-5">
-                                    <input type="color" :aria-label="trans('Text Color')"
-                                        class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                                        @mousedown="startPickingColor"
-                                        @input="applyTextColor($event.target.value)"
-                                        @change="finishPickingColor"
-                                        @blur="cancelPickingColor"
-                                        :value="editorInstance.getAttributes('textStyle').color || '#000000'" />
-                                    <div class="flex h-full w-full items-center justify-center rounded"
-                                        :style="{ color: editorInstance.getAttributes('textStyle').color || 'gray' }">
-                                        <FontAwesomeIcon :icon="faTint" class="text-sm" />
-                                    </div>
-                                </div>
+                                <EditorColorPicker :color="textColorValue" :label="trans('Text Color')" @open="onColorPickerOpen"
+                                    @close="onColorPickerClose" @changeColor="applyTextColor">
+                                    <template #button>
+                                        <div class="flex h-5 w-5 cursor-pointer items-center justify-center rounded"
+                                            :aria-label="trans('Text Color')"
+                                            :style="{ color: editorInstance.getAttributes('textStyle').color || 'gray' }">
+                                            <FontAwesomeIcon :icon="faTint" class="text-sm" />
+                                        </div>
+                                    </template>
+                                </EditorColorPicker>
                             </TiptapToolbarButton>
 
                             <TiptapToolbarButton v-if="toggle.includes('highlight')" label="Text highlight" :preserve-selection="false">
-                                <div class="relative h-5 w-5">
-                                    <input type="color" :aria-label="trans('Text highlight')"
-                                        class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                                        @input="editorInstance.chain().focus().setHighlight({ color: $event.target.value }).run()"
-                                        :value="editorInstance.getAttributes('highlight').color" />
-                                    <div class="flex h-full w-full items-center justify-center rounded"
-                                        :style="{ backgroundColor: editorInstance?.getAttributes('highlight').color }">
-                                        <FontAwesomeIcon :icon="faPaintBrushAlt" class="text-sm" />
-                                    </div>
-                                </div>
+                                <EditorColorPicker :color="highlightColorValue" :label="trans('Text highlight')" @open="onColorPickerOpen"
+                                    @close="onColorPickerClose" @changeColor="applyHighlightColor">
+                                    <template #button>
+                                        <div class="flex h-5 w-5 cursor-pointer items-center justify-center rounded"
+                                            :aria-label="trans('Text highlight')"
+                                            :style="{ backgroundColor: editorInstance?.getAttributes('highlight').color }">
+                                            <FontAwesomeIcon :icon="faPaintBrushAlt" class="text-sm" />
+                                        </div>
+                                    </template>
+                                </EditorColorPicker>
                             </TiptapToolbarButton>
                         </TiptapToolbarGroup>
 

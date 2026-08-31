@@ -19,7 +19,6 @@ import { routeType } from "@/types/route"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
 import Toggle from "../Pure/Toggle.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
-import { notify } from "@kyvg/vue3-notification"
 
 library.add(faBarcodeRead, faCheckCircle, faTimesCircle, faExclamationTriangle)
 
@@ -32,14 +31,13 @@ const emits = defineEmits<{
     scanned: [payload: ScanOutcome]
 }>()
 
-type ScanStatus = "packed" | "already_packed" | "nothing_to_pack" | "not_found" | "wrong_state" | "error"
+type ScanStatus = "packed" | "already_packed" | "nothing_to_pack" | "not_found" | "not_scannable" | "wrong_state" | "error"
 
 // delivery_note and picking_session_state only come back when the panel is packing a whole picking
 // session, where the packer has to be told which box the scan just went into.
 type ScanOutcome = {
     status: ScanStatus
     message: string
-    warning?: string | null
     scanned: string
     item: {
         id: number
@@ -84,6 +82,7 @@ const statusStyles: Record<ScanStatus, { wrapper: string; icon: string; iconClas
     already_packed: { wrapper: "border-sky-500 bg-sky-50 text-sky-800", icon: "fal fa-exclamation-triangle", iconClass: "text-sky-600" },
     nothing_to_pack: { wrapper: "border-amber-500 bg-amber-50 text-amber-800", icon: "fal fa-exclamation-triangle", iconClass: "text-amber-600" },
     not_found: { wrapper: "border-red-500 bg-red-50 text-red-800", icon: "fal fa-times-circle", iconClass: "text-red-600" },
+    not_scannable: { wrapper: "border-amber-500 bg-amber-50 text-amber-800", icon: "fal fa-exclamation-triangle", iconClass: "text-amber-600" },
     wrong_state: { wrapper: "border-red-500 bg-red-50 text-red-800", icon: "fal fa-times-circle", iconClass: "text-red-600" },
     error: { wrapper: "border-red-500 bg-red-50 text-red-800", icon: "fal fa-times-circle", iconClass: "text-red-600" },
 }
@@ -185,11 +184,6 @@ const applyOutcome = (outcome: ScanOutcome) => {
     } else {
         playNotificationSound({ frequency: 200, duration: 280, type: "square" })
     }
-
-    if (outcome.warning) {
-        notify({ title: ctrans("Check what you packed"), text: outcome.warning, type: "warning" })
-    }
-
     emits("scanned", outcome)
 }
 </script>

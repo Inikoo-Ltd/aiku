@@ -4,7 +4,7 @@ import { onMounted, provide } from 'vue'
 import Accordion from 'primevue/accordion'
 import ParentFieldSideEditor from '@/Components/Workshop/SideEditor/ParentFieldSideEditor.vue'
 
-import { getFormValue } from '@/Composables/SideEditorHelper'
+import { getFormValue, getFieldKey } from '@/Composables/SideEditorHelper'
 import { set as setLodash, get } from 'lodash-es'
 
 import { routeType } from '@/types/route'
@@ -89,7 +89,7 @@ onMounted(() => {
 
 <template>
     <div class="w-full min-w-0 max-w-full">
-        <div v-for="field of blueprint.filter((item) => item.type != 'hidden')" :key="field.key" class="min-w-0 max-w-full">
+        <div v-for="(field, index) of blueprint.filter((item) => item.type != 'hidden')" :key="getFieldKey(field.key, index)" class="min-w-0 max-w-full">
             <Accordion class="w-full min-w-0" :value="panelOpen">
                 <template #collapseicon>
                     <FontAwesomeIcon :icon="faCaretDown" class="text-white"></FontAwesomeIcon>

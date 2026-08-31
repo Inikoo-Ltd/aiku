@@ -37,12 +37,14 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                 'fields' => [
                     'is_vat_adjustment' => [
                         'type' => 'toggle',
-                        'label' => __('VAT Pricing Adjustment'),
+                        'label' => __('Show prices with VAT'),
+                        'information' => __('Display only: when on, the prices we show you in your product list include VAT at the rate of the category below. It does not change the prices we send to your sales channel.'),
                         'value' => (bool)Arr::get($customerSalesChannel->settings, 'tax_category.checked')
                     ],
                     'tax_category_id' => [
                         'type' => 'select',
                         'label' => __('Vat Category'),
+                        'information' => __('The VAT rate used to show prices including VAT.'),
                         'required' => true,
                         'hidden' => !Arr::get($customerSalesChannel->settings, 'tax_category.checked'),
                         'options' => Options::forModels(TaxCategory::class),
@@ -68,6 +70,49 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
 
         if ($user instanceof EbayUser) {
             $routeName = 'retina.models.customer_sales_channel.ebay_update';
+
+            $pricingPolicy = Arr::get($customerSalesChannel->settings, 'do_not_update_prices')
+                ? 'not_follow'
+                : (Arr::get($customerSalesChannel->settings, 'pricing.type') ?: 'percent');
+
+            $properties[0]['fields'] = [
+                'is_vat_adjustment' => $properties[0]['fields']['is_vat_adjustment'],
+                'tax_category_id'   => $properties[0]['fields']['tax_category_id'],
+                'pricing_type' => [
+                    'type' => 'pricing_policy',
+                    'label' => __('Pricing Policy'),
+                    'information' => __('The default for every product in this channel, so you never have to price them one by one. A single product can still be given its own price in Edit Product. Choose "Do not follow RRP" to manage prices yourself on eBay: we will never upload or overwrite them.'),
+                    'value' => $pricingPolicy,
+                    'currency_code' => $customerSalesChannel->shop->currency->code,
+                    'currency_symbol' => $customerSalesChannel->shop->currency->symbol ?? $customerSalesChannel->shop->currency->code,
+                    'example_price' => 10,
+                    'value_field' => 'pricing_value',
+                    'hasOther' => [
+                        [
+                            'name'  => 'pricing_value',
+                            'value' => Arr::get($customerSalesChannel->settings, 'pricing.value') ?? 0
+                        ],
+                        [
+                            'name'  => 'pricing_reset_all',
+                            'value' => false
+                        ]
+                    ],
+                    'saveConfirmation' => [
+                        'whenValueIs' => ['percent', 'fixed'],
+                        'title'       => __('Reprice every product?'),
+                        'description' => __('Saving reprices all :count products in this channel from their RRP and uploads the new prices to eBay. Products where you set your own price are not touched.', [
+                            'count' => $customerSalesChannel->portfolios()->where('status', true)->count()
+                        ]),
+                        'yesLabel'    => __('Save and reprice')
+                    ]
+                ],
+                'upload_as_draft' => [
+                    'type' => 'toggle',
+                    'label' => __('Upload as draft'),
+                    'information' => __('When on, new products are created on eBay unpublished so you can review the price and text before they go live. Publish them from your product list when you are ready.'),
+                    'value' => (bool) Arr::get($customerSalesChannel->settings, 'upload_as_draft')
+                ],
+            ];
             $properties = [
                 ...$properties,
                 [
@@ -76,18 +121,18 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                     'fields' => [
                         'shipping_service' => [
                             'type' => 'select',
-                            'label' => __('shipping service'),
+                            'label' => __('Shipping service'),
                             'options' => Options::forArray($user->getServicesForOptions()),
                             'value' => Arr::get($customerSalesChannel->settings, 'shipping.service_code'),
                         ],
                         'shipping_price' => [
                             'type' => 'input',
-                            'label' => __('shipping price'),
+                            'label' => __('Shipping price'),
                             'value' => Arr::get($customerSalesChannel->settings, 'shipping.price')
                         ],
                         'shipping_max_dispatch_time' => [
                             'type' => 'input',
-                            'label' => __('shipping max dispatch time'),
+                            'label' => __('Shipping max dispatch time'),
                             'value' => Arr::get($customerSalesChannel->settings, 'shipping.max_dispatch_time')
                         ],
                     ]
@@ -114,7 +159,7 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                         ],
                         'return_within' => [
                             'type' => 'select',
-                            'label' => __('returns within'),
+                            'label' => __('Returns within'),
                             'required' => true,
                             'hidden' => !Arr::get($customerSalesChannel->settings, 'return.accepted'),
                             'options' => Options::forArray([
@@ -126,7 +171,7 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                         ],
                         'return_description' => [
                             'type' => 'textarea',
-                            'label' => __('return description'),
+                            'label' => __('Return description'),
                             'hidden' => !Arr::get($customerSalesChannel->settings, 'return.accepted'),
                             'value' => Arr::get($customerSalesChannel->settings, 'return.description')
                         ],
@@ -169,7 +214,7 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                                 'fields' => [
                                     'name' => [
                                         'type' => 'input',
-                                        'label' => __('store name'),
+                                        'label' => __('Store name'),
                                         'value' => $customerSalesChannel->name
                                     ],
                                 ]
@@ -187,16 +232,18 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                                     'max_quantity_advertise' => [
                                         'type' => 'input',
                                         'label' => __('Max Quantity To Advertise'),
-                                        'information' => __('The maximum stock quantity advertised on the channel, even if more is available.'),
+                                        'information' => __('The maximum stock quantity advertised on the channel, even if more is available. Leave empty for no cap.'),
+                                        'placeholder' => __('No cap'),
                                         'hidden' => !$customerSalesChannel->stock_update,
-                                        'value' => $customerSalesChannel->max_quantity_advertise
+                                        'value' => $customerSalesChannel->max_quantity_advertise ?: null
                                     ],
                                     'stock_threshold' => [
                                         'type' => 'input',
                                         'label' => __('Stock Threshold'),
-                                        'information' => __('When stock falls to this level, the product is advertised as out of stock on the channel.'),
+                                        'information' => __('When stock falls to this level, the product is advertised as out of stock on the channel. Leave empty to always advertise real stock.'),
+                                        'placeholder' => __('No threshold'),
                                         'hidden' => !$customerSalesChannel->stock_update,
-                                        'value' => $customerSalesChannel->stock_threshold
+                                        'value' => $customerSalesChannel->stock_threshold ?: null
                                     ],
                                 ]
                             ],
@@ -216,11 +263,18 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
         );
     }
 
-    public function priceConfOptions(): array
+    public function priceConfOptions(?CustomerSalesChannel $customerSalesChannel = null): array
     {
+        if (!$customerSalesChannel) {
+            return [
+                'percent' => 'Percent',
+                'fixed' => 'Fixed'
+            ];
+        }
+
         return [
-            'percent' => 'Percent',
-            'fixed' => 'Fixed'
+            'percent' => __('± % over live RRP'),
+            'fixed'   => __('± :currency over live RRP', ['currency' => $customerSalesChannel->shop->currency->symbol ?? $customerSalesChannel->shop->currency->code])
         ];
     }
 

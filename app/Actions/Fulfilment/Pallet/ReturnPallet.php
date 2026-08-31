@@ -32,6 +32,7 @@ class ReturnPallet extends OrgAction
             modelData: [
                 'state'         => PalletStateEnum::DISPATCHED,
                 'status'        => PalletStatusEnum::RETURNED,
+                'location_id'   => null,
                 'dispatched_at' => now(),
             ],
             hydrateParents: false

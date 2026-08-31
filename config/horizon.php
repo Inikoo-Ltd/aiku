@@ -392,6 +392,7 @@ return [
                     'shopify',
                     'shopify-bulk',
                     'ebay',
+                    'tiktok',
                     'woo'
                 ],
             'balance'             => 'auto',

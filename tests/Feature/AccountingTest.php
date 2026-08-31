@@ -22,7 +22,10 @@ use App\Actions\Accounting\InvoiceCategory\StoreInvoiceCategory;
 use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Accounting\InvoiceTransaction\RefundTaxTransactions;
+use App\Actions\Accounting\Invoice\PdfInvoice;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
+use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromCharge;
+use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromShipping;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
@@ -1584,14 +1587,42 @@ test('Store invoice refund transaction', function (Invoice $refund) {
     return $refund;
 })->depends('Store invoice refund');
 
+test('refund pdf lines include shipping and charge refunds', function () {
+    $this->withoutExceptionHandling();
+    $customer = createCustomer($this->shop);
+    $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+    $noProductData = [
+        'tax_category_id' => $invoice->tax_category_id,
+        'quantity'        => 1,
+        'gross_amount'    => 10,
+        'net_amount'      => 10,
+    ];
+    $shippingTransaction = StoreInvoiceTransactionFromShipping::make()->action($invoice, null, $noProductData);
+    $chargeTransaction   = StoreInvoiceTransactionFromCharge::make()->action($invoice, null, $noProductData);
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    StoreRefundInvoiceTransaction::make()->action($refund, $shippingTransaction, ['net_amount' => 10]);
+    StoreRefundInvoiceTransaction::make()->action($refund, $chargeTransaction, ['net_amount' => 10]);
+
+    $invoiceLineTypes = PdfInvoice::make()->getInvoicePdfTransactions($invoice->refresh())->pluck('model_type')->all();
+    $refundLineTypes  = PdfInvoice::make()->getInvoicePdfTransactions($refund->refresh())->pluck('model_type')->all();
+
+    expect($invoiceLineTypes)->not->toContain('ShippingZone')
+        ->and($invoiceLineTypes)->not->toContain('Charge')
+        ->and($refundLineTypes)->toContain('ShippingZone')
+        ->and($refundLineTypes)->toContain('Charge');
+});
+
 test('Delete Refund', function (Invoice $refund) {
     $this->withoutExceptionHandling();
     $customer = $refund->customer;
-    expect($customer->stats->number_invoices_type_refund)->toBe(1);
+    $refundsBefore = $customer->stats->number_invoices_type_refund;
+    expect($refundsBefore)->toBeGreaterThanOrEqual(1);
 
     ForceDeleteRefund::make()->handle($refund);
     $customer->refresh();
-    expect($customer->stats->number_invoices_type_refund)->toBe(0);
+    expect($customer->stats->number_invoices_type_refund)->toBe($refundsBefore - 1);
 })->depends('Store invoice refund');
 
 test('UI index customer balances', function () {
@@ -2919,6 +2950,8 @@ describe('payment method from checkout.com source', function () {
             ->and(Payment::methodLabel('applepay', 'visa'))->toBe('Apple Pay · Visa')
             ->and(Payment::methodLabel('checkout'))->toBe('Checkout.com')
             ->and(Payment::methodLabel('cash_on_delivery'))->toBe('Cash on delivery')
+            ->and(Payment::methodLabel('blik'))->toBe('BLIK')
+            ->and(Payment::methodLabel('swish'))->toBe('Swish')
             ->and(Payment::methodLabel(null))->toBe('');
     });
 });
