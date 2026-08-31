@@ -12,11 +12,14 @@ import { trans } from "laravel-vue-i18n"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { faChartLine } from "@fal"
+import Tabs from "@/Components/Navigation/Tabs.vue"
+import { useTabChange } from "@/Composables/tab-change"
+import { Tabs as TSTabs } from "@/types/Tabs"
+import { faChartLine, faHashtag, faNewspaper, faTachometerAltFast } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed, ref } from "vue"
 
-library.add(faChartLine)
+library.add(faChartLine, faHashtag, faNewspaper, faTachometerAltFast)
 
 interface StatRow {
     views: number
@@ -45,8 +48,10 @@ interface ArticleRow {
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
-    articles: { data: ArticleRow[] } | any
-    stats: {
+    tabs: TSTabs
+    articles?: { data: ArticleRow[] } | any
+    hashtags?: any
+    overview?: {
         daily: StatRow[]
         pages: StatRow[]
         searches: StatRow[]
@@ -56,16 +61,17 @@ const props = defineProps<{
     }
 }>()
 
-const currentTab = ref<"overview" | "articles">("overview")
+const currentTab = ref(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const shortDate = (value?: string) => value ? new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "—"
 
-const maxDailyViews = computed(() => Math.max(...props.stats.daily.map(d => Number(d.views)), 1))
+const maxDailyViews = computed(() => Math.max(...(props.overview?.daily ?? []).map(d => Number(d.views)), 1))
 
 const sections = computed(() => [
-    { label: trans("Pages"), key: "path", rows: props.stats.pages },
-    { label: trans("Referrers"), key: "referrer", rows: props.stats.referrers },
-    { label: trans("Countries"), key: "country", rows: props.stats.countries },
-    { label: trans("Searches"), key: "query", rows: props.stats.searches },
+    { label: trans("Pages"), key: "path", rows: props.overview?.pages ?? [] },
+    { label: trans("Referrers"), key: "referrer", rows: props.overview?.referrers ?? [] },
+    { label: trans("Countries"), key: "country", rows: props.overview?.countries ?? [] },
+    { label: trans("Searches"), key: "query", rows: props.overview?.searches ?? [] },
 ])
 </script>
 
@@ -73,21 +79,12 @@ const sections = computed(() => [
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
 
-    <div class="space-y-8 p-4">
-        <div class="flex gap-2">
-            <button v-for="tab in [{ key: 'overview', label: trans('Overview') }, { key: 'articles', label: trans('Articles') }]"
-                :key="tab.key"
-                type="button"
-                class="px-4 py-2 rounded-md text-sm font-medium transition"
-                :class="currentTab === tab.key ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
-                @click="currentTab = tab.key as 'overview' | 'articles'">
-                {{ tab.label }}
-            </button>
-        </div>
+    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 
-        <Table v-show="currentTab === 'articles'" :resource="articles" name="articles" class="mt-2">
+    <div class="space-y-8 p-4">
+        <Table v-if="currentTab === 'articles' && articles" :resource="articles" name="articles" class="mt-2">
             <template #cell(title)="{ item }">
-                <a :href="item.url" target="_blank" class="hover:underline">{{ item.title }}</a>
+                <a :href="item.url" target="_blank" class="block -ml-2 lg:-ml-6 hover:underline">{{ item.title }}</a>
             </template>
             <template #cell(committed_at)="{ item }">
                 <span class="whitespace-nowrap text-gray-500">{{ shortDate(item.committed_at) }}</span>
@@ -103,11 +100,20 @@ const sections = computed(() => [
             </template>
         </Table>
 
-        <template v-if="currentTab === 'overview'">
+        <Table v-if="currentTab === 'hashtags' && hashtags" :resource="hashtags" name="hashtags" class="mt-2">
+            <template #cell(hashtag)="{ item }">
+                <span class="block -ml-2 lg:-ml-6">{{ item.hashtag }}</span>
+            </template>
+            <template #cell(last_visited_at)="{ item }">
+                <span class="whitespace-nowrap text-xs text-gray-500">{{ lastVisited(item.last_visited_at) }}</span>
+            </template>
+        </Table>
+
+        <template v-if="currentTab === 'overview' && overview">
         <section>
             <h2 class="text-sm font-medium">{{ trans("Daily visits (last 30 days)") }}</h2>
             <div class="mt-2 flex h-32 items-end gap-1">
-                <div v-for="d in stats.daily" :key="d.day" class="group relative max-w-10 flex-1">
+                <div v-for="d in overview.daily" :key="d.day" class="group relative max-w-10 flex-1">
                     <div class="w-full rounded-t bg-indigo-500/80"
                         :style="{ height: `${(Number(d.views) / maxDailyViews) * 120}px` }" />
                     <div class="pointer-events-none absolute bottom-full left-1/2 z-10 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white group-hover:block">
@@ -157,14 +163,14 @@ const sections = computed(() => [
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="row in stats.page_referrers" :key="`${row.path}|${row.referrer}`" class="border-b border-gray-100">
+                    <tr v-for="row in overview.page_referrers" :key="`${row.path}|${row.referrer}`" class="border-b border-gray-100">
                         <td class="max-w-96 truncate py-1">{{ row.path }}</td>
                         <td class="max-w-56 truncate py-1">{{ row.referrer }}</td>
                         <td class="py-1 text-right">{{ row.visitors }}</td>
                         <td class="py-1 text-right text-gray-500">{{ row.views }}</td>
                         <td class="whitespace-nowrap py-1 text-right text-xs text-gray-500">{{ lastVisited(row.last_visited_at) }}</td>
                     </tr>
-                    <tr v-if="!stats.page_referrers.length">
+                    <tr v-if="!overview.page_referrers.length">
                         <td colspan="5" class="py-2 text-xs text-gray-500">{{ trans("No data yet") }}</td>
                     </tr>
                 </tbody>

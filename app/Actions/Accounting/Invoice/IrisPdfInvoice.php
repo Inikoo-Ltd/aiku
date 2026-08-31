@@ -23,18 +23,14 @@ class IrisPdfInvoice extends OrgAction
     use WithInvoicesExport;
 
 
-    public function handle(Invoice $invoice, array $options = []): Response
+    public function handle(Invoice $invoice): Response
     {
-        return $this->processDataExportPdf($invoice, $options);
+        return $this->processDataExportPdf($invoice);
     }
 
 
     public function asController(Invoice $invoice): Response
     {
-        return $this->handle($invoice, [
-            'country_of_origin' => true,
-            'weight'            => true,
-            'commodity_codes'   => true,
-        ]);
+        return $this->handle($invoice);
     }
 }

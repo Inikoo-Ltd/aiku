@@ -420,8 +420,7 @@ test('the typo tuning reaches every search sent to typesense', function () {
 test('discontinued family drops out of the storefront search', function () {
     [, $product] = createProduct($this->shop);
     $family      = $product->family;
-    StoreProductCategoryWebpage::make()->action($family);
-    $family->webpage->update(['state' => WebpageStateEnum::LIVE]);
+    StoreProductCategoryWebpage::make()->action($family)->update(['state' => WebpageStateEnum::LIVE]);
     \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($family->refresh());
     expect((bool) $family->refresh()->is_in_website)->toBeTrue();
 
@@ -454,8 +453,7 @@ test('a family that is the strongest hit becomes the best match, superseding pro
     expect((bool) $product->refresh()->is_in_website)->toBeTrue();
 
     $family = $product->family;
-    StoreProductCategoryWebpage::make()->action($family);
-    $family->webpage->update(['state' => WebpageStateEnum::LIVE]);
+    StoreProductCategoryWebpage::make()->action($family)->update(['state' => WebpageStateEnum::LIVE]);
     \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($family->refresh());
     expect((bool) $family->refresh()->is_in_website)->toBeTrue();
 

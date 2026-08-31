@@ -1745,6 +1745,12 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         <AlertMessage :alert />
     </div>
 
+    <!-- Section: API order held for payment -->
+    <div v-if="pageHead.api_order?.held_unpaid" class="mx-2 mt-2 rounded-md border border-orange-300 bg-orange-50 px-3 py-2 text-sm text-orange-800">
+        <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />
+        {{ pageHead.api_order.held_message }}
+    </div>
+
     <!-- Section: Box Note -->
     <div class="relative">
         <Transition name="headlessui">

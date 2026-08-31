@@ -20,6 +20,7 @@ use App\Http\Resources\Helpers\CurrencyResource;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\UI\NotesEnum;
 
 class GetCustomerShowcase
 {
@@ -136,12 +137,12 @@ class GetCustomerShowcase
                 ]
             ],
             'internal_note' => [
-                "label"       => __("Private"),
+                "label"       => NotesEnum::INTERNAL->label(),
                 "note"        => $customer->internal_notes ?? '',
                 "information" => __("This note is only visible to staff members. Staff can communicate with each other about the customer."),
                 "editable"    => true,
-                "bgColor"     => "#FF7DBD",
-                "field"       => "internal_notes"
+                "field"       => "internal_notes",
+                ...NotesEnum::INTERNAL->boilerPlate()
             ],
             'update_route' => [
                 'name'       => 'grp.models.customer.update',

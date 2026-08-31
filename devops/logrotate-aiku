@@ -1,0 +1,11 @@
+/home/aiku/aiku/shared/local_storage/logs/*.log {
+    su aiku aiku
+    maxsize 100M
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}

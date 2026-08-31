@@ -155,6 +155,16 @@ class ShowFamily extends OrgAction
             ];
         }
 
+        $urlMasterTuf = null;
+        if ($family->tradeUnitFamily) {
+            $urlMasterTuf = [
+                'name'       => 'grp.trade_units.families.show',
+                'parameters' => [
+                    $family->tradeUnitFamily->slug
+                ]
+            ];
+        }
+
         $iconLinks = [];
         if ($family->has_gr_vol_discount) {
             $iconLinks[] = [
@@ -273,6 +283,7 @@ class ShowFamily extends OrgAction
                     'subNavigation' => $this->getFamilySubNavigation($family, $this->parent, $request)
                 ],
                 'url_master'       => $urlMaster,
+                'url_master_tuf'   => $urlMasterTuf,
                 'tabs'             => [
                     'current'    => $this->tab,
                     'navigation' => FamilyTabsEnum::navigationExcept([FamilyTabsEnum::SALES]),

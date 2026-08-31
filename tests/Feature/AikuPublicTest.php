@@ -223,3 +223,17 @@ test('analytics articles tab lists every note with real commit date and visit st
         ->and($row['date'])->toBe('2026-08-19')
         ->and($row['committed_at'])->toStartWith('2026-08-');
 });
+
+test('blog post shows related notes ranked by shared tags', function () {
+    $post = BlogPosts::all()->first(fn (array $candidate) => count($candidate['tags']) > 0);
+
+    $bestMatch = BlogPosts::all()
+        ->where('slug', '!=', $post['slug'])
+        ->sortByDesc(fn (array $other) => count(array_intersect($other['tags'], $post['tags'])) * 1e12 + $other['date']->timestamp)
+        ->first();
+
+    get($this->host.'/blog/'.$post['slug'])
+        ->assertOk()
+        ->assertSee('Related notes', false)
+        ->assertSee(route('aiku-public.blog.show', $bestMatch['slug']), false);
+});

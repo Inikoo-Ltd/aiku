@@ -6,9 +6,13 @@ import { faCheck } from '@far'
 import { trans } from 'laravel-vue-i18n'
 import { routeType } from '@/types/route'
 
-defineProps<{
-    steps: { key: string, label: string, current: boolean, done?: boolean, disabled?: boolean, route: routeType }[]
-}>()
+withDefaults(
+    defineProps<{
+        steps: { key: string, label: string, current: boolean, done?: boolean, disabled?: boolean, route: routeType }[]
+        disabledTooltip?: string
+    }>(),
+    { disabledTooltip: undefined }
+)
 </script>
 
 <template>
@@ -17,7 +21,7 @@ defineProps<{
             <FontAwesomeIcon v-if="index" :icon="faChevronRight" class="text-gray-300 text-[10px]" fixed-width />
             <component :is="step.current || step.disabled ? 'span' : Link"
                 :href="step.current || step.disabled ? undefined : route(step.route.name, step.route.parameters)"
-                v-tooltip="step.disabled ? trans('Compose the email first') : undefined"
+                v-tooltip="step.disabled ? (disabledTooltip ?? trans('Compose the email first')) : undefined"
                 class="flex items-center gap-x-1.5"
                 :class="step.current ? 'text-indigo-600 font-medium' : step.disabled ? 'text-gray-300 cursor-not-allowed' : step.done ? 'text-green-600 hover:text-green-700' : 'text-gray-400 hover:text-gray-600'">
                 <span class="h-5 w-5 grid place-items-center rounded-full text-xs leading-none"

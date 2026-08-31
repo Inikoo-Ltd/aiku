@@ -17,6 +17,8 @@ export interface WorkshopPicker {
   selectionKey: string
   resultKey?: string
   routeParam?: string
+  selectionRouteKey?: string
+  selectionRouteParam?: string
   title: string
   subtitle: string
   emptyTitle: string
@@ -160,7 +162,8 @@ export const WORKSHOP_TABS: Record<string, WorkshopTabConfig> = {
     sidebarProps: (ctx) => ({
       data: ctx.layoutState,
       webBlockTypes: ctx.data.web_block_types,
-      selectedBlock: ctx.selectedBlock
+      selectedBlock: ctx.selectedBlock,
+      organisation: ctx.data.organisation
     }),
     layoutShape: 'blocks',
     screenView: true,
@@ -170,6 +173,8 @@ export const WORKSHOP_TABS: Record<string, WorkshopTabConfig> = {
     picker: {
       listKey: 'family',
       selectionKey: 'family',
+      selectionRouteKey: 'route_get_selection',
+      selectionRouteParam: 'family',
       title: 'Family',
       subtitle: 'Choose a family to preview',
       emptyTitle: 'No family selected',

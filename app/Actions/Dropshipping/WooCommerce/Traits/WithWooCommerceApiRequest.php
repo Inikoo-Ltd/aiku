@@ -2,6 +2,7 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Traits;
 
+use App\Actions\Dropshipping\PlatformOutboundGuard;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
@@ -165,6 +166,10 @@ trait WithWooCommerceApiRequest
      */
     protected function makeWooCommerceRequest(string $method, string $endpoint, array $params = [], bool $useCache = false): ?array
     {
+        if (PlatformOutboundGuard::blocks('WooCommerce', "$method $endpoint")) {
+            return null;
+        }
+
         if (!$this->woocommerceConsumerKey) {
             $this->initWooCommerceApi();
         }

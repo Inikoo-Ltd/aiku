@@ -166,6 +166,14 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.staff_chat.crm_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_user_ids'))));
         }
 
+        if (Arr::has($modelData, 'staff_chat_warehouse_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.warehouse_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_warehouse_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'staff_chat_warehouse_backup_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.warehouse_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_warehouse_backup_user_ids'))));
+        }
+
         if (Arr::has($modelData, 'staff_chat_crm_backup_user_ids')) {
             data_set($modelData, 'settings.staff_chat.crm_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_backup_user_ids'))));
         }
@@ -707,6 +715,10 @@ class UpdateShop extends OrgAction
             'staff_chat_crm_user_ids.*'      => ['integer', 'exists:users,id'],
             'staff_chat_crm_backup_user_ids'   => ['sometimes', 'array'],
             'staff_chat_crm_backup_user_ids.*' => ['integer', 'exists:users,id'],
+            'staff_chat_warehouse_user_ids'          => ['sometimes', 'array'],
+            'staff_chat_warehouse_user_ids.*'        => ['integer', 'exists:users,id'],
+            'staff_chat_warehouse_backup_user_ids'   => ['sometimes', 'array'],
+            'staff_chat_warehouse_backup_user_ids.*' => ['integer', 'exists:users,id'],
             'invoice_serial_references'   => ['sometimes', 'array'],
             'registration_needs_approval' => ['sometimes', 'boolean'],
             'stand_alone_invoice_numbers' => ['sometimes', 'boolean'],

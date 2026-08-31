@@ -8,12 +8,14 @@
 
 namespace App\Actions\Goods\TradeUnitFamily;
 
+use App\Actions\Catalogue\ProductCategory\LabelingGuide\StoreLabelingGuide;
 use App\Actions\OrgAction;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Goods\TradeUnitFamily;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTradeUnitFamily extends OrgAction
@@ -33,6 +35,12 @@ class UpdateTradeUnitFamily extends OrgAction
                 'brand_id' => Arr::pull($modelData, 'brands')
             ]);
         }
+        
+        // Handle labeling_guide pdf file upload
+        if (Arr::has($modelData, 'labeling_guide_file') && data_get($modelData, 'labeling_guide_file', null) instanceof \Illuminate\Http\UploadedFile) {
+            StoreLabelingGuide::make()->action($tradeUnitFamily, Arr::only($modelData, 'labeling_guide_file'));
+            Arr::forget($modelData, 'labeling_guide_file');
+        }
 
         $tradeUnitFamily = $this->update($tradeUnitFamily, $modelData);
 
@@ -44,6 +52,7 @@ class UpdateTradeUnitFamily extends OrgAction
         return [
             'name'                  => ['sometimes', 'string', 'max:255'],
             'description'           => ['sometimes', 'nullable', 'string', 'max:1024'],
+            'labeling_guide_file'   => ['sometimes', 'nullable', File::types(['pdf'])->max(64000)], // 64mb max, following server max (prod on php.ini max file size upload)
         ];
     }
 

@@ -77,6 +77,23 @@ class EditDepartment extends OrgAction
                 'id'    => $item->id
             ]
         ]);
+        
+        $iconLinks = [];
+
+        if ($department->masterProductCategory) {
+            $iconLinks[] = [
+                'icon'    => 'fab fa-octopus-deploy',
+                'tooltip' => __('Go to Edit Master Department'),
+                'route'   => [
+                    'name'       => 'grp.masters.master_shops.show.master_departments.edit',
+                    'parameters' => [
+                        'masterShop'    => $department->shop->masterShop->slug,
+                        'masterDepartment' => $department->masterProductCategory->slug,
+                    ]
+                ],
+                'color'   => 'rgb(75, 0, 130)'
+            ];
+        }
 
         return Inertia::render(
             'EditModel',
@@ -93,12 +110,6 @@ class EditDepartment extends OrgAction
                 ],
                 'pageHead'    => [
                     'title'     => $department->name,
-                    'iconRight' => $urlMaster ? [
-                        'icon'  => "fab fa-octopus-deploy",
-                        'color' => "#4B0082",
-                        'class' => 'opacity-70 hover:opacity-100',
-                        'url'   => $urlMaster
-                    ] : [],
                     'icon'      =>
                         [
                             'icon'  => ['fal', 'fa-folder-tree'],
@@ -113,7 +124,8 @@ class EditDepartment extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ]
-                    ]
+                    ],
+                    'iconLinks' => $iconLinks
                 ],
                 'formData'    => [
                     'blueprint' =>

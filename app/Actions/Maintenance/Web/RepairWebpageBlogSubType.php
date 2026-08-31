@@ -35,25 +35,13 @@ class RepairWebpageBlogSubType
 
     public function asCommand(Command $command)
     {
-        $travelWebpages = Webpage::where('type', WebpageTypeEnum::BLOG)->whereRaw("code ilike '%david-blog%'")->get();
-
-        foreach ($travelWebpages as $webpage) {
-            $command->info("Repairing $webpage->slug: Fixing Sub Type & Updating Canonical URL");
-            $this->handle($webpage, WebpageSubTypeEnum::NEWSLETTERS);
-        }
-
-        $tipsWebpages = Webpage::where('type', WebpageTypeEnum::BLOG)->where('sub_type', 'tips')->get();
-
-        foreach ($tipsWebpages as $webpage) {
-            $command->info("Repairing $webpage->slug: Fixing Sub Type & Updating Canonical URL");
-            $this->handle($webpage, WebpageSubTypeEnum::BUSINESS_TIPS);
-        }
-
         $webpages = Webpage::where('type', WebpageTypeEnum::BLOG)->get();
 
         foreach ($webpages as $webpage) {
-            $command->info("Repairing $webpage->slug: Updating Canonical URL");
-            $this->handle($webpage);
+            $blogCategory = $webpage->getBlogCategory(withAmbiguousFallback: false);
+
+            $command->info("Repairing $webpage->slug: ".($blogCategory ? "Setting sub type to $blogCategory->value & " : '').'Updating Canonical URL');
+            $this->handle($webpage, $blogCategory);
         }
     }
 }

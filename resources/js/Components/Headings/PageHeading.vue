@@ -253,6 +253,13 @@ const setError = (e) => {
                             <span v-tooltip="'platform order id'" v-if="data.platform?.order_id" class="text-light font-sm">{{ data.platform?.order_id }}</span>
 						</slot>
 
+						<span
+							v-if="data.api_order"
+							v-tooltip="data.api_order.tooltip"
+							class="rounded-md bg-orange-100 border border-orange-300 px-2 py-0.5 text-sm font-semibold text-orange-700 leading-none">
+							{{ data.api_order.label }}
+						</span>
+
 						<slot name="afterTitle2" />
 
 						<!-- Section: Icon Links (to show master Octopus icon) -->
@@ -269,9 +276,9 @@ const setError = (e) => {
 								<FontAwesomeIcon
 									:icon="iconLink.icon"
 									class="text-gray-400 hover:text-gray-600"
-									:style="{
-										color: iconLink.color,
-									}"
+									:style="[
+										iconLink.color ? `color: ${iconLink.color}` : ''
+									]"
 									fixed-width
 									aria-hidden="true" />
 							</Link>

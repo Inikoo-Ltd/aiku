@@ -49,6 +49,7 @@ class NotPickedPalletFromReturn extends OrgAction
                 'state'              => Arr::get($modelData, 'state'),
                 'status'             => PalletStatusEnum::INCIDENT,
                 'set_as_incident_at' => now(),
+                'location_id'        => null,
                 'incident_report'    => [
                     'notes' => Arr::get($modelData, 'notes')
                 ]

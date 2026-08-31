@@ -26,7 +26,8 @@ class HistoryValueExtractor
             return null;
         }
 
-        $trimmed = trim($value);
+        $trimmed = trim(html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5));
+        $trimmed = trim(preg_replace('/\s+/', ' ', $trimmed));
 
         return $trimmed === '' ? null : $trimmed;
     }
@@ -68,6 +69,8 @@ class HistoryValueExtractor
             'action' => null,
             'old'    => null,
             'new'    => null,
+            'old_html' => null,
+            'new_html' => null,
         ];
 
         $rows = [];
@@ -91,6 +94,10 @@ class HistoryValueExtractor
             }
 
             $result[$key] = self::normalize($value);
+
+            if ($key === 'old' || $key === 'new') {
+                $result[$key.'_html'] = trim($value) === '' ? null : trim($value);
+            }
         }
 
         return $result;

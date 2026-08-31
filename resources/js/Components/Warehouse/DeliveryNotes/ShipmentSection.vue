@@ -27,6 +27,7 @@ import { InputNumber } from "primevue"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import { useStaffMessaging } from "@/Stores/staff-messaging"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faBarcodeRead, faPrint, faChevronDown, faLock } from '@fal'
@@ -240,6 +241,7 @@ const onSubmitShipment = () => {
 					// 	})
 					// }
 
+					apiShipmentError.value = null
 					emits("addSuccsess", null)
 					isModalShipment.value = false
 					isModalErrorShipment.value = false // Close the error modal
@@ -247,6 +249,10 @@ const onSubmitShipment = () => {
 					preferredTrackingNumber.value = ""
 				},
 				onError: (errors) => {
+					apiShipmentError.value = formTrackingNumber.shipping_id?.api_shipper
+						? [errors.message, errors.shipper, errors.address].filter(Boolean).join(" ")
+						: null
+
 					// TODO: Make condition if the error related to delivery address then set to true
 					// set(listError.value, 'box_stats_address', true) // To make the Box stats delivery address error
 					if (errors.address) {
@@ -491,6 +497,30 @@ const preferredShipper = computed(() => {
 })
 
 // Section: Shipment Error
+const staffMessaging = useStaffMessaging()
+const apiShipmentError = ref<string | null>(null)
+const isAskingCrm = ref(false)
+const deliveryNoteId = computed(() => props.shipments_routes?.submit_route?.parameters?.deliveryNote ?? null)
+
+const askCrmAboutShipment = async () => {
+	if (!deliveryNoteId.value) return
+	isAskingCrm.value = true
+	try {
+		await staffMessaging.openContext(
+			"DeliveryNote",
+			Number(deliveryNoteId.value),
+			"crm",
+			trans("Label could not be created with :shipper. The carrier answered: :error. Please advise.", {
+				shipper: formTrackingNumber.shipping_id?.name ?? "",
+				error: apiShipmentError.value ?? "",
+			})
+		)
+		isModalShipment.value = false
+	} finally {
+		isAskingCrm.value = false
+	}
+}
+
 const isModalErrorShipment = ref(false)
 const shipmentErrorMessage = ref("")
 const addressOptions = props.shipping_fields?.address?.options || props.address?.options
@@ -753,6 +783,18 @@ const onClickButtonShipmentPlatform = () => {
 			@onClose="!isModalErrorShipment ? (isModalShipment = false) : null"
 			width="w-full max-w-2xl">
 			<div>
+				<div v-if="apiShipmentError && deliveryNoteId" class="mb-3 rounded-md bg-red-50 border border-red-200 p-3">
+					<div class="text-sm text-red-700">{{ apiShipmentError }}</div>
+					<Button
+						class="mt-2"
+						type="tertiary"
+						icon="fal fa-comments"
+						:label="trans('Ask CRM about this')"
+						:loading="isAskingCrm"
+						@click="askCrmAboutShipment()"
+					/>
+				</div>
+
 				<!-- Shipment Cost -->
 				<div v-if="external_shop?.engine_value === 'faire'" class="mt-3">
 					<span class="text-xs px-1 my-2">{{ trans("Shipment cost") }}: </span>

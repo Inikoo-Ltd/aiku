@@ -3,6 +3,7 @@
 namespace App\Actions\Web\Webpage\Iris;
 
 use App\Actions\Iris\Blog\IndexIrisBlogs;
+use App\Actions\Web\Webpage\Traits\WithIrisBlogBreadcrumbs;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\BlogsIrisResource;
 use App\Models\Web\Website;
@@ -15,6 +16,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ShowIrisProductGuidesDashboard
 {
     use AsAction;
+    use WithIrisBlogBreadcrumbs;
 
     private const SUB_TYPES = [WebpageSubTypeEnum::PRODUCT_GUIDES];
 
@@ -39,7 +41,9 @@ class ShowIrisProductGuidesDashboard
         return Inertia::render(
             'BlogDashboard',
             [
-                'title' => __('Product Guides'),
+                'breadcrumbs' => $this->getIrisBlogDashboardBreadcrumbs(WebpageSubTypeEnum::PRODUCT_GUIDES),
+                'title'       => __('Product Guides'),
+                'blog_category' => WebpageSubTypeEnum::PRODUCT_GUIDES->value,
                 'data'  => BlogsIrisResource::collection($blogs),
             ]
         )->table(IndexIrisBlogs::make()->tableStructure($website, IndexIrisBlogs::PREFIX, self::SUB_TYPES));

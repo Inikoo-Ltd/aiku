@@ -60,10 +60,10 @@ const emits = defineEmits<{
     </div>
     <div v-if="counter" class="grid grid-flow-col text-xs italic text-gray-500 mt-2 space-x-12 justify-start tabular-nums">
         <p class="">
-            {{ trans('Letters') }}: {{ modelValue.length }}<span v-if="$attrs.maxLength">/{{ $attrs.maxLength }}</span>
+            {{ trans('Letters') }}: {{ modelValue?.length }}<span v-if="$attrs.maxLength">/{{ $attrs.maxLength }}</span>
         </p>
         <p class="">
-            {{ trans('Words') }}: {{ modelValue.trim().split(/\s+/).filter(Boolean).length }}
+            {{ trans('Words') }}: {{ modelValue?.trim().split(/\s+/).filter(Boolean).length }}
         </p>
     </div>
 </template>

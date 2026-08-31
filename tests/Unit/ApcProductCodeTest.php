@@ -56,6 +56,18 @@ it('prefers non conveyable over excess for a wide box', function () {
         ->and($this->apc->fitsExcessParcel($box))->toBeFalse();
 });
 
+it('routes scottish 2-5 day postcodes off next day service', function () {
+    foreach (['AB37 1AA', 'AB43 1AA', 'AB45 1AA', 'AB55 1AA', 'IV21 1AA', 'IV27 1AA', 'IV40 1AA', 'IV49 1AA', 'IV51 1AA', 'IV56 1AA', 'PA20 1AA', 'PA41 1AA', 'PA78 1AA', 'PH42 1AA', 'PH44 1AA', 'KA27 1AA', 'KA28 1AA', 'KW1 1AA', 'KW17 1AA', 'HS1 1AA', 'HS9 1AA', 'ZE1 1AA', 'ZE3 1AA', 'JE2 1AA', 'GG1 1AA', 'IM1 1AA'] as $postcode) {
+        expect($this->apc->isTwoToFiveDayPostcode($postcode))->toBeTrue($postcode);
+    }
+});
+
+it('keeps scottish next day postcodes on next day service', function () {
+    foreach (['AB10 1AA', 'AB25 1AA', 'AB30 1AA', 'AB36 1AA', 'AB39 1AA', 'AB41 1AA', 'AB42 1AA', 'AB51 1AA', 'AB54 1AA', 'IV1 1AA', 'IV2 1AA', 'IV20 1AA', 'IV23 1AA', 'IV25 1AA', 'IV30 1AA', 'IV32 1AA', 'IV36 1AA', 'IV63 1AA', 'PH3 1AA', 'PH13 1AA', 'PH15 1AA', 'PH26 1AA', 'PH30 1AA', 'PH41 1AA', 'PH49 1AA', 'PH50 1AA', 'PA21 1AA', 'PA38 1AA', 'PA80 1AA', 'DD8 1AA', 'DD11 1AA', 'FK7 1AA', 'FK21 1AA', 'KY6 1AA', 'G1 1AA', 'EH1 1AA', 'SW1A 1AA'] as $postcode) {
+        expect($this->apc->isTwoToFiveDayPostcode($postcode))->toBeFalse($postcode);
+    }
+});
+
 it('rejects parcels beyond every apc service', function () {
     expect($this->apc->fitsNonConveyableParcel([apcParcel(161, 60, 60, 25)]))->toBeFalse()
         ->and($this->apc->fitsNonConveyableParcel([apcParcel(160, 61, 60, 25)]))->toBeFalse()

@@ -37,6 +37,10 @@ export const useMiniChats = () => {
         miniChats.value = miniChats.value.filter((chat) => chat.ulid !== ulid)
     }
 
+    const closeAllMiniChats = () => {
+        miniChats.value = []
+    }
+
     const toggleMiniChat = (ulid: string) => {
         const chat = findMiniChat(ulid)
         if (chat) {
@@ -52,5 +56,5 @@ export const useMiniChats = () => {
     const trackNavigation = () =>
         router.on("navigate", (event) => closeMiniChatsOpenedInPage(event.detail.page.url))
 
-    return { miniChats, openMiniChat, closeMiniChat, toggleMiniChat, trackNavigation }
+    return { miniChats, openMiniChat, closeMiniChat, closeAllMiniChats, toggleMiniChat, trackNavigation }
 }

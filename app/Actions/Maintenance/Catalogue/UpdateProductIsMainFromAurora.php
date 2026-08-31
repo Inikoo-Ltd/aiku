@@ -64,7 +64,6 @@ class UpdateProductIsMainFromAurora
                 if ($product) {
                     UpdateProduct::make()->action($product, [
                         'is_main' => false,
-                        'is_for_sale' => false,
                     ]);
                 }
             }

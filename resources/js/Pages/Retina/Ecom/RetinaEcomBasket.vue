@@ -769,15 +769,14 @@ const onChangeInsurance = async (val: boolean) => {
                             <!-- Input text: Delivery instructions -->
                             <div class="">
                                 <div class="text-sm text-gray-500">
-                                    <FontAwesomeIcon icon="fal fa-truck" class="text-[#38bdf8]" fixed-width aria-hidden="true" />
-                                    {{ trans("Delivery instructions") }}
-                                    <FontAwesomeIcon v-tooltip="trans('To be printed in shipping label')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon style="color: #93C5FD" icon="fal fa-truck" fixed-width aria-hidden="true"/>
+                                    {{ ctrans("Delivery Instructions") }}
                                     :
                                 </div>
                                 <PureTextarea
                                     v-model="deliveryInstructions"
                                     @update:modelValue="() => debounceDeliveryInstructions()"
-                                    :placeholder="trans('Add if needed')"
+                                    :placeholder="ctrans('Add if needed') + ' (' + ctrans('This message will be printed in shipping label') + ')'"
                                     rows="4"
                                     :disabled="!is_in_basket"
                                     :loading="isLoadingNote.includes('shipping_notes')"
@@ -789,13 +788,13 @@ const onChangeInsurance = async (val: boolean) => {
                             <!-- Input text: Other instructions -->
                             <div class="">
                                 <div class="text-sm text-gray-500">
-                                    <FontAwesomeIcon icon="fal fa-sticky-note" style="color: rgb(255, 125, 189)" fixed-width aria-hidden="true" />
-                                    {{ trans("Other instructions") }}:
+                                    <FontAwesomeIcon style="color: #599FF0" icon="fal fa-sticky-note" fixed-width aria-hidden="true"/>
+                                    {{ trans("Other Instructions") }}:
                                 </div>
                                 <PureTextarea
                                     v-model="noteToSubmit"
                                     @update:modelValue="() => debounceSubmitNote()"
-                                    :placeholder="trans('Add if needed')"
+                                    :placeholder="ctrans('Add if needed')"
                                     rows="4"
                                     :loading="isLoadingNote.includes('customer_notes')"
                                     :isSuccess="recentlySuccessNote.includes('customer_notes')"

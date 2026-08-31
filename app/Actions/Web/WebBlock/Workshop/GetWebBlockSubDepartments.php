@@ -38,6 +38,7 @@ class GetWebBlockSubDepartments
                     'product_categories.slug',
                     'product_categories.code',
                     'product_categories.name',
+                    'product_categories.description',
                     'product_categories.web_images',
                     'product_categories.image_id',
                     'webpages.canonical_url'

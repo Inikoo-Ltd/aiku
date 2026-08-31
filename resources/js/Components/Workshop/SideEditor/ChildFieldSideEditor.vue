@@ -4,6 +4,7 @@ import Accordion from 'primevue/accordion'
 import { ref } from 'vue'
 
 import { routeType } from '@/types/route'
+import { getFieldKey } from '@/Composables/SideEditorHelper'
 const props = defineProps<{
     blueprint: {
         replaceForm : Array<any>
@@ -21,7 +22,7 @@ const openPanel = ref(0)
 </script>
 
 <template>
-    <div v-for="(form, index) in blueprint.replaceForm.filter(f => f.type !== 'hidden')" :key="form.key">
+    <div v-for="(form, index) in blueprint.replaceForm.filter(f => f.type !== 'hidden')" :key="getFieldKey(form.key, index)">
         <Accordion v-if="form.name" class="w-full" v-model="openPanel">
             <template #default>
                 <div v-if="form.label" class="my-2 text-xs font-semibold">{{ form.label }}</div>

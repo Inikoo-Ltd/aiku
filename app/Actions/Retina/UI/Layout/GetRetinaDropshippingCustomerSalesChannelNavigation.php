@@ -93,8 +93,8 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
 
         if ($isManual) {
             $platformNavigation['api_token'] = [
-                'label' => __('Api'),
-                'icon'  => ['fal', 'fa-key'],
+                'label' => __('API'),
+                'icon'  => ['fal', 'fa-plug'],
                 'root'  => 'retina.dropshipping.customer_sales_channels.api.',
                 'route' => [
                     'name'       => 'retina.dropshipping.customer_sales_channels.api.dashboard',

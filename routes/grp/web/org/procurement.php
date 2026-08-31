@@ -18,6 +18,16 @@ use App\Actions\Procurement\OrgAgent\UI\EditOrgAgent;
 use App\Actions\Procurement\OrgAgent\UI\IndexOrgAgents;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgPartner\UI\IndexOrgPartners;
+use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
+use App\Actions\Procurement\OrgPartner\UI\ShowPartnerShoppingDashboard;
+use App\Actions\Procurement\PartnerShoppingListItem\CherryPickPartnerShoppingListItems;
+use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
+use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexPartnerShippingList;
+use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexPartnerShoppingListItems;
+use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
+use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
+use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
+use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
 use App\Actions\Procurement\OrgSupplier\ExportOrgSuppliers;
 use App\Actions\Procurement\OrgSupplier\UI\CreateOrgSupplier;
@@ -90,6 +100,8 @@ Route::prefix('suppliers')->as('org_suppliers.')->group(function () {
 
 Route::prefix('partners')->as('org_partners.')->group(function () {
     Route::get('', IndexOrgPartners::class)->name('index');
+    Route::get('shipping-list', IndexPartnerShippingList::class)->name('shipping_list.index');
+    Route::post('shipping-list/cherry-pick', CherryPickPartnerShoppingListItems::class)->name('shipping_list.cherry_pick');
     Route::prefix('{orgPartner}')->as('show')->group(function () {
         Route::get('', ShowOrgPartner::class);
         Route::prefix('purchase-orders')->as('.purchase-orders.')->group(function () {
@@ -101,6 +113,20 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
         });
         Route::prefix('stock-deliveries')->as('.stock-deliveries.')->group(function () {
             Route::get('index', [IndexStockDeliveries::class, 'inOrgPartner'])->name('index');
+        });
+        Route::prefix('shopping')->as('.shopping.')->group(function () {
+            Route::get('', ShowPartnerShoppingDashboard::class)->name('dashboard');
+        });
+        Route::prefix('browse')->as('.browse.')->group(function () {
+            Route::get('', ShowPartnerBrowse::class)->name('index');
+        });
+        Route::prefix('shopping-list')->as('.shopping_list.')->group(function () {
+            Route::get('', IndexPartnerShoppingListItems::class)->name('index');
+            Route::post('suggest', SuggestPartnerShoppingList::class)->name('suggest');
+            Route::post('bulk', StorePartnerShoppingListItems::class)->name('bulk_store');
+            Route::post('{orgStock}', StorePartnerShoppingListItem::class)->name('store');
+            Route::patch('{partnerShoppingListItem}', UpdatePartnerShoppingListItem::class)->name('update');
+            Route::delete('{partnerShoppingListItem}', DeletePartnerShoppingListItem::class)->name('destroy');
         });
     });
 

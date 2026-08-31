@@ -145,6 +145,15 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
 
                 ],
 
+                'bulk_import_product' => [
+                    'title'               => [
+                        'label'       => __('Bulk Import Portfolios'),
+                        'information' => __('The list of column file: portfolios')
+                    ],
+                    'progressDescription' => __('Importing portfolios'),
+                    'upload_spreadsheet'  => $this->buildUploadSpreadsheetConfig($this->customerSalesChannel)
+                ],
+
                 'is_show_add_products_modal' => $this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL,
                 'data'                       => PortfoliosResource::collection($portfolios),
                 'customer'                   => $this->customerSalesChannel->customer,
@@ -327,5 +336,35 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 ]
             ]
         );
+    }
+
+    protected function buildUploadSpreadsheetConfig(CustomerSalesChannel $customerSalesChannel): array
+    {
+        return [
+            'event'           => 'action-progress',
+            'channel'         => 'grp.personal.'.$this->organisation->id,
+            'required_fields' => ['sku', 'title'],
+            'template'        => [
+                'label' => __('Download template (.xlsx)'),
+            ],
+            'route'           => [
+                'upload'   => [
+                    'name'       => 'grp.models.customer_sales_channel.portfolios.bulk_import',
+                    'parameters' => [
+                        'customerSalesChannel' => $customerSalesChannel->id
+                    ]
+                ],
+                'download' => [
+                    'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.export_template',
+                    'parameters' => [
+                        'organisation'         => $this->organisation->slug,
+                        'shop'                 => $this->shop->slug,
+                        'customer'             => $customerSalesChannel->customer->slug,
+                        'customerSalesChannel' => $customerSalesChannel->slug,
+                        'type'                 => 'xlsx'
+                    ]
+                ],
+            ],
+        ];
     }
 }

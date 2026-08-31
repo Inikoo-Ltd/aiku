@@ -19,9 +19,40 @@ return [
     'email_retention_days' => (int) env('EMAIL_RETENTION_DAYS', 90),
 
     /*
-     * The email archiver pauses between delete batches while any replica is further behind than this,
+     * How old a transactional record (order, delivery note, invoice, payment) must be before its
+     * whole audit trail is archived. The record's own age decides, not the age of each audit row:
+     * old records still collect machine audits from backfills, history imports and hydrators, and
+     * the History tab falls back to the archive per record, so a split trail would hide its older
+     * half. Kept separate from the email retention, which is pinned to the SES reporting window.
+     */
+    'audit_retention_days' => (int) env('AUDIT_RETENTION_DAYS', 120),
+
+    /*
+     * How far back per SKU and per location stock history is kept at daily granularity in the
+     * operational database. Beyond it only the last snapshot of each month stays local; every
+     * other day is moved to the archive database, where the UI reads it back transparently.
+     *
+     * Three years rather than two is an engineering choice: BackfillStockValuations and the cost
+     * repairs rewrite everything from organisations.wac_calculations_start_date, and they only
+     * ever touch the operational database, so a window that ends inside a range those sweeps
+     * still rewrite would leave archived rows disagreeing with recomputed ones. The org and group
+     * level daily series (organisation_stock_histories, group_stock_histories) is never archived,
+     * so every dashboard and valuation total keeps its full history whatever this is set to.
+     */
+    'stock_history_retention_months' => (int) env('STOCK_HISTORY_RETENTION_MONTHS', 36),
+
+    /*
+     * The nightly stock history downsample stays off until the first pass over the historic
+     * backlog has been run by hand: the same command serves both, and one new day a night is a
+     * two minute tick while nineteen years of backlog is hours of unattended deletes against
+     * production. Turned on with an environment variable rather than a deploy once that is done.
+     */
+    'stock_history_nightly' => (bool) env('STOCK_HISTORY_NIGHTLY_ARCHIVE', false),
+
+    /*
+     * Every archiver pauses between delete batches while any replica is further behind than this,
      * so archiving can never build up the WAL backlog that once filled boro's disk.
      */
-    'email_max_replication_lag_mb' => (int) env('EMAIL_ARCHIVE_MAX_REPLICATION_LAG_MB', 256),
+    'max_replication_lag_mb' => (int) env('EMAIL_ARCHIVE_MAX_REPLICATION_LAG_MB', 256),
 
 ];

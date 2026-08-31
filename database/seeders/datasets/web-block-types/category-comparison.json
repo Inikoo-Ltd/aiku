@@ -1,0 +1,31 @@
+{
+	"slug": "category-comparison",
+	"code": "category-comparison",
+	"name": "Category Comparison",
+	"scope": "webpage",
+	"category": "block",
+	"icon": ["fal", "table-columns"],
+	"website_type": ["b2b", "b2c", "dropshipping"],
+	"shop_availability": [],
+	"is_in_test": true,
+	"fixed": true,
+	"data": {
+		"fieldValue": {
+			"title": "Range Comparison",
+			"number_of_families": {
+				"desktop": 4,
+				"tablet": 3,
+				"mobile": 2
+			},
+			"settings": {
+				"highlight_color": "#eeede3",
+				"label_color": "#black",
+				"link_color": "#black",
+				"value_color": "#black"
+			},
+			"container": {
+				"properties": null
+			}
+		}
+	}
+}

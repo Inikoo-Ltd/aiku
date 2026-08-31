@@ -72,6 +72,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ImportBulkCustomerSales
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\SyncRetinaCustomerSalesChannelPortfolioManually;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UnSuspendRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaCustomerSalesChannel;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\DismissRetinaCustomerSalesChannelNotice;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaEbayCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
@@ -109,6 +110,8 @@ use App\Actions\Retina\Ebay\CreateRetinaNewBulkPortfoliosToEbay;
 use App\Actions\Retina\Dropshipping\Portfolio\MatchRetinaBulkPortfoliosToPlatform;
 use App\Actions\Retina\Ebay\MatchRetinaBulkNewProductToCurrentEbay;
 use App\Actions\Retina\Ebay\MatchRetinaPortfolioToCurrentEbayProduct;
+use App\Actions\Retina\Ebay\PublishAllRetinaEbayDraftPortfolios;
+use App\Actions\Retina\Ebay\PublishRetinaEbayPortfolio;
 use App\Actions\Retina\Ebay\StoreRetinaNewProductToCurrentEbay;
 use App\Actions\Retina\Ecom\Basket\RetinaDeleteBasketTransaction;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
@@ -340,6 +343,7 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
 
     Route::patch('update', UpdateRetinaCustomerSalesChannel::class)->name('update');
     Route::patch('update-ebay', UpdateRetinaEbayCustomerSalesChannel::class)->name('ebay_update');
+    Route::patch('dismiss-notice', DismissRetinaCustomerSalesChannelNotice::class)->name('dismiss_notice');
     Route::post('client', StoreRetinaCustomerClient::class)->name('customer-client.store');
     Route::post('fulfilment', StoreRetinaFulfilmentCustomerClient::class)->name('fulfilment.customer-client.store');
     Route::post('fulfilment-client-with-order', StoreRetinaFulfilmentCustomerClientWithOrder::class)->name('fulfilment.customer-client-with-order.store');
@@ -394,6 +398,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{customerSalesChannel:id}/ebay-batch-upload', CreateRetinaNewBulkPortfoliosToEbay::class)->name('ebay.batch_upload')->withoutScopedBindings()->whereNumber('customerSalesChannel');
     Route::post('{customerSalesChannel:id}/ebay-batch-match', MatchRetinaBulkNewProductToCurrentEbay::class)->name('ebay.batch_match')->withoutScopedBindings()->whereNumber('customerSalesChannel');
     Route::post('{customerSalesChannel:id}/ebay-batch-all', CreateRetinaNewAllPortfoliosToEbay::class)->name('ebay.batch_all')->withoutScopedBindings()->whereNumber('customerSalesChannel');
+    Route::post('{customerSalesChannel:id}/ebay-publish-drafts', PublishAllRetinaEbayDraftPortfolios::class)->name('ebay.publish_drafts')->withoutScopedBindings()->whereNumber('customerSalesChannel');
 
     Route::post('{wooCommerceUser:id}/woo-batch-upload', CreateNewBulkPortfolioToWooCommerce::class)->name('woo.batch_upload_legacy')->withoutScopedBindings()->whereNumber('wooCommerceUser');
     Route::post('{wooCommerceUser:id}/woo-batch-sync', [CreateNewBulkPortfolioToWooCommerce::class, 'asBatchSync'])->name('woo.batch_sync')->withoutScopedBindings()->whereNumber('wooCommerceUser');
@@ -459,6 +464,7 @@ Route::post('portfolio/{portfolio:id}/store-new-woo-product', StoreRetinaNewProd
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-ebay-product', MatchRetinaPortfolioToCurrentEbayProduct::class)->name('portfolio.match_to_existing_ebay_product')->whereNumber('portfolio');
 Route::post('portfolio/{portfolio:id}/store-new-ebay-product', StoreRetinaNewProductToCurrentEbay::class)->name('portfolio.store_new_ebay_product')->whereNumber('portfolio');
+Route::post('portfolio/{portfolio:id}/publish-ebay-product', PublishRetinaEbayPortfolio::class)->name('portfolio.publish_ebay_product')->whereNumber('portfolio');
 Route::post('portfolio/{portfolio:id}/update-new-product', UpdateAndUploadRetinaPortfolioToCurrentChannel::class)->name('portfolio.update_new_product.publish')->whereNumber('portfolio');
 Route::post('portfolio/{portfolio:id}/update-new-product/draft', [UpdateAndUploadRetinaPortfolioToCurrentChannel::class, 'asDraft'])->name('portfolio.update_new_product.draft')->whereNumber('portfolio');
 

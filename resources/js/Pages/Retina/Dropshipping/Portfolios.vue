@@ -16,7 +16,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWithUpload.vue"
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue"
 import AddBundles from "@/Components/Dropshipping/AddBundles.vue"
-import { Message, Popover } from "primevue"
+import { InputNumber, Message, Popover } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSyncAlt } from "@fas"
 import { useTimeCountdown } from "@/Composables/useFormatTime"
@@ -766,13 +766,11 @@ const updateTimeLeft = () => {
 	setCountdown(expiryDate)
 }
 
-const bulkUpdatePriceData = ref({})
+const bulkUpdatePriceData = ref({ pricing_type: "percent", pricing_value: 0 })
 
-const calculateAdjustedPrice = (amount, type) => {
-	bulkUpdatePriceData.value = {
-		amount: amount,
-		type: type,
-	}
+const switchBulkPricingMode = (mode) => {
+	if (bulkUpdatePriceData.value.pricing_type === mode) return
+	bulkUpdatePriceData.value = { pricing_type: mode, pricing_value: 0 }
 }
 
 const submitBulkEditPrice = async (type) => {
@@ -1347,7 +1345,7 @@ const layout = inject("layout", layoutStructure)
 	<div v-if="selectedProducts.length > 0" class="px-4 pt-4 grid justify-items-end">
 		<div class="gap-x-3 flex">
 			<Button
-				v-if="selectedProducts.length > 0"
+				v-if="selectedProducts.length > 0 && !customer_sales_channel?.do_not_update_prices"
 				v-tooltip="trans('Edit Product :platform', { platform: props.platform_data?.name })"
 				:type="'tertiary'"
 				:label="trans('Edit Price (:_count)', { _count: selectedProducts?.length })"
@@ -1815,39 +1813,52 @@ const layout = inject("layout", layoutStructure)
 		</div>
 
 		<div class="mb-3">
-			<label for="edit-product-rrp" class="block text-sm font-semibold">{{
-				trans("Up Selling Price")
+			<label class="block text-sm font-semibold">{{
+				trans("Price Mapping")
 			}}</label>
-			<div class="mt-2 flex flex-row gap-2">
+			<div class="mt-2 flex flex-row flex-wrap items-center gap-2">
 				<Button
-					v-for="percent in [20, 40, 60, 80, 100]"
-					:key="'p' + percent"
-					@click="calculateAdjustedPrice(percent, 'percent')"
-					:label="`+${percent}%`"
+					:key="'bulk-percent-' + bulkUpdatePriceData.pricing_type"
+					:label="trans('± % over live RRP')"
 					size="xs"
-					:disabled="
-						bulkUpdatePriceData.type === 'percent' &&
-						bulkUpdatePriceData.amount === percent
-					"
-					:type="'tertiary'" />
+					:type="bulkUpdatePriceData.pricing_type === 'percent' ? 'primary' : 'tertiary'"
+					:style="bulkUpdatePriceData.pricing_type === 'percent' ? undefined : 'white-w-outline'"
+					@click="switchBulkPricingMode('percent')" />
 				<Button
-					v-for="amount in [2, 4, 6, 8, 10]"
-					:key="'a' + amount"
-					@click="calculateAdjustedPrice(amount, 'fixed')"
-					:label="`+${amount}`"
+					:key="'bulk-fixed-' + bulkUpdatePriceData.pricing_type"
+					:label="trans('± :currency over live RRP', { currency: layout?.iris?.currency?.symbol || layout?.iris?.currency?.code || '£' })"
 					size="xs"
-					:disabled="
-						bulkUpdatePriceData.type === 'fixed' &&
-						bulkUpdatePriceData.amount === amount
-					"
-					:type="'tertiary'" />
+					:type="bulkUpdatePriceData.pricing_type === 'fixed' ? 'primary' : 'tertiary'"
+					:style="bulkUpdatePriceData.pricing_type === 'fixed' ? undefined : 'white-w-outline'"
+					@click="switchBulkPricingMode('fixed')" />
 				<Button
-					@click="calculateAdjustedPrice(0, 'reset')"
-					:label="trans('Reset')"
-					:tooltip="trans('Reset to the original selling price')"
+					:key="'bulk-notfollow-' + bulkUpdatePriceData.pricing_type"
+					:label="trans('Not follow')"
 					size="xs"
-					:disabled="bulkUpdatePriceData.type === 'reset'"
-					:type="'tertiary'" />
+					:type="bulkUpdatePriceData.pricing_type === 'not_follow' ? 'primary' : 'tertiary'"
+					:style="bulkUpdatePriceData.pricing_type === 'not_follow' ? undefined : 'white-w-outline'"
+					@click="switchBulkPricingMode('not_follow')" />
+			</div>
+			<div v-if="bulkUpdatePriceData.pricing_type !== 'not_follow'" class="mt-3 min-h-[44px] flex flex-row items-center gap-4">
+				<InputNumber
+					@update:modelValue="(value) => (bulkUpdatePriceData.pricing_value = value)"
+					@input="(event) => (bulkUpdatePriceData.pricing_value = event.value)"
+					:modelValue="bulkUpdatePriceData.pricing_value"
+					:inputClass="'xxs w-[100px]'"
+					:min="-100"
+					:max="900"
+					:minFractionDigits="0"
+					:maxFractionDigits="2"
+					:allowEmpty="false"
+					:suffix="bulkUpdatePriceData.pricing_type === 'percent' ? '%' : undefined"
+					:prefix="bulkUpdatePriceData.pricing_type === 'fixed' ? (layout?.iris?.currency?.symbol || layout?.iris?.currency?.code || '£') : (bulkUpdatePriceData.pricing_value > 0 ? '+' : undefined)"
+					size="small" />
+				<div class="text-sm text-gray-500">
+					{{ trans("Each of the :count selected products is priced from its own live RRP.", { count: selectedProducts.length }) }}
+				</div>
+			</div>
+			<div v-else class="mt-3 min-h-[44px] flex items-center text-sm text-gray-500">
+				{{ trans("The selected products keep their eBay price as it is. We will not update them, even when the RRP changes.") }}
 			</div>
 		</div>
 

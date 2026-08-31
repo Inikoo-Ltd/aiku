@@ -10,11 +10,15 @@
 namespace Tests\Feature;
 
 use App\Actions\CRM\Customer\ImportCustomers;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\Dropshipping\Portfolio\ImportBulkPortfolios;
 use App\Actions\HumanResources\Employee\ImportEmployees;
 use App\Actions\Production\Artefact\ImportArtefact;
 use App\Actions\Production\Production\StoreProduction;
 use App\Actions\Production\RawMaterial\ImportRawMaterial;
 use App\Actions\SysAdmin\Guest\ImportGuests;
+use App\Enums\Helpers\Import\UploadRecordStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Helpers\Upload;
 use App\Models\HumanResources\JobPosition;
 use App\Models\Production\Production;
@@ -158,4 +162,68 @@ test('import guests from file', function () {
         ->and($upload->number_rows)->toBe(1)
         ->and($upload->number_success)->toBe(1)
         ->and($upload->number_fails)->toBe(0);
+});
+
+test('import portfolios in customer sales channel from file, unknown sku fails its own row only', function () {
+    Storage::fake('local');
+
+    $customer = createCustomer($this->shop);
+
+    list(, $product) = createProduct($this->shop);
+
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::MANUAL)->firstOrFail();
+
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+        $customer,
+        $platform,
+        ['reference' => 'test_portfolio_import_reference']
+    );
+
+    $file = csvUpload('portfolios.csv', [
+        ['Sku', 'Title'],
+        [$product->code, $product->name],
+        ['SKU-DOES-NOT-EXIST', 'Typo made by the client'],
+    ]);
+
+    $upload = ImportBulkPortfolios::make()->handle($customerSalesChannel, $file);
+
+    expect($upload)->toBeInstanceOf(Upload::class)
+        ->and($upload->original_filename)->toBe('portfolios.csv')
+        ->and($upload->organisation_id)->toBe($this->organisation->id)
+        ->and($upload->number_rows)->toBe(2)
+        ->and($upload->number_success)->toBe(1)
+        ->and($upload->number_fails)->toBe(1)
+        ->and($customerSalesChannel->portfolios()->count())->toBe(1)
+        ->and($customerSalesChannel->portfolios()->first()->item_id)->toBe($product->id);
+});
+
+test('import portfolios reports a sku belonging to another shop instead of a null error', function () {
+    Storage::fake('local');
+
+    $customer = createCustomer($this->shop);
+
+    $otherShop = createOwnShop('portfolio-import-foreign-shop')[2];
+    list(, $foreignProduct) = createProduct($otherShop);
+
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::MANUAL)->firstOrFail();
+
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+        $customer,
+        $platform,
+        ['reference' => 'test_foreign_sku_reference']
+    );
+
+    $file = csvUpload('foreign-portfolios.csv', [
+        ['Sku', 'Title'],
+        [$foreignProduct->code, $foreignProduct->name],
+    ]);
+
+    $upload = ImportBulkPortfolios::make()->handle($customerSalesChannel, $file);
+
+    $record = $upload->records()->where('status', UploadRecordStatusEnum::FAILED)->first();
+
+    expect($upload->number_success)->toBe(0)
+        ->and($upload->number_fails)->toBe(1)
+        ->and($customerSalesChannel->portfolios()->count())->toBe(0)
+        ->and($record->errors)->toContain('SKU not found in this shop.');
 });

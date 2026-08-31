@@ -139,7 +139,7 @@ class EditTradeUnit extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'label'  => __('Id'),
+                            'label'  => __('Properties'),
                             'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
                                 // 'code' => [

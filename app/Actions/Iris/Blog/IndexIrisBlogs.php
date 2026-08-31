@@ -12,6 +12,7 @@ use App\Models\Web\Website;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
@@ -23,12 +24,19 @@ class IndexIrisBlogs extends IrisAction
     public const PREFIX = 'blogs';
 
     public const SUB_TYPES = [
-        WebpageSubTypeEnum::BLOG,
         WebpageSubTypeEnum::NEWSLETTERS,
         WebpageSubTypeEnum::PRODUCT_GUIDES,
         WebpageSubTypeEnum::BUSINESS_TIPS,
-        WebpageSubTypeEnum::INSIGHT,
     ];
+
+    /**
+     * @param  array<int, WebpageSubTypeEnum>  $subTypes
+     * @return array<int, string>
+     */
+    protected static function subTypeValues(array $subTypes): array
+    {
+        return array_map(fn (WebpageSubTypeEnum $subType) => $subType->value, $subTypes);
+    }
 
     /**
      * @param  array<int, WebpageSubTypeEnum>  $subTypes
@@ -40,13 +48,15 @@ class IndexIrisBlogs extends IrisAction
             return [];
         }
 
+        $blogCategory = WebpageSubTypeEnum::blogCategorySqlExpression();
+
         $counts = Webpage::where('webpages.website_id', $website->id)
             ->where('webpages.type', WebpageTypeEnum::BLOG)
             ->where('webpages.state', WebpageStateEnum::LIVE)
-            ->whereIn('webpages.sub_type', $subTypes)
-            ->groupBy('webpages.sub_type')
-            ->selectRaw('webpages.sub_type, count(*) as total')
-            ->pluck('total', 'webpages.sub_type');
+            ->whereIn(DB::raw($blogCategory), self::subTypeValues($subTypes))
+            ->groupBy(DB::raw($blogCategory))
+            ->selectRaw($blogCategory.' as blog_category, count(*) as total')
+            ->pluck('total', 'blog_category');
 
         $labels = WebpageSubTypeEnum::labels();
 
@@ -60,7 +70,7 @@ class IndexIrisBlogs extends IrisAction
                     ],
                 ])->all(),
                 'engine'   => function ($query, $elements) {
-                    $query->whereIn('webpages.sub_type', $elements);
+                    $query->whereIn(DB::raw(WebpageSubTypeEnum::blogCategorySqlExpression()), $elements);
                 },
             ],
         ];
@@ -92,10 +102,12 @@ class IndexIrisBlogs extends IrisAction
             });
         });
 
-        $publishedAtSort = AllowedSort::callback('last_published_at', function ($query, bool $descending) {
-            $newestFirst = !$descending;
+        $subTypeFilter = AllowedFilter::callback('sub_type', function ($query, $value) {
+            $query->whereIn(DB::raw(WebpageSubTypeEnum::blogCategorySqlExpression()), Arr::wrap($value));
+        });
 
-            $query->orderByRaw($this->getPublishedAtSortExpression().' '.($newestFirst ? 'desc' : 'asc').' nulls last');
+        $publishedAtSort = AllowedSort::callback('last_published_at', function ($query, bool $descending) {
+            $query->orderByRaw($this->getPublishedAtSortExpression().' '.($descending ? 'desc' : 'asc').' nulls last');
         });
 
         if ($prefix) {
@@ -113,10 +125,16 @@ class IndexIrisBlogs extends IrisAction
             );
         }
 
+        $orderBy = request()->query($prefix ? $prefix.'_sort' : 'sort');
+
+        if (!$orderBy) {
+            $queryBuilder->orderByRaw($this->getPublishedAtSortExpression().' desc nulls last');
+        }
+
         return $queryBuilder
             ->where('webpages.website_id', $website->id)
             ->where('webpages.type', WebpageTypeEnum::BLOG)
-            ->whereIn('webpages.sub_type', $subTypes)
+            ->whereIn(DB::raw(WebpageSubTypeEnum::blogCategorySqlExpression()), self::subTypeValues($subTypes))
             ->where('webpages.state', WebpageStateEnum::LIVE)
             ->select([
                 'webpages.id',
@@ -129,9 +147,8 @@ class IndexIrisBlogs extends IrisAction
                 'webpages.live_snapshot_id',
             ])
             ->with('liveSnapshot:id,published_at')
-            ->defaultSort('-webpages.live_at')
-            ->allowedSorts(['title', $publishedAtSort])
-            ->allowedFilters([$globalSearch, AllowedFilter::exact('sub_type')])
+            ->allowedSorts([$publishedAtSort, 'title'])
+            ->allowedFilters([$globalSearch, $subTypeFilter])
             ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
     }

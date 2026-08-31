@@ -8,8 +8,10 @@ import { defineStore } from "pinia"
 import axios from "axios"
 import { usePage } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
+import { notify } from "@kyvg/vue3-notification"
 import { useLayoutStore } from "@/Stores/layout"
 import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
+import { useMiniChats } from "@/Composables/useMiniChats"
 
 export interface StaffMessageReactions {
     [emoji: string]: number[]
@@ -117,9 +119,20 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             this.openConversation(conversation.ulid)
         },
 
-        async openContext(contextType: string, contextId: number, audience: string) {
+        async openContext(contextType: string, contextId: number, audience: string, message?: string) {
             const { data } = await axios.post(route("grp.chat.staff.context.open"), { context_type: contextType, context_id: contextId, audience })
             const conversation: StaffConversation = data.data
+            const myId = usePage().props?.auth?.user?.id
+            if (!conversation.participants.some((p) => p.id !== myId)) {
+                notify({
+                    title: trans("Nobody to ask"),
+                    text: audience === "crm"
+                        ? trans("No customer service colleague is set up for this shop. Tell a supervisor.")
+                        : trans("No warehouse colleague is set up here. Tell a supervisor."),
+                    type: "warning",
+                })
+                return
+            }
             const existingIndex = this.conversations.findIndex((c) => c.ulid === conversation.ulid)
             if (existingIndex === -1) {
                 this.conversations.unshift(conversation)
@@ -127,9 +140,14 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                 this.conversations[existingIndex] = conversation
             }
             this.openConversation(conversation.ulid)
+            if (message) {
+                await this.send(conversation.ulid, message)
+            }
         },
 
         openConversation(ulid: string) {
+            useMiniChats().closeAllMiniChats()
+
             const existing = this.openWindows.find((w) => w.ulid === ulid)
             if (existing) {
                 existing.minimised = false

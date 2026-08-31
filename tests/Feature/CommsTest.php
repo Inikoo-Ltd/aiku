@@ -113,6 +113,8 @@ use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\Comms\Outbox\OutboxTypeEnum;
 use App\Enums\Comms\PostRoom\PostRoomCodeEnum;
 use App\Enums\Comms\SubscriptionEvent\SubscriptionEventTypeEnum;
+use App\Enums\Comms\WhatsappCampaign\WhatsappCampaignStateEnum;
+use App\Enums\Comms\WhatsappCampaign\WhatsappCampaignTypeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\ChatEmailRecipient;
@@ -130,6 +132,7 @@ use App\Models\Comms\OutBoxHasSubscriber;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Comms\TestEmailRecipient;
+use App\Models\Comms\WhatsappCampaign;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\Fulfilment;
@@ -3649,7 +3652,7 @@ describe('email retention', function () {
             ->expectsOutputToContain('Nothing older than')
             ->assertSuccessful();
 
-        expect(DB::selectOne('select count(*) as n from pg_locks where locktype = ?', ['advisory'])->n)->toBe(0);
+        expect(DB::selectOne('select count(*) as n from pg_locks where locktype = ? and pid = pg_backend_pid()', ['advisory'])->n)->toBe(0);
     });
 
     test('archiver reconciles archive tables when the live schema has moved on', function () {
@@ -3748,5 +3751,24 @@ describe('email retention', function () {
 
         expect($wouldArchive)->toBeGreaterThanOrEqual(1)
             ->and(DB::table('dispatched_emails')->where('id', $emailId)->exists())->toBeTrue();
+    });
+});
+
+describe('mailshot template gallery previews', function () {
+    test('the layout endpoint returns compiled html only when asked for a preview', function () {
+        $template = EmailTemplate::where('builder', EmailTemplateBuilderEnum::BEEFREE->value)->first()
+            ?? EmailTemplate::first();
+
+        $template->update(['compiled_layout' => '<html><body>Preview me</body></html>']);
+
+        $layout = \App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout::make()
+            ->asController($template, new \Lorisleiva\Actions\ActionRequest());
+
+        expect($layout)->toBe($template->layout);
+
+        $preview = \App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout::make()
+            ->asController($template, \Lorisleiva\Actions\ActionRequest::create('/', 'GET', ['preview' => 1]));
+
+        expect($preview)->toBe(['html' => '<html><body>Preview me</body></html>']);
     });
 });

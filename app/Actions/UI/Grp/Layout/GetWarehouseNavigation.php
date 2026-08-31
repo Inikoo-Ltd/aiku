@@ -320,6 +320,19 @@ class GetWarehouseNavigation
                                 ],
                             ]
                         ],
+                        [
+                            'label' => __('Reports'),
+                            'tooltip' => __('Pickers and packers performance reports'),
+                            'icon'  => ['fal', 'fa-chart-line'],
+                            'root'  => 'grp.org.warehouses.show.dispatching.reports',
+                            'route' => [
+                                "name"       => "grp.org.warehouses.show.dispatching.reports",
+                                "parameters" => [
+                                    $warehouse->organisation->slug,
+                                    $warehouse->slug
+                                ],
+                            ]
+                        ],
 
 
                     ]

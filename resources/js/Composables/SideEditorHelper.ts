@@ -118,3 +118,11 @@ export const setFormValue = (mValue = {} , fieldKeys: string | string[], newVal:
     const keys = Array.isArray(fieldKeys) ? fieldKeys : [fieldKeys];
     return set(mValue, keys, newVal);
 };
+
+export const getFieldKey = (fieldKeys: string | string[] | undefined, fallback: string | number) => {
+    if (Array.isArray(fieldKeys)) {
+        return fieldKeys.join('-');
+    }
+
+    return fieldKeys ?? fallback;
+};

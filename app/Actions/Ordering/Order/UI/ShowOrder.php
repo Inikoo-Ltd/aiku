@@ -36,6 +36,8 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
+use App\Enums\UI\NotesEnum;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
@@ -187,45 +189,45 @@ class ShowOrder extends OrgAction
         return [
             "note_list" => [
                 [
-                    "label"       => __("Shipping label message") . ' ('  . __("Customer") . ')',
+                    "label"       => NotesEnum::SHIPPING_LABEL->label(),
                     "note"        => $order->shipping_notes ?? '',
                     "information" => __("Note from crm. First 34 char. Will be printed on the shipping label."),
                     "editable"    => true,
-                    "bgColor"     => "#38bdf8",
-                    "field"       => "shipping_notes"
+                    "field"       => "shipping_notes",
+                    ...NotesEnum::SHIPPING_LABEL->boilerPlate()
                 ],
                 [
-                    "label"       => __("Customer"),
+                    "label"       => NotesEnum::CUSTOMER->label(),
                     "note"        => $order->customer_notes ?? '',
                     "information" => __("This note is from customer in the platform. Not editable."),
                     "editable"    => false,
-                    "bgColor"     => "#FF7DBD",
-                    "field"       => "customer_notes"
+                    "field"       => "customer_notes",
+                    ...NotesEnum::CUSTOMER->boilerPlate()
                 ],
                 [
-                    "label"       => __("Public"),
+                    "label"       => NotesEnum::PUBLIC->label(),
                     "note"        => $order->public_notes ?? '',
                     "information" => __("This note will be visible to public, both staff and the customer can see."),
                     "editable"    => true,
                     "warning"     => __('Customer can see this note'),
-                    "bgColor"     => "#94DB84",
-                    "field"       => "public_notes"
+                    "field"       => "public_notes",
+                    ...NotesEnum::PUBLIC->boilerPlate()
                 ],
                 [
-                    "label"       => __("Private CRM note"),
+                    "label"       => NotesEnum::INTERNAL->label(),
                     "note"        => $order->internal_notes ?? '',
                     "information" => __("This note is only visible to staff members in the order. It is not shown in the delivery note."),
                     "editable"    => true,
-                    "bgColor"     => "#FCF4A3",
-                    "field"       => "internal_notes"
+                    "field"       => "internal_notes",
+                    ...NotesEnum::INTERNAL->boilerPlate()
                 ],
                 [
-                    "label"       => __("Private warehouse note"),
+                    "label"       => NotesEnum::WAREHOUSE->label(),
                     "note"        => $order->private_warehouse_note ?? '',
                     "information" => __("This note is only visible to staff members and is shown in the delivery note."),
                     "editable"    => true,
-                    "bgColor"     => "#FFD8A8",
-                    "field"       => "private_warehouse_note"
+                    "field"       => "private_warehouse_note",
+                    ...NotesEnum::WAREHOUSE->boilerPlate()
                 ]
             ]
         ];
@@ -383,6 +385,12 @@ class ShowOrder extends OrgAction
                         'type'  => $platform->type,
                         'title' => __('Platform :platform', ['platform' => $platform->name]),
                         'order_id' => $order->platform_order_id
+                    ] : null,
+                    'api_order'       => $order->salesChannel?->type == SalesChannelTypeEnum::API ? [
+                        'label'        => __('API order'),
+                        'tooltip'      => __('Placed automatically through the customer API, not by a person'),
+                        'held_unpaid'  => $order->state == OrderStateEnum::SUBMITTED && $order->pay_status == OrderPayStatusEnum::UNPAID,
+                        'held_message' => __('Auto-held: the saved-card charge failed. It will move to the warehouse automatically once payment succeeds — do not send it manually unless payment is resolved.'),
                     ] : null,
                 ],
                 'tabs'        => [

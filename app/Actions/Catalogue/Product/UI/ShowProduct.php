@@ -493,7 +493,7 @@ class ShowProduct extends OrgAction
             ->table(IndexOrdersInProduct::make()->tableStructure($product, ProductTabsEnum::ORDERS->value))
             ->table(IndexTradeUnitsInProduct::make()->tableStructure(prefix: ProductTabsEnum::TRADE_UNITS->value))
             ->table(IndexOrgStocksInProduct::make()->tableStructure(prefix: ProductTabsEnum::STOCKS->value))
-            ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value))
+            ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value, model: $product))
             ->table(IndexCustomers::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::CUSTOMERS->value))
             ->table(IndexReviews::make()->tableStructure(prefix: ProductTabsEnum::REVIEWS->value));
 

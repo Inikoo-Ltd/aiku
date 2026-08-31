@@ -38,13 +38,22 @@ class UpdateOrderPaymentsStatus extends OrgAction
     protected function handle(Order $order, bool $applyCutOffDate = true): Order
     {
         $runningPaymentsAmount = 0;
+        $paidAmount            = 0;
+        $refundedAmount        = 0;
         $payStatus             = OrderPayStatusEnum::UNPAID;
         $payDetailedStatus     = OrderPayDetailedStatusEnum::UNPAID;
         /** @var Payment $payment */
         foreach ($order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->whereNot('payments.state', PaymentStateEnum::CANCELLED)->get() as $payment) {
             $runningPaymentsAmount += $payment->amount;
+            if ($payment->amount >= 0) {
+                $paidAmount += $payment->amount;
+            } else {
+                $refundedAmount -= $payment->amount;
+            }
         }
         $runningPaymentsAmount = round($runningPaymentsAmount, 2);
+        $paidAmount            = round($paidAmount, 2);
+        $refundedAmount        = round($refundedAmount, 2);
         $totalAmount           = $order->total_amount;
         /** @var Invoice $refund */
         foreach (Invoice::where('order_id', $order->id)->where('type', InvoiceTypeEnum::REFUND)->where('in_process', false)->get() as $refund) {
@@ -83,6 +92,22 @@ class UpdateOrderPaymentsStatus extends OrgAction
         if ($applyCutOffDate && $runningPaymentsAmount == 0 && $cutOffDate && $order->created_at->lt($cutOffDate) && $totalAmount != 0) {
             $payStatus         = OrderPayStatusEnum::UNKNOWN;
             $payDetailedStatus = OrderPayDetailedStatusEnum::UNKNOWN;
+        }
+
+        /**
+         * A paid-then-refunded order nets its payments back to zero (or its total to ~0 once the
+         * refund is invoiced) and would otherwise read as unpaid forever. Only the human-facing
+         * detailed status changes: pay_status stays as computed so the pre-dispatch gates hold.
+         */
+        if (
+            in_array($payDetailedStatus, [OrderPayDetailedStatusEnum::UNPAID, OrderPayDetailedStatusEnum::UNKNOWN], true)
+            && $paidAmount > 0
+            && (
+                ($refundedAmount > 0 && $paidAmount >= $totalAmount && round($paidAmount - $refundedAmount, 2) <= 0)
+                || ($totalAmount == 0 && $runningPaymentsAmount >= 0)
+            )
+        ) {
+            $payDetailedStatus = OrderPayDetailedStatusEnum::REFUNDED;
         }
 
         $order->update(

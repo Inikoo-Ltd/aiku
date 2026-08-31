@@ -54,7 +54,7 @@ return [
     'ebay'      => [
         'client_id'       => env('EBAY_CLIENT_ID'),
         'client_secret'   => env('EBAY_CLIENT_SECRET'),
-        'sandbox'         => env('EBAY_SANDBOX', true),
+        'sandbox'         => env('APP_ENV') === 'production' ? env('EBAY_SANDBOX', true) : true,
         'redirect_uri'    => env('EBAY_REDIRECT_URI'),
         'redirect_uri_es' => env('EBAY_REDIRECT_URI_ES'),
     ],
@@ -63,7 +63,7 @@ return [
         'app_id'        => env('AMAZON_APP_ID'),
         'client_secret' => env('AMAZON_CLIENT_SECRET'),
         'region'        => env('AMAZON_REGION', 'na'),
-        'sandbox'       => env('AMAZON_SANDBOX', true)
+        'sandbox'       => env('APP_ENV') === 'production' ? env('AMAZON_SANDBOX', true) : true
     ],
     'apple_pay' => [
         'verification_string' => env('APPLE_PAY_VERIFICATION_STRING'),

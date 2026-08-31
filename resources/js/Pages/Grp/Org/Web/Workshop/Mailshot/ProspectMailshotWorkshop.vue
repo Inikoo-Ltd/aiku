@@ -31,10 +31,12 @@ import { useTabChange } from "@/Composables/tab-change";
 import TableEmailTemplate from "@/Components/Tables/TableEmailTemplate.vue";
 import TablePreviousMailshots from "@/Components/Tables/TablePreviousMailshots.vue"
 import TableOtherStoreMailshots from "@/Components/Tables/TableOtherStoreMailshots.vue"
+import TemplateGallery from "@/Components/Mailshot/TemplateGallery.vue"
+import { faThLarge, faList } from '@fal'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { usePage } from "@inertiajs/vue3"
 
-library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faExclamationTriangle)
+library.add(faThLarge, faList, faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faExclamationTriangle)
 
 const props = defineProps<{
     title: string,
@@ -320,7 +322,18 @@ const tabData = computed(() => {
 const handleTabUpdate = (tabSlug: string) =>
     useTabChange(tabSlug, currentTab)
 
+const templateView = ref<'gallery' | 'list'>((localStorage.getItem('mailshot-template-view') as 'gallery' | 'list') ?? 'gallery')
+
+const setTemplateView = (view: 'gallery' | 'list') => {
+    templateView.value = view
+    localStorage.setItem('mailshot-template-view', view)
+}
+
 const component = computed(() => {
+    if (templateView.value === 'gallery') {
+        return TemplateGallery
+    }
+
     const components: Component = {
         templates: TableEmailTemplate,
         other_store_templates: TableEmailTemplate,
@@ -392,10 +405,28 @@ onMounted(() => {
 
     <Modal :isOpen="isModalCloneTemplateEmail" @onClose="isModalCloneTemplateEmail = false" width="w-full max-w-6xl">
 
-        <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+        <div class="flex items-start justify-between gap-x-4">
+            <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" class="flex-1" />
+            <div class="flex items-center rounded-md border border-gray-300 overflow-hidden shrink-0">
+                <button
+                    v-tooltip="trans('Gallery')"
+                    class="px-2 py-1"
+                    :class="templateView === 'gallery' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-600'"
+                    @click="setTemplateView('gallery')">
+                    <FontAwesomeIcon icon="fal fa-th-large" fixed-width aria-hidden="true" />
+                </button>
+                <button
+                    v-tooltip="trans('List')"
+                    class="px-2 py-1"
+                    :class="templateView === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-600'"
+                    @click="setTemplateView('list')">
+                    <FontAwesomeIcon icon="fal fa-list" fixed-width aria-hidden="true" />
+                </button>
+            </div>
+        </div>
 
 
-        <component :is="component" :key="currentTab" :data="tabData" :tab="currentTab"
+        <component :is="component" :key="currentTab + templateView" :data="tabData" :tab="currentTab"
             @select-snapshot="onSelectTemplateSnapshot" />
 
     </Modal>

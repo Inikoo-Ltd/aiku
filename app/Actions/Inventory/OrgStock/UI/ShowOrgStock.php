@@ -129,6 +129,10 @@ class ShowOrgStock extends OrgAction
                     ],
                     'model'         => __('SKO'),
                     'title'         => $orgStock->code,
+                    'afterTitle'    => $orgStock->is_on_demand ? [
+                        'label'   => __('On Demand'),
+                        'tooltip' => __('Stock figure is not tracked, products advertise a fixed quantity')
+                    ] : null,
                     'iconRight'          => $orgStock->state->stateIcon()[$orgStock->state->value],
                     'actions'       => [
                         [
@@ -197,7 +201,7 @@ class ShowOrgStock extends OrgAction
             ]
         )
         ->table(IndexTradeUnitsInOrgStock::make()->tableStructure(prefix: OrgStockTabsEnum::TRADE_UNITS->value))
-        ->table(IndexHistory::make()->tableStructure(prefix: OrgStockTabsEnum::HISTORY->value))
+        ->table(IndexHistory::make()->tableStructure(prefix: OrgStockTabsEnum::HISTORY->value, model: $orgStock))
         ->table(IndexPurchaseOrders::make()->tableStructure(parent: $orgStock, prefix: OrgStockTabsEnum::PURCHASE_ORDERS->value))
         ->table(IndexOrgStockSupplierProducts::make()->tableStructure(prefix: OrgStockTabsEnum::SUPPLIER_PRODUCTS->value));
     }

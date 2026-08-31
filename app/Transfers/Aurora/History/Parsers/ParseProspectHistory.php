@@ -184,8 +184,8 @@ class ParseProspectHistory
             $new = $table['new'] ?? '';
 
             if ($field === 'address') {
-                $old = $old === null ? null : (HistoryValueExtractor::parseAdrAddress($old) ?? $old);
-                $new = HistoryValueExtractor::parseAdrAddress($new) ?? $new;
+                $old = $old === null ? null : (HistoryValueExtractor::parseAdrAddress($table['old_html'] ?? $old) ?? $old);
+                $new = HistoryValueExtractor::parseAdrAddress($table['new_html'] ?? $new) ?? $new;
             }
 
             return [

@@ -8,6 +8,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingS
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionTypeEnum;
 use App\Enums\UI\Dispatch\PickingSessionTabsEnum;
@@ -132,13 +133,17 @@ class ShowPickingSession extends OrgAction
 
         /*
          * Scanning packs delivery note items, so it has nothing to offer a fulfilment session, and
-         * it only makes sense once the picking is over and the packer is filling the boxes.
+         * it only makes sense once the picking is over and the packer is filling the boxes. A
+         * session holding nothing but dropshipping notes has nothing scannable in it either.
          */
         $scanToPack = null;
         if (
             (bool)data_get($this->organisation->settings, 'orders.allow_scan_to_pack', false)
             && $pickingSession->state == PickingSessionStateEnum::PICKING_FINISHED
             && $pickingSession->type != PickingSessionTypeEnum::FULFILMENT
+            && $pickingSession->deliveryNotes()
+                ->whereRelation('shop', 'type', '!=', ShopTypeEnum::DROPSHIPPING)
+                ->exists()
         ) {
             $scanToPack = [
                 'scan_route' => [
