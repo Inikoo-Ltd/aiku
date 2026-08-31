@@ -69,6 +69,10 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['stale_orders_days'] = max(1, (int) Arr::pull($modelData, 'stale_orders_days'));
         }
 
+        if (Arr::exists($modelData, 'stale_orders_filters')) {
+            $modelData['settings']['stale_orders_filters'] = Arr::pull($modelData, 'stale_orders_filters');
+        }
+
         if (Arr::exists($modelData, 'chat_theme')) {
             $chatTheme                           = Arr::pull($modelData, 'chat_theme');
             $modelData['settings']['chat_theme'] = $chatTheme;
@@ -126,6 +130,11 @@ class UpdateProfile extends OrgAction
             'enable_2fa'        => ['sometimes', 'array'],
             'settings'          => ['sometimes'],
             'stale_orders_days' => ['sometimes', 'integer', 'min:1'],
+            'stale_orders_filters'                => ['sometimes', 'array'],
+            'stale_orders_filters.show_aspos'     => ['sometimes', 'boolean'],
+            'stale_orders_filters.show_pos'       => ['sometimes', 'boolean'],
+            'stale_orders_filters.agents'         => ['sometimes', 'array'],
+            'stale_orders_filters.agents.*'       => ['string'],
         ];
     }
 

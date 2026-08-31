@@ -33,12 +33,14 @@ class ShowSupplyChainDashboard extends OrgAction
     use WithInertia;
 
     private int $staleDays = 60;
+    private ?array $staleFilters = null;
 
     public function asController(ActionRequest $request): void
     {
         $this->initialisationFromGroup(app('group'), $request);
-        $default         = (int) ($request->user()->settings['stale_orders_days'] ?? 60);
-        $this->staleDays = max(1, (int) $request->query('stale_days', $default ?: 60));
+        $default            = (int) ($request->user()->settings['stale_orders_days'] ?? 60);
+        $this->staleDays    = max(1, (int) $request->query('stale_days', $default ?: 60));
+        $this->staleFilters = $request->user()->settings['stale_orders_filters'] ?? null;
     }
 
     private function getDashboardCards(): array
@@ -259,6 +261,7 @@ class ShowSupplyChainDashboard extends OrgAction
         return [
             'threshold_days' => $this->staleDays,
             'grp_currency'   => $this->group->currency->code,
+            'filters'        => $this->staleFilters,
             'agents'         => Agent::where('group_id', $this->group->id)
                 ->where('status', true)
                 ->orderBy('code')

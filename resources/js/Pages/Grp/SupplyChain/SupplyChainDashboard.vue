@@ -6,7 +6,8 @@
 
 <script setup lang="ts">
 import { Deferred, Head, Link, router } from "@inertiajs/vue3"
-import { computed, ref } from "vue"
+import axios from "axios"
+import { computed, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -91,10 +92,37 @@ const sortedStaleOrders = computed(() => {
 const showAspos = ref(true)
 const showPos = ref(true)
 const agentFilter = ref<Set<string>>(new Set())
+
+let filtersInitialised = false
+watch(
+    () => props.staleOrders,
+    (so) => {
+        if (filtersInitialised || !so) return
+        filtersInitialised = true
+        if (so.filters) {
+            showAspos.value = so.filters.show_aspos ?? true
+            showPos.value = so.filters.show_pos ?? true
+            agentFilter.value = new Set(so.filters.agents ?? [])
+        }
+    },
+    { immediate: true }
+)
+
+const saveStaleFilters = () => {
+    axios.patch(route("grp.models.profile.update"), {
+        stale_orders_filters: {
+            show_aspos: showAspos.value,
+            show_pos: showPos.value,
+            agents: [...agentFilter.value],
+        },
+    })
+}
+
 const toggleAgentFilter = (code: string) => {
     const next = new Set(agentFilter.value)
     next.has(code) ? next.delete(code) : next.add(code)
     agentFilter.value = next
+    saveStaleFilters()
 }
 const staleAgents = computed(() => {
     const counts = new Map<string, number>()
@@ -230,14 +258,14 @@ const currencyFormat = (currency: string | null, amount: number | null) => {
                             type="button"
                             class="rounded-full border px-2.5 py-px text-xs"
                             :class="showAspos ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-400 hover:bg-gray-50'"
-                            @click="showAspos = !showAspos">
+                            @click="showAspos = !showAspos; saveStaleFilters()">
                             {{ staleOrders.aspos.length }} {{ trans("agent POs") }}
                         </button>
                         <button
                             type="button"
                             class="rounded-full border px-2.5 py-px text-xs"
                             :class="showPos ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-400 hover:bg-gray-50'"
-                            @click="showPos = !showPos">
+                            @click="showPos = !showPos; saveStaleFilters()">
                             {{ staleOrders.purchase_orders.length }} {{ trans("POs") }}
                         </button>
                     </span>
