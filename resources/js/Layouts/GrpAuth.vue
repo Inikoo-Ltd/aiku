@@ -35,7 +35,7 @@ console.log('environment:', useLayoutStore().app.environment)
     <div :style="{'background-image': watercolourBackground(), 'background-size': 'cover', 'background-position': 'center'}"
           class="relative min-h-[100dvh] w-screen overflow-hidden flex items-center justify-center bg-[#fbf7ee] sm:px-6 lg:px-8">
         <Head><link rel="stylesheet" href="https://fonts.bunny.net/css?family=caveat:400&display=swap" /></Head>
-        <AuthQuote />
+        <AuthQuote :public-site-url="publicSiteUrl" />
         <a :href="publicSiteUrl" class="absolute top-8 left-10 flex items-center gap-x-3 select-none hover:opacity-80" title="About aiku">
             <img class="h-14 w-auto" src="/art/invader-sketch.svg" alt="aiku" />
             <span style="font-family: Georgia, 'Times New Roman', serif" class="text-4xl font-semibold text-[#1c1b22] leading-none tracking-tight">aiku</span>

@@ -4,6 +4,7 @@ export interface AuthQuote {
 	language: string
 	languageCode: string
 	direction: "ltr" | "rtl"
+	articleSlug?: string
 }
 
 const englishLines = [
@@ -39,6 +40,14 @@ const englishLines = [
 	"good morning. the inbox can wait five minutes.",
 	"nothing ships itself. thank you.",
 ]
+
+export const linkedAuthQuoteArticles: Record<string, string> = {
+	"every shelf remembers what it held.": "seventeen-million-stock-movements",
+	"the day is a queue; clear it kindly.": "twenty-six-queues-and-the-feeling-of-cpu-at-100",
+	"one source of truth, many stories.": "one-image-six-urls",
+	"measure the pallet, not the mood.": "stop-pretending-you-are-forecasting",
+	"invoices are memories with totals.": "an-invoice-is-a-snapshot",
+}
 
 const seasonalEnglishLines: Record<string, string[]> = {
 	xmas: [
@@ -242,6 +251,7 @@ export const authQuoteForRandomValue = (
 			language: "English",
 			languageCode: "en",
 			direction: "ltr",
+			articleSlug: linkedAuthQuoteArticles[text],
 		}
 	}
 
@@ -249,3 +259,7 @@ export const authQuoteForRandomValue = (
 }
 
 export const randomAuthQuote = (): AuthQuote => authQuoteForRandomValue(Math.random())
+
+export const authQuoteArticleUrl = (publicSiteUrl: string, articleSlug: string): string => {
+	return `${publicSiteUrl.replace(/\/$/, "")}/blog/${articleSlug}`
+}

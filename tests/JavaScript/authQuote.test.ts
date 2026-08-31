@@ -1,7 +1,10 @@
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
 import test from "node:test"
 import {
+	authQuoteArticleUrl,
 	authQuoteForRandomValue,
+	linkedAuthQuoteArticles,
 	translatedAuthQuotes,
 } from "../../resources/js/Composables/useAuthQuote.ts"
 
@@ -29,4 +32,30 @@ test("includes the requested scripts in the translated quote collection", () => 
 	assert.ok(languageCodes.includes("ja"))
 	assert.ok(languageCodes.includes("uk"))
 	assert.ok(languageCodes.includes("en-Brai"))
+})
+
+test("builds linked quote URLs on the public local and production domains", () => {
+	const slug = "stop-pretending-you-are-forecasting"
+
+	assert.equal(
+		authQuoteArticleUrl("https://aiku.test", slug),
+		"https://aiku.test/blog/stop-pretending-you-are-forecasting"
+	)
+	assert.equal(
+		authQuoteArticleUrl("https://aiku.io", slug),
+		"https://aiku.io/blog/stop-pretending-you-are-forecasting"
+	)
+})
+
+test("keeps every linked login quote verbatim and italic in its article", () => {
+	assert.equal(Object.keys(linkedAuthQuoteArticles).length, 5)
+
+	for (const [quote, articleSlug] of Object.entries(linkedAuthQuoteArticles)) {
+		const article = readFileSync(
+			new URL(`../../resources/markdown/aiku-public/blog/${articleSlug}.md`, import.meta.url),
+			"utf8"
+		)
+
+		assert.ok(article.includes(`*${quote}*`))
+	}
 })

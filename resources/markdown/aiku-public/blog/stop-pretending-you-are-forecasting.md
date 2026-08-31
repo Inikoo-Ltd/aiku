@@ -17,6 +17,8 @@ Ask a database how fast something sells and it will happily divide: units shippe
 
 The fix is to stop counting days that couldn't sell. Our stock movements ledger stores a running balance with every movement, so the forecaster rebuilds, day by day over the last quarter, whether the shelf had anything on it — and computes the selling rate over **in-stock days only**. An item that shifted 40 units in the 9 days it existed on the shelf is treated as what it is: a 4.4-a-day product you keep failing to buy enough of.
 
+*measure the pallet, not the mood.*
+
 ## One rate, four models, in order of desperation
 
 Demand curves come in shapes, and one estimator fits none of them well. The forecaster picks:

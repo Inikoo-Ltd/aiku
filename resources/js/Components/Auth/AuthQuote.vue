@@ -1,11 +1,20 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faLanguage } from "@fal"
-import { onMounted, ref } from "vue"
-import { randomAuthQuote, type AuthQuote } from "@/Composables/useAuthQuote"
+import { computed, onMounted, ref } from "vue"
+import { authQuoteArticleUrl, randomAuthQuote, type AuthQuote } from "@/Composables/useAuthQuote"
+
+const props = defineProps<{
+	publicSiteUrl: string
+}>()
 
 const quote = ref<AuthQuote | null>(null)
 const showEnglishTranslation = ref(false)
+const articleUrl = computed(() => {
+	return quote.value?.articleSlug
+		? authQuoteArticleUrl(props.publicSiteUrl, quote.value.articleSlug)
+		: null
+})
 
 onMounted(() => {
 	quote.value = randomAuthQuote()
@@ -21,7 +30,14 @@ onMounted(() => {
 			:lang="quote.languageCode"
 			:dir="quote.direction"
 			class="text-2xl leading-tight text-[#1c1b22]/70">
-			{{ quote.text }}
+			<a
+				v-if="articleUrl"
+				:href="articleUrl"
+				class="rounded-sm transition hover:text-[#1c1b22] focus:outline-none focus:ring-1 focus:ring-[#1c1b22]/30"
+				title="Read the related engineering note">
+				{{ quote.text }}
+			</a>
+			<template v-else>{{ quote.text }}</template>
 		</blockquote>
 
 		<figcaption class="mt-1 flex items-center justify-end gap-x-1.5 text-xs text-[#1c1b22]/45">
