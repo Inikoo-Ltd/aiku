@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { Head } from "@inertiajs/vue3"
+import { Head, Link } from "@inertiajs/vue3"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -31,10 +31,12 @@ const props = defineProps<{
     journey: any
     campaign: { name: string; meta_message_template_id: number | null; recipients_count: number }
     updateRoute: routeType
+    recipientsRoute: routeType
     templates: TemplateOption[]
     mergeTags: { value: string }[]
     businessName: string
     isConfigured: boolean
+    isEditable: boolean
 }>()
 
 const name = ref(props.campaign.name)
@@ -51,6 +53,8 @@ const pageHeadData = computed(() =>
 )
 
 const persist = async (payload: Record<string, unknown>) => {
+    if (!props.isEditable) return
+
     saveError.value = null
 
     try {
@@ -84,6 +88,10 @@ watch(templateId, (value) => persist({ meta_message_template_id: value }))
     </PageHeading>
 
     <div class="w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        <Message v-if="!isEditable" severity="info" :closable="false">
+            {{ trans("This campaign is no longer editable, cancel its schedule to change it.") }}
+        </Message>
+
         <Message v-if="!isConfigured" severity="warn" :closable="false">
             {{ trans("WhatsApp is not configured for this shop yet, so this campaign cannot be sent.") }}
         </Message>
@@ -98,7 +106,7 @@ watch(templateId, (value) => persist({ meta_message_template_id: value }))
             <div class="p-4 max-w-md">
                 <label class="block text-sm font-medium text-gray-700">{{ trans("Campaign name") }}</label>
                 <p class="text-xs text-gray-500 mb-2">{{ trans("The name is only used internally") }}</p>
-                <PureInput v-model="name" @blur="onNameBlur" />
+                <PureInput v-model="name" :disabled="!isEditable" @blur="onNameBlur" />
             </div>
         </section>
 
@@ -129,6 +137,7 @@ watch(templateId, (value) => persist({ meta_message_template_id: value }))
                         </label>
                         <PureMultiselect
                             v-model="templateId"
+                            :disabled="!isEditable"
                             :options="templates"
                             label="label"
                             valueProp="value"
@@ -166,15 +175,14 @@ watch(templateId, (value) => persist({ meta_message_template_id: value }))
                             {{ trans(":count contacts selected", { count: campaign.recipients_count }) }}
                         </div>
                         <p class="text-xs text-gray-500 mt-1">
-                            {{ trans("Choosing who receives this campaign is not available yet.") }}
+                            {{ trans("Choose which contacts receive this campaign.") }}
                         </p>
                     </div>
-                    <Button
-                        :label="trans('Edit')"
-                        style="tertiary"
-                        size="xs"
-                        disabled
-                        :tooltip="trans('Recipient selection is coming soon')" />
+                    <Link
+                        v-if="isEditable"
+                        :href="route(recipientsRoute.name, recipientsRoute.parameters)">
+                        <Button :label="trans('Edit')" style="tertiary" size="xs" />
+                    </Link>
                 </div>
 
                 <div class="mt-3 flex items-center gap-2 text-xs text-gray-500">

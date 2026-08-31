@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\CustomerComms;
 
+use App\Actions\Comms\WhatsappSubscriber\SyncCustomerWhatsappSubscriber;
 use App\Actions\CRM\Customer\SaveCustomerInAurora;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
@@ -40,6 +41,10 @@ class UpdateCustomerComms extends OrgAction
             && $customerComms->customer->shop->is_aiku
             && $updateAurora) {
             SaveCustomerInAurora::dispatch($customerComms->customer);
+        }
+
+        if (Arr::has($changes, 'is_subscribed_to_whatsapp_newsletter')) {
+            SyncCustomerWhatsappSubscriber::run($customerComms->customer);
         }
 
         return $customerComms;
