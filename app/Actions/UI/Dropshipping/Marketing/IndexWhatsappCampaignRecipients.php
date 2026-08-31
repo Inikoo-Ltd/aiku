@@ -167,7 +167,7 @@ class IndexWhatsappCampaignRecipients extends OrgAction
                         'title' => __('Recipients'),
                     ],
                 ],
-                'selectedRecipients' => Arr::get($campaign->recipients_recipe, 'selected_keys', []),
+                'selectedRecipients' => Arr::pluck($campaign->recipients_list ?? [], 'phone_number'),
                 'channels'           => $this->channels,
                 'filtersStructure'   => GetCustomerFilterStructure::run($this->shop),
                 'filters'            => $this->customerFilters,

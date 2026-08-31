@@ -14,6 +14,7 @@ use App\Enums\Comms\WhatsappCampaign\WhatsappCampaignStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\WhatsappCampaign;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -27,13 +28,50 @@ class UpdateWhatsappCampaign extends OrgAction
     private WhatsappCampaign $campaign;
 
     /**
-     * recipients_recipe is deliberately not in the json merge list: a recipient
-     * selection must replace the stored list wholesale, or deselected contacts
-     * would survive as leftover arrow updates.
+     * Reduces the selected recipients to the same digits only form the audience query
+     * groups by, dropping blanks and duplicates. Normalising here rather than in the page
+     * means every write path gets it, not just the one the recipients table posts from.
+     */
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        $recipientsList = $this->get('recipients_list');
+
+        if (!is_array($recipientsList)) {
+            return;
+        }
+
+        $keys = array_filter(array_map(
+            function ($recipient) {
+                $phoneNumber = Arr::get($recipient, 'phone_number');
+
+                return is_scalar($phoneNumber) ? GetWhatsappRecipientsQuery::normalisePhoneKey((string) $phoneNumber) : '';
+            },
+            $recipientsList
+        ));
+
+        $this->set('recipients_list', array_map(
+            fn (string $key) => ['phone_number' => $key],
+            array_values(array_unique($keys))
+        ));
+    }
+
+    /**
+     * recipients_recipe holds the audience settings, recipients_list the contacts chosen
+     * from them. Neither is in the json merge list: a recipient selection must replace the
+     * stored list wholesale, or deselected contacts would survive as leftover arrow updates.
+     *
+     * recipients_count is derived rather than accepted: it is the audience half of the
+     * READY and sendable gates, so a client must not be able to declare an audience it
+     * did not select. It is only touched when a selection is part of this update, so a
+     * rename or a template change leaves the stored count alone.
      */
     public function handle(WhatsappCampaign $campaign, array $modelData): WhatsappCampaign
     {
         $this->assertEditable($campaign);
+
+        if (array_key_exists('recipients_list', $modelData)) {
+            $modelData['recipients_count'] = count($modelData['recipients_list']);
+        }
 
         $campaign = $this->update($campaign, $modelData, ['data']);
 
@@ -112,9 +150,9 @@ class UpdateWhatsappCampaign extends OrgAction
             'recipients_recipe.channels'         => ['sometimes', 'array'],
             'recipients_recipe.channels.*'       => ['sometimes', 'boolean'],
             'recipients_recipe.customer_filters' => ['sometimes', 'array'],
-            'recipients_recipe.selected_keys'    => ['sometimes', 'array'],
-            'recipients_recipe.selected_keys.*'  => ['string'],
-            'recipients_count'                   => ['sometimes', 'integer', 'min:0'],
+            'recipients_list'                    => ['sometimes', 'array'],
+            'recipients_list.*'                  => ['array'],
+            'recipients_list.*.phone_number'     => ['required', 'string'],
         ];
     }
 

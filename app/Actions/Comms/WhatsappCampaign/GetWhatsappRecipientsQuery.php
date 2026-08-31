@@ -86,6 +86,17 @@ class GetWhatsappRecipientsQuery
     }
 
     /**
+     * The PHP twin of PHONE_KEY, kept beside it so the two definitions of a recipient key
+     * stay in step. A stored selection is matched back against the audience by this value,
+     * so anything written into recipients_recipe has to be reduced the same way the query
+     * reduces the columns it groups by.
+     */
+    public static function normalisePhoneKey(?string $phone): string
+    {
+        return preg_replace('/[^0-9]/', '', (string) $phone);
+    }
+
+    /**
      * Every branch has to expose the same column list in the same order for the UNION ALL
      * to line up, so the flags are selected as literals rather than omitted.
      */

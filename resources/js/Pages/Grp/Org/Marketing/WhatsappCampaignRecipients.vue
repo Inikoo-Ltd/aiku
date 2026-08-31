@@ -52,9 +52,8 @@ const onSelect = async () => {
                 type: "hybrid",
                 channels: props.channels,
                 customer_filters: props.filters ?? {},
-                selected_keys: selectedKeys.value,
             },
-            recipients_count: selectedKeys.value.length,
+            recipients_list: selectedKeys.value.map((phone_number) => ({ phone_number })),
         })
 
         goBack()
