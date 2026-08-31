@@ -42,7 +42,7 @@ class MarketingTrendTool extends AikuTool
         $granularity = $request->string('granularity', 'month')->toString() ?: 'month';
         $by          = $request->string('by', 'group')->toString() ?: 'group';
         $to          = $request->string('to')->isNotEmpty() ? $request->date('to')->endOfDay() : now()->endOfDay();
-        $from        = $request->string('from')->isNotEmpty() ? $request->date('from')->startOfDay() : $to->copy()->subMonths(6)->startOfMonth();
+        $from        = $request->string('from')->isNotEmpty() ? $request->date('from')->startOfDay() : $to->copy()->startOfMonth()->subMonths(6);
 
         $rows = DB::table('marketing_channel_daily')
             ->where('shop_id', $shop->id)
