@@ -97,6 +97,7 @@ const props = defineProps<{
     canReply?: boolean
     formatMarkup?: boolean
     translateUrlBase?: string
+    disableSlackForward?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -495,7 +496,11 @@ const canVerifyImage = computed(() =>
 )
 
 // feature forward to Slack
-const canForwardToSlack = computed(() => props.viewerType === "agent" && !!props.message.id)
+// Opting out rather than in: an absent Boolean prop is false, so an opt-in flag would
+// silently strip forwarding from the website chat that already relies on it.
+const canForwardToSlack = computed(() =>
+    props.viewerType === "agent" && !!props.message.id && !props.disableSlackForward
+)
 const isForwardModalOpen = ref(false)
 
 // feature hover toolbar (quick reactions) — persisted per message reactor

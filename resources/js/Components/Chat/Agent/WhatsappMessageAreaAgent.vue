@@ -801,6 +801,7 @@ onUnmounted(() => {
                             :canEdit="false"
                             reactionUrlBase="/app/api/chats/meta/messages"
                             translateUrlBase="/app/api/chats/meta/messages"
+                            disable-slack-forward
                             :viewerReactorId="layout?.user?.id"
                             :canReply="!isClosed && !templateOnly"
                             format-markup
