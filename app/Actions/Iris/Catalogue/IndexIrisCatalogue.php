@@ -307,7 +307,7 @@ class IndexIrisCatalogue extends IrisAction
 
             if (in_array($scope, ['family', 'product'])) {
                 // $table->column(key: 'download_csv', label: __('CSV'), align: 'center');
-                $table->column(key: 'download_images', label: __('Images'), align: 'center');
+                // $table->column(key: 'download_images', label: __('Images'), align: 'center');
             }
         };
     }
