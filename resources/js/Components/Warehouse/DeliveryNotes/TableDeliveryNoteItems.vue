@@ -777,6 +777,40 @@ const hasDirtyDeliveryNoteItem = computed(() => {
     return Object.values(props.data?.data ?? {}).some((item: any) => item.is_dirty);
 });
 
+const hasPickedMoreThanRequired = computed(() => {
+    return Object.values(props.data?.data ?? {}).some((item: any) => item.quantity_picked > item.quantity_required)
+})
+
+const warningMsg = computed(() => {
+    let text = '';
+    let title = '';
+
+    if (hasDirtyDeliveryNoteItem.value) {
+        text = ctrans('Order has been modified by the CRM, some items quantity might differ, please check it');
+        title = ctrans('Order has been modified');
+    }
+
+    if (hasPickedMoreThanRequired.value) {
+
+        if (hasDirtyDeliveryNoteItem.value) {
+            text += '. ';
+            title += ' | '
+        }
+
+        text += ctrans('Some items might be picked more than the required quantity, please give it a check (row might be marked in red)');
+        title += ctrans('Item Picked more than the Required Quantity')
+
+    }
+    
+
+    return {
+        text: text,
+        title: title,
+        icon: 'fal fa-exclamation-triangle',
+        type: 'warning'
+    }
+})
+
 </script>
 
 <template>
@@ -791,17 +825,16 @@ const hasDirtyDeliveryNoteItem = computed(() => {
             if (item.is_dirty) {
                 return '!bg-[#fff6db]'
             }
+            if (item.quantity_picked > item.quantity_required) {
+                return '!bg-[#f5463d66]'
+            }
             return ''
         }"
-        :showWarningMessage="hasDirtyDeliveryNoteItem"
-        :warning="{
-            text: ctrans('Order has been modified by the CRM, some items quantity might differ, please check it'),
-            title: ctrans('Order has been modified'),
-            icon: 'fal fa-exclamation-triangle',
-            type: 'warning'
-        }"
+        :showWarningMessage="hasDirtyDeliveryNoteItem || hasPickedMoreThanRequired"
+        :warning="warningMsg"
     >
-        <template #afterRecordCount>
+
+    <template #afterRecordCount>
             | <span class="font-semibold tabular-nums">{{ Math.round(total_unit_counts * 100) / 100 }}</span> {{ ctrans("SKO's") }}
         </template>
         <!-- Whichever picking tab runs out of rows offers the step that follows it, rigt where the picker is already looking. -->
