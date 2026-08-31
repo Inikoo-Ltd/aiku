@@ -35,6 +35,7 @@ class WebpagesSubTypeSheet implements FromQuery, WithMapping, ShouldAutoSize, Wi
                 'webpages.url',
                 'webpages.canonical_url',
                 'webpages.seo_title',
+                'webpages.title as webpage_title',
                 'webpages.seo_description',
                 'webpages.index_page',
                 'webpages.follow_link',
@@ -46,7 +47,7 @@ class WebpagesSubTypeSheet implements FromQuery, WithMapping, ShouldAutoSize, Wi
         return [
             $row->code,
             $row->canonical_url ?: $row->url,
-            $row->seo_title,
+            $row->webpage_title, // We use webpage title as SEO / Meta title
             $row->seo_description,
             $row->index_page ? 'yes' : 'no',
             $row->follow_link ? 'yes' : 'no',
