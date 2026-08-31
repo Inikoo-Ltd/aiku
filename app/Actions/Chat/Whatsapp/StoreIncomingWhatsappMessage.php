@@ -138,8 +138,10 @@ class StoreIncomingWhatsappMessage
             ],
         ]);
 
+        // Meta waits for this response and retries a slow one, so pulling the binary —
+        // a video can be tens of megabytes — happens after the webhook is answered.
         if ($isMedia) {
-            DownloadWhatsappMedia::run($metaChatMessage, $shop);
+            DownloadWhatsappMedia::dispatch($metaChatMessage, $shop);
         }
 
         $metaChatSession->update(['last_visitor_message_at' => now()]);

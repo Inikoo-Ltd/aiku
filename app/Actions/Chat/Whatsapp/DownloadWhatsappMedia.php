@@ -10,6 +10,8 @@ namespace App\Actions\Chat\Whatsapp;
 use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappCredentials;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
+use App\Events\BroadcastMetaChatListEvent;
+use App\Events\BroadcastRealtimeMetaChat;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\MetaChatMessage;
 use App\Models\Helpers\Media;
@@ -115,6 +117,13 @@ class DownloadWhatsappMedia
             'media_id'     => $media->id,
             'message_type' => $isImage ? ChatMessageTypeEnum::IMAGE : ChatMessageTypeEnum::FILE,
         ]);
+
+        // The bubble was already broadcast while the file was still downloading, so it is
+        // sent again now that there is something to show in it.
+        $metaChatMessage = $metaChatMessage->fresh(['attachment', 'metaChatSession']);
+
+        BroadcastRealtimeMetaChat::dispatch($metaChatMessage);
+        BroadcastMetaChatListEvent::dispatch($metaChatMessage, $metaChatMessage->metaChatSession);
 
         return $media;
     }
