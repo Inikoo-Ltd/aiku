@@ -14,6 +14,7 @@ use App\Actions\Dispatching\DeliveryNote\SweepStrandedDeliveryNotes;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
+use App\Actions\Comms\WhatsappCampaign\RunWhatsappCampaignScheduled;
 use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunMailshotTrackingUpdates;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
@@ -193,6 +194,15 @@ class Kernel extends ConsoleKernel
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
+
+            // $this->logSchedule(
+            //     $schedule->job(RunWhatsappCampaignScheduled::makeJob())->everyMinute()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+            //         monitorSlug: 'RunWhatsappCampaignScheduled',
+            //     ),
+            //     name: 'RunWhatsappCampaignScheduled',
+            //     type: 'job',
+            //     scheduledAt: now()->format('H:i')
+            // );
 
             $this->logSchedule(
                 $schedule->job(RunMailshotSecondWave::makeJob())->everyMinute()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(

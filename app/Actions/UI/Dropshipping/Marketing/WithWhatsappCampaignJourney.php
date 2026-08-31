@@ -30,6 +30,11 @@ trait WithWhatsappCampaignJourney
 
         $isComposed = (bool) $campaign->meta_message_template_id;
 
+        /* The review step is navigable as soon as there is something to preview, that page
+           is where a missing audience is explained. It only reads as done once the campaign
+           is actually publishable, which is what the READY state means. */
+        $isReady = $campaign->state == WhatsappCampaignStateEnum::READY;
+
         $steps = [
             [
                 'key'   => 'compose',
@@ -42,7 +47,7 @@ trait WithWhatsappCampaignJourney
             ],
             [
                 'key'      => 'review',
-                'done'     => false,
+                'done'     => $isReady,
                 'disabled' => !$isComposed,
                 'label'    => __('Preview & send'),
                 'route'    => [

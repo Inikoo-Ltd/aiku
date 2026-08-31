@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\MetaMessageTemplate;
+use App\Enums\Comms\WhatsappCampaign\WhatsappCampaignStateEnum;
 use App\Models\Comms\WhatsappCampaign;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -72,10 +73,19 @@ class ShowWhatsappCampaignWorkshop extends OrgAction
                     ],
                     'method'     => 'patch',
                 ],
+                'recipientsRoute' => [
+                    'name'       => 'grp.org.shops.show.marketing.whatsapp_campaigns.recipients.index',
+                    'parameters' => [
+                        'organisation'     => $shop->organisation->slug,
+                        'shop'             => $shop->slug,
+                        'whatsappCampaign' => $campaign->slug,
+                    ],
+                ],
                 'templates'    => $this->getTemplates($shop),
                 'mergeTags'    => GetWhatsappTemplateTags::run($shop),
                 'businessName' => $shop->name,
                 'isConfigured' => filled(Arr::get($shop->settings, 'whatsapp.phone_number_id')),
+                'isEditable'   => in_array($campaign->state, [WhatsappCampaignStateEnum::IN_PROCESS, WhatsappCampaignStateEnum::READY]),
             ]
         );
     }

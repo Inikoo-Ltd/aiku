@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
+use App\Actions\Comms\WhatsappSubscriber\SyncCustomerWhatsappSubscriber;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\CRM\TrafficSource\AttachTrafficSourcesToModel;
 use App\Actions\CRM\TrafficSource\ParseTrafficSourceTouches;
@@ -162,6 +163,10 @@ class StoreCustomer extends OrgAction
 
             return $customer;
         });
+
+        if (Arr::get($emailSubscriptionsData, 'is_subscribed_to_whatsapp_newsletter')) {
+            SyncCustomerWhatsappSubscriber::run($customer);
+        }
 
         ShopHydrateCrmStats::dispatch($customer->shop)->delay($this->hydratorsDelay);
         ShopHydrateCustomers::dispatch($customer->shop)->delay($this->hydratorsDelay);

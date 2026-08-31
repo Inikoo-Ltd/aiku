@@ -8,6 +8,7 @@
 namespace App\Actions\UI\Dropshipping\Marketing;
 
 use App\Actions\Chat\Whatsapp\Templates\GetWhatsappTemplateTags;
+use App\Actions\Helpers\TimeZone\UI\GetTimeZoneSelectOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Models\Catalogue\Shop;
@@ -28,6 +29,14 @@ class ShowWhatsappCampaign extends OrgAction
     {
         $shop     = $campaign->shop;
         $template = $campaign->metaMessageTemplate;
+
+        $routeParameters = [
+            'organisation'     => $shop->organisation->slug,
+            'shop'             => $shop->slug,
+            'whatsappCampaign' => $campaign->slug,
+        ];
+
+        $routeBase = 'grp.org.shops.show.marketing.whatsapp_campaigns';
 
         return Inertia::render(
             'Org/Marketing/WhatsappCampaign',
@@ -50,16 +59,29 @@ class ShowWhatsappCampaign extends OrgAction
                     'state'            => $campaign->state,
                     'state_label'      => $campaign->state->labels()[$campaign->state->value],
                     'recipients_count' => $campaign->recipients_count,
+                    'scheduled_at'     => $campaign->scheduled_at?->toIso8601String(),
                 ],
+                'status'       => $campaign->state->value,
                 'template'     => $template ? $this->whatsappTemplatePreview($template) : null,
                 'workshopRoute' => [
-                    'name'       => 'grp.org.shops.show.marketing.whatsapp_campaigns.workshop',
-                    'parameters' => [
-                        'organisation'     => $shop->organisation->slug,
-                        'shop'             => $shop->slug,
-                        'whatsappCampaign' => $campaign->slug,
-                    ],
+                    'name'       => "$routeBase.workshop",
+                    'parameters' => $routeParameters,
                 ],
+                'sendRoute'           => [
+                    'name'       => "$routeBase.send",
+                    'parameters' => $routeParameters,
+                ],
+                'scheduleRoute'       => [
+                    'name'       => "$routeBase.schedule",
+                    'parameters' => $routeParameters,
+                ],
+                'cancelScheduleRoute' => [
+                    'name'       => "$routeBase.cancel-schedule",
+                    'parameters' => $routeParameters,
+                ],
+                'isConfigured'        => filled(Arr::get($shop->settings, 'whatsapp.phone_number_id')),
+                'timeZoneOptions'     => GetTimeZoneSelectOptions::run(),
+                'defaultShopTimezone' => $shop->timezone?->name ?? 'UTC',
                 'mergeTags'    => GetWhatsappTemplateTags::run($shop),
                 'businessName' => $shop->name,
             ]

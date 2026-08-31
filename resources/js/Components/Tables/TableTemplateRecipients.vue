@@ -95,6 +95,9 @@ const props = withDefaults(defineProps<{
     upcomingFilter?: string | null
     estimateLabel?: string
     exportFields?: { key: string, label: string }[]
+    channels?: Record<string, boolean>
+    channelOptions?: { value: string, label: string }[]
+    reloadOnly?: string[]
 }>(), {
     showSave: true,
     estimateLabel: 'Estimated Recipients',
@@ -121,6 +124,17 @@ const {
     hydrateSavedFilters,
     extraQuery,
 } = useFilterRecipients(props)
+
+const selectedChannels = ref<Record<string, boolean>>({ ...(props.channels ?? {}) })
+
+if (props.channelOptions?.length) {
+    extraQuery.channels = { ...selectedChannels.value }
+}
+
+const onChannelChange = () => {
+    extraQuery.channels = { ...selectedChannels.value }
+    fetchCustomers()
+}
 
 const selectedStates = ref<string[]>(props.stateFilter ? [...props.stateFilter] : [])
 
@@ -398,6 +412,15 @@ watch(
         <div class="flex flex-col gap-3 mb-6 xl:flex-row xl:items-center xl:justify-between">
             <!-- left side -->
             <div class="flex flex-wrap items-center gap-2 min-w-0">
+                <div v-if="channelOptions?.length" class="flex items-center gap-4 h-10 px-4 rounded-lg border border-gray-200 bg-white">
+                    <label v-for="option in channelOptions" :key="option.value"
+                        class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" v-model="selectedChannels[option.value]" @change="onChannelChange"
+                            class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <span class="text-sm text-gray-700 whitespace-nowrap">{{ trans(option.label) }}</span>
+                    </label>
+                </div>
+
                 <Menu :model="availableFilters" popup ref="filterMenu">
                 </Menu>
 
