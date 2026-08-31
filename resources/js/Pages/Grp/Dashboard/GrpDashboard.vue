@@ -5,7 +5,7 @@ import { faChevronDown } from "@far"
 import { faChartLine, faPlay, faTimesCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head } from "@inertiajs/vue3"
-import { faCog, faFolderOpen, faSeedling, faTriangle, faSitemap, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse } from "@fal"
+import { faCog, faFolderOpen, faSeedling, faTriangle, faSitemap, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse, faChartLine as falChartLine } from "@fal"
 import "tippy.js/dist/tippy.css"
 import { ref, provide } from "vue"
 import { Link } from "@inertiajs/vue3"
@@ -23,7 +23,7 @@ import ShopIntervalStats from "@/Components/DataDisplay/Dashboard/ShopIntervalSt
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 import { Dashboard as DashboardTS } from "@/types/Components/Dashboard"
 
-library.add(faTriangle, faSitemap, faChevronDown, faSeedling, faTimesCircle, faFolderOpen, faPlay, faCog, faChartLine, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse)
+library.add(faTriangle, faSitemap, faChevronDown, faSeedling, faTimesCircle, faFolderOpen, faPlay, faCog, faChartLine, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse, falChartLine)
 
 const locale = useLocaleStore()
 
@@ -280,8 +280,9 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 		<ShopIntervalStats v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks" :shop-blocks="props.dashboard?.super_blocks?.[0]?.shop_blocks" />
 
 		<DashboardSettings
+			v-if="props.dashboard?.super_blocks?.[0]?.blocks"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
-			:settings="props.dashboard?.super_blocks?.[0].settings"
+			:settings="props.dashboard?.super_blocks?.[0]?.settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks?.[0]?.current_tab"
 		/>
 
@@ -291,7 +292,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			:idTable="props.dashboard?.super_blocks?.[0]?.id"
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
-			:settings="props.dashboard?.super_blocks?.[0].settings"
+			:settings="props.dashboard?.super_blocks?.[0]?.settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
 			@onChangeTab="onChangeDashboardTab"
 		/>
@@ -305,7 +306,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 				current_tab: props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab
 			}"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
-			:settings="props.dashboard?.super_blocks?.[0].settings"
+			:settings="props.dashboard?.super_blocks?.[0]?.settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
 			:showTabs="false"
 			@onChangeTab="onChangeDashboardTab"
@@ -323,5 +324,15 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			:interval="props.dashboard?.super_blocks?.[0]?.intervals?.value"
 			:data="props.dashboard?.super_blocks?.[0]?.shop_blocks"
 		/>
+
+		<div v-if="!props.dashboard?.super_blocks?.length" class="flex flex-col items-center justify-center px-4 py-24" role="status">
+			<FontAwesomeIcon icon="fal fa-chart-line" class="mb-4 text-6xl text-gray-300" aria-hidden="true" />
+			<h3 class="mb-2 text-center text-lg font-medium text-gray-500">
+				{{ trans('No sales data to show') }}
+			</h3>
+			<p class="max-w-md text-center text-sm text-gray-400">
+				{{ trans('Your account does not have access to the group sales figures.') }}
+			</p>
+		</div>
 	</div>
 </template>
