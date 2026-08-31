@@ -7,7 +7,7 @@ import { faLongArrowRight } from "@fal"
 import { faInfoCircle, faForklift, faTimes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Textarea } from 'primevue'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
@@ -68,6 +68,61 @@ const note = ref('')
 
 const isSource = (location: any) => moveStock.value.from?.id === location.id
 const isTarget = (location: any) => moveStock.value.to?.id === location.id
+
+const stickyRowHeights = ref<Record<number, number>>({})
+let stickyRowResizeObserver: ResizeObserver | null = null
+
+const getStickyRowResizeObserver = () => {
+    if (!stickyRowResizeObserver && typeof ResizeObserver !== 'undefined') {
+        stickyRowResizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const locationId = Number((entry.target as HTMLElement).dataset.locationId)
+                if (!Number.isNaN(locationId)) {
+                    stickyRowHeights.value[locationId] = entry.target.getBoundingClientRect().height
+                }
+            }
+        })
+    }
+
+    return stickyRowResizeObserver
+}
+
+const setStickyRowRef = (location: any, el: unknown) => {
+    if (!(el instanceof HTMLElement)) {
+        return
+    }
+
+    const observer = getStickyRowResizeObserver()
+    if (!observer) {
+        return
+    }
+
+    if (isSource(location) || isTarget(location)) {
+        observer.observe(el)
+    } else {
+        observer.unobserve(el)
+    }
+}
+
+onBeforeUnmount(() => {
+    stickyRowResizeObserver?.disconnect()
+})
+
+const stickyRowStyle = (location: any) => {
+    if (!isSource(location) && !isTarget(location)) {
+        return undefined
+    }
+
+    const stickyLocationIds = form.stockCheck
+        .filter((row) => isSource(row) || isTarget(row))
+        .map((row) => row.id)
+
+    if (stickyLocationIds.indexOf(location.id) <= 0) {
+        return { top: '0px' }
+    }
+
+    return { top: `${stickyRowHeights.value[stickyLocationIds[0]] ?? 0}px` }
+}
 
 const canSave = computed(() => {
     return !!moveStock.value.from
@@ -558,11 +613,15 @@ onMounted(() => {
         <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-1 pr-4 pb-3 mt-4">
         <template v-if="form.stockCheck.length > 0">
             <div v-for="location in form.stockCheck" :key="location.id"
+                :ref="(el) => setStickyRowRef(location, el)"
+                :data-location-id="location.id"
+                :style="stickyRowStyle(location)"
                 :class="[
                     'flex items-center gap-x-3 ps-2 pe-2 py-2 rounded transition',
                     isSource(location) ? 'bg-green-50 border border-green-100' :
                     isTarget(location) ? 'bg-blue-50 border border-blue-100' :
-                    'border border-[rgba(255,255,255,0)] hover:bg-gray-50'
+                    'border border-[rgba(255,255,255,0)] hover:bg-gray-50',
+                    isSource(location) || isTarget(location) ? 'sticky z-10' : ''
                 ]">
 
                 <!-- Left: Source forklift -->
