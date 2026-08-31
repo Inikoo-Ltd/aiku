@@ -7,14 +7,15 @@
         ['label' => 'Warehouse', 'tags' => ['warehouse'], 'color' => '#76b7c2', 'size' => 'small', 'pos' => ['lg' => [775, 265], 'md' => [775, 265], 'sm' => [160, 395]]],
         ['label' => 'Dispatch', 'tags' => ['dispatch', 'shippers'], 'color' => '#7f9fd1', 'size' => 'small', 'pos' => ['lg' => [1045, 265], 'md' => [165, 430], 'sm' => [460, 395]]],
         ['label' => 'Production', 'tags' => ['production'], 'color' => '#c2a878', 'size' => 'small', 'pos' => ['lg' => [160, 265], 'md' => [165, 265], 'sm' => [160, 545]]],
-        ['label' => 'Accounting', 'tags' => ['accounting'], 'color' => '#d1a3b5', 'size' => 'small', 'pos' => ['lg' => [330, 425], 'md' => [470, 430], 'sm' => [460, 545]]],
-        ['label' => 'People & Profile', 'tags' => ['hr', 'profile', 'getting-started'], 'color' => '#a3c17f', 'size' => 'small', 'pos' => ['lg' => [660, 430], 'md' => [775, 430], 'sm' => [160, 695]]],
-        ['label' => 'Marketing', 'tags' => ['marketing'], 'color' => '#e0b04a', 'size' => 'small', 'pos' => ['lg' => [960, 425], 'md' => [470, 595], 'sm' => [460, 695]]],
+        ['label' => 'Accounting', 'tags' => ['accounting'], 'color' => '#d1a3b5', 'size' => 'small', 'pos' => ['lg' => [160, 425], 'md' => [470, 430], 'sm' => [460, 545]]],
+        ['label' => 'Human Resources', 'tags' => ['hr', 'clocking'], 'color' => '#a3c17f', 'size' => 'small', 'pos' => ['lg' => [455, 430], 'md' => [775, 430], 'sm' => [160, 695]]],
+        ['label' => 'My Profile', 'tags' => ['profile', 'getting-started'], 'color' => '#8fc1b5', 'size' => 'small', 'pos' => ['lg' => [750, 430], 'md' => [165, 595], 'sm' => [460, 695]]],
+        ['label' => 'Marketing', 'tags' => ['marketing'], 'color' => '#e0b04a', 'size' => 'small', 'pos' => ['lg' => [1045, 425], 'md' => [470, 595], 'sm' => [310, 845]]],
     ];
     $layouts = [
         'lg' => ['viewBox' => '0 0 1200 505', 'maxWidth' => '940px'],
         'md' => ['viewBox' => '0 0 940 675', 'maxWidth' => '660px'],
-        'sm' => ['viewBox' => '0 0 620 790', 'maxWidth' => '420px'],
+        'sm' => ['viewBox' => '0 0 620 940', 'maxWidth' => '420px'],
     ];
     $blobs = [
         'big' => 'M-145 -58 C-70 -84 80 -82 142 -52 C166 -12 163 42 132 66 C45 90 -68 88 -134 60 C-160 22 -160 -26 -145 -58 Z',
