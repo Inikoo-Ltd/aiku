@@ -1,85 +1,70 @@
 <script setup lang="ts">
-import { ref, inject } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faAlignLeft, faSearch } from "@fas"
-import ContentProductCategorySuggestion from './ContentProductCategorySuggestion.vue';
-import MasterSeoSuggestion from './MasterSeoSuggestion.vue';
+import { trans } from 'laravel-vue-i18n'
+import { layoutStructure } from "@/Composables/useLayoutStructure"
+import ContentProductCategorySuggestion from './ContentProductCategorySuggestion.vue'
+import MasterSeoSuggestion from './MasterSeoSuggestion.vue'
 
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
     data: any
     isMaster?: boolean
 }>(), {
     isMaster: false,
 })
 
-const layout: any = inject("layout", {})
+const layout = inject('layout', layoutStructure)
+const primaryColor = computed(() => layout.app.theme[4])
+const primaryContrastColor = computed(() => layout.app.theme[5])
 
 const tabs = [
-    { key: "description", label: "Description", icon: faAlignLeft },
-    { key: "seo", label: "SEO Content", icon: faSearch },
+    { key: 'description', label: trans('Description'), icon: faAlignLeft },
+    { key: 'seo', label: trans('SEO Content'), icon: faSearch },
 ]
 
-const current = ref(0)
+const currentTab = ref(tabs[0].key)
 </script>
 
 <template>
-    <div class="flex bg-white border overflow-hidden shadow-sm">
-
-        <!-- Sidebar Compact -->
-        <aside class="flex flex-col w-14 py-4 border-r bg-gray-50/80 backdrop-blur-sm">
+    <div class="flex overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+        <aside class="flex w-14 shrink-0 flex-col gap-y-1 border-r border-gray-200 bg-gray-50 p-2">
             <button
-                v-for="(tab, index) in tabs"
+                v-for="tab in tabs"
                 :key="tab.key"
-                @click="current = index"
-                class="relative group flex items-center justify-center mx-2 mb-2 p-3 rounded-xl transition-all"
-                :class="current === index
-                    ? 'buttonPrimary shadow-sm'
-                    : 'text-gray-600 hover:bg-gray-100'
+                type="button"
+                @click="currentTab = tab.key"
+                class="group relative flex h-10 w-10 items-center justify-center rounded-lg border transition-colors duration-200"
+                :class="currentTab === tab.key
+                    ? 'shadow-sm'
+                    : 'border-transparent text-gray-500 hover:bg-gray-200/70 hover:text-gray-700'
+                "
+                :style="currentTab === tab.key
+                    ? { backgroundColor: primaryColor, borderColor: primaryColor, color: primaryContrastColor }
+                    : undefined
                 "
             >
-                <FontAwesomeIcon :icon="tab.icon" class="w-4 h-4" />
+                <FontAwesomeIcon :icon="tab.icon" class="text-sm" fixed-width aria-hidden="true" />
 
-                <!-- Tooltip -->
                 <span
-                    class="absolute top-1/2 -translate-y-1/2 left-full ml-2
-                    hidden group-hover:flex pointer-events-none
-                    bg-gray-800 text-white text-xs px-3 py-1 rounded-lg shadow-lg
-                    whitespace-nowrap z-20"
+                    class="pointer-events-none absolute left-full top-1/2 z-20 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2.5 py-1 text-xs text-white shadow-lg group-hover:block"
                 >
                     {{ tab.label }}
                 </span>
             </button>
         </aside>
 
-        <!-- Content -->
-        <div class="flex-1">
-            <div v-if="current === 0">
-                <ContentProductCategorySuggestion  :data="data.department "/>
-            </div>
-
-            <div v-if="current === 1">
-                <MasterSeoSuggestion />
-            </div>
+        <div class="min-w-0 flex-1">
+            <ContentProductCategorySuggestion
+                v-if="currentTab === 'description'"
+                :data="data.department"
+                :isMaster="isMaster"
+            />
+           <!--  <MasterSeoSuggestion
+                v-else-if="currentTab === 'seo'"
+                :data="data"
+                :isMaster="isMaster"
+            /> -->
         </div>
     </div>
 </template>
-
-
-<style lang="scss" scoped>
-.buttonPrimary {
-  background-color: v-bind('layout?.app?.theme[4]') !important;
-  color: v-bind('layout?.app?.theme[5]') !important;
-  border: v-bind('`1px solid color-mix(in srgb, ${layout?.app?.theme[4]} 80%, black)`');
-  transition: all .2s ease;
-
-  &:hover {
-    background-color: v-bind('`color-mix(in srgb, ${layout?.app?.theme[4]} 85%, black)`') !important;
-    transform: translateY(-1px);
-  }
-
-  &:disabled {
-    background-color: v-bind('`color-mix(in srgb, ${layout?.app?.theme[4]} 50%, grey)`') !important;
-  }
-}
-
-</style>

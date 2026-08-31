@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, inject } from "vue"
+import { ref, computed, onMounted, onUnmounted, watch, nextTick, inject } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
@@ -19,6 +19,7 @@ import {
 import Image from "@common/Components/Image.vue"
 //import { useFormatTime } from "@/Composables/useFormatTime"
 import { getStyles } from "@/Composables/styles"
+import { buildBlogTableOfContents, htmlToPlainText } from "@/Iris/Composables/useBlogTableOfContents"
 
 library.add(faCube, faLink, faImage, faEnvelope, faFacebook, faTwitter, faLinkedin, faXTwitter, faWhatsapp)
 
@@ -49,31 +50,24 @@ const displayDate = computed(() => {
 })
 
 const contentRef = ref<HTMLElement | null>(null)
-const headings = ref<{ id: string; text: string; level: number }[]>([])
 const currentHeadingId = ref<string | null>(null)
 const pageUrl = ref("")
 
-onMounted(async () => {
-  pageUrl.value = window.location.href
+const tableOfContents = computed(() => buildBlogTableOfContents(props.fieldValue?.content ?? ""))
+const contentHtml = computed(() => tableOfContents.value.html)
+const headings = computed(() => tableOfContents.value.headings)
+
+let headingObserver: IntersectionObserver | null = null
+
+const observeHeadings = async () => {
+  headingObserver?.disconnect()
+  headingObserver = null
+  currentHeadingId.value = null
 
   await nextTick()
-  if (!contentRef.value) return
+  if (!contentRef.value || !headings.value.length) return
 
-  headings.value = []
-
-  const headingElements = contentRef.value.querySelectorAll("h1, h2, h3")
-
-  headingElements.forEach((el, index) => {
-    const id = `heading-${index}`
-    el.setAttribute("id", id)
-    headings.value.push({
-      id,
-      text: el.textContent || `Section ${index + 1}`,
-      level: parseInt(el.tagName.replace("H", ""))
-    })
-  })
-
-  const observer = new IntersectionObserver(
+  headingObserver = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
@@ -87,35 +81,38 @@ onMounted(async () => {
     }
   )
 
-  headingElements.forEach((el) => observer.observe(el))
+  headings.value.forEach(({ id }) => {
+    const el = contentRef.value?.querySelector(`[id="${id}"]`)
+    if (el) headingObserver?.observe(el)
+  })
+}
+
+onMounted(() => {
+  pageUrl.value = window.location.href
+  observeHeadings()
 })
 
-const plainTitle = computed(() => {
-  return (props.fieldValue.title ?? "")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ")
-    .trim()
+watch(contentHtml, observeHeadings)
+
+onUnmounted(() => {
+  headingObserver?.disconnect()
+  headingObserver = null
 })
+
+const plainTitle = computed(() => htmlToPlainText(props.fieldValue.title ?? ""))
 
 const shareUrl = computed(() => encodeURIComponent(pageUrl.value))
 const shareTitle = computed(() => encodeURIComponent(plainTitle.value))
 
 const screenType = inject("screenType", "desktop")
 
-console.log(props)
 </script>
 
 <template>
   <div v-if="fieldValue?.builderType != 'beefree'" class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-12 max-w-7xl mx-auto px-4 py-10 text-gray-800"   :style="{fontFamily: 'Raleway, sans-serif'}">
     <!-- Sidebar -->
     <aside class="lg:sticky lg:top-10 max-h-[80vh] overflow-y-auto hidden lg:block border-r border-gray-100 pr-6">
-      <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">
+      <div v-if="headings.length" class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">
         {{ ctrans("Content") }}
       </div>
 
@@ -177,7 +174,7 @@ console.log(props)
 
       <!-- Article Content -->
       <div :style="{fontFamily: 'Raleway, sans-serif', fontSize: '1.1250rem', ...getStyles(fieldValue.properties, screenType)}">
-        <div class="prose prose-blue max-w-none scroll-smooth mb-10" ref="contentRef" v-html="fieldValue.content" />
+        <div class="prose prose-blue max-w-none scroll-smooth mb-10" ref="contentRef" v-html="contentHtml" />
       </div>
 
 
