@@ -2996,10 +2996,17 @@ describe('partner browse', function () {
         $this->buyerOrgStock = $buyerOrgStock;
 
         $this->buyerOrgStock->update(['quantity_available' => 10, 'health_rank' => null]);
-        DB::table('org_stock_stats')
-            ->whereIn('org_stock_id', DB::table('org_stocks')->where('organisation_id', $this->organisation->id)->pluck('id'))
-            ->update(['predicted_daily_usage' => 0]);
-        $this->buyerOrgStock->stats->update(['predicted_daily_usage' => 0.001]);
+        Cache::put("partner-order-capacity:{$this->orgPartner->id}", [
+            ['delivers_to_us_per_30d' => 0.01, 'source' => 'sales', 'samples' => 0],
+            [
+                'total_locations'       => 100,
+                'empty_locations'       => 50,
+                'free_ratio'            => 0.5,
+                'inbound_open_po_lines' => 0,
+                'partner_share_used'    => 0,
+                'partner_share_limit'   => 10,
+            ],
+        ], now()->addMinutes(15));
 
         $firstItem = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 5,
@@ -3023,7 +3030,7 @@ describe('partner browse', function () {
         expect($aRankItem)->toBeInstanceOf(PartnerShoppingListItem::class);
 
         $this->buyerOrgStock->update(['health_rank' => null]);
-        $this->buyerOrgStock->stats->update(['predicted_daily_usage' => 0]);
+        Cache::forget("partner-order-capacity:{$this->orgPartner->id}");
         foreach ([$firstItem, $outOfStockItem, $aRankItem] as $item) {
             DeletePartnerShoppingListItem::make()->action($item);
         }
@@ -3079,6 +3086,20 @@ describe('partner browse', function () {
             ->has('products.data'));
 
         $seller->update(['settings' => $originalSettings]);
+    });
+
+    test('UI partner cover bucket items index', function () {
+        $response = $this->get(route('grp.org.procurement.org_partners.show.shopping.items.index', [$this->organisation->slug, $this->orgPartner->id]).'?cover=out');
+        $response->assertOk();
+
+        $response->assertInertia(function (AssertableInertia $page) {
+            $page
+                ->component('Procurement/PartnerCoverBucketItems')
+                ->where('bucket', 'out')
+                ->where('bucketLabel', 'Out of stock')
+                ->has('items.data')
+                ->has('addRoute.name');
+        });
     });
 });
 
@@ -3152,26 +3173,7 @@ test('auto-fill suggests shopping list within budget from usage history', functi
         ->where('state', ShoppingListItemStateEnum::OPEN)
         ->delete();
 
-    $seriesId = DB::table('org_stock_time_series')->insertGetId([
-        'org_stock_id' => $buyerOrgStock->id,
-        'frequency'    => 'quarterly',
-        'created_at'   => now(),
-        'updated_at'   => now(),
-    ]);
-    foreach ([1, 2] as $quartersAgo) {
-        $quarter = now()->subQuarters($quartersAgo);
-        DB::table('org_stock_time_series_records')->insert([
-            'org_stock_time_series_id' => $seriesId,
-            'frequency'                => 'Q',
-            'sales_external'           => 500,
-            'sales_internal'           => 0,
-            'from'                     => $quarter->copy()->startOfQuarter(),
-            'to'                       => $quarter->copy()->endOfQuarter(),
-            'period'                   => $quarter->year.'Q'.$quarter->quarter,
-            'created_at'               => now(),
-            'updated_at'               => now(),
-        ]);
-    }
+    $buyerOrgStock->stats->update(['predicted_daily_usage' => 5.5]);
 
     DB::table('org_stocks')->where('id', $sellerOrgStock->id)->update(['quantity_available' => 50]);
 

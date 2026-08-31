@@ -36,7 +36,7 @@ type LatePurchaseOrder = { id: number, slug: string, reference: string, state: s
 const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
-    orgPartner: { id: number, slug: string, currency: string }
+    orgPartner: { id: number, slug: string, name: string, currency: string }
     browseRoute: routeType
     shoppingListRoute: routeType
     canBrowse: boolean
@@ -68,21 +68,21 @@ const capacityShare = () => {
     return cap ? Math.min(props.orderCapacity.list.value / cap, 1) : null
 }
 
-const problemThreshold = () => Math.max(props.leadTime.days * 2, 14)
+const problemThreshold = () => Math.max(props.leadTime.days * 10, 30)
 
 const isProblemOrder = (sd: OpenStockDelivery) => sd.days_old > problemThreshold()
 
-const ageClasses = (daysOld: number) => (daysOld > 21 ? "text-red-600" : daysOld > 10 ? "text-amber-600" : "text-gray-400")
+const agingThreshold = () => Math.max(props.leadTime.days * 3, 14)
+
+const ageClasses = (daysOld: number) => (daysOld > problemThreshold() ? "text-red-600" : daysOld > agingThreshold() ? "text-amber-600" : "text-gray-400")
 
 const dashboardReload = { only: ["coverBuckets", "coverTotal", "orderCapacity", "stats"], preserveScroll: true }
 
 const removeMisplaced = (bucket: string) => {
-    if (confirm(trans("Remove these items from the shopping list?"))) {
-        router.delete(
-            route("grp.org.procurement.org_partners.show.shopping.misplaced.destroy", [route().params.organisation, orgPartner.id]),
-            { data: { bucket }, ...dashboardReload }
-        )
-    }
+    router.delete(
+        route("grp.org.procurement.org_partners.show.shopping.misplaced.destroy", [route().params.organisation, props.orgPartner.id]),
+        { data: { bucket }, ...dashboardReload }
+    )
 }
 
 const autoFillOpen = ref(false)
@@ -114,6 +114,13 @@ const segmentWidth = (bucket: CoverBucket, part: number) => (bucket.count ? `${M
 const needsAction = (bucket: CoverBucket) => !["ok", "dead", "never"].includes(bucket.bucket) && bucket.untouched > 0
 
 const bucketRoute = (bucket: string, rank?: string) => `${route(props.browseRoute.name, props.browseRoute.parameters)}?cover=${bucket}${rank ? `&rank=${rank}` : ""}`
+
+const goToBucketItems = (bucket: string) => {
+    router.get(
+        route("grp.org.procurement.org_partners.show.shopping.items.index", [route().params.organisation, props.orgPartner.id]),
+        { cover: bucket }
+    )
+}
 
 const rankClasses: Record<string, string> = {
     A: "",
@@ -147,10 +154,10 @@ const rankClasses: Record<string, string> = {
                 </div>
                 <div class="mt-1 text-xs text-gray-500">
                     <template v-if="orderCapacity.partner_capacity.source === 'measured'">
-                        {{ trans("what they historically deliver to us per month, measured from :n deliveries", { n: orderCapacity.partner_capacity.samples }) }}
+                        {{ trans("one order cycle of what they historically deliver to us, measured from :n deliveries", { n: orderCapacity.partner_capacity.samples }) }}
                     </template>
                     <template v-else>
-                        {{ trans("budget = 30 days of our sales of their products (no delivery history yet)") }}
+                        {{ trans("budget = one order cycle (:days days) of what we actually sell of their products", { days: Math.min(leadTime.days + 7, 30) }) }}
                     </template>
                 </div>
             </template>
@@ -183,7 +190,7 @@ const rankClasses: Record<string, string> = {
         </div>
         <div class="rounded-lg border border-gray-200 bg-white p-4">
             <div class="flex items-baseline justify-between text-sm text-gray-500">
-                <span>{{ trans("Lead time") }}</span>
+                <span>{{ orgPartner.name }}</span>
                 <span v-if="latePurchaseOrders.length" class="font-medium text-red-600">{{ latePurchaseOrders.length }} {{ trans("late") }}</span>
             </div>
             <div class="mt-1 text-2xl font-semibold text-gray-900">
@@ -200,16 +207,13 @@ const rankClasses: Record<string, string> = {
             <div v-if="latePurchaseOrders.length" class="mt-1 text-xs text-red-600">
                 {{ trans("worst delay :days days", { days: latePurchaseOrders[0].days_late }) }}
             </div>
+            <div class="mt-1 text-xs text-gray-400">{{ trans(":total products in their catalogue", { total: coverTotal.toLocaleString() }) }}</div>
         </div>
     </div>
 
 
-    <div v-if="canBrowse" class="mx-4 mt-4">
-        <h3 class="text-sm font-semibold text-gray-700">
-            {{ trans("Stock at risk") }}
-            <span class="ml-1 font-normal text-gray-400">{{ trans(":total products this partner sells", { total: coverTotal.toLocaleString() }) }}</span>
-        </h3>
-        <div class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div v-if="canBrowse" class="mx-4 mt-4 rounded-xl border-2 border-indigo-200 bg-indigo-50/40 p-4">
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Link
                 v-for="bucket in coverBuckets"
                 :key="bucket.bucket"
@@ -218,7 +222,7 @@ const rankClasses: Record<string, string> = {
                 :class="toneClasses[bucket.tone]"
             >
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl font-semibold tabular-nums">{{ bucket.count }}</span>
+                    <button type="button" class="text-2xl font-semibold tabular-nums hover:underline" @click.prevent.stop="goToBucketItems(bucket.bucket)">{{ bucket.count }}</button>
                     <span v-if="bucket.bucket === 'dead'" class="ml-auto text-xs tabular-nums opacity-70">
                         {{ useLocaleStore().currencyFormat(orgPartner.currency, bucket.stock_value) }}
                     </span>
@@ -271,7 +275,7 @@ const rankClasses: Record<string, string> = {
         </div>
     </div>
 
-    <div class="mx-4 mt-6 max-w-6xl">
+    <div class="mx-4 mt-6">
         <h3 class="text-sm font-semibold text-gray-700">
             <Link class="hover:underline" :href="route(stockDeliveriesRoute.name, stockDeliveriesRoute.parameters)">
                 {{ trans("Order pipeline") }}
@@ -300,12 +304,21 @@ const rankClasses: Record<string, string> = {
                         <span class="h-2 w-2 rounded-full" :class="column.dot" />
                         {{ column.label }}
                     </span>
-                    <span class="rounded-full px-2 py-0.5 text-xs font-medium tabular-nums" :class="column.badge">{{ column.deliveries.length }}</span>
+                    <span class="flex items-center gap-1">
+                        <span class="rounded-full px-2 py-0.5 text-xs font-medium tabular-nums" :class="column.badge" :title="trans('deliveries')">{{ column.deliveries.length }}</span>
+                        <span class="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium tabular-nums text-gray-600" :title="trans('items')">{{ column.deliveries.reduce((sum, sd) => sum + sd.items, 0) }} {{ trans("items") }}</span>
+                    </span>
                 </div>
-                <div class="flex max-h-80 flex-col gap-2 overflow-y-auto">
-                    <div v-for="sd in column.deliveries" :key="sd.id" class="rounded-md border-l-2 p-2 shadow-sm" :class="isProblemOrder(sd) ? 'border-red-400 bg-red-50' : [column.card, sd.days_old > 10 ? 'border-amber-400' : 'border-transparent']">
+                <div class="flex flex-col gap-2">
+                    <Link
+                        v-for="sd in column.deliveries"
+                        :key="sd.id"
+                        :href="route('grp.org.procurement.org_partners.show.stock-deliveries.show', [route().params.organisation, orgPartner.id, sd.slug])"
+                        class="block rounded-md border-l-2 p-2 shadow-sm hover:ring-1 hover:ring-indigo-300"
+                        :class="isProblemOrder(sd) ? 'border-red-400 bg-red-50' : [column.card, sd.days_old > agingThreshold() ? 'border-amber-400' : 'border-transparent']"
+                    >
                         <div class="flex items-baseline justify-between gap-2">
-                            <span class="text-sm font-bold" :class="isProblemOrder(sd) ? 'text-red-700' : 'text-gray-900'">{{ sd.reference }}</span>
+                            <span class="whitespace-nowrap text-sm font-bold" :class="isProblemOrder(sd) ? 'text-red-700' : 'text-gray-900'">{{ sd.reference }}</span>
                             <span class="whitespace-nowrap text-xs tabular-nums" :class="ageClasses(sd.days_old)">{{ useFormatTime(sd.date, { formatTime: "mdy" }) }}</span>
                         </div>
                         <div class="text-xs text-gray-500">{{ sd.items }} {{ trans("items") }} · {{ sd.state.replace("_", " ") }}</div>
@@ -316,7 +329,7 @@ const rankClasses: Record<string, string> = {
                         >
                             {{ sd.days_in_transit }} {{ trans("days in transit") }}
                         </div>
-                    </div>
+                    </Link>
                     <div v-if="!column.deliveries.length" class="px-1 py-2 text-xs text-gray-400">—</div>
                 </div>
             </div>

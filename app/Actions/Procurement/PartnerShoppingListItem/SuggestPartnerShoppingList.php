@@ -160,6 +160,7 @@ class SuggestPartnerShoppingList extends OrgAction
                 'product_has_org_stocks.quantity as skos_per_product_unit',
                 'buyer_org_stocks.health_rank as buyer_health_rank',
                 'buyer_stats.days_of_cover as buyer_days_of_cover',
+                'buyer_stats.predicted_daily_usage as buyer_daily_usage',
                 'buyer_stats.recommended_order_quantity as buyer_recommended',
             ])
             ->orderBy('org_stocks.id')
@@ -167,11 +168,9 @@ class SuggestPartnerShoppingList extends OrgAction
             ->unique('id')
             ->values();
 
-        $usage = $this->buyerQuarterlyUsage($rows->pluck('buyer_org_stock_id')->filter()->all());
-
         $exchange = GetCurrencyExchange::run($orgPartner->partner->currency, $orgPartner->organisation->currency) ?? 1;
 
-        return $rows->map(function ($row) use ($usage, $exchange) {
+        return $rows->map(function ($row) use ($exchange) {
             $skosPerProductUnit = (float) $row->skos_per_product_unit > 0 ? (float) $row->skos_per_product_unit : 1;
 
             return [
@@ -181,7 +180,7 @@ class SuggestPartnerShoppingList extends OrgAction
                 'name'              => $row->name,
                 'partner_available' => (float) $row->partner_available,
                 'buyer_available'   => (float) ($row->buyer_available ?? 0),
-                'quarterly_usage'   => $usage[$row->buyer_org_stock_id] ?? 0.0,
+                'quarterly_usage'   => round((float) ($row->buyer_daily_usage ?? 0) * 91, 1),
                 'cap_exempt'        => ($row->buyer_org_stock_id && (float) ($row->buyer_available ?? 0) <= 0) || $row->buyer_health_rank === HealthRankEnum::A->value,
                 'health_rank'       => $row->buyer_health_rank,
                 'never_stocked'     => $row->buyer_org_stock_id === null,

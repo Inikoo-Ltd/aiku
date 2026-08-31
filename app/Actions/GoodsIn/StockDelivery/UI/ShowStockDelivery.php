@@ -34,6 +34,7 @@ use App\Models\GoodsIn\StockDeliveryCost;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
@@ -68,6 +69,19 @@ class ShowStockDelivery extends OrgAction
         $this->stockDelivery = $stockDelivery;
         $this->initialisation($organisation, $request)->withTab($this->getTabs($stockDelivery));
         $this->authorizeProcurementRecord($stockDelivery);
+
+        return $this->handle($stockDelivery);
+    }
+
+    /**
+     * Read-only view from the partner's shopping side.
+     */
+    public function inOrgPartner(Organisation $organisation, OrgPartner $orgPartner, StockDelivery $stockDelivery, ActionRequest $request): StockDelivery
+    {
+        $this->stockDelivery = $stockDelivery;
+        $this->initialisation($organisation, $request)->withTab($this->getTabs($stockDelivery));
+        $this->authorizeProcurementRecord($stockDelivery);
+        $this->canEdit = false;
 
         return $this->handle($stockDelivery);
     }

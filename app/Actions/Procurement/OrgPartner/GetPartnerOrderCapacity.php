@@ -16,6 +16,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -45,9 +46,12 @@ class GetPartnerOrderCapacity
      */
     public function handle(OrgPartner $orgPartner): array
     {
-        $capacity  = $this->partnerCapacity($orgPartner);
-        $list      = $this->openListValue($orgPartner);
-        $warehouse = $this->warehouse($orgPartner);
+        [$capacity, $warehouse] = Cache::remember(
+            "partner-order-capacity:{$orgPartner->id}",
+            now()->addMinutes(15),
+            fn () => [$this->partnerCapacity($orgPartner), $this->warehouse($orgPartner)]
+        );
+        $list = $this->openListValue($orgPartner);
 
         return [
             'partner_capacity' => $capacity,
@@ -75,15 +79,26 @@ class GetPartnerOrderCapacity
                 sum(cost_total) as total")
             ->first();
 
+        $cycleShare = $this->orderCycleShare($orgPartner);
+
         if ((int) $measured->months >= self::MIN_MONTHS) {
             return [
-                'delivers_to_us_per_30d' => round((float) $measured->total / (int) $measured->months, 2),
+                'delivers_to_us_per_30d' => round((float) $measured->total / (int) $measured->months * $cycleShare, 2),
                 'source'        => 'measured',
                 'samples'       => (int) $measured->samples,
             ];
         }
 
-        return $this->bootstrapCapacity($orgPartner, (int) $measured->samples);
+        return $this->bootstrapCapacity($orgPartner, (int) $measured->samples, $cycleShare);
+    }
+
+    /**
+     * A shopping list should hold one order cycle of demand (lead time plus a review week),
+     * never a full month at once.
+     */
+    protected function orderCycleShare(OrgPartner $orgPartner): float
+    {
+        return min(1, (GetPartnerLeadTime::run($orgPartner)['days'] + 7) / 30);
     }
 
     /**
@@ -92,36 +107,40 @@ class GetPartnerOrderCapacity
      *
      * @return array{delivers_to_us_per_30d: float|null, source: string, samples: int}
      */
-    protected function bootstrapCapacity(OrgPartner $orgPartner, int $samples): array
+    protected function bootstrapCapacity(OrgPartner $orgPartner, int $samples, float $cycleShare): array
     {
-        $forecast = $this->salesDemandValue($orgPartner);
+        $sales = $this->salesDemandValue($orgPartner);
 
         return [
-            'delivers_to_us_per_30d' => $forecast > 0 ? $forecast : null,
-            'source'                 => $forecast > 0 ? 'sales' : 'none',
+            'delivers_to_us_per_30d' => $sales > 0 ? round($sales * $cycleShare, 2) : null,
+            'source'                 => $sales > 0 ? 'sales' : 'none',
             'samples'                => $samples,
         ];
     }
 
     /**
-     * Deterministic bootstrap while delivery history is thin: 30 days of our own sales of this
-     * partner's products. Pack-size minimums never inflate it and nobody can edit it.
+     * Deterministic bootstrap while delivery history is thin: what we actually dispatched of this
+     * partner's products in the last 90 days, monthly, at the partner's prices. Real shipments,
+     * so out-of-stock extrapolation and pack-size minimums never inflate it; nobody can edit it.
      */
     protected function salesDemandValue(OrgPartner $orgPartner): float
     {
-        return round((float) DB::table('org_stocks as p')
+        return round((float) DB::table('delivery_note_items as dni')
             ->join('org_stocks as os', function ($join) use ($orgPartner) {
-                $join->on('os.stock_id', 'p.stock_id')
+                $join->on('os.id', 'dni.org_stock_id')
                     ->where('os.organisation_id', $orgPartner->organisation_id);
             })
-            ->join('org_stock_stats as s', 's.org_stock_id', 'os.id')
-            ->where('p.organisation_id', $orgPartner->partner_id)
-            ->where('p.state', OrgStockStateEnum::ACTIVE->value)
-            ->where('s.predicted_daily_usage', '>', 0)
-            ->selectRaw("coalesce(sum(s.predicted_daily_usage * 30 * coalesce((select pr.price / nullif(phos.quantity, 0)
+            ->join('org_stocks as p', function ($join) use ($orgPartner) {
+                $join->on('p.stock_id', 'os.stock_id')
+                    ->where('p.organisation_id', $orgPartner->partner_id)
+                    ->where('p.state', OrgStockStateEnum::ACTIVE->value);
+            })
+            ->where('dni.quantity_dispatched', '>', 0)
+            ->where('dni.created_at', '>=', now()->subDays(90))
+            ->selectRaw("coalesce(sum(dni.quantity_dispatched * coalesce((select pr.price / nullif(phos.quantity, 0)
                 from product_has_org_stocks phos
                 join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."'
-                where phos.org_stock_id = p.id limit 1), 0)), 0) as total")
+                where phos.org_stock_id = p.id limit 1), 0)) / 3, 0) as total")
             ->value('total'), 2);
     }
 

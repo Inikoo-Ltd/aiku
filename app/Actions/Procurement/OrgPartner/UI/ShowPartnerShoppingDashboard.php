@@ -169,6 +169,7 @@ class ShowPartnerShoppingDashboard extends OrgAction
                 'orgPartner'  => [
                     'id'       => $this->orgPartner->id,
                     'slug'     => $this->orgPartner->partner->slug,
+                    'name'     => $this->orgPartner->partner->name,
                     'currency' => $this->orgPartner->partner->currency->code,
                 ],
                 'browseRoute' => [

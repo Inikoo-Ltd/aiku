@@ -151,7 +151,7 @@ async function commit() {
                 </div>
                 <Button
                     type="create"
-                    :label="proposal ? trans('Regenerate') : trans('Generate proposal')"
+                    :label="isGenerating ? trans('Generating…') : proposal ? trans('Regenerate') : trans('Generate proposal')"
                     :loading="isGenerating"
                     :disabled="!budget"
                     @click="generate"

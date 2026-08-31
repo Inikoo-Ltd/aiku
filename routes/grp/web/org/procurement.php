@@ -18,6 +18,7 @@ use App\Actions\Procurement\OrgAgent\UI\EditOrgAgent;
 use App\Actions\Procurement\OrgAgent\UI\IndexOrgAgents;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgPartner\UI\IndexOrgPartners;
+use App\Actions\Procurement\OrgPartner\UI\IndexPartnerCoverBucketItems;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerShoppingDashboard;
 use App\Actions\Procurement\OrgPartner\RemoveMisplacedShoppingListItems;
@@ -117,11 +118,13 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
         });
         Route::prefix('stock-deliveries')->as('.stock-deliveries.')->group(function () {
             Route::get('index', [IndexStockDeliveries::class, 'inOrgPartner'])->name('index');
+            Route::get('{stockDelivery}', [ShowStockDelivery::class, 'inOrgPartner'])->name('show');
         });
         Route::prefix('shopping')->as('.shopping.')->group(function () {
             Route::get('', ShowPartnerShoppingDashboard::class)->name('dashboard');
             Route::patch('lead-time', UpdatePartnerLeadTimeEstimate::class)->name('lead_time.update');
             Route::delete('misplaced', RemoveMisplacedShoppingListItems::class)->name('misplaced.destroy');
+            Route::get('items', IndexPartnerCoverBucketItems::class)->name('items.index');
         });
         Route::prefix('browse')->as('.browse.')->group(function () {
             Route::get('', ShowPartnerBrowse::class)->name('index');
