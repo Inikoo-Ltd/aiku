@@ -277,8 +277,8 @@ defineExpose({
 
 })
 
-const updateQuantityOrdered = (item: ProductRow) => {
-    let valueToCompare = item.is_cut_view ? (
+const updateQuantityOrdered = (item: ProductRow, is_cut_view: boolean) => {
+    let valueToCompare = is_cut_view ? (
             (item.quantity_ordered_fractional[0] * item.quantity_ordered_fractional[1][1]) + item.quantity_ordered_fractional[1][0]
         ) : item.quantity_ordered;
 
@@ -286,7 +286,7 @@ const updateQuantityOrdered = (item: ProductRow) => {
         quantity_ordered: item.amount_modified
     }
     
-    if (item.is_cut_view) {
+    if (is_cut_view) {
         sentData = {
             units_ordered: item.amount_modified
         }
@@ -861,7 +861,7 @@ const isOffersData = (offersData: any): boolean => {
                             size="sm"
                             aria-label="Save changes"
                             :loading="loadingsaveModify"
-                            @click="updateQuantityOrdered(createNewQty[item.id])"
+                            @click="updateQuantityOrdered(createNewQty[item.id], item.is_cut_view)"
                         />
                         <Button v-if="typeof item.id === 'string' && item.id.startsWith('new')" type="negative"
                                 v-tooltip="'delete'" :icon="faTrashAlt" @click="() => onDeleteNewRow(item.rowIndex)"
