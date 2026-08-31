@@ -280,8 +280,9 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 		<ShopIntervalStats v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks" :shop-blocks="props.dashboard?.super_blocks?.[0]?.shop_blocks" />
 
 		<DashboardSettings
+			v-if="props.dashboard?.super_blocks?.[0]?.blocks"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
-			:settings="props.dashboard?.super_blocks?.[0].settings"
+			:settings="props.dashboard?.super_blocks?.[0]?.settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks?.[0]?.current_tab"
 		/>
 
@@ -291,7 +292,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			:idTable="props.dashboard?.super_blocks?.[0]?.id"
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
-			:settings="props.dashboard?.super_blocks?.[0].settings"
+			:settings="props.dashboard?.super_blocks?.[0]?.settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
 			@onChangeTab="onChangeDashboardTab"
 		/>
@@ -305,7 +306,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 				current_tab: props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab
 			}"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
-			:settings="props.dashboard?.super_blocks?.[0].settings"
+			:settings="props.dashboard?.super_blocks?.[0]?.settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
 			:showTabs="false"
 			@onChangeTab="onChangeDashboardTab"
