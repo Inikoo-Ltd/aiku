@@ -13,6 +13,7 @@ use App\Actions\Comms\Email\SendDispatchedReplacementOrderEmailToCustomer;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDispatchTotals;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrderFromDeliveryNote;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PartnerShoppingListItem\SyncPartnerStockDeliveryOnDispatch;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
@@ -68,6 +69,8 @@ class DispatchDeliveryNote extends OrgAction
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::DISPATCHED);
 
         DeliveryNoteHydrateDispatchTotals::dispatch($deliveryNote);
+
+        SyncPartnerStockDeliveryOnDispatch::run($deliveryNote);
 
         return $deliveryNote;
     }

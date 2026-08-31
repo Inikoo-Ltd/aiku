@@ -39,6 +39,20 @@ watch(isModalOpen, (isOpen, wasOpen) => {
 const amountOf = (item: { quantity: number, price_per_sko: number | null }) =>
     Number(item.quantity) * Number(item.price_per_sko ?? 0)
 
+const priorities = ["low", "normal", "high", "urgent"]
+
+function updateItem(item: { id: number }, data: Record<string, string | null>) {
+    router.patch(
+        route("grp.org.procurement.org_partners.show.shopping_list.update", [
+            route().params["organisation"],
+            props.orgPartner.id,
+            item.id,
+        ]),
+        data,
+        { preserveScroll: true }
+    )
+}
+
 function deleteItem(item: { id: number }) {
     router.delete(
         route("grp.org.procurement.org_partners.show.shopping_list.destroy", [
@@ -83,8 +97,27 @@ function deleteItem(item: { id: number }) {
                 {{ item.price_per_sko ? useLocaleStore().currencyFormat(orgPartner.currency, amountOf(item)) : "-" }}
             </span>
         </template>
+        <template #cell(priority)="{ item }">
+            <select
+                v-if="item.state === 'open'"
+                :value="item.priority"
+                class="rounded border-gray-300 py-0.5 pl-2 pr-7 text-xs"
+                :class="{ 'text-red-600': item.priority === 'urgent', 'text-amber-600': item.priority === 'high', 'text-gray-400': item.priority === 'low' }"
+                @change="updateItem(item, { priority: ($event.target as HTMLSelectElement).value })"
+            >
+                <option v-for="priority in priorities" :key="priority" :value="priority">{{ trans(priority) }}</option>
+            </select>
+            <span v-else>{{ trans(item.priority) }}</span>
+        </template>
         <template #cell(needed_by)="{ item }">
-            {{ item.needed_by ? useFormatTime(item.needed_by, { formatTime: "mdy" }) : "-" }}
+            <input
+                v-if="item.state === 'open'"
+                type="date"
+                :value="item.needed_by ? String(item.needed_by).substring(0, 10) : ''"
+                class="rounded border-gray-300 py-0.5 px-1.5 text-xs"
+                @change="updateItem(item, { needed_by: ($event.target as HTMLInputElement).value || null })"
+            />
+            <span v-else>{{ item.needed_by ? useFormatTime(item.needed_by, { formatTime: "mdy" }) : "-" }}</span>
         </template>
         <template #cell(created_at)="{ item }">
             {{ useFormatTime(item.created_at, { formatTime: "mdy" }) }}

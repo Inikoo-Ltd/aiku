@@ -12,6 +12,9 @@ import { router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
+import { useLocaleStore } from "@/Stores/locale"
+
+const locale = useLocaleStore()
 
 interface ProposalLine {
     org_stock_id: number
@@ -98,7 +101,7 @@ async function commit() {
             type: "success",
         })
         closeModal()
-        router.reload({ only: ["data"] })
+        router.reload()
     } catch (error: any) {
         notify({
             title: trans("Something went wrong"),
@@ -113,7 +116,7 @@ async function commit() {
 
 <template>
     <Modal :isOpen="model" @onClose="closeModal" :closeButton="true" width="w-full max-w-2xl md:max-w-4xl">
-        <div class="flex flex-col h-[600px] overflow-y-auto pb-4 px-4">
+        <div class="flex flex-col h-[600px] px-4">
             <div class="flex justify-center py-2 text-gray-600 font-medium mb-3">
                 <h2>{{ trans("Auto-fill shopping list") }}</h2>
             </div>
@@ -152,35 +155,37 @@ async function commit() {
                 </div>
 
                 <template v-else>
-                    <table class="mt-4 w-full text-sm">
-                        <thead>
-                            <tr class="border-b border-gray-200 text-left text-gray-500">
-                                <th class="py-1"></th>
-                                <th class="py-1">{{ trans("Stock") }}</th>
-                                <th class="py-1">{{ trans("Reason") }}</th>
-                                <th class="py-1 text-right">{{ trans("SKOs") }}</th>
-                                <th class="py-1 text-right">{{ trans("Price") }}</th>
-                                <th class="py-1 text-right">{{ trans("Cost") }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="line in proposal" :key="line.org_stock_id" class="border-b border-gray-100" :class="line.selected ? '' : 'opacity-40'">
-                                <td class="py-1.5"><input v-model="line.selected" type="checkbox" /></td>
-                                <td class="py-1.5"><span class="font-medium">{{ line.code }}</span> <span class="text-gray-500">{{ line.name }}</span></td>
-                                <td class="py-1.5 text-gray-500 italic">{{ line.reason }}</td>
-                                <td class="py-1.5 text-right">
-                                    <input v-model.number="line.quantity" type="number" min="1" step="1" class="w-20 rounded border-gray-300 text-right" />
-                                </td>
-                                <td class="py-1.5 text-right">{{ line.price_per_sko }}</td>
-                                <td class="py-1.5 text-right">{{ Math.round(line.quantity * line.price_per_sko * 100) / 100 }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="mt-4 flex-1 overflow-y-auto">
+                        <table class="w-full text-xs">
+                            <thead class="sticky top-0 bg-white">
+                                <tr class="border-b border-gray-200 text-left text-gray-500">
+                                    <th class="py-1"></th>
+                                    <th class="py-1">{{ trans("Stock") }}</th>
+                                    <th class="py-1">{{ trans("Reason") }}</th>
+                                    <th class="py-1 text-right">{{ trans("SKOs") }}</th>
+                                    <th class="py-1 text-right">{{ trans("Amount") }} ({{ currency }})</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="line in proposal" :key="line.org_stock_id" class="border-b border-gray-100" :class="line.selected ? '' : 'opacity-40'">
+                                    <td class="py-1"><input v-model="line.selected" type="checkbox" /></td>
+                                    <td class="py-1"><span class="font-medium">{{ line.code }}</span> <span class="text-gray-500">{{ line.name }}</span></td>
+                                    <td class="py-1 text-gray-500 italic">{{ line.reason }}</td>
+                                    <td class="py-1 text-right">
+                                        <input v-model.number="line.quantity" type="number" min="1" step="1" class="w-16 rounded border-gray-300 text-right text-xs py-0.5" />
+                                    </td>
+                                    <td class="py-1 text-right tabular-nums" :title="`${locale.currencyFormat(currency, line.price_per_sko)} / SKO`">
+                                        {{ locale.currencyFormat(currency, Math.round(line.quantity * line.price_per_sko * 100) / 100) }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                    <div class="mt-4 flex items-center justify-between">
+                    <div class="flex items-center justify-between border-t border-gray-200 bg-white py-3">
                         <div :class="overBudget ? 'text-red-600 font-medium' : 'text-gray-600'">
-                            {{ trans("Total") }}: {{ selectedTotal }} {{ currency }}
-                            <span class="text-gray-400">/ {{ budget }} {{ currency }}</span>
+                            {{ trans("Total") }}: {{ locale.currencyFormat(currency, selectedTotal) }}
+                            <span class="text-gray-400">/ {{ locale.currencyFormat(currency, budget ?? 0) }}</span>
                             <span v-if="overBudget"> — {{ trans("over budget") }}</span>
                         </div>
                         <Button

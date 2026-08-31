@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\PartnerShoppingListItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
+use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\PartnerShoppingListItem;
 use Illuminate\Validation\Rule;
@@ -35,7 +36,12 @@ class UpdatePartnerShoppingListItem extends OrgAction
     {
         abort_unless($partnerShoppingListItem->state === ShoppingListItemStateEnum::OPEN, 422, 'Only open items can be updated');
 
-        return $this->update($partnerShoppingListItem, $modelData);
+        $partnerShoppingListItem = $this->update($partnerShoppingListItem, $modelData);
+        if ($partnerShoppingListItem->wasChanged('quantity')) {
+            OrgPartnerHydrateShoppingListItems::dispatch($partnerShoppingListItem->orgPartner);
+        }
+
+        return $partnerShoppingListItem;
     }
 
     public function rules(): array

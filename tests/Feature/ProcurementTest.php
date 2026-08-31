@@ -37,6 +37,7 @@ use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToConfirmedStockDeliveryIte
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\UpsertStockDeliveryItemPlaced;
 use App\Actions\Inventory\Location\StoreLocation;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateOutOfStockForecast;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
@@ -61,9 +62,11 @@ use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\CherryPickPartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
+use App\Actions\Procurement\PartnerShoppingListItem\SendPartnerOrderToWarehouse;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
+use App\Actions\Procurement\PartnerShoppingListItem\SyncPartnerStockDeliveryOnDispatch;
 use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
 use App\Actions\Procurement\ShoppingListItem\CherryPickShoppingListItems;
 use App\Actions\Procurement\ShoppingListItem\DeleteShoppingListItem;
@@ -2792,6 +2795,91 @@ describe('partner shopping list', function () {
         expect($result['picked'])->toBe(0)
             ->and($result['skipped'])->toHaveCount(1)
             ->and($item->refresh()->state)->toBe(ShoppingListItemStateEnum::OPEN);
+    });
+
+    test('send partner order to warehouse creates DN and mirror stock delivery in buyer org', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 20,
+        ]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+        $order  = $result['orders'][0];
+
+        $stockDelivery = SendPartnerOrderToWarehouse::make()->action($order);
+        $order->refresh();
+
+        expect($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
+            ->and($order->deliveryNotes()->count())->toBe(1)
+            ->and($stockDelivery)->not->toBeNull()
+            ->and($stockDelivery->organisation_id)->toBe($this->orgPartner->organisation_id)
+            ->and($stockDelivery->parent_id)->toBe($this->orgPartner->id)
+            ->and($stockDelivery->state)->toBe(StockDeliveryStateEnum::CONFIRMED)
+            ->and($stockDelivery->delivery_note_id)->toBe($order->deliveryNotes()->first()->id)
+            ->and($stockDelivery->items()->count())->toBe(1)
+            ->and($stockDelivery->items()->first()->org_stock_id)->toBe($this->buyerOrgStock->id);
+    });
+
+    test('send partner order to warehouse rejects non-creating order', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+
+        $item   = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 4,
+        ]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+        $order  = $result['orders'][0];
+
+        SendPartnerOrderToWarehouse::make()->action($order);
+
+        expect(fn () => SendPartnerOrderToWarehouse::make()->action($order->refresh()))
+            ->toThrow(ValidationException::class);
+    });
+
+    test('mirror stock delivery follows delivery note dispatch', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+
+        $item   = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 8,
+        ]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+        $order  = $result['orders'][0];
+
+        $stockDelivery = SendPartnerOrderToWarehouse::make()->action($order);
+        $deliveryNote  = $order->deliveryNotes()->first();
+
+        foreach ($deliveryNote->deliveryNoteItems as $deliveryNoteItem) {
+            $deliveryNoteItem->update(['quantity_dispatched' => $deliveryNoteItem->quantity_required]);
+        }
+
+        SyncPartnerStockDeliveryOnDispatch::run($deliveryNote->refresh());
+        $stockDelivery->refresh();
+
+        expect($stockDelivery->state)->toBe(StockDeliveryStateEnum::DISPATCHED)
+            ->and($stockDelivery->dispatched_at)->not->toBeNull()
+            ->and($stockDelivery->items()->first()->state)->toBe(StockDeliveryItemStateEnum::DISPATCHED);
+    });
+
+    test('out of stock forecast hydrator fills stats', function () {
+        $orgStock = $this->buyerOrgStock;
+
+        OrgStockHydrateOutOfStockForecast::run($orgStock);
+        $stats = $orgStock->stats->refresh();
+
+        if ((float) $orgStock->quantity_available <= 0) {
+            expect((float) $stats->days_of_cover)->toBe(0.0)
+                ->and($stats->predicted_out_of_stock_at)->not->toBeNull();
+        } else {
+            expect($stats->days_of_cover === null || $stats->days_of_cover >= 0)->toBeTrue();
+        }
     });
 });
 

@@ -24,6 +24,7 @@ use App\Actions\Procurement\PartnerShoppingListItem\CherryPickPartnerShoppingLis
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexPartnerShippingList;
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexPartnerShoppingListItems;
+use App\Actions\Procurement\PartnerShoppingListItem\SendPartnerOrderToWarehouse;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
@@ -102,6 +103,7 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
     Route::get('', IndexOrgPartners::class)->name('index');
     Route::get('shipping-list', IndexPartnerShippingList::class)->name('shipping_list.index');
     Route::post('shipping-list/cherry-pick', CherryPickPartnerShoppingListItems::class)->name('shipping_list.cherry_pick');
+    Route::post('shipping-list/orders/{order}/send-to-warehouse', SendPartnerOrderToWarehouse::class)->name('shipping_list.send_to_warehouse');
     Route::prefix('{orgPartner}')->as('show')->group(function () {
         Route::get('', ShowOrgPartner::class);
         Route::prefix('purchase-orders')->as('.purchase-orders.')->group(function () {

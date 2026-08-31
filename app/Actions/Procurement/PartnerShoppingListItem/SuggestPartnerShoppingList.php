@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PartnerShoppingListItem;
 
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -47,7 +48,7 @@ class SuggestPartnerShoppingList extends OrgAction
         }
 
         return [
-            'currency' => $orgPartner->partner->currency->code,
+            'currency' => $orgPartner->organisation->currency->code,
             'budget'   => $budget,
             'total'    => round(array_sum(array_column($lines, 'cost')), 2),
             'lines'    => $lines,
@@ -97,7 +98,9 @@ class SuggestPartnerShoppingList extends OrgAction
 
         $usage = $this->buyerQuarterlyUsage($rows->pluck('buyer_org_stock_id')->filter()->all());
 
-        return $rows->map(function ($row) use ($usage) {
+        $exchange = GetCurrencyExchange::run($orgPartner->partner->currency, $orgPartner->organisation->currency) ?? 1;
+
+        return $rows->map(function ($row) use ($usage, $exchange) {
             $skosPerProductUnit = (float) $row->skos_per_product_unit > 0 ? (float) $row->skos_per_product_unit : 1;
 
             return [
@@ -107,7 +110,7 @@ class SuggestPartnerShoppingList extends OrgAction
                 'partner_available' => (float) $row->partner_available,
                 'buyer_available'   => (float) ($row->buyer_available ?? 0),
                 'quarterly_usage'   => $usage[$row->buyer_org_stock_id] ?? 0.0,
-                'price_per_sko'     => round((float) $row->product_price / $skosPerProductUnit, 4),
+                'price_per_sko'     => round((float) $row->product_price * $exchange / $skosPerProductUnit, 4),
             ];
         })->all();
     }
@@ -117,7 +120,7 @@ class SuggestPartnerShoppingList extends OrgAction
      *
      * @return array<int, float> average quarterly SKO usage per buyer org stock
      */
-    protected function buyerQuarterlyUsage(array $buyerOrgStockIds): array
+    public function buyerQuarterlyUsage(array $buyerOrgStockIds): array
     {
         if (empty($buyerOrgStockIds)) {
             return [];
