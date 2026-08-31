@@ -55,12 +55,20 @@ class StoreWhatsappTemplateDraft extends StoreWhatsappMessageTemplate
             'buttons.*.phone_number' => ['nullable', 'string', 'max:20'],
         ];
     }
+    /**
+     * A name identifies a template, but Meta localises by keeping one name across several
+     * languages — so only name and language together have to be unique. Locking the name
+     * alone would make a second language impossible to write.
+     */
     protected function uniqueName(): Unique
     {
         $current = request()->route('metaMessageTemplate');
 
         return Rule::unique('meta_message_templates', 'name')
-            ->where(fn ($query) => $query->where('shop_id', $this->shop->id)->whereNull('deleted_at'))
+            ->where(fn ($query) => $query
+                ->where('shop_id', $this->shop->id)
+                ->where('language', request('language'))
+                ->whereNull('deleted_at'))
             ->ignore($current instanceof MetaMessageTemplate ? $current->id : null);
     }
 
