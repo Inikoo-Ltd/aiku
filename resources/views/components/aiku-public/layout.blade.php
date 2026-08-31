@@ -184,26 +184,27 @@
         article.post .body aside.wayfinder ul { margin: 0; padding-left: 1.1em; }
         article.post .body aside.wayfinder b { font-weight: 600; }
         article.post .body img { max-width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 8px; }
-        footer.site { position: relative; margin-top: 96px; padding: 40px 0 64px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 14px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+        footer.site { position: relative; margin-top: 96px; padding: 40px 0 64px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
         footer.site a { color: var(--muted); margin-right: 20px; }
+        .footer-license { display: flex; align-items: center; gap: 7px; }
+        .footer-animation-trigger { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 31px; margin: -7px 0; padding: 0; border: 0; background: transparent; color: var(--ink); line-height: 0; cursor: pointer; transition: transform .18s ease; }
+        .footer-animation-trigger:hover { transform: translateY(-1px) scale(1.07); }
+        .footer-animation-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+        .footer-animation-trigger:disabled { cursor: default; opacity: .65; }
+        .footer-animation-trigger .footer-mascot-art { width: 26px; height: 29px; }
         .footer-mascot { --gait-speed: .42s; position: absolute; z-index: 1; top: -45px; left: 0; width: 40px; height: 44px; color: var(--ink); pointer-events: none; opacity: 0; }
-        .footer-mascot svg { display: block; width: 100%; height: 100%; overflow: visible; transform-origin: 50% 88%; }
+        .footer-mascot > .footer-mascot-art { width: 100%; height: 100%; transform-origin: 50% 88%; }
+        .footer-mascot-art, .footer-mascot-art img { display: block; }
+        .footer-mascot-art img { width: 100%; height: 100%; }
         .footer-character { --gait-speed: .42s; }
-        .footer-character [data-limb] { transform-box: fill-box; }
-        .footer-character [data-leg="left"] { transform-origin: 85% 0; animation: aiku-leg-left var(--gait-speed) steps(2, end) infinite; }
-        .footer-character [data-leg="right"] { transform-origin: 15% 0; animation: aiku-leg-right var(--gait-speed) steps(2, end) infinite; }
-        .footer-character [data-arm="left"] { transform-origin: 100% 25%; animation: aiku-arm-left var(--gait-speed) steps(2, end) infinite; }
-        .footer-character [data-arm="right"] { transform-origin: 0 25%; animation: aiku-arm-right var(--gait-speed) steps(2, end) infinite; }
+        .footer-character .footer-mascot-art img { transform-origin: 50% 88%; animation: aiku-character-gait var(--gait-speed) steps(2, end) infinite; }
         .footer-mascot[data-routine="patrol"] { animation: aiku-footer-patrol 18s linear both; }
-        .footer-mascot[data-routine="patrol"] svg { animation: aiku-footer-patrol-stunt 18s ease-in-out both; }
+        .footer-mascot[data-routine="patrol"] > .footer-mascot-art { animation: aiku-footer-patrol-stunt 18s ease-in-out both; }
         .footer-mascot[data-routine="dance"] { left: calc(50% - 20px); --gait-speed: .28s; animation: aiku-footer-appearance 7s ease both; }
-        .footer-mascot[data-routine="dance"] svg { animation: aiku-footer-dance 7s ease-in-out both; }
+        .footer-mascot[data-routine="dance"] > .footer-mascot-art { animation: aiku-footer-dance 7s ease-in-out both; }
         .footer-mascot[data-routine="dash"] { --gait-speed: .2s; animation: aiku-footer-dash 6s cubic-bezier(.3, .05, .65, .95) both; }
-        .footer-mascot[data-routine="dash"] svg { animation: aiku-footer-hop .48s ease-in-out infinite alternate; }
-        @keyframes aiku-leg-left { 0% { transform: rotate(12deg); } 100% { transform: rotate(-16deg) translateY(1px); } }
-        @keyframes aiku-leg-right { 0% { transform: rotate(-16deg) translateY(1px); } 100% { transform: rotate(12deg); } }
-        @keyframes aiku-arm-left { 0% { transform: rotate(-10deg); } 100% { transform: rotate(16deg); } }
-        @keyframes aiku-arm-right { 0% { transform: rotate(16deg); } 100% { transform: rotate(-10deg); } }
+        .footer-mascot[data-routine="dash"] > .footer-mascot-art { animation: aiku-footer-hop .48s ease-in-out infinite alternate; }
+        @keyframes aiku-character-gait { 0% { transform: translateY(0) rotate(-1.5deg); } 100% { transform: translateY(-2px) rotate(1.5deg); } }
         @keyframes aiku-footer-patrol {
             0% { left: 0; opacity: 0; transform: scaleX(1); }
             3% { opacity: 1; }
@@ -241,7 +242,7 @@
         @keyframes aiku-footer-hop { 0% { transform: translateY(0) rotate(-2deg); } 100% { transform: translateY(-4px) rotate(2deg); } }
         .footer-romance { position: absolute; z-index: 1; top: -45px; left: 0; right: 0; height: 44px; pointer-events: none; color: var(--ink); animation: aiku-romance-scene 16s linear both; }
         .footer-romance__partner { position: absolute; bottom: 0; width: 40px; height: 44px; }
-        .footer-romance__partner svg, .footer-romance__kid svg { display: block; width: 100%; height: 100%; overflow: visible; }
+        .footer-romance__partner .footer-mascot-art, .footer-romance__kid .footer-mascot-art { width: 100%; height: 100%; }
         .footer-romance__partner--left { animation: aiku-romance-left 16s ease-in-out both; }
         .footer-romance__partner--right { animation: aiku-romance-right 16s ease-in-out both; }
         .footer-romance__heart { position: absolute; left: calc(50% - 7px); top: -8px; color: #e879a0; font-family: var(--serif); font-size: 20px; line-height: 1; animation: aiku-romance-heart 16s ease-out both; }
@@ -282,9 +283,65 @@
             54%, 66% { left: calc(50% - 16px); opacity: 1; transform: translateY(0) scale(.65); }
             92%, 100% { left: calc(100% + 20px); opacity: 1; transform: translateY(0) scale(.65); }
         }
+        .footer-duel { position: absolute; z-index: 1; top: -45px; left: 0; right: 0; height: 44px; pointer-events: none; color: var(--ink); animation: aiku-duel-scene 13s linear both; }
+        .footer-duel__fighter { position: absolute; bottom: 0; width: 40px; height: 44px; }
+        .footer-duel__fighter .footer-mascot-art { width: 100%; height: 100%; }
+        .footer-duel__fighter--left { animation: aiku-duel-left 13s ease-in-out both; }
+        .footer-duel__fighter--right { animation: aiku-duel-right 13s ease-in-out both; }
+        .footer-duel__fighter--left .footer-mascot-art img { filter: hue-rotate(-20deg) saturate(1.15); }
+        .footer-duel__fighter--right .footer-mascot-art img { filter: hue-rotate(145deg) saturate(1.45); }
+        .footer-duel__bullet { position: absolute; top: 23px; width: 8px; height: 3px; border-radius: 1px; background: #f3c04a; box-shadow: 0 0 7px rgba(243, 192, 74, .9); opacity: 0; }
+        .footer-duel__bullet--left { animation: aiku-duel-bullet-left 13s linear both; }
+        .footer-duel__bullet--right { animation: aiku-duel-bullet-right 13s linear both; }
+        .footer-duel__impact { position: absolute; left: calc(12% + 22px); top: 9px; color: #ef4444; font-size: 20px; line-height: 1; opacity: 0; animation: aiku-duel-impact 13s ease-out both; }
+        @keyframes aiku-duel-scene { 0%, 100% { opacity: 0; } 3%, 96% { opacity: 1; } }
+        @keyframes aiku-duel-left {
+            0% { left: -42px; opacity: 0; transform: scaleX(1); }
+            5% { opacity: 1; }
+            20%, 48% { left: 12%; transform: translate(0, 0) scaleX(1); }
+            52% { left: 12%; transform: translateX(-4px) scaleX(1); }
+            57% { left: 12%; transform: translate(0, 0) scaleX(1); }
+            62% { left: 12%; transform: translateY(-5px) rotate(-20deg) scaleX(1); }
+            70%, 88% { left: 12%; opacity: 1; transform: translate(-7px, 14px) rotate(-90deg) scale(.92); }
+            96%, 100% { left: 12%; opacity: 0; transform: translate(-7px, 14px) rotate(-90deg) scale(.92); }
+        }
+        @keyframes aiku-duel-right {
+            0% { left: calc(100% + 2px); opacity: 0; transform: scaleX(-1); }
+            5% { opacity: 1; }
+            20%, 31% { left: calc(88% - 40px); transform: translateY(0) scaleX(-1); }
+            37%, 43% { left: calc(88% - 40px); transform: translateY(-23px) rotate(-7deg) scaleX(-1); }
+            48% { left: calc(88% - 40px); transform: translateY(0) scaleX(-1); }
+            52% { left: calc(88% - 40px); transform: translateX(4px) scaleX(-1); }
+            58%, 73% { left: calc(88% - 40px); transform: translate(0, 0) scaleX(-1); }
+            78% { left: calc(88% - 40px); transform: translateY(-7px) rotate(-8deg) scaleX(-1); }
+            84%, 96% { left: calc(88% - 40px); opacity: 1; transform: translateY(0) rotate(5deg) scaleX(-1); }
+            100% { left: calc(88% - 40px); opacity: 0; transform: translateY(0) scaleX(-1); }
+        }
+        @keyframes aiku-duel-bullet-left {
+            0%, 25% { left: calc(12% + 31px); opacity: 0; }
+            27% { opacity: 1; }
+            44% { left: calc(88% - 30px); opacity: 1; }
+            45%, 100% { left: calc(88% - 30px); opacity: 0; }
+        }
+        @keyframes aiku-duel-bullet-right {
+            0%, 50% { left: calc(88% - 10px); opacity: 0; }
+            52% { opacity: 1; }
+            62% { left: calc(12% + 30px); opacity: 1; }
+            63%, 100% { left: calc(12% + 30px); opacity: 0; }
+        }
+        @keyframes aiku-duel-impact {
+            0%, 59% { opacity: 0; transform: scale(.2) rotate(0); }
+            62% { opacity: 1; transform: scale(1.35) rotate(35deg); }
+            68%, 100% { opacity: 0; transform: scale(.5) rotate(90deg); }
+        }
+        @media (prefers-color-scheme: dark) {
+            .footer-mascot-art img { filter: invert(.92) hue-rotate(180deg); }
+            .footer-duel__fighter--left .footer-mascot-art img { filter: invert(.92) hue-rotate(160deg) saturate(1.15); }
+            .footer-duel__fighter--right .footer-mascot-art img { filter: invert(.92) hue-rotate(325deg) saturate(1.45); }
+        }
         @media (prefers-reduced-motion: reduce) {
-            .footer-mascot, .footer-romance { display: none !important; }
-            .footer-mascot, .footer-mascot *, .footer-romance, .footer-romance * { animation: none !important; }
+            .footer-mascot, .footer-romance, .footer-duel { display: none !important; }
+            .footer-mascot, .footer-mascot *, .footer-romance, .footer-romance *, .footer-duel, .footer-duel * { animation: none !important; }
         }
         @media (max-width: 640px) {
             body { font-size: 16px; }
@@ -392,6 +449,13 @@
             <span class="footer-romance__kid footer-romance__kid--two footer-character"><x-aiku-public.footer-mascot-svg/></span>
             <span class="footer-romance__kid footer-romance__kid--three footer-character"><x-aiku-public.footer-mascot-svg/></span>
         </span>
+        <span class="footer-duel" data-footer-duel hidden aria-hidden="true">
+            <span class="footer-duel__fighter footer-duel__fighter--left footer-character"><x-aiku-public.footer-mascot-svg/></span>
+            <span class="footer-duel__fighter footer-duel__fighter--right footer-character"><x-aiku-public.footer-mascot-svg/></span>
+            <span class="footer-duel__bullet footer-duel__bullet--left"></span>
+            <span class="footer-duel__bullet footer-duel__bullet--right"></span>
+            <span class="footer-duel__impact">✦</span>
+        </span>
         <div>
             <a href="https://github.com/Inikoo-Ltd/aiku" rel="noopener"><svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
             <a href="{{ route('aiku-public.blog.index') }}">Engineering notes</a>
@@ -400,28 +464,54 @@
             <a href="{{ route('aiku-public.sitemap') }}">Sitemap</a>
             <a href="mailto:hello@aiku.io">hello@aiku.io</a>
         </div>
-        <div>aiku is open source software (<a href="https://github.com/Inikoo-Ltd/aiku/blob/main/LICENSE" rel="noopener" style="margin:0">AGPL-3.0</a>).</div>
+        <div class="footer-license">
+            <button class="footer-animation-trigger" type="button" data-footer-animation-trigger aria-label="Play the next mascot animation" title="Play mascot animation">
+                <x-aiku-public.footer-mascot-svg/>
+            </button>
+            <span>aiku</span>
+            <span>is open source software (<a href="https://github.com/Inikoo-Ltd/aiku/blob/main/LICENSE" rel="noopener" style="margin:0">AGPL-3.0</a>).</span>
+        </div>
     </footer>
 </div>
 
 <script>
     (function () {
         var mascot = document.querySelector('[data-footer-mascot]');
-        if (!mascot || Math.random() >= 0.2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
-
         var romance = document.querySelector('[data-footer-romance]');
-        var routines = ['patrol', 'dance', 'dash', 'romance'];
-        var observer = new IntersectionObserver(function (entries) {
-            if (!entries.some(function (entry) { return entry.isIntersecting; })) return;
-            observer.disconnect();
-            var routine = routines[Math.floor(Math.random() * routines.length)];
-            if (routine === 'romance') {
-                romance.hidden = false;
-            } else {
-                mascot.dataset.routine = routine;
-                mascot.hidden = false;
-            }
-        }, { rootMargin: '120px' });
+        var duel = document.querySelector('[data-footer-duel]');
+        var trigger = document.querySelector('[data-footer-animation-trigger]');
+        if (!mascot || !romance || !duel || !trigger) return;
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            trigger.disabled = true;
+            return;
+        }
+
+        var routines = ['patrol', 'dance', 'dash', 'romance', 'duel'];
+        var routineIndex = 0;
+        var pendingFrame = null;
+
+        trigger.addEventListener('click', function () {
+            mascot.hidden = true;
+            romance.hidden = true;
+            duel.hidden = true;
+            mascot.removeAttribute('data-routine');
+            if (pendingFrame) window.cancelAnimationFrame(pendingFrame);
+
+            var routine = routines[routineIndex % routines.length];
+            routineIndex += 1;
+            pendingFrame = window.requestAnimationFrame(function () {
+                if (routine === 'romance') {
+                    romance.hidden = false;
+                } else if (routine === 'duel') {
+                    duel.hidden = false;
+                } else {
+                    mascot.dataset.routine = routine;
+                    mascot.hidden = false;
+                }
+                pendingFrame = null;
+            });
+        });
 
         mascot.addEventListener('animationend', function (event) {
             if (event.target === mascot) mascot.hidden = true;
@@ -429,7 +519,9 @@
         romance.addEventListener('animationend', function (event) {
             if (event.target === romance) romance.hidden = true;
         });
-        observer.observe(mascot.closest('footer'));
+        duel.addEventListener('animationend', function (event) {
+            if (event.target === duel) duel.hidden = true;
+        });
     })();
 </script>
 
