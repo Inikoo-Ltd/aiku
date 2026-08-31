@@ -12,6 +12,7 @@ use App\Actions\Chat\Whatsapp\Templates\UpdateWhatsappTemplateStatus;
 use App\Models\Catalogue\Shop;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -60,15 +61,22 @@ class HandleWhatsappWebhook
     }
 
     /**
-     * Meta signs the raw body with the app secret. The check is waived only on local
-     * installs that have no secret configured, so replaying payloads by hand keeps working.
+     * Meta signs the raw body with the app secret. Local installs skip the check outright
+     * so payloads can be replayed by hand; everywhere else it is mandatory, and a missing
+     * secret rejects rather than waves the request through.
      */
     protected function hasValidSignature(ActionRequest $request): bool
     {
+        if (app()->environment('local')) {
+            return true;
+        }
+
         $appSecret = $this->webhookSecret($request);
 
         if ($appSecret === '') {
-            return app()->environment('local');
+            Log::warning('WhatsApp webhook rejected: no Meta app secret set for this organisation');
+
+            return false;
         }
 
         $expectedSignature = 'sha256='.hash_hmac('sha256', $request->getContent(), $appSecret);

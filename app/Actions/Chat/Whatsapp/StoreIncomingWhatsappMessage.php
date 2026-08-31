@@ -134,6 +134,7 @@ class StoreIncomingWhatsappMessage
                 'profile_name' => $profileName,
                 'wa_payload'   => $type !== 'text' ? $waNode : null,
                 'wa_context'   => Arr::get($message, 'context'),
+                'wa_errors'    => Arr::get($message, 'errors'),
             ],
         ]);
 
@@ -185,6 +186,12 @@ class StoreIncomingWhatsappMessage
             'interactive' => $this->interactiveText((array) $waNode),
             'location'    => $this->locationText((array) $waNode),
             'contacts'    => $this->contactsText((array) $waNode),
+            // WhatsApp refuses to deliver the content of some types — polls among them —
+            // and sends only their name. Saying so beats an empty bubble the agent cannot
+            // tell apart from a delivery bug.
+            'unsupported' => __('Unsupported message: :type', [
+                'type' => Arr::get($waNode, 'raw_type') ?: Arr::get($waNode, 'type', 'unknown'),
+            ]),
             default       => Arr::get($waNode, 'caption'),
         };
     }

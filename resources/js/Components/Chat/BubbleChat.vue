@@ -3,7 +3,7 @@ import { inject, computed, ref, onMounted, onUnmounted, watch } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faCheckDouble, faExclamationCircle, faLanguage, faRobot, faShieldCheck } from "@far"
-import { faShare, faFaceSmile, faReply } from "@fortawesome/free-solid-svg-icons"
+import { faShare, faFaceSmile, faReply, faLocationDot, faPhone, faCopy, faCircleExclamation } from "@fortawesome/free-solid-svg-icons"
 import axios from "axios"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import Image from "primevue/image"
@@ -13,6 +13,7 @@ import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import AudioPlayer from "@/Components/Chat/AudioPlayer.vue"
 import { formatWhatsappMarkup } from "@/Composables/useWhatsappMarkup"
+import { useCopyText } from "@/Composables/useCopyText"
 
 type SenderType = "guest" | "user" | "agent" | "system"
 type MessageStatus = "sending" | "sent" | "failed"
@@ -337,8 +338,98 @@ const displayText = computed(() => {
 
 const formattedText = computed(() => formatWhatsappMarkup(displayText.value))
 
+const location = computed(() => {
+    if (props.message.metadata?.wa_type !== "location") return null
+
+    const payload = props.message.metadata?.wa_payload
+    const latitude = Number(payload?.latitude)
+    const longitude = Number(payload?.longitude)
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null
+
+    return {
+        latitude,
+        longitude,
+        name: payload?.name || trans("Shared location"),
+        address: payload?.address || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+    }
+})
+
+const sharedContacts = computed(() => {
+    if (props.message.metadata?.wa_type !== "contacts") return []
+
+    const payload = props.message.metadata?.wa_payload
+
+    if (!Array.isArray(payload)) return []
+
+    return payload.map((contact: any, index: number) => {
+        const name = contact?.name?.formatted_name
+            || [contact?.name?.first_name, contact?.name?.last_name].filter(Boolean).join(" ")
+            || trans("Shared contact")
+
+        return {
+            key: `${index}-${name}`,
+            name,
+            initial: name.trim().charAt(0).toUpperCase(),
+            phones: (contact?.phones ?? []).map((phone: any) => ({
+                number: phone?.phone,
+                label: phone?.type,
+            })).filter((phone: any) => !!phone.number),
+        }
+    })
+})
+
+// WhatsApp delivers no content for these, so the bubble states what arrived rather than
+// pretending the customer wrote that sentence.
+const isUnsupportedMessage = computed(() => props.message.metadata?.wa_type === "unsupported")
+
+const MAP = { tile: 256, zoom: 16, width: 240, height: 112 }
+
+/**
+ * Painting the map from raw tiles rather than OpenStreetMap's embed keeps its chrome —
+ * the report link, donation banner and zoom buttons — out of a bubble that has no room
+ * for them, and needs no API key the way a hosted static-map service would.
+ */
+const mapTiles = computed(() => {
+    if (!location.value) return []
+
+    const count = 2 ** MAP.zoom
+    const latitude = (location.value.latitude * Math.PI) / 180
+    const worldX = ((location.value.longitude + 180) / 360) * count * MAP.tile
+    const worldY =
+        ((1 - Math.log(Math.tan(latitude) + 1 / Math.cos(latitude)) / Math.PI) / 2) * count * MAP.tile
+
+    // Offset of the visible box within the world, so the pin lands dead centre.
+    const originX = worldX - MAP.width / 2
+    const originY = worldY - MAP.height / 2
+
+    const tiles = []
+
+    for (let x = Math.floor(originX / MAP.tile); x <= Math.floor((originX + MAP.width - 1) / MAP.tile); x++) {
+        for (let y = Math.floor(originY / MAP.tile); y <= Math.floor((originY + MAP.height - 1) / MAP.tile); y++) {
+            if (y < 0 || y >= count) continue
+
+            tiles.push({
+                key: `${x}-${y}`,
+                src: `https://tile.openstreetmap.org/${MAP.zoom}/${((x % count) + count) % count}/${y}.png`,
+                left: x * MAP.tile - originX,
+                top: y * MAP.tile - originY,
+            })
+        }
+    }
+
+    return tiles
+})
+
+const locationMapsUrl = computed(() =>
+    location.value
+        ? `https://www.google.com/maps/search/?api=1&query=${location.value.latitude},${location.value.longitude}`
+        : ""
+)
+
 const canTranslate = computed(() =>
     props.viewerType === "agent" &&
+    !isUnsupportedMessage.value &&
     (
         props.message.sender_type === "guest" ||
         props.message.sender_type === "user"
@@ -653,6 +744,56 @@ watch(selectedLanguage, async (val) => {
                 <div class="opacity-70 line-clamp-2 break-words">{{ quotedLabel }}</div>
             </div>
 
+            <div v-if="sharedContacts.length" class="mb-1 flex w-[240px] max-w-full flex-col gap-1.5">
+                <div v-for="contact in sharedContacts" :key="contact.key"
+                    class="rounded-lg border border-black/10 bg-white px-2.5 py-2">
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-200 text-[11px] font-semibold text-gray-600">
+                            {{ contact.initial }}
+                        </span>
+                        <span class="min-w-0 truncate text-xs font-semibold text-gray-800">{{ contact.name }}</span>
+                    </div>
+
+                    <div v-for="phone in contact.phones" :key="phone.number"
+                        class="mt-1.5 flex items-center gap-2 border-t border-gray-100 pt-1.5">
+                        <FontAwesomeIcon :icon="faPhone" class="text-[10px] text-gray-400" />
+                        <div class="min-w-0 flex-1">
+                            <div class="truncate text-[11px] text-gray-700">{{ phone.number }}</div>
+                            <div v-if="phone.label" class="text-[10px] text-gray-400">{{ phone.label }}</div>
+                        </div>
+                        <button type="button" v-tooltip.top="trans('Copy number')" @click="useCopyText(phone.number)"
+                            class="shrink-0 rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600">
+                            <FontAwesomeIcon :icon="faCopy" class="text-[10px]" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <a v-if="location" :href="locationMapsUrl" target="_blank" rel="noopener noreferrer"
+                class="mb-1 block w-[240px] max-w-full overflow-hidden rounded-lg border border-black/10 bg-white transition hover:border-black/25">
+                <div class="relative h-28 overflow-hidden bg-gray-100">
+                    <img v-for="tile in mapTiles" :key="tile.key" :src="tile.src" alt="" loading="lazy"
+                        class="absolute max-w-none"
+                        :style="{ left: `${tile.left}px`, top: `${tile.top}px`, width: '256px', height: '256px' }" />
+
+                    <FontAwesomeIcon :icon="faLocationDot"
+                        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full text-xl text-red-500 drop-shadow" />
+
+                    <span class="absolute bottom-0 right-0 bg-white/75 px-1 text-[9px] leading-tight text-gray-500">
+                        © OpenStreetMap
+                    </span>
+                </div>
+
+                <div class="flex items-start gap-1.5 px-2.5 py-2">
+                    <FontAwesomeIcon :icon="faLocationDot" class="mt-0.5 text-[11px] text-red-500" />
+                    <div class="min-w-0">
+                        <div class="truncate text-xs font-semibold text-gray-800">{{ location.name }}</div>
+                        <div class="text-[11px] leading-snug text-gray-500">{{ location.address }}</div>
+                    </div>
+                </div>
+            </a>
+
             <AudioPlayer v-if="isAudio && audioUrl" :src="audioUrl"
                 :is-voice="!!message.metadata?.wa_payload?.voice" :label="audioLabel"
                 :download-url="message.download_route?.url" />
@@ -702,14 +843,20 @@ watch(selectedLanguage, async (val) => {
                 </button>
             </div>
 
-            <p v-if="!isEditingMessage && formatMarkup" class="whitespace-pre-wrap break-words"
+            <div v-if="isUnsupportedMessage"
+                class="inline-flex w-fit items-center gap-1.5 text-[11px] italic opacity-60">
+                <FontAwesomeIcon :icon="faCircleExclamation" class="text-[10px]" />
+                <span>{{ displayText || trans("Unsupported message") }}</span>
+            </div>
+
+            <p v-else-if="!isEditingMessage && !location && !sharedContacts.length && formatMarkup" class="whitespace-pre-wrap break-words"
                 v-html="formattedText" />
 
-            <p v-else-if="!isEditingMessage" class="whitespace-pre-wrap break-words">
+            <p v-else-if="!isEditingMessage && !location && !sharedContacts.length" class="whitespace-pre-wrap break-words">
                 {{ displayText }}
             </p>
 
-            <div v-else class="flex flex-col gap-1.5 min-w-[220px]">
+            <div v-else-if="isEditingMessage" class="flex flex-col gap-1.5 min-w-[220px]">
                 <textarea v-model="editText" rows="2"
                     class="w-full text-sm rounded-md border border-gray-300 px-2 py-1.5 text-gray-800 bg-white focus:outline-none focus:ring-1 resize-y"
                     @keydown.enter.exact.prevent="saveEditMessage" @keydown.esc="cancelEditMessage" />
