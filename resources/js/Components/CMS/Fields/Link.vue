@@ -1,10 +1,17 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed, inject, ref, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
 import RadioButton from "primevue/radiobutton"
 import PureInput from "@/Components/Pure/PureInput.vue"
+import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import SelectQuery from "@/Components/SelectQuery.vue"
 import { isPlainObject, set } from 'lodash-es'
+import type { ComputedRef } from "vue"
+
+export interface RevealBlockOption {
+	key: string
+	label: string
+}
 
 const props = withDefaults(defineProps<{
 	modelValue?: {
@@ -39,11 +46,23 @@ const localModel = computed({
 	}
 })
 
-const options = [
+const revealBlockOptions = inject<ComputedRef<RevealBlockOption[]> | null>('revealBlockOptions', null)
+
+const canLinkToRevealBlock = computed(() => !!revealBlockOptions)
+
+const revealOptions = computed(() =>
+	(revealBlockOptions?.value ?? []).map(option => ({
+		label: `${option.label} (#${option.key})`,
+		value: `#${option.key}`,
+	}))
+)
+
+const options = computed(() => [
 	{ label: "Internal", value: "internal" },
 	{ label: "External", value: "external" },
+	...(canLinkToRevealBlock.value ? [{ label: "Reveal Block", value: "reveal" }] : []),
 	{ label: "No Link", value: "none" },
-]
+])
 
 const isCleared = ref(props.modelValue === null)
 
@@ -165,6 +184,17 @@ const cleanCanonicalPath = (url) => {
 					set(localModel, 'href', e)
 					emit('update:modelValue', localModel)
 				}" clear />
+			<template v-if="localModel?.type == 'reveal'">
+				<PureMultiselect v-if="revealOptions.length" :modelValue="localModel.href" :options="revealOptions"
+					:placeholder="trans('Select a block')" @update:modelValue="(e: string) => {
+						set(localModel, 'href', e)
+						emit('update:modelValue', localModel)
+					}" />
+				<div v-else class="text-xs text-gray-500">
+					{{ trans('Mark a block as "Reveal on click" first, then it can be selected here.') }}
+				</div>
+			</template>
+
 			<SelectQuery v-if="localModel?.type == 'internal'" :object="true" fieldName="data" :value="localModel"
 				:closeOnSelect="true" :searchable="true" label="path" :canClear="true" :clearOnSearch="true" :onChange="(e) => {
 					set(localModel, 'url', e?.url)

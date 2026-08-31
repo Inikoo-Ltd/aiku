@@ -1,8 +1,15 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import Image from "@common/Components/Image.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faChevronCircleLeft, faChevronCircleRight } from '@far'
+
+import { Swiper, SwiperSlide } from 'swiper/vue'
+import { Navigation, Pagination } from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/navigation'
+import 'swiper/css/pagination'
 
 const props = withDefaults(defineProps<{
   products: any[]
@@ -24,7 +31,10 @@ const columns = computed(() => {
   }[props.screenType] ?? 5
 })
 
-const visibleProducts = computed(() => (props.products ?? []).slice(0, columns.value))
+const allProducts = computed(() => props.products ?? [])
+
+const prevEl = ref(null)
+const nextEl = ref(null)
 
 const getImage = (product: any) => {
   return product?.web_images?.main?.gallery ?? product?.web_images?.main?.original ?? null
@@ -32,35 +42,87 @@ const getImage = (product: any) => {
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-[1400px] px-4 py-6 2xl:max-w-[1700px] 2xl:px-10 2xl:py-8">
-    <div class="grid gap-x-6 gap-y-8 2xl:gap-x-10 2xl:gap-y-10" :style="{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }">
-      <component
-        :is="product.url ? LinkIris : 'div'"
-        v-for="product in visibleProducts"
-        :key="product.id ?? product.slug"
-        :href="product.url"
-        type="internal"
-        class="group flex flex-col items-center text-center"
-      >
-        <div class="relative w-full max-w-[180px] aspect-square overflow-hidden bg-white 2xl:max-w-[240px]">
-          <Image
-            v-if="getImage(product)"
-            :src="getImage(product)"
-            :alt="product.name"
-            class="absolute inset-0 w-full h-full"
-            :style="{ objectFit: 'contain', objectPosition: 'center' }"
-          />
-          <FontAwesomeIcon
-            v-else
-            icon="fal fa-image"
-            class="opacity-20 text-3xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 2xl:text-5xl"
-          />
-        </div>
+  <div class="relative mx-auto w-full max-w-[1400px] px-4 py-6 2xl:max-w-[1700px] 2xl:px-10 2xl:py-8">
+    <button ref="prevEl" class="swiper-nav-button hidden lg:block left-0">
+      <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-lg" />
+    </button>
 
-        <div class="mt-3 max-w-[180px] text-sm leading-tight text-[#1d2d44] group-hover:text-gray-500 2xl:mt-4 2xl:max-w-[240px] 2xl:text-base">
-          {{ product.name }}
-        </div>
-      </component>
-    </div>
+    <button ref="nextEl" class="swiper-nav-button hidden lg:block right-0">
+      <FontAwesomeIcon :icon="faChevronCircleRight" class="text-lg" />
+    </button>
+
+    <Swiper
+      :modules="[Navigation, Pagination]"
+      :slides-per-view="columns"
+      :space-between="24"
+      :navigation="{ prevEl, nextEl }"
+      :pagination="{ clickable: true, dynamicBullets: true }"
+      :loop="false"
+      :autoHeight="false"
+    >
+      <SwiperSlide v-for="product in allProducts" :key="product.id ?? product.slug" class="!h-auto">
+        <component
+          :is="product.url ? LinkIris : 'div'"
+          :href="product.url"
+          type="internal"
+          class="group flex h-full flex-col items-center text-center"
+        >
+          <div class="relative w-[180px] h-[180px] shrink-0 overflow-hidden bg-white 2xl:w-[240px] 2xl:h-[240px]">
+            <Image
+              v-if="getImage(product)"
+              :src="getImage(product)"
+              :alt="product.name"
+              class="absolute inset-0 w-full h-full flex items-center justify-center"
+              :style="{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }"
+            />
+            <FontAwesomeIcon
+              v-else
+              icon="fal fa-image"
+              class="opacity-20 text-3xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 2xl:text-5xl"
+            />
+          </div>
+
+          <div class="mt-3 w-[180px] text-sm leading-tight text-[#1d2d44] group-hover:text-gray-500 2xl:mt-4 2xl:w-[240px] 2xl:text-base">
+            {{ product.name }}
+          </div>
+        </component>
+      </SwiperSlide>
+    </Swiper>
   </div>
 </template>
+
+<style scoped>
+.swiper-nav-button {
+  @apply absolute top-1/2 transform -translate-y-1/2 z-10;
+}
+
+.swiper-nav-button svg {
+  @apply text-gray-700 w-4 h-4;
+}
+
+:deep(.swiper-slide) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center;
+}
+
+:deep(.swiper-pagination) {
+  position: relative;
+  bottom: auto;
+  margin-top: 1.5rem;
+  display: none;
+}
+
+:deep(.swiper-pagination.swiper-pagination-lock) {
+  display: none;
+}
+
+:deep(.swiper-pagination-bullet) {
+  background-color: #cbd5e1;
+  opacity: 1;
+}
+
+:deep(.swiper-pagination-bullet-active) {
+  background-color: #1d2d44;
+}
+</style>
