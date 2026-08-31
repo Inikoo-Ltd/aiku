@@ -3,6 +3,7 @@ title: Ordering from a partner organisation
 summary: Why trade between sister organisations uses a shopping list instead of purchase orders, and how the whole loop works from listed need to booked-in stock.
 date: 2026-08-31
 tags: procurement, warehouse, intercompany
+help_routes: grp.org.procurement.org_partners
 series: Ordering from partners
 order: 1
 ---

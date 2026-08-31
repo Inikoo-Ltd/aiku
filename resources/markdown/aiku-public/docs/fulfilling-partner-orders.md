@@ -3,6 +3,7 @@ title: Fulfilling partner orders
 summary: The seller's guide - cherry-pick what you can ship from partner shopping lists, send it to your warehouse, and let the paperwork follow on its own.
 date: 2026-08-31
 tags: procurement, intercompany, dispatch
+help_routes: grp.org.procurement.org_partners.shipping_list
 series: Ordering from partners
 order: 3
 ---
@@ -13,12 +14,12 @@ For the people who <em>ship</em> to sister organisations. Partners list what the
 
 ## The shipping list
 
-**Procurement → Partners → Shipping list** shows every open line from every partner's [shopping list](/docs/buying-from-a-partner), with who wants it, how much, the priority they set and when they need it by. Nothing here is a commitment until you make it one.
+**Procurement → Partners → Shipping list** shows every open line from every partner's [shopping list](/docs/buying-from-a-partner), with who wants it, how much and the priority they set. Nothing here is a commitment until you make it one.
 
 - Tick the lines you can ship. Adjust the quantity for a **partial pick** — the remainder stays open for a later shipment, nothing is lost.
 - **Pick into order** gathers your ticks into a pending shipment per buying organisation. You can keep adding to it over the day; it stays open until you send it.
 
-Urgent lines deserve a look first: sort by priority or needed-by, that is what the buyer set them for.
+Urgent lines deserve a look first: sort by priority, that is what the buyer set it for.
 
 ## Send to warehouse
 

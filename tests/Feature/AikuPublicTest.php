@@ -251,3 +251,22 @@ test('docs index and article render with layout nav', function () {
 
     get($this->host.'/docs/does-not-exist')->assertNotFound();
 });
+
+test('docs index shows the clickable module map', function () {
+    get($this->host.'/docs')->assertOk()
+        ->assertSee('Map of aiku modules', false)
+        ->assertSee(route('aiku-public.docs.index', ['tag' => 'procurement']), false)
+        ->assertSee('soon', false);
+
+    get($this->host.'/docs?tag=procurement')->assertOk()
+        ->assertSee('docsmap-mini', false)
+        ->assertDontSee('docsmap"', false);
+});
+
+test('helpFor matches grp routes to docs by longest prefix', function () {
+    expect(BlogPosts::helpFor('grp.org.procurement.org_partners.show.shopping.dashboard')['title'])->toBe('Buying from a partner')
+        ->and(BlogPosts::helpFor('grp.org.procurement.org_partners.index')['title'])->toBe('Ordering from a partner organisation')
+        ->and(BlogPosts::helpFor('grp.org.shops.show.chat.dashboard')['url'])->toContain('/docs/customer-chat')
+        ->and(BlogPosts::helpFor('grp.dashboard.show'))->toBeNull()
+        ->and(BlogPosts::helpFor(null))->toBeNull();
+});

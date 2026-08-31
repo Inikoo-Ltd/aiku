@@ -35,6 +35,24 @@ class BlogPosts
         return $post && $post['date']->isFuture() ? null : $post;
     }
 
+    public static function helpFor(?string $routeName): ?array
+    {
+        if (!$routeName) {
+            return null;
+        }
+
+        $match = self::all('docs')
+            ->flatMap(fn (array $doc) => collect($doc['help_routes'])->map(fn (string $prefix) => ['prefix' => $prefix, 'doc' => $doc]))
+            ->filter(fn (array $candidate) => str_starts_with($routeName, $candidate['prefix']))
+            ->sortByDesc(fn (array $candidate) => strlen($candidate['prefix']))
+            ->first();
+
+        return $match ? [
+            'title' => $match['doc']['title'],
+            'url' => 'https://'.config('app.domain').'/docs/'.$match['doc']['slug'],
+        ] : null;
+    }
+
     private static function parse(string $path): array
     {
         $raw = file_get_contents($path);
@@ -52,6 +70,7 @@ class BlogPosts
             'summary' => $meta['summary'],
             'date' => Carbon::parse($meta['date']),
             'tags' => array_map('trim', explode(',', $meta['tags'] ?? '')),
+            'help_routes' => array_values(array_filter(array_map('trim', explode(',', $meta['help_routes'] ?? '')))),
             'series' => $meta['series'] ?? null,
             'series_order' => (int) ($meta['order'] ?? 0),
             'body' => $matches[2],
