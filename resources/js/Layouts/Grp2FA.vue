@@ -11,8 +11,8 @@ import { usePage } from '@inertiajs/vue3'
 import { loadLanguageAsync } from 'laravel-vue-i18n'
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 import { watercolourBackground } from "@/Composables/useWatercolourBackground"
-import { dailyLine } from "@/Composables/useDailyLine"
 import { Head } from "@inertiajs/vue3"
+import AuthQuote from "@/Components/Auth/AuthQuote.vue"
 
 provide('layout', useLayoutStore())
 
@@ -34,9 +34,7 @@ console.log('environment:', useLayoutStore().app.environment)
     <div :style="{'background-image': watercolourBackground(), 'background-size': 'cover', 'background-position': 'center'}"
           class="relative min-h-[100dvh] w-screen flex items-center justify-center bg-[#fbf7ee] sm:px-6 lg:px-8">
         <Head><link rel="stylesheet" href="https://fonts.bunny.net/css?family=caveat:400&display=swap" /></Head>
-        <div class="absolute top-9 right-10 max-w-xs text-right select-none hidden sm:block" style="font-family: Caveat, 'Segoe Print', 'Bradley Hand', cursive" aria-hidden="true">
-            <span class="text-2xl leading-tight text-[#1c1b22]/70">{{ dailyLine() }}</span>
-        </div>
+        <AuthQuote />
         <a :href="publicSiteUrl" class="absolute top-8 left-10 flex items-center gap-x-3 select-none hover:opacity-80" title="About aiku">
             <img class="h-14 w-auto" src="/art/invader-sketch.svg" alt="aiku" />
             <span style="font-family: Georgia, 'Times New Roman', serif" class="text-4xl font-semibold text-[#1c1b22] leading-none tracking-tight">aiku</span>
