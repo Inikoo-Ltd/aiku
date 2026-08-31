@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Inventory\OrgStockMovement;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
+use App\Actions\Traits\WithStockHistoryArchiveWrite;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\OrgStock;
@@ -25,6 +26,7 @@ class RecalculateOrgStockHistoriesPostCostFix
 {
     use AsAction;
     use CalculatesOrgStockHistories;
+    use WithStockHistoryArchiveWrite;
 
     public string $jobQueue = 'sales_slave_historic';
 
@@ -107,12 +109,11 @@ class RecalculateOrgStockHistoriesPostCostFix
             ->orderBy('date')
             ->get()->all();
 
-        $histories = DB::connection('aiku_no_sticky')->table('org_stock_histories')
-            ->select(['id', 'date', 'quantity_in_locations', 'org_stock_lpp_value', 'grp_stock_lpp_value'])
-            ->where('org_stock_id', $orgStock->id)
-            ->where('date', '>=', $wacStartDate->format('Y-m-d'))
-            ->orderBy('date')
-            ->get();
+        $histories = $this->stockHistoriesAcrossArchive(
+            $orgStock->id,
+            $wacStartDate->format('Y-m-d'),
+            ['id', 'date', 'quantity_in_locations', 'org_stock_lpp_value', 'grp_stock_lpp_value']
+        );
 
         $auditCutoff   = Carbon::parse(self::LPP_AUDIT_CUTOFF);
         $movementIndex = 0;
@@ -160,8 +161,8 @@ class RecalculateOrgStockHistoriesPostCostFix
                 $locationUpdateData['grp_stock_lpp_value'] = DB::raw("quantity_in_locations * $lppPerSku * $exchangeRate");
             }
 
-            DB::table('org_stock_histories')->where('id', $history->id)->update($updateData);
-            DB::table('location_org_stock_histories')->where('org_stock_history_id', $history->id)->update($locationUpdateData);
+            DB::connection($history->write_connection)->table('org_stock_histories')->where('id', $history->id)->update($updateData);
+            DB::connection($history->write_connection)->table('location_org_stock_histories')->where('org_stock_history_id', $history->id)->update($locationUpdateData);
         }
     }
 

@@ -75,6 +75,16 @@ class PackPickingSessionItemByScan extends OrgAction
         }
 
         if ($matchedItems->isEmpty()) {
+            if ($this->dropshippingMatches($sessionItems, $scanned)->isNotEmpty()) {
+                return $this->outcome(
+                    $pickingSession,
+                    'not_scannable',
+                    __('Dropshipping orders are packed by hand, not by scanner'),
+                    $scanned,
+                    knownItems: $sessionItems
+                );
+            }
+
             return $this->outcome(
                 $pickingSession,
                 'not_found',
@@ -183,9 +193,7 @@ class PackPickingSessionItemByScan extends OrgAction
      */
     protected function hasWaitingItems(DeliveryNote $deliveryNote, Collection $sessionItems): bool
     {
-        return $sessionItems
-            ->where('delivery_note_id', $deliveryNote->id)
-            ->contains(fn (DeliveryNoteItem $item) => $item->has_waiting_warehouse || $item->has_waiting_crm);
+        return $deliveryNote->hasBlockingItems();
     }
 
     /**
@@ -295,7 +303,6 @@ class PackPickingSessionItemByScan extends OrgAction
     ): array {
         $deliveryNote = $deliveryNoteItem?->deliveryNote;
         $row          = null;
-        $warning      = null;
 
         if ($deliveryNoteItem && $status === 'packed') {
             $rowId = $tab == PickingSessionTabsEnum::GROUPED->value
@@ -303,14 +310,11 @@ class PackPickingSessionItemByScan extends OrgAction
                 : $deliveryNoteItem->id;
 
             $row = FetchPickingSessionItemRow::run($pickingSession, $tab, $rowId)?->toArray(request());
-
-            $warning = $this->scanKindWarning($deliveryNoteItem, $this->matchedKind($deliveryNoteItem, $scanned));
         }
 
         return [
             'status'                => $status,
             'message'               => $message,
-            'warning'               => $warning,
             'scanned'               => $scanned,
             'item'                  => $deliveryNoteItem ? [
                 'id'               => $deliveryNoteItem->id,

@@ -709,33 +709,39 @@ test('UI edit outbox in fulfilment', function () {
     });
 });
 
-test('UI create mailshot', function () {
-    $this->withoutExceptionHandling();
-    $response = $this->get(route('grp.org.shops.show.marketing.mailshots.create', [
-        $this->organisation,
-        $this->shop
-    ]));
-
-
+test('one-click create mailshot redirects to recipients', function () {
     $outbox = $this->shop->outboxes()->where('outboxes.code', OutboxCodeEnum::MARKETING)->first();
 
-    $response->assertInertia(function (AssertableInertia $page) use ($outbox) {
-        $page
-            ->component('CreateModel')
-            ->has('title')
-            ->has(
-                'formData',
-                fn (AssertableInertia $page) => $page
-                    ->where('route', [
-                        'name'       => 'grp.models.outbox.mailshot.store',
-                        'parameters' => [
-                            'outbox' => $outbox->id
-                        ]
-                    ])
-                    ->etc()
-            )
-            ->has('breadcrumbs');
-    });
+    $response = $this->post(route('grp.models.outbox.mailshot.store', [$outbox->id]));
+
+    $mailshot = Mailshot::where('outbox_id', $outbox->id)->latest('id')->first();
+    expect($mailshot)->not->toBeNull()
+        ->and($mailshot->type)->toBe(MailshotTypeEnum::MARKETING)
+        ->and($mailshot->subject)->not->toBeEmpty()
+        ->and($mailshot->recipients_recipe)->toBe(['all_customers' => ['value' => true]]);
+
+    $response->assertRedirect(route('grp.org.shops.show.marketing.mailshots.recipients', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $mailshot->slug
+    ]));
+});
+
+test('one-click create prospect mailshot redirects to recipients', function () {
+    $response = $this->post(route('grp.models.shop.prospect.mailshot.store', [$this->shop->id]));
+
+    $outbox   = $this->shop->outboxes()->where('outboxes.code', OutboxCodeEnum::INVITE)->first();
+    $mailshot = Mailshot::where('outbox_id', $outbox->id)->latest('id')->first();
+    expect($mailshot)->not->toBeNull()
+        ->and($mailshot->type)->toBe(MailshotTypeEnum::INVITE)
+        ->and($mailshot->subject)->not->toBeEmpty()
+        ->and($mailshot->recipients_recipe)->toBe(['all_prospects' => ['value' => true]]);
+
+    $response->assertRedirect(route('grp.org.shops.show.crm.prospects.mailshots.recipients', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $mailshot->slug
+    ]));
 });
 
 test('UI edit mailshot', function (Mailshot $mailShot) {
@@ -820,6 +826,13 @@ test('outbox hydrate', function () {
 
 test('email bulk runs', function () {
     $emailBulkRun = EmailBulkRun::first();
+    if (!$emailBulkRun) {
+        $outbox       = createOutboxDirectly($this->shop, OutboxCode::PRICE_CHANGE_NOTIFICATION);
+        $emailBulkRun = StoreEmailBulkRun::make()->action($outbox->emailOngoingRun, [
+            'subject' => 'Bulk run hydrate',
+            'state'   => \App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum::SENDING,
+        ], strict: false);
+    }
     HydrateEmailBulkRuns::run($emailBulkRun);
     $this->artisan('hydrate:email_bulk_runs --ids '.$emailBulkRun->id)->assertExitCode(0);
 });
@@ -1849,19 +1862,21 @@ test('UI create mailshot template', function () {
     });
 });
 
-test('UI create newsletter', function () {
-    $response = $this->get(route('grp.org.shops.show.marketing.newsletters.create', [$this->organisation, $this->shop]));
+test('one-click create newsletter redirects to workshop', function () {
+    $outbox = $this->shop->outboxes()->where('type', OutboxCodeEnum::NEWSLETTER)->first();
 
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page->component('CreateModel')
-            ->has('title')
-            ->has(
-                'pageHead',
-                fn (AssertableInertia $page) => $page->where('title', 'New newsletter')->etc()
-            )
-            ->has('formData')
-            ->has('breadcrumbs');
-    });
+    $response = $this->post(route('grp.models.outbox.mailshot.store', [$outbox->id]));
+
+    $mailshot = Mailshot::where('outbox_id', $outbox->id)->latest('id')->first();
+    expect($mailshot)->not->toBeNull()
+        ->and($mailshot->type)->toBe(MailshotTypeEnum::NEWSLETTER)
+        ->and($mailshot->subject)->not->toBeEmpty();
+
+    $response->assertRedirect(route('grp.org.shops.show.marketing.newsletters.workshop', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $mailshot->slug
+    ]));
 });
 
 test('UI index mailshot templates', function () {
@@ -3621,6 +3636,22 @@ describe('email retention', function () {
         );
     });
 
+    test('archiver exits cleanly when nothing is older than the retention window', function () {
+        config()->set(
+            'database.connections.archive',
+            array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'archive'])
+        );
+        DB::purge('archive');
+        DB::statement('create schema if not exists archive');
+        DB::table('dispatched_emails')->where('created_at', '<', now()->subDays(config('archive.email_retention_days')))->delete();
+
+        $this->artisan('comms:archive_dispatched_emails')
+            ->expectsOutputToContain('Nothing older than')
+            ->assertSuccessful();
+
+        expect(DB::selectOne('select count(*) as n from pg_locks where locktype = ? and pid = pg_backend_pid()', ['advisory'])->n)->toBe(0);
+    });
+
     test('archiver reconciles archive tables when the live schema has moved on', function () {
         config()->set(
             'database.connections.archive',
@@ -3717,5 +3748,24 @@ describe('email retention', function () {
 
         expect($wouldArchive)->toBeGreaterThanOrEqual(1)
             ->and(DB::table('dispatched_emails')->where('id', $emailId)->exists())->toBeTrue();
+    });
+});
+
+describe('mailshot template gallery previews', function () {
+    test('the layout endpoint returns compiled html only when asked for a preview', function () {
+        $template = EmailTemplate::where('builder', EmailTemplateBuilderEnum::BEEFREE->value)->first()
+            ?? EmailTemplate::first();
+
+        $template->update(['compiled_layout' => '<html><body>Preview me</body></html>']);
+
+        $layout = \App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout::make()
+            ->asController($template, new \Lorisleiva\Actions\ActionRequest());
+
+        expect($layout)->toBe($template->layout);
+
+        $preview = \App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout::make()
+            ->asController($template, \Lorisleiva\Actions\ActionRequest::create('/', 'GET', ['preview' => 1]));
+
+        expect($preview)->toBe(['html' => '<html><body>Preview me</body></html>']);
     });
 });

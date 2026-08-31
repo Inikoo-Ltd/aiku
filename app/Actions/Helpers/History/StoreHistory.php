@@ -13,10 +13,10 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\History;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Validation\Rule;
-use OwenIt\Auditing\Resolvers\IpAddressResolver;
 use OwenIt\Auditing\Resolvers\UrlResolver;
-use OwenIt\Auditing\Resolvers\UserAgentResolver;
 
 class StoreHistory extends OrgAction
 {
@@ -28,9 +28,9 @@ class StoreHistory extends OrgAction
         data_set($modelData, 'customer_id', $auditable instanceof Customer ? $auditable->id : $auditable->customer_id);
         data_set($modelData, 'auditable_type', class_basename($auditable));
         data_set($modelData, 'auditable_id', $auditable->id);
-        data_set($modelData, 'url', UrlResolver::resolve($auditable));
-        data_set($modelData, 'ip_address', IpAddressResolver::resolve($auditable));
-        data_set($modelData, 'user_agent', UserAgentResolver::resolve($auditable));
+        data_set($modelData, 'url', App::runningInConsole() ? UrlResolver::resolveCommandLine() : Request::fullUrl());
+        data_set($modelData, 'ip_address', Request::ip());
+        data_set($modelData, 'user_agent', Request::header('User-Agent', ''));
 
         /** @var History $history */
         $history = History::create($modelData);

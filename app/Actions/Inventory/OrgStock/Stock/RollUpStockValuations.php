@@ -8,15 +8,25 @@
 
 namespace App\Actions\Inventory\OrgStock\Stock;
 
+use App\Actions\Traits\WithStockHistoryArchiveWrite;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
+/**
+ * The organisation totals are summed from the per SKU rows, which for days beyond the retention
+ * window live in the archive. A day is never split across the two databases, so each organisation
+ * day is summed wholly on one side: the operational days keep the single UPDATE ... FROM they
+ * always had, and the archived days are aggregated remotely and written back onto the same
+ * (never archived) organisation_stock_histories rows. The group statement then reads those and
+ * needs no archive awareness at all.
+ */
 class RollUpStockValuations
 {
     use AsAction;
+    use WithStockHistoryArchiveWrite;
 
     public function handle(Organisation $organisation): void
     {
@@ -34,6 +44,8 @@ class RollUpStockValuations
             WHERE agg.organisation_stock_history_id = osh.id
         ', [$organisation->id, $wacStartDate]);
 
+        $this->rollUpArchivedDays($organisation, $wacStartDate);
+
         DB::statement('
             UPDATE group_stock_histories AS gsh
             SET grp_stock_wac_value = agg.grp_wac, grp_stock_fifo_value = agg.grp_fifo
@@ -45,6 +57,34 @@ class RollUpStockValuations
             ) AS agg
             WHERE agg.group_stock_history_id = gsh.id
         ', [$organisation->group_id, $wacStartDate]);
+    }
+
+    private function rollUpArchivedDays(Organisation $organisation, string $wacStartDate): void
+    {
+        $archiveConnection = $this->stockHistoryWriteConnection();
+
+        if (!$archiveConnection) {
+            return;
+        }
+
+        $aggregates = DB::connection($archiveConnection)->table('org_stock_histories')
+            ->selectRaw('organisation_stock_history_id, sum(org_stock_wac_value) AS org_wac, sum(grp_stock_wac_value) AS grp_wac, sum(org_stock_fifo_value) AS org_fifo, sum(grp_stock_fifo_value) AS grp_fifo')
+            ->where('organisation_id', $organisation->id)
+            ->where('date', '>=', $wacStartDate)
+            ->whereNotNull('organisation_stock_history_id')
+            ->groupBy('organisation_stock_history_id')
+            ->get();
+
+        foreach ($aggregates as $aggregate) {
+            DB::table('organisation_stock_histories')
+                ->where('id', $aggregate->organisation_stock_history_id)
+                ->update([
+                    'org_stock_wac_value'  => $aggregate->org_wac,
+                    'grp_stock_wac_value'  => $aggregate->grp_wac,
+                    'org_stock_fifo_value' => $aggregate->org_fifo,
+                    'grp_stock_fifo_value' => $aggregate->grp_fifo,
+                ]);
+        }
     }
 
     public function getCommandSignature(): string

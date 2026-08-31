@@ -120,12 +120,6 @@ class Portfolio extends Model implements Auditable
         'reference',
         'type',
         'status',
-        'last_added_at',
-        'removed_at',
-        'has_valid_platform_product_id',
-        'exist_in_platform',
-        'platform_status',
-        'number_platform_possible_matches',
         'sku'
     ];
 

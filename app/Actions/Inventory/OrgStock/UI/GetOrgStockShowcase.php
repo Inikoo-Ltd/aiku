@@ -56,16 +56,6 @@ class GetOrgStockShowcase
                     ],
                     'method'     => 'patch',
                 ],
-                'can_edit_unit_barcode' => request()->user()?->authTo("supervisor-stocks.{$warehouse->id}") ?? false,
-                'unit_barcode_update_route' => [
-                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.update_unit_barcode',
-                    'parameters' => [
-                        'organisation' => $warehouse->organisation->slug,
-                        'warehouse'    => $warehouse->slug,
-                        'orgStock'     => $orgStock->slug,
-                    ],
-                    'method'     => 'patch',
-                ],
                 'label_route'        => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stocks.label',
                     'parameters' => [

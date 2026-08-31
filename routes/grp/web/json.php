@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Inventory\LocationOrgStock\HandleLowStockAuditLock;
 use App\Actions\Accounting\OrgPaymentServiceProvider\Json\GetOrgPaymentServiceProviders;
 use App\Actions\Catalogue\Product\Json\GetProductsIncludingNotForSaleInShop;
 use App\Actions\Dispatching\BatchCode\Json\GetBatchCodes;
@@ -37,11 +38,14 @@ use App\Actions\Catalogue\ProductCategory\Json\GetDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamilies;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesComparisonDetail;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesForComparisonOption;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInDepartmentInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamilyDescriptionDataInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategories;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryFamilies;
@@ -56,6 +60,7 @@ use App\Actions\Comms\EmailCopy\GetEmailCopy;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\Comms\Mailshot\GetMailshotTemplate;
+use App\Actions\Comms\Mailshot\SuggestMailshotCopy;
 use App\Actions\Comms\OutboxHasSubscribers\Json\GetOutboxUsers;
 use App\Actions\CRM\Customer\UI\GetProductsForPortfolioSelect;
 use App\Actions\Dashboard\GetMasterShopsSalesCustomDates;
@@ -63,6 +68,7 @@ use App\Actions\Dispatching\DeliveryNote\Json\GetDeliveryNoteValidForReturn;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments;
 use App\Actions\Dispatching\PickingSession\Json\GetDeliveryNotesForPickingSession;
+use App\Actions\Fulfilment\PalletReturnItem\PickPalletReturnItemByScan;
 use App\Actions\Fulfilment\PickingSession\Json\GetPalletReturnsForPickingSession;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchSingleDeliveryNoteItem;
 use App\Actions\Dispatching\DeliveryNote\SetScanToPickDeliveryNote;
@@ -81,6 +87,7 @@ use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
 use App\Actions\Dispatching\Trolley\Json\ListAvailableTrolleys;
 use App\Actions\Dispatching\Trolley\Json\ListUnavailableTrolleys;
+use App\Actions\Catalogue\Shop\External\Faire\Json\GetFaireSkippedBadge;
 use App\Actions\Dispatching\WaitingItems\Json\GetCrmReturnedBadge;
 use App\Actions\Dispatching\WaitingItems\Json\GetCrmWaitingBadge;
 use App\Actions\Dispatching\WaitingItems\Json\GetDispatchingWaitingBadge;
@@ -125,11 +132,13 @@ use App\Actions\Masters\MasterProductCategory\Json\GetFamiliesInMasterProductCat
 use App\Actions\Masters\MasterProductCategory\Json\GetMasterDepartmentAndMasterSubDepartments;
 use App\Actions\Ordering\Order\GetChargesInOrder;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
+use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexPartnerShoppingListOrgStocks;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrderOrgSupplierProducts;
 use App\Actions\SysAdmin\Group\Json\GetAllTradeUnitsInGroup;
 use App\Actions\SysAdmin\User\GetSupervisorUsers;
 use App\Actions\Web\Announcement\UI\GetActiveAnnouncement;
 use App\Actions\Web\Announcement\UI\GetAnnouncementTemplates;
+use App\Actions\Web\Announcement\UI\GetIrisAnnouncements;
 use App\Actions\Web\WebBlockHistory\GetWebBlockHistories;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
 use App\Actions\Web\WebLayoutTemplate\FetchWebLayoutTemplateDetail;
@@ -144,6 +153,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
 Route::get('announcement-templates', GetAnnouncementTemplates::class)->name('announcement_templates.index');
 Route::get('{website}/active-announcements', GetActiveAnnouncement::class)->name('announcement_active.index');
+Route::get('{website}/iris-announcements', GetIrisAnnouncements::class)->name('announcement_simulation.index');
 
 Route::get('comms/outboxes/{outbox}/users', GetOutboxUsers::class)->name('outbox.users.index');
 
@@ -208,6 +218,7 @@ Route::get('organisation/{organisation}/employees/picker-users', GetPickerUsers:
 
 Route::get('product-category/{productCategory}/families', GetFamiliesInProductCategory::class)->name('product_category.families.index');
 Route::get('master-product-category/{masterProductCategory}/families', GetFamiliesInMasterProductCategory::class)->name('master_product_category.families.index');
+Route::get('org-partner/{orgPartner}/shopping-list-org-stocks', IndexPartnerShoppingListOrgStocks::class)->name('org_partner.shopping_list_org_stocks');
 Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgAgent'])->name('org-agent.org-supplier-products');
 Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
 
@@ -231,6 +242,7 @@ Route::get('brands', GetBrands::class)->name('brands.index');
 Route::get('workshop/department/{department}/sub-departments', GetSubDepartmentsInWorkshop::class)->name('workshop.sub_departments.index');
 Route::get('workshop/department/{department}/families', GetFamiliesInDepartmentInWorkshop::class)->name('workshop.families_under_department.index');
 Route::get('workshop/sub-department/{subDepartment}/families', GetFamiliesInWorkshop::class)->name('workshop.families.index');
+Route::get('workshop/family/{family}/description-data', GetFamilyDescriptionDataInWorkshop::class)->name('workshop.family_description_data');
 
 Route::get('workshop/product-category/{productCategory:id}/products', GetProductsInProductCategory::class)->name('product_category.products.index');
 Route::get('workshop/product-category/{productCategory:id}/see-also-products', GetProductsInProductCategory::class)->name('product_category.see_also_products.index');
@@ -277,6 +289,7 @@ Route::get('delivery-note-item/{deliveryNoteItem:id}/image', FetchDeliveryNoteIt
 Route::post('delivery-note/{deliveryNote:id}/pack-by-scan', PackDeliveryNoteItemByScan::class)->name('delivery_note.pack_by_scan');
 Route::post('delivery-note/{deliveryNote:id}/pick-by-scan', PickDeliveryNoteItemByScan::class)->name('delivery_note.pick_by_scan');
 Route::patch('delivery-note/{deliveryNote:id}/scan-to-pick', SetScanToPickDeliveryNote::class)->name('delivery_note.set_scan_to_pick');
+Route::post('pallet-return/{palletReturn:id}/pick-by-scan', PickPalletReturnItemByScan::class)->name('pallet_return.pick_by_scan');
 
 Route::get('customer/{customer}/tags', [IndexTags::class, 'inCustomer'])->name('customer.tags.index');
 Route::get('shop/{shop:id}/customers', GetCustomersInShop::class)->name('shop.customers');
@@ -338,6 +351,7 @@ Route::get('product/{product}/trade-units', GetExternalProductTradeUnits::class)
 Route::post('master-product/{masterAsset}/check-org-stocks-existence', CheckMasterAssetTradeUnitOrgStockExistence::class)->name('master_product.check_org_stock_existence');
 
 Route::get('mailshot/{mailshot:id}/template', GetMailshotTemplate::class)->name('mailshot.template');
+Route::post('mailshot/{mailshot:id}/copy-suggestion', SuggestMailshotCopy::class)->name('mailshot.copy_suggestion');
 Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::class)->name('email_templates.layout');
 
 Route::get('charges-in-order/{order:id}', GetChargesInOrder::class)->name('charges_in_order.index');
@@ -355,11 +369,15 @@ Route::get('dispatching/waiting-badge', GetDispatchingWaitingBadge::class)->name
 Route::get('dispatching/crm-waiting-badge', GetCrmWaitingBadge::class)->name('crm_waiting_badge');
 Route::get('shops/crm-return-badge', GetCrmReturnedBadge::class)->name('crm_return_badge');
 Route::get('shops/master-updated-badge', GetMasterUpdatedBadge::class)->name('master_updated_badge');
+Route::get('shops/faire-skipped-badge', GetFaireSkippedBadge::class)->name('faire_skipped_badge');
 
 Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelect::class)->name('webpages_for_workshop_select');
 
 // Families list under department page
 Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
+// Families list for range comparison in Family Page Workshop
+Route::get('{website}/{productCategory}/comparison-detail', [GetFamiliesComparisonDetail::class, 'inWebsite'])->name('website.category.comparison_detail');
+Route::get('{website}/{productCategory}/comparison-option', [GetFamiliesForComparisonOption::class, 'inWebsite'])->name('website.category.comparison_option');
 
 Route::post('ingredients/parse', ParseIngredientsList::class)->name('ingredients.parse');
 
@@ -367,3 +385,5 @@ Route::get('stock/{stock}/trade-unit-changes-impact', ValidateStockTradeUnitChan
 
 Route::get('{webpage:id}/web-layout-templates/list', IndexWebLayoutTemplates::class)->name('template_layouts.index');
 Route::get('{webpage:id}/web-layout-templates/{layoutTemplate:id}', FetchWebLayoutTemplateDetail::class)->name('template_layouts.detail')->withoutScopedBindings();
+
+Route::post('warehouse/{warehouse}/low-stock-audit-lock', HandleLowStockAuditLock::class)->name('warehouse.low_stock_audit_lock')->withoutScopedBindings();

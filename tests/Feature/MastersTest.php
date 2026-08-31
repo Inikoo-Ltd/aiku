@@ -15,6 +15,8 @@ use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\DeleteMasterAsset;
 use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
+use App\Actions\Catalogue\Collection\StoreCollection;
+use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMultipleMasterProductsFamily;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
@@ -764,6 +766,47 @@ test('detach family from master sub department', function (MasterProductCategory
         ->and($masterFamily->master_parent_id)->toBe($masterDepartment->id);
 })->depends('store master department');
 
+test('UI Show Master Family mismatch with null master department', function (MasterProductCategory $masterDepartment) {
+    $masterSubDepartment = StoreMasterSubDepartment::make()->action(
+        $masterDepartment,
+        [
+            'code' => 'MM_SUBDEPT1',
+            'name' => 'mismatch sub department',
+        ]
+    );
+
+    $masterFamily = StoreMasterFamily::make()->action(
+        $masterDepartment,
+        [
+            'code' => 'MM_FAM1',
+            'name' => 'mismatch family',
+        ]
+    );
+
+    AttachMasterFamiliesToMasterSubDepartment::make()->action(
+        $masterSubDepartment,
+        ['master_families' => [$masterFamily->id]]
+    );
+
+    $masterFamily->refresh();
+    $masterFamily->updateQuietly(['master_department_id' => null]);
+    $masterFamily->refresh();
+
+    $response = get(
+        route('grp.masters.master_shops.show.master_family.mismatch_detected.show', [
+            'masterShop'   => $masterFamily->masterShop->slug,
+            'masterFamily' => $masterFamily->slug,
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) use ($masterDepartment) {
+        $page
+            ->component('Masters/MasterFamily')
+            ->where('mini_breadcrumbs.1.to.parameters.masterDepartment', $masterDepartment->slug)
+            ->etc();
+    });
+})->depends('create master department');
+
 
 test('create master asset', function (MasterProductCategory $masterFamily) {
     $masterAsset = StoreMasterAsset::make()->action(
@@ -892,6 +935,33 @@ test('Hydrate master collections', function (MasterCollection $masterCollection)
 
     // And ensure the artisan command runs successfully
     $this->artisan('hydrate:master_collections')->assertSuccessful();
+})->depends('create master collection');
+
+test('linking shop collection to master collection hydrates collection stats', function (MasterCollection $masterCollection) {
+    $collection = StoreCollection::make()->action(
+        $this->shop,
+        [
+            'code' => 'LinkMC1',
+            'name' => 'Linked to master collection',
+        ]
+    );
+
+    UpdateCollection::make()->action($collection, [
+        'master_collection_id' => $masterCollection->id,
+    ]);
+
+    $masterCollection->refresh();
+    expect($masterCollection->stats->number_collections)->toBe(1)
+        ->and($masterCollection->stats->number_current_collections)->toBe(0);
+
+    UpdateCollection::make()->action($collection, [
+        'master_collection_id' => null,
+    ]);
+
+    $masterCollection->refresh();
+    expect($masterCollection->stats->number_collections)->toBe(0);
+
+    return $masterCollection;
 })->depends('create master collection');
 
 // UI: Index master collections in a master shop
@@ -3057,3 +3127,48 @@ test('creating a master asset queues its effective cost hydration', function (Ma
             && $job->getParameters()[0]->id === $masterAsset->id
     );
 })->depends("create master family");
+
+test('upload and delete sound sample on master asset', function () {
+    $masterDepartment = ensureMasterProductCategory();
+    $masterFamily     = StoreMasterProductCategory::make()->action($masterDepartment, [
+        'code' => 'SND-FAM-'.rand(100, 999),
+        'name' => 'sound family',
+        'type' => MasterProductCategoryTypeEnum::FAMILY
+    ]);
+
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'SOUND_SAMPLE_1',
+        'name'    => 'sound sample 1',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $media = \App\Actions\Masters\MasterAsset\UploadAudioToMasterProduct::make()->handle($masterAsset, [
+        'audio' => \Illuminate\Http\UploadedFile::fake()->create('bowl.mp3', 100, 'audio/mpeg'),
+    ]);
+
+    $masterAsset->refresh();
+
+    expect($masterAsset->audio_id)->toBe($media->id)
+        ->and($masterAsset->audio->id)->toBe($media->id)
+        ->and($masterAsset->images()->wherePivot('scope', 'audio')->count())->toBe(1)
+        ->and($masterAsset->images()->wherePivot('sub_scope', 'audio')->first()->id)->toBe($media->id);
+
+    $bucketImages = (new class () {
+        use \App\Actions\Traits\HasBucketImages;
+    })->getImagesData($masterAsset);
+    $audioBox = collect($bucketImages)->firstWhere('column_in_db', 'audio_id');
+    expect($audioBox['type'])->toBe('audio')
+        ->and($audioBox['audio']['url'])->toContain($media->ulid);
+
+    $audioResponse = \App\Actions\Helpers\Media\UI\ShowIrisAudio::make()->asController($media);
+    expect($audioResponse->headers->get('Content-Type'))->toBe($media->mime_type);
+
+    \App\Actions\Masters\MasterAsset\DeleteImageFromMasterProduct::make()->handle($masterAsset, $media);
+    $masterAsset->refresh();
+
+    expect($masterAsset->audio_id)->toBeNull()
+        ->and($masterAsset->images()->count())->toBe(0);
+});

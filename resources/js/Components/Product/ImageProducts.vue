@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted, computed } from 'vue'
+import { ref, nextTick, onMounted, computed, defineAsyncComponent } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/navigation'
@@ -9,15 +9,19 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import {
   faChevronCircleLeft,
   faChevronCircleRight,
+  faSearchPlus,
 } from '@fal'
-import { faVideo } from '@fas'
 import { ulid } from 'ulid'
 import Image from '../../Common/Components/Image.vue'
-import Dialog from 'primevue/dialog'
+import ProductImageViewerDialog from './ProductImageViewerDialog.vue'
+import { buildProductMediaItems } from './buildProductMediaItems'
+
+const ProductSoundButton = defineAsyncComponent(() => import('@/Iris/Components/ProductSoundButton.vue'))
 
 const props = defineProps<{
-  images: { source: string; thumbnail: string; alt: string }[]
+  images: { source: object; thumbnail?: object; zoom?: object; alt: string }[]
   video?: string
+  audio?: string
   breakpoints?: {
     [key: number]: { slidesPerView: number }
   }
@@ -69,82 +73,62 @@ function openVideoModal() {
   showModal.value = true
 }
 
-function closeImageModal() {
-  showModal.value = false
-  showVideoModal.value = false
-}
-
-const onPrevNavigation = () => {
-  selectedIndex.value = (selectedIndex.value - 1 + props.images.length) % props.images.length
-}
-
-const onRightNavigation = () => {
-  selectedIndex.value = (selectedIndex.value + 1) % props.images.length
-}
-
 onMounted(async () => {
   await nextTick()
   navigation.value = {
     prevEl: prevEl.value,
     nextEl: nextEl.value
   }
-
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' || e.key === 'Esc') closeImageModal()
-    if (showModal.value && !showVideoModal.value) {
-      if (e.key === 'ArrowLeft') onPrevNavigation()
-      if (e.key === 'ArrowRight') onRightNavigation()
-    }
-  })
 })
 
-const totalSlides = computed(() => {
-  return props.images.length + (props.video ? 1 : 0)
-})
+const mediaItems = computed(() => buildProductMediaItems(props.images, props.video))
 
-const enableLoop = computed(() => totalSlides.value > 1)
+const enableLoop = computed(() => mediaItems.value.length > 1)
 </script>
 
 <template>
   <div class="w-full flex flex-col items-center relative isolate">
     <!-- Main Swiper -->
-    <Swiper :key="keySwiperMain" :slides-per-view="1"   :loop="enableLoop" :autoplay="false" :navigation="navigation"
-      :modules="[Navigation, Autoplay, Thumbs]" :thumbs="{ swiper: thumbsSwiper }"
-      class="aspect-square w-full rounded-lg mb-4">
-      <!-- Shared Navigation Buttons -->
-      <div class="absolute inset-0 pointer-events-none z-50">
-        <div ref="prevEl"
-          class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
-          <FontAwesomeIcon fixed-width :icon="faChevronCircleLeft" />
-        </div>
-        <div ref="nextEl"
-          class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
-          <FontAwesomeIcon fixed-width :icon="faChevronCircleRight" />
-        </div>
-      </div>
-
-      <!-- Image Slides -->
-      <SwiperSlide v-for="(image, index) in props.images" :key="`img-${index}`"
-        class="flex justify-center items-center">
-        <div
-          class=" w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-pointer"
-          @click="openImageModal(index)">
-          <Image :src="image.source" :alt="image.alt" class="w-full h-full flex items-center justify-center"
-            :style="{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />
-        </div>
-      </SwiperSlide>
-
-      <!-- Video Slide -->
-      <SwiperSlide v-if="props.video" key="video">
-        <div class="w-full aspect-square flex items-center justify-center  rounded-lg overflow-hidden cursor-pointer"
-          @click="openVideoModal">
-          <div class="relative w-full h-full flex items-center justify-center">
-            <iframe class="w-full h-full  pointer-events-none" :src="props.video" frameborder="0"
-              allow="autoplay; fullscreen" allowfullscreen></iframe>
+    <div class="relative w-full mb-4">
+      <Swiper :key="keySwiperMain" :slides-per-view="1"   :loop="enableLoop" :autoplay="false" :navigation="navigation"
+        :modules="[Navigation, Autoplay, Thumbs]" :thumbs="{ swiper: thumbsSwiper }"
+        class="aspect-square w-full rounded-lg">
+        <!-- Shared Navigation Buttons -->
+        <div class="absolute inset-0 pointer-events-none z-50">
+          <div ref="prevEl"
+            class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
+            <FontAwesomeIcon fixed-width :icon="faChevronCircleLeft" />
+          </div>
+          <div ref="nextEl"
+            class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
+            <FontAwesomeIcon fixed-width :icon="faChevronCircleRight" />
           </div>
         </div>
-      </SwiperSlide>
-    </Swiper>
+
+        <!-- Media Slides -->
+        <SwiperSlide v-for="item in mediaItems" :key="item.type === 'video' ? 'video' : `img-${item.imageIndex}`"
+          class="flex justify-center items-center">
+          <div v-if="item.type === 'image'"
+            class="relative w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-zoom-in"
+            @click="openImageModal(item.imageIndex)">
+            <Image :src="item.image.source" :alt="item.image.alt" class="w-full h-full flex items-center justify-center"
+              :style="{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />
+          </div>
+
+          <div v-else
+            class="w-full aspect-square flex items-center justify-center  rounded-lg overflow-hidden cursor-pointer"
+            @click="openVideoModal">
+            <div class="relative w-full h-full flex items-center justify-center">
+              <iframe class="w-full h-full  pointer-events-none" :src="props.video" frameborder="0"
+                allow="autoplay; fullscreen" allowfullscreen></iframe>
+            </div>
+          </div>
+        </SwiperSlide>
+      </Swiper>
+
+      <!-- Sound sample, kept outside <Swiper> so it is not picked up as a slide -->
+      <ProductSoundButton v-if="props.audio" :src="props.audio" placement="bottom-left" />
+    </div>
 
     <!-- Thumbnail Swiper -->
     <div class="relative w-full" :class="isThumbLocked ? '' : 'px-8'">
@@ -164,21 +148,18 @@ const enableLoop = computed(() => totalSlides.value > 1)
         @breakpoint="syncThumbNavigationState" @lock="syncThumbNavigationState" @unlock="syncThumbNavigationState"
         @observer-update="syncThumbNavigationState"
         :breakpoints="breakpoints ?? { 0: { slidesPerView: 3 }, 640: { slidesPerView: 6 } }" class="w-full">
-        <SwiperSlide v-for="(image, index) in props.images" :key="`thumb-${index}`"
+        <SwiperSlide v-for="item in mediaItems"
+          :key="item.type === 'video' ? 'thumb-video' : `thumb-${item.imageIndex}`"
           class="cursor-pointer rounded overflow-hidden border border-gray-300">
-          <div class="aspect-square w-full">
-            <Image :src="image.source" :alt="image.alt || `Thumbnail ${index + 1}`"
+          <div v-if="item.type === 'image'" class="aspect-square w-full">
+            <Image :src="item.image.thumbnail || item.image.source"
+              :alt="item.image.alt || `Thumbnail ${item.imageIndex + 1}`"
               class="w-full h-full flex items-center justify-center"
               :style="{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />
           </div>
-        </SwiperSlide>
 
-        <!-- Video thumbnail -->
-        <SwiperSlide v-if="props.video" key="thumb-video"
-          class="cursor-pointer rounded overflow-hidden border border-gray-300" @click="openVideoModal">
-          <div class="aspect-square w-full flex items-center justify-center bg-gray-200 relative">
-            <!--  <FontAwesomeIcon :icon="faVideo" class="text-3xl text-gray-600" />
-            <span class="absolute bottom-2 text-xs text-gray-700 bg-white/70 px-2 py-0.5 rounded">Video</span> -->
+          <div v-else class="aspect-square w-full flex items-center justify-center bg-gray-200 relative"
+            @click="openVideoModal">
             <div class="relative w-full h-full">
               <iframe class="w-full h-full rounded-lg" :src="props.video" frameborder="0" allow="autoplay; fullscreen"
                 allowfullscreen></iframe>
@@ -190,43 +171,8 @@ const enableLoop = computed(() => totalSlides.value > 1)
       </Swiper>
     </div>
 
-    <!-- PrimeVue Dialog (Replaces Custom Modal) -->
-    <Dialog v-model:visible="showModal" modal dismissable-mask :closable="false"
-      class="w-full max-w-3xl !bg-transparent !shadow-none !border-0 !border-transparent">
-      <div class="relative w-full flex flex-col items-center justify-center">
-        <!-- Close Button -->
-        <!-- <button
-          class="absolute top-0 right-4 text-white text-3xl z-50"
-          @click="closeImageModal"
-          aria-label="Close image viewer"
-        >
-          <FontAwesomeIcon :icon="faTimesCircle" />
-        </button> -->
-
-        <!-- Image Viewer -->
-        <div v-if="!showVideoModal" class="block w-full h-auto min-h-[400px] max-h-[80vh] mb-1 rounded">
-          <Image :src="props.images[selectedIndex]?.source"
-            :alt="props.images[selectedIndex]?.alt || `Image ${selectedIndex + 1}`"
-            :style="{ objectFit: 'contain' }" :imageCover="true" />
-        </div>
-
-        <!-- Video Viewer -->
-        <div v-else class="w-full aspect-video flex items-center justify-center">
-          <iframe class="w-full h-full rounded-lg" :src="props.video" frameborder="0" allow="autoplay; fullscreen"
-            allowfullscreen></iframe>
-        </div>
-
-        <!-- Navigation (for image only) -->
-        <template v-if="!showVideoModal">
-          <button class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40" @click="onPrevNavigation">
-            <FontAwesomeIcon :icon="faChevronCircleLeft" />
-          </button>
-          <button class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40" @click="onRightNavigation">
-            <FontAwesomeIcon :icon="faChevronCircleRight" />
-          </button>
-        </template>
-      </div>
-    </Dialog>
+    <ProductImageViewerDialog v-model:visible="showModal" v-model:index="selectedIndex" :images="props.images"
+      :video="props.video" :show-video="showVideoModal" />
   </div>
 </template>
 
@@ -237,15 +183,5 @@ const enableLoop = computed(() => totalSlides.value > 1)
 
 button {
   outline: none;
-}
-
-:deep(.p-dialog-mask) {
-  background-color: rgba(0, 0, 0, 0.9) !important;
-}
-
-:deep(.p-dialog) {
-  background: transparent !important;
-  box-shadow: none !important;
-  border: none !important;
 }
 </style>

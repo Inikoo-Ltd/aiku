@@ -85,10 +85,7 @@ class SyncCustomerTrafficSourcesFromDevice implements ShouldBeUnique
                 && $touch['timestamp'] <= $ceiling)
             /* A referral's campaign reference is a hostname taken from a client-controlled header,
                so it is re-validated here rather than trusted into the customer's history. */
-            ->filter(fn (array $touch) => !in_array($touch['type'], [
-                TrafficSourcesTypeEnum::REFERRAL,
-                TrafficSourcesTypeEnum::ORGANIC_SEARCH,
-            ], true)
+            ->filter(fn (array $touch) => !in_array($touch['type'], TrafficSourcesTypeEnum::hostReferenced(), true)
                 || GetTrafficSourceFromRefererHeader::normaliseHost($touch['campaign_ref']) === $touch['campaign_ref'])
             ->map(fn (array $touch) => $touch['timestamp'].$touch['abbr'].($touch['campaign_ref'] ?? ''));
 

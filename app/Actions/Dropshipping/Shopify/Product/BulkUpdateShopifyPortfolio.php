@@ -73,10 +73,11 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             ->keyBy('id');
 
         $maxQtyAd = $customerSalesChannel->max_quantity_advertise;
+        $stockThreshold = $customerSalesChannel->stock_threshold;
 
         foreach ($portfolios->chunk(100) as $portfolioChunk) {
             try {
-                $this->processChunk($shopifyUser, $portfolioChunk, $productMap, $maxQtyAd, $command);
+                $this->processChunk($shopifyUser, $portfolioChunk, $productMap, $maxQtyAd, $stockThreshold, $command);
             } catch (\Throwable) {
                 // Individual chunk failure handled by not throwing to allow other chunks to proceed
             }
@@ -87,7 +88,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
      * @param  Collection<int, Portfolio>  $portfolios
      * @param  Collection<int, \stdClass>  $productMap
      */
-    private function processChunk(ShopifyUser $shopifyUser, Collection $portfolios, Collection $productMap, ?int $maxQtyAd, ?Command $command = null): void
+    private function processChunk(ShopifyUser $shopifyUser, Collection $portfolios, Collection $productMap, ?int $maxQtyAd, ?int $stockThreshold = null, ?Command $command = null): void
     {
         $logs                   = [];
         $inventoryItems         = [];
@@ -113,7 +114,9 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 $availableQuantity = 0;
             }
 
-            if ($maxQtyAd > 0) {
+            if ($stockThreshold > 0 && $availableQuantity <= $stockThreshold) {
+                $availableQuantity = 0;
+            } elseif ($maxQtyAd > 0) {
                 $availableQuantity = min($availableQuantity, $maxQtyAd);
             }
 

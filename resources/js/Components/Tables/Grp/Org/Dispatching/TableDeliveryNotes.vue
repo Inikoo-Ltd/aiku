@@ -317,6 +317,13 @@ const dateColumnOptions = computed(() => [
 						{{ deliveryNote["reference"] }}
 					</Link>
 					<FontAwesomeIcon
+						v-if="deliveryNote.is_collection"
+						v-tooltip="ctrans('Collection')"
+						:icon="faMapMarkerAlt"
+						class="text-pink-500"
+						fixed-width
+						aria-hidden="true" />
+					<FontAwesomeIcon
 						v-if="deliveryNote.is_premium_dispatch"
 						v-tooltip="trans('Priority dispatch')"
 						icon="fas fa-star"
@@ -358,16 +365,6 @@ const dateColumnOptions = computed(() => [
 						:href="deliveryNoteHref(deliveryNote)"
 					/>
 				</div>
-				<span
-                    v-if="deliveryNote.is_collection"
-					class="border border-pink-500 text-pink-500 py-[0.15rem] px-[0.25rem] rounded-md ml-auto text-xs my-auto whitespace-nowrap"
-				>
-					{{ ctrans('Collection') }}
-					<FontAwesomeIcon 
-						:icon="faMapMarkerAlt"
-						class="text-pink-500"
-					/>
-				</span>
 			</div>
 		</template>
 

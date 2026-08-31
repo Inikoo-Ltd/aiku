@@ -55,6 +55,10 @@ class ProcessOrderTrafficSource implements ShouldBeUnique
         $attributionModel = $order->customer?->trafficSources()->first()?->pivot->attribution_model
             ?? ProcessTrafficSourceShare::ATTRIBUTION_LINEAR;
 
+        /* A re-submitted order (sent back to basket, or a retried job after a partial write) already
+           has pivot rows; AttachTrafficSourcesToModel only ever inserts, so clear them first. */
+        $order->trafficSources()->detach();
+
         AttachTrafficSourcesToModel::run($order, $order->shop_id, $touches, $attributionModel);
     }
 }

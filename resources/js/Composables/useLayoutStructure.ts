@@ -34,6 +34,10 @@ export const layoutStructure = {
     leftSidebar: {
         show: true,
     },
+    messagingSidebar: {
+        show: false,
+        micro: false,
+    },
     navigation: {
         grp: {} as grpNavigation,
         org: {} as { [key: string]: orgNavigation } | { [key: string]: Navigation } | Navigation
@@ -78,5 +82,6 @@ export const layoutStructure = {
     crm_waiting_count: 0 as number,
     crm_return_count: 0 as number,
     master_updated_count: 0 as number,
+    faire_skipped_count: 0 as number,
     bookmarks: [] as Bookmark[],
 }

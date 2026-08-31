@@ -94,7 +94,7 @@ use App\Actions\Comms\Mailshot\UpdateMailshotRecipientFilter;
 use App\Actions\Comms\Mailshot\UpdateMailshotSecondWave;
 use App\Actions\Comms\Mailshot\UpdateMailshotTemplate;
 use App\Actions\Comms\Mailshot\UpdateWorkshopMailShot;
-use App\Actions\Comms\Outbox\AbandonedCart\SendAbandonedCartReminder;
+use App\Actions\Comms\Outbox\AbandonedCheckout\SendAbandonedCheckoutReminder;
 use App\Actions\Comms\Outbox\PublishOutbox;
 use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
 use App\Actions\Comms\Outbox\UpdateOutbox;
@@ -147,10 +147,12 @@ use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CheckCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\Ebay\Product\MatchBulkNewProductToCurrentEbay;
+use App\Actions\Dropshipping\Portfolio\MatchBulkPortfoliosToPlatform;
 use App\Actions\Dropshipping\Ebay\Product\MatchPortfolioToCurrentEbayProduct;
 use App\Actions\Dropshipping\Ebay\Product\StoreBulkNewProductToCurrentEbay;
 use App\Actions\Dropshipping\Ebay\Product\StoreNewProductToCurrentEbay;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
+use App\Actions\Dropshipping\Portfolio\ImportBulkPortfolios;
 use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
@@ -351,6 +353,7 @@ use App\Actions\Masters\MasterAsset\UpdateMasterAssetImageAlt;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
 use App\Actions\Masters\MasterAsset\UpdateMasterProductImages;
 use App\Actions\Masters\MasterAsset\UpdateMultipleMasterProductsFamily;
+use App\Actions\Masters\MasterAsset\UploadAudioToMasterProduct;
 use App\Actions\Masters\MasterAsset\UploadImagesToMasterProduct;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
 use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
@@ -489,6 +492,7 @@ use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\WebLayoutTemplate\ApplyWebLayoutTemplate;
+use App\Actions\Web\WebLayoutTemplate\DeleteWebLayoutTemplate;
 use App\Actions\Web\WebLayoutTemplate\StoreWebLayoutTemplate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\DeleteWebpage;
@@ -675,6 +679,7 @@ Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(fun
     Route::post('kill-all-rebels', KillAllMasterAssetRebelProducts::class)->name('kill_all_rebels');
     Route::patch('update-images', UpdateMasterProductImages::class)->name('update_images');
     Route::post('upload-images', UploadImagesToMasterProduct::class)->name('upload_images');
+    Route::post('upload-audio', UploadAudioToMasterProduct::class)->name('upload_audio');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterProduct::class)->name('delete_images')->withoutScopedBindings();
     Route::patch('media/{media:id}/alt', UpdateMasterAssetImageAlt::class)->name('update_image_alt')->withoutScopedBindings();
 });
@@ -730,7 +735,7 @@ Route::prefix('sub-department/{subDepartment:id}')->name('sub-department.')->gro
 Route::delete('portfolio/{portfolio:id}', DeletePortfolio::class)->name('portfolio.delete');
 Route::patch('portfolio/{portfolio:id}', UpdatePortfolio::class)->name('portfolio.update')->withoutScopedBindings();
 
-Route::post('checkout-abandonment/{checkoutAbandonment:id}/send-reminder', SendAbandonedCartReminder::class)->name('checkout_abandonment.send_reminder');
+Route::post('checkout-abandonment/{checkoutAbandonment:id}/send-reminder', SendAbandonedCheckoutReminder::class)->name('checkout_abandonment.send_reminder');
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
 Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreNewProductToCurrentShopify::class)->name('portfolio.store_new_shopify_product');
@@ -951,6 +956,8 @@ Route::post('{customerSalesChannel:id}/ebay-batch-upload', StoreBulkNewProductTo
 Route::post('{customerSalesChannel:id}/ebay-batch-match', MatchBulkNewProductToCurrentEbay::class)->name('ebay.batch_match')->withoutScopedBindings();
 Route::post('{customerSalesChannel:id}/ebay-batch-all', StoreBulkNewProductToCurrentEbay::class)->name('ebay.batch_all')->withoutScopedBindings();
 
+Route::post('{customerSalesChannel:id}/batch-match', MatchBulkPortfoliosToPlatform::class)->name('platform.batch_match')->withoutScopedBindings();
+
 Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
 Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreNewProductToCurrentShopify::class)->name('portfolio.store_new_shopify_product');
 
@@ -1160,6 +1167,8 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('apply-template', ApplyWebLayoutTemplate::class)->name('apply_template');
 });
 
+Route::delete('{template:id}/delete-template', DeleteWebLayoutTemplate::class)->name('web_layout_template.delete');
+
 Route::patch('website/{website:id}/bulk-offline-webpages', SetWebpageOfflineBulk::class)->name('webpage.set_offline_bulk');
 
 Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
@@ -1198,6 +1207,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
     Route::post('portfolio-multiple-manual', StoreMultiplePortfolios::class)->name('portfolio.store_multiple_manual');
+    Route::post('portfolios-bulk-import', ImportBulkPortfolios::class)->name('portfolios.bulk_import');
     Route::post('client', StoreCustomerClient::class)->name('client.store');
     Route::delete('delete', CloseCustomerSalesChannel::class)->name('delete');
     Route::patch('reset-shopify', ResetShopifyChannel::class)->name('shopify_reset');

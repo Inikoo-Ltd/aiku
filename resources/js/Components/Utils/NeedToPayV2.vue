@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCheck, faEllipsisV } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '../Elements/Buttons/Button.vue'
+import PaymentMethodBadge from '@/Components/Accounting/PaymentMethodBadge.vue'
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
@@ -35,10 +36,13 @@ const props = defineProps<{
 
     }
     handleTabUpdate: Function
+    provisional?: boolean
     payments: {
         id: number
         amount: number
         created_at: string
+        method?: string | null
+        method_label?: string | null
         payment_account: {
             type: string
             code: string
@@ -121,7 +125,7 @@ const onPayWithBalance = () => {
 
         <!-- Section: background green/red -->
         <div class="px-2.5 pt-1 pb-2" :class="[
-            isPaidOff || Number(payAmount) <= 0 ? 'bg-green-50 border-green-300 rounded-md' : 'text-red-600',
+            isPaidOff || Number(payAmount) <= 0 ? 'bg-green-50 border-green-300 rounded-md' : provisional ? 'text-gray-500' : 'text-red-600',
         ]">
     
             <!-- Section: Progress bar -->
@@ -135,6 +139,11 @@ const onPayWithBalance = () => {
                             width: (Number(payment.amount)/Number(totalAmount))*100 + '%',
                         }"
                     />
+                </div>
+                <div class="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
+                    <PaymentMethodBadge v-for="payment in payments" :key="payment.id"
+                        :label="payment.method_label" :method="payment.method"
+                        :accountType="payment.payment_account?.type" :accountName="payment.payment_account?.name" />
                 </div>
             </div>
     
@@ -162,14 +171,18 @@ const onPayWithBalance = () => {
                 <!-- Section: Remaining -->
                 <div class="text-center relative">
                     <div class="text-lg font-bold">
-                        <span v-if="toBePaidBy?.value">{{ trans("Waiting :toBePaid", { toBePaid: toBePaidBy?.label }) }}</span>
+                        <span v-if="provisional">{{ trans("In warehouse") }}</span>
+                        <span v-else-if="toBePaidBy?.value">{{ trans("Waiting :toBePaid", { toBePaid: toBePaidBy?.label }) }}</span>
                         <span v-else>
                             {{ trans("Unpaid") }}
                         </span>
                         <!-- <FontAwesomeIcon v-tooltip="trans('Not fully paid yet')" icon="fas fa-times-circle" class="text-red-600" fixed-width aria-hidden="true" /> -->
                     </div>
-    
-                    <div class="opacity-70">
+
+                    <div v-if="provisional" class="opacity-70 text-xs">
+                        {{ trans("Amounts will be recalculated when picking is finished") }}
+                    </div>
+                    <div v-else class="opacity-70">
                         Need to pay {{ locale.currencyFormat(currencyCode, Number(payAmount)) }} of {{ locale.currencyFormat(currencyCode, Number(totalAmount)) }}
                     </div>
 

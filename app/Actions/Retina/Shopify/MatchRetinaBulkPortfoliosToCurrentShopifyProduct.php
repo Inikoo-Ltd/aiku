@@ -8,7 +8,7 @@
 
 namespace App\Actions\Retina\Shopify;
 
-use App\Actions\Dropshipping\Shopify\Product\MatchBulkPortfoliosToCurrentShopifyProduct;
+use App\Actions\Dropshipping\Portfolio\MatchBulkPortfoliosToPlatform;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -27,13 +27,13 @@ class MatchRetinaBulkPortfoliosToCurrentShopifyProduct extends RetinaAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
     {
-        MatchBulkPortfoliosToCurrentShopifyProduct::run($customerSalesChannel, $attributes);
+        MatchBulkPortfoliosToPlatform::dispatch($customerSalesChannel, $attributes);
     }
 
     public function rules(): array
     {
         return [
-            'portfolios' => ['required', 'array'],
+            'portfolios' => ['sometimes', 'array'],
             'portfolios.*' => ['required', 'integer'],
         ];
     }

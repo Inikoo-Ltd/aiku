@@ -258,6 +258,14 @@ class Invoice extends Model implements Auditable, HasMedia
         'phone',
         'commission_amount',
         'date',
+        'total_amount',
+        'net_amount',
+        'tax_amount',
+        'gross_amount',
+        'pay_status',
+        'address_id',
+        'billing_country_id',
+        'original_invoice_id',
     ];
 
     public function getRouteKeyName(): string

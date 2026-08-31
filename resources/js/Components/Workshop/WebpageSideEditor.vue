@@ -10,10 +10,12 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 
 import VisibleCheckmark from '@/Components/CMS/Fields/VisibleCheckmark.vue'
+import RevealOnClick from '@/Components/CMS/Fields/RevealOnClick.vue'
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
 import SiteSettings from '@/Components/Workshop/SiteSettings.vue'
 import ConfirmPopup from 'primevue/confirmpopup'
 import { useLayoutStore } from '@/Stores/layout'
+import { getRevealSetting } from '@/Composables/Workshop'
 import {
 	getBlueprint,
 	getEditPermissions,
@@ -71,6 +73,7 @@ const props = withDefaults(
 		isLoadingTemplates?: boolean
 		templatesErrorMessage?: string | null
 		applyingTemplateId?: number | null
+		deletingTemplateId?: number | null
 	}>(),
 	{
 		canUseTemplate: true,
@@ -78,6 +81,7 @@ const props = withDefaults(
 		isLoadingTemplates: false,
 		templatesErrorMessage: null,
 		applyingTemplateId: null,
+		deletingTemplateId: null,
 	}
 )
 
@@ -95,6 +99,7 @@ const emits = defineEmits<{
 	(e: 'searchTemplates', value: string): void
 	(e: 'navigateTemplates', value: string): void
 	(e: 'useTemplate', value: WebLayoutTemplate): void
+	(e: 'deleteTemplate', value: WebLayoutTemplate): void
 }>()
 
 const confirm = useConfirm()
@@ -156,6 +161,8 @@ const onNavigateTemplates = (url: string) => emits('navigateTemplates', url)
 
 const onUseTemplate = (template: WebLayoutTemplate) => emits('useTemplate', template)
 
+const onDeleteTemplate = (template: WebLayoutTemplate) => emits('deleteTemplate', template)
+
 const filterOptions = [
 	{ label: 'All', value: 'all' },
 	{ label: 'Logged out', value: 'logged-out' },
@@ -210,6 +217,18 @@ const showWebpage = (block: Daum) => {
 const visibleBlockCount = computed(
 	() => props.webpage?.layout?.web_blocks?.filter(showWebpage).length ?? 0
 )
+
+const revealKeysUsedByOtherBlocks = computed(() =>
+	(props.webpage?.layout?.web_blocks ?? [])
+		.filter((block, index) => index !== openedBlockSideEditor.value)
+		.map(block => getRevealSetting(block)?.key)
+		.filter(Boolean)
+)
+
+const onUpdateRevealSetting = (block: Daum, value: object) => {
+	block.web_block.layout.reveal = value
+	sendBlockUpdate(block)
+}
 
 const contextMenu = ref({
 	visible: false,
@@ -604,6 +623,22 @@ const blockNotEditableVisible = [
 													{{ trans('Hidden') }}
 												</span>
 
+												<span
+													v-if="element.show && getRevealSetting(element)"
+													v-tooltip="
+														trans('Revealed when this link is clicked') +
+														': #' +
+														getRevealSetting(element)?.key
+													"
+													class="shrink-0 px-1 py-px rounded text-[10px] font-medium leading-tight"
+													:class="
+														openedBlockSideEditor === index
+															? 'bg-white/20 text-white'
+															: 'bg-indigo-50 text-indigo-600'
+													">
+													{{ trans('On click') }}
+												</span>
+
 												<LoadingIcon v-if="isLoadingBlock === element.id" class="shrink-0" />
 											</button>
 
@@ -741,6 +776,22 @@ const blockNotEditableVisible = [
 												webpage.layout.web_blocks[openedBlockSideEditor]
 											)
 										" />
+									<RevealOnClick
+										:disabled="!editable"
+										v-if="!blockNotEditableVisible.includes(webpage.layout.web_blocks?.[openedBlockSideEditor]?.type)"
+										:modelValue="
+											webpage.layout.web_blocks[openedBlockSideEditor]
+												.web_block.layout.reveal
+										"
+										:blockId="webpage.layout.web_blocks[openedBlockSideEditor].id"
+										:usedKeys="revealKeysUsedByOtherBlocks"
+										@update:modelValue="
+											value =>
+												onUpdateRevealSetting(
+													webpage.layout.web_blocks[openedBlockSideEditor],
+													value
+												)
+										" />
 									<SideEditor
 										v-model="
 											webpage.layout.web_blocks[openedBlockSideEditor]
@@ -799,11 +850,13 @@ const blockNotEditableVisible = [
 						:isLoading="isLoadingTemplates"
 						:errorMessage="templatesErrorMessage"
 						:applyingTemplateId="applyingTemplateId"
+						:deletingTemplateId="deletingTemplateId"
 						:editable="editable"
 						@refresh="requestTemplates"
 						@search="onSearchTemplates"
 						@navigate="onNavigateTemplates"
-						@use="onUseTemplate" />
+						@use="onUseTemplate"
+						@delete="onDeleteTemplate" />
 				</TabPanel>
 			</TabPanels>
 		</TabGroup>

@@ -29,6 +29,58 @@
 					"type": "internal"
 				}
 			},
+			"button": {
+				"properties": {
+					"background": {
+						"desktop": {
+							"type": "color",
+							"color": "rgba(15, 23, 42, 1)",
+							"image": {
+								"original": null
+							}
+						}
+					},
+					"text": {
+						"desktop": {
+							"color": "rgba(255, 255, 255, 1)",
+							"fontFamily": null
+						}
+					},
+					"border": {
+						"desktop": {
+							"unit": "px",
+							"color": "rgba(15, 23, 42, 1)",
+							"top": {
+								"value": 1
+							},
+							"left": {
+								"value": 1
+							},
+							"right": {
+								"value": 1
+							},
+							"bottom": {
+								"value": 1
+							},
+							"rounded": {
+								"unit": "px",
+								"topleft": {
+									"value": 6
+								},
+								"topright": {
+									"value": 6
+								},
+								"bottomleft": {
+									"value": 6
+								},
+								"bottomright": {
+									"value": 6
+								}
+							}
+						}
+					}
+				}
+			},
 			"appointment_data": {
 				"text": "<p>See Product In The Showroom</p><p>- Book Appointment</p>",
 				"link": {

@@ -176,6 +176,7 @@ class DropshippingPortfolioResource extends JsonResource
             'bundle_id' => $this->bundle_id,
             'is_bundle' => $this->is_bundle,
 
+            'is_platform_draft'                      => (bool) Arr::get($this->data, 'is_platform_draft'),
             'has_valid_platform_product_id'          => $this->has_valid_platform_product_id,
             'exist_in_platform'                      => $this->exist_in_platform,
             'platform_status'                        => $this->platform_status,

@@ -103,6 +103,16 @@ const props = defineProps({
 		type: [String, Number, Object, Boolean],
 		default: '',
 		required: false,
+	},
+	hideDefault: {
+		type: Boolean,
+		default: false,
+		required: false,
+	},
+	selectedColumn: {
+		type: [String, null],
+		default: null,
+		required: false
 	}
 })
 
@@ -505,20 +515,18 @@ watch(
 						>
 						<select
 							:id="`grid-${name}-sort`"
-							:value="queryBuilderData.sort || ''"
+							:value="queryBuilderData.sort || selectedColumn || ''"
 							@change="onSortChange(($event.target as HTMLSelectElement).value)"
 							class="min-w-0 max-w-[45vw] sm:max-w-none rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-							<option value="">{{ trans("Default") }}</option>
+							<option v-if="!hideDefault" value="">{{ trans("Default") }}</option>
 							<template
 								v-for="column in queryBuilderProps.columns.filter(
 									(item: any) => item.sortable
 								)"
-								:key="`sort-option-${column.key}`">
-								<option :value="column.key">
-									{{ column.label }} ({{ trans("ascending") }})
-								</option>
-								<option :value="`-${column.key}`">
-									{{ column.label }} ({{ trans("descending") }})
+								:key="`sort-option-${column.key}`"
+							>
+								<option v-for="type in ['ascending', 'descending']" :value="(type == 'descending' ? '-' : '') + column.key">
+									{{ column.label }} ({{ type }})
 								</option>
 							</template>
 						</select>

@@ -18,10 +18,13 @@ use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Product\HydrateProducts;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\StoreProductVariant;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\ProductCategory\AttachFamiliesToSubDepartment;
+use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\HydrateDepartments;
 use App\Actions\Catalogue\ProductCategory\HydrateFamilies;
 use App\Actions\Catalogue\ProductCategory\HydrateSubDepartments;
@@ -38,6 +41,7 @@ use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
@@ -175,6 +179,15 @@ test('update shop', function (Shop $shop) {
         ->and($shop->organisation->catalogueStats->number_shops_state_open)->toBe(1);
 })->depends('create shop');
 
+test('update shop settings creates audit with dotted key', function (Shop $shop) {
+    $shop = UpdateShop::make()->action($shop, ['reviews' => true]);
+
+    $audit = $shop->audits()->latest('id')->first();
+
+    expect($audit)->not->toBeNull()
+        ->and($audit->new_values)->toHaveKey('settings.reviews.enabled');
+})->depends('create shop');
+
 test('seed shop permissions from command', function () {
     $this->artisan('shop:seed-permissions')->assertExitCode(0);
 })->depends('create shop by command');
@@ -205,7 +218,12 @@ test('create product category webpage', function (ProductCategory $department) {
 
     expect($webpage)->toBeInstanceOf(Webpage::class)
         ->and($webpage->model_type)->toBe('ProductCategory')
-        ->and(intval($webpage->model_id))->toBe($department->id);
+        ->and(intval($webpage->model_id))->toBe($department->id)
+        ->and($department->webpage->id)->toBe($webpage->id);
+
+    UpdateProductCategory::make()->action($department, ['url' => 'a-nice-url']);
+    $department->refresh();
+    expect($department->webpage->id)->toBe($webpage->id);
 
     return $department;
 })->depends('create department');
@@ -272,6 +290,23 @@ test('create family', function ($department) {
 
     return $family;
 })->depends('update department');
+
+
+test('attach and detach family to sub department', function (ProductCategory $family, ProductCategory $subDepartment) {
+    AttachFamiliesToSubDepartment::make()->action($subDepartment, ['families_id' => [$family->id]]);
+    $family->refresh();
+
+    expect($family->sub_department_id)->toBe($subDepartment->id)
+        ->and($family->parent_id)->toBe($subDepartment->id)
+        ->and($family->department_id)->toBe($subDepartment->department_id);
+
+    DetachFamilyToSubDepartment::make()->handle($family);
+    $family->refresh();
+
+    expect($family->sub_department_id)->toBeNull()
+        ->and($family->department_id)->toBe($subDepartment->department_id)
+        ->and($family->parent_id)->toBe($subDepartment->department_id);
+})->depends('create family', 'create sub department');
 
 
 test('create product', function (ProductCategory $family) {
@@ -401,6 +436,21 @@ test('update product', function (Product $product) {
 
     return $product;
 })->depends('create product');
+
+test('hydrate available quantity recovers stale not-for-sale status', function (Product $product) {
+    $product->updateQuietly(['status' => ProductStatusEnum::NOT_FOR_SALE, 'is_for_sale' => true]);
+
+    $product = ProductHydrateAvailableQuantity::run($product->refresh());
+    expect($product->status)->not->toBe(ProductStatusEnum::NOT_FOR_SALE);
+
+    $product->updateQuietly(['is_for_sale' => false]);
+    $product = ProductHydrateAvailableQuantity::run($product->refresh());
+    expect($product->status)->toBe(ProductStatusEnum::NOT_FOR_SALE);
+
+    $product->updateQuietly(['is_for_sale' => true]);
+    $product = ProductHydrateAvailableQuantity::run($product->refresh());
+    expect($product->status)->not->toBe(ProductStatusEnum::NOT_FOR_SALE);
+})->depends('update product');
 
 test('update product trade units recalculates units', function (Product $product) {
     expect((float) $product->units)->toBe(1.0);
@@ -915,4 +965,201 @@ test('repair command resyncs product ingredients and origin from trade units', f
     $product = Product::find($product->id);
     expect($product->marketing_ingredients)->toBe('Coconut Leaf')
         ->and($product->country_of_origin)->toBe('IDN');
+});
+
+test('bulk update product unit is scoped to shop', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    \App\Actions\Catalogue\Product\UpdateBulkProduct::make()->handle($shop, [
+        'products' => [
+            ['id' => $product->id, 'unit' => 'од.'],
+        ],
+    ]);
+    expect($product->refresh()->unit)->toBe('од.');
+
+    $otherShop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    \App\Actions\Catalogue\Product\UpdateBulkProduct::make()->handle($otherShop, [
+        'products' => [
+            ['id' => $product->id, 'unit' => 'hacked'],
+        ],
+    ]);
+    expect($product->refresh()->unit)->toBe('од.');
+});
+
+test('audit archiver moves closed shop and discontinued product audits, history falls back to archive', function () {
+    config()->set(
+        'database.connections.archive',
+        array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'archive'])
+    );
+    DB::purge('archive');
+    DB::statement('create schema if not exists archive');
+
+    Product::enableAuditing();
+    $shop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $discontinuedProduct = $shop->products()->orderBy('id')->first();
+    UpdateProduct::make()->action($discontinuedProduct, ['name' => 'audited before discontinuation']);
+
+    $liveShop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+
+    expect(DB::table('audits')->where('auditable_type', 'Product')->where('auditable_id', $discontinuedProduct->id)->count())
+        ->toBeGreaterThan(0);
+
+    DB::table('products')->where('id', $discontinuedProduct->id)->update(['state' => ProductStateEnum::DISCONTINUED->value]);
+
+    $dryRun = \App\Actions\Helpers\History\ArchiveAudits::make()->handle(dryRun: true);
+    expect($dryRun)->toBeGreaterThan(0);
+
+    $archived = \App\Actions\Helpers\History\ArchiveAudits::make()->handle();
+
+    expect($archived)->toBeGreaterThan(0)
+        ->and(DB::table('audits')->where('auditable_type', 'Product')->where('auditable_id', $discontinuedProduct->id)->exists())->toBeFalse()
+        ->and(DB::connection('archive')->table('audits')->where('auditable_type', 'Product')->where('auditable_id', $discontinuedProduct->id)->count())->toBeGreaterThan(0)
+        ->and(DB::table('audits')->where('auditable_type', 'Shop')->where('auditable_id', $liveShop->id)->exists())->toBeTrue();
+
+    request()->setRouteResolver(fn () => (new \Illuminate\Routing\Route('GET', 'test-history', []))->name('test.history'));
+
+    $footerNoteFor = function ($model): ?string {
+        $table = new \App\InertiaTable\InertiaTable(request());
+        (\App\Actions\Helpers\History\UI\IndexHistory::make()->tableStructure(model: $model))($table);
+        $property = new \ReflectionProperty($table, 'footerNote');
+
+        return $property->getValue($table);
+    };
+
+    $history = \App\Actions\Helpers\History\UI\IndexHistory::run($discontinuedProduct);
+    expect($history->total())->toBeGreaterThan(0)
+        ->and($footerNoteFor($discontinuedProduct))->toBe(__('Showing archived history.'));
+
+    UpdateProduct::make()->action($discontinuedProduct->refresh(), ['name' => 'relaunched']);
+    $mixedHistory = \App\Actions\Helpers\History\UI\IndexHistory::run($discontinuedProduct);
+    expect($mixedHistory->total())->toBeGreaterThan(0)
+        ->and($footerNoteFor($discontinuedProduct))->toContain(__('are archived.'));
+
+    DB::table('shops')->where('id', $shop->id)->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::CLOSED->value]);
+    $shopAuditsBefore = DB::table('audits')->where('shop_id', $shop->id)->count();
+    expect($shopAuditsBefore)->toBeGreaterThan(0);
+
+    \App\Actions\Helpers\History\ArchiveAudits::make()->handle(discontinued: false);
+
+    expect(DB::table('audits')->where('shop_id', $shop->id)->exists())->toBeFalse()
+        ->and(DB::connection('archive')->table('audits')->where('shop_id', $shop->id)->count())->toBeGreaterThanOrEqual($shopAuditsBefore)
+        ->and(DB::table('audits')->where('auditable_type', 'Shop')->where('auditable_id', $liveShop->id)->exists())->toBeTrue();
+});
+
+test('audit archiver moves Aurora loop noise but keeps genuinely busy history', function () {
+    config()->set(
+        'database.connections.archive',
+        array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'archive'])
+    );
+    DB::purge('archive');
+    DB::statement('create schema if not exists archive');
+
+    $insert = function (int $auditableId, callable $values) {
+        $rows = [];
+        for ($i = 0; $i < 1200; $i++) {
+            [$old, $new] = $values($i);
+            $rows[]      = [
+                'auditable_type' => 'Product',
+                'auditable_id'   => $auditableId,
+                'event'          => 'updated',
+                'tags'           => '[]',
+                'old_values'     => json_encode(['duty_rate' => $old]),
+                'new_values'     => json_encode(['duty_rate' => $new]),
+                'url'            => 'artisan fetch:histories --organisations aw',
+                'source_id'      => 'loop-test-'.$auditableId.'-'.$i,
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ];
+        }
+        DB::table('audits')->insert($rows);
+    };
+
+    $loopingId = 987001;
+    $busyId    = 987002;
+    $insert($loopingId, fn (int $i) => $i % 2 ? ['0%', '650%'] : ['650%', '0%']);
+    $insert($busyId, fn (int $i) => [$i.'%', ($i + 1).'%']);
+
+    $archived = \App\Actions\Helpers\History\ArchiveAudits::make()
+        ->handle(closedShops: false, discontinued: false, auroraLoops: true);
+
+    expect($archived)->toBe(1200)
+        ->and(DB::table('audits')->where('auditable_id', $loopingId)->exists())->toBeFalse()
+        ->and(DB::connection('archive')->table('audits')->where('auditable_id', $loopingId)->count())->toBe(1200)
+        ->and(DB::table('audits')->where('auditable_id', $busyId)->count())->toBe(1200);
+});
+
+test('audit archiver moves the whole trail of records older than the age cutoff', function () {
+    config()->set(
+        'database.connections.archive',
+        array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'archive'])
+    );
+    DB::purge('archive');
+    DB::statement('create schema if not exists archive');
+
+    $shop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    [, $product] = createProduct($shop);
+    $order = createOrder(createCustomer($shop), $product);
+
+    DB::table('audits')->insert([
+        'auditable_type' => 'Order',
+        'auditable_id'   => $order->id,
+        'event'          => 'updated',
+        'tags'           => '[]',
+        'old_values'     => json_encode(['state' => 'a']),
+        'new_values'     => json_encode(['state' => 'b']),
+        'source_id'      => 'aged-test-backfill',
+        'created_at'     => now()->subDay(),
+        'updated_at'     => now()->subDay(),
+    ]);
+
+    $orderAudits = fn (): int => DB::table('audits')->where('auditable_type', 'Order')->where('auditable_id', $order->id)->count();
+
+    DB::table('orders')->where('id', $order->id)->update(['created_at' => now()->subDays(5)]);
+    $liveAudits = $orderAudits();
+
+    expect($liveAudits)->toBeGreaterThan(1)
+        ->and(\App\Actions\Helpers\History\ArchiveAudits::make()->handle(closedShops: false, discontinued: false, aged: true))->toBe(0)
+        ->and($orderAudits())->toBe($liveAudits);
+
+    DB::table('orders')->where('id', $order->id)->update(['created_at' => now()->subDays(150)]);
+
+    $archived = \App\Actions\Helpers\History\ArchiveAudits::make()->handle(closedShops: false, discontinued: false, aged: true);
+
+    expect($archived)->toBe($liveAudits)
+        ->and($orderAudits())->toBe(0)
+        ->and(DB::connection('archive')->table('audits')->where('auditable_type', 'Order')->where('auditable_id', $order->id)->count())->toBe($liveAudits);
+});
+
+test('noise audit purge deletes flag only audits and keeps real history', function () {
+    $insert = function (string $auditableType, int $auditableId, array $newValues) {
+        DB::table('audits')->insert([
+            'auditable_type' => $auditableType,
+            'auditable_id'   => $auditableId,
+            'event'          => 'updated',
+            'tags'           => '[]',
+            'old_values'     => json_encode([]),
+            'new_values'     => json_encode($newValues),
+            'source_id'      => 'noise-test-'.$auditableType.'-'.$auditableId,
+            'created_at'     => now(),
+            'updated_at'     => now(),
+        ]);
+    };
+
+    $insert('Portfolio', 989001, ['platform_status' => false, 'exist_in_platform' => false]);
+    $insert('Portfolio', 989002, ['status' => false]);
+    $insert('Portfolio', 989003, ['platform_status' => false, 'status' => false]);
+    $insert('EbayUser', 989004, ['settings.credentials.ebay_access_token' => '*********']);
+    $insert('CustomerSalesChannel', 989005, ['number_portfolios' => 3, 'number_portfolio_broken' => 1]);
+    $insert('CustomerSalesChannel', 989006, ['state' => 'card_saved']);
+
+    expect(\App\Actions\Helpers\History\PurgeNoiseAudits::make()->handle(dryRun: true))->toBe(3);
+
+    $deleted = \App\Actions\Helpers\History\PurgeNoiseAudits::make()->handle();
+
+    expect($deleted)->toBe(3)
+        ->and(DB::table('audits')->whereIn('auditable_id', [989001, 989004, 989005])->exists())->toBeFalse()
+        ->and(DB::table('audits')->whereIn('auditable_id', [989002, 989003, 989006])->count())->toBe(3);
 });

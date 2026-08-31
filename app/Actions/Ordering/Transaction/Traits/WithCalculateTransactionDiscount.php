@@ -14,6 +14,10 @@ trait WithCalculateTransactionDiscount
     {
         $transaction = $deliveryNoteItem->transaction;
 
+        if (!$deliveryNoteItem->deliveryNote->state->isPickedOrLater()) {
+            return;
+        }
+
         // INI-1811: Guard, is follow on products must always be 0
         if ($transaction->is_follow_on) {
             return;

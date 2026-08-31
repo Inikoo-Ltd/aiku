@@ -42,6 +42,7 @@ import {
 	faBan,
 	faDollarSign,
 	faCube,
+	faInfoCircle,
 } from "@fal"
 import { faStar, faFilter } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
@@ -50,6 +51,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { notify } from "@kyvg/vue3-notification"
 import Modal from "@/Components/Utils/Modal.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
@@ -60,6 +62,7 @@ import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import RetinaMatchStoredItemPicker from "@/Components/Tables/Retina/RetinaMatchStoredItemPicker.vue"
 
 library.add(
+	faInfoCircle,
 	faHandshake,
 	faHandshakeSlash,
 	faHandPointer,
@@ -155,7 +158,6 @@ const locale = inject("locale", aikuLocaleStructure)
 const layout = inject("layout", retinaLayoutStructure)
 const isEbay = computed(() => props.platform_data?.type === "ebay")
 const selectedProducts = defineModel<number[]>("selectedProducts")
-const selectedInvalidProductsCreate = ref<number[]>([]);
 
 const onUnchecked = (itemId: number) => {
 	props.selectedData.products = props.selectedData.products.filter(
@@ -291,8 +293,13 @@ const onSubmitVariant = () => {
 const resultOfFetchPlatformProduct = ref<PlatformProduct[]>([])
 const isLoadingFetchPlatformProduct = ref(false)
 
+const normalizeFetchedProducts = (data) =>
+	Array.isArray(data) ? data : (data?.products ?? [])
+
 const fetchRoute = async () => {
 	isLoadingFetchPlatformProduct.value = true
+	currentOffset.value = 0
+	hasMore.value = true
 	try {
 		const www = await axios.get(
 			route(props.routes.fetch_products.name, {
@@ -301,11 +308,13 @@ const fetchRoute = async () => {
 			})
 		)
 
-		if (!Array.isArray(www.data) || www.data.length < 50) {
+		const products = normalizeFetchedProducts(www.data)
+
+		if (products.length < 50) {
 			hasMore.value = false
 		}
 
-		resultOfFetchPlatformProduct.value = www.data
+		resultOfFetchPlatformProduct.value = products
 		// console.log('qweqw', www)
 	} catch (e) {
 		console.error("Error processing products", e)
@@ -320,35 +329,21 @@ const openEditModal = (item) => {
 	selectedEditProduct.value = {
 		...item,
 		basePrice: item?.product_rrp,
+		pricing_type: item?.price_rule?.type ?? "percent",
+		pricing_value: item?.price_rule?.value ?? 0,
 	}
 }
 
 const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
 	if (!selectedProducts.value) return
 
-    const changeButtonState = disableCreateNew(item);
-
 	if (checked) {
 		if (!selectedProducts.value.includes(item.id)) {
 			selectedProducts.value.push(item.id)
 		}
-
-        if (!selectedInvalidProductsCreate.value?.includes(item.id) && changeButtonState){
-            selectedInvalidProductsCreate.value?.push(item.id)
-        }
 	} else {
 		selectedProducts.value = selectedProducts.value.filter((id) => id != item.id)
-
-        if (changeButtonState){
-            selectedInvalidProductsCreate.value = selectedInvalidProductsCreate.value?.filter(id => id != item.id)
-        }
 	}
-
-    if(selectedInvalidProductsCreate.value.length > 0){
-        emits('hideBulkButton');
-    }else{
-        emits('showBulkButton');
-    }
 }
 
 const onCheckedAll = ({ data, allChecked }) => {
@@ -385,7 +380,6 @@ const disableCreateNew = (item) => {
 	}
 
 	if (
-		!isEbay.value &&
 		item.platform_status &&
 		item.exist_in_platform &&
 		item.has_valid_platform_product_id
@@ -398,6 +392,18 @@ const disableCreateNew = (item) => {
 const disableButtons = (item) => {
 	return item.product_state == "discontinued" || !item.is_for_sale
 }
+
+const hasSelectedProductToCreate = computed(() =>
+	(props.data?.data ?? []).some(
+		(row) => selectedProducts.value?.includes(row.id) && !disableCreateNew(row)
+	)
+)
+
+watch(
+	hasSelectedProductToCreate,
+	(canCreate) => emits(canCreate ? "showBulkButton" : "hideBulkButton"),
+	{ immediate: true }
+)
 
 const listErrorProducts = ref({})
 
@@ -413,10 +419,49 @@ const calculateAdjustedPrice = (
 	type: "percent" | "fixed"
 ): number => {
 	if (type === "percent") {
-		return basePrice * (1 + adjustment / 100)
+		return Math.round(basePrice * (1 + adjustment / 100) * 100) / 100
 	}
 
-	return basePrice * 1 + adjustment
+	return Math.round((basePrice * 1 + adjustment) * 100) / 100
+}
+
+
+const editProductComputedPrice = computed(() =>
+	calculateAdjustedPrice(
+		selectedEditProduct.value?.product_rrp || 0,
+		selectedEditProduct.value?.pricing_value || 0,
+		selectedEditProduct.value?.pricing_type || "percent"
+	)
+)
+const isEditProductPriceInvalid = computed(() =>
+	selectedEditProduct.value?.pricing_type !== "not_follow" && editProductComputedPrice.value <= 0)
+const editProductPriceColor = computed(() => {
+	if (isEditProductPriceInvalid.value) return "text-red-600"
+	const rrp = selectedEditProduct.value?.product_rrp || 0
+	if (!rrp) return "text-emerald-700"
+	const diff = ((editProductComputedPrice.value - rrp) / rrp) * 100
+	if (diff > 20 || diff < -20) return "text-red-600"
+	if (diff > 15 || diff < -15) return "text-orange-500"
+	if (diff > 10 || diff < -10) return "text-yellow-600"
+	return "text-emerald-700"
+})
+
+const switchPricingMode = (mode: "percent" | "fixed" | "not_follow") => {
+	const sel = selectedEditProduct.value
+	if (!sel || sel.pricing_type === mode) return
+	if (mode === "not_follow" || sel.pricing_type === "not_follow") {
+		sel.pricing_value = 0
+		sel.pricing_type = mode
+		return
+	}
+	const rrp = sel.product_rrp || 0
+	const value = sel.pricing_value || 0
+	if (mode === "fixed") {
+		sel.pricing_value = Math.round(rrp * value) / 100
+	} else {
+		sel.pricing_value = rrp ? Math.round((value / rrp) * 10000) / 100 : 0
+	}
+	sel.pricing_type = mode
 }
 
 const submitUpdateAndUploadProduct = (sel, state: "draft" | "publish") => {
@@ -427,7 +472,9 @@ const submitUpdateAndUploadProduct = (sel, state: "draft" | "publish") => {
 		}),
 		{
 			title: sel.name,
-			price: sel.customer_price,
+			...(props.customerSalesChannel?.do_not_update_prices
+				? {}
+				: { pricing_type: sel.pricing_type, pricing_value: sel.pricing_value }),
 			description: sel.description,
 		},
 		{
@@ -468,45 +515,45 @@ const currentOffset = ref(0)
 const hasMore = ref(true)
 const isLoadingMore = ref(false)
 
-if (props.platform_data?.type === "ebay") {
-	watch(sentinel, async (element) => {
-		if (!element) return
-		await nextTick()
-		observer = new IntersectionObserver(([entry]) => {
-			if (entry.isIntersecting && hasMore) {
-				loadMore()
-			}
-		})
-		observer.observe(element)
+watch(sentinel, async (element) => {
+	if (!element) return
+	await nextTick()
+	observer = new IntersectionObserver(([entry]) => {
+		if (entry.isIntersecting && hasMore) {
+			loadMore()
+		}
 	})
+	observer.observe(element)
+})
 
-	const loadMore = async () => {
-		if (resultOfFetchPlatformProduct.value.length < 50 || !hasMore.value) {
+const loadMore = async () => {
+	if (resultOfFetchPlatformProduct.value.length < 50 || !hasMore.value) {
+		hasMore.value = false
+		return
+	}
+	currentOffset.value += 50
+	isLoadingMore.value = true
+	try {
+		const www = await axios.get(
+			route(props.routes.fetch_products.name, {
+				customerSalesChannel: props.customerSalesChannel?.id,
+				query: querySearchPortfolios.value,
+				offset: currentOffset.value,
+			})
+		)
+		const products = normalizeFetchedProducts(www.data)
+
+		if (products.length < 50) {
 			hasMore.value = false
-			return
 		}
-		currentOffset.value += 50
-		isLoadingMore.value = true
-		try {
-			const www = await axios.get(
-				route(props.routes.fetch_products.name, {
-					customerSalesChannel: props.customerSalesChannel?.id,
-					offset: currentOffset.value,
-				})
-			)
-			if (!Array.isArray(www.data) || www.data.length < 50) {
-				console.log("Doesn't have more")
-				hasMore.value = false
-			}
-			isLoadingMore.value = false
-			resultOfFetchPlatformProduct.value = [
-				...resultOfFetchPlatformProduct.value,
-				...www.data,
-			]
-		} catch (e) {
-			console.error("Error processing products", e)
-			isLoadingMore.value = false
-		}
+		isLoadingMore.value = false
+		resultOfFetchPlatformProduct.value = [
+			...resultOfFetchPlatformProduct.value,
+			...products,
+		]
+	} catch (e) {
+		console.error("Error processing products", e)
+		isLoadingMore.value = false
 	}
 }
 
@@ -536,7 +583,6 @@ const compTableFilterForSale = computed(() => {
 	return layout.currentQuery?.[`${props.tab}_filter`]?.is_for_sale
 })
 
-const percentageIncrease = ref(0);
 
 </script>
 
@@ -831,6 +877,17 @@ const percentageIncrease = ref(0);
 			</div>
 			<div
 				class="whitespace min-w-[50px] font-medium whitespace-break-spaces flex items-center text-center w-full"
+				v-else-if="item.is_platform_draft">
+				<FontAwesomeIcon
+					v-tooltip="trans('Draft: uploaded to eBay but not published yet')"
+					icon="fal fa-exclamation-circle"
+					class="text-amber-500 text-xl"
+					style="width: 100% !important"
+					fixed-width
+					aria-hidden="true" />
+			</div>
+			<div
+				class="whitespace min-w-[50px] font-medium whitespace-break-spaces flex items-center text-center w-full"
 				v-else-if="item.message">
 				<FontAwesomeIcon
 					v-tooltip="item.message"
@@ -855,7 +912,25 @@ const percentageIncrease = ref(0);
 		<!-- Column: Actions (connect) -->
 		<template #cell(matches)="{ item }">
 			<template v-if="item.customer_sales_channel_platform_status">
-				<template v-if="!item.platform_status">
+				<template v-if="item.is_platform_draft">
+					<ButtonWithLink
+						v-if="!disabled"
+						v-tooltip="trans('Publish this draft listing on eBay')"
+						:routeTarget="{
+							method: 'post',
+							name: 'retina.models.portfolio.publish_ebay_product',
+							parameters: {
+								portfolio: item.id,
+							},
+						}"
+						:bindToLink="{ preserveScroll: true }"
+						type="primary"
+						:label="trans('Publish on eBay')"
+						size="xxs"
+						icon="fal fa-upload"
+						:disabled="disableButtons(item)" />
+				</template>
+				<template v-else-if="!item.platform_status">
 					<div
 						v-if="item.platform_possible_matches?.number_matches"
 						class="border rounded p-1"
@@ -993,10 +1068,10 @@ const percentageIncrease = ref(0);
 						"
 						v-tooltip="
 							item.is_for_sale
-								? trans('Connect with other product')
+								? trans('Link this product to a different listing on :platform', { platform: props.platform_data.name })
 								: trans('This product line is currently not for sale')
 						"
-						:label="trans('Connect with other product')"
+						:label="trans('Change linked listing')"
 						:capitalize="false"
 						:icon="faRecycle"
 						size="xxs"
@@ -1076,7 +1151,7 @@ const percentageIncrease = ref(0);
 		<template #cell(create_new)="{ item }" v-if="!disabled">
 			<!-- {{ item.customer_sales_channel_platform_status }} --- {{ !item.platform_status }} -->
 			<div
-				v-if="item.customer_sales_channel_platform_status && !item.platform_status"
+				v-if="item.customer_sales_channel_platform_status && !item.platform_status && !item.is_platform_draft"
 				class="flex gap-x-2 items-center">
 				<ButtonWithLink
 					v-tooltip="
@@ -1153,19 +1228,25 @@ const percentageIncrease = ref(0);
 					size="xs"
 					icon="fal fa-pencil"
 					@click="openEditModal(item)" />
-				<ButtonWithLink
-					v-tooltip="
-						trans('Unselect product. This will remove the product from :platform', {
-							platform: props.platform_data.name,
-						})
-					"
-					type="negative"
-					icon="fal fa-skull"
-					:routeTarget="item.delete_portfolio"
-					:method="'delete'"
-					size="xs"
-					:style="'white-r-outline'"
-					:bindToLink="{ preserveScroll: true }" />
+				<ModalConfirmationDelete
+					:routeDelete="item.delete_portfolio"
+					:title="trans('Remove :product from :platform?', { product: item.name, platform: props.platform_data.name })"
+					:description="trans('The product will be unselected from this channel.')"
+					isFullLoading>
+					<template #default="{ changeModel }">
+						<Button
+							v-tooltip="
+								trans('Unselect product. This will remove the product from :platform', {
+									platform: props.platform_data.name,
+								})
+							"
+							type="negative"
+							icon="fal fa-skull"
+							@click="changeModel"
+							size="xs"
+							:style="'white-r-outline'" />
+					</template>
+				</ModalConfirmationDelete>
 			</div>
 		</template>
 	</Table>
@@ -1317,7 +1398,7 @@ const percentageIncrease = ref(0);
 									<LoadingIcon v-if="hasMore" />
 								</div>
 								<div
-									v-if="!hasMore && platform_data.type == 'ebay'"
+									v-if="!hasMore"
 									class="col-span-2 text-center">
 									{{ trans("You've reached the end of item list") }}
 								</div>
@@ -1354,11 +1435,13 @@ const percentageIncrease = ref(0);
 	<Modal
 		:isOpen="isOpenModalEditProduct"
 		width="w-full max-w-2xl h-full"
+		closeButton
 		@close="isOpenModalEditProduct = false">
-		<div class="max-h-[570px] overflow-auto">
+		<div class="max-h-[570px] flex flex-col">
 			<div class="text-xl font-semibold text-center">
 				{{ trans("Edit Product") }}
 			</div>
+			<div class="flex-1 min-h-0 overflow-auto">
 
 			<div class="mb-3">
 				<label for="edit-product-title" class="block text-sm font-semibold">{{
@@ -1372,94 +1455,71 @@ const percentageIncrease = ref(0);
 					:disabled="isLoadingSubmitErrorTitle" />
 			</div>
 
-			<div class="mb-3">
-				<label for="edit-product-rrp" class="block text-sm font-semibold">{{
-					trans("Selling Price")
-				}}</label>
-				<InputNumber
-					@update:modelValue="(value) => selectedEditProduct.customer_price = value"
-					:modelValue="selectedEditProduct?.customer_price"
-					inputId="edit-product-rrp"
-					mode="currency"
-					fluid
-					size="small"
-					:currency="layout?.iris?.currency?.code"
-					:locale="layout.locale"
-					:allowEmpty="false"
-					:min="selectedEditProduct?.product_rrp" />
-				<div class="mt-2 flex flex-row gap-2">
+			<div v-if="customerSalesChannel?.do_not_update_prices" class="mb-3 text-sm text-gray-500">
+				{{ trans("This channel does not follow our prices: you manage prices directly on eBay. Title and description are still updated there when you save.") }}
+			</div>
+			<div v-else class="mb-3">
+				<label class="block text-sm font-semibold">
+					{{ trans("Price Mapping") }}
+					<FontAwesomeIcon
+						:icon="['fal', 'info-circle']"
+						class="text-gray-400 cursor-help"
+						v-tooltip="trans('Your eBay price is set relative to the base price (RRP): a percentage or an amount, up or down. When the base price changes, your eBay price follows this rule.')" />
+				</label>
+				<div class="flex flex-row flex-wrap items-center gap-2">
 					<Button
-						v-for="percent in [20, 40, 60]"
-						:key="'p' + percent"
-						@click="
-							set(
-								selectedEditProduct,
-								['customer_price'],
-								calculateAdjustedPrice(
-									selectedEditProduct?.product_rrp || 0,
-									percent,
-									'percent'
-								)
-							)
-						"
-						:label="`+${percent}%`"
+						:key="'mode-percent-' + selectedEditProduct.pricing_type"
+						:label="trans('± % over live RRP')"
 						size="xs"
-						type="tertiary"
-						:style="'white-w-outline'" />
-						<div class="flex flex-row">
-							<InputNumber
-								@update:modelValue="(value) => percentageIncrease = value"
-								:modelValue="percentageIncrease"
-								:inputClass="'xxs w-[65px]'"
-								:inputStyle="{
-									'border-top-right-radius':0,
-									'border-bottom-right-radius':0,
-									'font-size': '0.75rem'
-								}"
-								type="tertiary"
-								:style="'white-w-outline'"
-								:min="0"
-								:max="100"
-								:allowEmpty="false"
-								:suffix="'%'"
-							/>
-							<Button
-								@click="
-									set(
-										selectedEditProduct,
-										['customer_price'],
-										calculateAdjustedPrice(
-											selectedEditProduct?.product_rrp || 0,
-											percentageIncrease,
-											'percent'
-										)
-									)
-								"
-								:label="`+`"
-								size="xs"
-								type="tertiary"
-								:class="'rounded-l-none  ml-0 px-4'"
-								:style="'white-w-outline'"
-							/>
+						:type="selectedEditProduct.pricing_type === 'percent' ? 'primary' : 'tertiary'"
+						:style="selectedEditProduct.pricing_type === 'percent' ? undefined : 'white-w-outline'"
+						@click="switchPricingMode('percent')" />
+					<Button
+						:key="'mode-fixed-' + selectedEditProduct.pricing_type"
+						:label="trans('± :currency over live RRP', { currency: layout?.iris?.currency?.symbol || layout?.iris?.currency?.code || '£' })"
+						size="xs"
+						:type="selectedEditProduct.pricing_type === 'fixed' ? 'primary' : 'tertiary'"
+						:style="selectedEditProduct.pricing_type === 'fixed' ? undefined : 'white-w-outline'"
+						@click="switchPricingMode('fixed')" />
+					<Button
+						:key="'mode-notfollow-' + selectedEditProduct.pricing_type"
+						:label="trans('Not follow')"
+						size="xs"
+						:type="selectedEditProduct.pricing_type === 'not_follow' ? 'primary' : 'tertiary'"
+						:style="selectedEditProduct.pricing_type === 'not_follow' ? undefined : 'white-w-outline'"
+						@click="switchPricingMode('not_follow')" />
+				</div>
+				<div v-if="selectedEditProduct.pricing_type !== 'not_follow'" class="mt-3 min-h-[56px] flex flex-row items-center gap-4">
+					<InputNumber
+						@update:modelValue="(value) => selectedEditProduct.pricing_value = value"
+						@input="(event) => selectedEditProduct.pricing_value = event.value"
+						:modelValue="selectedEditProduct?.pricing_value"
+						:inputClass="'xxs w-[100px]'"
+						:min="-100"
+						:max="900"
+						:minFractionDigits="0"
+						:maxFractionDigits="2"
+						:allowEmpty="false"
+						:suffix="selectedEditProduct.pricing_type === 'percent' ? '%' : undefined"
+						:prefix="selectedEditProduct.pricing_type === 'fixed' ? (layout?.iris?.currency?.symbol || layout?.iris?.currency?.code || '£') : (selectedEditProduct.pricing_value > 0 ? '+' : undefined)"
+						size="small" />
+					<div class="flex flex-row items-center gap-3 whitespace-nowrap">
+						<div>
+							<div class="text-[10px] uppercase tracking-wide text-gray-400">{{ trans("Live RRP") }}</div>
+							<div class="text-base text-gray-500">{{ locale.currencyFormat(layout?.iris?.currency?.code, selectedEditProduct?.product_rrp || 0) }}</div>
 						</div>
-						<Button
-						v-for="amount in [2, 4, 6, 8, 10]"
-						:key="'a' + amount"
-						@click="
-							set(
-								selectedEditProduct,
-								['customer_price'],
-								calculateAdjustedPrice(
-									selectedEditProduct?.product_rrp || 0,
-									amount,
-									'fixed'
-								)
-							)
-						"
-						:label="`+${amount}`"
-						size="xs"
-						type="tertiary"
-						:style="'white-w-outline'" />
+						<div class="text-gray-400">→</div>
+						<div>
+							<div class="text-[10px] uppercase tracking-wide" :class="editProductPriceColor">{{ trans("Your eBay price") }}</div>
+							<div class="text-base font-semibold" :class="editProductPriceColor">{{ locale.currencyFormat(layout?.iris?.currency?.code, editProductComputedPrice) }}</div>
+						</div>
+					</div>
+				</div>
+				<div v-else class="mt-3 min-h-[56px] flex items-center text-sm text-gray-500">
+					{{ trans("This product's eBay price stays as it is. We will not update it, even when the RRP changes.") }}
+				</div>
+				<div v-if="isEditProductPriceInvalid" class="mt-1 text-sm text-red-600">
+					{{ trans("This adjustment takes the price to zero or below. Your eBay price must be greater than zero.") }}
 				</div>
 			</div>
 
@@ -1519,18 +1579,21 @@ const percentageIncrease = ref(0);
 					</template>
 				</Editor2>
 			</div>
-			<div class="mt-3 flex gap-2">
+			</div>
+			<div class="mt-3 pt-3 border-t border-gray-200 flex gap-2 flex-shrink-0">
 				<Button
 					type="tertiary"
 					:style="'white-w-outline'"
 					@click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'draft')"
 					:label="trans('Save as Draft')"
 					full
+					:disabled="isEditProductPriceInvalid"
 					:loading="isLoadingSubmitErrorTitle" />
 				<Button
 					@click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'publish')"
 					:label="trans('Save & Publish')"
 					full
+					:disabled="isEditProductPriceInvalid"
 					:loading="isLoadingSubmitErrorTitle" />
 			</div>
 		</div>

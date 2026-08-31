@@ -166,7 +166,7 @@ task('deploy:restart-owl', function () {
     // an unchanged process. Its own VersionDriftWatcher warns if this ever misses.
     $checksum = function (string $path): string {
         $cmd = 'find '.$path.'/vendor/nightowl/agent '.$path.'/config/nightowl.php'
-            .' -type f -exec sha1sum {} + 2>/dev/null | sort | sha1sum';
+            .' -type f -exec sha1sum {} + 2>/dev/null | cut -d" " -f1 | sort | sha1sum';
 
         try {
             return trim(run("bash -c '".$cmd."'"));
@@ -429,7 +429,11 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
     }
 })->select('env=prod|staging');
 
-set('keep_releases', 20);
+set('keep_releases', function () {
+    // helio's horizon workers run with --max-time=0 and stay pinned to the release
+    // they started in, so 2 was deleting a release that was still live.
+    return currentHost()->getAlias() === 'aiku_helio' ? 4 : 20;
+});
 
 set('shared_dirs', ['storage', 'private', 'local_storage']);
 set('shared_files', [
@@ -494,6 +498,25 @@ task('deploy:translations:setup-guess-language', function () {
 });
 
 
+desc('Index engineering notes into Typesense');
+task('deploy:aiku-public:index-notes', function () {
+    try {
+        artisan('aiku-public:index-notes', ['skipIfNoEnv', 'showOutput'])();
+    } catch (\Throwable $e) {
+        writeln('<comment>aiku-public:index-notes skipped: '.$e->getMessage().'</comment>');
+    }
+});
+
+desc('Submit public URLs to IndexNow');
+task('deploy:aiku-public:indexnow', function () {
+    try {
+        artisan('aiku-public:indexnow', ['skipIfNoEnv', 'showOutput'])();
+    } catch (\Throwable $e) {
+        writeln('<comment>aiku-public:indexnow skipped: '.$e->getMessage().'</comment>');
+    }
+});
+
+
 desc('Strip node_modules from all but the 5 newest releases');
 task('deploy:prune-node-modules', function () {
     run("ls -1t {{deploy_path}}/releases | tail -n +6 | while read r; do rm -rf \"{{deploy_path}}/releases/\$r/node_modules\"; done");
@@ -527,4 +550,33 @@ task('deploy', [
     'deploy:refresh-vue',
     'deploy:flush-varnish',
     'deploy:translations:setup-guess-language',
+    'deploy:aiku-public:index-notes',
+    'deploy:aiku-public:indexnow',
 ]);
+
+// ponytail: same as the stock cleanup, plus two things it lacks. A release is
+// skipped while any process still has its cwd inside it -- horizon workers and
+// crons keep running from the release they started in, and rm there deletes the
+// shared-storage symlink, which the live app instantly recreates as a real
+// directory (ENOTEMPTY, and feeds written into a dead release). And a release
+// that cannot be removed warns instead of failing the whole deploy at its last
+// task.
+task('deploy:cleanup', function () {
+    run('cd {{deploy_path}} && if [ -e release ]; then rm release; fi');
+
+    $keep = (int) get('keep_releases');
+    if ($keep <= 0) {
+        return;
+    }
+
+    foreach (array_slice(get('releases_list'), $keep) as $release) {
+        $path = '{{deploy_path}}/releases/'.$release;
+        $busy = trim(run("bash -c 'ls -l /proc/*/cwd 2>/dev/null | grep -c \"$(readlink -f $path)\"' || true"));
+        if ($busy !== '0' && $busy !== '') {
+            writeln("<comment>Keeping release $release: $busy process(es) still running from it.</comment>");
+            continue;
+        }
+
+        run("rm -rf $path || echo 'could not remove release $release'");
+    }
+});

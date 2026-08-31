@@ -80,6 +80,22 @@ class EditMasterProduct extends OrgAction
      */
     public function htmlResponse(MasterAsset $masterAsset, ActionRequest $request): Response
     {
+        
+        $iconLinks = [];
+
+        if ($masterAsset->is_single_trade_unit && $masterAsset->tradeUnits->first()) {
+            $iconLinks[] = [
+                'icon'    => 'fal fa-atom',
+                'tooltip' => __('Go to Edit Trade Unit'),
+                'route'   => [
+                    'name'       => 'grp.trade_units.units.show',
+                    'parameters' => [
+                        'tradeUnit' => $masterAsset->tradeUnits->first()->slug,
+                    ]
+                ],
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
@@ -116,7 +132,8 @@ class EditMasterProduct extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ]
-                    ]
+                    ],
+                    'iconLinks' => $iconLinks,
                 ],
                 'formData' => [
                     'blueprint' => $this->getBlueprint($masterAsset),

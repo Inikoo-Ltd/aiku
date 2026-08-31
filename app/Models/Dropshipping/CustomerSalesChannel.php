@@ -142,6 +142,14 @@ class CustomerSalesChannel extends Model implements Authenticatable, Auditable
         'settings'  => '{}'
     ];
 
+    protected array $auditInclude = [
+        'reference',
+        'name',
+        'status',
+        'state',
+        'connection_status',
+    ];
+
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
@@ -166,7 +174,7 @@ class CustomerSalesChannel extends Model implements Authenticatable, Auditable
 
     public function user(): MorphTo
     {
-        return $this->morphTo('platform_user');
+        return $this->morphTo(__FUNCTION__, 'platform_user_type', 'platform_user_id');
     }
 
     public function platform(): BelongsTo

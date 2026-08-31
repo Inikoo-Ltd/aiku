@@ -19,7 +19,7 @@ import { trans } from "laravel-vue-i18n";
 import { useConfirm } from "primevue/useconfirm";
 import { useLiveUsers } from "@/Stores/active-users";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
-import { setIframeView } from "@/Composables/Workshop";
+import { getRevealSetting, setIframeView } from "@/Composables/Workshop";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Publish from "@/Components/Publish.vue";
@@ -113,12 +113,14 @@ const isCreatingTemplate = ref(false);
 const TEMPLATES_INDEX_ROUTE = "grp.json.template_layouts.index";
 const TEMPLATE_DETAIL_ROUTE = "grp.json.template_layouts.detail";
 const TEMPLATE_APPLY_ROUTE = "grp.models.webpage.apply_template";
+const TEMPLATE_DELETE_ROUTE = "grp.models.web_layout_template.delete";
 const TEMPLATES_PER_PAGE = 10;
 const templates = ref<WebLayoutTemplateList>({ data: [] });
 const templatesSearch = ref("");
 const isLoadingTemplates = ref(false);
 const templatesErrorMessage = ref<string | null>(null);
 const applyingTemplateId = ref<number | null>(null);
+const deletingTemplateId = ref<number | null>(null);
 const isApplyTemplateDialogVisible = ref(false);
 const isApplyingTemplate = ref(false);
 const selectedTemplate = ref<WebLayoutTemplate | null>(null);
@@ -131,6 +133,17 @@ const WEBPAGE_TYPES_WITHOUT_TEMPLATE = ['storefront', 'blog'];
 const canUseTemplate = computed(() => !WEBPAGE_TYPES_WITHOUT_TEMPLATE.includes(props.webpage.type));
 
 console.log('layout',layout)
+
+const revealBlockOptions = computed(() =>
+  (data.value?.layout?.web_blocks ?? [])
+    .filter(block => getRevealSetting(block))
+    .map(block => ({
+      key: getRevealSetting(block).key,
+      label: block.web_block.layout.data?.fieldValue?.blocks?.name || block.type,
+    }))
+);
+
+provide('revealBlockOptions', revealBlockOptions);
 
 provide('webpage_luigi_tracker_id', props.luigi_tracker_id)
 provide('currentView', currentView);
@@ -188,6 +201,30 @@ const addNewBlock = async ({ block, type }) => {
   );
 };
 
+const renameDuplicatedRevealKeys = () => {
+  const blocks = data.value.layout.web_blocks;
+  const usedKeys = new Set(blocks.map(block => block?.web_block?.layout?.reveal?.key).filter(Boolean));
+  const seenKeys = new Set();
+
+  blocks.forEach(block => {
+    const reveal = block?.web_block?.layout?.reveal;
+    if (!reveal?.key) return;
+
+    if (!seenKeys.has(reveal.key)) {
+      seenKeys.add(reveal.key);
+      return;
+    }
+
+    let suffix = 2;
+    while (usedKeys.has(`${reveal.key}-${suffix}`)) suffix++;
+
+    reveal.key = `${reveal.key}-${suffix}`;
+    usedKeys.add(reveal.key);
+    seenKeys.add(reveal.key);
+    onSaveWorkshop(block, false);
+  });
+};
+
 const duplicateBlock = async (modelHasWebBlock = Number) => {
   router.post(
     route('grp.models.webpage.web_block.duplicate', {
@@ -206,6 +243,7 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
       onCancelToken: token => addBlockCancelToken.value = token.cancel,
       onSuccess: e => {
         data.value = e.props.webpage;
+        renameDuplicatedRevealKeys();
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => notify({
@@ -630,6 +668,30 @@ const applyTemplate = async (template: WebLayoutTemplate) => {
   }
 };
 
+const deleteTemplate = async (template: WebLayoutTemplate) => {
+  deletingTemplateId.value = template.id;
+
+  try {
+    await axios.delete(route(TEMPLATE_DELETE_ROUTE, { template: template.id }));
+
+    notify({
+      title: trans("Success"),
+      text: trans("Template has been deleted"),
+      type: "success"
+    });
+
+    await fetchTemplates();
+  } catch (error: any) {
+    notify({
+      title: trans("Something went wrong"),
+      text: error?.response?.data?.message || error.message,
+      type: "error"
+    });
+  } finally {
+    deletingTemplateId.value = null;
+  }
+};
+
 const onApplyTemplate = (payload: {
   template_id: number | null,
   blocks: Array<{
@@ -897,10 +959,12 @@ console.log('props_workshop',props)
           :isLoadingTemplates="isLoadingTemplates"
           :templatesErrorMessage="templatesErrorMessage"
           :applyingTemplateId="applyingTemplateId"
+          :deletingTemplateId="deletingTemplateId"
           @fetchTemplates="fetchTemplates()"
           @searchTemplates="onSearchTemplates"
           @navigateTemplates="fetchTemplates"
           @useTemplate="applyTemplate"
+          @deleteTemplate="deleteTemplate"
           @update="onSaveWorkshop"
           @delete="sendDeleteBlock"
           @add="addNewBlock"

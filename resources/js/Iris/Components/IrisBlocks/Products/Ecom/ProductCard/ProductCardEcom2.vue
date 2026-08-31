@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref } from 'vue'
+import { defineAsyncComponent, inject, ref } from 'vue'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faEnvelope, faHeart as farHeart } from '@far'
 import { faHeart as fasHeart, faStarHalfAlt } from '@fas'
@@ -23,6 +23,8 @@ import { ProductResource } from '@/types/Iris/Products'
 import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
+
+const ProductSoundButton = defineAsyncComponent(() => import("@/Iris/Components/ProductSoundButton.vue"))
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -152,6 +154,8 @@ defineExpose({
                     <div class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10 offer ">
                          <DiscountByType :offers_data="product?.product_offers_data" template="max_discount" />
                     </div>
+
+                    <ProductSoundButton v-if="product.audio" :src="product.audio" :topSeller="product.top_seller" />
 
                     <!-- GOLDEN PRODUCT + FAVOURITE -->
                     <div v-if="product.is_golden_product || (layout?.iris?.is_logged_in && !product.variant)"

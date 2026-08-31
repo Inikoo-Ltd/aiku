@@ -370,8 +370,8 @@ class ShowProduct extends OrgAction
                 : Inertia::optional(fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
 
             ProductTabsEnum::HISTORY->value => $this->tab == ProductTabsEnum::HISTORY->value ?
-                fn () => HistoryResource::collection(IndexHistory::run($product))
-                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($product))),
+                fn () => HistoryResource::collection(IndexHistory::run($product, ProductTabsEnum::HISTORY->value))
+                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($product, ProductTabsEnum::HISTORY->value))),
 
             ProductTabsEnum::CUSTOMERS->value => $this->tab == ProductTabsEnum::CUSTOMERS->value ?
                 fn () => CustomersResource::collection(IndexCustomers::run($product))
@@ -493,7 +493,7 @@ class ShowProduct extends OrgAction
             ->table(IndexOrdersInProduct::make()->tableStructure($product, ProductTabsEnum::ORDERS->value))
             ->table(IndexTradeUnitsInProduct::make()->tableStructure(prefix: ProductTabsEnum::TRADE_UNITS->value))
             ->table(IndexOrgStocksInProduct::make()->tableStructure(prefix: ProductTabsEnum::STOCKS->value))
-            ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value))
+            ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value, model: $product))
             ->table(IndexCustomers::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::CUSTOMERS->value))
             ->table(IndexReviews::make()->tableStructure(prefix: ProductTabsEnum::REVIEWS->value));
 

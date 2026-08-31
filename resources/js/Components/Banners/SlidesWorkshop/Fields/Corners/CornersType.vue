@@ -20,6 +20,9 @@ const props = defineProps<{
   fieldData: any
 }>()
 
+const toPlainObject = (value: any) =>
+  value && typeof value === "object" && !Array.isArray(value) ? value : {}
+
 const section = computed({
   get: () => props.modelValue,
   set: (val) => {
@@ -106,17 +109,15 @@ const clickTypeCorner = (index: number, value: any) => {
   const current = cloneDeep(section.value || {})
 
   const prevType = current?.type
-  const tempStore = current?.temporaryData || {}
+  const tempStore = toPlainObject(current?.temporaryData)
 
   // simpan hanya data dari type sebelumnya
   if (prevType) {
-    tempStore[prevType] = cloneDeep(current?.data || {})
+    tempStore[prevType] = toPlainObject(cloneDeep(current?.data))
   }
 
   // ambil data dari type baru jika ada
-  const nextData = tempStore[value.value]
-    ? cloneDeep(tempStore[value.value])
-    : {}
+  const nextData = toPlainObject(cloneDeep(tempStore[value.value]))
 
   const nextSection = {
     ...current,
@@ -145,8 +146,8 @@ const getValue = (fieldData: any) => {
 }
 
 const setValue = (fieldData: any, value: any) => {
-  console.log(fieldData, value)
   const cloned = cloneDeep(props.modelValue || {})
+  cloned.data = toPlainObject(cloned.data)
   const fieldName = fieldData.name
 
   if (Array.isArray(fieldData.useIn) && fieldData.useIn.length > 0) {

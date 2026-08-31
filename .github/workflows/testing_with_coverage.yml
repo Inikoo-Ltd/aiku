@@ -1,21 +1,29 @@
-name: Backend Tests With Coverage
+name: Nightly Coverage & Bundle Analysis
 on:
-  push:
-    branches: [ "production_stop" ]
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+    inputs:
+      only:
+        description: Run only this job
+        type: choice
+        default: all
+        options: [ all, coverage, bundle ]
 
 env:
   HOME: /home/aiku_test
   XDEBUG_MODE: coverage
 
 jobs:
-  laravel-tests:
-    name: Run backend tests 🧪
+  coverage:
+    name: Coverage → Codecov 📊
+    if: ${{ inputs.only == 'all' || inputs.only == 'coverage' || inputs.only == '' }}
     runs-on: [ self-hosted ]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          fetch-depth: 0
       - name: Composer install
         run: php8.4 /usr/local/bin/composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
       - name: Prepare environment
@@ -23,6 +31,9 @@ jobs:
           ln -s ../../../../.pgpass .pgpass
           ln -s ../../../../env.aiku.testing .env.testing
           ln -s ../../../../env.aiku.testing .env
+          ln -s ../../../../../artifacts/playwright/node_modules node_modules
+          ln -s ../../../../../artifacts/oauth/oauth-private.key storage/oauth-private.key
+          ln -s ../../../../../artifacts/oauth/oauth-public.key storage/oauth-public.key
           ln -s ../../../../../artifacts/public/grp public/grp
           ln -s ../../../../../artifacts/public/iris public/iris
           ln -s ../../../../../artifacts/public/retina public/retina
@@ -30,33 +41,55 @@ jobs:
           mkdir private
           cd private
           ln -s ../../../../../artifacts/fa .
-
-      - name: Get db changed files
-        id: changed-db-files
-        uses: tj-actions/changed-files@v47
-        with:
-          files: |
-            app/Enums/**
-            app/Stubs/**
-            database/migrations/**
-      - name: Get coverage changed files
-        id: changed-coverage-files
-        uses: tj-actions/changed-files@v47
-        with:
-          files: |
-            app/**
-            tests/**
-            database/migrations/**
       - name: Generate database dumps 📚
-        run: ./generate_testing_db_dumps.sh php8.4 aiku_test;cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/
+        run: |
+          MIGRATIONS_HASH=$(git ls-files -s database/migrations database/seeders | git hash-object --stdin)
+          if [ ! -f ../../../../artifacts/aiku.dump ] || [ "$MIGRATIONS_HASH" != "$(cat ../../../../artifacts/aiku.dump.migrations_hash 2>/dev/null)" ]; then
+            ./generate_testing_db_dumps.sh php8.4 aiku_test
+            cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/
+            echo "$MIGRATIONS_HASH" > ../../../../artifacts/aiku.dump.migrations_hash
+          else
+            echo "Migrations unchanged, reusing cached aiku.dump"
+          fi
       - name: Retrieve db dumps
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
-      - name: Run test with coverage
-        if: steps.changed-coverage-files.outputs.any_changed == 'true'
-        run: /usr/bin/php8.4 -d memory_limit=-1 -d newrelic.enabled=0 vendor/bin/pest --parallel --processes=8 --coverage-clover clover.xml --stop-on-defect
-      - name: Process coverage to Codecov
-        if: steps.changed-coverage-files.outputs.any_changed == 'true'
+      - name: Run tests with coverage
+        run: /usr/bin/php8.4 -d memory_limit=-1 -d newrelic.enabled=0 vendor/bin/pest --parallel --processes=8 --coverage-clover clover.xml --log-junit junit.xml
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: Inikoo-Ltd/aiku
+          files: clover.xml
+          flags: backend
+          fail_ci_if_error: true
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: Inikoo-Ltd/aiku
+          files: junit.xml
+          flags: backend
+
+  bundle-analysis:
+    name: Bundle analysis → Codecov 📦
+    if: ${{ inputs.only == 'all' || inputs.only == 'bundle' || inputs.only == '' }}
+    runs-on: [ self-hosted ]
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Prepare environment
+        run: |
+          mkdir private
+          cd private
+          ln -s ../../../../../artifacts/fa .
+      - name: npm ci
+        run: npm ci
+      - name: Build and upload bundle stats
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          NODE_OPTIONS: --max-old-space-size=8192
+        run: npm run build

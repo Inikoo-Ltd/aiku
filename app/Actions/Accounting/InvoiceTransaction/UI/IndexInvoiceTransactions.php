@@ -10,6 +10,7 @@
 namespace App\Actions\Accounting\InvoiceTransaction\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithMarginData;
 use App\InertiaTable\InertiaTable;
 use App\Services\QueryBuilder;
 use Closure;
@@ -21,7 +22,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexInvoiceTransactions extends OrgAction
 {
-    public function handle(Invoice $invoice, $prefix = null): LengthAwarePaginator
+    use WithMarginData;
+
+    public function handle(Invoice $invoice, $prefix = null, bool $withMargins = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -66,6 +69,18 @@ class IndexInvoiceTransactions extends OrgAction
                 'currencies.id as currency_id'
             ]);
 
+        if ($withMargins) {
+            $queryBuilder->leftJoin('products', function ($join) {
+                $join->on('assets.model_id', '=', 'products.id')->where('assets.model_type', 'Product');
+            });
+            $queryBuilder->leftJoin('transactions as margin_transactions', 'margin_transactions.id', '=', 'invoice_transactions.transaction_id');
+            $queryBuilder->addSelect([
+                'invoice_transactions.org_net_amount',
+                DB::raw('('.$this->actualCostSql('invoice_transactions.transaction_id').') * invoice_transactions.quantity / NULLIF(margin_transactions.quantity_ordered, 0) as margin_actual_cost'),
+                DB::raw($this->estimatedCostSql('invoice_transactions.quantity').' as margin_estimated_cost'),
+            ]);
+        }
+
         $queryBuilder->with('model');
 
         return $queryBuilder
@@ -75,9 +90,9 @@ class IndexInvoiceTransactions extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure($prefix = null): Closure
+    public function tableStructure($prefix = null, bool $withMargins = false): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($prefix, $withMargins) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -91,6 +106,9 @@ class IndexInvoiceTransactions extends OrgAction
             $table->column(key: 'description', label: __('Description'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            if ($withMargins) {
+                $table->column(key: 'margin', label: __('Margin'), canBeHidden: false, align: 'right');
+            }
             $table->defaultSort('code');
         };
     }

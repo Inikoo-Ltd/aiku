@@ -161,7 +161,6 @@ const locale = inject("locale", aikuLocaleStructure)
 const layout = inject("layout", retinaLayoutStructure)
 const isEbay = computed(() => props.platform_data?.type === "ebay")
 const selectedProducts = defineModel<number[]>("selectedProducts")
-const selectedInvalidProductsCreate = ref<number[]>([]);
 // Table: Filter out-of-stock and discontinued
 const compTableFilterStatus = computed(() => {
 	return layout.currentQuery?.[`${props.tab}_filter`]?.status
@@ -255,8 +254,13 @@ const onSubmitVariant = () => {
 const resultOfFetchPlatformProduct = ref<PlatformProduct[]>([])
 const isLoadingFetchPlatformProduct = ref(false)
 
+const normalizeFetchedProducts = (data) =>
+	Array.isArray(data) ? data : (data?.products ?? [])
+
 const fetchRoute = async () => {
 	isLoadingFetchPlatformProduct.value = true
+	currentOffset.value = 0
+	hasMore.value = true
 	try {
 		const www = await axios.get(
 			route(props.routes.fetch_products.name, {
@@ -265,11 +269,13 @@ const fetchRoute = async () => {
 			})
 		)
 
-		if (!Array.isArray(www.data) || www.data.length < 50) {
+		const products = normalizeFetchedProducts(www.data)
+
+		if (products.length < 50) {
 			hasMore.value = false
 		}
 
-		resultOfFetchPlatformProduct.value = www.data
+		resultOfFetchPlatformProduct.value = products
 		// console.log('qweqw', www)
 	} catch (e) {
 		console.error("Error processing products", e)
@@ -283,28 +289,12 @@ const debounceGetPortfoliosList = debounce(() => fetchRoute(), 700)
 const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
 	if (!selectedProducts.value) return
 
-	const changeButtonState = disableCreateNew(item);
-
 	if (checked) {
 		if (!selectedProducts.value.includes(item.id)) {
 			selectedProducts.value.push(item.id)
 		}
-
-		if (!selectedInvalidProductsCreate.value?.includes(item.id) && changeButtonState) {
-			selectedInvalidProductsCreate.value?.push(item.id)
-		}
 	} else {
 		selectedProducts.value = selectedProducts.value.filter((id) => id != item.id)
-
-		if (changeButtonState) {
-			selectedInvalidProductsCreate.value = selectedInvalidProductsCreate.value?.filter(id => id != item.id)
-		}
-	}
-
-	if (selectedInvalidProductsCreate.value.length > 0) {
-		emits('hideBulkButton');
-	} else {
-		emits('showBulkButton');
 	}
 }
 
@@ -342,7 +332,6 @@ const disableCreateNew = (item) => {
 	}
 
 	if (
-		!isEbay.value &&
 		item.platform_status &&
 		item.exist_in_platform &&
 		item.has_valid_platform_product_id
@@ -356,10 +345,22 @@ const disableButtons = (item) => {
 	return item.product_state == "discontinued" || !item.is_for_sale
 }
 
+const hasSelectedProductToCreate = computed(() =>
+	(props.data?.data ?? []).some(
+		(row) => selectedProducts.value?.includes(row.id) && !disableCreateNew(row)
+	)
+)
+
+watch(
+	hasSelectedProductToCreate,
+	(canCreate) => emits(canCreate ? "showBulkButton" : "hideBulkButton"),
+	{ immediate: true }
+)
+
 const listErrorProducts = ref({})
 
 // Section: Modal Error Product (i.e Ebay title too long)
-const selectedEditProduct = ref(null)
+const selectedEditProduct = ref<any>(null)
 const selectedErrorProduct = ref(null)
 const isOpenModalEditProduct = ref(false)
 const isLoadingSubmitErrorTitle = ref(false)
@@ -425,45 +426,45 @@ const currentOffset = ref(0)
 const hasMore = ref(true)
 const isLoadingMore = ref(false)
 
-if (props.platform_data?.type === "ebay") {
-	watch(sentinel, async (element) => {
-		if (!element) return
-		await nextTick()
-		observer = new IntersectionObserver(([entry]) => {
-			if (entry.isIntersecting && hasMore) {
-				loadMore()
-			}
-		})
-		observer.observe(element)
+watch(sentinel, async (element) => {
+	if (!element) return
+	await nextTick()
+	observer = new IntersectionObserver(([entry]) => {
+		if (entry.isIntersecting && hasMore) {
+			loadMore()
+		}
 	})
+	observer.observe(element)
+})
 
-	const loadMore = async () => {
-		if (resultOfFetchPlatformProduct.value.length < 50 || !hasMore.value) {
+const loadMore = async () => {
+	if (resultOfFetchPlatformProduct.value.length < 50 || !hasMore.value) {
+		hasMore.value = false
+		return
+	}
+	currentOffset.value += 50
+	isLoadingMore.value = true
+	try {
+		const www = await axios.get(
+			route(props.routes.fetch_products.name, {
+				customerSalesChannel: props.customerSalesChannel?.id,
+				query: querySearchPortfolios.value,
+				offset: currentOffset.value,
+			})
+		)
+		const products = normalizeFetchedProducts(www.data)
+
+		if (products.length < 50) {
 			hasMore.value = false
-			return
 		}
-		currentOffset.value += 50
-		isLoadingMore.value = true
-		try {
-			const www = await axios.get(
-				route(props.routes.fetch_products.name, {
-					customerSalesChannel: props.customerSalesChannel?.id,
-					offset: currentOffset.value,
-				})
-			)
-			if (!Array.isArray(www.data) || www.data.length < 50) {
-				console.log("Doesn't have more")
-				hasMore.value = false
-			}
-			isLoadingMore.value = false
-			resultOfFetchPlatformProduct.value = [
-				...resultOfFetchPlatformProduct.value,
-				...www.data,
-			]
-		} catch (e) {
-			console.error("Error processing products", e)
-			isLoadingMore.value = false
-		}
+		isLoadingMore.value = false
+		resultOfFetchPlatformProduct.value = [
+			...resultOfFetchPlatformProduct.value,
+			...products,
+		]
+	} catch (e) {
+		console.error("Error processing products", e)
+		isLoadingMore.value = false
 	}
 }
 
@@ -496,11 +497,12 @@ const compTableFilterForSale = computed(() => {
 // action bundle edit
 const openEditModal = (item: any) => {
 	isOpenModalEditProduct.value = true
-
 	selectedEditProduct.value = {
 		...item,
 		basePrice: item?.customer_price,
 	}
+	submitError.value = null
+	bundleSnapshotOnLoad.value = null
 	fetchEditMediaGallery()
 }
 
@@ -535,15 +537,22 @@ const fetchEditMediaGallery = async () => {
 		editMediaGallery.value = data
 
 		if (data.current_images) {
+			const mainImageId = data.main_image_id ? Number(data.main_image_id) : null
+
 			selectedMedia.value = Object.entries(data.current_images).map(
-				([image_id, img]: any, index) => ({
+				([image_id, img]: any) => ({
 					key: String(image_id),
 					image_id: Number(image_id),
 					image: img,
 					url: img.original,
-					is_main: index === 0 // default first jadi main
+					is_main: mainImageId === Number(image_id)
 				})
 			)
+
+			if (selectedMedia.value.length && !selectedMedia.value.some(m => m.is_main)) {
+				selectedMedia.value[0].is_main = true
+			}
+
 			selectedMediaIds.value = selectedMedia.value.map(m => m.image_id)
 		}
 		if (data.items) {
@@ -556,6 +565,8 @@ const fetchEditMediaGallery = async () => {
 				raw: i
 			}))
 		}
+
+		bundleSnapshotOnLoad.value = JSON.stringify(bundlePayload.value)
 	} catch (e) {
 		console.error(e)
 
@@ -795,66 +806,90 @@ const handleGenerateAIImages = () => {
 	})
 }
 
+const bundleSnapshotOnLoad = ref<string | null>(null)
+
+const hasBundleChanges = computed(
+	() => bundleSnapshotOnLoad.value !== null
+		&& JSON.stringify(bundlePayload.value) !== bundleSnapshotOnLoad.value
+)
+
+const isBundleFilled = computed(
+	() => !!bundlePayload.value.name
+		&& !!bundlePayload.value.description.length
+		&& !!bundlePayload.value.images.length
+)
+
+const canSubmitBundle = computed(
+	() => isBundleFilled.value
+		&& hasBundleChanges.value
+		&& !isLoadingMedia.value
+		&& !isSubmitBundle.value
+)
+
 const bundle = useBundle(props.bundle_routes)
 const submitError = ref<string | null>(null)
-const submitBundle = async () => {
-	
-		const payloadItems = bundleItems.value.map(i => ({
-			bundle_item_id: i.id,
-			quantity: i.quantity
-		}))
 
-		const payload = {
-			description: selectedEditProduct?.value.description,
-			images: selectedMedia.value.map(img => ({
-				id: img.image_id,
-				is_main: img.is_main
-			})),
-			payloadItems
+const bundlePayload = computed(() => ({
+	name: selectedEditProduct.value?.name?.trim() ?? '',
+	description: selectedEditProduct.value?.description ?? '',
+	images: selectedMedia.value
+		.map(img => ({ id: img.image_id, is_main: !!img.is_main }))
+		.sort((a, b) => a.id - b.id),
+	payloadItems: bundleItems.value
+		.map(item => ({ bundle_item_id: item.id, quantity: item.quantity }))
+		.sort((a, b) => a.bundle_item_id - b.bundle_item_id),
+}))
+
+const submitBundle = () => {
+	if (!canSubmitBundle.value) {
+		return
+	}
+
+	const payload = bundlePayload.value
+	const routeParams = {
+		...props.bundle_routes.update.parameters,
+		bundle: selectedEditProduct.value?.bundle_id
+	}
+
+	router.patch(
+		route(props.bundle_routes.update.name, routeParams),
+		payload,
+		{
+			preserveScroll: true,
+			preserveState: true,
+			onStart: () => {
+				isSubmitBundle.value = true
+				submitError.value = null
+			},
+			onSuccess: () => {
+				bundleSnapshotOnLoad.value = JSON.stringify(payload)
+				notify({
+					title: trans('Success'),
+					text: trans('Success edit bundle'),
+					type: 'success'
+				})
+				isOpenModalEditProduct.value = false
+				bundle.resetBundle()
+			},
+			onError: errors => {
+				submitError.value =
+					errors.name ||
+					errors.description ||
+					errors.images ||
+					Object.values(errors)[0] ||
+					trans("Failed to submit the data, please try again")
+
+				notify({
+					title: trans("Something went wrong"),
+					text: submitError.value,
+					type: "error"
+				})
+			},
+			onFinish: () => {
+				isSubmitBundle.value = false
+			},
 		}
-
-		const routeParams = {
-			...props.bundle_routes.update.parameters,
-			bundle: selectedEditProduct?.value.bundle_id
-		}
-		router.patch(
-			route(props.bundle_routes.update.name, routeParams),
-			payload,
-			{
-				preserveScroll: true,
-				preserveState: true,
-				onStart: () => {
-					isSubmitBundle.value = true
-					submitError.value = null
-				},
-				onSuccess: () => {
-					notify({
-						title: trans('Success'),
-						text: trans('Success edit bundle'),
-						type: 'success'
-					})
-					isSubmitBundle.value = false
-					isOpenModalEditProduct.value = false
-					bundle.resetBundle()
-				},
-				onError: errors => {
-					submitError.value =
-                    errors.description ||
-                    errors.images ||
-                    Object.values(errors)[0] ||
-                    trans("Failed to submit the data, please try again")
-
-					notify({
-						title: trans("Something went wrong"),
-						text: submitError.value,
-						type: "error"
-					})
-				},
-				 onFinish: () => {
-					isSubmitBundle.value = false
-				},
-			}
-		)
+	)
 }
 onBeforeUnmount(() => {
     stopEchoListener()
@@ -1316,7 +1351,7 @@ onBeforeUnmount(() => {
 								<div ref="sentinel" class="col-span-2 justify-items-center flex mx-auto">
 									<LoadingIcon v-if="hasMore" />
 								</div>
-								<div v-if="!hasMore && platform_data.type == 'ebay'" class="col-span-2 text-center">
+								<div v-if="!hasMore" class="col-span-2 text-center">
 									{{ trans("You've reached the end of item list") }}
 								</div>
 							</template>
@@ -1402,7 +1437,7 @@ onBeforeUnmount(() => {
                     </div>
 				<Button icon="fal fa-sparkles" @click="generateAIDescription" :loading="isGeneratingAI" type="primary"
 				:label="trans('Generate with AI')"
-			:disabled="!selectedEditProduct?.description.length" />
+			:disabled="!selectedEditProduct?.description?.length" />
 			</div>
 
 			<div class="mb-5">
@@ -1483,7 +1518,15 @@ onBeforeUnmount(() => {
                 {{ submitError }}
             </div>
 			<div class="mt-3 flex gap-2">
-				<Button @click="submitBundle" :label="isSubmitBundle ? trans('Loading') : trans('Save')" full  icon="fad fa-save" :loading="isSubmitBundle" :disabled="!selectedEditProduct?.description.length || isSubmitBundle || !selectedMedia.length"/>
+				<Button
+					@click="submitBundle"
+					:label="isSubmitBundle ? trans('Loading') : trans('Save')"
+					full
+					icon="fad fa-save"
+					:loading="isSubmitBundle"
+					:disabled="!canSubmitBundle"
+					v-tooltip="isBundleFilled && !hasBundleChanges ? trans('No changes to save') : ''"
+				/>
 			</div>
 		</div>
 	</Modal>

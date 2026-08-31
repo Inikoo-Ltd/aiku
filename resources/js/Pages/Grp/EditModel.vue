@@ -17,6 +17,7 @@ import { routeType } from "@/types/route"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { router } from "@inertiajs/vue3"
 import {
+    faMusic,
     faMicrophoneAltSlash,
     faImage,
     faTag,
@@ -48,11 +49,13 @@ import {
     faFlagCheckered,
     faBracketsCurly,
     faFileInvoice,
+    faFilePdf,
     faTransporter,
     faCode,
     faExchange,
     faBoxes,
     faAtom,
+    faAtomAlt,
     faMoneyBill,
     faTags,
     faUserTag,
@@ -73,7 +76,10 @@ import {
     faPercent,
     faBusinessTime,
     faChessClock,
-    faCameraRetro
+    faCameraRetro,
+    faTemperatureLow,
+    faBalanceScale,
+    faNotEqual,
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -84,6 +90,9 @@ import axios from "axios"
 import Message from 'primevue/message';
 
 library.add(
+    faTemperatureLow,
+    faNotEqual,
+    faMusic,
     faShapes,
     faTags,
     faBiohazard,
@@ -93,6 +102,7 @@ library.add(
     faOctopusDeploy,
     faExclamationTriangle,
     faAtom,
+    faAtomAlt,
     faTag,
     faMicrophoneAltSlash,
     faImage,
@@ -127,6 +137,7 @@ library.add(
     faFlagCheckered,
     faBracketsCurly,
     faFileInvoice,
+    faFilePdf,
     faTransporter,
     faCode,
     faDoorClosed,
@@ -148,7 +159,9 @@ library.add(
     faCalendarCheck,
     faPercent,
     faBusinessTime,
-    faChessClock
+    faChessClock,
+    faCameraRetro,
+    faBalanceScale,
 )
 
 const props = defineProps<{

@@ -76,9 +76,17 @@ function tagColorClass(scope?: string) {
             return "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
     }
 }
+
+const shortLocation = (location: string[]) => {
+    const place = location?.[2] ?? ''
+
+    return [location?.[0], location?.[1], place.length > 16 ? place.slice(0, 16) + '…' : place]
+}
 </script>
 
 <template>
+    <!-- ponytail: font shrunk with arbitrary variants on a wrapper, Table has no font prop -->
+    <div class="[&_td]:!text-xs [&_th_div]:!text-xs">
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(reference)="{ item: customer }">
             <Link v-if="customerRoute(customer)" :href="customerRoute(customer) as string" class="primaryLink">
@@ -101,7 +109,9 @@ function tagColorClass(scope?: string) {
             </Link>
         </template>
         <template #cell(location)="{ item: customer }">
-            <AddressLocation :data="customer['location']" />
+            <span v-tooltip="customer['location']?.[2]" class="whitespace-nowrap">
+                <AddressLocation :data="shortLocation(customer['location'])" />
+            </span>
         </template>
 
         <template #cell(invoiced_net_amount)="{ item: customer }">
@@ -116,13 +126,13 @@ function tagColorClass(scope?: string) {
                     v-for="tag in customer.tags"
                     v-tooltip="tag.scope"
                     :key="tag.id || tag.name"
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border transition-colors duration-200 ease-in-out"
+                    class="inline-flex items-center px-2 py-px rounded-full text-[10px] font-medium border transition-colors duration-200 ease-in-out"
                     :class="tagColorClass(tag.scope)"
                 >
                     {{ tag.name }}
                 </span>
             </div>
-            <div v-else class="text-gray-400 text-xs italic">
+            <div v-else class="text-gray-400 text-[10px] italic">
                 No tags
             </div>
         </template>
@@ -143,4 +153,5 @@ function tagColorClass(scope?: string) {
             </div>
         </template>
     </Table>
+    </div>
 </template>

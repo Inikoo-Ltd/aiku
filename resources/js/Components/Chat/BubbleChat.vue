@@ -2,8 +2,8 @@
 import { inject, computed, ref, onMounted, onUnmounted, watch } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faCheckDouble, faLanguage, faRobot, faShieldCheck, faBookmark } from "@far"
-import { faShare, faFaceSmile, faEllipsisVertical } from "@fortawesome/free-solid-svg-icons"
+import { faCheck, faCheckDouble, faLanguage, faRobot, faShieldCheck } from "@far"
+import { faShare, faFaceSmile } from "@fortawesome/free-solid-svg-icons"
 import axios from "axios"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import Image from "primevue/image"
@@ -46,6 +46,18 @@ interface Message {
         confidence: number
         reasoning: string
     } | null
+    reactions?: ReactionGroup[]
+}
+
+interface ReactionReactor {
+    type: string
+    id: number | null
+}
+
+interface ReactionGroup {
+    emoji: string
+    count: number
+    reactors: ReactionReactor[]
 }
 
 interface Translation {
@@ -64,6 +76,10 @@ const props = defineProps<{
     agentName?: string | null
     contactName?: string | null
     canEdit?: boolean
+    readonly?: boolean
+    sessionUlid?: string | null
+    apiBase?: string
+    viewerReactorId?: number | null
 }>()
 
 const emit = defineEmits<{
@@ -163,9 +179,13 @@ const showSenderLabel = computed(() =>
     props.viewerType === "agent" && props.message.sender_type !== "system"
 )
 
+const firstName = (name?: string | null): string =>
+    (name ?? "").trim().split(/\s+/)[0] || ""
+
 const senderLabel = computed(() => {
     if (props.message.sender_type === "agent") {
-        return props.message.sender_name ?? props.agentName ?? layout?.user?.contact_name ?? "Agent"
+        const fullName = props.message.sender_name ?? props.agentName ?? layout?.user?.contact_name ?? "Agent"
+        return firstName(fullName) || "Agent"
     }
     return props.contactName ?? "Customer"
 })
@@ -289,26 +309,105 @@ const canVerifyImage = computed(() =>
 const canForwardToSlack = computed(() => props.viewerType === "agent" && !!props.message.id)
 const isForwardModalOpen = ref(false)
 
-// feature hover toolbar (quick reactions) — UI only for now, no persistence/backend yet
-const showHoverToolbar = computed(() => props.viewerType === "agent" && !!props.message.id)
+// feature hover toolbar (quick reactions) — persisted per message reactor
+const showHoverToolbar = computed(() => !props.readonly && !!props.message.id)
 const quickReactions = ["✅", "👀", "👏"] as const
-const activeReactions = ref<Set<string>>(new Set())
 
-const toggleReaction = (emoji: string) => {
-    const next = new Set(activeReactions.value)
-    if (next.has(emoji)) {
-        next.delete(emoji)
-    } else {
-        next.add(emoji)
+const reactionState = ref<ReactionGroup[]>([])
+
+watch(
+    () => props.message.reactions,
+    (val) => {
+        reactionState.value = Array.isArray(val)
+            ? val.map((g) => ({ emoji: g.emoji, count: g.count, reactors: [...g.reactors] }))
+            : []
+    },
+    { immediate: true, deep: true }
+)
+
+const isMyReactor = (reactor: ReactionReactor): boolean => {
+    if (props.viewerType === "agent") {
+        return reactor.type === "agent" && reactor.id === (props.viewerReactorId ?? null)
     }
-    activeReactions.value = next
+    return reactor.type !== "agent"
 }
 
-const notImplementedYet = () => {
-    notify({ title: trans("Coming soon"), text: trans("This action isn't wired up yet."), type: "info" })
+const hasMyReaction = (group: ReactionGroup): boolean =>
+    group.reactors.some(isMyReactor)
+
+const myReactedEmojis = computed(
+    () => new Set(reactionState.value.filter(hasMyReaction).map((g) => g.emoji))
+)
+
+const myReactorStub = (): ReactionReactor =>
+    props.viewerType === "agent"
+        ? { type: "agent", id: props.viewerReactorId ?? null }
+        : { type: "__me__", id: null }
+
+const applyOptimisticToggle = (emoji: string): void => {
+    const group = reactionState.value.find((g) => g.emoji === emoji)
+
+    if (group && hasMyReaction(group)) {
+        const idx = group.reactors.findIndex(isMyReactor)
+        if (idx !== -1) {
+            group.reactors.splice(idx, 1)
+            group.count = Math.max(0, group.count - 1)
+        }
+        if (group.count === 0) {
+            reactionState.value = reactionState.value.filter((g) => g.emoji !== emoji)
+        }
+        return
+    }
+
+    if (group) {
+        group.reactors.push(myReactorStub())
+        group.count += 1
+        return
+    }
+
+    reactionState.value = [
+        ...reactionState.value,
+        { emoji, count: 1, reactors: [myReactorStub()] },
+    ]
 }
 
-// full emoji picker for "Add reaction" — UI only, reuses the same local toggleReaction state
+const isReacting = ref(false)
+
+const toggleReaction = async (emoji: string) => {
+    if (!props.message.id || isReacting.value) return
+
+    const previous = reactionState.value.map((g) => ({
+        emoji: g.emoji,
+        count: g.count,
+        reactors: [...g.reactors],
+    }))
+
+    applyOptimisticToggle(emoji)
+    isReacting.value = true
+
+    try {
+        const { data } = await axios.post(
+            `${props.apiBase ?? ""}/app/api/chats/messages/${props.message.id}/reactions`,
+            {
+                emoji,
+                reactor: props.viewerType === "agent" ? "agent" : "customer",
+                session_ulid: props.sessionUlid ?? undefined,
+            }
+        )
+
+        const serverReactions = data?.data?.reactions
+        reactionState.value = Array.isArray(serverReactions)
+            ? serverReactions.map((g: ReactionGroup) => ({ emoji: g.emoji, count: g.count, reactors: [...g.reactors] }))
+            : reactionState.value
+    } catch (e) {
+        reactionState.value = previous
+        notify({ title: trans("Failed"), text: trans("Could not update reaction."), type: "error" })
+    } finally {
+        isReacting.value = false
+    }
+}
+
+// full emoji picker for "Add reaction" — reuses the persisted toggleReaction
 const isEmojiPickerOpen = ref(false)
 const emojiPickerRef = ref<HTMLElement | null>(null)
 const emojiPalette = [
@@ -388,14 +487,15 @@ watch(selectedLanguage, async (val) => {
         </div>
         <div class="relative max-w-[70%]">
             <div v-if="showHoverToolbar"
-                class="absolute -top-5 right-1 z-20 flex items-center gap-0.5 p-1 rounded-xl bg-white border border-gray-200 shadow-lg opacity-0 scale-95 pointer-events-none group-hover/msg:opacity-100 group-hover/msg:scale-100 group-hover/msg:pointer-events-auto transition-all duration-150">
+                class="absolute -top-5 z-20 flex items-center gap-0.5 p-1 rounded-full bg-white border border-gray-200 shadow-lg whitespace-nowrap opacity-0 scale-95 pointer-events-none group-hover/msg:opacity-100 group-hover/msg:scale-100 group-hover/msg:pointer-events-auto transition-all duration-150"
+                :class="isFromViewer ? 'right-0' : 'left-0'">
                 <button
                     v-for="emoji in quickReactions"
                     :key="emoji"
                     type="button"
                     v-tooltip.top="trans('React')"
-                    class="w-[33px] h-[33px] flex items-center justify-center text-lg rounded-lg hover:bg-gray-100 hover:scale-110 transition-all"
-                    :class="activeReactions.has(emoji) ? 'bg-indigo-50 ring-1 ring-indigo-200' : ''"
+                    class="w-[33px] h-[33px] flex items-center justify-center text-lg rounded-full hover:bg-gray-100 hover:scale-110 transition-all"
+                    :class="myReactedEmojis.has(emoji) ? 'bg-indigo-50 ring-1 ring-indigo-200' : ''"
                     @click="toggleReaction(emoji)"
                 >
                     {{ emoji }}
@@ -405,7 +505,7 @@ watch(selectedLanguage, async (val) => {
 
                 <div class="relative" ref="emojiPickerRef">
                     <button type="button" v-tooltip.top="trans('Add reaction')"
-                        class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-lg hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
+                        class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-full hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
                         @click="isEmojiPickerOpen = !isEmojiPickerOpen">
                         <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" />
                     </button>
@@ -418,7 +518,7 @@ watch(selectedLanguage, async (val) => {
                             :key="emoji"
                             type="button"
                             class="w-6 h-6 flex items-center justify-center text-base rounded hover:bg-gray-100 transition-colors"
-                            :class="activeReactions.has(emoji) ? 'bg-indigo-50' : ''"
+                            :class="myReactedEmojis.has(emoji) ? 'bg-indigo-50' : ''"
                             @click="selectEmoji(emoji)"
                         >
                             {{ emoji }}
@@ -427,24 +527,14 @@ watch(selectedLanguage, async (val) => {
                 </div>
 
                 <button v-if="canForwardToSlack" type="button" v-tooltip.top="trans('Forward message…')"
-                    class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-lg hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
+                    class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-full hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
                     @click="isForwardModalOpen = true">
                     <FontAwesomeIcon :icon="faShare" class="text-sm" />
-                </button>
-                <button type="button" v-tooltip.top="trans('Save message')"
-                    class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-lg hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
-                    @click="notImplementedYet">
-                    <FontAwesomeIcon :icon="faBookmark" class="text-sm" />
-                </button>
-                <button type="button" v-tooltip.top="trans('More actions')"
-                    class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-lg hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
-                    @click="notImplementedYet">
-                    <FontAwesomeIcon :icon="faEllipsisVertical" class="text-sm" />
                 </button>
             </div>
 
             <div class="flex flex-col gap-0.5 text-sm leading-relaxed shadow-sm px-3.5 py-2.5 rounded-2xl"
-                :class="[bubbleClass, showHoverToolbar ? 'min-w-[260px]' : '']">
+                :class="[bubbleClass, showHoverToolbar && viewerType === 'agent' ? 'min-w-[260px]' : '']">
 
             <div v-if="showSenderLabel" class="text-[11px] font-semibold mb-0.5 opacity-70">
                 {{ senderLabel }}
@@ -593,15 +683,20 @@ watch(selectedLanguage, async (val) => {
         </div>
         </div>
 
-        <div v-if="activeReactions.size" class="flex flex-wrap gap-1 mt-1 px-1">
+        <div v-if="reactionState.length" class="flex flex-wrap gap-1 mt-1 px-1"
+            :class="isFromViewer ? 'justify-end' : 'justify-start'">
             <button
-                v-for="emoji in activeReactions"
-                :key="emoji"
+                v-for="group in reactionState"
+                :key="group.emoji"
                 type="button"
-                class="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
-                @click="toggleReaction(emoji)"
+                class="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full border transition-colors"
+                :class="myReactedEmojis.has(group.emoji)
+                    ? 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                    : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'"
+                @click="toggleReaction(group.emoji)"
             >
-                {{ emoji }}
+                <span>{{ group.emoji }}</span>
+                <span v-if="group.count > 1" class="font-semibold">{{ group.count }}</span>
             </button>
         </div>
 

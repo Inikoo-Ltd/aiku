@@ -81,6 +81,30 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, "settings.invoicing.show_tax_liability_date", Arr::pull($modelData, 'show_tax_liability_date'));
         }
 
+        if (Arr::has($modelData, 'staff_chat_crm_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.crm_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'staff_chat_warehouse_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.warehouse_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_warehouse_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'staff_chat_crm_backup_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.crm_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_backup_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'staff_chat_warehouse_backup_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.warehouse_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_warehouse_backup_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'procurement_shop_id')) {
+            data_set($modelData, 'settings.procurement.shop_id', Arr::pull($modelData, 'procurement_shop_id'));
+        }
+
+        if (Arr::has($modelData, 'margin_break_even_pct')) {
+            data_set($modelData, 'settings.margins.break_even_pct', (float) Arr::pull($modelData, 'margin_break_even_pct'));
+        }
+
         if (Arr::has($modelData, 'allow_waiting')) {
             data_set($modelData, 'settings.orders.allow_waiting', Arr::pull($modelData, 'allow_waiting'));
         }
@@ -245,10 +269,20 @@ class UpdateOrganisation extends OrgAction
             'hr_annual_leave_days'                  => ['sometimes', 'required', 'integer', 'min:0', 'max:365'],
             'hr_probation_period_days'              => ['sometimes', 'required', 'integer', 'min:0', 'max:365'],
             'allow_waiting'                         => ['sometimes', 'boolean'],
+            'margin_break_even_pct'                 => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'procurement_shop_id'                   => ['sometimes', 'nullable', 'integer', Rule::exists('shops', 'id')->where('organisation_id', $this->organisation->id)],
             'allow_picker_set_not_picked'           => ['sometimes', 'boolean'],
             'allow_stock_controller_set_not_picked' => ['sometimes', 'boolean'],
             'allow_scan_to_pick'                    => ['sometimes', 'boolean'],
             'allow_scan_to_pack'                    => ['sometimes', 'boolean'],
+            'staff_chat_crm_user_ids'               => ['sometimes', 'array'],
+            'staff_chat_crm_user_ids.*'              => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
+            'staff_chat_warehouse_user_ids'         => ['sometimes', 'array'],
+            'staff_chat_warehouse_user_ids.*'        => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
+            'staff_chat_crm_backup_user_ids'         => ['sometimes', 'array'],
+            'staff_chat_crm_backup_user_ids.*'       => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
+            'staff_chat_warehouse_backup_user_ids'   => ['sometimes', 'array'],
+            'staff_chat_warehouse_backup_user_ids.*' => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
             'banned_countries'                      => ['sometimes', 'nullable', 'array'],
             'banned_countries.banned_list'          => ['sometimes', 'nullable', 'array'],
             'banned_countries.banned_list.*'        => ['required', 'array'],

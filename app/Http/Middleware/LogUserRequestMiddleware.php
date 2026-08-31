@@ -9,6 +9,7 @@
 namespace App\Http\Middleware;
 
 use App\Actions\SysAdmin\UserRequest\ProcessUserRequest;
+use Illuminate\Support\Facades\Cache;
 use App\Models\SysAdmin\User;
 use Closure;
 use Illuminate\Http\Request;
@@ -38,31 +39,44 @@ class LogUserRequestMiddleware
         /* @var User $user */
         $user = $request->user();
 
-        if (!app()->runningUnitTests() && $user) {
-            \Sentry\traceMetrics()->count(
-                'aiku.visit',
-                1,
-                [
+        if ($user) {
+            rescue(fn () => Cache::put('staff-last-active:'.$user->id, now()->timestamp, now()->addHours(2)), report: false);
+        }
+
+        if ($user) {
+            rescue(fn () => $this->recordUserRequest($request, $user, $ip, $geoLocation));
+        }
+
+        return $next($request);
+    }
+
+    protected function recordUserRequest(Request $request, User $user, string $ip, array $geoLocation): void
+    {
+        if (app()->runningUnitTests()) {
+            return;
+        }
+
+        \Sentry\traceMetrics()->count(
+            'aiku.visit',
+            1,
+            [
                     'form_factors' => request()->header('sec-ch-ua-form-factors'),
                     'country'      => request()->header('CF-IPCountry') ?? 'XX'
 
                 ]
-            );
+        );
 
-            ProcessUserRequest::dispatch(
-                $user,
-                now(),
-                [
-                    'name'      => $request->route()->getName(),
-                    'arguments' => $request->route()->originalParameters(),
-                    'url'       => $request->path(),
-                ],
-                $ip,
-                $request->header('User-Agent'),
-                $geoLocation
-            )->delay(now()->addSeconds(5));
-        }
-
-        return $next($request);
+        ProcessUserRequest::dispatch(
+            $user,
+            now(),
+            [
+                'name'      => $request->route()->getName(),
+                'arguments' => $request->route()->originalParameters(),
+                'url'       => $request->path(),
+            ],
+            $ip,
+            $request->header('User-Agent'),
+            $geoLocation
+        )->delay(now()->addSeconds(5));
     }
 }

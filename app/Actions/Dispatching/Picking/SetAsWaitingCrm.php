@@ -57,8 +57,6 @@ class SetAsWaitingCrm extends OrgAction
             'state'                      => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
             'quantity_waiting_warehouse' => $newQuantityWaitingWarehouse,
             'quantity_waiting_crm'       => $deliveryNoteItem->quantity_waiting_crm + $quantityToMove,
-            'has_waiting_crm'            => true,
-            'has_waiting_warehouse'      => $newQuantityWaitingWarehouse > 0,
         ];
         if (Arr::has($modelData, 'note')) {
             $dataToUpdate['notes'] = $modelData['note'];

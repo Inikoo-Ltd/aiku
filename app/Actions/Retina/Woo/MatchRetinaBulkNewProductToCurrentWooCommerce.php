@@ -8,7 +8,7 @@
 
 namespace App\Actions\Retina\Woo;
 
-use App\Actions\Dropshipping\WooCommerce\Product\MatchBulkNewProductToCurrentWooCommerce;
+use App\Actions\Dropshipping\Portfolio\MatchBulkPortfoliosToPlatform;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,13 +25,13 @@ class MatchRetinaBulkNewProductToCurrentWooCommerce extends RetinaAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
     {
-        MatchBulkNewProductToCurrentWooCommerce::run($customerSalesChannel, $attributes);
+        MatchBulkPortfoliosToPlatform::dispatch($customerSalesChannel, $attributes);
     }
 
     public function rules(): array
     {
         return [
-            'portfolios' => ['required', 'array'],
+            'portfolios' => ['sometimes', 'array'],
             'portfolios.*' => ['required', 'integer'],
         ];
     }

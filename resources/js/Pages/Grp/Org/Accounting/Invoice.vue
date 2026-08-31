@@ -20,6 +20,7 @@ import {trans} from "laravel-vue-i18n";
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue";
 import {routeType} from "@/types/route";
 import OrderSummary from "@/Components/Summary/OrderSummary.vue";
+import MarginSummary from "@/Components/Margin/MarginSummary.vue";
 import {FieldOrderSummary} from "@/types/Pallet";
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome";
 import {library} from "@fortawesome/fontawesome-svg-core";
@@ -104,6 +105,7 @@ const props = defineProps<{
         }
     }
     order_summary: FieldOrderSummary[][]
+    margin_summary?: {}
     recurring_bill_route?: routeType
     invoice: InvoiceResource
     invoice_transactions?: {}
@@ -753,6 +755,7 @@ const submitEditAddress = async () => {
         <!-- Section: Order Summary -->
         <BoxStatPallet class="py-2 px-3">
             <OrderSummary :order_summary :currency_code="invoice.currency_code"/>
+            <MarginSummary v-if="margin_summary" :summary="margin_summary" class="mt-2" />
         </BoxStatPallet>
 
     </div>

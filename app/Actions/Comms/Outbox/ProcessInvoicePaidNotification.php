@@ -12,32 +12,34 @@ use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoicePayDetailedStatusEnum;
 use App\Models\Accounting\Invoice;
 use App\Actions\Comms\Email\SendInvoicePaidEmailToCustomer;
-use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 
 class ProcessInvoicePaidNotification extends OrgAction
 {
     public string $jobQueue = 'ses';
 
-    public function handle(int $invoiceId, int $paymentId): void
+    public function handle(int $invoiceId): void
     {
         $invoice = Invoice::find($invoiceId);
+
         if (!$invoice) {
             return;
         }
 
-        $payment = $invoice->payments()->find($paymentId);
-
-        if (!$payment) {
+        /**
+         * Gated on the invoice, not on the account the payment came through: a cash on delivery
+         * order settled via a bank or cash account is still cash on delivery, and the old
+         * payment-account check silently swallowed the email in exactly those cases.
+         */
+        if (!$invoice->is_cash_on_delivery) {
             return;
         }
-        //   // TODO: This should be moved to a job, and the email should be sent only if the outbox is active and applicable
-        if ($invoice && in_array($invoice->pay_detailed_status, [InvoicePayDetailedStatusEnum::PAID, InvoicePayDetailedStatusEnum::OVERPAID])
-            && in_array($payment->paymentAccount->type, [PaymentAccountTypeEnum::CASH_ON_DELIVERY])) {
-            $customer = $invoice->customer;
 
-            SendInvoicePaidEmailToCustomer::dispatch($customer, [
-                'invoice_id' => $invoice->id,
-            ]);
+        if (!in_array($invoice->pay_detailed_status, [InvoicePayDetailedStatusEnum::PAID, InvoicePayDetailedStatusEnum::OVERPAID])) {
+            return;
         }
+
+        SendInvoicePaidEmailToCustomer::dispatch($invoice->customer, [
+            'invoice_id' => $invoice->id,
+        ]);
     }
 }

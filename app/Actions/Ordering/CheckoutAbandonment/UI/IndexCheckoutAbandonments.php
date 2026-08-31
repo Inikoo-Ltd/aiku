@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
+use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Overview\ShowOrganisationOverviewHub;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -118,20 +119,26 @@ class IndexCheckoutAbandonments extends OrgAction
             default                     => null,
         };
 
+        $abandonedInformation        = __('Checkouts reached but not completed within :hours hours, the basket is still open.', ['hours' => RunCheckoutAbandonmentScan::THRESHOLD_HOURS]);
+        $recoveredInformation        = __('Abandoned checkouts where the customer came back and submitted the order.');
+        $recoveryRateInformation     = __('Recovered checkouts divided by all tracked checkouts (abandoned + recovered).');
+        $lostRevenueInformation      = __('Basket value still sitting in the abandoned checkouts.');
+        $recoveredRevenueInformation = __('Basket value of the checkouts that ended up being ordered.');
+
         if ($currency) {
             return [
-                ['label' => __('Abandoned'), 'value' => $abandonedCount],
-                ['label' => __('Lost revenue'), 'value' => $currency->symbol.number_format((float) ($agg[CheckoutAbandonmentStateEnum::ABANDONED->value]->revenue ?? 0), 2)],
-                ['label' => __('Recovery rate'), 'value' => $recoveryRate.'%'],
-                ['label' => __('Recovered'), 'value' => $recoveredCount],
-                ['label' => __('Recovered revenue'), 'value' => $currency->symbol.number_format((float) ($agg[CheckoutAbandonmentStateEnum::RECOVERED->value]->revenue ?? 0), 2)],
+                ['label' => __('Abandoned'), 'value' => $abandonedCount, 'information' => $abandonedInformation],
+                ['label' => __('Lost revenue'), 'value' => $currency->symbol.number_format((float) ($agg[CheckoutAbandonmentStateEnum::ABANDONED->value]->revenue ?? 0), 2), 'information' => $lostRevenueInformation],
+                ['label' => __('Recovery rate'), 'value' => $recoveryRate.'%', 'information' => $recoveryRateInformation],
+                ['label' => __('Recovered'), 'value' => $recoveredCount, 'information' => $recoveredInformation],
+                ['label' => __('Recovered revenue'), 'value' => $currency->symbol.number_format((float) ($agg[CheckoutAbandonmentStateEnum::RECOVERED->value]->revenue ?? 0), 2), 'information' => $recoveredRevenueInformation],
             ];
         }
 
         return [
-            ['label' => __('Abandoned'), 'value' => $abandonedCount],
-            ['label' => __('Recovered'), 'value' => $recoveredCount],
-            ['label' => __('Recovery rate'), 'value' => $recoveryRate.'%'],
+            ['label' => __('Abandoned'), 'value' => $abandonedCount, 'information' => $abandonedInformation],
+            ['label' => __('Recovered'), 'value' => $recoveredCount, 'information' => $recoveredInformation],
+            ['label' => __('Recovery rate'), 'value' => $recoveryRate.'%', 'information' => $recoveryRateInformation],
         ];
     }
 
@@ -163,6 +170,13 @@ class IndexCheckoutAbandonments extends OrgAction
         $query->leftJoin('customers', 'checkout_abandonments.customer_id', '=', 'customers.id');
         $query->leftJoin('shops', 'checkout_abandonments.shop_id', '=', 'shops.id');
         $query->leftJoin('organisations', 'checkout_abandonments.organisation_id', '=', 'organisations.id');
+        $query->leftJoin('outboxes', function ($join) {
+            $join->on('shops.id', '=', 'outboxes.shop_id')
+                ->where('outboxes.code', OutboxCodeEnum::ABANDONED_CHECKOUT->value)
+                ->where('outboxes.state', OutboxStateEnum::ACTIVE->value)
+                ->where('outboxes.is_applicable', true)
+                ->whereNull('outboxes.deleted_at');
+        });
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('transactions', function ($join) {
             $join->on('orders.id', '=', 'transactions.order_id')
@@ -183,6 +197,7 @@ class IndexCheckoutAbandonments extends OrgAction
             'organisations.code',
             'organisations.slug',
             'currencies.code',
+            'outboxes.id',
         ]);
 
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
@@ -214,6 +229,7 @@ class IndexCheckoutAbandonments extends OrgAction
                 'organisations.code as organisation_code',
                 'organisations.slug as organisation_slug',
                 'currencies.code as currency_code',
+                'outboxes.id as outbox_id',
             ])
             ->selectRaw('count(transactions.id) as number_items')
             ->allowedSorts(['checkout_visited_at', 'total_amount', 'customer_name', 'shop_code', 'organisation_code', 'email_sent_at'])
@@ -289,12 +305,6 @@ class IndexCheckoutAbandonments extends OrgAction
         $title         = __('Abandoned checkouts');
         $subNavigation = null;
 
-        $outboxStateActive = (bool) $this->shop?->outboxes()
-            ->where('code', OutboxCodeEnum::ABANDONED_CART_REMINDER_1)
-            ->where('state', OutboxStateEnum::ACTIVE)
-            ->where('is_applicable', true)
-            ->exists();
-
         if ($this->parent instanceof Customer) {
             if ($this->parent->is_dropshipping) {
                 $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
@@ -313,9 +323,8 @@ class IndexCheckoutAbandonments extends OrgAction
                     'title'         => $title,
                     'subNavigation' => $subNavigation,
                 ],
-                'stats'               => $this->getStats($this->parent),
-                'outbox_state_active' => $outboxStateActive,
-                'data'                => CheckoutAbandonmentsResource::collection($abandonments),
+                'stats' => $this->getStats($this->parent),
+                'data'  => CheckoutAbandonmentsResource::collection($abandonments),
             ]
         )->table($this->tableStructure($this->parent));
     }

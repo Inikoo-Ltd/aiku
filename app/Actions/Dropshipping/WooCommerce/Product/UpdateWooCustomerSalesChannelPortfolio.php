@@ -28,7 +28,7 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
         return $customerSalesChannel->id;
     }
 
-    public function handle(CustomerSalesChannel $customerSalesChannel): void
+    public function handle(CustomerSalesChannel $customerSalesChannel, bool $force = false): void
     {
         /** @var WooCommerceUser $wooCommerceUser */
         $wooCommerceUser = $customerSalesChannel->user;
@@ -60,6 +60,7 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
                 'item_type',
                 'platform_product_id',
                 'platform_status',
+                'last_stock_value',
                 'stock_last_updated_at',
                 'stock_last_fail_updated_at',
             ])
@@ -68,31 +69,21 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
             ->where('item_type', 'Product')
             ->where('platform_status', true)
             ->with('item:id,available_quantity,is_for_sale,available_quantity_updated_at')
-            ->chunkById(500, function ($portfolioChunk) use ($customerSalesChannel, $wooCommerceUser): void {
+            ->chunkById(500, function ($portfolioChunk) use ($customerSalesChannel, $wooCommerceUser, $force): void {
                 $updates = [];
 
                 foreach ($portfolioChunk as $portfolio) {
-                    if (!$this->checkIfApplicable($portfolio)) {
+                    if (!$this->checkIfApplicable($portfolio, $customerSalesChannel, $force)) {
                         continue;
                     }
 
                     /** @var Product $product */
                     $product = $portfolio->item;
 
-                    $availableQuantity = $product->available_quantity ?? 0;
-
-                    if (!$product->is_for_sale) {
-                        $availableQuantity = 0;
-                    }
-
-                    if ($customerSalesChannel->max_quantity_advertise > 0) {
-                        $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
-                    }
-
                     $updates[] = [
                         'id'             => $portfolio->platform_product_id,
                         'manage_stock'   => true,
-                        'stock_quantity' => $availableQuantity,
+                        'stock_quantity' => self::quantityToSend($product, $customerSalesChannel),
                     ];
                 }
 
@@ -104,7 +95,26 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
             });
     }
 
-    public function checkIfApplicable(Portfolio $portfolio): bool
+    public static function quantityToSend(Product $product, CustomerSalesChannel $customerSalesChannel): int
+    {
+        $availableQuantity = $product->available_quantity ?? 0;
+
+        if (!$product->is_for_sale) {
+            $availableQuantity = 0;
+        }
+
+        if ($customerSalesChannel->stock_threshold > 0 && $availableQuantity <= $customerSalesChannel->stock_threshold) {
+            return 0;
+        }
+
+        if ($customerSalesChannel->max_quantity_advertise > 0) {
+            $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
+        }
+
+        return (int) $availableQuantity;
+    }
+
+    public function checkIfApplicable(Portfolio $portfolio, CustomerSalesChannel $customerSalesChannel, bool $force = false): bool
     {
         $product = $portfolio->item;
 
@@ -115,22 +125,15 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
         $lastSuccessAt = $portfolio->stock_last_updated_at;
         $lastFailAt = $portfolio->stock_last_fail_updated_at;
 
-        $lastAttemptAt = $lastSuccessAt;
-        $lastAttemptFailed = false;
-
-        if ($lastFailAt && (!$lastAttemptAt || $lastFailAt->gt($lastAttemptAt))) {
-            $lastAttemptAt = $lastFailAt;
-            $lastAttemptFailed = true;
+        if (!$force && $lastFailAt && (!$lastSuccessAt || $lastFailAt->gt($lastSuccessAt))) {
+            return $lastFailAt->lt(now()->subDay())
+                || ($product->available_quantity_updated_at && $product->available_quantity_updated_at->gt($lastFailAt));
         }
 
-        if (!$lastAttemptAt) {
+        if (!$lastSuccessAt || $portfolio->last_stock_value === null) {
             return true;
         }
 
-        if ($product->available_quantity_updated_at && $product->available_quantity_updated_at->gt($lastAttemptAt)) {
-            return true;
-        }
-
-        return $lastAttemptFailed && $lastAttemptAt->lt(now()->subDay());
+        return (int) $portfolio->last_stock_value !== self::quantityToSend($product, $customerSalesChannel);
     }
 }

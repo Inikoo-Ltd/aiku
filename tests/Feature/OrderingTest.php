@@ -9,6 +9,10 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\Comms\Email\SendInvoicePaidEmailToCustomer;
+use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
+use App\Enums\Ordering\Order\OrderToBePaidByEnum;
+use Lorisleiva\Actions\Decorators\JobDecorator;
 use App\Actions\Accounting\Invoice\UpdateInvoice;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInProcessInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
@@ -124,15 +128,24 @@ use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Actions\Ordering\Order\WriteOffOrderShortfall;
+use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Models\Ordering\Adjustment;
 use App\Enums\Helpers\Import\UploadRecordStatusEnum;
 use App\Imports\Ordering\TransactionImport;
 use App\Models\Helpers\Upload;
 use App\Models\Helpers\TaxCategory;
+use App\Actions\Ordering\Order\UI\IndexOrderChannels;
+use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
+use App\Actions\Dropshipping\Platform\ProcessPlatformTimeSeriesRecords;
+use App\Actions\SysAdmin\Group\Seeders\SeedSalesChannels;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
+use App\Models\Dropshipping\PlatformSalesChannelTimeSeriesRecord;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\PurgedOrder;
+use App\Models\Ordering\SalesChannel;
 use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\Permission;
@@ -1354,6 +1367,91 @@ test('Pay order attaches payment to invoice when invoice exists', function () {
     expect($payment->invoices()->where('invoices.id', $invoice->id)->exists())->toBeTrue();
 });
 
+describe('COD invoice paid email', function () {
+    function payCodOrder(string $paymentAccountType): array
+    {
+        $billingAddress  = new Address(Address::factory()->definition());
+        $deliveryAddress = new Address(Address::factory()->definition());
+
+        $orderData = Order::factory()->definition();
+        data_set($orderData, 'billing_address', $billingAddress);
+        data_set($orderData, 'delivery_address', $deliveryAddress);
+        data_set($orderData, 'to_be_paid_by', OrderToBePaidByEnum::CASH_ON_DELIVERY);
+
+        $order = StoreOrder::make()->action(test()->customer, $orderData);
+
+        $invoice = StoreInvoice::make()->action($order, [
+            'type'                 => InvoiceTypeEnum::INVOICE,
+            'currency_id'          => test()->shop->currency_id,
+            'net_amount'           => 10,
+            'total_amount'         => 10,
+            'gross_amount'         => 10,
+            'tax_amount'           => 0,
+        ]);
+
+        $invoice->update(['is_cash_on_delivery' => true]);
+
+        $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+            test()->organisation,
+            PaymentServiceProvider::where('type', $paymentAccountType)->first(),
+            [
+                'code' => 'ACC'.mt_rand(1000, 9999),
+                'name' => 'Account '.mt_rand(1000, 9999),
+            ]
+        );
+
+        Queue::fake();
+
+        PayOrder::make()->action($order, $paymentAccount, [
+            'amount' => 10.00,
+            'status' => PaymentStatusEnum::SUCCESS,
+            'state'  => PaymentStateEnum::COMPLETED,
+        ]);
+
+        return [$order, $invoice->refresh()];
+    }
+
+    test('paying a COD order notifies the customer', function () {
+        payCodOrder(PaymentServiceProviderTypeEnum::CASH->value);
+
+        Queue::assertPushed(JobDecorator::class, fn ($job) => $job->displayName() === ProcessInvoicePaidNotification::class);
+    });
+
+    test('a COD order settled through a non cash account still notifies the customer', function () {
+        [, $invoice] = payCodOrder(PaymentServiceProviderTypeEnum::BANK->value);
+
+        expect($invoice->pay_status)->toBe(InvoicePayStatusEnum::PAID);
+
+        Queue::assertPushed(JobDecorator::class, fn ($job) => $job->displayName() === ProcessInvoicePaidNotification::class);
+    });
+
+    test('the invoice email goes out only once the invoice reads as paid', function () {
+        [, $invoice] = payCodOrder(PaymentServiceProviderTypeEnum::CASH->value);
+
+        Queue::fake();
+        ProcessInvoicePaidNotification::make()->handle($invoice->id);
+        Queue::assertPushed(JobDecorator::class, fn ($job) => $job->displayName() === SendInvoicePaidEmailToCustomer::class);
+
+        $unpaidInvoice = StoreInvoice::make()->action($this->customer, array_merge(
+            Invoice::factory()->definition(),
+            ['total_amount' => 10, 'net_amount' => 10, 'gross_amount' => 10, 'tax_amount' => 0]
+        ));
+
+        Queue::fake();
+        ProcessInvoicePaidNotification::make()->handle($unpaidInvoice->id);
+        Queue::assertNotPushed(JobDecorator::class, fn ($job) => $job->displayName() === SendInvoicePaidEmailToCustomer::class);
+    });
+
+    test('a paid invoice that is not cash on delivery is left alone', function () {
+        [, $invoice] = payCodOrder(PaymentServiceProviderTypeEnum::CASH->value);
+        $invoice->update(['is_cash_on_delivery' => false]);
+
+        Queue::fake();
+        ProcessInvoicePaidNotification::make()->handle($invoice->id);
+        Queue::assertNotPushed(JobDecorator::class, fn ($job) => $job->displayName() === SendInvoicePaidEmailToCustomer::class);
+    });
+});
+
 test('invoice from overpaid order credits excess to customer balance', function () {
     $billingAddress  = new Address(Address::factory()->definition());
     $deliveryAddress = new Address(Address::factory()->definition());
@@ -2166,6 +2264,116 @@ test('invoice totals from a part picked order keep net plus tax equal to the tot
         ->and($totals['net_amount'] + $totals['tax_amount'])->toBe($totals['total_amount']);
 });
 
+test('a ten per cent line keeps the penny it was submitted at', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $historicAsset = $this->product->historicAsset;
+    $historicAsset->update(['price' => 61.95]);
+
+    $transaction = StoreTransaction::make()->action($order, $historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 1]
+    ));
+
+    // 61.95 off ten per cent: the discount is 6.195, which must round up to 6.20 like the
+    // basket did, not down to 6.19 because 1 - 0.9 is a hair under a tenth in binary.
+    $transaction->update([
+        'gross_amount'            => 61.95,
+        'net_amount'              => 55.75,
+        'quantity_bonus'          => 0,
+        'current_discount_factor' => 0.9,
+    ]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+
+    $totals = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction->refresh(), $deliveryNote);
+
+    expect($totals['net_amount'])->toBe(55.75);
+});
+
+test('a part picked line bills the fraction of the price it was sold at', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $historicAsset = $this->product->historicAsset;
+    $historicAsset->update(['price' => 26.95]);
+
+    $transaction = StoreTransaction::make()->action($order, $historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 4]
+    ));
+    $transaction->update([
+        'gross_amount'            => 107.80,
+        'net_amount'              => 102.41,
+        'quantity_bonus'          => 0,
+        'current_discount_factor' => 0.95,
+    ]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+
+    DB::table('delivery_note_items')->insert([
+        'group_id'          => $order->group_id,
+        'organisation_id'   => $order->organisation_id,
+        'shop_id'           => $order->shop_id,
+        'delivery_note_id'  => $deliveryNote->id,
+        'transaction_id'    => $transaction->id,
+        'state'             => 'picked',
+        'quantity_required' => 4,
+        'quantity_picked'   => 2,
+        'data'              => '{}',
+    ]);
+
+    $totals = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction->refresh(), $deliveryNote);
+
+    // half of 102.41, not half of the gross discounted again
+    expect($totals['net_amount'])->toBe(51.21);
+});
+
+test('a line discounted after it was submitted is priced on its new factor', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $historicAsset = $this->product->historicAsset;
+    $historicAsset->update(['price' => 61.95]);
+
+    $transaction = StoreTransaction::make()->action($order, $historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 1]
+    ));
+    $transaction->update(['gross_amount' => 61.95, 'net_amount' => 61.95, 'quantity_bonus' => 0]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+
+    // sold at full price, then given ten per cent off by hand afterwards
+    $transaction->update(['current_discount_factor' => 0.9, 'net_amount' => 55.75]);
+
+    $totals = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction->refresh(), $deliveryNote);
+
+    expect($totals['net_amount'])->toBe(55.75);
+});
+
 test('shipping zone with territories wins over a catch all zone placed above it', function () {
     $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, [
         'name' => 'catch all on top schema',
@@ -2396,6 +2604,56 @@ test('write off settles an overpaid order with a positive adjustment', function 
         ->and((float)$adjustmentTransaction->net_amount)->toBeGreaterThan(0);
 });
 
+test('paid then refunded order reads refunded not unpaid', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $orderData = Order::factory()->definition();
+    data_set($orderData, 'billing_address', $billingAddress);
+    data_set($orderData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $orderData);
+
+    StoreTransaction::make()->action($order, $this->product->historicAsset, [
+        'quantity_ordered' => 1,
+    ]);
+
+    $order->refresh();
+    $total = (float)$order->total_amount;
+
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        [
+            'code' => 'RF'.mt_rand(1000, 9999),
+            'name' => 'Cash Account',
+        ]
+    );
+
+    PayOrder::make()->action($order, $paymentAccount, [
+        'amount'    => $total,
+        'reference' => 'PAY-'.uniqid(),
+        'status'    => PaymentStatusEnum::SUCCESS,
+        'state'     => PaymentStateEnum::COMPLETED,
+    ]);
+    $order->refresh();
+
+    expect($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and($order->pay_detailed_status)->toBe(OrderPayDetailedStatusEnum::PAID);
+
+    PayOrder::make()->action($order, $paymentAccount, [
+        'amount'    => -$total,
+        'reference' => 'REFUND-'.uniqid(),
+        'status'    => PaymentStatusEnum::SUCCESS,
+        'state'     => PaymentStateEnum::COMPLETED,
+    ]);
+    $order->refresh();
+
+    expect($order->pay_status)->toBe(OrderPayStatusEnum::UNPAID)
+        ->and($order->pay_detailed_status)->toBe(OrderPayDetailedStatusEnum::REFUNDED)
+        ->and((float)$order->payment_amount)->toBe(0.0);
+});
+
 test('service only order sent to warehouse skips delivery note', function () {
     $service = StoreService::make()->action($this->shop, [
         'code'  => 'SRV1',
@@ -2493,4 +2751,505 @@ test('service transaction defaults net amount to historic asset price times quan
 
     expect((float)$serviceTransaction->net_amount)->toBe((float)$service->historicAsset->price * 2)
         ->and((float)$serviceTransaction->gross_amount)->toBe((float)$service->historicAsset->price * 2);
+});
+
+describe('order margin data', function () {
+    test('margin fields math and no-cost blanking', function () {
+        $trait = new class () {
+            use \App\Actions\Traits\WithMarginData;
+
+            public function fields(...$args): ?array
+            {
+                return $this->marginFields(...$args);
+            }
+        };
+
+        expect($trait->fields('Service', 10, 10, null, null))->toBeNull()
+            ->and($trait->fields('Product', 100, 100, 40, null))->toBe([
+                'margin_pct'          => 60.0,
+                'profit_amount'       => 60.0,
+                'margin_is_estimated' => false,
+                'margin_no_cost'      => false,
+            ])
+            ->and($trait->fields('Product', 100, 100, null, 30))->toBe([
+                'margin_pct'          => 70.0,
+                'profit_amount'       => 70.0,
+                'margin_is_estimated' => true,
+                'margin_no_cost'      => false,
+            ])
+            ->and($trait->fields('Product', 1000, 1000, 120, 400, 30, 100))->toBe([
+                'margin_pct'          => 60.0,
+                'profit_amount'       => 600.0,
+                'margin_is_estimated' => true,
+                'margin_no_cost'      => false,
+            ])
+            ->and($trait->fields('Product', 100, 100, null, null))->toBe([
+                'margin_pct'          => null,
+                'profit_amount'       => null,
+                'margin_is_estimated' => false,
+                'margin_no_cost'      => true,
+            ]);
+    });
+
+    test('order margin summary runs and estimates from sku value', function () {
+        $billingAddress  = new Address(Address::factory()->definition());
+        $deliveryAddress = new Address(Address::factory()->definition());
+
+        $modelData = Order::factory()->definition();
+        data_set($modelData, 'billing_address', $billingAddress);
+        data_set($modelData, 'delivery_address', $deliveryAddress);
+
+        $order = StoreOrder::make()->action($this->customer, $modelData);
+        StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+
+        $adminGuest = createAdminGuest($this->group);
+        actingAs($adminGuest->getUser());
+
+        $action = new class () {
+            use \App\Actions\Traits\WithMarginData;
+
+            public function canSeeMargins(\App\Models\Catalogue\Shop $shop): bool
+            {
+                return true;
+            }
+        };
+
+        $summary = $action->getMarginSummary($order->refresh());
+
+        if ($summary !== null) {
+            expect($summary)->toHaveKeys(['profit_amount', 'margin_pct', 'is_estimated', 'lines_without_cost', 'currency_code']);
+        } else {
+            expect($summary)->toBeNull();
+        }
+    });
+
+    test('margin summary excludes uncosted lines instead of treating them as free', function () {
+        $trait = new class () {
+            use \App\Actions\Traits\WithMarginData;
+
+            public function aggregate(iterable $lines, float $breakEvenPct = 0.0): ?array
+            {
+                return $this->aggregateMarginLines($lines, 'GBP', $breakEvenPct);
+            }
+        };
+
+        $exact      = (object) ['net' => 100, 'org_net' => 100, 'gross' => 100, 'org_exchange' => 1, 'actual_cost' => 40, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
+        $estimated  = (object) ['net' => 100, 'org_net' => 100, 'gross' => 100, 'org_exchange' => 1, 'actual_cost' => null, 'estimated_cost' => 50, 'picked' => null, 'ordered' => null];
+        $uncosted   = (object) ['net' => 100, 'org_net' => 100, 'gross' => 100, 'org_exchange' => 1, 'actual_cost' => null, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
+        $partial    = (object) ['net' => 1000, 'org_net' => 1000, 'gross' => 1000, 'org_exchange' => 1, 'actual_cost' => 120, 'estimated_cost' => 400, 'picked' => 30, 'ordered' => 100];
+        $discounted = (object) ['net' => 180, 'org_net' => 180, 'gross' => 200, 'org_exchange' => 1, 'actual_cost' => 90, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
+
+        $exactPlusUncosted = $trait->aggregate([$exact, $uncosted]);
+
+        expect($exactPlusUncosted['profit_amount'])->toBe(60.0)
+            ->and($exactPlusUncosted['margin_pct'])->toBe(60.0)
+            ->and($exactPlusUncosted['before_discounts'])->toBeNull()
+            ->and($exactPlusUncosted['is_estimated'])->toBeFalse()
+            ->and($exactPlusUncosted['lines_without_cost'])->toBe(1)
+            ->and($trait->aggregate([$exact, $estimated])['margin_pct'])->toBe(55.0)
+            ->and($trait->aggregate([$exact, $estimated])['is_estimated'])->toBeTrue()
+            ->and($trait->aggregate([$partial])['margin_pct'])->toBe(60.0)
+            ->and($trait->aggregate([$uncosted]))->toBeNull();
+
+        $withDiscount = $trait->aggregate([$discounted]);
+
+        expect($withDiscount['margin_pct'])->toBe(50.0)
+            ->and($withDiscount['before_discounts'])->toBe(['margin_pct' => 55.0, 'profit_amount' => 110.0])
+            ->and($withDiscount['is_below_break_even'])->toBeFalse();
+
+        $belowBreakEven = $trait->aggregate([$exact], breakEvenPct: 70.0);
+
+        expect($belowBreakEven['is_below_break_even'])->toBeTrue()
+            ->and($belowBreakEven['break_even_pct'])->toBe(70.0)
+            ->and($belowBreakEven['margin_status'])->toBe('danger')
+            ->and($trait->aggregate([$exact], breakEvenPct: 55.0)['margin_status'])->toBe('warning')
+            ->and($trait->aggregate([$exact], breakEvenPct: 40.0)['margin_status'])->toBe('ok');
+
+        $gift = (object) ['net' => 0, 'org_net' => 0, 'gross' => 0, 'org_exchange' => 1, 'actual_cost' => 20, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
+
+        expect($trait->aggregate([$exact, $gift])['margin_pct'])->toBe(40.0)
+            ->and($trait->aggregate([$exact, $gift])['profit_amount'])->toBe(40.0);
+    });
+});
+
+test('submitting an order keeps the warehouse note typed in the basket', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+    $modelData       = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    UpdateOrder::make()->action($order, ['private_warehouse_note' => 'fragile, double box']);
+    $this->customer->update(['warehouse_internal_notes' => null]);
+
+    $order = SubmitOrder::make()->action($order->refresh());
+
+    expect($order->private_warehouse_note)->toBe('fragile, double box');
+});
+
+test('submitting an order merges the customer profile warehouse note', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+    $modelData       = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    UpdateOrder::make()->action($order, ['private_warehouse_note' => 'fragile']);
+    $this->customer->update(['warehouse_internal_notes' => 'always call before delivery']);
+
+    $order = SubmitOrder::make()->action($order->refresh());
+
+    expect($order->private_warehouse_note)->toBe('fragile — always call before delivery');
+});
+
+describe('order state element group', function () {
+    test('every state label has a count so no chip renders NaN', function () {
+        $elements = array_merge_recursive(
+            OrderStateEnum::labels(),
+            OrderStateEnum::count($this->shop)
+        );
+
+        foreach (OrderStateEnum::cases() as $case) {
+            expect($elements[$case->value])->toBeArray()->toHaveCount(2)
+                ->and($elements[$case->value][1])->toBeInt();
+        }
+        expect($elements['picked'][1])->toBe(0)
+            ->and($elements['packing'][1])->toBe(0);
+    });
+});
+
+test('UI show order flags unpaid API orders as auto-held', function () {
+    $this->withoutExceptionHandling();
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order      = StoreOrder::make()->action($this->customer, $modelData);
+    SeedSalesChannels::run($this->organisation->group);
+    $apiChannel = SalesChannel::where('type', SalesChannelTypeEnum::API)->first();
+    $order->update([
+        'sales_channel_id' => $apiChannel->id,
+        'state'            => OrderStateEnum::SUBMITTED,
+        'pay_status'       => OrderPayStatusEnum::UNPAID,
+        'submitted_at'     => now(),
+    ]);
+
+    $response = get(route('grp.org.shops.show.ordering.orders.show', [$this->organisation->slug, $this->shop->slug, $order->slug]));
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('pageHead.api_order.label', 'API order')
+            ->where('pageHead.api_order.held_unpaid', true)
+            ->etc()
+    );
+
+    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+    $paid = get(route('grp.org.shops.show.ordering.orders.show', [$this->organisation->slug, $this->shop->slug, $order->slug]));
+    $paid->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('pageHead.api_order.held_unpaid', false)
+            ->etc()
+    );
+});
+
+test('UI order channels report groups by platform and sales channel', function () {
+    $this->withoutExceptionHandling();
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    SeedSalesChannels::run($this->organisation->group);
+    $apiChannel = SalesChannel::where('type', SalesChannelTypeEnum::API)->first();
+    $order->update([
+        'sales_channel_id' => $apiChannel->id,
+        'state'            => OrderStateEnum::SUBMITTED,
+        'pay_status'       => OrderPayStatusEnum::UNPAID,
+        'submitted_at'     => now(),
+    ]);
+
+    $response = get(route('grp.org.shops.show.ordering.channels.index', [$this->organisation->slug, $this->shop->slug]));
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->component('Org/Ordering/OrderChannels')
+            ->has('data.rows')
+            ->where('data.currency_code', $this->shop->currency->code)
+            ->where('pageHead.title', 'Order Channels')
+            ->etc()
+    );
+
+    $rows = collect(IndexOrderChannels::make()->handle($this->shop)['rows']);
+    expect($rows)->not->toBeEmpty();
+
+    $apiRow = $rows->first(fn ($row) => $row['sales_channel_type'] === 'api');
+    expect($apiRow)->not->toBeNull()
+        ->and($apiRow['number_held_unpaid'])->toBeGreaterThanOrEqual(1);
+});
+
+test('UI shop dashboard buries brands as a link and brands page renders', function () {
+    $this->withoutExceptionHandling();
+
+    if ($this->shop->type->value === 'dropshipping') {
+        $dashboard = get(route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug]));
+        $dashboard->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->where('dashboard.super_blocks.0.brands_link.route.name', 'grp.org.shops.show.dashboard.brands')
+                ->missing('dashboard.super_blocks.0.blocks.0.tables.brands')
+                ->etc()
+        );
+    }
+
+    $brandsPage = get(route('grp.org.shops.show.dashboard.brands', [$this->organisation->slug, $this->shop->slug]));
+    $brandsPage->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->component('Org/Catalogue/Shop')
+            ->has('dashboard.super_blocks.0.blocks.0.tables.brands')
+            ->etc()
+    );
+});
+
+test('manual platform time series splits sales by channel', function () {
+    SeedSalesChannels::run($this->organisation->group);
+    $platform   = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+    $webChannel = SalesChannel::where('type', SalesChannelTypeEnum::WEBSITE)->first();
+    $apiChannel = SalesChannel::where('type', SalesChannelTypeEnum::API)->first();
+
+    StoreInvoice::make()->action($this->customer, array_merge(Invoice::factory()->definition(), [
+        'platform_id'      => $platform->id,
+        'sales_channel_id' => $webChannel->id,
+    ]));
+    StoreInvoice::make()->action($this->customer, array_merge(Invoice::factory()->definition(), [
+        'platform_id'      => $platform->id,
+        'sales_channel_id' => $apiChannel->id,
+        'gross_amount'     => 20,
+        'net_amount'       => 20,
+        'total_amount'     => 20,
+    ]));
+    StoreInvoice::make()->action($this->customer, array_merge(Invoice::factory()->definition(), [
+        'platform_id'  => $platform->id,
+        'gross_amount' => 5,
+        'net_amount'   => 5,
+        'total_amount' => 5,
+    ]));
+
+    ProcessPlatformTimeSeriesRecords::run($platform->id, $this->shop->id, TimeSeriesFrequencyEnum::DAILY, now()->toDateString(), now()->toDateString());
+
+    $records = PlatformSalesChannelTimeSeriesRecord::where('shop_id', $this->shop->id)->where('frequency', 'D')->get();
+    expect($records)->toHaveCount(2)
+        ->and((float) $records->firstWhere('sales_channel_id', $webChannel->id)->sales_external)->toBe(15.0)
+        ->and((int) $records->firstWhere('sales_channel_id', $webChannel->id)->invoices)->toBe(2)
+        ->and((float) $records->firstWhere('sales_channel_id', $apiChannel->id)->sales_external)->toBe(20.0)
+        ->and((int) $records->firstWhere('sales_channel_id', $apiChannel->id)->invoices)->toBe(1)
+        ->and((float) $records->sum('sales_external'))->toBe(35.0);
+
+    $stats    = collect(GetPlatformTimeSeriesStats::run($this->shop));
+    $children = $stats->filter(fn ($row) => !empty($row['is_sales_channel']))->values();
+    expect($stats->firstWhere('slug', $platform->slug))->not->toBeNull()
+        ->and($children)->toHaveCount(2)
+        ->and($children->pluck('name')->all())->toContain('Web', $apiChannel->name)
+        ->and($children->pluck('parent_slug')->unique()->all())->toBe([$platform->slug])
+        ->and($stats->search(fn ($row) => !empty($row['is_sales_channel'])))
+        ->toBeGreaterThan($stats->search(fn ($row) => ($row['slug'] ?? null) === $platform->slug));
+});
+
+test('platforms:backfill_sales_channel_time_series is dry run by default and backfills with --commit', function () {
+    SeedSalesChannels::run($this->organisation->group);
+    $platform   = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+    $webChannel = SalesChannel::where('type', SalesChannelTypeEnum::WEBSITE)->first();
+
+    StoreInvoice::make()->action($this->customer, array_merge(Invoice::factory()->definition(), [
+        'platform_id'      => $platform->id,
+        'sales_channel_id' => $webChannel->id,
+    ]));
+
+    PlatformSalesChannelTimeSeriesRecord::query()->delete();
+
+    $this->artisan('platforms:backfill_sales_channel_time_series')->assertSuccessful();
+    expect(PlatformSalesChannelTimeSeriesRecord::count())->toBe(0);
+
+    $this->artisan('platforms:backfill_sales_channel_time_series', ['--commit' => true])->assertSuccessful();
+
+    $apiChannel       = SalesChannel::where('type', SalesChannelTypeEnum::API)->first();
+    $expectedWebSales = (float) Invoice::where('platform_id', $platform->id)
+        ->where(fn ($query) => $query->whereNull('sales_channel_id')->orWhere('sales_channel_id', '!=', $apiChannel->id))
+        ->where('in_process', false)
+        ->sum('net_amount');
+
+    $records    = PlatformSalesChannelTimeSeriesRecord::where('shop_id', $this->shop->id)->get();
+    $webRecords = $records->where('sales_channel_id', $webChannel->id);
+    expect($webRecords->where('frequency', 'D'))->toHaveCount(1)
+        ->and($records->pluck('frequency')->unique()->sort()->values()->all())->toBe(['D', 'M', 'Q', 'W', 'Y'])
+        ->and((float) $webRecords->firstWhere('frequency', 'Y')->sales_external)->toBe($expectedWebSales);
+});
+
+test('channel import never submits an order with no transactions', function () {
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    expect($order->transactions()->count())->toBe(0);
+
+    $action = new class () {
+        use \App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
+    };
+    $result = $action->payAndSubmitOrder($order);
+
+    expect($result->state)->toBe(OrderStateEnum::CREATING)
+        ->and($result->submitted_at)->toBeNull();
+});
+
+test('fulfilment gate holds order from warehouse until released', function () {
+    $settings = $this->organisation->settings ?? [];
+    $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    StoreTransaction::make()->action($order, $this->product->historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 2]
+    ));
+
+    SubmitOrder::make()->action($order);
+    $held = SendOrderToWarehouse::make()->action($order, []);
+    $order->refresh();
+
+    expect($held)->toBeNull()
+        ->and($order->state)->toEqual(OrderStateEnum::SUBMITTED)
+        ->and($order->at_gate_at)->not->toBeNull()
+        ->and($order->deliveryNotes()->count())->toBe(0);
+
+    $deliveryNote = \App\Actions\Ordering\Order\UpdateState\ReleaseOrderFromGate::make()->action($order);
+    $order->refresh();
+
+    expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
+        ->and($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->at_gate_at)->toBeNull()
+        ->and(\App\Models\Dispatching\FulfilmentGateRelease::where('order_id', $order->id)->count())->toBe(1);
+
+    $this->organisation->update(['settings' => $settings]);
+});
+
+test('fulfilment gate lets paid fully coverable order straight to warehouse', function () {
+    $settings = $this->organisation->settings ?? [];
+    $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    StoreTransaction::make()->action($order, $this->product->historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 2]
+    ));
+
+    if (!$this->product->orgStocks()->count()) {
+        $orgStock = \App\Models\Inventory\OrgStock::where('organisation_id', $this->organisation->id)->firstOrFail();
+        $this->product->orgStocks()->attach($orgStock->id, ['quantity' => 1]);
+    }
+    $this->product->orgStocks()->update(['quantity_available' => 100000]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    $order->refresh();
+
+    expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
+        ->and($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->at_gate_at)->toBeNull();
+
+    $this->product->orgStocks()->update(['quantity_available' => 0]);
+    $this->organisation->update(['settings' => $settings]);
+});
+
+test('fulfilment gate auto releases paid order when stock arrives', function () {
+    $settings = $this->organisation->settings ?? [];
+    $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    StoreTransaction::make()->action($order, $this->product->historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 2]
+    ));
+
+    if (!$this->product->orgStocks()->count()) {
+        $orgStock = \App\Models\Inventory\OrgStock::where('organisation_id', $this->organisation->id)->firstOrFail();
+        $this->product->orgStocks()->attach($orgStock->id, ['quantity' => 1]);
+    }
+    $this->product->orgStocks()->update(['quantity_available' => 0]);
+
+    $order->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
+    SubmitOrder::make()->action($order);
+    $order->refresh();
+
+    expect($order->at_gate_at)->not->toBeNull()
+        ->and($order->state)->toEqual(OrderStateEnum::SUBMITTED);
+
+    $this->product->orgStocks()->update(['quantity_available' => 100000]);
+    \App\Actions\Dispatching\FulfilmentGate\ReleaseCoverableOrdersAtGate::run($this->organisation->id);
+    $order->refresh();
+
+    expect($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->at_gate_at)->toBeNull()
+        ->and($order->deliveryNotes()->count())->toBe(1);
+
+    $this->product->orgStocks()->update(['quantity_available' => 0]);
+    $this->organisation->update(['settings' => $settings]);
+});
+
+test('make queue ranks paid blocked stock with suggested quantity', function () {
+    $settings = $this->organisation->settings ?? [];
+    $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $transaction = StoreTransaction::make()->action($order, $this->product->historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 5]
+    ));
+    $transaction->update(['net_amount' => 250]);
+
+    if (!$this->product->orgStocks()->count()) {
+        $orgStock = \App\Models\Inventory\OrgStock::where('organisation_id', $this->organisation->id)->firstOrFail();
+        $this->product->orgStocks()->attach($orgStock->id, ['quantity' => 1]);
+    }
+    $orgStock = $this->product->orgStocks()->first();
+    $this->product->orgStocks()->update(['quantity_available' => 0]);
+
+    $production = $this->organisation->productions()->first()
+        ?? \App\Actions\Production\Production\StoreProduction::make()->action($this->organisation, ['code' => 'MKQ', 'name' => 'MKQ']);
+    $artefact = \App\Models\Production\Artefact::firstOrCreate(
+        ['organisation_id' => $this->organisation->id, 'org_stock_id' => $orgStock->id],
+        ['group_id' => $this->organisation->group_id, 'production_id' => $production->id, 'code' => 'MKQ-ART', 'name' => 'MKQ artefact']
+    );
+
+    $order->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
+    SubmitOrder::make()->action($order);
+    $order->refresh();
+    expect($order->at_gate_at)->not->toBeNull();
+
+    $queue = \App\Actions\Dispatching\FulfilmentGate\GetMakeQueue::make()->handle($this->organisation);
+    $row = collect($queue->items())->firstWhere('org_stock_id', $orgStock->id);
+
+    expect($row)->not->toBeNull()
+        ->and((float) $row->blocked_paid_amount)->toBe(250.0)
+        ->and((int) $row->suggested_quantity)->toBeGreaterThanOrEqual(5)
+        ->and((float) $row->score)->toBeGreaterThan(0);
+
+    $this->organisation->update(['settings' => $settings]);
 });

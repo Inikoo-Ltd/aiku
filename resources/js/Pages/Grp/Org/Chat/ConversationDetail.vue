@@ -293,6 +293,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                         <button
                             class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
                             @click="showContactDetail = !showContactDetail"
+                            aria-label="Toggle contact details"
                         >
                             <FontAwesomeIcon :icon="['fal', 'fa-user']" class="text-sm" />
                         </button>
@@ -465,7 +466,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                 <div class="text-gray-500 text-xs">Chat ID</div>
                                 <div class="col-span-2 flex items-center gap-1">
                                     <code class="text-[11px] font-mono text-gray-700 bg-gray-100 rounded px-1.5 py-0.5 truncate">{{ chatSession.ulid }}</code>
-                                    <button class="shrink-0 text-gray-400 hover:text-gray-600 transition-colors" @click="copyChatId">
+                                    <button class="shrink-0 text-gray-400 hover:text-gray-600 transition-colors" @click="copyChatId" aria-label="Copy chat ID">
                                         <FontAwesomeIcon :icon="isCopied ? ['fal', 'fa-check'] : ['fal', 'fa-copy']" class="text-xs" />
                                     </button>
                                 </div>

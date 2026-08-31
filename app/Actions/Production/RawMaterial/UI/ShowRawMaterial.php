@@ -110,8 +110,8 @@ class ShowRawMaterial extends OrgAction
 
 
                RawMaterialTabsEnum::HISTORY->value => $this->tab == RawMaterialTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($rawMaterial))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($rawMaterial)))
+                    fn () => HistoryResource::collection(IndexHistory::run($rawMaterial, ProductionTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($rawMaterial, ProductionTabsEnum::HISTORY->value)))
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: ProductionTabsEnum::HISTORY->value));

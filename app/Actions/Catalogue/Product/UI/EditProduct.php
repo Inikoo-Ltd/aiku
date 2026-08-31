@@ -101,10 +101,6 @@ class EditProduct extends OrgAction
         $hasMaster      = (bool)$product->masterProduct;
         $isExternalShop = $product->shop->type == ShopTypeEnum::EXTERNAL;
 
-        if ($product->is_single_trade_unit && $product->shop->type != ShopTypeEnum::EXTERNAL) {
-            $warningText[] = __('This product is associated with trade unit, for weights, ingredients etc edit the trade unit. Changing name or description will affect all shops/websites using same language.');
-        }
-
         $forceFollowMasterProduct = data_get($product->shop->settings, 'catalog.product_follow_master');
 
         if ($hasMaster && $forceFollowMasterProduct) {
@@ -134,6 +130,19 @@ class EditProduct extends OrgAction
                     ]
                 ],
                 'color'   => 'rgb(75, 0, 130)'
+            ];
+        }
+        
+        if ($product->is_single_trade_unit && $product->tradeUnits->first()) {
+            $iconLinks[] = [
+                'icon'    => 'fal fa-atom',
+                'tooltip' => __('Go to Edit Trade Unit'),
+                'route'   => [
+                    'name'       => 'grp.trade_units.units.show',
+                    'parameters' => [
+                        'tradeUnit' => $product->tradeUnits->first()->slug,
+                    ]
+                ],
             ];
         }
 
@@ -343,6 +352,13 @@ class EditProduct extends OrgAction
         $tradeUnits = $this->getTradeUnitsWithPackingData($product);
 
         $nameFields = [
+            'unit'              => $product->is_single_trade_unit
+                ? [
+                    'type'  => 'input',
+                    'label' => __('Unit'),
+                    'value' => $product->unit,
+                ]
+                : [],
             'name'              => $product->masterProduct
                 ? [
                     'type'          => 'input_translation',
@@ -602,9 +618,9 @@ class EditProduct extends OrgAction
                     ]
                 ],
                 [
-                    'label'  => __('Name/Description'),
+                    'label'  => $product->is_single_trade_unit ? __('Unit/Name/Description') : __('Name/Description'),
                     'icon'   => 'fa-light fa-tag',
-                    'fields' => $nameFields
+                    'fields' => array_filter($nameFields)
                 ],
                 [
                     'label'  => __('Pricing'),

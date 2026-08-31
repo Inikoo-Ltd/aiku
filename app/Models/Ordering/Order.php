@@ -236,6 +236,7 @@ class Order extends Model implements HasMedia, Auditable
         'updated_by_customer_at'        => 'datetime',
         'submitted_at'                  => 'datetime',
         'in_warehouse_at'               => 'datetime',
+        'at_gate_at'                    => 'datetime',
         'handling_at'                   => 'datetime',
         'picked_at'                     => 'datetime',
         'packed_at'                     => 'datetime',
@@ -344,6 +345,7 @@ class Order extends Model implements HasMedia, Auditable
         // Timestamps
         'submitted_at',
         'in_warehouse_at',
+        'at_gate_at',
         'handling_at',
         'picked_at',
         'packed_at',

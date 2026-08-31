@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
@@ -61,6 +62,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ChatSession extends Model
 {
     use HasFactory;
+    use SoftDeletes;
+
     protected $table = 'chat_sessions';
 
 
@@ -71,9 +74,24 @@ class ChatSession extends Model
         'closed_at' => 'datetime',
         'rating' => 'decimal:1',
         'metadata' => 'array',
+        'is_spam' => 'boolean',
+        'spam_at' => 'datetime',
+        'is_highlighted' => 'boolean',
+        'highlighted_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
     protected $guarded = [];
+
+    public function scopeNotSpam($query)
+    {
+        return $query->where('is_spam', false);
+    }
+
+    public function scopeSpam($query)
+    {
+        return $query->where('is_spam', true);
+    }
 
 
     public function webUser()

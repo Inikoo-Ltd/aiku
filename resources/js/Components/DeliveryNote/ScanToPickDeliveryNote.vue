@@ -18,7 +18,6 @@ import { routeType } from "@/types/route"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
 import Toggle from "../Pure/Toggle.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
-import { notify } from "@kyvg/vue3-notification"
 
 library.add(faBarcodeRead, faCheckCircle, faTimesCircle, faExclamationTriangle, faMapMarkerAlt)
 
@@ -31,14 +30,13 @@ const emits = defineEmits<{
     scanned: [payload: ScanOutcome]
 }>()
 
-type ScanStatus = "picked" | "already_picked" | "no_stock" | "not_found" | "wrong_state" | "error"
+type ScanStatus = "picked" | "already_picked" | "no_stock" | "not_found" | "not_scannable" | "wrong_state" | "error"
 
 // delivery_note and picking_session_state only come back when the panel is picking a whole picking
 // session, where the picker has to be told which order the scan just went into.
 type ScanOutcome = {
     status: ScanStatus
     message: string
-    warning?: string | null
     scanned: string
     item: {
         id: number
@@ -86,6 +84,7 @@ const statusStyles: Record<ScanStatus, { wrapper: string; icon: string; iconClas
     already_picked: { wrapper: "border-sky-500 bg-sky-50 text-sky-800", icon: "fal fa-exclamation-triangle", iconClass: "text-sky-600" },
     no_stock: { wrapper: "border-amber-500 bg-amber-50 text-amber-800", icon: "fal fa-exclamation-triangle", iconClass: "text-amber-600" },
     not_found: { wrapper: "border-red-500 bg-red-50 text-red-800", icon: "fal fa-times-circle", iconClass: "text-red-600" },
+    not_scannable: { wrapper: "border-amber-500 bg-amber-50 text-amber-800", icon: "fal fa-exclamation-triangle", iconClass: "text-amber-600" },
     wrong_state: { wrapper: "border-red-500 bg-red-50 text-red-800", icon: "fal fa-times-circle", iconClass: "text-red-600" },
     error: { wrapper: "border-red-500 bg-red-50 text-red-800", icon: "fal fa-times-circle", iconClass: "text-red-600" },
 }
@@ -121,9 +120,9 @@ const pickAllLabelParts = computed(() => splitAroundRemaining("Pick all :remaini
 
 const { queuedCount, enqueueScan } = useScanQueue<PendingScan>((scan) => submitScan(scan))
 
-// One scan is one physical thing taken off the shelf, so a line needing three is scanned three times,
-// or finished in one go with the pick-the-rest button. What that thing is worth is the backend's
-// call: the outer barcode is a whole SKO, the unit EAN is one unit out of it.
+// One scan is one whole outer/SKO taken off the shelf, so a line needing three is scanned three
+// times, or finished in one go with the pick-the-rest button. Only the SKO barcode (or the typed
+// org stock code) matches; unit EANs are deliberately ignored by the backend.
 const { buffer, inputElement, isListening, registerKeystroke, clearBuffer, flushBuffer } = useBarcodeScanner(
     (code) => enqueueScan({ code, quantity: 1 })
 )
@@ -194,11 +193,6 @@ const applyOutcome = (outcome: ScanOutcome) => {
     } else {
         playNotificationSound({ frequency: 200, duration: 280, type: "square" })
     }
-
-    if (outcome.warning) {
-        notify({ title: ctrans("Check what you picked"), text: outcome.warning, type: "warning" })
-    }
-
     emits("scanned", outcome)
 }
 </script>

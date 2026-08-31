@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Dispatching\Packing\DeletePacking;
 use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\OrgAction;
@@ -46,6 +47,9 @@ class DeleteDeliveryNoteItem extends OrgAction
         if ($wasWaiting) {
             DeliveryNoteHydrateWaitingItems::run($deliveryNote->id);
         }
+
+        /** The deleted line may have been the only thing blocking the note. */
+        AutoFinishWaitingDeliveryNote::run($deliveryNote->refresh());
 
         return $deliveryNoteItem;
     }

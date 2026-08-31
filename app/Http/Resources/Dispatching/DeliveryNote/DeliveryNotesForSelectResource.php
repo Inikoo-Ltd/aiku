@@ -19,6 +19,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $slug
  * @property mixed $company_name
  * @property mixed $contact_name
+ * @property mixed $customer_reference
+ * @property mixed $tracking_number
  */
 class DeliveryNotesForSelectResource extends JsonResource
 {
@@ -26,14 +28,23 @@ class DeliveryNotesForSelectResource extends JsonResource
 
     public function toArray($request): array
     {
-        $name = $this->company_name;
-        if (!$name) {
-            $name = $this->contact_name;
-        }
+        $name = $this->company_name ?: $this->contact_name ?: $this->customer_name;
+
+        $parts = array_filter([
+            $this->reference,
+            $name,
+            $this->customer_reference,
+            $this->tracking_number,
+        ]);
 
         return [
-            'id'    => $this->id,
-            'label' => "$this->reference | $name (".$this->date->format('Y-m-d').")",
+            'id'                 => $this->id,
+            'label'              => implode(' | ', $parts).' ('.$this->date->format('Y-m-d').')',
+            'reference'          => $this->reference,
+            'customer_name'      => $name,
+            'customer_reference' => $this->customer_reference,
+            'tracking_number'    => $this->tracking_number,
+            'date'               => $this->date->format('Y-m-d'),
         ];
     }
 }

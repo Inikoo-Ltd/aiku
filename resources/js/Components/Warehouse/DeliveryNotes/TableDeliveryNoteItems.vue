@@ -777,12 +777,6 @@ const hasDirtyDeliveryNoteItem = computed(() => {
     return Object.values(props.data?.data ?? {}).some((item: any) => item.is_dirty);
 });
 
-const totalUnitsAll = computed(() => {
-  return props.data.data.reduce((accumulator, item) => {
-    return accumulator + item.total_units_count
-  }, 0)
-})
-
 </script>
 
 <template>
@@ -894,7 +888,7 @@ const totalUnitsAll = computed(() => {
         <!-- Column: Name -->
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
             <div class="flex flex-1 flex-wrap gap-2">
-                <div class="min-w-[20rem] mr-auto">
+                <div class="lg:min-w-[20rem] mr-auto">
                     {{ deliveryNoteItem.org_stock_name }} 
                     <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span>
                     <span
@@ -910,7 +904,7 @@ const totalUnitsAll = computed(() => {
                     </span>
                 </div>
                 <OrgStockHandlingNotes v-if="deliveryNoteItem.note_to_pickers" :noteToPickers="deliveryNoteItem.note_to_pickers" :noteToPackers="deliveryNoteItem.note_to_packers" />
-                <div class="min-w-[10rem] text-right">
+                <div class="lg:min-w-[10rem] text-right">
                     <span 
                         v-tooltip="ctrans('Units / SKU')"
                         class="mr-3"

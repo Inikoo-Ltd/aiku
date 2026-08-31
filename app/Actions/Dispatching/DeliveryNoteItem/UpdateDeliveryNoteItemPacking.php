@@ -70,9 +70,15 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
 
 
         $siblingDeliveryNoteItems = $deliveryNote->deliveryNoteItems()->with('packings')->get();
+        /*
+         * What is left to pack is measured against what was PICKED, never against what was
+         * ordered, so a line picked short is finished when its picked units are in the box. Asking
+         * for quantity_not_picked to be empty on top of that excused any short-picked line from
+         * being packed at all: scanning the last whole item swept its picked units in as
+         * auto_packed and promoted the note, with nobody ever confirming them at the bench.
+         */
         $hasUnfinishedPackings = $siblingDeliveryNoteItems->filter(
-            fn (DeliveryNoteItem $item) => empty((float)$item->quantity_not_picked)
-                && !static::isFullyPacked($item)
+            fn (DeliveryNoteItem $item) => !static::isFullyPacked($item)
         );
 
 
@@ -81,9 +87,7 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
          * which isFullyPacked() reads as complete. Without this check, scanning the last real item
          * silently packs a note whose waiting lines were never picked, zeroing them on the order.
          */
-        $hasWaitingItems = $siblingDeliveryNoteItems->contains(
-            fn (DeliveryNoteItem $item) => $item->has_waiting_warehouse || $item->has_waiting_crm
-        );
+        $hasWaitingItems = $deliveryNote->hasBlockingItems();
 
         if ($hasUnfinishedPackings->count() == 0 && !$hasWaitingItems) {
             UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $user);

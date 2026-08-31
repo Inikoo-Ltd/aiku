@@ -32,6 +32,7 @@ const props = defineProps<{
         decrease: [],
         transfer: [],
     }
+    lockedLocationIds?: number[]
     org_stock_id: number
 }>()
 
@@ -119,6 +120,11 @@ const bulkSubmitAudit = () => {
     )
 }
 
+
+// Locked by an audit running in another tab, or by this component's own request in flight
+const isLocationBusy = (locationOrgStockId: number) =>
+    listLoadingLocations.value.includes(locationOrgStockId) ||
+    (props.lockedLocationIds ?? []).includes(locationOrgStockId)
 
 const setInputRef = (el: any, id: number) => {
     if (el) {
@@ -333,8 +339,10 @@ const currentPage = ref(1);
                             </span>
                         </div>
 
-                        <div v-else-if="listLoadingLocations.includes(location.id)"
-                            v-tooltip="ctrans('Setting as audited')"
+                        <div v-else-if="isLocationBusy(location.id)"
+                            v-tooltip="listLoadingLocations.includes(location.id)
+                                ? ctrans('Setting as audited')
+                                : ctrans('Being audited somewhere else')"
                             class="text-gray-400"
                         >
                             <LoadingIcon />
@@ -361,6 +369,7 @@ const currentPage = ref(1);
                                     v-tooltip="ctrans('Whole units')"
                                     :modelValue="quantityInputs[location.id].whole"
                                     @input="(event: { value: any }) => updateWholeQuantity(location, event.value)"
+                                    :disabled="isLocationBusy(location.id)"
                                     :min="0"
                                     :step="1"
                                     size="small"
@@ -377,6 +386,7 @@ const currentPage = ref(1);
                                         v-tooltip="ctrans('Fraction of a unit (:packedIn per unit)', { packedIn: packedIn })"
                                         :modelValue="quantityInputs[location.id].numerator"
                                         @input="(event: { value: any }) => updateFractionQuantity(location, event.value)"
+                                        :disabled="isLocationBusy(location.id)"
                                         :min="0"
                                         :max="packedIn - 1"
                                         :step="1"
@@ -404,6 +414,7 @@ const currentPage = ref(1);
                                     location.quantity = event.value
                                     hydrateModifiedLocationsQuantity(location);
                                 }"
+                                :disabled="isLocationBusy(location.id)"
                                 :min="0"
                                 :step="1"
                                 size="small"

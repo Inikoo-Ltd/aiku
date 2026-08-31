@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks;
 
 use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
+use App\Actions\Accounting\Payment\CheckoutCom\StoreFailedCheckoutComPayment;
 use App\Actions\Accounting\TopUpPaymentApiPoint\UpdateTopUpPaymentApiPoint;
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\RetinaWebhookAction;
@@ -19,6 +20,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
+use Sentry;
 
 class TopUpPaymentFailure extends RetinaWebhookAction
 {
@@ -59,8 +61,10 @@ class TopUpPaymentFailure extends RetinaWebhookAction
         return $this->processFailure($topUpPaymentApiPoint, $payment);
     }
 
-    public function processFailure(TopUpPaymentApiPoint $topUpPaymentApiPoint, $payment): TopUpPaymentApiPoint
+    public function processFailure(TopUpPaymentApiPoint $topUpPaymentApiPoint, $payment, ?string $eventType = null): TopUpPaymentApiPoint
     {
+        $this->recordFailedAttempt($topUpPaymentApiPoint, (array) $payment, $eventType);
+
         return DB::transaction(function () use ($topUpPaymentApiPoint, $payment) {
             /** @var TopUpPaymentApiPoint $topUpPaymentApiPoint locked so a racing capture webhook committing SUCCESS is never overwritten */
             $topUpPaymentApiPoint = TopUpPaymentApiPoint::lockForUpdate()->find($topUpPaymentApiPoint->id);
@@ -143,4 +147,23 @@ class TopUpPaymentFailure extends RetinaWebhookAction
         );
     }
 
+    /**
+     * Best effort: the failed attempt is for the report, it must never get in the way of
+     * telling the customer their top up did not go through.
+     */
+    private function recordFailedAttempt(TopUpPaymentApiPoint $topUpPaymentApiPoint, array $checkoutComPayment, ?string $eventType): void
+    {
+        try {
+            $paymentAccountShop = PaymentAccountShop::find(Arr::get($topUpPaymentApiPoint->data, 'payment_account_shop_id.checkout'));
+            $customer           = $topUpPaymentApiPoint->customer;
+            if ($paymentAccountShop && $customer) {
+                StoreFailedCheckoutComPayment::run($customer, $paymentAccountShop, $checkoutComPayment, $eventType, [
+                    'type' => class_basename($topUpPaymentApiPoint),
+                    'id'   => $topUpPaymentApiPoint->id,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Sentry::captureException($e);
+        }
+    }
 }

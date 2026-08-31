@@ -16,29 +16,25 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Describe the Aiku database schema (or the NightOwl telemetry schema with database: nightowl): list tables matching a name, or get columns, types, foreign keys and the observed values of enum-like columns (type, state, status) for specific tables. Use this before writing SQL instead of querying information_schema by hand.')]
+#[Description('Describe the Aiku database schema (or the NightOwl telemetry schema with database: nightowl, or the archive schema with database: archive): list tables matching a name, or get columns, types, foreign keys and the observed values of enum-like columns (type, state, status) for specific tables. Use this before writing SQL instead of querying information_schema by hand.')]
 #[IsReadOnly]
 class DescribeTablesTool extends Tool
 {
     use WithMcpSqlAccess;
-
-    /**
-     * Only offered to users with direct SQL access enabled.
-     */
-    public function shouldRegister(Request $request): bool
-    {
-        return (bool) $request->user()?->can_use_mcp_sql;
-    }
 
     public function handle(Request $request): Response
     {
         $request->validate([
             'tables'   => ['sometimes', 'array', 'max:10'],
             'search'   => ['sometimes', 'string', 'max:64'],
-            'database' => ['sometimes', 'string', 'in:aiku,nightowl'],
+            'database' => ['sometimes', 'string', 'in:aiku,nightowl,archive'],
         ]);
 
         if ($denied = $this->deniedSqlAccess($request)) {
+            return $denied;
+        }
+
+        if ($denied = $this->deniedArchiveAccess($request)) {
             return $denied;
         }
 
@@ -118,7 +114,7 @@ class DescribeTablesTool extends Tool
         return [
             'tables'   => $schema->array()->description('Table names to describe, max 10')->items($schema->string()),
             'search'   => $schema->string()->description('Text to match against table names when you do not know the exact name'),
-            'database' => $schema->string()->enum(['aiku', 'nightowl'])->description('Database to inspect: aiku (default, commerce data) or nightowl (telemetry: requests, exceptions, queries, jobs)'),
+            'database' => $schema->string()->enum(['aiku', 'nightowl', 'archive'])->description('Database to inspect: aiku (default, commerce data), nightowl (telemetry) or archive (what aiku no longer keeps: dispatched emails, audits, per SKU stock history older than the retention window)'),
         ];
     }
 }

@@ -31,8 +31,7 @@ class InvoiceTransactionsGroupedByAssetResource extends JsonResource
     {
 
         $packedInMessage = '';
-        $historicUnits = $this->historicAsset?->units;
-        $units = $historicUnits > 1 ? $historicUnits : $this->model?->units;
+        $units = soldPackUnits($this->historicAsset?->units, $this->model?->units);
         if ($this->model_type === 'Product' && $units > 1) {
             $packedInMessage = '('.__('Pack of').": " . trimDecimalZeros($units) . ")";
         }

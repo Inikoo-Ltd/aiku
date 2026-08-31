@@ -8,10 +8,12 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoPackingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoSetAsPickedDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UnpackDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
+use App\Actions\Dispatching\Picking\Traits\AutoIgnoreZeroQuantityItems;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -30,6 +32,7 @@ use Illuminate\Support\Collection;
 trait WithDeliveryNoteQuantitySync
 {
     use HasDeliveryNoteHydrators;
+    use AutoIgnoreZeroQuantityItems;
 
 
     /**
@@ -81,6 +84,16 @@ trait WithDeliveryNoteQuantitySync
         }
 
         $this->walkDeliveryNoteBackToPicking($deliveryNote, $goBackToPicking, $quantityLowered, $user);
+
+        /** A line the marketplace took down to nothing has no work left on it and must not block. */
+        $this->ignoreZeroQuantityItems($deliveryNote, $user);
+
+        /*
+         * Once, and only after the walk, so every line has been seen. A quantity lowered onto what
+         * is already picked leaves nothing to do and never walks the note back, so without this a
+         * blocked note stays blocked with no work left on it.
+         */
+        AutoFinishWaitingDeliveryNote::run($deliveryNote->refresh());
     }
 
     /**
@@ -107,9 +120,9 @@ trait WithDeliveryNoteQuantitySync
 
             /*
              * A blocked note is waiting on its own items, but the line that just changed still has
-             * to be walked to. Auto finish waiting only looks at the waiting flags, so a note left
-             * blocked would jump to picked with this line never picked and the order would ship
-             * short. Picking recomputes the block when it finishes, so nothing is lost by it.
+             * to be walked to, so the note is released to handling and picking recomputes the block
+             * when it finishes. Auto finish waiting refuses to release a note holding an unhandled
+             * line, so nothing here can carry an unpicked line through to a short shipment.
              */
             if ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING_BLOCKED) {
                 $oldState = $deliveryNote->state;

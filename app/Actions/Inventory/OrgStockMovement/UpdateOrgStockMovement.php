@@ -12,6 +12,7 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
+use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\Traits\WithOrgStockMovementHydrator;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\DB;
 
 class UpdateOrgStockMovement extends OrgAction
 {
+    use CalculatesOrgStockHistories;
     use WithActionUpdate;
     use WithOrgStockMovementHydrator;
 
@@ -38,7 +40,8 @@ class UpdateOrgStockMovement extends OrgAction
 
         if (Arr::has($modelData, 'quantity')) {
             if (!Arr::has($modelData, 'org_amount')) {
-                data_set($modelData, 'org_amount', $modelData['quantity'] * $orgStockMovement->orgStock->value_in_locations);
+                $officialPerSku = $this->getOfficialPerSku($orgStockMovement->orgStock, $orgStockMovement->date ?? now());
+                data_set($modelData, 'org_amount', round($modelData['quantity'] * $officialPerSku, 3));
             }
             data_set($modelData, 'grp_amount', Arr::get($modelData, 'org_amount') * GetCurrencyExchange::run($orgStockMovement->organisation->currency, $orgStockMovement->group->currency), overwrite: false);
 

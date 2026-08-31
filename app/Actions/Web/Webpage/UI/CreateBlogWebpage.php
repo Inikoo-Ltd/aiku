@@ -70,8 +70,6 @@ class CreateBlogWebpage extends OrgAction
                 ],
                 'formData'    => [
                     'blueprint' => [
-
-
                         [
                             'title'  => __('Blog'),
                             'icon'   => ['fal', 'fa-fingerprint'],
@@ -111,9 +109,7 @@ class CreateBlogWebpage extends OrgAction
                         ]
                     ],
                     'route'     => $route,
-
                 ],
-
             ]
         );
     }

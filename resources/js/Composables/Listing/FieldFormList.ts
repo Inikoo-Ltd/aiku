@@ -23,6 +23,7 @@ import Theme from '@/Components/Forms/Fields/Theme.vue'
 import ColorMode from '@/Components/Forms/Fields/ColorMode.vue'
 import Checkbox from '@/Components/Forms/Fields/Checkbox.vue'
 import AppTheme from '@/Components/Forms/Fields/AppTheme.vue'
+import ChatTheme from '@/Components/Forms/Fields/ChatTheme.vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
 import AppLogin from '@/Components/Forms/Fields/AppLogin.vue'
 import Pin from '@/Components/Forms/Fields/Pin.vue'
@@ -57,6 +58,7 @@ const MailshotRecipient = defineAsyncComponent(() => import('@/Components/Forms/
 const SelectCreate = defineAsyncComponent(() => import('@/Components/Forms/Fields/SelectCreate.vue'))
 const DynamicList = defineAsyncComponent(() => import('@/Components/Forms/Fields/DynamicList.vue'))
 const TaxPreset = defineAsyncComponent(() => import('@/Components/Forms/Fields/TaxPreset.vue'))
+const PricingPolicy = defineAsyncComponent(() => import('@/Components/Forms/Fields/PricingPolicy.vue'))
 import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
 import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
@@ -107,6 +109,9 @@ import MasterShopPriceExchanges from '@/Components/Forms/Fields/MasterShopPriceE
 import ContactOptionsPanel from '@/Components/Forms/Fields/ContactOptionPanel.vue'
 import IngredientsField from '@/Components/Forms/Fields/IngredientsField.vue'
 import TradeUnitsForStock from '@/Components/Forms/Fields/TradeUnitsForStock.vue'
+import FamilyCustomize from '@/Components/Forms/Fields/FamilyCustomize.vue'
+import FamilyStorageConditions from '@/Components/Forms/Fields/FamilyStorageConditions.vue'
+import CategoryComparison from '@/Components/Forms/Fields/CategoryComparison.vue'
 
 export const componentsList: { [key: string]: Component } = {
     'image_crop_square': ImageCropSquare,
@@ -129,6 +134,7 @@ export const componentsList: { [key: string]: Component } = {
     'customerRoles': CustomerRoles,
     'textarea': Textarea,
     'textEditor': TextEditor,
+    'pricing_policy': PricingPolicy,
     'toggle': Toggle,
     'toggle2fa': ToggleState2FA,
     'passkeys': PasskeysManager,
@@ -152,6 +158,7 @@ export const componentsList: { [key: string]: Component } = {
     'checkbox': Checkbox,
     'app_login': AppLogin,
     'app_theme': AppTheme,
+    'chat_theme': ChatTheme,
     'product_parts': ProductParts,
     'employeeState': EmployeeState,
     'pin': Pin,
@@ -166,6 +173,8 @@ export const componentsList: { [key: string]: Component } = {
     'input_translation': InputTranslation,
     'select_infinite': SelectInfiniteScroll,
     'ingredients': IngredientsField,
+    'family_customize': FamilyCustomize,
+    'family_storage_conditions': FamilyStorageConditions,
     'textEditor_translation': TextEditorTranslation,
     'pricing_zone': Pricing_zone,
     'pricing_zone_multi_shipper': PricingZoneMultiShipper,
@@ -214,7 +223,8 @@ export const componentsList: { [key: string]: Component } = {
 	field_group: FieldGroup,
     'multiple_price_currency' : MultiplePriceCurrency,
     'master_shop_price_exchanges' : MasterShopPriceExchanges,
-    'contact_options_panel' : ContactOptionsPanel
+    'contact_options_panel' : ContactOptionsPanel,
+    'category-comparison' : CategoryComparison
 }
 
 export const getComponent = (componentName: string) => {

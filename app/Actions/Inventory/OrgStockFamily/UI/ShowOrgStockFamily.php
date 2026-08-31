@@ -132,8 +132,8 @@ class ShowOrgStockFamily extends OrgAction
                     : Inertia::optional(fn () => OrgStockFamilyTimeSeriesResource::collection(IndexOrgStockFamilyTimeSeries::run($orgStockFamily, OrgStockFamilyTabsEnum::SALES->value))),
 
                 OrgStockFamilyTabsEnum::HISTORY->value => $this->tab == OrgStockFamilyTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))),
+                    fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily, OrgStockFamilyTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily, OrgStockFamilyTabsEnum::HISTORY->value))),
 
                 'salesData' => $this->tab == OrgStockFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockFamilyTimeSeriesData::run($orgStockFamily)

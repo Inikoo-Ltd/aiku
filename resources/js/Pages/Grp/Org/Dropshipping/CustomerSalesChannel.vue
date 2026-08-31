@@ -8,6 +8,7 @@
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TablePlatformPortfolioLogs from "@/Components/Tables/Grp/Org/CRM/TablePlatformPortfolioLogs.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { trans } from "laravel-vue-i18n"
@@ -44,6 +45,7 @@ const props = defineProps<{
         platform_user: {}
     }
     logs?: {}
+    history?: {}
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -52,7 +54,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         showcase: CustomerSalesChannelShowcase,
-        logs: TablePlatformPortfolioLogs
+        logs: TablePlatformPortfolioLogs,
+        history: TableHistories
     }
 
     return components[currentTab.value]

@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStockHistory\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithStockHistoryArchiveRead;
 use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\LocationOrgStockHistory;
@@ -22,6 +23,8 @@ use Spatie\QueryBuilder\AllowedSort;
 
 class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
 {
+    use WithStockHistoryArchiveRead;
+
     public function handle(OrganisationStockHistory $organisationStockHistory, ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -39,7 +42,9 @@ class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
         // TODO: after running repair:location_org_stock_histories_organisation_stock_history_id, remove the join to org_stock_histories and use this instead:
         // ->where('location_org_stock_histories.organisation_stock_history_id', $organisationStockHistory->id)
 
-        return QueryBuilder::for(LocationOrgStockHistory::class)
+        $connection = $this->stockHistoryDayConnection($organisationStockHistory);
+
+        return QueryBuilder::for($connection ? LocationOrgStockHistory::on($connection) : LocationOrgStockHistory::query())
             ->leftJoin('org_stock_histories', 'location_org_stock_histories.org_stock_history_id', '=', 'org_stock_histories.id')
             ->leftJoin('org_stocks', 'location_org_stock_histories.org_stock_id', '=', 'org_stocks.id')
             ->leftJoin('locations', 'location_org_stock_histories.location_id', '=', 'locations.id')

@@ -52,6 +52,19 @@ class StoreOrgStock extends OrgAction
         data_set($modelData, 'name', $stock->name);
         data_set($modelData, 'state', OrgStockStateEnum::ACTIVE, false);
 
+        /*
+         * org_stocks is unique on (organisation, barcode), so a second org stock of the same stock
+         * in an organisation that already carries the code is born without one rather than being
+         * rejected by the database.
+         */
+        $barcode = $stock->barcode;
+        if ($barcode !== null && OrgStock::where('organisation_id', $organisation->id)->where('barcode', $barcode)->exists()) {
+            $barcode = null;
+        }
+
+        data_set($modelData, 'barcode', $barcode);
+        data_set($modelData, 'independent_barcode', $barcode !== null);
+
 
         $orgStock = DB::transaction(function () use ($stock, $modelData, $parent) {
             /** @var OrgStock $orgStock */
@@ -131,7 +144,7 @@ class StoreOrgStock extends OrgAction
     public function action(Organisation|OrgStockFamily $parent, Stock $stock, $modelData = [], int $hydratorsDelay = 0, bool $strict = true, $audit = true): OrgStock
     {
         if (!$audit) {
-            OrgStock::disableAuditing();
+            return OrgStock::withoutAuditing(fn () => $this->action($parent, $stock, $modelData, $hydratorsDelay, $strict));
         }
 
         if ($parent instanceof Organisation) {

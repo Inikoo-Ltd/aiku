@@ -5,7 +5,6 @@
   -->
 
 <script setup lang="ts">
-import FooterActiveUsers from '@/Components/Footer/FooterActiveUsers.vue'
 import FooterLanguage from '@/Components/Footer/FooterLanguage.vue'
 import FooterCurrency from '@/Components/Footer/FooterCurrency.vue'
 import { faHeart, faComputerClassic } from '@fas'
@@ -15,7 +14,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import { computed, inject } from 'vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import FooterMessage from '@/Components/Footer/FooterMessage.vue'
 import TimezoneDisplay from './TimezoneDisplay.vue'
 import { useFormatTime } from '@/Composables/useFormatTime.js'
 import { Link } from '@inertiajs/vue3'
@@ -40,7 +38,7 @@ const deploymentTooltip = computed(() => {
 </script>
 
 <template>
-    <footer class="z-20 fixed w-screen bottom-0 left-0  text-white bg-black">
+    <footer class="z-20 fixed w-screen bottom-0 left-0 text-white bg-black transition-all duration-300 ease-in-out" :class="layout?.messagingSidebar?.show ? 'md:pr-56' : (layout?.messagingSidebar?.micro ? 'md:pr-4' : 'md:pr-12')">
         <!-- Helper: Product background (close popup purpose) -->
         <div class="flex justify-between">
             <!-- Left: Logo Section -->
@@ -52,7 +50,9 @@ const deploymentTooltip = computed(() => {
                         class="py-1 font-normal leading-none tabular-nums hover:text-white">
                         {{ layout?.app?.last_deployment_version ?? trans('unreleased') }}
                     </Link>
-                    <img class="h-3 select-none hidden lg:inline pl-1 pr-1" src="/art/logo-yellow.svg" alt="aiku" />
+                    <a href="https://aiku.io/" target="_blank" rel="noopener" aria-label="aiku.io" class="hidden lg:inline">
+                        <img class="h-3 select-none inline pl-1 pr-1" src="/art/invader.svg" alt="aiku" />
+                    </a>
                     <span class="hidden lg:inline whitespace-nowrap"
                         v-tooltip="trans('With help from the teams in the UK, Spain and Slovakia')">
                         {{ trans('Made with') }}
@@ -77,8 +77,6 @@ const deploymentTooltip = computed(() => {
                 </div>
                <!--  <FooterCurrency /> -->
                 <FooterLanguage />
-                <FooterActiveUsers />
-                <FooterMessage v-if="layout?.user?.is_agent" />
             </div>
         </div>
     </footer>

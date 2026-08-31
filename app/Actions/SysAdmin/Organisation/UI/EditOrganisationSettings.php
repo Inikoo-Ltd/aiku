@@ -19,6 +19,7 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Dispatching\Shipper;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Support\Forms\SesConfigurationBlueprint;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -267,6 +268,42 @@ class EditOrganisationSettings extends OrgAction
                             'label' => __('Picking'),
                             'icon' => 'fa-light fa-dolly-flatbed-alt',
                             'fields' => $pickingFields,
+                        ],
+                        [
+                            'label' => __('Staff chat'),
+                            'icon' => 'fal fa-comments',
+                            'fields' => [
+                                'staff_chat_warehouse_user_ids' => [
+                                    'type' => 'multiselect-tags',
+                                    'label' => __('Ask warehouse goes to'),
+                                    'information' => __('Default recipients of "Ask warehouse" messages, used when the shop has no list of its own. If empty, all warehouse role holders are used.'),
+                                    'options' => User::where('group_id', $organisation->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])->map(fn ($user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                                    'labelProp' => 'name',
+                                    'valueProp' => 'id',
+                                    'value' => Arr::get($organisation->settings, 'staff_chat.warehouse_user_ids', []),
+                                ],
+                                'staff_chat_warehouse_backup_user_ids' => [
+                                    'type' => 'multiselect-tags',
+                                    'label' => __('Ask warehouse backup'),
+                                    'information' => __('Used when nobody in "Ask warehouse goes to" is currently active.'),
+                                    'options' => User::where('group_id', $organisation->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])->map(fn ($user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                                    'labelProp' => 'name',
+                                    'valueProp' => 'id',
+                                    'value' => Arr::get($organisation->settings, 'staff_chat.warehouse_backup_user_ids', []),
+                                ],
+                            ],
+                        ],
+                        [
+                            'label' => __('Margins'),
+                            'icon' => 'fa-light fa-percent',
+                            'fields' => [
+                                'margin_break_even_pct' => [
+                                    'type'        => 'input',
+                                    'label'       => __('Break-even margin (%)'),
+                                    'information' => __('Orders with a margin below this are flagged as unprofitable once staff, rent and other running costs are counted. Industry guideline for this kind of shop is around 30%.'),
+                                    'value'       => Arr::get($organisation->settings, 'margins.break_even_pct', 30),
+                                ],
+                            ],
                         ],
                         [
                             'label' => __('Preferred Shipping'),

@@ -16,6 +16,7 @@ use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAttachments;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\InFulfilmentCustomer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -24,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -102,12 +104,13 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDelivery withoutTrashed()
  * @mixin \Eloquent
  */
-class PalletDelivery extends Model implements HasMedia
+class PalletDelivery extends Model implements HasMedia, Auditable
 {
     use HasSlug;
     use SoftDeletes;
     use InFulfilmentCustomer;
     use HasAttachments;
+    use HasHistory;
 
     protected $guarded = [];
     protected $casts   = [
@@ -194,4 +197,20 @@ class PalletDelivery extends Model implements HasMedia
     {
         return $this->belongsTo(Address::class, 'delivery_address_id');
     }
+
+    public function generateTags(): array
+    {
+        return ['fulfilment'];
+    }
+
+    protected array $auditInclude = [
+        'reference',
+        'customer_reference',
+        'state',
+        'date',
+        'estimated_delivery_date',
+        'customer_notes',
+        'public_notes',
+        'internal_notes'
+    ];
 }

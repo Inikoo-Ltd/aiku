@@ -25,6 +25,7 @@ use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Dispatching\DeliveryNote\SetScanToPickDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteHandler;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithMarginData;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Actions\UI\WithInertia;
@@ -35,6 +36,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
+use App\Enums\UI\NotesEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResource;
@@ -68,6 +70,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowDeliveryNote extends OrgAction
 {
     use WithInertia;
+    use WithMarginData;
     use GetPlatformLogo;
     use WithBucketNavigation;
     use WithOrderForbiddenCountryCheck;
@@ -215,14 +218,7 @@ class ShowDeliveryNote extends OrgAction
      */
     public function getHandlingBlockedActions(DeliveryNote $deliveryNote): array
     {
-        $stillWaiting = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
-            ->where(function ($query) {
-                $query->where('has_waiting_crm', true)
-                    ->orWhere('has_waiting_warehouse', true);
-            })
-            ->exists();
-
-        if ($stillWaiting) {
+        if ($deliveryNote->hasBlockingItems()) {
             return [];
         }
 
@@ -251,10 +247,7 @@ class ShowDeliveryNote extends OrgAction
         }
 
         $hasUnHandledItems = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
-            ->where(function ($q) {
-                $q->where('is_handled', false)
-                ->orWhere('is_dirty', true);
-            })
+            ->where('is_handled', false)
             ->exists();
 
         $actions = [];
@@ -450,13 +443,6 @@ class ShowDeliveryNote extends OrgAction
                         'deliveryNote' => $deliveryNote->id
                     ]
                 ],
-            ];
-        }
-
-        if ($deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED && $deliveryNote->shop?->type != ShopTypeEnum::EXTERNAL) {
-            $actions[] = [
-                'type' => 'button',
-                'key'  => 'return',
             ];
         }
 
@@ -697,10 +683,56 @@ class ShowDeliveryNote extends OrgAction
     }
 
 
+    /**
+     * SKOs and units the pickers have to walk, taken from what the order requires so the
+     * totals are already there while picking, unlike the dispatch totals on the delivery
+     * note and invoice PDFs which only land once the delivery note is dispatched.
+     *
+     * @return array{number_skos: int, number_units: int}
+     */
+    public function getPickingTotals(DeliveryNote $deliveryNote): array
+    {
+        $numberSkos  = 0;
+        $numberUnits = 0;
+
+        foreach ($deliveryNote->deliveryNoteItems()->with('orgStock')->get() as $deliveryNoteItem) {
+            $quantityRequired = (float)$deliveryNoteItem->quantity_required;
+
+            $numberSkos  += $quantityRequired;
+            $numberUnits += $quantityRequired * ($deliveryNoteItem->orgStock?->packed_in ?? 1);
+        }
+
+        return [
+            'number_skos'  => (int)$numberSkos,
+            'number_units' => (int)$numberUnits,
+        ];
+    }
+
+    /**
+     * How long the warehouse usually takes on an order this size, from its own median
+     * seconds per SKO. Null until the warehouse has enough finished orders to measure.
+     *
+     * @return array{estimated_picking_minutes: int|null, estimated_packing_minutes: int|null}
+     */
+    public function getEstimatedHandlingMinutes(DeliveryNote $deliveryNote, int $numberSkos): array
+    {
+        $warehouseStats = $deliveryNote->warehouse?->stats;
+
+        $estimate = fn (?string $secondsPerSko) => $secondsPerSko === null || $numberSkos <= 0
+            ? null
+            : max(1, (int)round($numberSkos * (float)$secondsPerSko / 60));
+
+        return [
+            'estimated_picking_minutes' => $estimate($warehouseStats?->picking_seconds_per_sko),
+            'estimated_packing_minutes' => $estimate($warehouseStats?->packing_seconds_per_sko),
+        ];
+    }
+
     public function getBoxStats(DeliveryNote $deliveryNote): array
     {
-        $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
-        $order     = $deliveryNote->orders->first();
+        $estWeight     = ($deliveryNote->estimated_weight ?? 0) / 1000;
+        $order         = $deliveryNote->orders->first();
+        $pickingTotals = $this->getPickingTotals($deliveryNote);
 
         $additionalShipmentRoutes = [];
         if ($deliveryNote->is_shipping_by_external) {
@@ -792,7 +824,9 @@ class ShowDeliveryNote extends OrgAction
             'products'                     => [
                 'estimated_weight' => $estWeight,
                 'number_items'     => $deliveryNote->number_items,
-                'number_skos'      => $deliveryNote->total_skos,
+                'number_skos'      => $pickingTotals['number_skos'],
+                'number_units'     => $pickingTotals['number_units'],
+                ...$this->getEstimatedHandlingMinutes($deliveryNote, $pickingTotals['number_skos']),
             ],
             'order'                        => [
                 'reference' => $order->reference,
@@ -1107,6 +1141,11 @@ class ShowDeliveryNote extends OrgAction
                 'previous' => $this->getPrevious($deliveryNote, $request),
                 'next'     => $this->getNext($deliveryNote, $request),
             ],
+            'staff_chat'    => [
+                'context_type' => 'DeliveryNote',
+                'context_id'   => $deliveryNote->id,
+                'audiences'    => [['key' => 'crm', 'label' => __('Ask CRM')]],
+            ],
             'pageHead'      => [
                 'title'           => $deliveryNote->reference,
                 'model'           => $model,
@@ -1137,6 +1176,7 @@ class ShowDeliveryNote extends OrgAction
             'allowActions'        => $allowAction,
             'timelines'           => $this->getTimeline($deliveryNote),
             'box_stats'           => $this->getBoxStats($deliveryNote),
+            'margin_summary'      => $this->getMarginSummary($deliveryNote),
             'shop_type'           => $deliveryNote->shop->type,
             'notes'               => $this->getDeliveryNoteNotes($deliveryNote),
             'quick_pickers'       => $this->quickGetPickers(),
@@ -1360,28 +1400,28 @@ class ShowDeliveryNote extends OrgAction
         return [
             "note_list" => [
                 [
-                    "label"       => __("Shipping label message").' ('.__("Customer").')',
+                    "label"       => NotesEnum::SHIPPING_LABEL->label(),
                     "note"        => $deliveryNote->shipping_notes ?? '',
                     "information" => __("Note from crm. First 34 char. Will be printed on the shipping label."),
-                    "editable"    => true,
-                    "bgColor"     => "#38bdf8",
-                    "field"       => "shipping_notes"
+                    "editable"    => false,
+                    "field"       => "shipping_notes",
+                    ...NotesEnum::SHIPPING_LABEL->boilerPlate()
                 ],
                 [
-                    "label"       => __("Customer's note"),
+                    "label"       => NotesEnum::CUSTOMER->label(),
                     "note"        => $deliveryNote->customer_notes ?? '',
                     "information" => __("This note is from customer in the platform. Not editable."),
                     "editable"    => false,
-                    "bgColor"     => "#FF7DBD",
-                    "field"       => "customer_notes"
+                    "field"       => "customer_notes",
+                    ...NotesEnum::CUSTOMER->boilerPlate()
                 ],
                 [
-                    "label"       => __("Private warehouse note"),
+                    "label"       => NotesEnum::WAREHOUSE->label(),
                     "note"        => $deliveryNote->private_warehouse_note ?? '',
                     "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
                     "editable"    => true,
-                    "bgColor"     => "#FFD8A8",
-                    "field"       => "private_warehouse_note"
+                    "field"       => "private_warehouse_note",
+                    ...NotesEnum::WAREHOUSE->boilerPlate()
                 ]
             ]
         ];

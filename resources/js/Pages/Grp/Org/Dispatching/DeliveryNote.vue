@@ -41,6 +41,7 @@ import { computed, provide, ref, watch, onMounted, onUnmounted, inject } from "v
 import type { Component } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
+import MarginSummary from "@/Components/Margin/MarginSummary.vue";
 import TableDeliveryNoteItems from "@/Components/Warehouse/DeliveryNotes/TableDeliveryNoteItems.vue";
 import TableDeliveryNoteTariffCodes from "@/Components/Warehouse/DeliveryNotes/TableDeliveryNoteTariffCodes.vue";
 import TablePickings from "@/Components/Warehouse/DeliveryNotes/TablePickings.vue";
@@ -48,6 +49,7 @@ import { routeType } from "@/types/route";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import type { DeliveryNote } from "@/types/warehouse";
 import Button from "@/Components/Elements/Buttons/Button.vue";
+import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue";
 import Modal from "@/Components/Utils/Modal.vue";
 import { trans } from "laravel-vue-i18n";
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
@@ -76,6 +78,7 @@ library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCh
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
+    staff_chat?: { context_type: string; context_id: number; audiences: { key: string; label: string }[] }
     tabs: TSTabs
     items?: {}
     picking_todo_items?: {}
@@ -123,6 +126,7 @@ const props = defineProps<{
 	allow_waiting: boolean
 	allow_picker_set_not_picked: boolean
     box_stats: {}
+    margin_summary?: {}
     quick_pickers: {}
     routes: {
         update: routeType
@@ -855,6 +859,7 @@ const stopSocketListener = () => {
 		</template>
 
 		<template #otherBefore v-if="!box_stats.is_replacement">
+			<StaffChatContextButtons v-if="staff_chat" :context="staff_chat" />
 			<!-- toggle picking view -->
 			<div
 				v-if="
@@ -1054,6 +1059,7 @@ const stopSocketListener = () => {
 	</div>
 
 	<!-- Section: Box Stats -->
+	<MarginSummary v-if="margin_summary" :summary="margin_summary" class="mx-4 mb-2" />
 	<BoxStatsDeliveryNote
 		v-if="box_stats && pickingView"
 		:showChangePickerPacker="showChangePickerPacker"

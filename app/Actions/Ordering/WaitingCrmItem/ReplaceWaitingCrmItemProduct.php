@@ -15,6 +15,7 @@ use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Ordering\Order\CalculateOrderDiscounts;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
@@ -61,7 +62,6 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
 
             $deliveryNoteItem->update([
                 'quantity_waiting_crm' => $remainingQuantity,
-                'has_waiting_crm'      => $remainingQuantity > 0,
             ]);
             DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
@@ -123,12 +123,25 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
                             ];
 
                             $replacementDeliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNoteItem->deliveryNote, $deliveryNoteItemData);
-                            $replacementDeliveryNoteItem->update([
-                                'state'                      => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
-                                'quantity_waiting_warehouse' => $quantity,
-                                'has_waiting_warehouse'      => true,
-                            ]);
-                            DeliveryNoteHydrateWaitingItems::run($replacementDeliveryNoteItem->delivery_note_id);
+
+                            /*
+                             * A picker still on the note (AWS38872) was handed the replacement as a
+                             * line waiting for the warehouse, with nothing to do but undo the waiting
+                             * before picking it. While the note is being picked the replacement is
+                             * just one more line to pick; the waiting list is for notes nobody is on,
+                             * where it is the only way the warehouse learns there is new work.
+                             */
+                            if ($deliveryNoteItem->deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
+                                $replacementDeliveryNoteItem->update([
+                                    'state' => DeliveryNoteItemStateEnum::HANDLING,
+                                ]);
+                            } else {
+                                $replacementDeliveryNoteItem->update([
+                                    'state'                      => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
+                                    'quantity_waiting_warehouse' => $quantity,
+                                ]);
+                                DeliveryNoteHydrateWaitingItems::run($replacementDeliveryNoteItem->delivery_note_id);
+                            }
                             CalculateDeliveryNoteItemTotalPicked::run($replacementDeliveryNoteItem);
                         }
                     }

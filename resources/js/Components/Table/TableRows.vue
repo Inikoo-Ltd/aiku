@@ -25,7 +25,7 @@ const props = defineProps<{
     </template>
     <template v-else-if="column.type === 'date'">
         <span v-tooltip="useFormatTime(item[column.key], { formatTime: 'hms' })" class="whitespace-nowrap">
-            {{ useFormatTime(item[column.key]) }}
+            {{ useFormatTime(item[column.key], { formatTime: 'mdy' }) }}
         </span>
     </template>
     <template v-else-if="column.type === 'date_hm'">

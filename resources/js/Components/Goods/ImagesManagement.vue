@@ -4,7 +4,8 @@ import { router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faImage, faPencil, faUnlink, faUpload, faVideo, faInfoCircle } from "@fal"
+import { faImage, faMusic, faPencil, faUnlink, faUpload, faVideo, faInfoCircle } from "@fal"
+import AudioWaveform from "@/Components/Pure/AudioWaveform.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
 import axios from "axios"
@@ -26,6 +27,7 @@ const props = defineProps<{
         bucket_images?: boolean
         images_update_route: routeType
         upload_images_route: routeType
+        upload_audio_route?: routeType
         delete_images_route: routeType
         update_image_alt_route?: routeType
         images_category_box: {
@@ -34,6 +36,7 @@ const props = defineProps<{
             column_in_db: string
             url?: string
             images?: ImageTS
+            audio?: { url: string, name: string } | null
             information?: string
             id?: number
         }[]
@@ -50,6 +53,7 @@ const loadingSubmit = ref<null | number | string>(null)
 const isModalEditVideo = ref(false)
 const selectedVideoToUpdate = ref<any>(null)
 const activeCategory = ref<string | null>(null)
+const isDragOver = ref(false)
 const isModalEditAlt = ref(false)
 const selectedImageToEditAlt = ref<any>(null)
 const altInput = ref<string>("")
@@ -151,6 +155,14 @@ function onSubmitVideoUrl() {
    Drag & Drop Handlers
 ---------------------------- */
 function onDropImage(event: DragEvent, categoryBox: any) {
+    event.preventDefault();
+
+    if (event.dataTransfer?.files?.length) {
+        uploadFiles(event.dataTransfer.files);
+        activeCategory.value = null;
+        return;
+    }
+
     const dataRowImage = JSON.parse(event.dataTransfer?.getData("application/json") || "{}");
     console.log("dataRowImage", dataRowImage);
 
@@ -203,7 +215,7 @@ function onEndDrag(event: DragEvent) {
    File Upload / Delete
 ---------------------------- */
 async function uploadFiles(files: FileList) {
-    if (!files?.length) return
+    if (!files?.length || !editable.value) return
 
     const formData = new FormData()
     Array.from(files).forEach((file) => formData.append("images[]", file))
@@ -236,6 +248,32 @@ function onUploadFile(event: Event) {
 
 function onDropFile(event: DragEvent) {
     if (event.dataTransfer?.files?.length) uploadFiles(event.dataTransfer.files)
+}
+
+async function uploadAudioFile(event: Event) {
+    const input = event.target as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file || !props.data.upload_audio_route) return
+
+    const formData = new FormData()
+    formData.append("audio", file)
+
+    try {
+        loadingSubmit.value = "audio_id"
+        await axios.post(
+            route(props.data.upload_audio_route.name, props.data.upload_audio_route.parameters),
+            formData,
+            { headers: { "Content-Type": "multipart/form-data" } }
+        )
+        notifySuccess(trans("Sound sample uploaded successfully"))
+        router.reload({ only: ["images"] })
+    } catch (e) {
+        console.error(e)
+        notifyError(trans("Failed to upload sound sample"))
+    } finally {
+        loadingSubmit.value = null
+        input.value = ""
+    }
 }
 
 function onDeletefilesInBox(categoryBox: any) {
@@ -285,7 +323,10 @@ function onDeleteFilesInList(categoryBox: any) {
             preserveState: true,
             only: ["images_category_box"],
             onStart: () => (loadingSubmit.value = categoryBox.column_in_db),
-            onSuccess: () => notifySuccess(trans("File deleted successfully")),
+            onSuccess: () => {
+                notifySuccess(trans("File deleted successfully"))
+                router.reload({ only: ["images"] })
+            },
             onError: () => notifyError(trans("Failed to delete file")),
             onFinish: () => (loadingSubmit.value = null),
         }
@@ -297,6 +338,9 @@ function onDeleteFilesInList(categoryBox: any) {
 
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 px-10 py-4">
+        <div v-if="!editable" class="lg:col-span-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {{ trans("Images are inherited from the trade unit, so they can't be edited here. Upload them on the trade unit, or turn off \"follow trade unit media\" on this product to manage them here.") }}
+        </div>
         <!-- Left: Drop Areas -->
         <div v-if="props.data.images_category_box?.length" class="rounded-xl bg-white p-5 lg:col-span-2">
             <h3 class="mb-4 text-base font-semibold text-gray-700">
@@ -335,6 +379,15 @@ function onDeleteFilesInList(categoryBox: any) {
                                 selectedVideoToUpdate = { ...categoryBox }
                                 isModalEditVideo = true
                             }" :icon="faPencil" class="text-gray-400 hover:text-gray-600 cursor-pointer" fixed-width />
+                            <label v-if="categoryBox.type == 'audio' && editable && data.upload_audio_route"
+                                class="cursor-pointer" v-tooltip="trans('Upload sound sample')">
+                                <FontAwesomeIcon :icon="faUpload" class="text-gray-400 hover:text-gray-600" fixed-width />
+                                <input type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" class="hidden"
+                                    @change="uploadAudioFile($event)" />
+                            </label>
+                            <FontAwesomeIcon v-if="categoryBox.type == 'audio' && categoryBox.audio && editable"
+                                :icon="faUnlink" @click="() => onDeleteFilesInList(categoryBox)"
+                                class="text-gray-400 text-red-600 cursor-pointer text-xs" />
                             <FontAwesomeIcon v-if="(categoryBox.images || categoryBox.url) && editable" :icon="faUnlink"
                                 @click="() => onDeletefilesInBox(categoryBox)"
                                 class="text-gray-400 text-red-600 cursor-pointer text-xs" />
@@ -352,6 +405,19 @@ function onDeleteFilesInList(categoryBox: any) {
                             <FontAwesomeIcon :icon="faImage" class="mb-1 text-2xl" />
                             <span class="text-[12px] font-medium">{{ trans('Drop image here') }}</span>
                         </div>
+                    </div>
+
+                    <div v-if="categoryBox.type == 'audio'"
+                        class="relative flex h-36 w-full items-center justify-center bg-gray-50 px-2">
+                        <AudioWaveform v-if="categoryBox.audio" :src="categoryBox.audio.url" />
+                        <label v-else class="flex flex-col items-center justify-center text-gray-400"
+                            :class="editable && data.upload_audio_route ? 'cursor-pointer' : ''">
+                            <FontAwesomeIcon :icon="faMusic" class="mb-1 text-2xl" />
+                            <span class="text-[12px] font-medium">{{ trans('Upload sound sample') }}</span>
+                            <input v-if="editable && data.upload_audio_route" type="file"
+                                accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" class="hidden"
+                                @change="uploadAudioFile($event)" />
+                        </label>
                     </div>
 
                     <div v-if="categoryBox.type == 'video'"

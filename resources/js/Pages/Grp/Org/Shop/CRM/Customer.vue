@@ -42,6 +42,7 @@ import ModalCreateCustomerOffers from "@/Components/Offers/ModalCreateCustomerOf
 import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
 import { useForm } from "@inertiajs/vue3"
 import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
+import UpcomingTransactionsPanel from "@/Components/CRM/UpcomingTransactionsPanel.vue"
 
 library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute)
 
@@ -77,7 +78,7 @@ const props = defineProps<{
     credit_transactions?: {}
     payments?: {}
     offers?: {}
-    notes: {}
+    notes?: Record<string, any> | null
     updateRoute: routeType
     shop_data: {
         id: number
@@ -172,11 +173,29 @@ const layout = inject('layout')
             <div xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
                 class="p-2 grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
                 <BoxNote
-                    v-for="(note, index) in notes.note_list"
+                    v-for="(note, index) in notes?.note_list"
                     :key="index + note.label"
                     :noteData="note"
                     :updateRoute="updateRoute"
                 />
+                <UpcomingTransactionsPanel
+                    v-if="props.showcase.upcoming_transaction_route && shop_data.type !== 'external'"
+                    :routes="props.showcase.upcoming_transaction_route"
+                    :shopSlug="props.showcase.shop.slug"
+                    :temporaryNote="notes?.temporary_note"
+                    :hideButton="true"
+                    :openModal="isModalOpen"
+                >
+                    <template #buttonSlot="{ openListModal}">
+                        <BoxNote
+                            :key="notes?.temporary_note?.label"
+                            :noteData="notes?.temporary_note"
+                            :updateRoute="notes?.temporary_note?.updateRoute"
+                            :disableModal=true
+                            @click="openListModal()"
+                        />
+                    </template>
+                </UpcomingTransactionsPanel>
             </div>
         </Transition>
     </div>
@@ -190,7 +209,8 @@ const layout = inject('layout')
         :gr_data
         :handleTabUpdate
         :timeline="props.timeline"
-        :detachRoute="attachmentRoutes.detachRoute"        
+        :detachRoute="attachmentRoutes.detachRoute"
+        :temporaryNote="notes?.temporary_note"
     />
 
   <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{

@@ -195,6 +195,7 @@ const fetchUncachedProduct = async (product: ProductResource = selected_product.
 
     if (selected_product.value?.slug !== product.slug) return
 
+    console.log("Fetched uncached product data", response.data)
     uncachedProductData.value = response.data
     selected_product.value = { ...selected_product.value, ...response.data }
   } catch (error) {
@@ -350,6 +351,7 @@ onMounted(() => {
     webpageData: props.webpageData ?? injectedWebpageData,
     currencyCode: layout?.iris?.currency?.code,
     websiteName: layout?.iris?.website?.name,
+    showPrice: Boolean(layout?.iris?.is_logged_in || layout?.iris?.show_price),
   })
 
   fetchVariantProducts()

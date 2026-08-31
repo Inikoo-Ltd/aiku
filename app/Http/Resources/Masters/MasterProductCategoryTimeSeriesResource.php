@@ -17,6 +17,7 @@ class MasterProductCategoryTimeSeriesResource extends JsonResource
             'id' => $this->id,
             'period' => $this->formatPeriod($this->from, $this->to, $frequencyEnum),
             'filter_date' => $this->formatFilterDate($this->from, $this->to),
+            'currency_code' => $this->currency_code,
             'from' => $this->from,
             'to' => $this->to,
             'sales_external' => (float) $this->sales_external,

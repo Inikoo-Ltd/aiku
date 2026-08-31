@@ -101,7 +101,7 @@ const fetchIndexUnuploadedPortfolios = async () => {
     const data = await axios.get(
         route('retina.dropshipping.customer_sales_channels.portfolios.index',
             {
-                customerSalesChannel: route().params.customerSalesChannel,
+                customerSalesChannel: route().params.customerSalesChannel ?? props.routes.itemRoute.parameters?.customerSalesChannel,
                 'filter[un_upload]': 'true',
             }
         )

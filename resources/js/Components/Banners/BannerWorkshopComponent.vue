@@ -32,7 +32,6 @@ const data = computed<BannerWorkshop>({
     return props.modelValue
   },
   set(v) {
-    console.log('components', v)
     emits("update:modelValue", v)
   }
 })

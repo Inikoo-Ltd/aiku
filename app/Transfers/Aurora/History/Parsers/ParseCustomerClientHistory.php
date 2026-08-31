@@ -93,8 +93,8 @@ class ParseCustomerClientHistory
         }
 
         if (in_array($field, self::ADDRESS_FIELDS, true)) {
-            $oldValue = $old === null ? '' : (HistoryValueExtractor::parseAdrAddress($old) ?? $old);
-            $newValue = $new === null ? '' : (HistoryValueExtractor::parseAdrAddress($new) ?? $new);
+            $oldValue = $old === null ? '' : (HistoryValueExtractor::parseAdrAddress($table['old_html'] ?? $old) ?? $old);
+            $newValue = $new === null ? '' : (HistoryValueExtractor::parseAdrAddress($table['new_html'] ?? $new) ?? $new);
 
             return ['old_values' => [$field => $oldValue], 'new_values' => [$field => $newValue], 'data' => []];
         }

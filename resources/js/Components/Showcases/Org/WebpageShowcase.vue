@@ -18,11 +18,11 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { trans } from "laravel-vue-i18n"
-import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
+// import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
 import { Message } from 'primevue'
 import { router } from "@inertiajs/vue3"
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
-import LuigiAvailabilityChecklist from '@/Components/Utils/LuigiAvailabilityChecklist.vue'
+import SearchInWebsiteAvailabilityChecklist from '@/Components/Utils/SearchInWebsiteAvailabilityChecklist.vue'
 
 library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt, faGlobe, faLink, faSearch, faFragile)
 
@@ -192,13 +192,15 @@ const visitRedirect = () => {
               </template>
             </ModalConfirmationDelete>
             
+            <!-- Luigi Search is discontinued, reindex button disabled
             <ButtonReindexWebpage
               :webpage="data"
             />
+            -->
 
-            <!-- Availability Checklist -->
-            <div v-if="data.luigi_data.availability_checklist" class="mt-3 border-t border-gray-200 pt-3">
-                <LuigiAvailabilityChecklist :checklist="data.luigi_data.availability_checklist" />
+            <!-- Internal Search Availability Checklist -->
+            <div v-if="data.search_in_website_availability" class="mt-3 border-t border-gray-200 pt-3">
+                <SearchInWebsiteAvailabilityChecklist :availability="data.search_in_website_availability" />
             </div>
 
             <!-- <ButtonWithLink v-if="data?.luigi_data?.luigisbox_tracker_id"

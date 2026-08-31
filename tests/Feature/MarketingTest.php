@@ -27,6 +27,8 @@ use App\Actions\CRM\TrafficSource\GetShopEmailMarketingPerformance;
 use App\Actions\CRM\TrafficSource\GetShopMarketingOverview;
 use App\Actions\CRM\TrafficSource\GetShopOfferPerformance;
 use App\Actions\CRM\TrafficSource\GetTrafficSourceFromRefererHeader;
+use App\Actions\CRM\TrafficSource\ReclassifyAiTrafficSourceTouches;
+use App\Actions\CRM\TrafficSource\RepairHostReferencedCampaignAttribution;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceCampaignHydrateStats;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCosts;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
@@ -1037,6 +1039,31 @@ describe('customer journey', function () {
         expect($journey['attribution_window_days'])->toBe(7)
             ->and($journey['events'][0]['in_window'])->toBeFalse();
     });
+
+    it('caps the timeline at the most recent events and reports how many were omitted', function () {
+        $cap    = GetCustomerJourney::MAX_EVENTS;
+        $extra  = 5;
+        $oldest = now()->subDays($cap + $extra + 1);
+
+        $touches = collect(range(0, $cap + $extra - 1))
+            ->map(fn (int $offset) => $oldest->copy()->addDays($offset)->timestamp.'a')
+            ->implode('|');
+
+        $customer = journeyCustomer($this->shop, $touches);
+
+        $journey = GetCustomerJourney::run($customer->refresh());
+
+        expect($journey['events'])->toHaveCount($cap)
+            ->and($journey['omitted_events'])->toBe($extra)
+            ->and($journey['events'][0]['datetime'])->toBe($oldest->copy()->addDays($extra)->toIso8601String())
+            ->and($journey['events'][$cap - 1]['datetime'])->toBe($oldest->copy()->addDays($cap + $extra - 1)->toIso8601String());
+    });
+
+    it('reports no omitted events for a short journey', function () {
+        $customer = journeyCustomer($this->shop, now()->subDays(2)->timestamp.'a');
+
+        expect(GetCustomerJourney::run($customer->refresh())['omitted_events'])->toBe(0);
+    });
 });
 
 describe('referral traffic sources', function () {
@@ -1187,6 +1214,144 @@ describe('referral traffic sources', function () {
             ->and(GetTrafficSourceFromRefererHeader::run('https://mail.ru/inbox'))->toBeNull();
     });
 
+    it('reclassifies the AI touches recorded before the channel existed', function () {
+        $ai       = createTrafficSource($this->shop, TrafficSourcesTypeEnum::AI->value, 'AI Assistants');
+        $recorded = now()->subDay()->timestamp;
+
+        $customer = StoreCustomer::make()->action(
+            $this->shop,
+            array_merge(Customer::factory()->definition(), [
+                'traffic_sources' => $recorded.'qchatgpt.com|'.$recorded.'qesources.co.uk',
+            ])
+        );
+
+        ReclassifyAiTrafficSourceTouches::run();
+
+        $aiAbbr = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::AI->value];
+
+        expect($customer->refresh()->traffic_sources)
+            ->toBe($recorded.$aiAbbr.'chatgpt.com|'.$recorded.'qesources.co.uk')
+            ->and(TrafficSourceCampaign::where('reference', 'chatgpt.com')->value('traffic_source_id'))->toBe($ai->id)
+            ->and($customer->trafficSources()->pluck('type')->all())
+            ->toContain(TrafficSourcesTypeEnum::AI->value)
+            ->and(TrafficSourceCampaign::where('reference', 'esources.co.uk')->value('traffic_source_id'))
+            ->toBe($this->referral->id);
+    });
+
+    it('lets every shop carry the same referring host as its own campaign', function () {
+        list(, , $otherShop) = createOwnShop('referral traffic sources other shop');
+        $otherReferral = createTrafficSource($otherShop, 'referral', 'Referral');
+        $host          = 'tradeleads.co.uk';
+
+        $customer = StoreCustomer::make()->action(
+            $this->shop,
+            array_merge(Customer::factory()->definition(), ['traffic_sources' => now()->subDay()->timestamp.'q'.$host])
+        );
+        $otherCustomer = StoreCustomer::make()->action(
+            $otherShop,
+            array_merge(Customer::factory()->definition(), ['traffic_sources' => now()->subDay()->timestamp.'q'.$host])
+        );
+
+        $campaign      = TrafficSourceCampaign::where('traffic_source_id', $this->referral->id)->where('reference', $host)->first();
+        $otherCampaign = TrafficSourceCampaign::where('traffic_source_id', $otherReferral->id)->where('reference', $host)->first();
+
+        expect($campaign)->not->toBeNull()
+            ->and($otherCampaign)->not->toBeNull()
+            ->and($otherCampaign->id)->not->toBe($campaign->id)
+            ->and($customer->trafficSources()->first()->pivot->traffic_source_campaign_id)->toBe($campaign->id)
+            ->and($otherCustomer->trafficSources()->first()->pivot->traffic_source_campaign_id)->toBe($otherCampaign->id);
+    });
+
+    it('keeps an ad-platform campaign id unique across shops', function () {
+        list(, , $otherShop) = createOwnShop('referral traffic sources other shop');
+        $googleAds      = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
+        $otherGoogleAds = createTrafficSource($otherShop, 'google-ads', 'Google Ads');
+
+        campaignFor($googleAds, '777000123');
+
+        expect(fn () => TrafficSourceCampaign::create([
+            'traffic_source_id' => $otherGoogleAds->id,
+            'reference'         => '777000123',
+            'name'              => '777000123',
+            'type'              => 'google-ads',
+        ]))->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
+    });
+
+    it('repairs the shops whose host campaigns were locked out by the old table-wide uniqueness', function () {
+        list(, , $otherShop) = createOwnShop('referral traffic sources other shop');
+        $otherReferral = createTrafficSource($otherShop, 'referral', 'Referral');
+        $host          = 'findabusiness.co.uk';
+        $recorded      = now()->subDay()->timestamp;
+
+        campaignFor($this->referral, $host);
+
+        $customer = StoreCustomer::make()->action(
+            $otherShop,
+            array_merge(Customer::factory()->definition(), ['traffic_sources' => $recorded.'q'.$host])
+        );
+        $undecidedCustomer = StoreCustomer::make()->action(
+            $otherShop,
+            array_merge(Customer::factory()->definition(), ['traffic_sources' => $recorded.'q'.$host.'|'.$recorded.'qother-directory.co.uk'])
+        );
+
+        $orderFor = fn (Customer $orderCustomer) => \App\Actions\Ordering\Order\StoreOrder::make()->action($orderCustomer, [
+            'reference'        => 'ref-'.$orderCustomer->id,
+            'date'             => now()->toDateString(),
+            'customer_id'      => $orderCustomer->id,
+            'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+            'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        ]);
+        $order          = $orderFor($customer);
+        $undecidedOrder = $orderFor($undecidedCustomer);
+
+        foreach ([$order, $undecidedOrder] as $snapshotOrder) {
+            $snapshotOrder->trafficSources()->detach();
+            $snapshotOrder->trafficSources()->attach($otherReferral->id, [
+                'share'             => 1.0,
+                'attribution_model' => ProcessTrafficSourceShare::ATTRIBUTION_LINEAR,
+            ]);
+        }
+
+        TrafficSourceCampaign::where('traffic_source_id', $otherReferral->id)->where('reference', $host)->delete();
+
+        expect($customer->trafficSources()->first()->pivot->traffic_source_campaign_id)->toBeNull();
+
+        $summary = RepairHostReferencedCampaignAttribution::run($otherShop);
+
+        $otherCampaign = TrafficSourceCampaign::where('traffic_source_id', $otherReferral->id)->where('reference', $host)->first();
+
+        expect($otherCampaign)->not->toBeNull()
+            ->and($customer->trafficSources()->first()->pivot->traffic_source_campaign_id)->toBe($otherCampaign->id)
+            ->and($order->trafficSources()->first()->pivot->traffic_source_campaign_id)->toBe($otherCampaign->id)
+            ->and($undecidedOrder->trafficSources()->first()->pivot->traffic_source_campaign_id)->toBeNull()
+            ->and($undecidedCustomer->trafficSources()->pluck('traffic_source_campaign_id')->filter()->count())->toBe(2)
+            ->and($summary)->toMatchArray(['customers' => 2, 'orders' => 1, 'orders_ambiguous' => 1, 'failed' => 0])
+            ->and(TrafficSourceCampaign::where('traffic_source_id', $this->referral->id)->where('reference', $host)->exists())->toBeTrue();
+    });
+
+    it('records an arrival from an AI assistant as AI traffic, named by the assistant', function () {
+        $aiAbbr = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::AI->value];
+
+        expect(GetTrafficSourceFromRefererHeader::run('https://chatgpt.com/c/abc'))->toBe($aiAbbr.'chatgpt.com')
+            ->and(GetTrafficSourceFromRefererHeader::run('https://claude.ai/chat/1'))->toBe($aiAbbr.'claude.ai')
+            ->and(GetTrafficSourceFromRefererHeader::run('https://www.perplexity.ai/search/x'))->toBe($aiAbbr.'perplexity.ai')
+            ->and(GetTrafficSourceFromRefererHeader::run('https://copilot.microsoft.com/chats/1'))->toBe($aiAbbr.'copilot.microsoft.com');
+    });
+
+    it('keeps Gemini out of organic Google', function () {
+        expect(GetTrafficSourceFromRefererHeader::run('https://gemini.google.com/app/1'))
+            ->toBe(TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::AI->value].'gemini.google.com')
+            ->and(GetTrafficSourceFromRefererHeader::run('https://www.google.com/search?q=x'))
+            ->toBe(TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_GOOGLE->value]);
+    });
+
+    it('groups AI traffic as its own channel group', function () {
+        expect(TrafficSourcesTypeEnum::AI->group()['key'])->toBe('ai')
+            ->and(TrafficSourcesTypeEnum::REFERRAL->group()['key'])->toBe('other')
+            ->and(TrafficSourcesTypeEnum::hostReferenced())->toContain(TrafficSourcesTypeEnum::AI)
+            ->and(TrafficSourcesTypeEnum::referrerKind(TrafficSourcesTypeEnum::AI->value))->toBe('ai');
+    });
+
     it('keeps a search engine matched before the webmail rules can reject it', function () {
         $searchAbbr = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_SEARCH->value];
 
@@ -1243,6 +1408,41 @@ describe('showing a traffic source', function () {
         $customers = IndexCustomers::make()->handle($this->organic, TrafficSourceTabsEnum::CUSTOMERS->value);
 
         expect($customers->pluck('id'))->not->toContain($this->customer->id);
+    });
+
+    it('lists an attributed revenue that adds up to the channel total', function () {
+        $this->customer->update(['traffic_sources' => '1700000000b|1700000100a']);
+        RecalculateTrafficSourceAttribution::run($this->customer->fresh());
+
+        journeyInvoice($this->customer, '2023-12-01', 100);
+        TrafficSourceHydrateCustomers::run($this->googleAds);
+
+        fakeRouteForCustomers();
+
+        $row = IndexCustomers::make()->handle($this->googleAds, TrafficSourceTabsEnum::CUSTOMERS->value)
+            ->firstWhere('id', $this->customer->id);
+
+        expect(round((float) $row->attributed_revenue, 2))->toBe(50.0)
+            ->and(round((float) $row->attributed_revenue, 2))
+            ->toBe(round((float) $this->googleAds->refresh()->stats->total_customer_revenue, 2));
+    });
+
+    it('leaves trade placed before the touch out of the attributed revenue', function () {
+        $this->customer->update(['traffic_sources' => '1700000000b']);
+        RecalculateTrafficSourceAttribution::run($this->customer->fresh());
+
+        fakeRouteForCustomers();
+
+        $attributedRevenue = fn () => (float) IndexCustomers::make()
+            ->handle($this->googleAds, TrafficSourceTabsEnum::CUSTOMERS->value)
+            ->firstWhere('id', $this->customer->id)
+            ->attributed_revenue;
+
+        $before = $attributedRevenue();
+
+        journeyInvoice($this->customer, '2020-01-01', 500);
+
+        expect(round($attributedRevenue(), 2))->toBe(round($before, 2));
     });
 });
 
@@ -1907,6 +2107,16 @@ describe('the cost webhook', function () {
         postCosts($this->token, costPayload(['currency' => 'ZZZ']))->assertStatus(422);
 
         expect(TrafficSourceCost::where('shop_id', $this->shop->id)->count())->toBe(0);
+    });
+
+    it('revokes a token so it stops working', function () {
+        postCosts($this->token, costPayload())->assertOk();
+
+        $tokenId = explode('|', $this->token)[0];
+
+        expect(Artisan::call('traffic-source:cost-token', ['--revoke' => $tokenId]))->toBe(0);
+
+        postCosts($this->token, costPayload())->assertForbidden();
     });
 });
 
@@ -3687,6 +3897,17 @@ describe('order attribution', function () {
 
         expect($order->state)->toBe(OrderStateEnum::SUBMITTED);
         expect($order->trafficSources()->count())->toBe(1);
+    });
+
+    it('re-attributes instead of duplicating when an order is submitted again', function () {
+        createTrafficSource($this->shop, 'meta-ads', 'Meta Ads');
+
+        $this->customer->update(['traffic_sources' => '1700000000f']);
+
+        ProcessOrderTrafficSource::run($this->order->fresh());
+        ProcessOrderTrafficSource::run($this->order->fresh());
+
+        expect($this->order->trafficSources()->count())->toBe(1);
     });
 
     it('leaves the submit time attribution intact when an order without its own touch history is recalculated', function () {

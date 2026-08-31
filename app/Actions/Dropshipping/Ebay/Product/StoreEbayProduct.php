@@ -307,6 +307,27 @@ class StoreEbayProduct extends RetinaAction
                 return $portfolio;
             }
 
+            if (Arr::get($customerSalesChannel->settings, 'upload_as_draft')) {
+                $portfolio = UpdatePortfolio::run($portfolio, [
+                    'platform_product_id' => Arr::get($offer, 'offerId'),
+                    'upload_warning'      => null,
+                    'errors_response'     => null,
+                    'data'                => ['is_platform_draft' => true]
+                ]);
+
+                $portfolio->update([
+                    'has_valid_platform_product_id' => true,
+                    'exist_in_platform'             => true,
+                    'platform_status'               => false
+                ]);
+
+                UpdatePlatformPortfolioLog::dispatch($logs, [
+                    'status' => PlatformPortfolioLogsStatusEnum::OK
+                ]);
+
+                return $portfolio;
+            }
+
             $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));
 
             if ($handleError($publishedOffer)) {
@@ -317,7 +338,8 @@ class StoreEbayProduct extends RetinaAction
                 'platform_product_id' => Arr::get($offer, 'offerId'),
                 'platform_product_variant_id' => Arr::get($publishedOffer, 'listingId'),
                 'upload_warning' => null,
-                'errors_response' => null
+                'errors_response' => null,
+                'data' => ['is_platform_draft' => false]
             ]);
 
             CheckEbayPortfolio::run($portfolio);

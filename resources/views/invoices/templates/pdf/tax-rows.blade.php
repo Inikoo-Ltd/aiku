@@ -2,8 +2,8 @@
 
 @forelse($taxBreakdown as $tax)
     <tr>
-        <td style="border:none" colspan="4"></td>
-        <td class="totals">
+        <td style="border:none" colspan="{{ $fillerColspan ?? 4 }}"></td>
+        <td class="totals" colspan="{{ $labelColspan ?? 1 }}">
             {{ __('Tax') }}
             <br><small>{{ $tax['name'] }}
                 ({{__('rate')}}:{{percentage($tax['rate'],1)}})
@@ -16,8 +16,8 @@
     </tr>
 @empty
     <tr>
-        <td style="border:none" colspan="4"></td>
-        <td class="totals">
+        <td style="border:none" colspan="{{ $fillerColspan ?? 4 }}"></td>
+        <td class="totals" colspan="{{ $labelColspan ?? 1 }}">
             {{ __('Tax') }}
             <br><small>{{$document->taxCategory->name}}
                 ({{__('rate')}}:{{percentage($document->taxCategory->rate,1)}})

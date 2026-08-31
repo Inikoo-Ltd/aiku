@@ -74,6 +74,8 @@ class UpdatePayment extends OrgAction
             $rules                = $this->noStrictUpdateRules($rules);
             $rules['shop_id']     = ['sometimes', 'required', 'exists:shops,id'];
             $rules['customer_id'] = ['sometimes', 'required', 'exists:customers,id'];
+            $rules['method']      = ['sometimes', 'string', 'max:255'];
+            $rules['sub_method']  = ['sometimes', 'nullable', 'string', 'max:255'];
         }
 
         return $rules;

@@ -540,15 +540,12 @@ class GetShopMarketingOverview
      */
     private function referrers(Shop $shop, Collection $campaignRevenue, Collection $registrations, int $limit = 10): array
     {
-        /* Search engines belong here as much as directories do: knowing DuckDuckGo sends people is
+        /* Search engines and AI assistants belong here as much as directories do: knowing DuckDuckGo sends people is
            what tells you whether it is worth advertising on. They keep their own channel for the
            totals, but this list is about which individual sites send us anybody. */
         $kindBySource = DB::table('traffic_sources')
             ->where('shop_id', $shop->id)
-            ->whereIn('type', [
-                TrafficSourcesTypeEnum::REFERRAL->value,
-                TrafficSourcesTypeEnum::ORGANIC_SEARCH->value,
-            ])
+            ->whereIn('type', TrafficSourcesTypeEnum::hostReferencedValues())
             ->pluck('type', 'id');
 
         if ($kindBySource->isEmpty()) {
@@ -578,9 +575,7 @@ class GetShopMarketingOverview
             ->get()
             ->map(fn ($campaign) => [
                 'host'          => $campaign->name,
-                'kind'          => ($kindBySource[$campaign->traffic_source_id] ?? '') === TrafficSourcesTypeEnum::ORGANIC_SEARCH->value
-                    ? 'search'
-                    : 'site',
+                'kind'          => TrafficSourcesTypeEnum::referrerKind($kindBySource[$campaign->traffic_source_id] ?? ''),
                 'visitors'      => round((float) ($touches[$campaign->id] ?? 0), 2),
                 'registrations' => round((float) ($registrations[$campaign->id] ?? 0), 2),
                 'revenue'       => round((float) ($revenue[$campaign->id] ?? 0), 2),

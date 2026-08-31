@@ -94,8 +94,6 @@ interface Customer {
     number_current_customer_clients: number | null
     address: Address
     contact_website?: string | null
-    eori?: string | null
-    ukims?: string | null
     is_dropshipping: boolean
     email_subscriptions?: {
         update_route: {
@@ -204,7 +202,8 @@ const props = defineProps<{
             color: string
             metadata: Record<string, unknown>
         }[]
-    }    
+    }
+    temporaryNote?: {}
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -371,6 +370,41 @@ const onToggleGiftOptOut = async (optOut: boolean) => {
     }
 }
 
+// Section: Gold reward manual extension
+const isLoadingGrExtension = ref(false)
+const localGrExtendedUntil = ref(props.gr_data?.gr_extended_until ?? '')
+
+const onSaveGrExtension = async (value: string) => {
+    if (!props.gr_data?.route_gift_opt_out) return
+
+    try {
+        isLoadingGrExtension.value = true
+
+        await axios.patch(
+            route(props.gr_data.route_gift_opt_out.name, props.gr_data.route_gift_opt_out.parameters),
+            { gr_extended_until: value || null }
+        )
+
+        localGrExtendedUntil.value = value
+
+        notify({
+            title: trans("Updated"),
+            text: value ? trans("Gold reward extended until") + " " + value : trans("Gold reward extension removed"),
+            type: 'success'
+        })
+
+        router.reload()
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Please try again or contact administrator"),
+            type: 'error'
+        })
+    } finally {
+        isLoadingGrExtension.value = false
+    }
+}
+
 // Section: Add History Note
 const isModalNote = ref(false)
 const noteText = ref("")
@@ -448,7 +482,7 @@ const submitNote = async () => {
             <div class="flex flex-col items-center text-center gap-2">
                 <h3 class="text-lg font-semibold text-gray-800">Pending Application</h3>
                 <p class="text-sm text-gray-600">
-                    This application is currently awaiting approval.
+                    {{ ctrans("This application is currently awaiting approval.") }}
                 </p>
             </div>
 
@@ -457,14 +491,13 @@ const submitNote = async () => {
                       :data="{ status: 'approved' }">
                     <ButtonPrimeVue class="fixed-width-btn" severity="success" size="small" variant="outlined">
                         <FontAwesomeIcon :icon="faCheck" @click="visible = false" />
-                        <span> Approve </span>
+                        <span> {{ ctrans("Approve") }} </span>
                     </ButtonPrimeVue>
                 </Link>
 
-                <ButtonPrimeVue class="fixed-width-btn" severity="danger" size="small" variant="outlined"
-                                @click="() => openRejectedModal(data.customer)">
+                <ButtonPrimeVue class="fixed-width-btn" severity="danger" size="small" variant="outlined" @click="() => openRejectedModal(data.customer)">
                     <FontAwesomeIcon :icon="faTimes" @click="visible = false" />
-                    <span> Reject </span>
+                    <span> {{ ctrans("Reject") }} </span>
                 </ButtonPrimeVue>
             </div>
         </div>
@@ -473,7 +506,7 @@ const submitNote = async () => {
     <!-- Quick Actions Bar -->
     <div class="px-4 pt-6 md:px-6 lg:px-8">
         <div class="flex flex-wrap items-center gap-3">
-            <BoxNote :noteData="data.internal_note" :updateRoute="data.update_route" :alternativeStyle="true" class="h-full">
+            <BoxNote v-if="data.shop.type !== 'external'" :noteData="data.internal_note" :updateRoute="data.update_route" :alternativeStyle="true" class="h-full">
                 <template #mainIcon>
                     <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" />
                     {{ trans("Add Note") }}
@@ -496,7 +529,7 @@ const submitNote = async () => {
                 {{ trans("Full Timeline") }}
             </button>
             <a
-                v-if="data.customer.email"
+                v-if="data.customer.email && data.shop.type !== 'external'"
                 :href="`mailto:${data.customer.email}`"
                 class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
             >
@@ -513,9 +546,10 @@ const submitNote = async () => {
             </button>
 
             <UpcomingTransactionsPanel
-                v-if="data.upcoming_transaction_route"
+                v-if="data.upcoming_transaction_route && data.shop.type !== 'external'"
                 :routes="data.upcoming_transaction_route"
-                :shopSlug="data.shop.slug"                
+                :shopSlug="data.shop.slug"
+                :temporaryNote="temporaryNote"
             />
         </div>
     </div>
@@ -554,6 +588,45 @@ const submitNote = async () => {
                                         </div>
                                     </template>
                                 </GoldReward>
+                            </dd>
+                        </div>
+
+                        <!-- Field: Gold reward manual extension -->
+                        <div v-if="gr_data?.shop_has_gr" class="flex items-center w-full flex-none gap-x-4 px-6">
+                            <dt v-tooltip="trans('Manually extend gold reward membership until a given date')" class="flex-none">
+                                <FontAwesomeIcon icon="fas fa-medal" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="text-sm flex items-center gap-x-2">
+                                <span class="text-gray-500">{{ trans("GR extension") }}</span>
+                                <input
+                                    type="date"
+                                    v-model="localGrExtendedUntil"
+                                    class="text-xs border border-gray-300 rounded px-1 py-0.5"
+                                />
+                                <button
+                                    v-if="isLoadingGrExtension"
+                                    class="text-xs text-gray-400 cursor-not-allowed"
+                                    disabled
+                                >
+                                    <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
+                                </button>
+                                <template v-else>
+                                    <button
+                                        v-if="localGrExtendedUntil && localGrExtendedUntil !== (gr_data?.gr_extended_until ?? '')"
+                                        @click="onSaveGrExtension(localGrExtendedUntil)"
+                                        class="text-xs text-blue-500 underline hover:text-blue-700"
+                                    >
+                                        {{ trans("Save") }}
+                                    </button>
+                                    <button
+                                        v-if="gr_data?.gr_extended_until"
+                                        @click="onSaveGrExtension('')"
+                                        class="text-xs text-gray-400 underline hover:text-red-500"
+                                        v-tooltip="trans('Remove gold reward extension')"
+                                    >
+                                        {{ trans("Remove") }}
+                                    </button>
+                                </template>
                             </dd>
                         </div>
 
@@ -651,28 +724,6 @@ const submitNote = async () => {
                             </button>
                         </div>
 
-                        <div v-if="data?.customer?.eori" class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="'Economic Operators Registration and Identification (EORI) number'" class="flex-none">
-                                <span class="sr-only">EORI</span>
-                                <FontAwesomeIcon icon="fal fa-globe-europe" class="text-gray-400" fixed-width aria-hidden="true" />
-                            </dt>
-                            <dd class="text-gray-500">
-                                {{ data?.customer?.eori }}
-                                <span class="text-xs text-gray-400">EORI</span>
-                            </dd>
-                        </div>
-
-                        <div v-if="data?.customer?.ukims" class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="'UK Internal Market Scheme (UKIMS) number'" class="flex-none">
-                                <span class="sr-only">UKIMS</span>
-                                <FontAwesomeIcon icon="fal fa-island-tropical" class="text-gray-400" fixed-width aria-hidden="true" />
-                            </dt>
-                            <dd class="text-gray-500">
-                                {{ data?.customer?.ukims }}
-                                <span class="text-xs text-gray-400">UKIMS</span>
-                            </dd>
-                        </div>
-
                         <!-- Field: Address -->
                         <div v-if="data?.customer?.address"
                              class="relative flex items-start w-full flex-none gap-x-4 px-6">
@@ -726,11 +777,8 @@ const submitNote = async () => {
                         </div>
                     </div>
 
-
-
-                    <!-- Field: Gift opt-out (shown when shop has GR gifts) -->
                     <div class="w-full flex gap-y-2 py-2 border-t">
-                        <div v-if="gr_data.shop_has_gr && gr_data.route_gift_opt_out" class="flex items-center w-full flex-none gap-x-4 px-6">
+                        <div v-if="gr_data.route_gift_opt_out" class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="localGiftOptedOut ? ctrans('Customer has opted out of eligible gifts and will not receive any') + '.' : ctrans('Customers will receive a gift if they are eligible and select the item. Customer can opted-out by themself in the basket page') + '.'" class="flex-none">
                                 <FontAwesomeIcon icon="fal fa-gift" :class="localGiftOptedOut ? 'text-gray-300' : 'text-gray-400'" fixed-width aria-hidden="true" />
                             </dt>
@@ -883,7 +931,6 @@ const submitNote = async () => {
                     {{ data?.customer?.fiscal_name }}
                     <span class="text-xs text-gray-400">{{trans('Fiscal name')}}</span>
                 </dd>
-
             </div>
 
             <!-- Offers Section -->
@@ -1119,7 +1166,8 @@ const submitNote = async () => {
 
             <!-- Email Subscriptions -->
             <EmailSubscription v-if="data?.customer?.email_subscriptions"
-                               :emailSubscriptions="data.customer.email_subscriptions" />
+                               :emailSubscriptions="data.customer.email_subscriptions"
+                               :showEditButton="data.shop.type !== 'external'" />
         </div>
     </div>
 

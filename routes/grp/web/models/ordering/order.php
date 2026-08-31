@@ -40,6 +40,7 @@ use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
 use App\Actions\Ordering\Order\UpdateState\RemoveOrderDiscount;
 use App\Actions\Ordering\Order\UpdateState\RollbackDispatchedOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderBackToBasket;
+use App\Actions\Ordering\Order\UpdateState\ReleaseOrderFromGate;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
@@ -111,6 +112,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
         Route::patch('submitted', SubmitOrder::class)->name('submitted');
         Route::patch('cancelled', CancelOrder::class)->name('cancelled');
         Route::patch('in-warehouse', SendOrderToWarehouse::class)->name('in-warehouse');
+        Route::patch('release-from-gate', ReleaseOrderFromGate::class)->name('release_from_gate');
         Route::patch('finalise', FinaliseOrder::class)->name('finalise');
         Route::patch('dispatched', DispatchOrder::class)->name('dispatched');
     });

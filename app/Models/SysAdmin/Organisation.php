@@ -910,6 +910,11 @@ class Organisation extends Model implements HasMedia, Auditable
         return $this->workSchedules()->where('type', 'default')->where('is_active', true)->first();
     }
 
+    public function hasFulfilmentGate(): bool
+    {
+        return (bool) ($this->settings['fulfilment_gate'] ?? false);
+    }
+
     public function getDefaultAnnualLeaveDays(): int
     {
         return $this->settings['hr']['leave_quota']['annual_leave_days'] ?? 10;

@@ -18,8 +18,10 @@ import "@vueform/multiselect/themes/default.css"
 import Tag from '@/Components/Tag.vue'
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faExclamationTriangle } from '@fal'
+import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faExclamationTriangle, faSyncAlt } from '@fal'
 import { faUserCog } from '@fas'
+import MailshotJourney from '@/Components/Navigation/MailshotJourney.vue'
+import MailshotSubjectEdit from '@/Components/Workshop/Mailshot/MailshotSubjectEdit.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import Modal from '@/Components/Utils/Modal.vue'
 import { routeType } from '@/types/route'
@@ -29,10 +31,12 @@ import { useTabChange } from "@/Composables/tab-change";
 import TableEmailTemplate from "@/Components/Tables/TableEmailTemplate.vue";
 import TablePreviousMailshots from "@/Components/Tables/TablePreviousMailshots.vue"
 import TableOtherStoreMailshots from "@/Components/Tables/TableOtherStoreMailshots.vue"
+import TemplateGallery from "@/Components/Mailshot/TemplateGallery.vue"
+import { faThLarge, faList } from '@fal'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { usePage } from "@inertiajs/vue3"
 
-library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faExclamationTriangle)
+library.add(faThLarge, faList, faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faExclamationTriangle)
 
 const props = defineProps<{
     title: string,
@@ -49,7 +53,32 @@ const props = defineProps<{
     storeNewTemplateRoute: routeType
     unpublished_layout: any
     compiledLayout: string | null
+    journey?: any
+    openTemplateSelector?: boolean
+    mailshot: { subject: string, name: string | null, preview_text: string | null }
+    updateMailshotRoute: routeType
+    suggestCopyRoute: routeType
 }>()
+
+const mailshotSavedSubject = ref(props.mailshot.subject)
+const pageHeadData = computed(() => ({ ...props.pageHead, title: mailshotSavedSubject.value }))
+
+const isPublished = ref(!!props.compiledLayout)
+const showUnpublishedWarning = ref(false)
+const pendingReviewRoute = ref<any>(null)
+// ponytail: warns only when never published; edits after a publish slip through silently
+const onReviewClick = (action: any) => {
+    if (isPublished.value) {
+        router.visit(route(action.route.name, action.route.parameters))
+    } else {
+        pendingReviewRoute.value = action.route
+        showUnpublishedWarning.value = true
+    }
+}
+const goToReviewAnyway = () => {
+    showUnpublishedWarning.value = false
+    router.visit(route(pendingReviewRoute.value.name, pendingReviewRoute.value.parameters))
+}
 
 const comment = ref('')
 const isLoading = ref(false)
@@ -91,6 +120,7 @@ const onSendPublish = async (data) => {
         });
 
         if (response && response.status === 200) {
+            isPublished.value = true
             // if (response.data.has_unsubscribelink === false) {
             //     visibleUnsubscribeWarningModal.value = true
 
@@ -292,7 +322,18 @@ const tabData = computed(() => {
 const handleTabUpdate = (tabSlug: string) =>
     useTabChange(tabSlug, currentTab)
 
+const templateView = ref<'gallery' | 'list'>((localStorage.getItem('mailshot-template-view') as 'gallery' | 'list') ?? 'gallery')
+
+const setTemplateView = (view: 'gallery' | 'list') => {
+    templateView.value = view
+    localStorage.setItem('mailshot-template-view', view)
+}
+
 const component = computed(() => {
+    if (templateView.value === 'gallery') {
+        return TemplateGallery
+    }
+
     const components: Component = {
         templates: TableEmailTemplate,
         other_store_templates: TableEmailTemplate,
@@ -318,6 +359,10 @@ onMounted(() => {
   window.addEventListener('popstate', () => {
     router.reload()
   });
+
+  if (props.openTemplateSelector) {
+    isModalCloneTemplateEmail.value = true
+  }
 })
 </script>
 
@@ -325,28 +370,63 @@ onMounted(() => {
 <template>
 
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead">
+    <PageHeading :data="pageHeadData">
+        <template #afterTitle>
+            <MailshotSubjectEdit :mailshot="mailshot" :updateMailshotRoute="updateMailshotRoute"
+                :suggestCopyRoute="suggestCopyRoute" @saved="subject => mailshotSavedSubject = subject" />
+        </template>
+        <template #afterTitle2>
+            <MailshotJourney :steps="journey" class="ml-4" />
+        </template>
         <template #otherBefore>
-            <div>
-                <div class="text-sm text-gray-600 mr-2 flex items-center gap-2">
-                    Estimated email size: approximately <span class="font-semibold">{{ compiledLayoutSize }} KB</span>
-                    <FontAwesomeIcon v-if="compiledLayoutSize > 102" :icon="faExclamationTriangle"
-                        class="text-yellow-500 text-lg" v-tooltip="emailSizeWarningTooltip" fixed-width />
-                </div>
-            </div>
-
             <Button @click="() => isModalCloneTemplateEmail = true" :label="trans('Choose Template')"
                 class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
-                :icon="faPlus" :disabled="!isBeefreeReady" />
+                :icon="faSyncAlt" :disabled="!isBeefreeReady" />
+        </template>
+        <template #button-index-0="{ action }">
+            <Button :label="action.label" type="primary" iconRight="fal fa-arrow-right"
+                @click="() => onReviewClick(action)" />
         </template>
     </PageHeading>
 
+    <Modal :isOpen="showUnpublishedWarning" @onClose="showUnpublishedWarning = false" width="w-full max-w-md">
+        <div class="p-2 text-center">
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 text-3xl mb-3" fixed-width />
+            <h2 class="text-lg font-semibold mb-2">{{ trans('Your email is not saved yet') }}</h2>
+            <p class="text-gray-600 mb-4">
+                {{ trans('Press the SAVE button in the editor to publish your email, otherwise it cannot be sent.') }}
+            </p>
+            <div class="flex justify-center gap-x-2">
+                <Button type="tertiary" :label="trans('Review & send anyway')" @click="goToReviewAnyway" />
+                <Button :label="trans('Keep editing')" @click="showUnpublishedWarning = false" />
+            </div>
+        </div>
+    </Modal>
+
     <Modal :isOpen="isModalCloneTemplateEmail" @onClose="isModalCloneTemplateEmail = false" width="w-full max-w-6xl">
 
-        <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+        <div class="flex items-start justify-between gap-x-4">
+            <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" class="flex-1" />
+            <div class="flex items-center rounded-md border border-gray-300 overflow-hidden shrink-0">
+                <button
+                    v-tooltip="trans('Gallery')"
+                    class="px-2 py-1"
+                    :class="templateView === 'gallery' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-600'"
+                    @click="setTemplateView('gallery')">
+                    <FontAwesomeIcon icon="fal fa-th-large" fixed-width aria-hidden="true" />
+                </button>
+                <button
+                    v-tooltip="trans('List')"
+                    class="px-2 py-1"
+                    :class="templateView === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-600'"
+                    @click="setTemplateView('list')">
+                    <FontAwesomeIcon icon="fal fa-list" fixed-width aria-hidden="true" />
+                </button>
+            </div>
+        </div>
 
 
-        <component :is="component" :key="currentTab" :data="tabData" :tab="currentTab"
+        <component :is="component" :key="currentTab + templateView" :data="tabData" :tab="currentTab"
             @select-snapshot="onSelectTemplateSnapshot" />
 
     </Modal>
@@ -361,10 +441,16 @@ onMounted(() => {
     <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
         :snapshot="snapshot" ref="_unlayer" />
 
-    <div v-else>
+    <div v-if="builder == 'beefree' && compiledLayoutSize > 102"
+        class="flex justify-end items-center gap-2 px-4 py-2 border-t border-gray-200 text-xs text-yellow-600">
+        <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" v-tooltip="emailSizeWarningTooltip" fixed-width />
+        Estimated email size <span class="font-semibold">{{ compiledLayoutSize }} KB</span> exceeds Gmail's 102 KB limit
+    </div>
+
+    <div v-if="builder != 'beefree' && builder != 'unlayer'">
         <EmptyState :data="{
             title: 'Builder Not Set Up',
-            description: 'you neeed to set up the builder'
+            description: 'you need to set up the builder'
         }" />
     </div>
 

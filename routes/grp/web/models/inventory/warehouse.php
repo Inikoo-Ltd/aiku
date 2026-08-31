@@ -27,6 +27,7 @@ use App\Actions\Fulfilment\PickingSession\StartPickFulfilmentPickingSession;
 use App\Actions\Fulfilment\PickingSession\AddPalletReturnsToPickingSession;
 use App\Actions\Fulfilment\PickingSession\RemovePalletReturnsFromPickingSession;
 use App\Actions\Fulfilment\Pallet\UpdatePalletLocation;
+use App\Actions\GoodsIn\UnidentifiedReturn\StoreUnidentifiedReturn;
 use App\Actions\Inventory\Location\ImportLocation;
 use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\Warehouse\DeleteWarehouse;
@@ -53,6 +54,8 @@ Route::name('warehouse.')->prefix('warehouse/{warehouse:id}')->group(function ()
     Route::patch('fulfilment-picking-session/{pickingSession:id}/start-picking', StartPickFulfilmentPickingSession::class)->name('fulfilment_picking_session.start_picking')->withoutScopedBindings();
 
     Route::post('trolleys', StoreTrolley::class)->name('trolleys.store');
+
+    Route::post('unidentified-return', StoreUnidentifiedReturn::class)->name('unidentified_return.store');
 
     Route::post('picked-bays', [StorePickedBay::class, 'inWarehouse'])->name('picked_bays.store');
     Route::patch('picked-bays/{pickedBay:id}', UpdatePickedBay::class)->name('picked_bays.update')->withoutScopedBindings();

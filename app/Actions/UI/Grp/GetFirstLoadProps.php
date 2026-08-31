@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Grp;
 
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
+use App\Actions\Catalogue\Shop\External\Faire\GetFaireSkippedBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetCrmReturnedBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetCrmWaitingBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetDispatchingWaitingBadgeData;
@@ -62,6 +63,7 @@ class GetFirstLoadProps
         data_set($props, 'dispatching_waiting_count', $user ? GetDispatchingWaitingBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'crm_waiting_count', $user ? GetCrmWaitingBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'crm_return_count', $user ? GetCrmReturnedBadgeData::make()->totalCount($user) : 0);
+        data_set($props, 'faire_skipped_count', $user ? GetFaireSkippedBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'master_updated_count', $user ? GetMasterUpdatedBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'ziggy', new Ziggy('grp')->toArray());
         data_set($props, 'last_deployment_at', $lastDeployment?->created_at);

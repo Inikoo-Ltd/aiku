@@ -34,6 +34,7 @@ class SaveWebsiteRobotsTxt extends OrgAction
             'Disallow: /cookies',
             'Disallow: /attachment.php*',
             'Disallow: /attachment/*',
+            'Disallow: /catalogue/feeds/',
             'Disallow: /asset_label*',
             'Disallow: /page.php*',
             'Disallow: /*.sys$',

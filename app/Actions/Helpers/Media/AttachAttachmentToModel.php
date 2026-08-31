@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Product\CloneProductAttachmentsFromTradeUnits;
 use App\Actions\OrgAction;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\PalletReturn;
@@ -28,7 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class AttachAttachmentToModel extends OrgAction
 {
-    public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|Product|TradeUnitFamily $model, array $modelData): void
+    public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|Product|TradeUnitFamily|ProductCategory $model, array $modelData): void
     {
         foreach (Arr::get($modelData, 'attachments') as $attachment) {
             $file           = $attachment;
@@ -43,7 +44,7 @@ class AttachAttachmentToModel extends OrgAction
             SaveModelAttachment::make()->action($model, $attachmentData);
         }
 
-        if ($model instanceof TradeUnit || $model instanceof TradeUnitFamily) {
+        if (($model instanceof TradeUnit || $model instanceof TradeUnitFamily) && Arr::get($modelData, 'scope') !== 'labeling_guide') {
             if ($model instanceof TradeUnitFamily) {
                 foreach ($model->tradeUnits as $tradeUnit) {
                     foreach ($tradeUnit->products as $product) {
@@ -68,6 +69,13 @@ class AttachAttachmentToModel extends OrgAction
                 'string'
             ],
         ];
+    }
+
+    public function action(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|Product|TradeUnitFamily|ProductCategory $model, array $modelData): void
+    {
+        $this->initialisationFromGroup(group(), $modelData);
+
+        $this->handle($model, $this->validatedData);
     }
 
     public function inTradeUnitFamily(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): void

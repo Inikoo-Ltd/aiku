@@ -66,7 +66,10 @@ let formFields = {
 }
 
 if (props['fieldData']['hasOther']) {
-    formFields[props['fieldData']['hasOther']['name']] = props['fieldData']['hasOther']['value']
+    const otherFields = Array.isArray(props['fieldData']['hasOther']) ? props['fieldData']['hasOther'] : [props['fieldData']['hasOther']]
+    otherFields.forEach((other) => {
+        formFields[other['name']] = other['value']
+    })
 }
 formFields['_method'] = 'patch'
 const form = useForm(formFields)
@@ -159,6 +162,9 @@ const needsSaveConfirmation = computed(() => {
     }
     if (confirmation.whenValueIs === undefined) {
         return true
+    }
+    if (Array.isArray(confirmation.whenValueIs)) {
+        return confirmation.whenValueIs.includes(form[props.field])
     }
     return Number(form[props.field]) === Number(confirmation.whenValueIs)
 })

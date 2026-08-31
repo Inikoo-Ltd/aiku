@@ -118,7 +118,6 @@ const props = withDefaults(
     }>(),
     {}
 )
-
 const locale = inject('locale', aikuLocaleStructure)
 
 const emits = defineEmits<{
@@ -256,8 +255,8 @@ onMounted(async () => {
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <!-- LEFT: Images -->
             <div class="col-span-7 bg-white" >
-                <div class="py-1 w-full">
-                    <ImageProducts :key="product.code" :images="validImages" :video="videoSetup?.url" />
+                <div class="py-1 w-full relative">
+                    <ImageProducts :key="product.code" :images="validImages" :video="videoSetup?.url" :audio="product.audio" />
                 </div>
 
                 <!-- TAGS -->
@@ -549,7 +548,9 @@ onMounted(async () => {
         </div>
 
         <!-- MEDIA -->
-        <ImageProducts :images="validImages" :video="videoSetup?.url" />
+        <div class="relative">
+            <ImageProducts :images="validImages" :video="videoSetup?.url" :audio="product.audio" />
+        </div>
         
 
         <!-- STOCK + FAVOURITE -->

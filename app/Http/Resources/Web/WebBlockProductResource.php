@@ -59,7 +59,7 @@ class WebBlockProductResource extends JsonResource
         if (is_array($product->offers_data)) {
             $productOffersData = $product->offers_data;
         } else {
-            $productOffersData = json_decode($product->offers_data, true);
+            $productOffersData = json_decode($product->offers_data ?? '', true);
         }
 
 
@@ -114,6 +114,7 @@ class WebBlockProductResource extends JsonResource
             'units'             => $units,
             'unit'              => $product->unit,
             'web_images'        => $product->web_images,
+            'audio'             => $product->audio ? '/audio/'.$product->audio->ulid : null,
             'created_at'        => $product->created_at,
             'updated_at'        => $product->updated_at,
             'images'            => $product->bucket_images ? $this->getImagesData($product, true, 800) : $this->getResizedMediaImages($product, 800),
@@ -152,7 +153,8 @@ class WebBlockProductResource extends JsonResource
         return $product->images->map(fn ($media) => [
             'id'        => $media->id,
             'source'    => GetPictureSources::run($media->getImage()->resize($maxWidth, $maxWidth)),
-            'thumbnail' => GetPictureSources::run($media->getImage()->resize(0, 48)),
+            'thumbnail' => GetPictureSources::run($media->getImage()->resize(0, 192)),
+            'zoom'      => GetPictureSources::run($media->getImage()->resize(1600, 1600)),
             'alt'       => $media->pivot?->caption,
         ])->all();
     }

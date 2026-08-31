@@ -12,6 +12,7 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
@@ -21,6 +22,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,6 +31,67 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexProductsWithNoImage extends OrgAction
 {
     use WithCatalogueAuthorisation;
+
+    public function getElementGroups(Shop $shop): array
+    {
+        return [
+            'state' => [
+                'label'    => __('State'),
+                'elements' => array_merge_recursive(
+                    array_merge(
+                        ProductStateEnum::labels(),
+                        ['not_for_sale' => __('Not for sale')]
+                    ),
+                    $this->getStateElementCounts($shop)
+                ),
+
+                'engine' => function ($query, $elements) {
+                    $states = array_values(array_diff($elements, ['not_for_sale']));
+
+                    $query->where(function ($query) use ($elements, $states) {
+                        if ($states) {
+                            $query->orWhereIn('products.state', $states);
+                        }
+
+                        if (in_array('not_for_sale', $elements)) {
+                            $query->orWhere('products.is_for_sale', false);
+                        }
+                    });
+                }
+
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    protected function getStateElementCounts(Shop $shop): array
+    {
+        $counts = $this->baseQuery($shop)
+            ->selectRaw('count(*) filter (where products.state = ?) as in_process', [ProductStateEnum::IN_PROCESS->value])
+            ->selectRaw('count(*) filter (where products.state = ?) as active', [ProductStateEnum::ACTIVE->value])
+            ->selectRaw('count(*) filter (where products.state = ?) as discontinuing', [ProductStateEnum::DISCONTINUING->value])
+            ->selectRaw('count(*) filter (where products.state = ?) as discontinued', [ProductStateEnum::DISCONTINUED->value])
+            ->selectRaw('count(*) filter (where products.is_for_sale = false) as not_for_sale')
+            ->first();
+
+        return [
+            'in_process'    => (int) $counts->in_process,
+            'active'        => (int) $counts->active,
+            'discontinuing' => (int) $counts->discontinuing,
+            'discontinued'  => (int) $counts->discontinued,
+            'not_for_sale'  => (int) $counts->not_for_sale,
+        ];
+    }
+
+    protected function baseQuery(Shop $shop): Builder
+    {
+        return Product::query()
+            ->where('products.shop_id', $shop->id)
+            ->whereNull('products.exclusive_for_customer_id')
+            ->whereNull('products.image_id');
+    }
 
     public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
@@ -49,6 +112,14 @@ class IndexProductsWithNoImage extends OrgAction
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
         $queryBuilder->whereNull('products.image_id');
 
+        foreach ($this->getElementGroups($shop) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix
+            );
+        }
 
         $queryBuilder
             ->defaultSort('products.code')
@@ -84,6 +155,14 @@ class IndexProductsWithNoImage extends OrgAction
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
+            }
+
+            foreach ($this->getElementGroups($shop) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements']
+                );
             }
 
             $table

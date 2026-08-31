@@ -129,6 +129,10 @@ class ShowOrgStock extends OrgAction
                     ],
                     'model'         => __('SKO'),
                     'title'         => $orgStock->code,
+                    'afterTitle'    => $orgStock->is_on_demand ? [
+                        'label'   => __('On Demand'),
+                        'tooltip' => __('Stock figure is not tracked, products advertise a fixed quantity')
+                    ] : null,
                     'iconRight'          => $orgStock->state->stateIcon()[$orgStock->state->value],
                     'actions'       => [
                         [
@@ -184,8 +188,8 @@ class ShowOrgStock extends OrgAction
                     : Inertia::optional(fn () => TradeUnitsResource::collection(IndexTradeUnitsInOrgStock::run($orgStock, OrgStockTabsEnum::TRADE_UNITS->value))),
 
                 OrgStockTabsEnum::HISTORY->value => $this->tab == OrgStockTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($orgStock))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgStock))),
+                    fn () => HistoryResource::collection(IndexHistory::run($orgStock, OrgStockTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgStock, OrgStockTabsEnum::HISTORY->value))),
 
                 OrgStockTabsEnum::PURCHASE_ORDERS->value => $this->tab == OrgStockTabsEnum::PURCHASE_ORDERS->value ?
                     fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::make()->inOrgStock($this->organisation, $orgStock, $request, OrgStockTabsEnum::PURCHASE_ORDERS->value))
@@ -197,7 +201,7 @@ class ShowOrgStock extends OrgAction
             ]
         )
         ->table(IndexTradeUnitsInOrgStock::make()->tableStructure(prefix: OrgStockTabsEnum::TRADE_UNITS->value))
-        ->table(IndexHistory::make()->tableStructure(prefix: OrgStockTabsEnum::HISTORY->value))
+        ->table(IndexHistory::make()->tableStructure(prefix: OrgStockTabsEnum::HISTORY->value, model: $orgStock))
         ->table(IndexPurchaseOrders::make()->tableStructure(parent: $orgStock, prefix: OrgStockTabsEnum::PURCHASE_ORDERS->value))
         ->table(IndexOrgStockSupplierProducts::make()->tableStructure(prefix: OrgStockTabsEnum::SUPPLIER_PRODUCTS->value));
     }

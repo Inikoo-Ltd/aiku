@@ -82,6 +82,12 @@ class Production extends Model implements Auditable
 
     protected $guarded = [];
 
+    protected array $auditInclude = [
+        'code',
+        'name',
+        'state',
+    ];
+
     public function getRouteKeyName(): string
     {
         return 'slug';

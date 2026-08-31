@@ -15,7 +15,10 @@ use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\GoodsIn\ReturnDeliveryNote;
+use App\Models\GoodsIn\UnidentifiedReturn;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Http\RedirectResponse;
@@ -28,7 +31,7 @@ class ProcessReturnDeliveryNote extends OrgAction
 
     public function handle(DeliveryNote $deliveryNote, array $modelData): ReturnDeliveryNote
     {
-        $returnDeliveryNote = DB::transaction(function () use ($deliveryNote) {
+        $returnDeliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
             $returnDeliveryNote = StoreReturnDeliveryNote::make()->action($deliveryNote, []);
             $returnDeliveryNote->refresh();
 
@@ -41,6 +44,14 @@ class ProcessReturnDeliveryNote extends OrgAction
             $deliveryNote->update([
                 'is_returned' => true
             ]);
+
+            if ($unidentifiedReturnId = Arr::get($modelData, 'unidentified_return_id')) {
+                UnidentifiedReturn::where('id', $unidentifiedReturnId)->update([
+                    'delivery_note_id'        => $deliveryNote->id,
+                    'return_delivery_note_id' => $returnDeliveryNote->id,
+                    'identified_at'           => now(),
+                ]);
+            }
 
             $returnDeliveryNote->refresh();
 
@@ -63,6 +74,19 @@ class ProcessReturnDeliveryNote extends OrgAction
                 'title'   => __('Success!'),
                 'description' => __('Return Delivery Note created successfully.'),
             ]);
+    }
+
+    public function rules(): array
+    {
+        return [
+            'unidentified_return_id' => [
+                'sometimes',
+                'nullable',
+                Rule::exists('unidentified_returns', 'id')
+                    ->where('organisation_id', $this->organisation->id)
+                    ->whereNull('identified_at'),
+            ],
+        ];
     }
 
     public function afterValidator(Validator $validator, ActionRequest $request)

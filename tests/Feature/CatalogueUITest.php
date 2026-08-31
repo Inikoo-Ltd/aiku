@@ -787,7 +787,7 @@ test('UI edit shop with related products description link', function () {
         $page
             ->component('EditModel')
             ->has(
-                'formData.blueprint.2.fields.related_product_follow_master',
+                'formData.blueprint.3.fields.related_product_follow_master',
                 fn (AssertableInertia $field) => $field
                     ->where('type', 'toggle')
                     ->where('descriptionLinks.manage_related_products.label', 'related products tab')

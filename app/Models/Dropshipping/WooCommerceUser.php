@@ -13,12 +13,14 @@ use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -59,12 +61,13 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUser withoutTrashed()
  * @mixin \Eloquent
  */
-class WooCommerceUser extends Model
+class WooCommerceUser extends Model implements Auditable
 {
     use InCustomer;
     use HasSlug;
     use WithWooCommerceApiRequest;
     use SoftDeletes;
+    use HasHistory;
 
     protected $guarded = [];
 
@@ -112,4 +115,16 @@ class WooCommerceUser extends Model
     {
         return $this->morphMany(DebugWebhooks::class, 'model');
     }
+
+    public function generateTags(): array
+    {
+        return ['crm', 'websites'];
+    }
+
+    protected array $auditInclude = [
+        'name',
+        'status',
+        'state',
+        'store_url'
+    ];
 }

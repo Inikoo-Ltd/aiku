@@ -112,6 +112,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_abandoned_cart_reminder_1
  * @property int $number_outboxes_type_abandoned_cart_reminder_2
  * @property int $number_outboxes_type_abandoned_cart_reminder_3
+ * @property int $number_outboxes_type_abandoned_checkout
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCommsStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCommsStats newQuery()

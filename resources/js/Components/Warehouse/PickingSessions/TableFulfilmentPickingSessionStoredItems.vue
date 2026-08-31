@@ -931,7 +931,7 @@ const onDispatchPalletReturn = async () => {
                                     :key="palletStoredItem.id"
                                     class="flex w-fit items-center gap-x-4"
                                 >
-                                    <div class="min-w-[150px]">
+                                    <div class="lg:min-w-[150px]">
                                         <Link
                                             v-if="storedItemRoute(storedItem)"
                                             :href="storedItemRoute(storedItem)"
@@ -944,7 +944,7 @@ const onDispatchPalletReturn = async () => {
                                         </div>
                                     </div>
 
-                                    <div class="min-w-[220px]">
+                                    <div class="lg:min-w-[220px]">
                                         <div class="flex items-center justify-between gap-x-3">
                                             <div class="flex items-center gap-x-1 whitespace-nowrap">
                                                 <Link
@@ -1025,7 +1025,7 @@ const onDispatchPalletReturn = async () => {
                                     >
                                         <div class="shrink-0">
                                             <template v-if="isRowPicking(storedItem)">
-                                                <div class="grid min-w-[480px] gap-y-1">
+                                                <div class="grid lg:min-w-[480px] gap-y-1">
                                                     <div
                                                         v-if="getRemainingActionQuantity(palletStoredItem) > 0"
                                                         class="flex items-center justify-between gap-x-3"

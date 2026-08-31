@@ -99,7 +99,7 @@ class FetchAuroraOrders extends FetchAuroraAction
                     ->select('Invoice Key as source_id')
                     ->orderBy('source_id')->get() as $invoice
             ) {
-                FetchAuroraInvoices::run($organisationSource, $invoice->source_id, true);
+                FetchAuroraInvoices::run($organisationSource, $invoice->source_id, true, true);
             }
 
 

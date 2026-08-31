@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Transaction\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithMarginData;
 use Illuminate\Support\Facades\DB;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -28,7 +29,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTransactions extends OrgAction
 {
-    public function handle(Organisation|Shop|Customer|Order|Invoice|Asset $parent, $prefix = null): LengthAwarePaginator
+    use WithMarginData;
+
+    public function handle(Organisation|Shop|Customer|Order|Invoice|Asset $parent, $prefix = null, bool $withMargins = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -128,15 +131,22 @@ class IndexTransactions extends OrgAction
                     AND p.batch_code_id IS NOT NULL
                 ) as batch_codes")
             ])
+            ->when($withMargins, fn ($q) => $q->addSelect([
+                'transactions.org_net_amount',
+                DB::raw($this->actualCostSql('transactions.id').' as margin_actual_cost'),
+                DB::raw($this->estimatedCostSql('transactions.quantity_ordered').' as margin_estimated_cost'),
+                'transactions.quantity_picked as margin_quantity_picked',
+                'transactions.quantity_ordered as margin_quantity_ordered',
+            ]))
             ->allowedSorts(['asset_code', 'asset_name', 'net_amount', 'quantity_ordered'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Organisation|Shop|Customer|Order|Invoice|Asset|CustomerClient $parent, $tableRows = null, $prefix = null): Closure
+    public function tableStructure(Organisation|Shop|Customer|Order|Invoice|Asset|CustomerClient $parent, $tableRows = null, $prefix = null, bool $withMargins = false): Closure
     {
-        return function (InertiaTable $table) use ($parent, $prefix, $tableRows) {
+        return function (InertiaTable $table) use ($parent, $prefix, $tableRows, $withMargins) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -161,6 +171,9 @@ class IndexTransactions extends OrgAction
                 $table->column(key: 'batch_codes', label: __('Batch Codes'), canBeHidden: false);
             }
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
+            if ($withMargins) {
+                $table->column(key: 'margin', label: __('Margin'), canBeHidden: false, align: 'right');
+            }
             if (
                 $parent instanceof Order
                 && (

@@ -7,6 +7,7 @@
 
 namespace App\Actions\Traits;
 
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Helpers\Country;
@@ -322,6 +323,25 @@ trait WithLineTaxCategories
      */
     public function getInvoiceTaxBreakdown(Invoice $invoice): array
     {
+        if ($invoice->type == InvoiceTypeEnum::REFUND && $invoice->is_tax_only) {
+            /** Tax-only refund lines carry no net, so net × rate is always zero: the refunded tax
+             *  is the sum of the lines' tax amounts, stored positive and negated at invoice level. */
+            return $invoice->invoiceTransactions()
+                ->get(['tax_category_id', 'tax_amount'])
+                ->groupBy('tax_category_id')
+                ->map(function (Collection $lines, int $taxCategoryId) {
+                    $taxCategory = TaxCategory::find($taxCategoryId);
+
+                    return [
+                        'tax_category_id' => $taxCategoryId,
+                        'name'            => $taxCategory->name,
+                        'rate'            => (float)$taxCategory->rate,
+                        'net_amount'      => 0.0,
+                        'tax_amount'      => round(-$lines->sum('tax_amount'), 2),
+                    ];
+                })->values()->all();
+        }
+
         /** Two columns, not 2,500 hydrated models: this runs on every invoice view and pdf. */
         return $this->getTaxBreakdown(
             $invoice->invoiceTransactions()

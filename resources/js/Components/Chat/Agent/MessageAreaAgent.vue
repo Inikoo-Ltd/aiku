@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick } from "vue"
+import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent } from "vue"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -10,7 +10,7 @@ import {
     faEllipsisVertical,
     faTimesCircle,
     faMessage,
-    faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight
+    faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight, faBan, faRotateLeft, faFaceSmile
 } from "@fortawesome/free-solid-svg-icons"
 import { faJira, faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -24,6 +24,8 @@ import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { notify } from "@kyvg/vue3-notification"
 import { Select } from "primevue"
+
+const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
@@ -57,6 +59,8 @@ const emit = defineEmits([
     "messages-read",
     "open-jira-settings",
     "open-slack-settings",
+    "spam-success",
+    "restore-success",
 ])
 
 const layout: any = inject("layout", {})
@@ -115,6 +119,29 @@ const onOpenSlackSettings = () => {
     emit("open-slack-settings")
 }
 
+const isSpamMarking = ref(false)
+const markSpam = async (spam: boolean) => {
+    if (!props.session?.ulid || isSpamMarking.value) return
+    isMenuOpen.value = false
+    isSpamMarking.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const routeName = spam
+            ? "grp.org.chat.agents.sessions.spam"
+            : "grp.org.chat.agents.sessions.not_spam"
+        await axios.patch(route(routeName, [organisation, props.session.ulid]), {}, { withCredentials: true })
+        emit("spam-success")
+    } catch (e: any) {
+        notify({
+            title: trans("Error"),
+            text: e?.response?.data?.message ?? trans("Failed to update spam status"),
+            type: "error",
+        })
+    } finally {
+        isSpamMarking.value = false
+    }
+}
+
 const isAssigningSelf = ref(false)
 const assignSelf = async () => {
     if (!props.session?.ulid || isAssigningSelf.value) return
@@ -136,6 +163,25 @@ const assignSelf = async () => {
         notify({ title: trans("Error"), text: trans("Failed to assign chat"), type: "error" })
     } finally {
         isAssigningSelf.value = false
+    }
+}
+
+const isRestoring = ref(false)
+const restoreChat = async () => {
+    if (!props.session?.ulid || isRestoring.value) return
+    isRestoring.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        await axios.patch(
+            route("grp.org.chat.agents.sessions.restore", [organisation, props.session.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        emit("restore-success")
+    } catch {
+        notify({ title: trans("Error"), text: trans("Failed to restore chat"), type: "error" })
+    } finally {
+        isRestoring.value = false
     }
 }
 
@@ -197,6 +243,34 @@ const handleEditMessage = async ({ id, text }: { id: number; text: string }) => 
 const messageInput = ref<HTMLTextAreaElement>()
 const messagesContainer = ref<HTMLDivElement>()
 
+const showEmojiPicker = ref(false)
+const emojiPickerContainer = ref<HTMLElement | null>(null)
+
+const pickEmoji = (emoji: string) => {
+    const el = messageInput.value
+    if (!el) {
+        newMessage.value += emoji
+        return
+    }
+
+    const start = el.selectionStart ?? newMessage.value.length
+    const end = el.selectionEnd ?? newMessage.value.length
+    newMessage.value = newMessage.value.slice(0, start) + emoji + newMessage.value.slice(end)
+
+    nextTick(() => {
+        el.focus()
+        const pos = start + emoji.length
+        el.setSelectionRange(pos, pos)
+        autoResize()
+    })
+}
+
+const handleClickOutsideEmoji = (event: MouseEvent) => {
+    if (showEmojiPicker.value && emojiPickerContainer.value && !emojiPickerContainer.value.contains(event.target as Node)) {
+        showEmojiPicker.value = false
+    }
+}
+
 // file upload
 const imageInput = ref<HTMLInputElement>()
 const fileInput = ref<HTMLInputElement>()
@@ -227,6 +301,7 @@ const canLoadMore = ref(false)
 const nextCursor = ref<string | null>(null)
 
 const chatSession = computed(() => props.session)
+const isTrashed = computed(() => !!(chatSession.value as any)?.is_trashed)
 const isClosed = computed(() => chatSession.value?.status === "closed")
 const isWaiting = computed(() => chatSession.value?.status === "waiting")
 const menuRef = ref<HTMLElement | null>(null)
@@ -546,6 +621,16 @@ const initSocket = () => {
 
         scrollBottom()
     })
+    chatChannel.listen(".reaction", ({ message }: any) => {
+        if (!message?.id) return
+        const index = messagesLocal.value.findIndex((m) => m.id === message.id)
+        if (index !== -1) {
+            messagesLocal.value[index] = {
+                ...messagesLocal.value[index],
+                reactions: message.reactions ?? [],
+            }
+        }
+    })
     chatChannel.listen(".messages.read", (event: any) => {
         if (event.reader_type !== "agent") {
             messagesLocal.value.forEach((msg) => {
@@ -699,11 +784,13 @@ onMounted(async () => {
     await getMediaUrl(chatSession.value!.ulid)
     initSocket()
     document.addEventListener("click", handleClickOutside)
+    document.addEventListener("click", handleClickOutsideEmoji)
 })
 
 onUnmounted(() => {
     stopSocket()
     document.removeEventListener("click", handleClickOutside)
+    document.removeEventListener("click", handleClickOutsideEmoji)
 })
 
 watch(selectedLanguage, (code) => {
@@ -723,7 +810,7 @@ const handleClickOutside = (e: MouseEvent) => {
     <div class="flex flex-col h-full bg-white overflow-hidden">
         <!-- Header -->
         <header class="flex items-center gap-3 px-3 py-2 border-b">
-            <button @click="$emit('back')">
+            <button @click="$emit('back')" :aria-label="trans('Back')">
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" />
             </button>
 
@@ -751,7 +838,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 </div>
             </div>
 
-            <ModalConfirmationDelete v-if="!isClosed && isMyChat" :routeDelete="{
+            <ModalConfirmationDelete v-if="!isClosed && !isTrashed && isMyChat" :routeDelete="{
                 name: 'grp.org.chat.agents.sessions.close',
                 parameters: [session?.organisation.id, session?.ulid],
                 method: 'patch',
@@ -779,11 +866,11 @@ const handleClickOutside = (e: MouseEvent) => {
             <FontAwesomeIcon v-if="isTranslating" :icon="faSpinner" class="text-gray-400 text-xs animate-spin" />
 
             <div class="relative" ref="menuRef">
-                <button @click.stop="isMenuOpen = !isMenuOpen">
+                <button @click.stop="isMenuOpen = !isMenuOpen" :aria-label="trans('Toggle menu')">
                     <FontAwesomeIcon :icon="faEllipsisVertical" class="text-gray-400" />
                 </button>
 
-                <div v-if="isMenuOpen && !isClosed"
+                <div v-if="isMenuOpen && !isClosed && !isTrashed"
                     class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
                     <button class="menu-item" @click="onViewUserProfile">
                         <FontAwesomeIcon :icon="faUser" /> {{ trans("View Profile") }}
@@ -799,6 +886,13 @@ const handleClickOutside = (e: MouseEvent) => {
 
                     <button class="menu-item" @click="openSlackModal">
                         <FontAwesomeIcon :icon="faSlack" class="text-purple-600" /> {{ trans("Share to Slack") }}
+                    </button>
+
+                    <button v-if="!(session as any)?.is_spam" class="menu-item text-red-600" @click="markSpam(true)">
+                        <FontAwesomeIcon :icon="faBan" /> {{ trans("Report spam") }}
+                    </button>
+                    <button v-else class="menu-item" @click="markSpam(false)">
+                        <FontAwesomeIcon :icon="faRotateLeft" /> {{ trans("Not spam") }}
                     </button>
                 </div>
             </div>
@@ -838,6 +932,8 @@ const handleClickOutside = (e: MouseEvent) => {
                         :contactName="session?.contact_name || session?.guest_identifier"
                         :agentName="session?.assigned_agent?.name"
                         :canEdit="isMyChat && !isClosed && !isWaiting"
+                        :sessionUlid="session?.ulid"
+                        :viewerReactorId="layout?.user?.id"
                         @edit-message="handleEditMessage"
                         @open-slack-settings="onOpenSlackSettings" />
                 </div>
@@ -850,7 +946,7 @@ const handleClickOutside = (e: MouseEvent) => {
         <div v-if="previewType === 'image' && previewUrl" class="px-3 pb-2">
             <div class="relative inline-block">
                 <img :src="previewUrl" class="h-24 rounded-lg border object-cover" />
-                <button @click="removeFile" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1">
+                <button @click="removeFile" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1" :aria-label="trans('Remove image')">
                     <FontAwesomeIcon :icon="faXmark" />
                 </button>
             </div>
@@ -869,14 +965,31 @@ const handleClickOutside = (e: MouseEvent) => {
                         {{ (selectedFile.size / 1024).toFixed(1) }} KB
                     </div>
                 </div>
-                <button @click="removeFile" class="text-gray-400 hover:text-red-500 shrink-0 ml-2">
+                <button @click="removeFile" class="text-gray-400 hover:text-red-500 shrink-0 ml-2" :aria-label="trans('Remove file')">
                     <FontAwesomeIcon :icon="faXmark" />
                 </button>
             </div>
         </div>
 
+        <!-- Footer: Restore banner for trashed chats -->
+        <footer v-if="isTrashed" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                <div class="text-xs text-gray-600">
+                    {{ trans('This chat is in trash') }}
+                </div>
+                <Button
+                    @click="restoreChat"
+                    :loading="isRestoring"
+                    style="primary"
+                    size="xs"
+                    :label="trans('Restore')"
+                    :icon="faRotateRight"
+                />
+            </div>
+        </footer>
+
         <!-- Footer: Reopen banner for closed chats -->
-        <footer v-if="isClosed" class="px-3 py-3 bg-white border-t">
+        <footer v-else-if="isClosed" class="px-3 py-3 bg-white border-t">
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
                     {{ trans('This chat has been closed') }}
@@ -950,13 +1063,25 @@ const handleClickOutside = (e: MouseEvent) => {
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">
                         <button @click="imageInput?.click()"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload image">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload image" :aria-label="trans('Upload image')">
                             <FontAwesomeIcon :icon="faImage" class="text-sm" />
                         </button>
                         <button @click="fileInput?.click()"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload file">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload file" :aria-label="trans('Upload file')">
                             <FontAwesomeIcon :icon="faPaperclip" class="text-sm" />
                         </button>
+                        <div ref="emojiPickerContainer" class="relative">
+                            <button type="button" @click.stop="showEmojiPicker = !showEmojiPicker"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+                                :class="showEmojiPicker ? 'text-indigo-600 bg-gray-100' : 'text-gray-500'"
+                                :title="trans('Emoji')" :aria-label="trans('Emoji')">
+                                <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" />
+                            </button>
+
+                            <div v-if="showEmojiPicker" class="absolute bottom-full left-0 mb-1 z-30">
+                                <EmojiPicker @pick="pickEmoji" />
+                            </div>
+                        </div>
                         <Button
                             @click="isEmailNotif = !isEmailNotif"
                             type="transparent"
@@ -973,11 +1098,11 @@ const handleClickOutside = (e: MouseEvent) => {
                             </template>
                         </Button>
                         <button @click="openJiraModal"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="trans('Create Jira ticket')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="trans('Create Jira ticket')" :aria-label="trans('Create Jira ticket')">
                             <FontAwesomeIcon :icon="faJira" class="text-sm" />
                         </button>
                     </div>
-                    <Button @click="sendMessage" :icon="faPaperPlane"></Button>
+                    <Button @click="sendMessage" :icon="faPaperPlane" :tooltip="trans('Send message')"></Button>
                 </div>
             </div>
         </footer>
