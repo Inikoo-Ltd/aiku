@@ -306,7 +306,7 @@ const rankClasses: Record<string, string> = {
                     </span>
                     <span class="flex items-center gap-1">
                         <span class="rounded-full px-2 py-0.5 text-xs font-medium tabular-nums" :class="column.badge" :title="trans('deliveries')">{{ column.deliveries.length }}</span>
-                        <span class="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium tabular-nums text-gray-600" :title="trans('items')">{{ column.deliveries.reduce((sum, sd) => sum + sd.items, 0) }} {{ trans("items") }}</span>
+                        <span class="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium tabular-nums text-violet-700" :title="trans('items')">{{ column.deliveries.reduce((sum, sd) => sum + sd.items, 0) }} {{ trans("items") }}</span>
                     </span>
                 </div>
                 <div class="flex flex-col gap-2">
