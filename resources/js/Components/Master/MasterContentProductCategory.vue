@@ -7,7 +7,7 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ContentProductCategorySuggestion from './ContentProductCategorySuggestion.vue'
 import MasterSeoSuggestion from './MasterSeoSuggestion.vue'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
     data: any
     isMaster?: boolean
 }>(), {
@@ -24,6 +24,10 @@ const tabs = [
 ]
 
 const currentTab = ref(tabs[0].key)
+
+const productCategory = computed(() =>
+    props.data?.department ?? props.data?.subDepartment ?? props.data?.family ?? props.data
+)
 </script>
 
 <template>
@@ -57,14 +61,14 @@ const currentTab = ref(tabs[0].key)
         <div class="min-w-0 flex-1">
             <ContentProductCategorySuggestion
                 v-if="currentTab === 'description'"
-                :data="data.department"
+                :data="productCategory"
                 :isMaster="isMaster"
             />
-           <!--  <MasterSeoSuggestion
+            <MasterSeoSuggestion
                 v-else-if="currentTab === 'seo'"
-                :data="data"
+                :data="productCategory"
                 :isMaster="isMaster"
-            /> -->
+            />
         </div>
     </div>
 </template>
