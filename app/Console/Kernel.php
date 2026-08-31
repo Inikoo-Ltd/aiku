@@ -266,6 +266,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('hydrate:org-stock-out-of-stock-forecast')->dailyAt('01:30')->timezone('UTC')->onOneServer()->withoutOverlapping(360)->sentryMonitor(
+                    monitorSlug: 'OrgStockHydrateOutOfStockForecast',
+                ),
+                name: 'OrgStockHydrateOutOfStockForecast',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->job(FulfilmentCustomersHydrateStatus::makeJob())->dailyAt('00:00')->onOneServer()->timezone('UTC')->sentryMonitor(
                     monitorSlug: 'FulfilmentCustomersHydrateStatus'
                 ),
