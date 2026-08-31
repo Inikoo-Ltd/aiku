@@ -48,6 +48,11 @@ class IndexPartnerShoppingListItems extends OrgAction
         $paginator = QueryBuilder::for(PartnerShoppingListItem::class)
             ->leftJoin('org_stocks', 'org_stocks.id', 'partner_shopping_list_items.org_stock_id')
             ->leftJoin('users', 'users.id', 'partner_shopping_list_items.added_by_user_id')
+            ->leftJoin('org_stock_stats', 'org_stock_stats.org_stock_id', 'partner_shopping_list_items.org_stock_id')
+            ->leftJoin('org_stocks as partner_org_stocks', function ($join) {
+                $join->on('partner_org_stocks.stock_id', 'partner_shopping_list_items.stock_id')
+                    ->on('partner_org_stocks.organisation_id', 'partner_shopping_list_items.partner_organisation_id');
+            })
             ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
             ->select([
                 'partner_shopping_list_items.id',
@@ -62,6 +67,8 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'org_stocks.name as org_stock_name',
                 'org_stocks.quantity_available as buyer_available',
                 'users.contact_name as added_by_name',
+                'org_stock_stats.days_of_cover',
+                'partner_org_stocks.quantity_available as their_available',
             ])
             ->selectRaw(PartnerShoppingListItem::pricePerSkoSql().' as price_per_sko')
             ->defaultSort('-created_at')
@@ -117,13 +124,11 @@ class IndexPartnerShoppingListItems extends OrgAction
                     .$orgPartner->organisation->currency->code.' '
                     .number_format((float) $orgPartner->stats->open_shopping_list_items_value * $this->buyerExchange($orgPartner), 2)
                 )
-                ->column(key: 'image', label: __('Image'), canBeHidden: false)
-                ->column(key: 'org_stock_code', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false)
+                ->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'info', label: __('Info'), canBeHidden: false)
                 ->column(key: 'quantity', label: __('Quantity (SKO)'), canBeHidden: false, align: 'right')
                 ->column(key: 'amount', label: __('Amount'), canBeHidden: false, align: 'right')
                 ->column(key: 'priority', label: __('Priority'), canBeHidden: false, sortable: true)
-                ->column(key: 'needed_by', label: __('Needed by'), canBeHidden: false, sortable: true)
                 ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true)
                 ->column(key: 'created_at', label: __('Added'), canBeHidden: false, sortable: true)
                 ->column(key: 'actions', label: '', canBeHidden: false, align: 'right')

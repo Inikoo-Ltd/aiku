@@ -21,7 +21,9 @@ use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Inventory\OrgStock;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
@@ -210,9 +212,16 @@ class ShowPartnerBrowse extends OrgAction
 
             $usage = SuggestPartnerShoppingList::make()->buyerQuarterlyUsage($buyerOrgStocks->pluck('id')->all());
 
-            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage) {
+            $openItems = PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
+                ->where('state', ShoppingListItemStateEnum::OPEN)
+                ->whereIn('stock_id', $buyerOrgStocks->keys())
+                ->get()
+                ->keyBy('stock_id');
+
+            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems) {
                 $sellerOrgStock = $sellerOrgStocks[$product->id] ?? null;
                 $buyerOrgStock  = $sellerOrgStock ? $buyerOrgStocks->get($sellerOrgStock->stock_id) : null;
+                $openItem       = $sellerOrgStock ? $openItems->get($sellerOrgStock->stock_id) : null;
 
                 return [
                     'id'                => $product->id,
@@ -229,6 +238,11 @@ class ShowPartnerBrowse extends OrgAction
                     'our_days_of_cover' => $buyerOrgStock?->stats?->days_of_cover !== null
                         ? (int) $buyerOrgStock->stats->days_of_cover
                         : null,
+                    'recommended_quantity'  => $buyerOrgStock?->stats?->recommended_order_quantity !== null
+                        ? (int) ceil((float) $buyerOrgStock->stats->recommended_order_quantity)
+                        : null,
+                    'shopping_list_item_id' => $openItem?->id,
+                    'ordered_quantity'      => $openItem ? (float) $openItem->quantity : 0,
                 ];
             });
         }

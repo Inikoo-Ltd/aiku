@@ -69,6 +69,7 @@ class SuggestPartnerShoppingList extends OrgAction
             })
             ->join('product_has_org_stocks', 'product_has_org_stocks.org_stock_id', 'org_stocks.id')
             ->join('products', 'products.id', 'product_has_org_stocks.product_id')
+            ->leftJoin('org_stock_stats as buyer_stats', 'buyer_stats.org_stock_id', 'buyer_org_stocks.id')
             ->leftJoin('partner_shopping_list_items', function ($join) use ($orgPartner) {
                 $join->on('partner_shopping_list_items.stock_id', 'org_stocks.stock_id')
                     ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
@@ -90,6 +91,8 @@ class SuggestPartnerShoppingList extends OrgAction
                 'buyer_org_stocks.quantity_available as buyer_available',
                 'products.price as product_price',
                 'product_has_org_stocks.quantity as skos_per_product_unit',
+                'buyer_stats.days_of_cover as buyer_days_of_cover',
+                'buyer_stats.recommended_order_quantity as buyer_recommended',
             ])
             ->orderBy('org_stocks.id')
             ->get()
@@ -111,6 +114,8 @@ class SuggestPartnerShoppingList extends OrgAction
                 'buyer_available'   => (float) ($row->buyer_available ?? 0),
                 'quarterly_usage'   => $usage[$row->buyer_org_stock_id] ?? 0.0,
                 'price_per_sko'     => round((float) $row->product_price * $exchange / $skosPerProductUnit, 4),
+                'days_of_cover'     => $row->buyer_days_of_cover !== null ? (float) $row->buyer_days_of_cover : null,
+                'recommended'       => $row->buyer_recommended !== null ? (float) $row->buyer_recommended : null,
             ];
         })->all();
     }
@@ -174,13 +179,16 @@ class SuggestPartnerShoppingList extends OrgAction
     {
         $ranked = collect($candidates)
             ->filter(fn ($candidate) => $candidate['quarterly_usage'] > 0 && $candidate['price_per_sko'] > 0)
-            ->sortBy(fn ($candidate) => $candidate['buyer_available'] / $candidate['quarterly_usage']);
+            ->sortBy(fn ($candidate) => $candidate['days_of_cover'] ?? $candidate['buyer_available'] / $candidate['quarterly_usage'] * 91);
 
         $lines     = [];
         $remaining = $budget;
 
         foreach ($ranked as $candidate) {
-            $target   = max(0.0, ceil($candidate['quarterly_usage'] - $candidate['buyer_available']));
+            $target = $candidate['recommended'] !== null
+                ? ceil($candidate['recommended'])
+                : max(0.0, ceil($candidate['quarterly_usage'] - $candidate['buyer_available']));
+
             $quantity = min($target, $candidate['partner_available'], floor($remaining / $candidate['price_per_sko']));
 
             if ($quantity < 1) {
@@ -190,11 +198,7 @@ class SuggestPartnerShoppingList extends OrgAction
             $cost       = round($quantity * $candidate['price_per_sko'], 2);
             $remaining -= $cost;
 
-            $lines[] = $this->line($candidate, $quantity, sprintf(
-                'You use ~%s/quarter and hold %s',
-                rtrim(rtrim(number_format($candidate['quarterly_usage'], 1), '0'), '.'),
-                rtrim(rtrim(number_format($candidate['buyer_available'], 1), '0'), '.'),
-            ));
+            $lines[] = $this->line($candidate, $quantity, $this->reason($candidate));
 
             if ($remaining < 1) {
                 break;
@@ -202,6 +206,28 @@ class SuggestPartnerShoppingList extends OrgAction
         }
 
         return $lines;
+    }
+
+    /**
+     * Same story the browse cards tell: sales per quarter, what we hold, when we run out.
+     *
+     * @param array<string, mixed> $candidate
+     */
+    protected function reason(array $candidate): string
+    {
+        $reason = sprintf(
+            'Our sales/quarter ~%d · our stock %d',
+            (int) round($candidate['quarterly_usage']),
+            (int) floor($candidate['buyer_available']),
+        );
+
+        if ($candidate['days_of_cover'] !== null) {
+            $reason .= $candidate['days_of_cover'] <= 0
+                ? ' · we run out now'
+                : sprintf(' · we run out in ~%d days', (int) round($candidate['days_of_cover']));
+        }
+
+        return $reason;
     }
 
     /**
@@ -219,12 +245,14 @@ class SuggestPartnerShoppingList extends OrgAction
             'partner_available' => $candidate['partner_available'],
             'you_hold'          => $candidate['buyer_available'],
             'quarterly_usage'   => $candidate['quarterly_usage'],
+            'days_until_out_of_stock' => $candidate['days_of_cover'],
+            'recommended_order'       => $candidate['recommended'],
         ])->values()->all();
 
         $prompt = 'You are a purchasing assistant building an inter-company replenishment shopping list.'
             ."\nBudget: {$budget}. Instruction from the purchaser: {$instruction}"
             ."\nPick lines from this catalogue (quantities are whole SKOs, never exceed partner_available, total cost must stay within budget)."
-            ."\nPrefer items with low cover (you_hold vs quarterly_usage) unless the instruction says otherwise."
+            ."\nPrefer items with low days_until_out_of_stock and quantities near recommended_order unless the instruction says otherwise."
             ."\nReturn ONLY a JSON array: [{\"id\": <org_stock_id>, \"quantity\": <int>, \"reason\": \"<max 12 words>\"}]"
             ."\n\nCatalogue: ".json_encode($catalogue, JSON_UNESCAPED_UNICODE);
 

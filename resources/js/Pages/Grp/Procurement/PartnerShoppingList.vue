@@ -78,18 +78,33 @@ function deleteItem(item: { id: number }) {
     <ModalAutoFillShoppingList v-model="isAutoFillOpen" :orgPartnerId="orgPartner.id" :currency="orgPartner.currency" />
 
     <Table :resource="data" class="mt-5">
-        <template #cell(image)="{ item }">
-            <div class="w-12 h-12 rounded">
-                <Image :src="item.image_sources" />
+        <template #cell(info)="{ item }">
+            <div class="flex items-start gap-3">
+                <div class="h-12 w-12 shrink-0 rounded">
+                    <Image :src="item.image_sources" />
+                </div>
+                <div class="min-w-0 text-xs leading-5">
+                    <div class="truncate text-sm font-medium text-gray-800">{{ item.org_stock_name }}</div>
+                    <div class="text-gray-500">
+                        {{ trans("Their stock") }} <b class="font-medium text-gray-700 tabular-nums">{{ item.their_available !== null ? useLocaleStore().number(Math.floor(Number(item.their_available))) : "-" }}</b>
+                        · {{ trans("our stock") }} <b class="font-medium text-gray-700 tabular-nums">{{ useLocaleStore().number(Math.floor(Number(item.buyer_available ?? 0))) }}</b>
+                        <template v-if="item.days_of_cover !== null">
+                            ·
+                            <span :class="{ 'text-red-600 font-medium': Number(item.days_of_cover) <= 14, 'text-amber-600': Number(item.days_of_cover) > 14 && Number(item.days_of_cover) <= 30 }">
+                                {{ Number(item.days_of_cover) === 0 ? trans("we run out now") : `${trans("we run out in")} ~${Math.round(Number(item.days_of_cover))} ${trans("days")}` }}
+                            </span>
+                        </template>
+                    </div>
+                </div>
             </div>
         </template>
         <template #cell(quantity)="{ item }">
             <span class="inline-grid grid-cols-[3.5rem_1rem_3.5rem_1rem_3.5rem] items-center tabular-nums whitespace-nowrap">
-                <span class="text-right text-gray-400">{{ useLocaleStore().number(Number(item.buyer_available ?? 0)) }}</span>
+                <span class="text-right text-gray-400">{{ useLocaleStore().number(Math.floor(Number(item.buyer_available ?? 0))) }}</span>
                 <span class="text-center text-gray-300">+</span>
                 <span class="text-right font-medium text-gray-700">{{ useLocaleStore().number(Number(item.quantity)) }}</span>
                 <span class="text-center text-gray-300">&rArr;</span>
-                <span class="text-right text-gray-400">{{ useLocaleStore().number(Number(item.buyer_available ?? 0) + Number(item.quantity)) }}</span>
+                <span class="text-right text-gray-400">{{ useLocaleStore().number(Math.floor(Number(item.buyer_available ?? 0) + Number(item.quantity))) }}</span>
             </span>
         </template>
         <template #cell(amount)="{ item }">
@@ -109,16 +124,6 @@ function deleteItem(item: { id: number }) {
             </select>
             <span v-else>{{ trans(item.priority) }}</span>
         </template>
-        <template #cell(needed_by)="{ item }">
-            <input
-                v-if="item.state === 'open'"
-                type="date"
-                :value="item.needed_by ? String(item.needed_by).substring(0, 10) : ''"
-                class="rounded border-gray-300 py-0.5 px-1.5 text-xs"
-                @change="updateItem(item, { needed_by: ($event.target as HTMLInputElement).value || null })"
-            />
-            <span v-else>{{ item.needed_by ? useFormatTime(item.needed_by, { formatTime: "mdy" }) : "-" }}</span>
-        </template>
         <template #cell(created_at)="{ item }">
             {{ useFormatTime(item.created_at, { formatTime: "mdy" }) }}
             <span v-if="item.added_by_name" class="text-gray-400">· {{ item.added_by_name }}</span>
@@ -128,7 +133,7 @@ function deleteItem(item: { id: number }) {
                 v-if="item.state === 'open'"
                 icon="fal fa-trash-alt"
                 :tooltip="trans('Remove from the shopping list')"
-                type="delete"
+                type="negative"
                 size="xs"
                 @click="deleteItem(item)"
             />

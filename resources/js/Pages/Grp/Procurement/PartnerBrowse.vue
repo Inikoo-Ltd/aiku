@@ -8,7 +8,6 @@
 import { Head, router } from "@inertiajs/vue3"
 import { ref, watch } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useLocaleStore } from "@/Stores/locale"
@@ -16,8 +15,9 @@ import { trans } from "laravel-vue-i18n"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
 type CategoryCard = { id: number, slug: string, code: string, name: string, image: object | null, number_current_products?: number, type?: string }
-type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_slug: string | null, our_stock: number | null, our_quarterly_usage: number | null, our_days_of_cover: number | null }
+type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_slug: string | null, our_stock: number | null, our_quarterly_usage: number | null, our_days_of_cover: number | null, recommended_quantity: number | null, shopping_list_item_id: number | null, ordered_quantity: number }
 import PartnerMiniShoppingList from "@/Components/Procurement/PartnerMiniShoppingList.vue"
+import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 
 type MiniCartItem = { id: number, quantity: number, org_stock_code: string | null, org_stock_name: string | null, family_name: string | null }
 type MiniCart = { partner_name: string, count: number, total: number, currency: string, items: MiniCartItem[], listRoute: { name: string, parameters: (string | number)[] } }
@@ -74,30 +74,55 @@ function goTo(params: Record<string, string | number>) {
 const browseTab = ref<"categories" | "collections">("categories")
 
 const quantities = ref<Record<number, number>>({})
-const justAdded = ref<Record<number, boolean>>({})
+const commitTimers: Record<number, ReturnType<typeof setTimeout>> = {}
 
-function quantityFor(productId: number): number {
-    return quantities.value[productId] ?? 1
+function quantityFor(product: ProductCard): number {
+    return quantities.value[product.id] ?? product.ordered_quantity ?? 0
 }
 
-function addToShoppingList(product: ProductCard) {
-    if (!product.org_stock_slug) {
+function setQuantity(product: ProductCard, quantity: number) {
+    quantities.value[product.id] = Math.max(0, quantity)
+    if (commitTimers[product.id]) {
+        clearTimeout(commitTimers[product.id])
+    }
+    commitTimers[product.id] = setTimeout(() => commitQuantity(product), 600)
+}
+
+function commitQuantity(product: ProductCard) {
+    const quantity = quantityFor(product)
+    if (quantity === (product.ordered_quantity ?? 0) || !product.org_stock_slug) {
         return
     }
 
-    router.post(
-        route(props.addRoute.name, [...props.addRoute.parameters, product.org_stock_slug]),
-        { quantity: quantityFor(product.id) },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ["miniCart"],
-            onSuccess: () => {
-                justAdded.value[product.id] = true
-                setTimeout(() => { justAdded.value[product.id] = false }, 1500)
-            },
+    const reloadOptions = {
+        preserveScroll: true,
+        preserveState: true,
+        only: ["miniCart", "products"],
+        onSuccess: () => { delete quantities.value[product.id] },
+    }
+
+    const organisation = route().params["organisation"]
+
+    if (product.shopping_list_item_id) {
+        if (quantity <= 0) {
+            router.delete(
+                route("grp.org.procurement.org_partners.show.shopping_list.destroy", [organisation, props.orgPartner.id, product.shopping_list_item_id]),
+                reloadOptions
+            )
+        } else {
+            router.patch(
+                route("grp.org.procurement.org_partners.show.shopping_list.update", [organisation, props.orgPartner.id, product.shopping_list_item_id]),
+                { quantity },
+                reloadOptions
+            )
         }
-    )
+    } else if (quantity > 0) {
+        router.post(
+            route(props.addRoute.name, [...props.addRoute.parameters, product.org_stock_slug]),
+            { quantity },
+            reloadOptions
+        )
+    }
 }
 </script>
 
@@ -218,15 +243,22 @@ function addToShoppingList(product: ProductCard) {
                     <div class="flex flex-1 flex-col gap-1 p-2">
                         <p class="truncate text-sm font-medium text-gray-800">{{ product.name }}</p>
                         <p class="text-xs text-gray-400">{{ product.code }}</p>
-                        <p class="text-sm font-semibold text-gray-900">
-                            {{ product.price !== null ? useLocaleStore().currencyFormat(orgPartner.currency, product.price) : "-" }}
-                        </p>
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-sm font-semibold text-gray-900">
+                                {{ product.price !== null ? useLocaleStore().currencyFormat(orgPartner.currency, product.price) : "-" }}
+                            </span>
+                            <span class="whitespace-nowrap rounded border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-xs text-gray-500">
+                                {{ trans("Their stock") }}: <b class="font-medium text-gray-700 tabular-nums">{{ useLocaleStore().number(product.available_quantity) }}</b>
+                            </span>
+                        </div>
                         <div class="grid grid-cols-[auto_1fr] gap-x-3 text-xs leading-5">
-                            <span class="text-gray-400">{{ trans("Their stock") }}</span>
-                            <span class="text-right font-medium tabular-nums">{{ useLocaleStore().number(product.available_quantity) }}</span>
                             <template v-if="product.our_stock !== null">
                                 <span class="text-gray-400">{{ trans("Our stock") }}</span>
                                 <span class="text-right font-medium tabular-nums">{{ useLocaleStore().number(Math.floor(product.our_stock)) }}</span>
+                            </template>
+                            <template v-if="product.our_quarterly_usage">
+                                <span class="text-gray-400">{{ trans("Our sales / quarter") }}</span>
+                                <span class="text-right font-medium tabular-nums">~{{ useLocaleStore().number(Math.round(product.our_quarterly_usage)) }}</span>
                             </template>
                             <template v-if="product.our_days_of_cover !== null">
                                 <span class="text-gray-400">{{ trans("We run out in") }}</span>
@@ -237,28 +269,28 @@ function addToShoppingList(product: ProductCard) {
                                     {{ product.our_days_of_cover === 0 ? trans("now") : `~${product.our_days_of_cover} ${trans("days")}` }}
                                 </span>
                             </template>
-                            <template v-if="product.our_quarterly_usage">
-                                <span class="text-gray-400">{{ trans("Our sales / quarter") }}</span>
-                                <span class="text-right font-medium tabular-nums">~{{ useLocaleStore().number(Math.round(product.our_quarterly_usage)) }}</span>
-                            </template>
                         </div>
 
                         <div v-if="product.org_stock_slug" class="mt-auto flex items-center gap-2 pt-2">
-                            <input
-                                type="number"
-                                min="0.01"
-                                step="0.01"
-                                class="w-16 rounded-md border-gray-300 text-sm shadow-sm"
-                                :value="quantityFor(product.id)"
-                                @input="quantities[product.id] = Number(($event.target as HTMLInputElement).value)"
+                            <NumberWithButtonSave
+                                :modelValue="quantityFor(product)"
+                                :bindToTarget="{ min: 0 }"
+                                allowZero
+                                isWithRefreshModel
+                                noUndoButton
+                                noSaveButton
+                                @update:modelValue="(value: number) => setQuantity(product, value)"
                             />
-                            <Button
-                                size="xs"
-                                :type="justAdded[product.id] ? 'positive' : 'create'"
-                                :icon="justAdded[product.id] ? 'fal fa-check' : 'fal fa-cart-plus'"
-                                :label="trans('Add')"
-                                @click="addToShoppingList(product)"
-                            />
+                            <button
+                                type="button"
+                                class="cursor-pointer rounded-md border border-dashed px-2 py-1 text-xs font-medium tabular-nums"
+                                :class="product.recommended_quantity ? 'border-indigo-300 text-indigo-600 hover:bg-indigo-50' : 'border-gray-200 text-gray-400 hover:bg-gray-50'"
+                                :title="trans('Suggested order, click to fill')"
+                                @click="setQuantity(product, product.recommended_quantity ?? 0)"
+                            >
+                                {{ useLocaleStore().number(product.recommended_quantity ?? 0) }}
+                                <span class="ml-0.5 font-normal text-gray-400">{{ trans("suggested") }}</span>
+                            </button>
                         </div>
                     </div>
                 </div>

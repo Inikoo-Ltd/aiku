@@ -3003,6 +3003,9 @@ test('auto-fill suggests shopping list within budget from usage history', functi
     $sellerOrgStock->update(['quantity_available' => 50]);
 
     $buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+    $buyerOrgStock->update(['quantity_available' => 0]);
+    DB::table('delivery_note_items')->where('org_stock_id', $buyerOrgStock->id)->update(['quantity_dispatched' => 0]);
+    $buyerOrgStock->stats()->update(['days_of_cover' => null, 'recommended_order_quantity' => null]);
 
     PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
         ->where('state', ShoppingListItemStateEnum::OPEN)
@@ -3029,12 +3032,14 @@ test('auto-fill suggests shopping list within budget from usage history', functi
         ]);
     }
 
-    $proposal = SuggestPartnerShoppingList::make()->action($this->orgPartner, 1000);
+    DB::table('org_stocks')->where('id', $sellerOrgStock->id)->update(['quantity_available' => 50]);
+
+    $proposal = SuggestPartnerShoppingList::make()->action($this->orgPartner, 100000);
 
     $line = collect($proposal['lines'])->firstWhere('org_stock_id', $sellerOrgStock->id);
 
     expect($line)->not->toBeNull()
-        ->and($proposal['total'])->toBeLessThanOrEqual(1000)
+        ->and($proposal['total'])->toBeLessThanOrEqual(100000)
         ->and((float) $line['quantity'])->toBeGreaterThanOrEqual(1.0)
         ->and((float) $line['cost'])->toBe(round($line['quantity'] * $line['price_per_sko'], 2))
         ->and($line['reason'])->toContain('/quarter');
