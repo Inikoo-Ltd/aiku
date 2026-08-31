@@ -36,6 +36,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Enums\UI\NotesEnum;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
@@ -384,6 +385,12 @@ class ShowOrder extends OrgAction
                         'type'  => $platform->type,
                         'title' => __('Platform :platform', ['platform' => $platform->name]),
                         'order_id' => $order->platform_order_id
+                    ] : null,
+                    'api_order'       => $order->salesChannel?->type == SalesChannelTypeEnum::API ? [
+                        'label'        => __('API order'),
+                        'tooltip'      => __('Placed automatically through the customer API, not by a person'),
+                        'held_unpaid'  => $order->state == OrderStateEnum::SUBMITTED && $order->pay_status == OrderPayStatusEnum::UNPAID,
+                        'held_message' => __('Auto-held: the saved-card charge failed. It will move to the warehouse automatically once payment succeeds — do not send it manually unless payment is resolved.'),
                     ] : null,
                 ],
                 'tabs'        => [

@@ -69,6 +69,8 @@ class HistoryValueExtractor
             'action' => null,
             'old'    => null,
             'new'    => null,
+            'old_html' => null,
+            'new_html' => null,
         ];
 
         $rows = [];
@@ -92,6 +94,10 @@ class HistoryValueExtractor
             }
 
             $result[$key] = self::normalize($value);
+
+            if ($key === 'old' || $key === 'new') {
+                $result[$key.'_html'] = trim($value) === '' ? null : trim($value);
+            }
         }
 
         return $result;

@@ -9,14 +9,21 @@
 namespace App\Actions\Inventory\OrganisationStockHistory\Hydrators;
 
 use App\Actions\Inventory\GroupStockHistory\Hydrators\GroupStockHistoryHydrateFromOrgStockHistories;
+use App\Actions\Traits\WithStockHistoryArchiveRead;
 use App\Models\Inventory\OrganisationStockHistory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
+/**
+ * A day beyond the retention window has its per SKU rows in the archive, so the sums are taken
+ * from wherever that day actually lives. The organisation row being written is always local:
+ * organisation_stock_histories is never archived.
+ */
 class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUnique
 {
     use AsAction;
+    use WithStockHistoryArchiveRead;
 
     public string $jobQueue = 'hydrators-slave';
 
@@ -61,7 +68,9 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
             return;
         }
 
-        $stockData = DB::connection('aiku_no_sticky')->table('org_stock_histories')
+        $connection = $this->stockHistoryDayConnection($organisationStockHistory) ?? 'aiku_no_sticky';
+
+        $stockData = DB::connection($connection)->table('org_stock_histories')
             ->selectRaw('sum(non_moving_1y*lpp_per_sku) as value_dormant_stock_1y')
             ->selectRaw('sum(non_moving_1y*wac_per_sku) as value_dormant_stock_1y_wac')
             ->selectRaw('sum(non_moving_1y*fifo_per_sku) as value_dormant_stock_1y_fifo')
@@ -76,12 +85,12 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
             ->where('organisation_stock_history_id', $organisationStockHistory->id)
             ->first();
 
-        $stockNotSold = DB::connection('aiku_no_sticky')->table('org_stock_histories')
+        $stockNotSold = DB::connection($connection)->table('org_stock_histories')
             ->where('org_stock_histories.sold_within_1y', false)
             ->where('organisation_stock_history_id', $organisationStockHistory->id)
             ->count();
 
-        $stockLocationData = DB::connection('aiku_no_sticky')->table('location_org_stock_histories')
+        $stockLocationData = DB::connection($connection)->table('location_org_stock_histories')
             ->selectRaw('COUNT(DISTINCT location_id) as number_locations')
             ->where('organisation_stock_history_id', $organisationStockHistory->id)
             ->first();

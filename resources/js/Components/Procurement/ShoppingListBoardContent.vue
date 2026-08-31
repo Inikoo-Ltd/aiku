@@ -6,9 +6,11 @@
 
 <script setup lang="ts">
 import { router } from "@inertiajs/vue3"
-import { reactive } from "vue"
+import { computed, reactive } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { useLocaleStore } from "@/Stores/locale"
+import ProcurementOverviewPill from "@/Components/DataDisplay/Dashboard/Widget/ProcurementOverviewPill.vue"
 
 interface OrgLine {
     id: number
@@ -63,6 +65,30 @@ const props = defineProps<{
 
 const selected = reactive<Record<number, number>>({})
 
+const selfRoute = computed(() => ({ name: route().current() as string, parameters: route().params }))
+
+const stats = computed(() => {
+    let suppliers = 0
+    let lines = 0
+    let value = 0
+
+    for (const agentGroup of props.agents) {
+        suppliers += agentGroup.suppliers.length
+        for (const supplier of agentGroup.suppliers) {
+            value += supplier.estimated_value
+            for (const product of supplier.products) {
+                lines += product.orgs.length
+            }
+        }
+    }
+
+    return [
+        { label: trans("Suppliers"), description: "", icon: "fal fa-person-dolly", value: suppliers, tone: "indigo", route: selfRoute.value, metrics: [] },
+        { label: trans("Open lines"), description: "", icon: "fal fa-boxes", value: lines, tone: "amber", route: selfRoute.value, metrics: [] },
+        { label: trans("Estimated value"), description: "", icon: "fal fa-box-usd", value: Math.round(value), tone: "emerald", route: selfRoute.value, metrics: [] },
+    ]
+})
+
 function toggle(line: OrgLine) {
     if (line.id in selected) {
         delete selected[line.id]
@@ -88,6 +114,10 @@ function proposeDismiss(line: OrgLine) {
 
 <template>
     <div class="mx-4 my-4 space-y-8">
+        <div class="flex flex-wrap gap-3">
+            <ProcurementOverviewPill v-for="card in stats" :key="card.label" :card="card" />
+        </div>
+
         <div v-if="editable && Object.keys(selected).length" class="sticky top-0 z-10 flex items-center justify-between rounded-lg bg-indigo-600 px-4 py-2 text-white">
             <span>{{ Object.keys(selected).length }} {{ trans("lines selected") }}</span>
             <button type="button" class="rounded bg-white px-3 py-1 text-indigo-600" @click="submitCherryPick">
@@ -98,20 +128,21 @@ function proposeDismiss(line: OrgLine) {
         <div v-for="agentGroup in agents" :key="agentGroup.agent_id">
             <h2 class="text-lg font-semibold">{{ agentGroup.code }}</h2>
 
-            <div v-for="supplier in agentGroup.suppliers" :key="supplier.supplier_id" class="mt-4 rounded-lg border border-gray-200 p-4">
-                <div class="flex items-center justify-between">
-                    <h3 class="font-medium">{{ supplier.code }}</h3>
-                    <div class="flex items-center gap-3">
+            <div v-for="supplier in agentGroup.suppliers" :key="supplier.supplier_id" class="mt-4 rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
+                <div class="flex items-center justify-between font-mono">
+                    <h3 class="text-sm font-semibold tracking-widest uppercase">{{ supplier.code }}</h3>
+                    <div class="flex items-center gap-3 text-xs">
                         <a
                             v-if="supplier.open_agent_supplier_purchase_order"
                             :href="route('grp.supply-chain.agent_supplier_purchase_orders.show', [supplier.open_agent_supplier_purchase_order.slug])"
-                            class="secondaryLink text-sm"
+                            class="secondaryLink"
                         >
                             {{ trans("Open ASPO") }}: {{ supplier.open_agent_supplier_purchase_order.reference }}
                         </a>
-                        <span class="text-sm text-gray-500">{{ trans("Estimated value") }}: {{ supplier.estimated_value }}</span>
+                        <span class="text-gray-500 tabular-nums">{{ trans("Estimated value") }}: {{ useLocaleStore().number(supplier.estimated_value) }}</span>
                     </div>
                 </div>
+                <div class="my-3 border-t border-dashed border-gray-300" />
 
                 <div v-for="product in supplier.products" :key="product.supplier_product_id" class="mt-3 border-t border-gray-100 pt-3">
                     <div class="flex items-center justify-between">

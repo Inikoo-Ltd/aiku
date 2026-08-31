@@ -282,6 +282,10 @@ const setNewMarkerDate = (newVal: Date) => {
 
                 <img v-if="order?.platform" :src="order?.platform" class="w-4" alt="platform" />
 
+                <span v-if="order.sales_channel_type === 'api'"
+                    v-tooltip="trans('Placed automatically through the customer API')"
+                    class="rounded bg-orange-100 border border-orange-300 px-1 text-xs font-semibold text-orange-700 leading-tight">API</span>
+
                 <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star"
                                  class="text-yellow-500" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon

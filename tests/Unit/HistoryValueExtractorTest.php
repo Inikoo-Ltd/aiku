@@ -59,6 +59,8 @@ it('extracts era-B legacy table markup', function () {
         'action' => 'Changed',
         'old'    => 'preosc',
         'new'    => 'Smellacloud 50ml Essential Oils',
+        'old_html' => 'preosc',
+        'new_html' => 'Smellacloud 50ml Essential Oils',
     ]);
 });
 
@@ -77,6 +79,8 @@ it('extracts era-C div table markup with the xx artifact present', function () {
         'action' => 'Changed',
         'old'    => 'preosc',
         'new'    => 'Smellacloud 50ml Essential Oils',
+        'old_html' => 'preosc',
+        'new_html' => 'Smellacloud 50ml Essential Oils',
     ]);
 });
 
@@ -94,6 +98,8 @@ it('matches localized labels, slovak and polish', function () {
         'action' => 'Changed',
         'old'    => '1',
         'new'    => '2',
+        'old_html' => '1',
+        'new_html' => '2',
     ]);
 
     $polish = '<div class="table">'
@@ -109,6 +115,8 @@ it('matches localized labels, slovak and polish', function () {
         'action' => 'Changed',
         'old'    => '1',
         'new'    => '2',
+        'old_html' => '1',
+        'new_html' => '2',
     ]);
 });
 

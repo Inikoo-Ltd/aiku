@@ -95,6 +95,32 @@ organisation, group (parent only — group records table does not exist yet).
   cost, it is estimated. Prefer marketing-performance-tool, marketing-trend-tool and
   email-marketing-performance-tool over SQL: they encode all of this.
 
+## Stock history is split across two databases
+
+`org_stock_histories` (one row per SKU per day) and `location_org_stock_histories` (per SKU
+per location per day) are downsampled: the operational database keeps the **last three years
+daily**, plus **one snapshot per month** for everything older. Every other historic day was
+moved to the archive database, same table names, same columns — query it with
+`database: archive`.
+
+So:
+
+- A question inside the last three years: `database: aiku`, nothing to think about.
+- A month end or year end value from any year (stock valuations, year end accounts): still
+  `database: aiku` — the monthly snapshots never left. **This is the common case.**
+- A specific non month end day from more than three years ago, or a day-by-day series
+  crossing the boundary: query both and union. A given date lives entirely on one side, so
+  the two result sets never overlap.
+- The monthly keeper is the last date **present** in that month, not necessarily the 28th to
+  31st. Do not assume `date = last_day_of_month`; take `max(date)` within the month.
+
+Organisation and group level history (`organisation_stock_histories`, `group_stock_histories`)
+is **never** archived and stays daily for every year, so totals, dashboards and any
+organisation wide valuation series need the archive at all. Only per SKU detail does.
+
+`org_stocks` and `locations` are mirrored into the archive, so joins for codes and names work
+there exactly as they do on aiku (refreshed daily; a SKU renamed today updates there tomorrow).
+
 ## Where common things live
 
 | Question | Tables |
@@ -104,6 +130,7 @@ organisation, group (parent only — group records table does not exist yet).
 | Customers | `customers`, `web_users` (their logins), `customer_notes` |
 | Catalogue | `products`, `assets`, `product_categories` (type: department / sub_department / family) |
 | Stock | `org_stocks` (`quantity_in_locations`, `value_in_locations`), `locations`, `location_org_stock` |
+| Stock history / valuation over time | `organisation_stock_histories` + `group_stock_histories` (daily, all years, never archived), `org_stock_histories` / `location_org_stock_histories` (per SKU, three years daily + monthly snapshots locally, older days in `database: archive`). Valuation columns come in three methods: `*_lpp_*` (last purchase price), `*_wac_*` (weighted average cost), `*_fifo_*`; the official one is a group setting, do not assume |
 | Dispatch | `delivery_notes`, `delivery_note_items`, `picking_sessions` |
 | Warehouse labour | `pickings` (`picker_user_id`, `last_picked_at`), `packings` (`packer_user_id`, `queued_at`, `packing_at`, `done_at`). Neither carries `warehouse_id`: join `delivery_notes`. Only trust rows where `created_at >= shops.migrated_to_aiku_on` and `delivery_notes.source_id IS NULL`; earlier work was picked on paper. For per line packing rates exclude `packings.data->>'auto_packed' = 'true'`, those lines were swept up by one click on the note rather than packed one by one |
 | Suppliers / purchasing | `suppliers`, `supplier_products`, `purchase_orders`, `stock_deliveries` |

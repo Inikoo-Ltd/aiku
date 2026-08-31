@@ -737,6 +737,44 @@ test('ebay channel do not update prices setting is stored', function () {
     expect(\Illuminate\Support\Arr::get($customerSalesChannel->settings, 'do_not_update_prices'))->toBeFalse();
 });
 
+test('ebay channel upload as draft setting is stored', function () {
+    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-user-draft']);
+    $customerSalesChannel = $ebayUser->customerSalesChannel;
+
+    CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
+
+    expect(\Illuminate\Support\Arr::get($customerSalesChannel->settings, 'upload_as_draft'))->toBeNull();
+
+    $customerSalesChannel = UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'upload_as_draft' => true
+    ]);
+    expect(\Illuminate\Support\Arr::get($customerSalesChannel->settings, 'upload_as_draft'))->toBeTrue();
+
+    $customerSalesChannel = UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'upload_as_draft' => false
+    ]);
+    expect(\Illuminate\Support\Arr::get($customerSalesChannel->settings, 'upload_as_draft'))->toBeFalse();
+});
+
+test('bulk publish queues a publish job only for draft ebay portfolios', function () {
+    Queue::fake();
+
+    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-bulk-publish']);
+    $customerSalesChannel = $ebayUser->customerSalesChannel;
+
+    CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
+
+    $portfolio = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+
+    \App\Actions\Retina\Ebay\PublishAllRetinaEbayDraftPortfolios::make()->handle($customerSalesChannel);
+    \App\Actions\Retina\Ebay\PublishRetinaEbayPortfolio::assertPushed(0);
+
+    $portfolio->update(['data' => ['is_platform_draft' => true]]);
+
+    \App\Actions\Retina\Ebay\PublishAllRetinaEbayDraftPortfolios::make()->handle($customerSalesChannel);
+    \App\Actions\Retina\Ebay\PublishRetinaEbayPortfolio::assertPushed(1);
+});
+
 test('channel percent pricing rule prices new portfolios honestly', function () {
     $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-pricing-store']);
     $customerSalesChannel = $ebayUser->customerSalesChannel;

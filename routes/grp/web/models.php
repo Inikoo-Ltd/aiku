@@ -152,6 +152,7 @@ use App\Actions\Dropshipping\Ebay\Product\MatchPortfolioToCurrentEbayProduct;
 use App\Actions\Dropshipping\Ebay\Product\StoreBulkNewProductToCurrentEbay;
 use App\Actions\Dropshipping\Ebay\Product\StoreNewProductToCurrentEbay;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
+use App\Actions\Dropshipping\Portfolio\ImportBulkPortfolios;
 use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
@@ -1208,6 +1209,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
     Route::post('portfolio-multiple-manual', StoreMultiplePortfolios::class)->name('portfolio.store_multiple_manual');
+    Route::post('portfolios-bulk-import', ImportBulkPortfolios::class)->name('portfolios.bulk_import');
     Route::post('client', StoreCustomerClient::class)->name('client.store');
     Route::delete('delete', CloseCustomerSalesChannel::class)->name('delete');
     Route::patch('reset-shopify', ResetShopifyChannel::class)->name('shopify_reset');

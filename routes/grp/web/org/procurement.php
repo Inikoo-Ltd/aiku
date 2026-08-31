@@ -18,6 +18,8 @@ use App\Actions\Procurement\OrgAgent\UI\EditOrgAgent;
 use App\Actions\Procurement\OrgAgent\UI\IndexOrgAgents;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgPartner\UI\IndexOrgPartners;
+use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
+use App\Actions\Procurement\OrgPartner\UI\ShowPartnerShoppingDashboard;
 use App\Actions\Procurement\PartnerShoppingListItem\CherryPickPartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexPartnerShippingList;
@@ -111,6 +113,12 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
         });
         Route::prefix('stock-deliveries')->as('.stock-deliveries.')->group(function () {
             Route::get('index', [IndexStockDeliveries::class, 'inOrgPartner'])->name('index');
+        });
+        Route::prefix('shopping')->as('.shopping.')->group(function () {
+            Route::get('', ShowPartnerShoppingDashboard::class)->name('dashboard');
+        });
+        Route::prefix('browse')->as('.browse.')->group(function () {
+            Route::get('', ShowPartnerBrowse::class)->name('index');
         });
         Route::prefix('shopping-list')->as('.shopping_list.')->group(function () {
             Route::get('', IndexPartnerShoppingListItems::class)->name('index');

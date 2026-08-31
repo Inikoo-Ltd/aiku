@@ -23,6 +23,8 @@ use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\StoreProductVariant;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\ProductCategory\AttachFamiliesToSubDepartment;
+use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\HydrateDepartments;
 use App\Actions\Catalogue\ProductCategory\HydrateFamilies;
 use App\Actions\Catalogue\ProductCategory\HydrateSubDepartments;
@@ -216,7 +218,12 @@ test('create product category webpage', function (ProductCategory $department) {
 
     expect($webpage)->toBeInstanceOf(Webpage::class)
         ->and($webpage->model_type)->toBe('ProductCategory')
-        ->and(intval($webpage->model_id))->toBe($department->id);
+        ->and(intval($webpage->model_id))->toBe($department->id)
+        ->and($department->webpage->id)->toBe($webpage->id);
+
+    UpdateProductCategory::make()->action($department, ['url' => 'a-nice-url']);
+    $department->refresh();
+    expect($department->webpage->id)->toBe($webpage->id);
 
     return $department;
 })->depends('create department');
@@ -283,6 +290,23 @@ test('create family', function ($department) {
 
     return $family;
 })->depends('update department');
+
+
+test('attach and detach family to sub department', function (ProductCategory $family, ProductCategory $subDepartment) {
+    AttachFamiliesToSubDepartment::make()->action($subDepartment, ['families_id' => [$family->id]]);
+    $family->refresh();
+
+    expect($family->sub_department_id)->toBe($subDepartment->id)
+        ->and($family->parent_id)->toBe($subDepartment->id)
+        ->and($family->department_id)->toBe($subDepartment->department_id);
+
+    DetachFamilyToSubDepartment::make()->handle($family);
+    $family->refresh();
+
+    expect($family->sub_department_id)->toBeNull()
+        ->and($family->department_id)->toBe($subDepartment->department_id)
+        ->and($family->parent_id)->toBe($subDepartment->department_id);
+})->depends('create family', 'create sub department');
 
 
 test('create product', function (ProductCategory $family) {
@@ -1065,4 +1089,77 @@ test('audit archiver moves Aurora loop noise but keeps genuinely busy history', 
         ->and(DB::table('audits')->where('auditable_id', $loopingId)->exists())->toBeFalse()
         ->and(DB::connection('archive')->table('audits')->where('auditable_id', $loopingId)->count())->toBe(1200)
         ->and(DB::table('audits')->where('auditable_id', $busyId)->count())->toBe(1200);
+});
+
+test('audit archiver moves the whole trail of records older than the age cutoff', function () {
+    config()->set(
+        'database.connections.archive',
+        array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'archive'])
+    );
+    DB::purge('archive');
+    DB::statement('create schema if not exists archive');
+
+    $shop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    [, $product] = createProduct($shop);
+    $order = createOrder(createCustomer($shop), $product);
+
+    DB::table('audits')->insert([
+        'auditable_type' => 'Order',
+        'auditable_id'   => $order->id,
+        'event'          => 'updated',
+        'tags'           => '[]',
+        'old_values'     => json_encode(['state' => 'a']),
+        'new_values'     => json_encode(['state' => 'b']),
+        'source_id'      => 'aged-test-backfill',
+        'created_at'     => now()->subDay(),
+        'updated_at'     => now()->subDay(),
+    ]);
+
+    $orderAudits = fn (): int => DB::table('audits')->where('auditable_type', 'Order')->where('auditable_id', $order->id)->count();
+
+    DB::table('orders')->where('id', $order->id)->update(['created_at' => now()->subDays(5)]);
+    $liveAudits = $orderAudits();
+
+    expect($liveAudits)->toBeGreaterThan(1)
+        ->and(\App\Actions\Helpers\History\ArchiveAudits::make()->handle(closedShops: false, discontinued: false, aged: true))->toBe(0)
+        ->and($orderAudits())->toBe($liveAudits);
+
+    DB::table('orders')->where('id', $order->id)->update(['created_at' => now()->subDays(150)]);
+
+    $archived = \App\Actions\Helpers\History\ArchiveAudits::make()->handle(closedShops: false, discontinued: false, aged: true);
+
+    expect($archived)->toBe($liveAudits)
+        ->and($orderAudits())->toBe(0)
+        ->and(DB::connection('archive')->table('audits')->where('auditable_type', 'Order')->where('auditable_id', $order->id)->count())->toBe($liveAudits);
+});
+
+test('noise audit purge deletes flag only audits and keeps real history', function () {
+    $insert = function (string $auditableType, int $auditableId, array $newValues) {
+        DB::table('audits')->insert([
+            'auditable_type' => $auditableType,
+            'auditable_id'   => $auditableId,
+            'event'          => 'updated',
+            'tags'           => '[]',
+            'old_values'     => json_encode([]),
+            'new_values'     => json_encode($newValues),
+            'source_id'      => 'noise-test-'.$auditableType.'-'.$auditableId,
+            'created_at'     => now(),
+            'updated_at'     => now(),
+        ]);
+    };
+
+    $insert('Portfolio', 989001, ['platform_status' => false, 'exist_in_platform' => false]);
+    $insert('Portfolio', 989002, ['status' => false]);
+    $insert('Portfolio', 989003, ['platform_status' => false, 'status' => false]);
+    $insert('EbayUser', 989004, ['settings.credentials.ebay_access_token' => '*********']);
+    $insert('CustomerSalesChannel', 989005, ['number_portfolios' => 3, 'number_portfolio_broken' => 1]);
+    $insert('CustomerSalesChannel', 989006, ['state' => 'card_saved']);
+
+    expect(\App\Actions\Helpers\History\PurgeNoiseAudits::make()->handle(dryRun: true))->toBe(3);
+
+    $deleted = \App\Actions\Helpers\History\PurgeNoiseAudits::make()->handle();
+
+    expect($deleted)->toBe(3)
+        ->and(DB::table('audits')->whereIn('auditable_id', [989001, 989004, 989005])->exists())->toBeFalse()
+        ->and(DB::table('audits')->whereIn('auditable_id', [989002, 989003, 989006])->count())->toBe(3);
 });

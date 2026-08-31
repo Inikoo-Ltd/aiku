@@ -49,9 +49,13 @@ enum ShopDashboardSalesTableTabsEnum: string
             ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardPlatformSalesResource::collection($platformTimeSeriesStats)->toJson(), true),
         };
 
+        $platformRowsWithoutChannelChildren = array_values(
+            array_filter($platformTimeSeriesStats, fn ($row) => empty($row['is_sales_channel']))
+        );
+
         $totals = match ($this) {
             ShopDashboardSalesTableTabsEnum::BRANDS       => json_decode(DashboardTotalBrandSalesResource::make($brandTimeSeriesStats)->toJson(), true),
-            ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardTotalPlatformSalesResource::make($platformTimeSeriesStats)->toJson(), true),
+            ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardTotalPlatformSalesResource::make($platformRowsWithoutChannelChildren)->toJson(), true),
         };
 
         return [
@@ -61,6 +65,16 @@ enum ShopDashboardSalesTableTabsEnum: string
         ];
     }
 
+    /**
+     * On dropshipping dashboards Brands is a link, not a tab: nobody works from it day to day,
+     * so it lives on its own page and the dashboard just points there. Other shop types keep
+     * the tab - it is the only sales table they have.
+     */
+    private static function isBuriedBrands(self $case, Shop $shop): bool
+    {
+        return $case === self::BRANDS && $shop->type->value === 'dropshipping';
+    }
+
     public static function navigation(Shop $shop): array
     {
         return collect(self::cases())
@@ -68,10 +82,31 @@ enum ShopDashboardSalesTableTabsEnum: string
                 if ($case === self::DS_PLATFORMS) {
                     return $shop->type->value === 'dropshipping';
                 }
-                return true;
+                return !self::isBuriedBrands($case, $shop);
             })
             ->mapWithKeys(fn ($case) => [$case->value => $case->blueprint()])
             ->all();
+    }
+
+    /**
+     * The buried Brands page link, shown next to the channel health badges instead of in the
+     * tab bar. Only dropshipping shops bury Brands; the rest keep it as a tab.
+     */
+    public static function brandsLink(Shop $shop): ?array
+    {
+        if ($shop->type->value !== 'dropshipping') {
+            return null;
+        }
+
+        return array_merge(
+            self::BRANDS->blueprint(),
+            [
+                'route' => [
+                    'name'       => 'grp.org.shops.show.dashboard.brands',
+                    'parameters' => [$shop->organisation->slug, $shop->slug],
+                ],
+            ]
+        );
     }
 
     public static function tables(Shop $shop, array $timeSeriesData = []): array
@@ -81,7 +116,7 @@ enum ShopDashboardSalesTableTabsEnum: string
                 if ($case === self::DS_PLATFORMS) {
                     return $shop->type->value === 'dropshipping';
                 }
-                return true;
+                return !self::isBuriedBrands($case, $shop);
             })
             ->mapWithKeys(fn ($case) => [$case->value => $case->table($shop, $timeSeriesData)])
             ->all();

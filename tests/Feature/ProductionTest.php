@@ -1659,3 +1659,28 @@ describe('reward sheet import', function () {
         expect(\App\Models\Production\ManufactureTask::where('production_id', $this->production->id)->where('code', 'ORPHAN1')->count())->toBe(1);
     });
 });
+
+test('create job order from gate shortfall', function () {
+    $organisation = $this->production->organisation;
+
+    $orgStock = \App\Models\Inventory\OrgStock::where('organisation_id', $organisation->id)->first();
+    if (!$orgStock) {
+        $stocks   = createStocks($organisation->group);
+        $orgStock = createOrgStocks($organisation, $stocks)[0];
+    }
+    $this->artefact->update(['org_stock_id' => $orgStock->id]);
+
+    $result = \App\Actions\Dispatching\FulfilmentGate\StoreJobOrderFromShortfall::make()->action(
+        $organisation,
+        [
+            ['org_stock_id' => $orgStock->id, 'quantity' => 7.3],
+            ['org_stock_id' => -1, 'quantity' => 5],
+        ]
+    );
+
+    expect($result['job_order'])->toBeInstanceOf(\App\Models\Production\JobOrder::class)
+        ->and($result['job_order']->jobOrderItems()->count())->toBe(1)
+        ->and($result['job_order']->jobOrderItems()->first()->artefact_id)->toBe($this->artefact->id)
+        ->and((int) $result['job_order']->jobOrderItems()->first()->quantity)->toBe(8)
+        ->and($result['skipped'])->toHaveCount(1);
+});

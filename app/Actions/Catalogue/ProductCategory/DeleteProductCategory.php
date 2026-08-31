@@ -52,7 +52,7 @@ class DeleteProductCategory extends OrgAction
             if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
                 DB::table('products')->where('family_id', $productCategory->id)->update(['family_id' => null]);
             }
-            $productCategory->webpage()->delete();
+            $productCategory->webpages()->delete();
             $productCategory->delete();
         }
         ShopHydrateDepartments::dispatch($productCategory->shop)->delay($this->hydratorsDelay);

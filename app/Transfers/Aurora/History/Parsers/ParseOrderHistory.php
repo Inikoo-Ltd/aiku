@@ -195,8 +195,8 @@ class ParseOrderHistory
 
         if ($field !== null) {
             if (in_array($field, self::ADDRESS_FIELDS, true)) {
-                $oldValues[$field] = $old === null ? '' : (HistoryValueExtractor::parseAdrAddress($old) ?? $old);
-                $newValues[$field] = $new === null ? '' : (HistoryValueExtractor::parseAdrAddress($new) ?? $new);
+                $oldValues[$field] = $old === null ? '' : (HistoryValueExtractor::parseAdrAddress($table['old_html'] ?? $old) ?? $old);
+                $newValues[$field] = $new === null ? '' : (HistoryValueExtractor::parseAdrAddress($table['new_html'] ?? $new) ?? $new);
             } else {
                 $oldValues[$field] = $old ?? '';
                 $newValues[$field] = $new ?? '';

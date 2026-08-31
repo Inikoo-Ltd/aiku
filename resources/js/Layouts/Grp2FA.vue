@@ -38,7 +38,7 @@ console.log('environment:', useLayoutStore().app.environment)
             <span class="text-2xl leading-tight text-[#1c1b22]/70">{{ dailyLine() }}</span>
         </div>
         <a :href="publicSiteUrl" class="absolute top-8 left-10 flex items-center gap-x-3 select-none hover:opacity-80" title="About aiku">
-            <img class="h-14 w-auto" src="/art/logo-sketch.svg" alt="aiku" />
+            <img class="h-14 w-auto" src="/art/invader-sketch.svg" alt="aiku" />
             <span style="font-family: Georgia, 'Times New Roman', serif" class="text-4xl font-semibold text-[#1c1b22] leading-none tracking-tight">aiku</span>
         </a>
 

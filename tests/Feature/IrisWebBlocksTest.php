@@ -220,7 +220,7 @@ test('family extra description block exposes the family customize options', func
 
     $parsed = $renderer->getIrisWebBlocks($webpage, $publishedBlocks, false);
 
-    $customizeOptions = Arr::get(Arr::first($parsed), 'web_block.layout.data.fieldValue.family.customize_option');
+    $customizeOptions = Arr::get(Arr::first($parsed), 'structure.family.customize_option');
 
     expect($customizeOptions)->toHaveCount(count(FamilyCustomizeEnum::cases()));
 
@@ -268,7 +268,7 @@ test('family extra description block flags families of the aroma organisation', 
 
         $parsed = $renderer->getIrisWebBlocks($webpage->fresh(), $publishedBlocks, true);
 
-        return Arr::get(Arr::first($parsed), 'web_block.layout.data.fieldValue.family');
+        return Arr::get(Arr::first($parsed), 'structure.family');
     };
 
     expect(Arr::get($renderFamilyBlock(), 'is_aroma_organisation'))->toBeFalse();
@@ -313,7 +313,7 @@ test('family extra description block exposes the family storage options', functi
         ->all();
 
     $parsed        = $renderer->getIrisWebBlocks($webpage, $publishedBlocks, true);
-    $storageOption = Arr::get(Arr::first($parsed), 'web_block.layout.data.fieldValue.family.storage_option');
+    $storageOption = Arr::get(Arr::first($parsed), 'structure.family.storage_option');
 
     expect(Arr::get($storageOption, 'storage_temperature'))->toBe('15°C - 25°C')
         ->and(Arr::get($storageOption, 'storage_guidelines'))->toHaveCount(2)
@@ -359,7 +359,7 @@ test('family extra description block exposes the labeling guide download route',
         ->all();
 
     $parsed        = $renderer->getIrisWebBlocks($webpage, $publishedBlocks, true);
-    $labelingGuide = Arr::get(Arr::first($parsed), 'web_block.layout.data.fieldValue.family.labeling_guide');
+    $labelingGuide = Arr::get(Arr::first($parsed), 'structure.family.labeling_guide');
 
     $media = $family->labelingGuide();
 
@@ -393,7 +393,7 @@ test('family extra description block returns a null labeling guide when no file 
         ->all();
 
     $parsed = $renderer->getIrisWebBlocks($webpage, $publishedBlocks, true);
-    $family = Arr::get(Arr::first($parsed), 'web_block.layout.data.fieldValue.family');
+    $family = Arr::get(Arr::first($parsed), 'structure.family');
 
     expect($family)->toHaveKey('labeling_guide')
         ->and(Arr::get($family, 'labeling_guide'))->toBeNull();
@@ -489,7 +489,7 @@ test('product web blocks expose the family extra description layout as the descr
     $webpage = StoreProductWebpage::make()->action($product);
 
     $workshopFieldValue = Arr::get(WorkshopGetWebBlockProduct::run($webpage, ['type' => 'product-3']), 'web_block.layout.data.fieldValue');
-    $irisFieldValue     = Arr::get(IrisGetWebBlockProduct::run($webpage, ['type' => 'product-3']), 'web_block.layout.data.fieldValue');
+    $irisFieldValue     = Arr::get(IrisGetWebBlockProduct::run($webpage, ['type' => 'product-3']), 'structure');
 
     foreach ([$workshopFieldValue, $irisFieldValue] as $fieldValue) {
         expect(Arr::get($fieldValue, 'setting.product_specs'))->toBeTrue()

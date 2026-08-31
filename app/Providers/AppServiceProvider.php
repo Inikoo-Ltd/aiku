@@ -155,6 +155,10 @@ class AppServiceProvider extends ServiceProvider
         Relation::morphMap(
             [
                 // Accounting
+                'TopUp'                            => 'App\Models\Accounting\TopUp',
+                'CreditTransaction'                => 'App\Models\Accounting\CreditTransaction',
+                'MitSavedCard'                     => 'App\Models\Accounting\MitSavedCard',
+                'InvoiceCategory'                  => 'App\Models\Accounting\InvoiceCategory',
                 'Invoice'                          => 'App\Models\Accounting\Invoice',
                 'InvoiceTransaction'               => 'App\Models\Accounting\InvoiceTransaction',
                 'OrgPaymentServiceProvider'        => 'App\Models\Accounting\OrgPaymentServiceProvider',
@@ -190,6 +194,9 @@ class AppServiceProvider extends ServiceProvider
                 'WebUser'                          => 'App\Models\CRM\WebUser',
 
                 // Dispatching
+                'Box'                              => 'App\Models\Dispatching\Box',
+                'ShipperAccount'                   => 'App\Models\Dispatching\ShipperAccount',
+                'Trolley'                          => 'App\Models\Dispatching\Trolley',
                 'DeliveryNote'                     => 'App\Models\Dispatching\DeliveryNote',
                 'DeliveryNoteItem'                 => 'App\Models\Dispatching\DeliveryNoteItem',
                 'PdfLabel'                         => 'App\Models\Dispatching\PdfLabel',
@@ -202,12 +209,15 @@ class AppServiceProvider extends ServiceProvider
                 'ReturnItem'                       => 'App\Models\GoodsIn\ReturnItem',
 
                 // Goods In
+                'StockDeliveryDepositApplication'  => 'App\Models\GoodsIn\StockDeliveryDepositApplication',
+                'OrderReturn'                      => 'App\Models\GoodsIn\OrderReturn',
                 'Sowing'                           => 'App\Models\GoodsIn\Sowing',
                 'StockDelivery'                    => 'App\Models\GoodsIn\StockDelivery',
                 'StockDeliveryItem'                => 'App\Models\GoodsIn\StockDeliveryItem',
                 'ReturnDeliveryNote'               => 'App\Models\GoodsIn\ReturnDeliveryNote',
 
                 // Dropshipping
+                'Bundle'                           => 'App\Models\Dropshipping\Bundle',
                 'CustomerClient'                   => 'App\Models\Dropshipping\CustomerClient',
                 'Portfolio'                        => 'App\Models\Dropshipping\Portfolio',
                 'ShopifyUser'                      => 'App\Models\Dropshipping\ShopifyUser',
@@ -220,6 +230,8 @@ class AppServiceProvider extends ServiceProvider
                 'AllegroUser'                      => 'App\Models\Dropshipping\AllegroUser',
 
                 // Fulfilment
+                'StoredItemAudit'                  => 'App\Models\Fulfilment\StoredItemAudit',
+                'RentalAgreementClause'            => 'App\Models\Fulfilment\RentalAgreementClause',
                 'FulfilmentCustomer'               => 'App\Models\Fulfilment\FulfilmentCustomer',
                 'Pallet'                           => 'App\Models\Fulfilment\Pallet',
                 'PalletDelivery'                   => 'App\Models\Fulfilment\PalletDelivery',
@@ -238,6 +250,7 @@ class AppServiceProvider extends ServiceProvider
                 // Goods
                 'Ingredient'                       => 'App\Models\Goods\Ingredient',
                 'MasterAsset'                      => 'App\Models\Masters\MasterAsset',
+                'MasterVariant'                    => 'App\Models\Masters\MasterVariant',
                 'MasterCollection'                 => 'App\Models\Masters\MasterCollection',
                 'MasterProductCategory'            => 'App\Models\Masters\MasterProductCategory',
                 'MasterShop'                       => 'App\Models\Masters\MasterShop',
@@ -266,6 +279,7 @@ class AppServiceProvider extends ServiceProvider
                 'Media'                            => 'App\Models\Helpers\Media',
 
                 // Human Resources
+                'AttendanceAdjustment'             => 'App\Models\HumanResources\AttendanceAdjustment',
                 'JobPosition'                      => 'App\Models\HumanResources\JobPosition',
                 'Employee'                         => 'App\Models\HumanResources\Employee',
                 'Workplace'                        => 'App\Models\HumanResources\Workplace',
@@ -276,6 +290,8 @@ class AppServiceProvider extends ServiceProvider
                 'Holiday'                          => 'App\Models\HumanResources\Holiday',
 
                 // Inventory
+                'OrgStockAudit'                    => 'App\Models\Inventory\OrgStockAudit',
+                'PickedBay'                        => 'App\Models\Inventory\PickedBay',
                 'Warehouse'                        => 'App\Models\Inventory\Warehouse',
                 'WarehouseArea'                    => 'App\Models\Inventory\WarehouseArea',
                 'Location'                         => 'App\Models\Inventory\Location',
@@ -307,6 +323,9 @@ class AppServiceProvider extends ServiceProvider
                 'TestEmailRecipient'               => 'App\Models\Comms\TestEmailRecipient',
 
                 // Catalogue
+                'Subscription'                     => 'App\Models\Catalogue\Subscription',
+                'Variant'                          => 'App\Models\Catalogue\Variant',
+                'PreferredShipping'                => 'App\Models\Catalogue\PreferredShipping',
                 'Shop'                             => 'App\Models\Catalogue\Shop',
                 'ProductCategory'                  => 'App\Models\Catalogue\ProductCategory',
                 'Asset'                            => 'App\Models\Catalogue\Asset',
@@ -343,6 +362,9 @@ class AppServiceProvider extends ServiceProvider
 
 
                 // Supply Chain
+                'AspoDeposit'                      => 'App\Models\SupplyChain\AspoDeposit',
+                'SupplierUser'                     => 'App\Models\SupplyChain\SupplierUser',
+                'AgentSupplierPurchaseOrder'       => 'App\Models\SupplyChain\AgentSupplierPurchaseOrder',
                 'HistoricSupplierProduct'          => 'App\Models\SupplyChain\HistoricSupplierProduct',
                 'SupplierProductTradeUnit'         => 'App\Models\SupplyChain\SupplierProductTradeUnit',
                 'SupplierProduct'                  => 'App\Models\SupplyChain\SupplierProduct',
@@ -360,6 +382,8 @@ class AppServiceProvider extends ServiceProvider
                 'Role'                             => 'App\Models\SysAdmin\Role',
 
                 // Web
+                'Redirect'                         => 'App\Models\Web\Redirect',
+                'WebLayoutTemplate'                => 'App\Models\Web\WebLayoutTemplate',
                 'Website'                          => 'App\Models\Web\Website',
                 'Webpage'                          => 'App\Models\Web\Webpage',
                 'WebBlock'                         => 'App\Models\Web\WebBlock',
@@ -374,7 +398,7 @@ class AppServiceProvider extends ServiceProvider
                 'Artefact'                         => 'App\Models\Production\Artefact',
 
                 //Reviews
-                'Review'                           => 'App\Models\Catalogue\Review\Review',
+                'Review'                           => 'App\Models\Reviews\Review',
 
             ]
         );

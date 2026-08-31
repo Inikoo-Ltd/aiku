@@ -2950,6 +2950,8 @@ describe('payment method from checkout.com source', function () {
             ->and(Payment::methodLabel('applepay', 'visa'))->toBe('Apple Pay · Visa')
             ->and(Payment::methodLabel('checkout'))->toBe('Checkout.com')
             ->and(Payment::methodLabel('cash_on_delivery'))->toBe('Cash on delivery')
+            ->and(Payment::methodLabel('blik'))->toBe('BLIK')
+            ->and(Payment::methodLabel('swish'))->toBe('Swish')
             ->and(Payment::methodLabel(null))->toBe('');
     });
 });

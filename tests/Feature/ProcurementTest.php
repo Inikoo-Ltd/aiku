@@ -1038,7 +1038,8 @@ test('UI show procurement dashboard', function () {
                 fn (AssertableInertia $page) => $page
                     ->where('title', 'Procurement')
                     ->etc()
-            );
+            )
+            ->has('shoppingLists');
     });
 });
 
@@ -2715,6 +2716,7 @@ describe('partner shopping list', function () {
         $item->refresh();
 
         expect($order->state)->toBe(OrderStateEnum::CREATING)
+            ->and($order->at_gate_at)->not->toBeNull()
             ->and($order->shop_id)->toBe($this->sellerShop->id)
             ->and($order->salesChannel->code)->toBe('intercompany')
             ->and($item->state)->toBe(ShoppingListItemStateEnum::ORDERED)
@@ -2778,6 +2780,64 @@ describe('partner shopping list', function () {
         expect($result['picked'])->toBe(0)
             ->and($result['skipped'])->toHaveCount(1)
             ->and($item->refresh()->state)->toBe(ShoppingListItemStateEnum::OPEN);
+    });
+});
+
+describe('partner browse', function () {
+    test('UI partner browse index requires procurement shop_id', function () {
+        $partner = $this->orgPartner->partner;
+        $originalSettings = $partner->settings;
+        $partner->update(['settings' => Arr::except($originalSettings, 'procurement.shop_id')]);
+
+        $response = $this->get(route('grp.org.procurement.org_partners.show.browse.index', [$this->organisation->slug, $this->orgPartner->id]));
+        $response->assertNotFound();
+
+        $partner->update(['settings' => $originalSettings]);
+    });
+
+    test('UI partner browse index returns catalogue tree when shop_id set', function () {
+        $seller = $this->orgPartner->partner;
+        $sellerShop = $seller->shops()->first();
+        if (!$sellerShop) {
+            $sellerShop = StoreShop::run($seller, Shop::factory()->definition());
+        }
+
+        [, $sellerProduct] = createProduct($sellerShop);
+        createOrgStocks($this->orgPartner->organisation, [$sellerProduct->orgStocks()->first()->stock]);
+
+        $originalSettings = $seller->settings;
+        $settings = $originalSettings;
+        data_set($settings, 'procurement.shop_id', $sellerShop->id);
+        $seller->update(['settings' => $settings]);
+
+        $response = $this->get(route('grp.org.procurement.org_partners.show.browse.index', [$this->organisation->slug, $this->orgPartner->id]));
+
+        $response->assertInertia(function (AssertableInertia $page) {
+            $page
+                ->component('Procurement/PartnerBrowse')
+                ->has('title')
+                ->has('level')
+                ->has('categories')
+                ->has('collections')
+                ->has('miniCart.count')
+                ->has('miniCart.total')
+                ->has('miniCart.items')
+                ->has('miniCart.listRoute');
+        });
+
+        $seller->update(['settings' => $originalSettings]);
+    });
+
+    test('UI partner shopping dashboard renders', function () {
+        $response = $this->get(route('grp.org.procurement.org_partners.show.shopping.dashboard', [$this->organisation->slug, $this->orgPartner->id]));
+
+        $response->assertInertia(function (AssertableInertia $page) {
+            $page
+                ->component('Procurement/PartnerShoppingDashboard')
+                ->has('title')
+                ->has('stats')
+                ->has('recentItems');
+        });
     });
 });
 

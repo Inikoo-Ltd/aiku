@@ -106,6 +106,12 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                         'yesLabel'    => __('Save and reprice')
                     ]
                 ],
+                'upload_as_draft' => [
+                    'type' => 'toggle',
+                    'label' => __('Upload as draft'),
+                    'information' => __('When on, new products are created on eBay unpublished so you can review the price and text before they go live. Publish them from your product list when you are ready.'),
+                    'value' => (bool) Arr::get($customerSalesChannel->settings, 'upload_as_draft')
+                ],
             ];
             $properties = [
                 ...$properties,
