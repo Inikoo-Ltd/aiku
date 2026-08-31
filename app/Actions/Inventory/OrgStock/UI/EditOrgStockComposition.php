@@ -99,6 +99,7 @@ class EditOrgStockComposition extends OrgAction
                     'trade_units' => [
                         'label'      => __('Trade units'),
                         'type'       => 'trade-units-for-stock',
+                        'hasOther'   => ['name' => 'stock_strategy', 'value' => null],
                         'fetchRoute' => [
                             'name' => 'grp.json.master_product_category.all_trade_units',
                         ],
@@ -106,8 +107,9 @@ class EditOrgStockComposition extends OrgAction
                             'id'       => $tradeUnit->id,
                             'code'     => $tradeUnit->code,
                             'name'     => $tradeUnit->name,
-                            'quantity' => $tradeUnit->pivot->quantity,
+                            'quantity' => (float) $tradeUnit->pivot->quantity,
                         ])->values(),
+                        'full'       => true,
 
                         /*
                          * Only this organisation's products: this page changes one
