@@ -3,6 +3,7 @@ title: Make aiku your own
 summary: Your profile is yours to shape - a photo, a nickname, your language and timezone, a colour theme you actually like, and the security that keeps it all safe.
 date: 2026-08-31
 tags: profile, getting-started
+category: profile
 help_routes: grp.profile
 ---
 

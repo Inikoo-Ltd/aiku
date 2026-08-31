@@ -23,12 +23,19 @@ class ShowDocs
         $tag = $request->query('tag');
         $tag = $tags->has($tag) ? $tag : null;
 
-        $filtered = $tag ? $docs->filter(fn (array $doc) => in_array($tag, $doc['tags'], true))->values() : $docs;
+        $category = $request->query('category');
+        $category = $docs->contains(fn (array $doc) => $doc['category'] === $category) ? $category : null;
+
+        $filtered = $docs
+            ->when($tag, fn ($filteredDocs) => $filteredDocs->filter(fn (array $doc) => in_array($tag, $doc['tags'], true)))
+            ->when($category, fn ($filteredDocs) => $filteredDocs->filter(fn (array $doc) => $doc['category'] === $category))
+            ->values();
 
         return view('aiku-public.docs.index', [
             'docs' => $filtered,
             'tags' => $tags,
             'tag' => $tag,
+            'category' => $category,
         ]);
     }
 }

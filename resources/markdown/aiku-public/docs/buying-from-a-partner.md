@@ -3,6 +3,7 @@ title: Buying from a partner
 summary: The buyer's guide - keep the shopping list filled by hand, from the partner's catalogue, or with an auto-fill budget, then receive the goods when they arrive.
 date: 2026-08-31
 tags: procurement, intercompany, shopping-list
+category: procurement
 help_routes: grp.org.procurement.org_partners.show.shopping, grp.org.procurement.org_partners.show.browse, grp.org.procurement.org_partners.show.shopping_list
 series: Ordering from partners
 order: 2

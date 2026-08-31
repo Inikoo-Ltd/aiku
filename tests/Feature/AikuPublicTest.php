@@ -255,12 +255,18 @@ test('docs index and article render with layout nav', function () {
 test('docs index shows the clickable module map', function () {
     get($this->host.'/docs')->assertOk()
         ->assertSee('Map of aiku modules', false)
-        ->assertSee(route('aiku-public.docs.index', ['tag' => 'procurement']), false)
+        ->assertSee(route('aiku-public.docs.index', ['category' => 'procurement']), false)
         ->assertSee('soon', false);
 
-    get($this->host.'/docs?tag=procurement')->assertOk()
+    get($this->host.'/docs?category=procurement')->assertOk()
         ->assertSee('docsmap-mini', false)
-        ->assertDontSee('docsmap"', false);
+        ->assertDontSee('docsmap"', false)
+        ->assertSee('Buying from a partner', false)
+        ->assertDontSee('Setting up a new employee', false);
+
+    get($this->host.'/docs?tag=clocking')->assertOk()
+        ->assertSee('docsmap-mini', false)
+        ->assertSee('Types of clocking machines', false);
 });
 
 test('helpFor matches grp routes to docs by longest prefix', function () {

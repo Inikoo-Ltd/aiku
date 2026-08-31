@@ -71,6 +71,7 @@ class BlogPosts
             'date' => Carbon::parse($meta['date']),
             'tags' => array_map('trim', explode(',', $meta['tags'] ?? '')),
             'help_routes' => array_values(array_filter(array_map('trim', explode(',', $meta['help_routes'] ?? '')))),
+            'category' => $meta['category'] ?? null,
             'series' => $meta['series'] ?? null,
             'series_order' => (int) ($meta['order'] ?? 0),
             'body' => $matches[2],

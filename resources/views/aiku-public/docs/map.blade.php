@@ -1,16 +1,16 @@
 @php
     $regions = [
-        ['label' => 'Shop & Catalogue', 'tags' => ['shop', 'catalogue'], 'color' => '#e88a73', 'size' => 'big', 'pos' => ['lg' => [185, 100], 'md' => [165, 100], 'sm' => [160, 95]]],
-        ['label' => 'CRM & Chat', 'tags' => ['crm', 'chat'], 'color' => '#b58ac2', 'size' => 'small', 'pos' => ['lg' => [490, 85], 'md' => [470, 100], 'sm' => [460, 95]]],
-        ['label' => 'Orders', 'tags' => ['orders'], 'color' => '#f3c04a', 'size' => 'small', 'pos' => ['lg' => [780, 100], 'md' => [775, 100], 'sm' => [160, 245]]],
-        ['label' => 'Procurement & Partners', 'tags' => ['procurement', 'intercompany', 'shopping-list'], 'color' => '#9dcab0', 'size' => 'big', 'pos' => ['lg' => [465, 265], 'md' => [470, 265], 'sm' => [460, 245]]],
-        ['label' => 'Warehouse', 'tags' => ['warehouse'], 'color' => '#76b7c2', 'size' => 'small', 'pos' => ['lg' => [775, 265], 'md' => [775, 265], 'sm' => [160, 395]]],
-        ['label' => 'Dispatch', 'tags' => ['dispatch', 'shippers'], 'color' => '#7f9fd1', 'size' => 'small', 'pos' => ['lg' => [1045, 265], 'md' => [165, 430], 'sm' => [460, 395]]],
-        ['label' => 'Production', 'tags' => ['production'], 'color' => '#c2a878', 'size' => 'small', 'pos' => ['lg' => [160, 265], 'md' => [165, 265], 'sm' => [160, 545]]],
-        ['label' => 'Accounting', 'tags' => ['accounting'], 'color' => '#d1a3b5', 'size' => 'small', 'pos' => ['lg' => [160, 425], 'md' => [470, 430], 'sm' => [460, 545]]],
-        ['label' => 'Human Resources', 'tags' => ['hr', 'clocking'], 'color' => '#a3c17f', 'size' => 'small', 'pos' => ['lg' => [455, 430], 'md' => [775, 430], 'sm' => [160, 695]]],
-        ['label' => 'My Profile', 'tags' => ['profile', 'getting-started'], 'color' => '#8fc1b5', 'size' => 'small', 'pos' => ['lg' => [750, 430], 'md' => [165, 595], 'sm' => [460, 695]]],
-        ['label' => 'Marketing', 'tags' => ['marketing'], 'color' => '#e0b04a', 'size' => 'small', 'pos' => ['lg' => [1045, 425], 'md' => [470, 595], 'sm' => [310, 845]]],
+        ['label' => 'Shop & Catalogue', 'category' => 'shop', 'color' => '#e88a73', 'size' => 'big', 'pos' => ['lg' => [185, 100], 'md' => [165, 100], 'sm' => [160, 95]]],
+        ['label' => 'CRM & Chat', 'category' => 'crm', 'color' => '#b58ac2', 'size' => 'small', 'pos' => ['lg' => [490, 85], 'md' => [470, 100], 'sm' => [460, 95]]],
+        ['label' => 'Orders', 'category' => 'orders', 'color' => '#f3c04a', 'size' => 'small', 'pos' => ['lg' => [780, 100], 'md' => [775, 100], 'sm' => [160, 245]]],
+        ['label' => 'Procurement & Partners', 'category' => 'procurement', 'color' => '#9dcab0', 'size' => 'big', 'pos' => ['lg' => [465, 265], 'md' => [470, 265], 'sm' => [460, 245]]],
+        ['label' => 'Warehouse', 'category' => 'warehouse', 'color' => '#76b7c2', 'size' => 'small', 'pos' => ['lg' => [775, 265], 'md' => [775, 265], 'sm' => [160, 395]]],
+        ['label' => 'Dispatch', 'category' => 'dispatch', 'color' => '#7f9fd1', 'size' => 'small', 'pos' => ['lg' => [1045, 265], 'md' => [165, 430], 'sm' => [460, 395]]],
+        ['label' => 'Production', 'category' => 'production', 'color' => '#c2a878', 'size' => 'small', 'pos' => ['lg' => [160, 265], 'md' => [165, 265], 'sm' => [160, 545]]],
+        ['label' => 'Accounting', 'category' => 'accounting', 'color' => '#d1a3b5', 'size' => 'small', 'pos' => ['lg' => [160, 425], 'md' => [470, 430], 'sm' => [460, 545]]],
+        ['label' => 'HR', 'category' => 'hr', 'color' => '#a3c17f', 'size' => 'small', 'pos' => ['lg' => [455, 430], 'md' => [775, 430], 'sm' => [160, 695]]],
+        ['label' => 'My Profile', 'category' => 'profile', 'color' => '#8fc1b5', 'size' => 'small', 'pos' => ['lg' => [750, 430], 'md' => [165, 595], 'sm' => [460, 695]]],
+        ['label' => 'Marketing', 'category' => 'marketing', 'color' => '#e0b04a', 'size' => 'small', 'pos' => ['lg' => [1045, 425], 'md' => [470, 595], 'sm' => [310, 845]]],
     ];
     $layouts = [
         'lg' => ['viewBox' => '0 0 1200 505', 'maxWidth' => '940px'],
@@ -22,9 +22,9 @@
         'small' => 'M-112 -48 C-54 -68 60 -66 108 -42 C126 -10 124 34 100 52 C34 70 -52 68 -102 46 C-122 16 -122 -22 -112 -48 Z',
     ];
     $allDocs = \App\Actions\UI\AikuPublic\BlogPosts::all('docs');
-    $docCount = fn (array $region) => $allDocs->filter(fn (array $doc) => array_intersect($region['tags'], $doc['tags']))->count();
+    $docCount = fn (array $region) => $allDocs->where('category', $region['category'])->count();
 @endphp
-@if ($tag)
+@if ($tag || $category)
     <style>
         .docsmap-mini { display: flex; flex-wrap: wrap; gap: 14px; margin: 18px 0 6px; font-family: 'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive; }
         .docsmap-mini a { position: relative; display: inline-block; padding: 3px 14px 5px; font-size: 21px; line-height: 1.2; color: #23222e; text-decoration: none; isolation: isolate; }
@@ -38,9 +38,9 @@
         style="--brush:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 38' preserveAspectRatio='none'%3E%3Cpath d='M4%2018%20C48%207%20120%205%20196%208%20C268%2011%20352%204%20428%209%20C436%2013%20438%2024%20430%2029%20C356%2036%20268%2031%20178%2033%20C116%2034%2056%2034%2012%2028%20C4%2026%201%2022%204%2018%20Z' fill='%23000'/%3E%3C/svg%3E&quot;)">
         @foreach ($regions as $region)
             @php $count = $docCount($region); @endphp
-            @php $isCurrent = in_array($tag, $region['tags'], true); @endphp
+            @php $isCurrent = $category === $region['category']; @endphp
             @if ($count > 0)
-                <a href="{{ route('aiku-public.docs.index', ['tag' => collect($region['tags'])->first(fn ($regionTag) => $tags->has($regionTag))]) }}"
+                <a href="{{ route('aiku-public.docs.index', ['category' => $region['category']]) }}"
                     style="--paint:{{ $region['color'] }}"
                     @if ($isCurrent) aria-current="true" @endif
                 >{{ $region['label'] }} <span>{{ $count }}</span></a>
@@ -100,9 +100,8 @@
 
             @foreach ($regions as $region)
                 @php $count = $docCount($region); @endphp
-                @php $firstTag = collect($region['tags'])->first(fn ($regionTag) => $tags->has($regionTag)); @endphp
-                @if ($count > 0)
-                    <a href="{{ route('aiku-public.docs.index', ['tag' => $firstTag]) }}" aria-label="{{ $region['label'] }} — {{ $count }} {{ Str::plural('guide', $count) }}">
+                                @if ($count > 0)
+                    <a href="{{ route('aiku-public.docs.index', ['category' => $region['category']]) }}" aria-label="{{ $region['label'] }} — {{ $count }} {{ Str::plural('guide', $count) }}">
                 @endif
                 <g transform="translate({{ $region['pos'][$layoutKey][0] }} {{ $region['pos'][$layoutKey][1] }})" @class(['dormant' => $count === 0])>
                     <path class="w" d="{{ $blobs[$region['size']] }}" fill="{{ $region['color'] }}" opacity="{{ $count > 0 ? '.34' : '.18' }}"/>

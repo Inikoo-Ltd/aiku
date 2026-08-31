@@ -3,6 +3,7 @@ title: Types of clocking machines
 summary: What each kind of clocking machine is for, how staff actually clock in and out with it, and how to pick the right one for your workplace.
 date: 2026-08-31
 tags: hr, clocking
+category: hr
 help_routes: grp.org.hr.clocking_machines, grp.org.hr.workplaces.show.clocking_machines
 series: Clocking in and out
 order: 1

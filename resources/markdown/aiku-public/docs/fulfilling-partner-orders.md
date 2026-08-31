@@ -3,6 +3,7 @@ title: Fulfilling partner orders
 summary: The seller's guide - cherry-pick what you can ship from partner shopping lists, send it to your warehouse, and let the paperwork follow on its own.
 date: 2026-08-31
 tags: procurement, intercompany, dispatch
+category: procurement
 help_routes: grp.org.procurement.org_partners.shipping_list
 series: Ordering from partners
 order: 3

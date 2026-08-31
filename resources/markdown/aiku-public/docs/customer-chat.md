@@ -3,6 +3,7 @@ title: Talking to customers in Chat
 summary: The live chat desk inside your shop - see visitors writing in from the website, take a conversation, reply with everything you know about the customer at your side, and close it cleanly when it's done.
 date: 2026-08-31
 tags: crm, chat
+category: crm
 help_routes: grp.org.shops.show.chat
 ---
 

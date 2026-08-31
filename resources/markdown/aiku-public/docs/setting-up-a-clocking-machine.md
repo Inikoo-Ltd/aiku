@@ -3,6 +3,7 @@ title: Setting up a clocking machine
 summary: Create a clocking machine in a few clicks, put its kiosk link on a tablet or its QR codes on the wall, and know where every clock-in ends up.
 date: 2026-08-31
 tags: hr, clocking
+category: hr
 help_routes: grp.org.hr.clocking_machines, grp.org.hr.workplaces.show.clocking_machines
 series: Clocking in and out
 order: 2

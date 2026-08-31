@@ -3,6 +3,7 @@ title: Setting up shippers
 summary: Add the carriers your warehouse dispatches with, connect the ones that print their own labels, and teach aiku which shipper to prefer for each destination.
 date: 2026-08-31
 tags: dispatch, shippers
+category: dispatch
 help_routes: grp.org.warehouses.show.dispatching.shippers
 ---
 

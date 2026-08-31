@@ -3,6 +3,7 @@ title: Setting up a new employee
 summary: Add a new starter to aiku — their personal details, employment terms and job positions — and, if they need it, give them their own login in the same form.
 date: 2026-08-31
 tags: hr
+category: hr
 help_routes: grp.org.hr.employees.index, grp.org.hr.employees.create, grp.org.hr.employees.show, grp.org.hr.employees.edit
 ---
 

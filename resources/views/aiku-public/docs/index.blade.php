@@ -1,4 +1,4 @@
-<x-aiku-public.layout :title="($tag ? '#'.$tag.' — ' : '').'Documentation — aiku'" description="How to use aiku, feature by feature: what each part is for, why it works the way it does, and how to run it day to day." :canonical="route('aiku-public.docs.index', array_filter(['tag' => $tag]))">
+<x-aiku-public.layout :title="($category ? ucfirst($category).' — ' : ($tag ? '#'.$tag.' — ' : '')).'Documentation — aiku'" description="How to use aiku, feature by feature: what each part is for, why it works the way it does, and how to run it day to day." :canonical="route('aiku-public.docs.index', array_filter(['tag' => $tag, 'category' => $category]))">
     <div class="wrap">
         <section class="hero" style="padding-bottom:0">
             <div class="eyebrow">Documentation</div>
