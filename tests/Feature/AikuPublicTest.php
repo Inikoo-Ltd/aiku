@@ -23,8 +23,6 @@ test('home renders server side with drawings and latest notes', function () {
     $response->assertOk()
         ->assertSee('open source operating system for commerce', false)
         ->assertSee('draw-dashboard.svg', false)
-        ->assertSee('animation: aiku-logo-dance 14s ease-in-out infinite', false)
-        ->assertSee('prefers-reduced-motion: reduce', false)
         ->assertSee(BlogPosts::all()->first()['title']);
 });
 

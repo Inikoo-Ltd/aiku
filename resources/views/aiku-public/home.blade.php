@@ -11,7 +11,7 @@
     <div class="wrap">
         <section class="hero">
             <div class="eyebrow">Open source software for people who ship things</div>
-            <h1>The open source operating system for commerce.</h1>
+            <h1>The operating system for commerce.</h1>
             <p class="lede">One codebase that runs wholesale, retail, dropshipping, marketplaces, third‑party fulfilment and your own storefronts — across many companies, warehouses, countries and currencies. Built by a team that runs it every day.</p>
             <div class="actions">
                 <a class="btn" href="https://github.com/Inikoo-Ltd/aiku" rel="noopener">Read the source</a>

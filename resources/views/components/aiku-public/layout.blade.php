@@ -184,8 +184,108 @@
         article.post .body aside.wayfinder ul { margin: 0; padding-left: 1.1em; }
         article.post .body aside.wayfinder b { font-weight: 600; }
         article.post .body img { max-width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 8px; }
-        footer.site { margin-top: 96px; padding: 40px 0 64px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 14px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+        footer.site { position: relative; margin-top: 96px; padding: 40px 0 64px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 14px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
         footer.site a { color: var(--muted); margin-right: 20px; }
+        .footer-mascot { --gait-speed: .42s; position: absolute; z-index: 1; top: -45px; left: 0; width: 40px; height: 44px; color: var(--ink); pointer-events: none; opacity: 0; }
+        .footer-mascot svg { display: block; width: 100%; height: 100%; overflow: visible; transform-origin: 50% 88%; }
+        .footer-character { --gait-speed: .42s; }
+        .footer-character [data-limb] { transform-box: fill-box; }
+        .footer-character [data-leg="left"] { transform-origin: 85% 0; animation: aiku-leg-left var(--gait-speed) steps(2, end) infinite; }
+        .footer-character [data-leg="right"] { transform-origin: 15% 0; animation: aiku-leg-right var(--gait-speed) steps(2, end) infinite; }
+        .footer-character [data-arm="left"] { transform-origin: 100% 25%; animation: aiku-arm-left var(--gait-speed) steps(2, end) infinite; }
+        .footer-character [data-arm="right"] { transform-origin: 0 25%; animation: aiku-arm-right var(--gait-speed) steps(2, end) infinite; }
+        .footer-mascot[data-routine="patrol"] { animation: aiku-footer-patrol 18s linear both; }
+        .footer-mascot[data-routine="patrol"] svg { animation: aiku-footer-patrol-stunt 18s ease-in-out both; }
+        .footer-mascot[data-routine="dance"] { left: calc(50% - 20px); --gait-speed: .28s; animation: aiku-footer-appearance 7s ease both; }
+        .footer-mascot[data-routine="dance"] svg { animation: aiku-footer-dance 7s ease-in-out both; }
+        .footer-mascot[data-routine="dash"] { --gait-speed: .2s; animation: aiku-footer-dash 6s cubic-bezier(.3, .05, .65, .95) both; }
+        .footer-mascot[data-routine="dash"] svg { animation: aiku-footer-hop .48s ease-in-out infinite alternate; }
+        @keyframes aiku-leg-left { 0% { transform: rotate(12deg); } 100% { transform: rotate(-16deg) translateY(1px); } }
+        @keyframes aiku-leg-right { 0% { transform: rotate(-16deg) translateY(1px); } 100% { transform: rotate(12deg); } }
+        @keyframes aiku-arm-left { 0% { transform: rotate(-10deg); } 100% { transform: rotate(16deg); } }
+        @keyframes aiku-arm-right { 0% { transform: rotate(16deg); } 100% { transform: rotate(-10deg); } }
+        @keyframes aiku-footer-patrol {
+            0% { left: 0; opacity: 0; transform: scaleX(1); }
+            3% { opacity: 1; }
+            34%, 50% { left: calc(50% - 20px); opacity: 1; transform: scaleX(1); }
+            72%, 76% { left: calc(100% - 40px); opacity: 1; transform: scaleX(1); }
+            79% { left: calc(100% - 40px); opacity: 1; transform: scaleX(-1); }
+            97% { left: 0; opacity: 1; transform: scaleX(-1); }
+            100% { left: 0; opacity: 0; transform: scaleX(-1); }
+        }
+        @keyframes aiku-footer-patrol-stunt {
+            0%, 34%, 49%, 100% { transform: translateY(0) rotate(0) scale(1); }
+            37% { transform: translateY(-4px) rotate(-10deg) scale(1.04); }
+            40% { transform: translateY(0) rotate(10deg) scale(1); }
+            43% { transform: translateY(-12px) rotate(180deg) scale(1.12); }
+            46% { transform: translateY(0) rotate(360deg) scale(1); }
+        }
+        @keyframes aiku-footer-appearance { 0%, 100% { opacity: 0; } 8%, 92% { opacity: 1; } }
+        @keyframes aiku-footer-dance {
+            0%, 8%, 92%, 100% { transform: translateY(0) rotate(0) scale(1); }
+            18% { transform: translateY(-5px) rotate(-12deg) scale(1.05); }
+            28% { transform: translateY(0) rotate(12deg) scale(.96); }
+            42% { transform: translateY(-14px) rotate(180deg) scale(1.14); }
+            56% { transform: translateY(0) rotate(360deg) scale(1); }
+            68% { transform: translateY(-6px) rotate(348deg) scale(1.08); }
+            80% { transform: translateY(0) rotate(372deg) scale(1); }
+        }
+        @keyframes aiku-footer-dash {
+            0% { left: 0; opacity: 0; transform: scaleX(1); }
+            8% { opacity: 1; }
+            48% { left: calc(100% - 40px); opacity: 1; transform: scaleX(1); }
+            55% { left: calc(100% - 40px); transform: scaleX(-1); }
+            92% { left: 0; opacity: 1; transform: scaleX(-1); }
+            100% { left: 0; opacity: 0; transform: scaleX(-1); }
+        }
+        @keyframes aiku-footer-hop { 0% { transform: translateY(0) rotate(-2deg); } 100% { transform: translateY(-4px) rotate(2deg); } }
+        .footer-romance { position: absolute; z-index: 1; top: -45px; left: 0; right: 0; height: 44px; pointer-events: none; color: var(--ink); animation: aiku-romance-scene 16s linear both; }
+        .footer-romance__partner { position: absolute; bottom: 0; width: 40px; height: 44px; }
+        .footer-romance__partner svg, .footer-romance__kid svg { display: block; width: 100%; height: 100%; overflow: visible; }
+        .footer-romance__partner--left { animation: aiku-romance-left 16s ease-in-out both; }
+        .footer-romance__partner--right { animation: aiku-romance-right 16s ease-in-out both; }
+        .footer-romance__heart { position: absolute; left: calc(50% - 7px); top: -8px; color: #e879a0; font-family: var(--serif); font-size: 20px; line-height: 1; animation: aiku-romance-heart 16s ease-out both; }
+        .footer-romance__kid { --gait-speed: .2s; position: absolute; bottom: 0; left: calc(50% - 24px); width: 19px; height: 22px; opacity: 0; animation: aiku-romance-kid 16s ease-in both; }
+        .footer-romance__kid--two { animation-delay: .32s; }
+        .footer-romance__kid--three { animation-delay: .64s; }
+        @keyframes aiku-romance-scene { 0%, 100% { opacity: 0; } 3%, 96% { opacity: 1; } }
+        @keyframes aiku-romance-left {
+            0% { left: -42px; opacity: 0; transform: rotate(0); }
+            5% { opacity: 1; }
+            26% { left: calc(50% - 42px); transform: rotate(0); }
+            32%, 38% { left: calc(50% - 39px); transform: translateX(3px) rotate(9deg); }
+            43% { left: calc(50% - 42px); transform: translateY(-5px) rotate(-5deg); }
+            50%, 72% { left: calc(50% - 42px); transform: translateY(0) rotate(0); }
+            78%, 84% { left: calc(50% - 42px); transform: rotate(-10deg); }
+            92%, 100% { left: calc(50% - 42px); opacity: 0; transform: rotate(0); }
+        }
+        @keyframes aiku-romance-right {
+            0% { left: calc(100% + 2px); opacity: 0; transform: scaleX(-1); }
+            5% { opacity: 1; }
+            26% { left: calc(50% + 2px); transform: scaleX(-1); }
+            32%, 38% { left: calc(50% - 1px); transform: translateX(-3px) rotate(-9deg) scaleX(-1); }
+            44%, 54% { left: calc(50% + 2px); transform: translateY(0) scaleX(-1); }
+            58% { left: calc(50% + 2px); transform: translateY(-5px) rotate(-8deg) scaleX(-1); }
+            63% { left: calc(50% + 2px); transform: translateY(0) rotate(8deg) scaleX(-1); }
+            68% { left: calc(50% + 2px); transform: scaleX(1); }
+            90%, 100% { left: calc(100% + 45px); opacity: 1; transform: scaleX(1); }
+        }
+        @keyframes aiku-romance-heart {
+            0%, 27% { opacity: 0; transform: translateY(8px) scale(.3); }
+            33% { opacity: 1; transform: translateY(0) scale(1.15); }
+            40% { opacity: 0; transform: translateY(-16px) scale(.8); }
+            100% { opacity: 0; }
+        }
+        @keyframes aiku-romance-kid {
+            0%, 44% { left: calc(50% - 24px); opacity: 0; transform: translateY(8px) scale(.2); }
+            49% { opacity: 1; transform: translateY(-5px) scale(.65); }
+            54%, 66% { left: calc(50% - 16px); opacity: 1; transform: translateY(0) scale(.65); }
+            92%, 100% { left: calc(100% + 20px); opacity: 1; transform: translateY(0) scale(.65); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .footer-mascot, .footer-romance { display: none !important; }
+            .footer-mascot, .footer-mascot *, .footer-romance, .footer-romance * { animation: none !important; }
+        }
         @media (max-width: 640px) {
             body { font-size: 16px; }
             header.site { flex-direction: column; align-items: flex-start; gap: 14px; }
@@ -277,6 +377,21 @@
 
 <div class="wrap">
     <footer class="site">
+        <span class="footer-mascot footer-character" data-footer-mascot hidden aria-hidden="true">
+            <x-aiku-public.footer-mascot-svg/>
+        </span>
+        <span class="footer-romance" data-footer-romance hidden aria-hidden="true">
+            <span class="footer-romance__partner footer-romance__partner--left footer-character">
+                <x-aiku-public.footer-mascot-svg/>
+            </span>
+            <span class="footer-romance__partner footer-romance__partner--right footer-character">
+                <x-aiku-public.footer-mascot-svg/>
+            </span>
+            <span class="footer-romance__heart">♥</span>
+            <span class="footer-romance__kid footer-romance__kid--one footer-character"><x-aiku-public.footer-mascot-svg/></span>
+            <span class="footer-romance__kid footer-romance__kid--two footer-character"><x-aiku-public.footer-mascot-svg/></span>
+            <span class="footer-romance__kid footer-romance__kid--three footer-character"><x-aiku-public.footer-mascot-svg/></span>
+        </span>
         <div>
             <a href="https://github.com/Inikoo-Ltd/aiku" rel="noopener"><svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
             <a href="{{ route('aiku-public.blog.index') }}">Engineering notes</a>
@@ -288,6 +403,35 @@
         <div>aiku is open source software (<a href="https://github.com/Inikoo-Ltd/aiku/blob/main/LICENSE" rel="noopener" style="margin:0">AGPL-3.0</a>).</div>
     </footer>
 </div>
+
+<script>
+    (function () {
+        var mascot = document.querySelector('[data-footer-mascot]');
+        if (!mascot || Math.random() >= 0.2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+
+        var romance = document.querySelector('[data-footer-romance]');
+        var routines = ['patrol', 'dance', 'dash', 'romance'];
+        var observer = new IntersectionObserver(function (entries) {
+            if (!entries.some(function (entry) { return entry.isIntersecting; })) return;
+            observer.disconnect();
+            var routine = routines[Math.floor(Math.random() * routines.length)];
+            if (routine === 'romance') {
+                romance.hidden = false;
+            } else {
+                mascot.dataset.routine = routine;
+                mascot.hidden = false;
+            }
+        }, { rootMargin: '120px' });
+
+        mascot.addEventListener('animationend', function (event) {
+            if (event.target === mascot) mascot.hidden = true;
+        });
+        romance.addEventListener('animationend', function (event) {
+            if (event.target === romance) romance.hidden = true;
+        });
+        observer.observe(mascot.closest('footer'));
+    })();
+</script>
 
 @production
     @if ($needsConsent)
