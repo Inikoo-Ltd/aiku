@@ -58,13 +58,13 @@ const label = computed(() => props.ctaLabel || trans("Read more"))
 
 		<div class="flex flex-1 flex-col gap-3 p-5">
 			<h2
-				class="line-clamp-2 !text-base font-semibold leading-snug text-gray-900 transition-colors duration-200 group-hover:text-blue-600">
+				class="line-clamp-2 !text-base font-semibold leading-snug text-gray-900 transition-colors duration-200 group-hover:text-primary-600">
 				{{ post.title }}
 			</h2>
 
 			<span
 				v-if="showCta"
-				class="mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-blue-600">
+				class="mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-primary-600">
 				{{ label }}
 				<span
 					aria-hidden="true"
@@ -76,7 +76,7 @@ const label = computed(() => props.ctaLabel || trans("Read more"))
 
 		<a
 			:href="post.url ? post.url : '#'"
-			class="absolute inset-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
+			class="absolute inset-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2">
 			<span class="sr-only">{{ post.title }}</span>
 		</a>
 	</article>
