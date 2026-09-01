@@ -125,6 +125,8 @@ const getGeolocationErrorMessage = (err?: GeolocationPositionError) => {
 	}
 }
 
+let shiftSchedulesRequest: Promise<void> | null = null
+
 const fetchShiftSchedules = async () => {
 	try {
 		const { data } = await axios.get(route("grp.models.work-schedule.index"))
@@ -135,12 +137,13 @@ const fetchShiftSchedules = async () => {
 }
 
 onMounted(() => {
-	fetchShiftSchedules()
+	shiftSchedulesRequest = fetchShiftSchedules()
 	detectMyLocation()
 })
 
 onBeforeUnmount(() => {
 	stopCamera()
+	cancelSuccessAutoClose()
 })
 
 const detectMyLocation = () => {
@@ -192,6 +195,8 @@ const startCamera = async () => {
 		console.warn("Camera blocked — missing type or location")
 		return
 	}
+
+	await shiftSchedulesRequest
 
 	const hasActiveShifts = shiftSchedules.value.some((s) => s.type === "shift" && s.is_active)
 	if (hasActiveShifts) {
