@@ -8464,6 +8464,8 @@
     "Thank you for your hard work :name!, Well done!": "Thank you for your hard work :name!, Well done!",
     "Thanks": "Thanks",
     "That time has already passed, pick a later one": "That time has already passed, pick a later one",
+    "The AI service has run out of credit, please contact IT Leader to fix the issue.": "The AI service has run out of credit, please contact IT Leader to fix the issue.",
+    "The AI service is not available right now, please contact our IT Support.": "The AI service is not available right now, please contact our IT Support.",
     "The Administrator ask you to reset password": "The Administrator ask you to reset password",
     "The OpenAI service is currently unreachable, please try again later.": "The OpenAI service is currently unreachable, please try again later.",
     "The SKO \":reference\" is :state and cannot be added to a pallet.": "The SKO \":reference\" is :state and cannot be added to a pallet.",

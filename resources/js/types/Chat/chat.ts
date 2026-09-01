@@ -141,6 +141,12 @@ export interface Contact {
 		email: string
 		phone: string
 	} | null
+	metadata?: {
+		name?: string
+		email?: string
+		phone?: string
+		[key: string]: any
+	} | null
 	agent?: {
 		id: string
 		name: string
