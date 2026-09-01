@@ -22,12 +22,14 @@ For the people who <em>place</em> partner orders. You keep one open list of what
 Next to the dashboard, the **Shopping list** tab holds every open line.
 
 - **Add stocks** opens the partner's stock list with their availability, how each item is packed, your own current stock, and how much you have used over the last four quarters. Quantities are in the seller's shipping units (SKOs).
-- Each line tells the stock story at a glance — *their stock*, *our stock*, and when *we run out* — plus the amount at the partner's current price, with the open items' total at the foot of the table.
+- Each line tells the stock story at a glance — *their stock*, *our stock*, and when *we run out* — plus the amount at your buying price, with the open items' total at the foot of the table.
 - Open lines are fully yours: pick the **priority** (low → urgent) straight from the dropdown in the table, or remove the line with its bin button. To change a quantity, use **Browse** — the same item's stepper there edits the open line directly. Once the partner picks a line it locks, and its state tells you where it is.
 
 ## Browsing the partner's catalogue
 
 Next to the shopping list there is a **Browse** tab: the partner's whole catalogue as a shop, with live stock and prices. Move through it by **Departments** or **Collections**, drill down to families, or just type in the search box. Every product card shows the current price, a **Their stock** badge with what the partner has available, and — for items you use — your own numbers: *our stock*, *our sales / quarter* and *we run out in* so many days (red when it's two weeks or less).
+
+Two things about that catalogue are worth knowing. The prices are **yours, not the shelf's**: the seller's list price with your intercompany discount already taken off, converted into your own organisation's currency, so what you read is what the invoice will say. And it includes products the partner has made **exclusive to you** — lines that never appear on their public shop but exist for your organisation. If you cannot find something you expected, that is worth asking about; if you find something you did not expect, it is probably yours by arrangement.
 
 Ordering happens right on the card: the quantity box **is** your shopping list. Type or step a number and the line is added or updated on the open list; set it back to 0 and the line is removed. Next to it, a dashed **suggested** chip shows the quantity aiku would order — one click fills the box with it.
 
