@@ -2972,6 +2972,8 @@ describe('partner shopping list', function () {
         expect($stockDelivery->state)->toBe(StockDeliveryStateEnum::DISPATCHED)
             ->and($stockDelivery->dispatched_at)->not->toBeNull()
             ->and($stockDelivery->items()->first()->state)->toBe(StockDeliveryItemStateEnum::DISPATCHED);
+
+        DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
     });
 
     test('out of stock forecast hydrator fills stats', function () {
@@ -3169,6 +3171,7 @@ describe('partner browse', function () {
         $this->buyerOrgStock = $buyerOrgStock;
 
         $this->buyerOrgStock->update(['quantity_available' => 10, 'health_rank' => null]);
+        PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
         Cache::put("partner-order-capacity:{$this->orgPartner->id}", [
             ['delivers_to_us_per_30d' => 0.01, 'source' => 'sales', 'samples' => 0],
             [
@@ -3762,6 +3765,7 @@ test('agent capacity guard blocks non-exempt adds and lets A-rank or out-of-stoc
         ->toBe($orgStock->id);
 
     $this->supplierProduct->update(['cost' => 10, 'currency_id' => $this->organisation->currency_id]);
+    ShoppingListItem::where('organisation_id', $this->organisation->id)->where('agent_id', $this->orgAgent->agent_id)->forceDelete();
 
     Cache::put("agent-order-capacity:{$this->orgAgent->id}", [
         ['lands_for_us_per_30d' => 5, 'source' => 'sales', 'samples' => 0],
