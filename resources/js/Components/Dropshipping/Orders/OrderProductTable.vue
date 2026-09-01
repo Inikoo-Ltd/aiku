@@ -23,6 +23,9 @@ import { faBan, faPercentage } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Discount from "@/Components/Utils/Label/Discount.vue"
 import { InputNumber, InputText } from "primevue"
+
+const quantityInputWidth = (value: number | string | null | undefined, hasSuffix = false) =>
+    `calc(${Math.max(String(value ?? '').replace(/\.\d+$/, '').length, 3) + (hasSuffix ? 4 : 1)}ch + 1.5rem)`
 import axios from "axios"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
@@ -597,7 +600,7 @@ const isOffersData = (offersData: any): boolean => {
                             :inputStyle="{
                                     width: bindToTarget?.fluid
                                         ? undefined
-                                        : (proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1 ? '90px' : '50px'),
+                                        : quantityInputWidth(item.quantity_ordered, proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1),
                                     textAlign: 'center',
                                 }" 
                             fluid
@@ -699,7 +702,7 @@ const isOffersData = (offersData: any): boolean => {
                                 :inputStyle="{
                                         width: bindToTarget?.fluid
                                             ? undefined
-                                            : (proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1 ? '90px' : '50px'),
+                                            : quantityInputWidth(createNewQty[item.id].amount_modified ?? createNewQty[item.id].quantity_ordered, proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1),
                                         textAlign: 'center',
                                     }" 
                                 fluid
