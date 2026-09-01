@@ -1,7 +1,7 @@
 ---
 title: Reading the partner shopping dashboard
 summary: The screen that tells you what to buy from a partner and how much room you have to buy it - three restraint cards, eight stock-at-risk buckets and the order pipeline.
-date: 2026-08-31
+date: 2026-09-01
 tags: procurement, intercompany, shopping-list, stock
 category: procurement
 help_routes: grp.org.procurement.org_partners.show.shopping
@@ -33,6 +33,8 @@ The block of tiles covers the partner's whole catalogue, split by how long your 
 - **Covered** — fine.
 - **Dead stock** — nothing selling, money sitting on a shelf; the tile shows what it is worth.
 - **We never stocked** — the partner sells it, you have never carried it.
+
+One kind of item never appears here at all: SKOs you have marked **On Demand** in your own inventory. Their stock figure is not tracked, so "out of stock" would be meaningless — the dashboard, the bucket tables and Auto-fill all leave them out.
 
 Each tile answers one question: **how many still need me?** The "*N* need action" count ignores anything already on the list or already on the way, so it drops to nothing as you work. Under it, the same count broken down by **rank** — A products first, D and Z faded at the end. Two out-of-stock A products matter more than five hundred D shrugs, so that is the order you work in.
 

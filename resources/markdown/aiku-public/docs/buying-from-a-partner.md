@@ -1,7 +1,7 @@
 ---
 title: Buying from a partner
 summary: The buyer's guide - start from the shopping dashboard, fill the list by hand, from the partner's catalogue or with auto-fill, and receive the goods when they arrive.
-date: 2026-08-31
+date: 2026-09-01
 tags: procurement, intercompany, shopping-list
 category: procurement
 help_routes: grp.org.procurement.org_partners.show.browse, grp.org.procurement.org_partners.show.shopping_list
@@ -43,6 +43,7 @@ Auto-fill exists so replenishment doesn't depend on someone remembering every it
 - Every proposed line shows its **reason** ("Our sales/quarter ~48 · our stock 0 · we run out now"), the quantity and the cost, so you can see why it is there. Quantities follow the same forecast as the *suggested* chips in Browse.
 - The **instruction box** is optional and takes plain language: *"prioritise essential oils, skip anything we hold over 8 weeks of"*, *"focus on candles, nothing seasonal"*. An AI reads your instruction together with the same usage data and reshapes the proposal accordingly — but its output is checked against reality before you see it: quantities are capped at what the partner actually has, and the total is forced back inside your budget. If the instruction can't be followed, you get the standard proposal instead.
 - **Nothing is added by itself.** The proposal is a set of ticked lines you can untick, re-quantify or regenerate with a different budget or instruction; only **Add items to shopping list** commits anything.
+- **Some items opt out.** A SKO with **Do not auto order** switched on (in the SKO's edit screen, under Stock Data) never appears in a proposal — for items procurement wants to keep under manual control. You can still order it by hand from Browse or the stock list; only the automatic path skips it. SKOs marked **On Demand** are left out of partner shopping entirely.
 
 Auto-fill can also be opened already scoped: **+ fill** on a risk tile on the dashboard opens it for that bucket alone, with the proposal already generated. Same rules — you adjust, untick and confirm; nothing is added by itself.
 
@@ -61,6 +62,7 @@ Once the partner [sends a shipment to their warehouse](/docs/fulfilling-partner-
 <li><b>See what needs buying:</b> your organisation → <b>Procurement → Partners</b> → open the partner → <b>Shopping</b> (the dashboard) → work the risk tiles.</li>
 <li><b>Add to the list:</b> <b>Shopping list</b> → <b>Add stocks</b>, or <b>Browse</b> and set quantities on the product cards, or <b>Auto-fill</b> (or <b>+ fill</b> on a dashboard tile) for a proposal.</li>
 <li><b>Adjust open lines:</b> change the priority or delete lines in the shopping list table; change quantities from the product cards in <b>Browse</b>.</li>
+<li><b>Keep an item out of auto-fill:</b> your organisation → <b>Warehouse → Inventory</b> → open the SKO → <b>Edit SKO</b> → switch on <b>Do not auto order</b>.</li>
 <li><b>Watch and receive the shipment:</b> same partner page → <b>Stock deliveries</b> → when the goods arrive, <b>Receive</b> → check → place into locations.</li>
 </ul>
 </aside>
