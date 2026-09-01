@@ -29,7 +29,7 @@ class TranslationsDown extends Command
 {
     protected $signature = 't:down {--skip-download : Repair and rescan the local files without pulling}';
 
-    protected $description = 'Pull translations from POEditor and repair them (download, strip empties, apply glossary, rescan)';
+    protected $description = 'Pull translations from POEditor and repair them (download, strip empties, apply glossary)';
 
     public function handle(): int
     {
