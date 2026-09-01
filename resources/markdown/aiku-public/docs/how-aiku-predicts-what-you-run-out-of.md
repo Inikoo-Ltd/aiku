@@ -41,6 +41,8 @@ Not every item has the same quality of evidence behind it, and it helps to know 
 
 There is also a seasonal adjustment: aiku compares the same quarter last year against that year's average and nudges the rate up or down, within limits, so a Christmas item is not bought on its August rate. The limits matter — one freak quarter can't run away with the number.
 
+The empty-days rule applies here too, and it has to. Last Christmas is only evidence about Christmas if you had the item to sell; a quarter you spent mostly out of stock says nothing about the season, only about the supply. So each quarter is measured per day the item was actually available, and any quarter you were empty for more than half of is dropped from the comparison entirely. If that leaves fewer than four usable quarters, aiku makes no seasonal adjustment at all rather than a confident one built on four thin ones.
+
 ## Why a number can look wrong (and often is)
 
 The forecast reads history. Anything that happened outside the history, it cannot know.
