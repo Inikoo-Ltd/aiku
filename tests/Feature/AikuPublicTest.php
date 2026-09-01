@@ -288,7 +288,7 @@ test('translated docs are served, linked and kept out of the English listings', 
         ->not->toContain('your-clean-handover-score-zh-hans');
 
     $translations = BlogPosts::translations($english, 'docs');
-    expect($translations->pluck('lang')->all())->toBe(['en', 'id', 'zh-hans'])
+    expect($translations->pluck('lang')->all())->toBe(['en', 'hi', 'id', 'ne', 'zh-hans'])
         ->and($translations->every(fn (array $doc) => $doc['base_slug'] === 'your-clean-handover-score'))->toBeTrue();
 
     get($this->host.'/docs/your-clean-handover-score-id')->assertOk()
@@ -309,4 +309,12 @@ test('a translation older than its English original is flagged as stale', functi
 
     get($this->host.'/docs/your-clean-handover-score-id')->assertOk()
         ->assertDontSee('telah berubah setelah terjemahan ini', false);
+});
+
+test('reading time counts non-latin scripts instead of reporting one minute', function () {
+    $devanagari = BlogPosts::everything('docs')->firstWhere('slug', 'your-clean-handover-score-hi');
+    $chinese = BlogPosts::everything('docs')->firstWhere('slug', 'your-clean-handover-score-zh-hans');
+
+    expect($devanagari['reading_minutes'])->toBeGreaterThan(3)
+        ->and($chinese['reading_minutes'])->toBeGreaterThan(3);
 });

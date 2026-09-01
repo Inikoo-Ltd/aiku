@@ -33,6 +33,16 @@ class BlogPosts
             'notice' => 'Traducido por comodidad. Si algo difiere, la versión en inglés es la que prevalece.',
             'stale'  => 'El original en inglés ha cambiado desde esta traducción. La versión en inglés es la que prevalece.',
         ],
+        'hi' => [
+            'name'   => 'हिन्दी',
+            'notice' => 'सुविधा के लिए अनूदित। किसी भी भिन्नता की स्थिति में अंग्रेज़ी संस्करण ही मान्य है।',
+            'stale'  => 'इस अनुवाद के बाद अंग्रेज़ी मूल में बदलाव हुआ है। अंग्रेज़ी संस्करण ही मान्य है।',
+        ],
+        'ne' => [
+            'name'   => 'नेपाली',
+            'notice' => 'सुविधाका लागि अनुवाद गरिएको। कुनै भिन्नता भएमा अङ्ग्रेजी संस्करण नै मान्य हुनेछ।',
+            'stale'  => 'यस अनुवादपछि अङ्ग्रेजी मूल परिवर्तन भएको छ। अङ्ग्रेजी संस्करण नै मान्य हुनेछ।',
+        ],
         'sk' => [
             'name'   => 'Slovenčina',
             'notice' => 'Preložené pre pohodlie. V prípade rozdielov platí anglická verzia.',
@@ -102,6 +112,22 @@ class BlogPosts
         ] : null;
     }
 
+    /**
+     * str_word_count only sees Latin letters, which reads every Devanagari or Chinese
+     * article as "1 min". Chinese is counted per character, everything else per token.
+     */
+    private static function readingMinutes(string $body): int
+    {
+        $plain = trim(strip_tags($body));
+        $han = preg_match_all('/\p{Han}/u', $plain);
+
+        $minutes = $han > 50
+            ? $han / 400
+            : count(preg_split('/\s+/u', $plain, -1, PREG_SPLIT_NO_EMPTY)) / 220;
+
+        return max(1, (int) round($minutes));
+    }
+
     private static function parse(string $path): array
     {
         $raw = file_get_contents($path);
@@ -130,7 +156,7 @@ class BlogPosts
             'series' => $meta['series'] ?? null,
             'series_order' => (int) ($meta['order'] ?? 0),
             'body' => $matches[2],
-            'reading_minutes' => max(1, (int) round(str_word_count(strip_tags($matches[2])) / 220)),
+            'reading_minutes' => self::readingMinutes($matches[2]),
             'html' => Str::markdown($matches[2]),
         ];
     }
