@@ -11,6 +11,7 @@
 namespace Tests\Feature;
 
 use App\Actions\Production\Artefact\StoreArtefact;
+use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\UpdateArtefact;
 use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
 use App\Actions\Production\ArtefactFamily\UpdateArtefactFamily;
@@ -504,6 +505,13 @@ test('update artefact category and tags', function () {
 
     $family = UpdateArtefactFamily::make()->action($family, ['name' => 'Soap bars']);
     expect($family->name)->toBe('Soap bars');
+
+    $otherFamily = StoreArtefactFamily::make()->action($this->production, ['code' => 'BOMB', 'name' => 'Bath bombs']);
+    $moved = MoveArtefactsToFamily::make()->action($this->production, ['artefacts' => [$artefact->id], 'artefact_family_id' => $otherFamily->id]);
+    expect($moved)->toBe(1)
+        ->and($artefact->refresh()->artefact_family_id)->toBe($otherFamily->id)
+        ->and($family->refresh()->number_artefacts)->toBe(0)
+        ->and($otherFamily->refresh()->number_artefacts)->toBe(1);
 });
 
 test('UI Index artefacts', function () {

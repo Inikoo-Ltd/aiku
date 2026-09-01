@@ -412,6 +412,7 @@ use App\Actions\Production\Artefact\DeleteArtefactComplianceItem;
 use App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact;
 use App\Actions\Production\Artefact\DetachRawMaterialFromRecipeStep;
 use App\Actions\Production\Artefact\ImportArtefact;
+use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Production\Artefact\StoreArtefactComplianceItem;
 use App\Actions\Production\Artefact\UpdateArtefact;
@@ -1256,6 +1257,7 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
     Route::post('artefacts', StoreArtefact::class)->name('artefacts.store');
     Route::patch('artefacts/{artefact:id}', UpdateArtefact::class)->name('artefacts.update');
     Route::post('artefact-families', StoreArtefactFamily::class)->name('artefact_families.store');
+    Route::post('artefacts/move-to-family', MoveArtefactsToFamily::class)->name('artefacts.move_to_family');
     Route::post('artefact-upload', ImportArtefact::class)->name('artefact.import');
 });
 

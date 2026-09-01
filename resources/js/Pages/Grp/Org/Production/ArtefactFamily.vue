@@ -22,6 +22,7 @@ const props = defineProps<{
     tabs: TSTabs
     artefacts?: object
     history?: object
+    move_to_family?: object
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -37,5 +38,5 @@ const component = computed(() => ({
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :moveToFamily="move_to_family" />
 </template>

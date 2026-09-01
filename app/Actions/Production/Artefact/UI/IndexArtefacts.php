@@ -134,6 +134,21 @@ class IndexArtefacts extends OrgAction
             ->withQueryString();
     }
 
+    public function getMoveToFamilyProps(Production $production, bool $canEdit): ?array
+    {
+        if (!$canEdit) {
+            return null;
+        }
+
+        $parameters = [$production->organisation->slug, $production->slug];
+
+        return [
+            'families'    => $production->artefactFamilies()->orderBy('name')->get(['id', 'name'])->map(fn ($family) => ['value' => $family->id, 'label' => $family->name])->all(),
+            'move_route'  => ['name' => 'grp.models.production.artefacts.move_to_family', 'parameters' => [$production->id]],
+            'create_route' => ['name' => 'grp.org.productions.show.crafts.artefact_families.create', 'parameters' => $parameters],
+        ];
+    }
+
     public function getArtefactsSubNavigation(Production $production): array
     {
         $parameters = [$production->organisation->slug, $production->slug];
@@ -262,6 +277,7 @@ class IndexArtefacts extends OrgAction
                         ] : null,
                     ]
                 ],
+                'move_to_family' => $this->parent instanceof Production ? $this->getMoveToFamilyProps($this->parent, $this->canEdit) : null,
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $this->parent instanceof Group ? Arr::except(ArtefactsTabsEnum::navigation(), [ArtefactsTabsEnum::ARTEFACTS_HISTORIES->value]) : ArtefactsTabsEnum::navigation(),
