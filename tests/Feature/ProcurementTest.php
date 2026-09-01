@@ -3312,6 +3312,44 @@ test('on demand buyer org stock excluded from partner shopping', function () {
     expect($outStockIds)->toContain($sellerOrgStock->stock_id);
 });
 
+test('do-not-auto-order buyer org stock excluded from auto-fill but kept in buckets', function () {
+    $seller = $this->orgPartner->partner;
+    $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
+    [, $sellerProduct] = createProduct($sellerShop);
+    $sellerOrgStock = $sellerProduct->orgStocks()->first();
+    $sellerOrgStock->update(['quantity_available' => 50]);
+
+    $buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+    $buyerOrgStock->update(['quantity_available' => 0]);
+    DB::table('delivery_note_items')->where('org_stock_id', $buyerOrgStock->id)->update(['quantity_dispatched' => 0]);
+    $buyerOrgStock->stats()->update(['days_of_cover' => null, 'recommended_order_quantity' => null, 'predicted_daily_usage' => 5.5]);
+
+    PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
+        ->where('state', ShoppingListItemStateEnum::OPEN)
+        ->delete();
+
+    $outStockIds = GetPartnerStockCoverBuckets::make()->stockIdsInBucket($this->orgPartner, 'out');
+    expect($outStockIds)->toContain($sellerOrgStock->stock_id);
+
+    DB::table('org_stocks')->where('id', $sellerOrgStock->id)->update(['quantity_available' => 50]);
+
+    $proposal = SuggestPartnerShoppingList::make()->action($this->orgPartner, 100000);
+    expect(collect($proposal['lines'])->firstWhere('org_stock_id', $sellerOrgStock->id))->not->toBeNull();
+
+    UpdateOrgStock::make()->action($buyerOrgStock, ['is_excluded_from_auto_ordering' => true]);
+    expect($buyerOrgStock->refresh()->is_excluded_from_auto_ordering)->toBeTrue();
+
+    DB::table('org_stocks')->where('id', $sellerOrgStock->id)->update(['quantity_available' => 50]);
+    DB::table('org_stocks')->where('id', $buyerOrgStock->id)->update(['quantity_available' => 0]);
+    $buyerOrgStock->stats()->update(['days_of_cover' => null, 'recommended_order_quantity' => null, 'predicted_daily_usage' => 5.5]);
+
+    $proposal = SuggestPartnerShoppingList::make()->action($this->orgPartner, 100000);
+    expect(collect($proposal['lines'])->firstWhere('org_stock_id', $sellerOrgStock->id))->toBeNull();
+
+    $outStockIds = GetPartnerStockCoverBuckets::make()->stockIdsInBucket($this->orgPartner, 'out');
+    expect($outStockIds)->toContain($sellerOrgStock->stock_id);
+});
+
 test('org partner shopping list stats hydrate', function () {
     $seller = $this->orgPartner->partner;
     $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());

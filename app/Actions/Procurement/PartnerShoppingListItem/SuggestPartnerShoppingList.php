@@ -153,6 +153,7 @@ class SuggestPartnerShoppingList extends OrgAction
             ->whereNull('partner_shopping_list_items.id')
             ->where('org_stocks.quantity_available', '>', 0)
             ->whereRaw('coalesce(buyer_org_stocks.is_on_demand, false) = false')
+            ->whereRaw('coalesce(buyer_org_stocks.is_excluded_from_auto_ordering, false) = false')
             ->select([
                 'org_stocks.id',
                 'org_stocks.stock_id',
