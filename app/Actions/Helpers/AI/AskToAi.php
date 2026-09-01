@@ -2,13 +2,17 @@
 
 namespace App\Actions\Helpers\AI;
 
+use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
 use App\Actions\OrgAction;
 use Illuminate\Support\Facades\Http;
+use App\Exceptions\AICreditException;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class AskToAi extends OrgAction
 {
+    use WithAICreditErrorHandler;
+
     /**
      * Send a prompt to AI and get a string response.
      * Reuses configuration from auto-translations (ChatGPT driver) for consistency.
@@ -32,8 +36,12 @@ class AskToAi extends OrgAction
             }
 
             return $this->sendRequest($apiKey, $model, $prompt);
+        } catch (AICreditException $e) {
+            throw $e;
         } catch (Throwable $e) {
             Log::error("AskToAi Exception: " . $e->getMessage());
+            $this->rethrowAICreditThrowable($e);
+
             return null;
         }
     }
@@ -75,6 +83,8 @@ class AskToAi extends OrgAction
 
         if (!$response->successful()) {
             Log::error("AskToAi API Error: " . $response->body());
+            $this->guardAICreditResponse($response);
+
             return null;
         }
 

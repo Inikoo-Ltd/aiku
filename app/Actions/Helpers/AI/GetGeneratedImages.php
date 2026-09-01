@@ -3,6 +3,7 @@
 namespace App\Actions\Helpers\AI;
 
 use App\Actions\Catalogue\Product\UploadImagesToProduct;
+use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithBase64FileConverter;
@@ -14,11 +15,13 @@ use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use OpenAI;
+use Throwable;
 
 class GetGeneratedImages extends OrgAction
 {
     use WithUploadModelImages;
     use WithBase64FileConverter;
+    use WithAICreditErrorHandler;
 
     public int $jobTries = 3;
     public string $jobQueue = 'long-high-priority';
@@ -46,7 +49,7 @@ class GetGeneratedImages extends OrgAction
                     }
                 }
 
-                $response = Http::baseUrl('https://api.openai.com/v1')
+                $editResponse = Http::baseUrl('https://api.openai.com/v1')
                     ->timeout(150)
                     ->withToken($apiKey)
                     ->post('images/edits', [
@@ -55,7 +58,13 @@ class GetGeneratedImages extends OrgAction
                         'prompt' => $prompt,
                         'n'      => $n,
                         'size'   => $size
-                    ])->json();
+                    ]);
+
+                if (!$editResponse->successful()) {
+                    throw new Exception('ChatGPT images/edits error: '.$editResponse->body());
+                }
+
+                $response = $editResponse->json();
             } else {
                 $response = $client->images()->create([
                     'model'           => 'dall-e-3',
@@ -76,8 +85,12 @@ class GetGeneratedImages extends OrgAction
             ]);
 
             GenerateGptImagesProgressEvent::dispatch($uploadedImages, $model->exclusive_for_customer_id);
-        } catch (Exception) {
-            GenerateGptImagesProgressEvent::dispatch([], $model->exclusive_for_customer_id);
+        } catch (Throwable $e) {
+            GenerateGptImagesProgressEvent::dispatch(
+                [],
+                $model->exclusive_for_customer_id,
+                $this->isAICreditThrowable($e) ? $this->aiCreditErrorMessage('retina') : null
+            );
         }
     }
 
