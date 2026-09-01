@@ -638,7 +638,7 @@ test('update purchase order deposit retrospectively', function ($purchaseOrder) 
         'balance_paid_at' => null,
     ]);
 
-    expect($purchaseOrder->deposit_amount)->toBe('1500.50')
+    expect($purchaseOrder->refresh()->deposit_amount)->toBe('1500.50')
         ->and($purchaseOrder->deposit_paid_at->toDateString())->toBe('2025-01-15')
         ->and($purchaseOrder->balance_paid_at)->toBeNull();
 })->depends('create purchase order independent supplier');
