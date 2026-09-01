@@ -2580,7 +2580,7 @@ test('master asset time series stores no row for periods without activity and dr
     $customer      = createCustomer($this->shop);
     $taxCategoryId = DB::table('tax_categories')->value('id');
     $soldMonth     = now()->subMonth()->startOfMonth();
-    $emptyMonth    = now()->subMonths(2)->startOfMonth();
+    $emptyMonth    = now()->startOfMonth()->subMonths(2);
 
     $transactionId = DB::table('invoice_transactions')->insertGetId([
         'group_id'        => $this->shop->group_id,

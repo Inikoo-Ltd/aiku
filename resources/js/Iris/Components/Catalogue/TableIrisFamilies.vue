@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, inject } from "vue"
 import { Link, usePage } from "@inertiajs/vue3"
 import Table from "../Tables/Table.vue"
 import { routeType } from "@/types/route"
@@ -19,6 +19,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExternalLink } from "@far";
 import { GridProducts } from "@/Components/Product"
 import CatalogueDownloadLink from "./CatalogueDownloadLink.vue"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure.js"
 
 
 
@@ -36,6 +37,10 @@ const props = defineProps<{
 }>()
 
 const page = usePage()
+
+const layout = inject('layout', retinaLayoutStructure)
+
+const isLoggedIn = computed(() => !!layout?.iris?.is_logged_in)
 
 const labelMap: Record<string, string> = {
     department: 'Department',
@@ -153,7 +158,7 @@ const parentInfo = computed(() => {
                     <FontAwesomeIcon :icon="faExternalLink" />
                 </a>
 
-                <div class="flex flex-shrink-0 items-center gap-1">
+                <div v-if="isLoggedIn" class="flex flex-shrink-0 items-center gap-1">
                     <CatalogueDownloadLink scope="family" :slug="item.slug" type="csv" variant="card" />
                     <CatalogueDownloadLink scope="family" :slug="item.slug" type="images" variant="card" />
                 </div>

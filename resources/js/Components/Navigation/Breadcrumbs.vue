@@ -6,12 +6,12 @@
   -->
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
-import { Link, router } from "@inertiajs/vue3"
+import { Link, router, usePage } from "@inertiajs/vue3"
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronRight } from '@far'
-import { faBars,faBallot, faBookmark, faTrashAlt } from '@fal'
+import { faBars,faBallot, faBookmark, faTrashAlt, faQuestionCircle } from '@fal'
 import { faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faBookmark as fasBookmark, faArrowUp } from '@fas'
 import { routeType } from '@/types/route'
 import { Bookmark } from '@/types/Bookmark'
@@ -21,7 +21,9 @@ import axios from 'axios'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import Popover from '@/Components/Popover.vue'
 
-library.add(faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faChevronRight, faBars,faBallot, faBookmark, faTrashAlt, fasBookmark, faArrowUp)
+library.add(faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faChevronRight, faBars,faBallot, faBookmark, faTrashAlt, faQuestionCircle, fasBookmark, faArrowUp)
+
+const help = computed(() => usePage().props.help as { title: string, url: string } | null)
 
 const props = defineProps<{
     breadcrumbs: {
@@ -299,6 +301,15 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
         </Menu>
 
         <div class="h-full flex justify-end items-center pr-2 space-x-2 text-sm md:text-lg text-gray-700 font-semibold">
+            <!-- Button: Help article -->
+            <a v-if="help" :href="help.url" target="_blank" rel="noopener"
+                class="rounded flex items-center justify-center w-12 xl:w-8 h-full opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
+                v-tooltip="trans('Guide') + ': ' + help.title"
+                :aria-label="trans('Guide') + ': ' + help.title"
+            >
+                <FontAwesomeIcon icon="fal fa-question-circle" aria-hidden="true" />
+            </a>
+
             <!-- Button: Bookmark -->
             <div v-if="isBookmarkAvailable" class="relative flex justify-center items-center w-12 xl:w-8 h-full">
                 <Popover class="w-full h-full" position="right-0" width="w-64">

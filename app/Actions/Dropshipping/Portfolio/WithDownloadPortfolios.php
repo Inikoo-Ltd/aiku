@@ -114,6 +114,8 @@ trait WithDownloadPortfolios
             return $content;
         }
 
+        app()->terminating(fn () => is_file($tempFile) && @unlink($tempFile));
+
         return response()->download($tempFile, $filename, [
             'Content-Type'  => 'text/csv',
             'Cache-Control' => 'max-age=0',

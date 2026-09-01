@@ -2495,8 +2495,8 @@ test('a single day customer redo keeps the whole period totals in the organisati
 
 test('customer time series merges grouped metrics with invoice periods and metric-only periods', function () {
     $customer       = StoreCustomer::make()->action($this->shop, \App\Models\CRM\Customer::factory()->definition());
-    $invoiceMonth   = now()->subMonths(2)->startOfMonth();
-    $basketMonth    = now()->subMonth()->startOfMonth();
+    $invoiceMonth   = now()->startOfMonth()->subMonths(2);
+    $basketMonth    = now()->startOfMonth()->subMonth();
     $insertInvoice  = function ($date, $amount) use ($customer) {
         DB::table('invoices')->insert([
             'group_id'        => $this->shop->group_id,

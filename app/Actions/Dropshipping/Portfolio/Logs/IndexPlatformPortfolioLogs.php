@@ -8,31 +8,17 @@
 
 namespace App\Actions\Dropshipping\Portfolio\Logs;
 
-use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
-use App\Actions\Dropshipping\CustomerSalesChannel\UI\WithCustomerSalesChannelSubNavigation;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
-use App\Http\Resources\Dropshipping\PlatformPortfolioLogsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\PlatformPortfolioLogs;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Inertia\Inertia;
-use Inertia\Response;
-use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPlatformPortfolioLogs extends OrgAction
 {
-    use WithCustomerSalesChannelSubNavigation;
-    use WithCRMAuthorisation;
-
-    private CustomerSalesChannel $customerSalesChannel;
-
     public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -69,38 +55,8 @@ class IndexPlatformPortfolioLogs extends OrgAction
             ->defaultSort('-platform_portfolio_logs.created_at')
             ->allowedSorts(['created_at', 'type', 'status', 'item_code'])
             ->allowedFilters([$globalSearch, 'created_at', 'type', 'status', 'item_code'])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
-    }
-
-    public function htmlResponse(LengthAwarePaginator $platformPortfolioLogs, ActionRequest $request): Response
-    {
-        return Inertia::render(
-            'Org/Dropshipping/PlatformPortfolioLogs',
-            [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $this->customerSalesChannel,
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
-                'title'       => __('Platform Portfolio Logs'),
-                'pageHead'    => [
-                    ...$this->getCustomerSalesChannelSubNavigationHead(
-                        $this->customerSalesChannel,
-                        __('Platform Portfolio Logs'),
-                        [
-                            'icon'  => ['fal', 'fa-clipboard-list'],
-                            'title' => __('Platform Portfolio Logs')
-                        ]
-                    )
-                ],
-                'data'                   => PlatformPortfolioLogsResource::collection($platformPortfolioLogs),
-                'customer'               => $this->customerSalesChannel->customer,
-                'platform'               => $this->customerSalesChannel->platform,
-                'customerSalesChannel'   => $this->customerSalesChannel,
-                'customerSalesChannelId' => $this->customerSalesChannel->id,
-            ]
-        )->table($this->tableStructure());
     }
 
     public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
@@ -123,31 +79,4 @@ class IndexPlatformPortfolioLogs extends OrgAction
         };
     }
 
-    public function asController(Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->customerSalesChannel = $customerSalesChannel;
-        $this->initialisationFromShop($shop, $request);
-
-        return $this->handle($customerSalesChannel);
-    }
-
-    public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, string $routeName, array $routeParameters): array
-    {
-        return array_merge(
-            ShowCustomerSalesChannel::make()->getBreadcrumbs($customerSalesChannel, $routeName, $routeParameters),
-            [
-                [
-                    'type'   => 'simple',
-                    'simple' => [
-                        'route' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.platform_portfolio_logs.index',
-                            'parameters' => $routeParameters,
-                        ],
-                        'label' => __('Platform Portfolio Logs'),
-                        'icon'  => 'fal fa-clipboard-list',
-                    ],
-                ]
-            ]
-        );
-    }
 }

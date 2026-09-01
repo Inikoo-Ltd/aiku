@@ -148,9 +148,10 @@ class MoveOrgStockToOtherLocation extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(LocationOrgStock $currentLocationStock, LocationOrgStock $targetLocationOrgStock, array $modelData): LocationOrgStock
+    public function action(LocationOrgStock $currentLocationStock, LocationOrgStock $targetLocationOrgStock, array $modelData, User|null $user = null): LocationOrgStock
     {
         $this->asAction = true;
+        $this->user = $user;
         $this->sourceLocationOrgStock = $currentLocationStock;
         $this->targetLocationOrgStock = $targetLocationOrgStock;
         $this->initialisation($currentLocationStock->organisation, $modelData);

@@ -9,10 +9,14 @@
 namespace App\Actions\Procurement\OrgPartner\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
+use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -30,25 +34,85 @@ class ShowPartnerShoppingDashboard extends OrgAction
 
     private OrgPartner $orgPartner;
 
-    private function pricePerSkoSubQuery(): string
+    /**
+     * Purchase orders the partner still owes us, worst delay first.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function latePurchaseOrders(OrgPartner $orgPartner): array
     {
-        return "(select pr.price / nullif(phos.quantity, 0)
-            from product_has_org_stocks phos
-            join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."'
-            join org_stocks sos on sos.id = phos.org_stock_id
-            where sos.stock_id = partner_shopping_list_items.stock_id
-                and sos.organisation_id = partner_shopping_list_items.partner_organisation_id
-            limit 1)";
+        return DB::table('purchase_orders')
+            ->where('parent_type', 'OrgPartner')
+            ->where('parent_id', $orgPartner->id)
+            ->whereIn('state', [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value])
+            ->whereNotIn('delivery_state', [
+                PurchaseOrderDeliveryStateEnum::RECEIVED->value,
+                PurchaseOrderDeliveryStateEnum::CHECKED->value,
+                PurchaseOrderDeliveryStateEnum::PLACED->value,
+                PurchaseOrderDeliveryStateEnum::CANCELLED->value,
+                PurchaseOrderDeliveryStateEnum::NOT_RECEIVED->value,
+            ])
+            ->whereNull('deleted_at')
+            ->selectRaw("id, slug, reference, state, delivery_state, estimated_received_at, submitted_at,
+                extract(day from now() - coalesce(estimated_received_at, submitted_at))::int as days_late,
+                estimated_received_at is null as no_eta")
+            ->whereRaw('coalesce(estimated_received_at, submitted_at) < now()')
+            ->orderByRaw('coalesce(estimated_received_at, submitted_at)')
+            ->limit(20)
+            ->get()
+            ->map(fn ($purchaseOrder) => [
+                'id'         => $purchaseOrder->id,
+                'slug'       => $purchaseOrder->slug,
+                'reference'  => $purchaseOrder->reference,
+                'state'      => $purchaseOrder->state,
+                'days_late'  => (int) $purchaseOrder->days_late,
+                'no_eta'     => (bool) $purchaseOrder->no_eta,
+            ])
+            ->all();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function openStockDeliveries(OrgPartner $orgPartner): array
+    {
+        return DB::table('stock_deliveries')
+            ->where('organisation_id', $orgPartner->organisation_id)
+            ->where('partner_id', $orgPartner->partner_id)
+            ->whereIn('state', [
+                StockDeliveryStateEnum::IN_PROCESS->value,
+                StockDeliveryStateEnum::CONFIRMED->value,
+                StockDeliveryStateEnum::READY_TO_SHIP->value,
+                StockDeliveryStateEnum::DISPATCHED->value,
+                StockDeliveryStateEnum::RECEIVED->value,
+                StockDeliveryStateEnum::CHECKED->value,
+                StockDeliveryStateEnum::BOOKING_IN->value,
+            ])
+            ->whereNull('deleted_at')
+            ->selectRaw("id, slug, reference, state, dispatched_at, number_stock_delivery_items_except_cancelled as items,
+                extract(day from now() - dispatched_at)::int as days_in_transit,
+                coalesce(date, created_at) as reference_date,
+                extract(day from now() - coalesce(date, created_at))::int as days_old")
+            ->orderByRaw('coalesce(date, created_at)')
+            ->limit(30)
+            ->get()
+            ->map(fn ($stockDelivery) => [
+                'id'              => $stockDelivery->id,
+                'slug'            => $stockDelivery->slug,
+                'reference'       => $stockDelivery->reference,
+                'state'           => $stockDelivery->state,
+                'items'           => (int) $stockDelivery->items,
+                'days_in_transit' => $stockDelivery->dispatched_at !== null ? (int) $stockDelivery->days_in_transit : null,
+                'date'            => $stockDelivery->reference_date,
+                'days_old'        => (int) $stockDelivery->days_old,
+            ])
+            ->all();
     }
 
     public function handle(OrgPartner $orgPartner): array
     {
-        $estimatedTotal = (float) DB::table('partner_shopping_list_items')
-            ->where('org_partner_id', $orgPartner->id)
-            ->where('state', ShoppingListItemStateEnum::OPEN->value)
-            ->whereNull('deleted_at')
-            ->selectRaw('coalesce(sum(quantity * coalesce('.$this->pricePerSkoSubQuery().', 0)), 0) as total')
-            ->value('total');
+        $orderCapacity  = GetPartnerOrderCapacity::run($orgPartner);
+        $estimatedTotal = $orderCapacity['list']['value'];
 
         $priorityBreakdown = PartnerShoppingListItem::query()
             ->where('org_partner_id', $orgPartner->id)
@@ -57,32 +121,24 @@ class ShowPartnerShoppingDashboard extends OrgAction
             ->groupBy('priority')
             ->pluck('total', 'priority');
 
-        $recentItems = PartnerShoppingListItem::query()
-            ->leftJoin('org_stocks', 'org_stocks.id', 'partner_shopping_list_items.org_stock_id')
-            ->leftJoin('users', 'users.id', 'partner_shopping_list_items.added_by_user_id')
-            ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
-            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN->value)
-            ->select([
-                'partner_shopping_list_items.id',
-                'partner_shopping_list_items.quantity',
-                'partner_shopping_list_items.created_at',
-                'org_stocks.code as org_stock_code',
-                'org_stocks.name as org_stock_name',
-                'users.contact_name as added_by_name',
-            ])
-            ->orderByDesc('partner_shopping_list_items.created_at')
-            ->limit(5)
-            ->get();
 
         return [
+            'cover'              => GetPartnerStockCoverBuckets::run($orgPartner),
+            'order_capacity'     => $orderCapacity,
+            'late_purchase_orders' => $this->latePurchaseOrders($orgPartner),
+            'open_stock_deliveries' => $this->openStockDeliveries($orgPartner),
             'open_items_count'   => $orgPartner->stats->number_open_shopping_list_items,
+            'oldest_item_at'     => DB::table('partner_shopping_list_items')
+                ->where('org_partner_id', $orgPartner->id)
+                ->where('state', ShoppingListItemStateEnum::OPEN->value)
+                ->whereNull('deleted_at')
+                ->min('created_at'),
             'estimated_total'    => $estimatedTotal,
             'priority_breakdown' => collect(ShoppingListItemPriorityEnum::cases())->map(fn ($priority) => [
                 'priority' => $priority->value,
                 'label'    => ShoppingListItemPriorityEnum::labels()[$priority->value],
                 'count'    => $priorityBreakdown[$priority->value] ?? 0,
             ])->values(),
-            'recent_items'       => $recentItems,
         ];
     }
 
@@ -113,6 +169,7 @@ class ShowPartnerShoppingDashboard extends OrgAction
                 'orgPartner'  => [
                     'id'       => $this->orgPartner->id,
                     'slug'     => $this->orgPartner->partner->slug,
+                    'name'     => $this->orgPartner->partner->name,
                     'currency' => $this->orgPartner->partner->currency->code,
                 ],
                 'browseRoute' => [
@@ -126,10 +183,24 @@ class ShowPartnerShoppingDashboard extends OrgAction
                 'canBrowse'         => (bool) Arr::get($this->orgPartner->partner->settings, 'procurement.shop_id'),
                 'stats'             => [
                     'open_items_count'   => $data['open_items_count'],
+                    'oldest_item_at'     => $data['oldest_item_at'],
                     'estimated_total'    => $data['estimated_total'],
                     'priority_breakdown' => $data['priority_breakdown'],
                 ],
-                'recentItems'       => $data['recent_items'],
+                'coverBuckets'      => $data['cover']['buckets'],
+                'coverTotal'        => $data['cover']['total'],
+                'leadTime'          => $data['cover']['lead_time'],
+                'orderCapacity'     => $data['order_capacity'],
+                'leadTimeRoute'     => [
+                    'name'       => 'grp.org.procurement.org_partners.show.shopping.lead_time.update',
+                    'parameters' => [$this->orgPartner->organisation->slug, $this->orgPartner->id],
+                ],
+                'latePurchaseOrders' => $data['late_purchase_orders'],
+                'openStockDeliveries' => $data['open_stock_deliveries'],
+                'stockDeliveriesRoute' => [
+                    'name'       => 'grp.org.procurement.org_partners.show.stock-deliveries.index',
+                    'parameters' => [$this->orgPartner->organisation->slug, $this->orgPartner->id],
+                ],
             ]
         );
     }

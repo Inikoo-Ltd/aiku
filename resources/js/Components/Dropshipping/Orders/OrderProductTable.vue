@@ -277,17 +277,29 @@ defineExpose({
 
 })
 
-const updateQuantityOrdered = (item: ProductRow) => {
-    if (item.quantity_ordered == createNewQty[item.id].quantity_ordered) {
+const updateQuantityOrdered = (item: ProductRow, is_cut_view: boolean) => {
+    let valueToCompare = is_cut_view ? (
+            (item.quantity_ordered_fractional[0] * item.quantity_ordered_fractional[1][1]) + item.quantity_ordered_fractional[1][0]
+        ) : item.quantity_ordered;
+
+    let sentData = {
+        quantity_ordered: item.amount_modified
+    }
+    
+    if (is_cut_view) {
+        sentData = {
+            units_ordered: item.amount_modified
+        }
+    }
+
+    if (valueToCompare == item.amount_modified) {
         editingIds.value.delete(item.id)
         return
     }
 
     router.patch(route('grp.models.transaction.update_quantity_ordered', {
         transaction: item.id
-    }), {
-        quantity_ordered: createNewQty[item.id].quantity_ordered
-    }, {
+    }), sentData, {
         preserveScroll: true,
         onStart: () => (loadingsaveModify.value = true),
         onFinish: () => (loadingsaveModify.value = false),
@@ -570,11 +582,12 @@ const isOffersData = (offersData: any): boolean => {
                                 (item.quantity_ordered_fractional[0] * item.quantity_ordered_fractional[1][1]) + item.quantity_ordered_fractional[1][0]
                             ) : item.quantity_ordered" 
                             @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e, proxyItem.is_cut_view)"
+                            :disabled="loadingsaveModify"
                             inputId="horizontal-buttons" 
                             showButtons 
                             buttonLayout="horizontal"
                             :step="1" 
-                            min='0',
+                            min='0'
                             :max="item.model_type !== 'Product' ? undefined : (proxyItem.is_cut_view ? (item.available_quantity * Number(item.quantity_ordered_fractional[1][1])) : item.available_quantity)"
                             v-bind="bindToTarget" 
                             :suffix="proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1
@@ -664,8 +677,62 @@ const isOffersData = (offersData: any): boolean => {
                         <span class="text-gray-500 italic text-sm">
                             original: {{ formatQuantity(item.quantity_ordered) }}
                         </span>
-                        <NumberWithButtonSave v-model="createNewQty[item.id].quantity_ordered"
-                                              :bindToTarget="{ min: 0 }" noUndoButton noSaveButton class="w-24" />
+                        <div class="w-fit flex gap-x-2">
+                            <InputNumber 
+                                :model-value="proxyItem.is_cut_view ? (
+                                    (createNewQty[item.id].quantity_ordered_fractional[0] * createNewQty[item.id].quantity_ordered_fractional[1][1]) + createNewQty[item.id].quantity_ordered_fractional[1][0]
+                                ) : createNewQty[item.id].quantity_ordered"
+                                @update:modelValue="(e: number) => {
+                                    createNewQty[item.id].amount_modified = e; console.log(createNewQty[item.id])
+                                }"
+                                inputId="horizontal-buttons" 
+                                showButtons 
+                                buttonLayout="horizontal"
+                                :step="1" 
+                                min='0'
+                                :max="item.model_type !== 'Product' ? undefined : (proxyItem.is_cut_view ? (item.available_quantity * Number(item.quantity_ordered_fractional[1][1])) : item.available_quantity)"
+                                v-bind="bindToTarget" 
+                                :suffix="proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1
+                                    ? `/${Number(item.quantity_ordered_fractional[1][1])}`
+                                    : undefined
+                                    " 
+                                :inputStyle="{
+                                        width: bindToTarget?.fluid
+                                            ? undefined
+                                            : (proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1 ? '90px' : '50px'),
+                                        textAlign: 'center',
+                                    }" 
+                                fluid
+                                :key="proxyItem.is_cut_view + item.id"
+                            >
+                                <template #incrementbuttonicon>
+                                    <FontAwesomeIcon :icon="faPlus" />
+                                </template>
+    
+                                <template #decrementbuttonicon>
+                                      <FontAwesomeIcon :icon="faMinus" />
+                                </template>
+                            </InputNumber>
+    
+                            <!-- Toggle: is_cut_view -->
+                            <span
+                                xv-if="layout.app.environment == 'local'"
+                                v-if="Number(item.product_units) !== 1"
+                                @click="() => {
+                                    if (loadingsaveModify) return; 
+                                    onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)
+                                    createNewQty[item.id].amount_modified = !proxyItem.is_cut_view ? (
+                                        (item.quantity_ordered_fractional[0] * item.quantity_ordered_fractional[1][1]) + item.quantity_ordered_fractional[1][0]
+                                    ) : item.quantity_ordered
+                                }"
+                                v-tooltip="ctrans('Cut view')"
+                                class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"
+                                :class="proxyItem.is_cut_view ? 'text-orange-500' : ''"
+                            >
+                                <LoadingIcon v-if="proxyItem.is_transaction_loading" class="text-gray-700" />
+                                <FontAwesomeIcon v-else icon="fas fa-fragile" class="" fixed-width aria-hidden="true" />
+                            </span>
+                        </div>
                     </div>
                 </div>
             </template>
@@ -803,7 +870,7 @@ const isOffersData = (offersData: any): boolean => {
                             size="sm"
                             aria-label="Save changes"
                             :loading="loadingsaveModify"
-                            @click="updateQuantityOrdered(item)"
+                            @click="updateQuantityOrdered(createNewQty[item.id], item.is_cut_view)"
                         />
                         <Button v-if="typeof item.id === 'string' && item.id.startsWith('new')" type="negative"
                                 v-tooltip="'delete'" :icon="faTrashAlt" @click="() => onDeleteNewRow(item.rowIndex)"

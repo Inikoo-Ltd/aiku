@@ -9,10 +9,13 @@
 namespace App\Actions\Procurement\ShoppingListItem\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
+use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
+use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\ShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -26,6 +29,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexShoppingListItems extends OrgAction
 {
     use WithProcurementAuthorisation;
+    use WithOrgSupplierSubNavigation;
+
+    private ?OrgSupplier $orgSupplier = null;
 
     public function handle(array $modelData = []): LengthAwarePaginator
     {
@@ -43,6 +49,12 @@ class IndexShoppingListItems extends OrgAction
             ->leftJoin('agents', 'agents.id', 'shopping_list_items.agent_id')
             ->leftJoin('users', 'users.id', 'shopping_list_items.added_by_user_id')
             ->where('shopping_list_items.organisation_id', $this->organisation->id);
+
+        if ($this->orgSupplier) {
+            $queryBuilder
+                ->join('org_supplier_products', 'org_supplier_products.id', 'shopping_list_items.org_supplier_product_id')
+                ->where('org_supplier_products.org_supplier_id', $this->orgSupplier->id);
+        }
 
         return $queryBuilder
             ->select([
@@ -97,8 +109,38 @@ class IndexShoppingListItems extends OrgAction
         return $this->handle();
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrgSupplier(Organisation $organisation, OrgSupplier $orgSupplier, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->orgSupplier = $orgSupplier;
+        $this->initialisation($organisation, $request);
+
+        return $this->handle();
+    }
+
     public function htmlResponse(LengthAwarePaginator $shoppingListItems, ActionRequest $request): Response
     {
+        if ($this->orgSupplier) {
+            return Inertia::render(
+                'Procurement/ShoppingListItems',
+                [
+                    'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                    'title'       => __('Shopping list'),
+                    'pageHead'    => [
+                        'icon'          => [
+                            'icon'  => ['fal', 'fa-list'],
+                            'title' => __('Shopping list'),
+                        ],
+                        'model'         => $this->orgSupplier->supplier->name,
+                        'title'         => __('Shopping list'),
+                        'subNavigation' => $this->getOrgSupplierNavigation($this->orgSupplier),
+                    ],
+                    'dismiss_proposed_count' => 0,
+                    'data'                   => $shoppingListItems,
+                ]
+            )->table($this->tableStructure());
+        }
+
         return Inertia::render(
             'Procurement/ShoppingListItems',
             [
@@ -121,6 +163,25 @@ class IndexShoppingListItems extends OrgAction
 
     public function getBreadcrumbs(array $routeParameters): array
     {
+        if ($this->orgSupplier) {
+            return array_merge(
+                ShowOrgSupplier::make()->getBreadcrumbs('grp.org.procurement.org_suppliers.show', $routeParameters),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'grp.org.procurement.org_suppliers.show.shopping_list.index',
+                                'parameters' => $routeParameters,
+                            ],
+                            'label' => __('Shopping list'),
+                            'icon'  => 'fal fa-list',
+                        ],
+                    ],
+                ]
+            );
+        }
+
         return array_merge(
             ShowProcurementDashboard::make()->getBreadcrumbs($routeParameters),
             [

@@ -73,6 +73,8 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
         ]);
 
         if ($orgStock->wasChanged('quantity_available')) {
+            OrgStockHydrateOutOfStockForecast::dispatch($orgStock)->delay(30);
+
             if ($quantityAvailable > $oldQuantityAvailable && $orgStock->organisation->hasFulfilmentGate()) {
                 ReleaseCoverableOrdersAtGate::dispatch($orgStock->organisation_id)->delay(5);
             }

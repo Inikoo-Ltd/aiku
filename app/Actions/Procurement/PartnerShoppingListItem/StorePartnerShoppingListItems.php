@@ -15,6 +15,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class StorePartnerShoppingListItems extends OrgAction
 {
@@ -30,25 +31,33 @@ class StorePartnerShoppingListItems extends OrgAction
     /**
      * @param array<int, array{org_stock_id: int, quantity: float, notes?: string}> $lines
      *
-     * @return array{created: int}
+     * @return array{created: int, skipped: array<int, array{org_stock_id: int, reason: string}>}
      */
     public function handle(OrgPartner $orgPartner, array $lines): array
     {
         $created = 0;
+        $skipped = [];
         foreach ($lines as $line) {
             $orgStock = OrgStock::find($line['org_stock_id']);
             if (!$orgStock) {
                 continue;
             }
 
-            StorePartnerShoppingListItem::make()->action($orgPartner, $orgStock, [
-                'quantity' => $line['quantity'],
-                'notes'    => $line['notes'] ?? null,
-            ]);
-            $created++;
+            try {
+                StorePartnerShoppingListItem::make()->action($orgPartner, $orgStock, [
+                    'quantity' => $line['quantity'],
+                    'notes'    => $line['notes'] ?? null,
+                ]);
+                $created++;
+            } catch (HttpException $exception) {
+                $skipped[] = [
+                    'org_stock_id' => $orgStock->id,
+                    'reason'       => $exception->getMessage(),
+                ];
+            }
         }
 
-        return ['created' => $created];
+        return ['created' => $created, 'skipped' => $skipped];
     }
 
     public function rules(): array

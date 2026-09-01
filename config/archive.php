@@ -42,10 +42,11 @@ return [
     'stock_history_retention_months' => (int) env('STOCK_HISTORY_RETENTION_MONTHS', 36),
 
     /*
-     * The nightly stock history downsample stays off until the first pass over the historic
-     * backlog has been run by hand: the same command serves both, and one new day a night is a
-     * two minute tick while nineteen years of backlog is hours of unattended deletes against
-     * production. Turned on with an environment variable rather than a deploy once that is done.
+     * The nightly stock history downsample. The historic backlog, 5,804 days back to March 2007,
+     * was archived by hand on 31 Aug 2026; what is left is one new day a night, a two minute tick.
+     * Bounded to five days a run so a missed night catches up and a bad one cannot touch more.
+     * Still gated on the environment variable, so an environment that has not had its backlog
+     * archived does not start eating it unattended.
      */
     'stock_history_nightly' => (bool) env('STOCK_HISTORY_NIGHTLY_ARCHIVE', false),
 

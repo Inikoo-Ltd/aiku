@@ -305,7 +305,7 @@ class IndexIrisCatalogue extends IrisAction
 
             $table->column(key: 'public_url', label: __('Webpage'), align: 'center');
 
-            if (in_array($scope, ['family', 'product'])) {
+            if (in_array($scope, ['family', 'product']) && request()->user()) {
                 $table->column(key: 'download_csv', label: __('CSV'), align: 'center');
                 $table->column(key: 'download_images', label: __('Images'), align: 'center');
             }

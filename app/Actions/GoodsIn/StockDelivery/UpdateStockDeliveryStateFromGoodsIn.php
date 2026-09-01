@@ -3,10 +3,15 @@
 namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLeadTime;
+use App\Actions\SupplyChain\SupplierProduct\Hydrators\SupplierProductHydrateLeadTime;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\Inventory\OrgStock;
+use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateStockDeliveryStateFromGoodsIn
@@ -64,9 +69,34 @@ class UpdateStockDeliveryStateFromGoodsIn
 
         UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery);
 
+        if ($newState === StockDeliveryStateEnum::BOOKED_IN) {
+            $this->dispatchLeadTimeHydrators($stockDelivery);
+        }
+
         $this->runStockDeliveryHydrators($stockDelivery);
 
         return $stockDelivery;
+    }
+
+    private function dispatchLeadTimeHydrators(StockDelivery $stockDelivery): void
+    {
+        $transactions = DB::table('purchase_order_transactions')
+            ->join('purchase_order_stock_delivery', 'purchase_order_stock_delivery.purchase_order_id', 'purchase_order_transactions.purchase_order_id')
+            ->where('purchase_order_stock_delivery.stock_delivery_id', $stockDelivery->id)
+            ->select('purchase_order_transactions.org_stock_id', 'purchase_order_transactions.supplier_product_id')
+            ->get();
+
+        foreach ($transactions->pluck('org_stock_id')->filter()->unique() as $orgStockId) {
+            if ($orgStock = OrgStock::find($orgStockId)) {
+                OrgStockHydrateLeadTime::dispatch($orgStock);
+            }
+        }
+
+        foreach ($transactions->pluck('supplier_product_id')->filter()->unique() as $supplierProductId) {
+            if ($supplierProduct = SupplierProduct::find($supplierProductId)) {
+                SupplierProductHydrateLeadTime::dispatch($supplierProduct);
+            }
+        }
     }
 
     private function stateTimestamps(StockDelivery $stockDelivery, StockDeliveryStateEnum $newState): array

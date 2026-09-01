@@ -7,6 +7,8 @@ tags: images, storefront, performance, cdn
 
 A product has a photo. That photo appears as a 64‑pixel thumbnail in a staff list, a 320‑pixel card on a family page, a 1200‑pixel hero on the product page, a 2× version of each for a retina screen, in AVIF where the browser can, in WebP where it cannot, in JPEG as the last resort, and cropped square for the marketplace listing. One file in storage; a dozen renditions on screen. We do not generate those renditions. We ask for them.
 
+*one source of truth, many stories.*
+
 ## The proxy
 
 Every image URL on a storefront or in the staff app points at an **image proxy** (we run [imgproxy](https://imgproxy.net), a small Go service, next to the application). The URL encodes the *processing options* — resize mode, width, height, gravity, format, enlargement allowed or not — and the location of the original. The proxy fetches the original once, applies the options, returns the result, and the CDN in front of it caches the answer by URL. The second request for the same rendition never reaches the proxy; the first request for a new one costs a few milliseconds of Go.

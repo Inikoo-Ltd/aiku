@@ -65,7 +65,15 @@ class EditOrder extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead' => [
-                    'title'    => $order->slug,
+                    'title'           => $order->reference,
+                    'model'           => __('Order'),
+                    'icon'            => [
+                        'icon'  => 'fal fa-shopping-cart',
+                        'title' => __('Customer client')
+                    ],
+                    'afterTitle'      => [
+                        'label' => $order->state->labels()[$order->state->value],
+                    ],
                     'actions'  => [
                         [
                             'type'  => 'button',
@@ -80,17 +88,17 @@ class EditOrder extends OrgAction
 
                 'formData' => [
                     'blueprint' => [
-                        [
-                            'label'  => __('Reference'),
-                            'title'  => __('id'),
-                            'fields' => [
-                                'reference' => [
-                                    'type'  => 'input',
-                                    'label' => __('Reference'),
-                                    'value' => $order->reference
-                                ],
-                            ]
-                        ],
+                        // [
+                        //     'label'  => __('Reference'),
+                        //     'title'  => __('id'),
+                        //     'fields' => [
+                        //         'reference' => [
+                        //             'type'  => 'input',
+                        //             'label' => __('Reference'),
+                        //             'value' => $order->reference
+                        //         ],
+                        //     ]
+                        // ],
                         [
                             'label'  => __('Sales Channel'),
                             'title'  => __('Sales Channel'),

@@ -9,11 +9,15 @@
 namespace App\Actions\Procurement\ShoppingListItem;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgAgent\GetAgentOrderCapacity;
+use App\Actions\Procurement\OrgSupplier\GetSupplierOrderCapacity;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\ShoppingListItem;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -24,6 +28,15 @@ class StoreShoppingListItem extends OrgAction
     public function handle(OrgSupplierProduct $orgSupplierProduct, array $modelData): ShoppingListItem
     {
         $supplierProduct = $orgSupplierProduct->supplierProduct;
+
+        $orgSupplier = $orgSupplierProduct->orgSupplier;
+        $orgAgent    = $orgSupplierProduct->orgAgent ?? $orgSupplier?->orgAgent;
+
+        if ($orgAgent) {
+            GetAgentOrderCapacity::guardAdd($orgAgent, $orgSupplierProduct);
+        } elseif ($orgSupplier) {
+            GetSupplierOrderCapacity::guardAdd($orgSupplier, $orgSupplierProduct);
+        }
 
         data_set($modelData, 'group_id', $orgSupplierProduct->group_id);
         data_set($modelData, 'organisation_id', $orgSupplierProduct->organisation_id);
@@ -49,6 +62,11 @@ class StoreShoppingListItem extends OrgAction
             'needed_by'      => ['sometimes', 'nullable', 'date'],
             'notes'          => ['sometimes', 'nullable', 'string'],
         ];
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return Redirect::back();
     }
 
     public function asController(Organisation $organisation, OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): ShoppingListItem

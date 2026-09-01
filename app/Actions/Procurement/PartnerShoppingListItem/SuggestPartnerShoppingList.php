@@ -8,6 +8,10 @@
 
 namespace App\Actions\Procurement\PartnerShoppingListItem;
 
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
+use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -17,6 +21,7 @@ use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
 
@@ -34,9 +39,17 @@ class SuggestPartnerShoppingList extends OrgAction
     /**
      * @return array{currency: string, budget: float, total: float, lines: array<int, array{org_stock_id: int, code: string, name: string, quantity: float, price_per_sko: float, cost: float, reason: string}>}
      */
-    public function handle(OrgPartner $orgPartner, float $budget, ?string $instruction = null): array
+    public function handle(OrgPartner $orgPartner, float $budget, ?string $instruction = null, ?string $bucket = null, ?string $rank = null): array
     {
         $candidates = $this->candidates($orgPartner);
+
+        if ($bucket) {
+            $scopedStockIds = array_flip(GetPartnerStockCoverBuckets::make()->stockIdsInBucket($orgPartner, $bucket, $rank));
+            $candidates     = array_values(array_filter(
+                $candidates,
+                fn (array $candidate) => isset($scopedStockIds[$candidate['stock_id']])
+            ));
+        }
 
         $lines = $instruction && config('services.openai.api_key')
             ? $this->aiPick($candidates, $budget, $instruction)
@@ -46,12 +59,67 @@ class SuggestPartnerShoppingList extends OrgAction
             $lines = $this->greedyFill($candidates, $budget);
         }
 
+        $lines = $this->respectPartnerCap($orgPartner, $candidates, $lines);
+
         return [
-            'currency' => $orgPartner->partner->currency->code,
+            'currency' => $orgPartner->organisation->currency->code,
             'budget'   => $budget,
             'total'    => round(array_sum(array_column($lines, 'cost')), 2),
             'lines'    => $lines,
         ];
+    }
+
+    /**
+     * Stop suggesting once the projected list value hits what the partner historically
+     * delivers to us per month; A-rank and out-of-stock items are exempt from the cap.
+     *
+     * @param array<int, array<string, mixed>> $candidates
+     * @param array<int, array<string, mixed>> $lines
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function rankPriority(?string $rank): int
+    {
+        return match ($rank) {
+            'A' => 0,
+            'B' => 1,
+            'C' => 2,
+            'D' => 4,
+            'Z' => 5,
+            default => 3,
+        };
+    }
+
+    protected function respectPartnerCap(OrgPartner $orgPartner, array $candidates, array $lines): array
+    {
+        $capacity = GetPartnerOrderCapacity::run($orgPartner);
+        $cap      = $capacity['partner_capacity']['delivers_to_us_per_30d'];
+
+        $candidatesById = collect($candidates)->keyBy('org_stock_id');
+        $shareLeft      = $capacity['blocked']['warehouse_full']
+            ? 0
+            : max(0, $capacity['warehouse']['partner_share_limit'] - $capacity['warehouse']['partner_share_used']);
+
+        $projected = $capacity['list']['value'];
+        $kept      = [];
+        foreach ($lines as $line) {
+            $candidate = $candidatesById->get($line['org_stock_id'], []);
+
+            if ($candidate['never_stocked'] ?? false) {
+                if ($shareLeft <= 0) {
+                    continue;
+                }
+                $shareLeft--;
+            }
+
+            if ($cap !== null && $projected >= $cap && !($candidate['cap_exempt'] ?? false)) {
+                continue;
+            }
+            $projected += $line['cost'];
+            $kept[]     = $line;
+        }
+
+        return $kept;
     }
 
     /**
@@ -68,6 +136,7 @@ class SuggestPartnerShoppingList extends OrgAction
             })
             ->join('product_has_org_stocks', 'product_has_org_stocks.org_stock_id', 'org_stocks.id')
             ->join('products', 'products.id', 'product_has_org_stocks.product_id')
+            ->leftJoin('org_stock_stats as buyer_stats', 'buyer_stats.org_stock_id', 'buyer_org_stocks.id')
             ->leftJoin('partner_shopping_list_items', function ($join) use ($orgPartner) {
                 $join->on('partner_shopping_list_items.stock_id', 'org_stocks.stock_id')
                     ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
@@ -89,25 +158,35 @@ class SuggestPartnerShoppingList extends OrgAction
                 'buyer_org_stocks.quantity_available as buyer_available',
                 'products.price as product_price',
                 'product_has_org_stocks.quantity as skos_per_product_unit',
+                'buyer_org_stocks.health_rank as buyer_health_rank',
+                'buyer_stats.days_of_cover as buyer_days_of_cover',
+                'buyer_stats.predicted_daily_usage as buyer_daily_usage',
+                'buyer_stats.recommended_order_quantity as buyer_recommended',
             ])
             ->orderBy('org_stocks.id')
             ->get()
             ->unique('id')
             ->values();
 
-        $usage = $this->buyerQuarterlyUsage($rows->pluck('buyer_org_stock_id')->filter()->all());
+        $exchange = GetCurrencyExchange::run($orgPartner->partner->currency, $orgPartner->organisation->currency) ?? 1;
 
-        return $rows->map(function ($row) use ($usage) {
+        return $rows->map(function ($row) use ($exchange) {
             $skosPerProductUnit = (float) $row->skos_per_product_unit > 0 ? (float) $row->skos_per_product_unit : 1;
 
             return [
                 'org_stock_id'      => $row->id,
+                'stock_id'          => (int) $row->stock_id,
                 'code'              => $row->code,
                 'name'              => $row->name,
                 'partner_available' => (float) $row->partner_available,
                 'buyer_available'   => (float) ($row->buyer_available ?? 0),
-                'quarterly_usage'   => $usage[$row->buyer_org_stock_id] ?? 0.0,
-                'price_per_sko'     => round((float) $row->product_price / $skosPerProductUnit, 4),
+                'quarterly_usage'   => round((float) ($row->buyer_daily_usage ?? 0) * 91, 1),
+                'cap_exempt'        => ($row->buyer_org_stock_id && (float) ($row->buyer_available ?? 0) <= 0) || $row->buyer_health_rank === HealthRankEnum::A->value,
+                'health_rank'       => $row->buyer_health_rank,
+                'never_stocked'     => $row->buyer_org_stock_id === null,
+                'price_per_sko'     => round((float) $row->product_price * $exchange / $skosPerProductUnit, 4),
+                'days_of_cover'     => $row->buyer_days_of_cover !== null ? (float) $row->buyer_days_of_cover : null,
+                'recommended'       => $row->buyer_recommended !== null ? (float) $row->buyer_recommended : null,
             ];
         })->all();
     }
@@ -117,7 +196,7 @@ class SuggestPartnerShoppingList extends OrgAction
      *
      * @return array<int, float> average quarterly SKO usage per buyer org stock
      */
-    protected function buyerQuarterlyUsage(array $buyerOrgStockIds): array
+    public function buyerQuarterlyUsage(array $buyerOrgStockIds): array
     {
         if (empty($buyerOrgStockIds)) {
             return [];
@@ -171,13 +250,19 @@ class SuggestPartnerShoppingList extends OrgAction
     {
         $ranked = collect($candidates)
             ->filter(fn ($candidate) => $candidate['quarterly_usage'] > 0 && $candidate['price_per_sko'] > 0)
-            ->sortBy(fn ($candidate) => $candidate['buyer_available'] / $candidate['quarterly_usage']);
+            ->sortBy([
+                fn ($a, $b) => ($this->rankPriority($a['health_rank'] ?? null) <=> $this->rankPriority($b['health_rank'] ?? null)),
+                fn ($a, $b) => (($a['days_of_cover'] ?? PHP_INT_MAX) <=> ($b['days_of_cover'] ?? PHP_INT_MAX)),
+            ]);
 
         $lines     = [];
         $remaining = $budget;
 
         foreach ($ranked as $candidate) {
-            $target   = max(0.0, ceil($candidate['quarterly_usage'] - $candidate['buyer_available']));
+            $target = $candidate['recommended'] !== null
+                ? ceil($candidate['recommended'])
+                : max(0.0, ceil($candidate['quarterly_usage'] - $candidate['buyer_available']));
+
             $quantity = min($target, $candidate['partner_available'], floor($remaining / $candidate['price_per_sko']));
 
             if ($quantity < 1) {
@@ -187,11 +272,7 @@ class SuggestPartnerShoppingList extends OrgAction
             $cost       = round($quantity * $candidate['price_per_sko'], 2);
             $remaining -= $cost;
 
-            $lines[] = $this->line($candidate, $quantity, sprintf(
-                'You use ~%s/quarter and hold %s',
-                rtrim(rtrim(number_format($candidate['quarterly_usage'], 1), '0'), '.'),
-                rtrim(rtrim(number_format($candidate['buyer_available'], 1), '0'), '.'),
-            ));
+            $lines[] = $this->line($candidate, $quantity, $this->reason($candidate));
 
             if ($remaining < 1) {
                 break;
@@ -199,6 +280,28 @@ class SuggestPartnerShoppingList extends OrgAction
         }
 
         return $lines;
+    }
+
+    /**
+     * Same story the browse cards tell: sales per quarter, what we hold, when we run out.
+     *
+     * @param array<string, mixed> $candidate
+     */
+    protected function reason(array $candidate): string
+    {
+        $reason = sprintf(
+            'Our sales/quarter ~%d · our stock %d',
+            (int) round($candidate['quarterly_usage']),
+            (int) floor($candidate['buyer_available']),
+        );
+
+        if ($candidate['days_of_cover'] !== null) {
+            $reason .= $candidate['days_of_cover'] <= 0
+                ? ' · we run out now'
+                : sprintf(' · we run out in ~%d days', (int) round($candidate['days_of_cover']));
+        }
+
+        return $reason;
     }
 
     /**
@@ -216,12 +319,14 @@ class SuggestPartnerShoppingList extends OrgAction
             'partner_available' => $candidate['partner_available'],
             'you_hold'          => $candidate['buyer_available'],
             'quarterly_usage'   => $candidate['quarterly_usage'],
+            'days_until_out_of_stock' => $candidate['days_of_cover'],
+            'recommended_order'       => $candidate['recommended'],
         ])->values()->all();
 
         $prompt = 'You are a purchasing assistant building an inter-company replenishment shopping list.'
             ."\nBudget: {$budget}. Instruction from the purchaser: {$instruction}"
             ."\nPick lines from this catalogue (quantities are whole SKOs, never exceed partner_available, total cost must stay within budget)."
-            ."\nPrefer items with low cover (you_hold vs quarterly_usage) unless the instruction says otherwise."
+            ."\nPrefer items with low days_until_out_of_stock and quantities near recommended_order unless the instruction says otherwise."
             ."\nReturn ONLY a JSON array: [{\"id\": <org_stock_id>, \"quantity\": <int>, \"reason\": \"<max 12 words>\"}]"
             ."\n\nCatalogue: ".json_encode($catalogue, JSON_UNESCAPED_UNICODE);
 
@@ -301,6 +406,8 @@ class SuggestPartnerShoppingList extends OrgAction
         return [
             'budget'      => ['required', 'numeric', 'min:1'],
             'instruction' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'bucket'      => ['sometimes', 'nullable', Rule::in(array_keys(GetPartnerStockCoverBuckets::BUCKETS))],
+            'rank'        => ['sometimes', 'nullable', Rule::in(['A', 'B', 'C', 'D', 'Z'])],
         ];
     }
 
@@ -311,7 +418,9 @@ class SuggestPartnerShoppingList extends OrgAction
         return $this->handle(
             $orgPartner,
             (float) $this->validatedData['budget'],
-            $this->validatedData['instruction'] ?? null
+            $this->validatedData['instruction'] ?? null,
+            $this->validatedData['bucket'] ?? null,
+            $this->validatedData['rank'] ?? null
         );
     }
 

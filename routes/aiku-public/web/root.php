@@ -11,6 +11,8 @@ use App\Actions\UI\AikuPublic\LogPublicVisit;
 use App\Actions\UI\AikuPublic\SearchNotes;
 use App\Actions\UI\AikuPublic\ShowBlog;
 use App\Actions\UI\AikuPublic\ShowBlogPost;
+use App\Actions\UI\AikuPublic\ShowDoc;
+use App\Actions\UI\AikuPublic\ShowDocs;
 use App\Actions\UI\AikuPublic\ShowFeed;
 use App\Actions\UI\AikuPublic\ShowHome;
 use App\Actions\UI\AikuPublic\ShowSitemap;
@@ -32,6 +34,7 @@ Route::get('llms.txt', function () {
         "# aiku\n\n> Open source operating system for commerce: ERP, warehouse and dispatch, fulfilment, storefronts, marketplaces, dropshipping, CRM, marketing and accounting in one Laravel codebase. Licensed AGPL-3.0.\n\n"
         ."- [Home](".route('aiku-public.home').")\n"
         ."- [Engineering notes](".route('aiku-public.blog.index').") — short notes on how the system is built and run\n"
+        ."- [Documentation](".route('aiku-public.docs.index').") — how to use aiku, feature by feature\n"
         ."- [RSS feed](".route('aiku-public.feed').")\n"
         ."- [Sitemap](".route('aiku-public.sitemap').")\n"
         ."- [Source code](https://github.com/Inikoo-Ltd/aiku)\n"
@@ -49,6 +52,8 @@ Route::get('blog', ShowBlog::class)->name('blog.index');
 Route::get('blog/search.json', SearchNotes::class)->middleware('throttle:60,1')->name('search');
 Route::get('visit.json', LogPublicVisit::class)->middleware('throttle:30,1')->name('visit');
 Route::get('blog/{slug}', ShowBlogPost::class)->name('blog.show');
+Route::get('docs', ShowDocs::class)->name('docs.index');
+Route::get('docs/{slug}', ShowDoc::class)->name('docs.show');
 Route::get('sitemap.xml', ShowSitemap::class)->name('sitemap');
 Route::get('feed.xml', ShowFeed::class)->name('feed');
 Route::get(config('services.indexnow.key', 'indexnow-key-not-set').'.txt', function () {

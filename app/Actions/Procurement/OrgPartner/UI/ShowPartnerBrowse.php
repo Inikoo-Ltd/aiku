@@ -9,16 +9,22 @@
 namespace App\Actions\Procurement\OrgPartner\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
+use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
 use App\Actions\Search\SearchCatalogue;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Inventory\OrgStock;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
@@ -41,6 +47,17 @@ class ShowPartnerBrowse extends OrgAction
         $subDepartment  = Arr::get($filters, 'sub_department');
         $family         = Arr::get($filters, 'family');
         $collection     = Arr::get($filters, 'collection');
+        $cover          = Arr::get($filters, 'cover');
+        $rank           = Arr::get($filters, 'rank');
+
+        if ($cover && array_key_exists($cover, GetPartnerStockCoverBuckets::BUCKETS)) {
+            return [
+                'level'       => 'cover',
+                'categories'  => [],
+                'collections' => [],
+                'products'    => $this->coverProducts($orgPartner, $shopId, $cover, in_array($rank, ['A', 'B', 'C', 'D', 'Z'], true) ? $rank : null),
+            ];
+        }
 
         if ($q) {
             return [
@@ -153,6 +170,50 @@ class ShowPartnerBrowse extends OrgAction
         ]);
     }
 
+    /**
+     * Never stocked has no cover of ours to sort by, so lead with what sells fastest for the partner.
+     */
+    private function coverOrder(OrgPartner $orgPartner, string $cover): string
+    {
+        if ($cover === 'never') {
+            return "products.available_quantity > 0 desc,
+                (select max(ps.predicted_daily_usage)
+                from product_has_org_stocks phos
+                join org_stocks po on po.id = phos.org_stock_id and po.organisation_id = ".(int) $orgPartner->partner_id."
+                join org_stock_stats ps on ps.org_stock_id = po.id
+                where phos.product_id = products.id) desc nulls last";
+        }
+
+        return "(select min(case bo.health_rank when 'A' then 1 when 'B' then 2 when 'C' then 3 when 'D' then 4 when 'Z' then 5 end)
+            from product_has_org_stocks phos
+            join org_stocks po on po.id = phos.org_stock_id and po.organisation_id = ".(int) $orgPartner->partner_id."
+            join org_stocks bo on bo.stock_id = po.stock_id and bo.organisation_id = ".(int) $orgPartner->organisation_id."
+            where phos.product_id = products.id) asc nulls last,
+            (select min(bs.days_of_cover)
+            from product_has_org_stocks phos
+            join org_stocks po on po.id = phos.org_stock_id and po.organisation_id = ".(int) $orgPartner->partner_id."
+            join org_stocks bo on bo.stock_id = po.stock_id and bo.organisation_id = ".(int) $orgPartner->organisation_id."
+            join org_stock_stats bs on bs.org_stock_id = bo.id
+            where phos.product_id = products.id) asc nulls last";
+    }
+
+    private function coverProducts(OrgPartner $orgPartner, int $shopId, string $cover, ?string $rank = null): LengthAwarePaginator
+    {
+        $stockIds = GetPartnerStockCoverBuckets::make()->stockIdsInBucket($orgPartner, $cover, $rank);
+
+        return $this->productsQuery($shopId, null, null)
+            ->whereIn('products.id', function ($query) use ($orgPartner, $stockIds) {
+                $query->select('product_has_org_stocks.product_id')
+                    ->from('product_has_org_stocks')
+                    ->join('org_stocks', 'org_stocks.id', 'product_has_org_stocks.org_stock_id')
+                    ->where('org_stocks.organisation_id', $orgPartner->partner_id)
+                    ->whereIn('org_stocks.stock_id', $stockIds);
+            })
+            ->orderByRaw($this->coverOrder($orgPartner, $cover))
+            ->paginate(24)
+            ->withQueryString();
+    }
+
     private function searchProducts(int $shopId, string $q): LengthAwarePaginator
     {
         $productIds = collect(Arr::get(SearchCatalogue::run($q, ['shop_id' => $shopId]), 'results.products', []))
@@ -179,7 +240,7 @@ class ShowPartnerBrowse extends OrgAction
             'slug'                   => $category->slug,
             'code'                   => $category->code,
             'name'                   => $category->name,
-            'image'                  => Arr::get($category->web_images, 'main.thumbnail'),
+            'image'                  => Arr::get($category->web_images, 'main.gallery') ?? Arr::get($category->web_images, 'main.thumbnail'),
             'type'                   => $category->type->value,
             'number_current_products' => $category->number_current_products,
         ])->values();
@@ -189,28 +250,60 @@ class ShowPartnerBrowse extends OrgAction
             'slug'  => $collection->slug,
             'code'  => $collection->code,
             'name'  => $collection->name,
-            'image' => Arr::get($collection->web_images, 'main.thumbnail'),
+            'image' => Arr::get($collection->web_images, 'main.gallery') ?? Arr::get($collection->web_images, 'main.thumbnail'),
         ])->values();
 
         $products = $data['products'];
         if ($products) {
-            $productIds = collect($products->items())->pluck('id');
-            $orgStockSlugs = Product::whereIn('id', $productIds)
-                ->with(['orgStocks' => fn ($query) => $query->where('org_stocks.organisation_id', $this->orgPartner->partner_id)])
+            $productIds        = collect($products->items())->pluck('id');
+            $sellerComponents  = Product::whereIn('id', $productIds)
+                ->with(['orgStocks' => fn ($query) => $query->where('org_stocks.organisation_id', $this->orgPartner->partner_id)->with('stats')])
                 ->get()
-                ->mapWithKeys(fn (Product $product) => [$product->id => $product->orgStocks->first()?->slug]);
+                ->mapWithKeys(fn (Product $product) => [$product->id => $product->orgStocks]);
 
-            $products->getCollection()->transform(function (Product $product) use ($orgStockSlugs) {
+            $buyerOrgStocks = OrgStock::with('stats')->where('organisation_id', $this->orgPartner->organisation_id)
+                ->whereIn('stock_id', $sellerComponents->flatten()->pluck('stock_id')->unique()->values())
+                ->get()
+                ->keyBy('stock_id');
+
+            $sellerOrgStocks = $sellerComponents->map(fn ($components) => $this->tightestComponent($components, $buyerOrgStocks));
+
+            $usage = SuggestPartnerShoppingList::make()->buyerQuarterlyUsage($buyerOrgStocks->pluck('id')->all());
+
+            $openItems = PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
+                ->where('state', ShoppingListItemStateEnum::OPEN)
+                ->whereIn('stock_id', $buyerOrgStocks->keys())
+                ->get()
+                ->keyBy('stock_id');
+
+            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems) {
+                $sellerOrgStock = $sellerOrgStocks[$product->id] ?? null;
+                $buyerOrgStock  = $sellerOrgStock ? $buyerOrgStocks->get($sellerOrgStock->stock_id) : null;
+                $openItem       = $sellerOrgStock ? $openItems->get($sellerOrgStock->stock_id) : null;
+
                 return [
                     'id'                => $product->id,
                     'slug'              => $product->slug,
                     'code'              => $product->code,
                     'name'              => $product->name,
-                    'image'             => Arr::get($product->web_images, 'main.thumbnail'),
+                    'image'             => Arr::get($product->web_images, 'main.gallery') ?? Arr::get($product->web_images, 'main.thumbnail'),
                     'price'             => $product->price,
                     'available_quantity' => $product->available_quantity,
                     'units'             => $product->units,
-                    'org_stock_slug'    => $orgStockSlugs[$product->id] ?? null,
+                    'org_stock_slug'    => $sellerOrgStock?->slug,
+                    'our_stock'         => $buyerOrgStock ? (float) $buyerOrgStock->quantity_available : null,
+                    'their_daily_usage' => $sellerOrgStock?->stats?->predicted_daily_usage !== null
+                        ? round((float) $sellerOrgStock->stats->predicted_daily_usage, 1)
+                        : null,
+                    'our_quarterly_usage' => $buyerOrgStock ? round($usage[$buyerOrgStock->id] ?? 0, 1) : null,
+                    'our_days_of_cover' => $buyerOrgStock?->stats?->days_of_cover !== null
+                        ? (int) $buyerOrgStock->stats->days_of_cover
+                        : null,
+                    'recommended_quantity'  => $buyerOrgStock?->stats?->recommended_order_quantity !== null
+                        ? (int) ceil((float) $buyerOrgStock->stats->recommended_order_quantity)
+                        : null,
+                    'shopping_list_item_id' => $openItem?->id,
+                    'ordered_quantity'      => $openItem ? (float) $openItem->quantity : 0,
                 ];
             });
         }
@@ -223,9 +316,39 @@ class ShowPartnerBrowse extends OrgAction
         ];
     }
 
+    /**
+     * The component that runs out first is the one the buyer has to decide about.
+     *
+     * @param  \Illuminate\Support\Collection<int, OrgStock>  $components
+     * @param  \Illuminate\Support\Collection<int, OrgStock>  $buyerOrgStocks  keyed by stock id
+     */
+    public function tightestComponent($components, $buyerOrgStocks): ?OrgStock
+    {
+        return $components->sortBy(function (OrgStock $component) use ($buyerOrgStocks) {
+            $daysOfCover = $buyerOrgStocks->get($component->stock_id)?->stats?->days_of_cover;
+
+            return $daysOfCover ?? PHP_INT_MAX;
+        })->first();
+    }
+
     private function miniCart(): array
     {
         return GetPartnerMiniCart::run($this->orgPartner);
+    }
+
+    /**
+     * @return array{products: int, in_stock: int, departments: int, collections: int}
+     */
+    private function browseStats(): array
+    {
+        $shopStats = Shop::find($this->shopId)->stats;
+
+        return [
+            'products'    => $shopStats->number_current_products,
+            'in_stock'    => $shopStats->number_products_status_for_sale,
+            'departments' => $shopStats->number_current_departments,
+            'collections' => $shopStats->number_collections,
+        ];
     }
 
     /**
@@ -250,7 +373,7 @@ class ShowPartnerBrowse extends OrgAction
 
         $this->initialisation($organisation, $request);
 
-        return $this->withOrgStock($this->handle($orgPartner, $this->shopId, $request->only(['q', 'department', 'sub_department', 'family', 'collection'])));
+        return $this->withOrgStock($this->handle($orgPartner, $this->shopId, $request->only(['q', 'department', 'sub_department', 'family', 'collection', 'cover', 'rank'])));
     }
 
     public function htmlResponse(array $data, ActionRequest $request): Response
@@ -279,8 +402,10 @@ class ShowPartnerBrowse extends OrgAction
                     'parameters' => [$this->orgPartner->organisation->slug, $this->orgPartner->id],
                 ],
                 'miniCart'    => $this->miniCart(),
-                'filters'     => $request->only(['q', 'department', 'sub_department', 'family', 'collection']),
+                'browseStats' => $this->browseStats(),
+                'filters'     => $request->only(['q', 'department', 'sub_department', 'family', 'collection', 'cover', 'rank']),
                 'filterNames' => $this->filterNames($request->only(['department', 'sub_department', 'family', 'collection'])),
+                'coverLabel'  => __(Arr::get(GetPartnerStockCoverBuckets::BUCKETS, $request->input('cover', '').'.label', '')),
                 'level'       => $data['level'],
                 'categories'  => $data['categories'],
                 'collections' => $data['collections'],
