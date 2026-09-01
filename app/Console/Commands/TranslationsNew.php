@@ -10,6 +10,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 /**
  * Everything needed to add a language, in the one order that is safe.
@@ -24,6 +25,11 @@ use Illuminate\Support\Facades\DB;
  */
 class TranslationsNew extends Command
 {
+    private const BATCH = 800;
+
+    // POEditor allows one upload per 20 seconds per project.
+    private const PAUSE_SECONDS = 21;
+
     protected $signature = 't:new
                             {locale : ISO 639-1 code as it appears in the languages table, e.g. ko}
                             {--native= : Native name for the language picker, e.g. 한국어}
@@ -87,19 +93,55 @@ class TranslationsNew extends Command
 
         if ($this->confirm("Have you added '{$locale}' as a language in the POEditor project?", false)) {
             $this->newLine();
-            $this->info('→ t:seed');
-
-            if ($this->call('t:seed', ['locale' => $locale]) !== self::SUCCESS) {
-                return self::FAILURE;
-            }
+            $this->seed($locale);
         } else {
-            $this->warn("Add it in POEditor, then run: php artisan t:seed {$locale}");
+            $this->warn("Add it in POEditor, then re-run: php artisan t:new {$locale} --skip-translate");
             $this->warn('Do NOT run t:down before seeding - it would overwrite the file with an empty export.');
         }
 
         $this->activate($locale, $language);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * translation:upload calls /translations/update, which cannot populate a language
+     * with no translations: it answers `success` with `updated: 0` and leaves it at 0%.
+     * /translations/add is the only endpoint that seeds one, and the POEditor package
+     * never calls it.
+     */
+    private function seed(string $locale): void
+    {
+        $entries = collect(json_decode(file_get_contents(lang_path($locale.'.json')), true))
+            ->filter(fn ($value) => is_string($value) && trim($value) !== '')
+            ->map(fn ($value, $term) => ['term' => $term, 'translation' => ['content' => $value]])
+            ->values();
+
+        $batches = $entries->chunk(self::BATCH)->values();
+        $this->info("→ seeding POEditor: {$entries->count()} translations in {$batches->count()} batches");
+
+        $added = 0;
+
+        foreach ($batches as $index => $batch) {
+            $response = Http::asForm()->timeout(120)->post('https://api.poeditor.com/v2/translations/add', [
+                'api_token' => config('translation.api_key'),
+                'id' => config('translation.project_id'),
+                'language' => $locale,
+                'data' => $batch->values()->toJson(),
+            ]);
+
+            $batchAdded = (int) $response->json('result.translations.added', 0);
+            $added += $batchAdded;
+
+            $this->line(sprintf('  batch %d/%d: added %d', $index + 1, $batches->count(), $batchAdded));
+
+            if ($index + 1 < $batches->count()) {
+                sleep(self::PAUSE_SECONDS);
+            }
+        }
+
+        $this->info("{$locale}: {$added} translations added to POEditor");
+        $this->line('A shortfall is usually whitespace-variant keys POEditor normalised away.');
     }
 
     private function activate(string $locale, object $language): void
