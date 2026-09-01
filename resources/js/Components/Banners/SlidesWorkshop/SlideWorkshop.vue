@@ -30,7 +30,7 @@ const props = defineProps<{
 
 const emit = defineEmits(["update:modelValue"])
 
-const screenView = inject('screenView')
+const screenView = inject<any>('screenView')
 const current = ref(0);
 
 const getValue = (fieldData: string | string[]) => {
@@ -64,6 +64,14 @@ const setValue = (fieldData: any, value: any) => {
     }
 
     emit("update:modelValue", cloned)
+}
+
+const fieldKey = (fieldData: any, index: number) => {
+    const base = fieldData.type + index + fieldData.label
+
+    return Array.isArray(fieldData.useIn) && fieldData.useIn.length > 0
+        ? base + screenView.value
+        : base
 }
 
 const shouldShowField = (fieldData: any) => {
@@ -144,7 +152,7 @@ defineExpose({
                             <pre>{{ fieldData }}</pre> -->
                             <component :is="getComponent(fieldData.type)" :model-value="getValue(fieldData)"
                                 @update:modelValue="setValue(fieldData, $event)" :fieldName="fieldData.name"
-                                :fieldData="fieldData" :key="fieldData.type + index + fieldData.label" :counter="false"
+                                :fieldData="fieldData" :key="fieldKey(fieldData, index)" :counter="false"
                                 :common="common" :uploadRoutes="uploadRoutes" :bannerType="bannerType" :ratio />
                         </div>
                     </dd>
