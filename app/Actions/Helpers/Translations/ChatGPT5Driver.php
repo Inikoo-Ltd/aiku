@@ -195,12 +195,24 @@ EOL
             throw new Exception('Unexpected payload returned by ChatGPT.');
         }
 
+        // The model sometimes drops entries it thinks need no translation AND renumbers
+        // what is left, which silently shifts every later value onto the wrong key. A
+        // batch is only trustworthy if every index sent comes back; otherwise discard it
+        // and let those strings fall back to English.
+        $expected = count($texts);
+
+        for ($position = 0; $position < $expected; $position++) {
+            if (!is_string($decoded[(string) $position] ?? null)) {
+                throw new Exception("ChatGPT returned {$position} of {$expected} indexed entries - discarding batch rather than misaligning it.");
+            }
+        }
+
         $translations = [];
 
         foreach (array_keys($texts) as $position => $key) {
-            $translated = $decoded[(string) $position] ?? null;
+            $translated = $decoded[(string) $position];
 
-            if (is_string($translated) && trim($translated) !== '') {
+            if (trim($translated) !== '') {
                 $translations[$key] = $translated;
             }
         }
