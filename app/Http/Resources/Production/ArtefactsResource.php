@@ -23,6 +23,8 @@ class ArtefactsResource extends JsonResource
             'slug'    => $this->slug,
             'code'    => $this->code,
             'name'    => $this->name,
+            'category' => $this->category,
+            'tags'    => $this->whenLoaded('tags', fn () => $this->tags->pluck('name')),
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
         ];

@@ -77,6 +77,7 @@ class StoreArtefact extends OrgAction
                 Rule::exists('org_stocks', 'id')->where('organisation_id', $this->organisation->id),
             ],
             'recommended_batch_size' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'category'               => ['sometimes', 'nullable', 'string', 'max:255'],
             'source_id'   => ['sometimes', 'nullable', 'string'],
             'created_at'  => ['sometimes', 'nullable', 'date'],
 

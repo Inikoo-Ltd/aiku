@@ -33,6 +33,10 @@ function productionRoute(artefact: {}) {
                 {{ production['code'] }}
             </Link>
         </template>
-
+        <template #cell(tags)="{ item }">
+            <div class="flex flex-wrap gap-1">
+                <span v-for="tag in item.tags" :key="tag" class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 text-xs">#{{ tag }}</span>
+            </div>
+        </template>
     </Table>
 </template>

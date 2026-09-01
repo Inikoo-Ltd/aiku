@@ -1407,6 +1407,14 @@ Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id
     Route::delete('delete', DeleteModelHasContent::class)->name('delete');
 });
 
+Route::name('artefact.')->prefix('artefact/{artefact:id}')->group(function () {
+    Route::post('tags/store', [StoreTag::class, 'inArtefact'])->name('tags.store');
+    Route::patch('tags/{tag:id}/update', [UpdateTag::class, 'inArtefact'])->name('tags.update');
+    Route::delete('tags/{tag:id}/delete', [DeleteTag::class, 'inArtefact'])->name('tags.delete');
+    Route::post('tags/attach', [AttachTagsToModel::class, 'inArtefact'])->name('tags.attach');
+    Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inArtefact'])->name('tags.detach');
+});
+
 Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () {
     Route::post('tags/store', [StoreTag::class, 'inTradeUnit'])->name('tags.store');
     Route::patch('tags/{tag:id}/update', [UpdateTag::class, 'inTradeUnit'])->name('tags.update');

@@ -23,6 +23,7 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -90,7 +91,12 @@ class IndexArtefacts extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $tagFilter = AllowedFilter::callback('tag', function ($query, $value) {
+            $query->whereHas('tags', fn ($query) => $query->where('tags.name', $value));
+        });
+
         $queryBuilder = QueryBuilder::for(Artefact::class)
+                        ->with('tags')
                         ->leftJoin('organisations', 'artefacts.organisation_id', '=', 'organisations.id');
         if ($parent instanceof Group) {
             $queryBuilder->where('artefacts.group_id', $parent->id);
@@ -98,6 +104,15 @@ class IndexArtefacts extends OrgAction
             $queryBuilder->where('artefacts.organisation_id', $parent->id);
         } else {
             $queryBuilder->where('artefacts.production_id', $parent->id);
+        }
+
+        foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix
+            );
         }
 
 
@@ -108,6 +123,7 @@ class IndexArtefacts extends OrgAction
                     'artefacts.code',
                     'artefacts.id',
                     'artefacts.name',
+                    'artefacts.category',
                     'productions.slug as production_slug',
                     'artefacts.slug',
                     'organisations.name as organisation_name',
@@ -116,10 +132,38 @@ class IndexArtefacts extends OrgAction
             )
             ->leftJoin('artefact_stats', 'artefact_stats.artefact_id', 'artefacts.id')
             ->leftJoin('productions', 'artefacts.production_id', 'productions.id')
-            ->allowedSorts(['code', 'name'])
-            ->allowedFilters([$globalSearch])
+            ->allowedSorts(['code', 'name', 'category'])
+            ->allowedFilters([$globalSearch, $tagFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    protected function getElementGroups(Group|Production|Organisation $parent): array
+    {
+        $categories = Artefact::query()
+            ->where(match (class_basename($parent)) {
+                'Group'        => 'group_id',
+                'Organisation' => 'organisation_id',
+                default        => 'production_id',
+            }, $parent->id)
+            ->whereNotNull('category')
+            ->groupBy('category')
+            ->orderBy('category')
+            ->pluck(DB::raw('count(*) as count'), 'category');
+
+        if ($categories->isEmpty()) {
+            return [];
+        }
+
+        return [
+            'category' => [
+                'label'    => __('Category'),
+                'elements' => $categories->map(fn ($count, $category) => [$category, $count])->all(),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('artefacts.category', $elements);
+                },
+            ],
+        ];
     }
 
     public function tableStructure(Group|Production|Organisation $parent, ?array $modelOperations = null, $prefix = null, bool $canEdit = false): Closure
@@ -130,6 +174,10 @@ class IndexArtefacts extends OrgAction
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
+            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements']);
+            }
+
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
@@ -163,7 +211,9 @@ class IndexArtefacts extends OrgAction
                     }
                 )
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'category', label: __('Category'), canBeHidden: false, sortable: true)
+                ->column(key: 'tags', label: __('Tags'), canBeHidden: false);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);
             }

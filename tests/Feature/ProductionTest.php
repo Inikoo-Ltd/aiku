@@ -11,6 +11,9 @@
 namespace Tests\Feature;
 
 use App\Actions\Production\Artefact\StoreArtefact;
+use App\Actions\Production\Artefact\UpdateArtefact;
+use App\Enums\Helpers\Tag\TagScopeEnum;
+use App\Models\Helpers\Tag;
 use App\Actions\Production\JobOrder\ConfirmJobOrder;
 use App\Actions\Production\JobOrder\StoreJobOrder;
 use App\Actions\Production\JobOrder\UpdateJobOrder;
@@ -464,6 +467,26 @@ test('UI edit raw material', function () {
     });
 });
 
+test('update artefact category and tags', function () {
+    $tag = Tag::create(['group_id' => $this->group->id, 'name' => 'lavender', 'scope' => TagScopeEnum::ARTEFACT]);
+
+    $artefact = UpdateArtefact::make()->action($this->artefact, [
+        'category' => 'Soaps',
+        'tags'     => [$tag->id],
+    ]);
+
+    expect($artefact->category)->toBe('Soaps')
+        ->and($artefact->tags->pluck('name')->all())->toBe(['lavender']);
+
+    $artefact = UpdateArtefact::make()->action($artefact, ['tags' => []]);
+    expect($artefact->tags)->toHaveCount(0);
+
+    $response = $this->get(route('grp.org.productions.show.crafts.artefacts.index', [$this->organisation->slug, $this->production->slug, 'artefacts_elements[category]' => 'Soaps']));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Production/Artefacts')->has('artefacts.data', 1)->where('artefacts.data.0.category', 'Soaps');
+    });
+});
+
 test('UI Index artefacts', function () {
     $response = $this->get(route('grp.org.productions.show.crafts.artefacts.index', [$this->organisation->slug, $this->production->slug]));
 
@@ -532,7 +555,7 @@ test('UI edit artefact', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 5)
+            ->has('formData.blueprint.0.fields', 7)
             ->has('pageHead')
             ->has('breadcrumbs', 4);
     });

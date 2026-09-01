@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\Artefact;
 
+use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Production\ArtefactResource;
@@ -15,6 +16,7 @@ use App\Models\Production\Artefact;
 use App\Models\Production\Production;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -27,7 +29,11 @@ class UpdateArtefact extends OrgAction
 
     public function handle(Artefact $artefact, array $modelData): Artefact
     {
-        return  $this->update($artefact, $modelData, ['data', 'settings']);
+        if (Arr::has($modelData, 'tags')) {
+            AttachTagsToModel::make()->action($artefact, ['tags_id' => Arr::pull($modelData, 'tags')], true);
+        }
+
+        return $this->update($artefact, $modelData, ['data', 'settings']);
 
     }
 
@@ -75,6 +81,9 @@ class UpdateArtefact extends OrgAction
                 Rule::exists('org_stocks', 'id')->where('organisation_id', $this->organisation->id),
             ],
             'recommended_batch_size' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'category'               => ['sometimes', 'nullable', 'string', 'max:255'],
+            'tags'                   => ['sometimes', 'array'],
+            'tags.*'                 => ['integer', 'exists:tags,id'],
         ];
     }
 

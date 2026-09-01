@@ -20,6 +20,7 @@ enum TagScopeEnum: string
     case SYSTEM_CUSTOMER        = 'system_customer';
     case ADMIN_CUSTOMER         = 'admin_customer';
     case USER_CUSTOMER          = 'user_customer';
+    case ARTEFACT               = 'artefact';
     case OTHER                  = 'other';
 
     /**
