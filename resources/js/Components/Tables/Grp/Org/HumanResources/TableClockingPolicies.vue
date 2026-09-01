@@ -10,7 +10,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import Select from "primevue/select"
 import SelectButton from "primevue/selectbutton"
 import DatePicker from "primevue/datepicker"
-import ToggleSwitch from "primevue/toggleswitch"
+import Toggle from "@/Components/Pure/Toggle.vue"
 import Message from 'primevue/message';
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -725,7 +725,7 @@ const createPolicy = (): void => {
                     </div>
                     <div class="flex items-end">
                         <div class="flex items-center gap-2 text-sm">
-                            <ToggleSwitch v-model="editForm.is_active" />
+                            <Toggle v-model="editForm.is_active" size="md" />
                             <span>{{ trans("Active") }}</span>
                         </div>
                     </div>
@@ -855,6 +855,8 @@ const createPolicy = (): void => {
                             :options="scopeIdOptions"
                             optionLabel="label"
                             optionValue="value"
+                            filter
+                            autoFilterFocus
                             class="w-full text-sm"
                             :placeholder="trans('Select scope')"
                         />
@@ -874,7 +876,7 @@ const createPolicy = (): void => {
                     </div>
                     <div class="flex items-end">
                         <div class="flex items-center gap-2 text-sm">
-                            <ToggleSwitch v-model="createForm.is_active" />
+                            <Toggle v-model="createForm.is_active" size="md" />
                             <span>{{ trans("Active") }}</span>
                         </div>
                     </div>
@@ -976,7 +978,7 @@ const createPolicy = (): void => {
                     </div>
                     <div class="flex items-end">
                         <div class="flex items-center gap-2 text-sm">
-                            <ToggleSwitch v-model="hybridRuleForm.is_active" />
+                            <Toggle v-model="hybridRuleForm.is_active" size="md" />
                             <span>{{ trans("Active") }}</span>
                         </div>
                     </div>
