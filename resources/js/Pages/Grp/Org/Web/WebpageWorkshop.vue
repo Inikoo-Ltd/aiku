@@ -1128,6 +1128,10 @@ console.log('props_workshop',props)
     :incoming="templateMerge.incoming"
     :webBlocks="data.layout.web_blocks"
     :isLoading="isApplyingTemplate"
+    :currentPageDetail="{
+      type: data.type,
+      sub_type: data.sub_type,
+    }"
     @apply="onApplyTemplate" />
 
   <Dialog v-model:visible="dialogUploadImageVisible" modal header="Upload Image" :style="{ width: '80rem' }"
