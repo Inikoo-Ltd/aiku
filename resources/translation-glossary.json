@@ -1,0 +1,52 @@
+{
+    "_comment": "Business terms the auto-translator gets wrong because a bare UI string carries no context. Applied by `lang:apply-glossary` after every translate:default run or POEditor download. Add a term the day someone reports a bad label.",
+    "es": {
+        "Balance": "Saldo",
+        "Charge": "Cargo",
+        "Charges": "Cargos",
+        "Close": "Cerrar",
+        "Dispatch": "Expedición",
+        "Dispatched": "Expedido",
+        "Goods In": "Recepción de mercancías",
+        "Handling": "Manipulación",
+        "Order": "Pedido",
+        "Orders": "Pedidos",
+        "Pick": "Preparar",
+        "Picked": "Preparado",
+        "Picking": "Preparación de pedidos"
+    },
+    "hi": {
+        "Balance": "शेष राशि",
+        "Charge": "शुल्क",
+        "Charges": "शुल्क",
+        "Dispatch": "प्रेषण",
+        "Dispatched": "भेजा गया",
+        "Goods In": "माल प्राप्ति",
+        "Handling": "हैंडलिंग",
+        "Order": "ऑर्डर",
+        "Orders": "ऑर्डर्स",
+        "Pick": "पिकिंग करें",
+        "Picked": "पिक किया गया",
+        "Picking": "पिकिंग",
+        "Slots": "स्थान",
+        "Stock": "स्टॉक",
+        "Draft": "प्रारूप"
+    },
+    "ne": {
+        "Balance": "बाँकी रकम",
+        "Charge": "शुल्क",
+        "Charges": "शुल्कहरू",
+        "Dispatch": "प्रेषण",
+        "Dispatched": "पठाइएको",
+        "Goods In": "सामान प्राप्ति",
+        "Handling": "ह्यान्डलिङ",
+        "Order": "अर्डर",
+        "Orders": "अर्डरहरू",
+        "Pick": "पिकिङ गर्नुहोस्",
+        "Picked": "पिक गरिएको",
+        "Picking": "पिकिङ",
+        "Slots": "स्थान",
+        "Stock": "स्टक",
+        "Draft": "मस्यौदा"
+    }
+}

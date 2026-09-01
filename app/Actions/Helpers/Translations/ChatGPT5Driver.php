@@ -108,9 +108,28 @@ EOL
             ],
             [
                 'role' => 'user',
-                'content' => json_encode($chunk),
+                'content' => json_encode($this->indexChunk($chunk)),
             ],
         ];
+    }
+
+    /**
+     * Keying the payload by the source text lets the model collapse entries that differ
+     * only by whitespace (" more" and "more" are separate aiku strings), which silently
+     * changed the entry count. Numeric keys cannot collide or be "helpfully" tidied.
+     *
+     * @return array<string, string>
+     */
+    private function indexChunk(array $chunk): array
+    {
+        $indexed = [];
+        $position = 0;
+
+        foreach ($chunk as $text) {
+            $indexed[(string) $position++] = $text;
+        }
+
+        return $indexed;
     }
 
     protected function sendTranslationRequest(array $texts, string $sourceLang, string $targetLang): array
@@ -127,6 +146,7 @@ EOL
                 'messages' => $prompt,
                 'temperature' => 1,
                 'max_completion_tokens' => $this->config['max_tokens'] ?? 1000,
+                'response_format' => ['type' => 'json_object'],
             ]);
 
         if (! $response->successful()) {
@@ -148,10 +168,20 @@ EOL
 
         $decoded = json_decode($content, true);
 
-        if (count($decoded) !== count($texts)) {
-            throw new Exception('Mismatch in number of translated texts returned by ChatGPT.');
+        if (!is_array($decoded)) {
+            throw new Exception('Unexpected payload returned by ChatGPT.');
         }
 
-        return array_combine(array_keys($texts), $decoded);
+        $translations = [];
+
+        foreach (array_keys($texts) as $position => $key) {
+            $translated = $decoded[(string) $position] ?? null;
+
+            if (is_string($translated) && trim($translated) !== '') {
+                $translations[$key] = $translated;
+            }
+        }
+
+        return $translations;
     }
 }

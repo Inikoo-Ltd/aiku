@@ -137,3 +137,4 @@ storage/oauth-*.key
 /devops/search
 public/art/logo-source.png
 docs/procurement/agents/AW_Nepal_Purchasing_Production_Coordination_Agreement_Final.pdf
+lang/texts_to_translate.json
