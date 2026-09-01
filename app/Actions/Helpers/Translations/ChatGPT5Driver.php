@@ -13,6 +13,7 @@ use App\Exceptions\AICreditException;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Arr;
+use Sentry;
 use Throwable;
 use TikToken\Encoder;
 use VildanBina\LaravelAutoTranslation\Contracts\TranslationDriver;
@@ -52,7 +53,19 @@ class ChatGPT5Driver implements TranslationDriver
 
         collect($chunks)
             ->each(function (array $value) use (&$translations, $sourceLang, $targetLang) {
-                $chunkResult = $this->sendTranslationRequest($value, $sourceLang, $targetLang);
+                try {
+                    $chunkResult = $this->sendTranslationRequest($value, $sourceLang, $targetLang);
+                } catch (AICreditException $e) {
+                    throw $e;
+                } catch (Throwable $e) {
+                    // One malformed reply used to abort the whole run and discard every
+                    // chunk before it. Skip this batch instead: its strings keep falling
+                    // back to English and a later run retries them.
+                    Sentry::captureMessage('Translation chunk skipped: '.$e->getMessage());
+
+                    return;
+                }
+
                 $translations += is_array($chunkResult) ? $chunkResult : [];
             });
 
@@ -162,6 +175,16 @@ EOL
 
         $json = $response->json();
         $content = is_array($json) ? Arr::get($json, 'choices.0.message.content', '') : '';
+
+        // Multi-line source strings come back with the newline written raw inside the JSON
+        // string rather than escaped, which is a parse error. They are never meaningful
+        // in a UI label, so fold them to spaces instead of losing the whole batch.
+        // No /u modifier: it makes preg_replace return null on malformed UTF-8, which fed
+        // the unfixed string straight back to the validator. Control characters are single
+        // bytes below 0x20 and UTF-8 continuation bytes are all >= 0x80, so byte matching
+        // cannot damage the Devanagari or Han text around them.
+        $content = preg_replace('/[\x00-\x1F]+/', ' ', $content) ?? $content;
+
         if (! json_validate($content)) {
             throw new Exception('Invalid JSON returned by ChatGPT: '.json_last_error_msg());
         }
