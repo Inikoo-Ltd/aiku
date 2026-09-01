@@ -50,10 +50,7 @@ export interface WorkshopTabConfig {
   irisPreview?: boolean
   requiredFieldValue?: string
   screenView?: boolean
-  collapsibleSidebar?: boolean
   templateRouteName?: string
-  sidebarClass?: string
-  previewClass?: string
 }
 
 const webBlockSidebar = (listKey: string) => (ctx: WorkshopContext) => ({
@@ -72,9 +69,7 @@ export const WORKSHOP_TABS: Record<string, WorkshopTabConfig> = {
     sidebarProps: (ctx) => ({ layout: ctx.data.layout }),
     preview: ColorSchemeWorkshopWebsite,
     previewProps: (ctx) => ({ routeList: ctx.data.routeList, theme: ctx.data.layout }),
-    layoutShape: 'theme',
-    sidebarClass: 'col-span-12 lg:col-span-3 bg-white rounded-xl shadow-md overflow-hidden flex flex-col',
-    previewClass: 'col-span-12 lg:col-span-9 bg-white rounded-xl shadow-md p-8 overflow-y-auto'
+    layoutShape: 'theme'
   },
 
   department_description: {
@@ -82,7 +77,6 @@ export const WORKSHOP_TABS: Record<string, WorkshopTabConfig> = {
     sidebarProps: webBlockSidebar('department'),
     layoutShape: 'keyed',
     screenView: true,
-    collapsibleSidebar: true,
     blockProps: editableBlock,
     picker: {
       listKey: 'department',
@@ -102,7 +96,6 @@ export const WORKSHOP_TABS: Record<string, WorkshopTabConfig> = {
     sidebarProps: webBlockSidebar('parent_product_category'),
     layoutShape: 'single',
     screenView: true,
-    collapsibleSidebar: true,
     blockProps: editableBlock,
     picker: {
       listKey: 'parent_product_category',
@@ -122,7 +115,6 @@ export const WORKSHOP_TABS: Record<string, WorkshopTabConfig> = {
     sidebarProps: webBlockSidebar('parent_product_category'),
     layoutShape: 'single',
     screenView: true,
-    collapsibleSidebar: true,
     blockProps: editableBlock,
     picker: {
       listKey: 'parent_product_category',
@@ -142,7 +134,6 @@ export const WORKSHOP_TABS: Record<string, WorkshopTabConfig> = {
     sidebarProps: webBlockSidebar('parent_product_category'),
     layoutShape: 'single',
     screenView: true,
-    collapsibleSidebar: true,
     blockProps: editableBlock,
     picker: {
       listKey: 'parent_product_category',
@@ -167,7 +158,6 @@ export const WORKSHOP_TABS: Record<string, WorkshopTabConfig> = {
     }),
     layoutShape: 'blocks',
     screenView: true,
-    collapsibleSidebar: true,
     templateRouteName: 'grp.json.workshop.fetch_descriptions_layout',
     blockProps: editableBlock,
     picker: {
@@ -232,7 +222,6 @@ export const WORKSHOP_TABS: Record<string, WorkshopTabConfig> = {
     sidebar: null,
     preview: TableHistories,
     previewProps: (ctx) => ({ data: ctx.data }),
-    layoutShape: 'none',
-    previewClass: 'col-span-12'
+    layoutShape: 'none'
   }
 }
