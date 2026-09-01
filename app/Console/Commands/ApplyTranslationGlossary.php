@@ -22,10 +22,17 @@ use Illuminate\Console\Command;
  *     php artisan translation:download
  *     php artisan lang:strip-empty
  *     php artisan lang:apply-glossary
+ *
+ * A term a translator has already changed to something else is left alone and reported,
+ * because POEditor is the source of truth and people do edit terms there. Pass --force
+ * only when the glossary is deliberately overruling them.
  */
 class ApplyTranslationGlossary extends Command
 {
-    protected $signature = 'lang:apply-glossary {locale? : Only this locale} {--dry-run : Report without writing}';
+    protected $signature = 'lang:apply-glossary
+                            {locale? : Only this locale}
+                            {--dry-run : Report without writing}
+                            {--force : Also overwrite terms a translator has already changed}';
 
     protected $description = 'Overwrite machine-translated UI terms with the curated values in resources/translation-glossary.json';
 
@@ -57,15 +64,29 @@ class ApplyTranslationGlossary extends Command
 
             $strings = json_decode(file_get_contents($path), true);
             $changed = 0;
+            $kept = 0;
 
             foreach ($terms as $key => $value) {
-                if (($strings[$key] ?? null) !== $value) {
-                    $strings[$key] = $value;
-                    $changed++;
+                $current = $strings[$key] ?? null;
+
+                if ($current === $value) {
+                    continue;
                 }
+
+                // Anything already translated to something else is a translator's decision,
+                // not a machine guess. Silently reverting it every download would undo their
+                // work without telling anyone, so report it and leave it alone.
+                if (is_string($current) && trim($current) !== '' && !$this->option('force')) {
+                    $this->warn(sprintf('%s: kept "%s" for "%s" (glossary says "%s") - use --force to override', $locale, $current, $key, $value));
+                    $kept++;
+                    continue;
+                }
+
+                $strings[$key] = $value;
+                $changed++;
             }
 
-            $rows[] = [$locale, $changed, count($terms)];
+            $rows[] = [$locale, $changed, $kept, count($terms)];
 
             if ($changed > 0 && !$this->option('dry-run')) {
                 ksort($strings);
@@ -76,7 +97,7 @@ class ApplyTranslationGlossary extends Command
             }
         }
 
-        $this->table(['locale', 'corrected', 'glossary terms'], $rows);
+        $this->table(['locale', 'corrected', 'kept (translator edited)', 'glossary terms'], $rows);
 
         return self::SUCCESS;
     }
