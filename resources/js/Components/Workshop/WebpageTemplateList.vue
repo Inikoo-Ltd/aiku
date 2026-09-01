@@ -18,11 +18,7 @@ import { useConfirm } from 'primevue/useconfirm'
 import ConfirmDialog from 'primevue/confirmdialog'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
-import {
-	WebLayoutTemplate,
-	WebLayoutTemplateFilter,
-	WebLayoutTemplateList,
-} from '@/types/WebLayoutTemplate'
+import { WebLayoutTemplate, WebLayoutTemplateList } from '@/types/WebLayoutTemplate'
 
 const props = withDefaults(
 	defineProps<{
@@ -32,7 +28,6 @@ const props = withDefaults(
 		applyingTemplateId?: number | null
 		deletingTemplateId?: number | null
 		editable?: boolean
-		filter?: WebLayoutTemplateFilter
 	}>(),
 	{
 		templates: () => ({ data: [] }),
@@ -41,7 +36,6 @@ const props = withDefaults(
 		applyingTemplateId: null,
 		deletingTemplateId: null,
 		editable: true,
-		filter: 'all',
 	}
 )
 
@@ -51,7 +45,6 @@ const emits = defineEmits<{
 	(e: 'navigate', value: string): void
 	(e: 'use', value: WebLayoutTemplate): void
 	(e: 'delete', value: WebLayoutTemplate): void
-	(e: 'filter', value: WebLayoutTemplateFilter): void
 }>()
 
 const confirm = useConfirm()
@@ -120,32 +113,9 @@ const onGoToPage = (url: string | null) => {
 	emits('navigate', url)
 }
 
-const filterOptions = computed<{ label: string; value: WebLayoutTemplateFilter }[]>(() => [
-	{ label: trans('All'), value: 'all' },
-	{ label: trans('Matching'), value: 'matching' },
-])
-
-const isMatchingFilterActive = computed(() => props.filter === 'matching')
-
-const onChangeFilter = (value: WebLayoutTemplateFilter) => {
-	if (value === props.filter) {
-		return
-	}
-
-	emits('filter', value)
-}
-
 const onClearSearch = () => {
 	search.value = ''
 	emitSearch.flush()
-}
-
-const onShowAllTemplates = () => {
-	onClearSearch()
-
-	if (isMatchingFilterActive.value) {
-		emits('filter', 'all')
-	}
 }
 </script>
 
@@ -170,21 +140,6 @@ const onShowAllTemplates = () => {
 					:placeholder="trans('Search template or author')"
 					class="w-full text-xs border border-slate-300 rounded pl-6 pr-1.5 py-1 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-400" />
 			</div>
-			<select
-				id="web-layout-template-filter"
-				:aria-label="trans('Show')"
-				v-tooltip="trans('Show every template or only the ones matching this page')"
-				class="w-24 shrink-0 text-xs border border-slate-300 rounded px-1.5 py-0.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-400"
-				:value="filter"
-				:disabled="isLoading"
-				@change="(event: { target: { value: any } }) => onChangeFilter(event.target.value)">
-				<option
-					v-for="option in filterOptions"
-					:key="option.value"
-					:value="option.value">
-					{{ option.label }}
-				</option>
-			</select>
 			<button
 				type="button"
 				v-tooltip="trans('Reload templates')"
@@ -288,16 +243,12 @@ const onShowAllTemplates = () => {
 				v-else
 				class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-slate-200 text-slate-500">
 				<FontAwesomeIcon :icon="faShapes" class="text-2xl mb-1 text-slate-300" />
-				<template v-if="search || isMatchingFilterActive">
-					<span class="text-xs font-medium">
-						{{ isMatchingFilterActive && !search
-							? trans('No template matches this page')
-							: trans('No template matches this search') }}
-					</span>
+				<template v-if="search">
+					<span class="text-xs font-medium">{{ trans('No template matches this search') }}</span>
 					<button
 						type="button"
 						class="text-[11px] underline text-slate-500 hover:text-slate-800"
-						@click="onShowAllTemplates">
+						@click="onClearSearch">
 						{{ trans('Show all templates') }}
 					</button>
 				</template>

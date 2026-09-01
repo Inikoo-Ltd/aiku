@@ -16,5 +16,3 @@ export interface WebLayoutTemplateList {
 	meta?: Meta
 	links?: Links
 }
-
-export type WebLayoutTemplateFilter = 'all' | 'matching'

@@ -37,11 +37,7 @@ import { Root, Daum } from "@/types/webBlockTypes";
 import { Root as RootWebpage } from "@/types/webpageTypes";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { routeType } from "@/types/route";
-import {
-  WebLayoutTemplate,
-  WebLayoutTemplateFilter,
-  WebLayoutTemplateList
-} from "@/types/WebLayoutTemplate";
+import { WebLayoutTemplate, WebLayoutTemplateList } from "@/types/WebLayoutTemplate";
 
 import {
   faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide,
@@ -121,7 +117,6 @@ const TEMPLATE_DELETE_ROUTE = "grp.models.web_layout_template.delete";
 const TEMPLATES_PER_PAGE = 10;
 const templates = ref<WebLayoutTemplateList>({ data: [] });
 const templatesSearch = ref("");
-const templatesFilter = ref<WebLayoutTemplateFilter>("all");
 const isLoadingTemplates = ref(false);
 const templatesErrorMessage = ref<string | null>(null);
 const applyingTemplateId = ref<number | null>(null);
@@ -621,8 +616,6 @@ const buildTemplatesUrl = (url?: string) => {
     target.searchParams.delete("filter[global]");
   }
 
-  target.searchParams.set("filter[show]", templatesFilter.value);
-
   return target.toString();
 };
 
@@ -647,11 +640,6 @@ const fetchTemplates = async (url?: string) => {
 
 const onSearchTemplates = (value: string) => {
   templatesSearch.value = value;
-  fetchTemplates();
-};
-
-const onFilterTemplates = (value: WebLayoutTemplateFilter) => {
-  templatesFilter.value = value;
   fetchTemplates();
 };
 
@@ -972,10 +960,8 @@ console.log('props_workshop',props)
           :templatesErrorMessage="templatesErrorMessage"
           :applyingTemplateId="applyingTemplateId"
           :deletingTemplateId="deletingTemplateId"
-          :templatesFilter="templatesFilter"
           @fetchTemplates="fetchTemplates()"
           @searchTemplates="onSearchTemplates"
-          @filterTemplates="onFilterTemplates"
           @navigateTemplates="fetchTemplates"
           @useTemplate="applyTemplate"
           @deleteTemplate="deleteTemplate"
