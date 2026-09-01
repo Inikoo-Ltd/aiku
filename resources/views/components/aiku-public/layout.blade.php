@@ -368,7 +368,6 @@
 </div>
 
 <script>
-    fetch('{{ route('aiku-public.visit') }}?p=' + encodeURIComponent(location.pathname + location.search) + '&r=' + encodeURIComponent(document.referrer), {keepalive: true});
     window.wireNotesSearch = function (input, results) {
         if (!input || !results) return;
         var timer = null;

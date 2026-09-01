@@ -142,7 +142,7 @@ test('llms.txt and home JSON-LD are served', function () {
         ->assertSee('"@type":"WebSite"', false);
 });
 
-test('visit beacon logs humans with referrer and country, skips bots', function () {
+test('visit beacon logs humans with referrer and country', function () {
     $visits = fn () => \Illuminate\Support\Facades\DB::table('aiku_public_visits');
     $before = $visits()->count();
 
@@ -154,12 +154,37 @@ test('visit beacon logs humans with referrer and country, skips bots', function 
         ->and($visit->country)->toBe('ES')
         ->and(mb_strlen($visit->visitor_hash))->toBe(16);
 
-    get($this->host.'/visit.json?p=/blog', ['User-Agent' => 'Googlebot/2.1'])->assertNoContent();
     get($this->host.'/visit.json?p=https://evil.example/x')->assertNoContent();
     get($this->host.'/visit.json')->assertNoContent();
     expect($visits()->count())->toBe($before + 1);
 
-    get($this->host.'/blog')->assertSee(route('aiku-public.visit'), false);
+    get($this->host.'/blog')->assertDontSee('document.referrer', false);
+});
+
+test('page views are logged server-side from the referer header so ad blockers cannot hide them', function () {
+    $visits = fn () => \Illuminate\Support\Facades\DB::table('aiku_public_visits');
+    $before = $visits()->count();
+
+    get($this->host.'/blog?msclkid=10f2b6be38c513c19b70dc2834d4cb88', ['Referer' => 'https://laravel-news.com/links/x', 'CF-IPCountry' => 'MY'])->assertOk();
+    $visit = $visits()->latest('id')->first();
+    expect($visits()->count())->toBe($before + 1)
+        ->and($visit->path)->toBe('/blog')
+        ->and($visit->referrer)->toBe('laravel-news.com')
+        ->and($visit->country)->toBe('MY');
+
+    get($this->host.'/feed.xml')->assertOk();
+    get($this->host.'/nope-'.uniqid())->assertNotFound();
+    expect($visits()->count())->toBe($before + 1);
+
+    get($this->host.'/blog', ['User-Agent' => 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'])->assertOk();
+    $bot = $visits()->latest('id')->first();
+    expect($visits()->count())->toBe($before + 2)
+        ->and($bot->is_bot)->toBeTrue()
+        ->and($visit->is_bot)->toBeFalse()
+        ->and($bot->user_agent)->toContain('Googlebot');
+
+    $stats = \App\Actions\DevOps\UI\ShowAikuPublicAnalytics::make()->handle();
+    expect(collect($stats['bots'])->pluck('user_agent')->first(fn ($ua) => str_contains($ua, 'Googlebot')))->not->toBeNull();
 });
 
 test('visit stats aggregate for devops dashboard widget and analytics page', function () {
