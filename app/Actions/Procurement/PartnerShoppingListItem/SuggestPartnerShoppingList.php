@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\PartnerShoppingListItem;
 
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Enums\Catalogue\HealthRankEnum;
@@ -151,6 +152,7 @@ class SuggestPartnerShoppingList extends OrgAction
             ->where('products.state', ProductStateEnum::ACTIVE->value)
             ->whereNull('partner_shopping_list_items.id')
             ->where('org_stocks.quantity_available', '>', 0)
+            ->whereRaw('coalesce(buyer_org_stocks.is_on_demand, false) = false')
             ->select([
                 'org_stocks.id',
                 'org_stocks.stock_id',
@@ -171,7 +173,7 @@ class SuggestPartnerShoppingList extends OrgAction
             ->unique('id')
             ->values();
 
-        $exchange = $orgPartner->exchangeToOrgCurrency();
+        $exchange = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
 
         return $rows->map(function ($row) use ($exchange) {
             $skosPerProductUnit = (float) $row->skos_per_product_unit > 0 ? (float) $row->skos_per_product_unit : 1;

@@ -68,6 +68,7 @@ use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListIte
 use App\Actions\Procurement\PartnerShoppingListItem\SendPartnerOrderToWarehouse;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
+use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
 use App\Actions\Procurement\PartnerShoppingListItem\SyncPartnerStockDeliveryOnDispatch;
 use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
@@ -115,7 +116,11 @@ use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Enums\Catalogue\HealthRankEnum;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\Procurement\OrgPartner\GetPartnerCustomerDiscount;
+use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
+use Illuminate\Support\Facades\Cache;
 use App\Actions\Procurement\OrgPartner\UpdatePartnerLeadTimeEstimate;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockStats;
@@ -2891,6 +2896,81 @@ describe('partner shopping list', function () {
             expect($stats->days_of_cover === null || $stats->days_of_cover >= 0)->toBeTrue();
         }
     });
+
+    test('intercompany customer resolved by normalised name and mapping persisted', function () {
+        StoreCustomer::make()->action($this->sellerShop, [
+            'company_name'    => str_replace('.', '', $this->orgPartner->organisation->name).'.',
+            'contact_name'    => 'Trade',
+            'contact_address' => Address::factory()->definition(),
+        ]);
+
+        $this->orgPartner->update(['data' => []]);
+
+        $resolved  = GetPartnerIntercompanyCustomer::run($this->orgPartner, $this->sellerShop->id);
+        $normalise = fn (string $name) => strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $name));
+
+        expect($resolved)->not->toBeNull()
+            ->and($normalise($resolved->company_name))->toBe($normalise($this->orgPartner->organisation->name))
+            ->and(data_get($this->orgPartner->refresh()->data, "intercompany_customers.{$this->sellerShop->id}"))->toBe($resolved->id);
+    });
+
+    test('partner customer discount factor is median of recent order net over gross', function () {
+        $item   = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $item->id]]);
+        $order  = $result['orders'][0];
+
+        DB::table('orders')->where('customer_id', $order->customer_id)
+            ->update(['state' => OrderStateEnum::SUBMITTED->value, 'gross_amount' => 100, 'net_amount' => 55]);
+        Cache::forget("partner_customer_discount_factor_{$order->customer_id}");
+
+        expect(GetPartnerCustomerDiscount::run($order->customer))->toBe(0.55);
+
+        DB::table('orders')->where('customer_id', $order->customer_id)
+            ->update(['state' => OrderStateEnum::CREATING->value, 'gross_amount' => 0, 'net_amount' => 0]);
+        Cache::forget("partner_customer_discount_factor_{$order->customer_id}");
+    });
+
+    test('exclusive products for the intercompany customer appear in partner browse query', function () {
+        $customer = GetPartnerIntercompanyCustomer::run($this->orgPartner, $this->sellerShop->id)
+            ?? StoreCustomer::make()->action($this->sellerShop, [
+                'company_name'    => $this->orgPartner->organisation->name,
+                'contact_name'    => 'Trade',
+                'contact_address' => Address::factory()->definition(),
+            ]);
+        $this->orgPartner->update([
+            'data' => ['intercompany_customers' => [$this->sellerShop->id => $customer->id]],
+        ]);
+
+        $this->sellerProduct->update(['is_for_sale' => false]);
+        DB::table('product_has_exclusive_customers')->insert([
+            'product_id'  => $this->sellerProduct->id,
+            'customer_id' => $customer->id,
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
+
+        $browse = ShowPartnerBrowse::make();
+        (function () use ($customer) {
+            $this->intercompanyCustomer = $customer;
+        })->call($browse);
+
+        $productIds = (fn () => $this->productsQuery($this->intercompanyCustomer->shop_id, null, null))
+            ->call($browse)
+            ->pluck('products.id');
+
+        expect($productIds)->toContain($this->sellerProduct->id);
+
+        (function () {
+            $this->intercompanyCustomer = null;
+        })->call($browse);
+
+        $shopId          = $this->sellerShop->id;
+        $withoutCustomer = (fn () => $this->productsQuery($shopId, null, null))
+            ->call($browse)
+            ->pluck('products.id');
+
+        expect($withoutCustomer)->not->toContain($this->sellerProduct->id);
+    });
 });
 
 describe('partner browse', function () {
@@ -3203,6 +3283,33 @@ test('auto-fill suggests shopping list within budget from usage history', functi
     expect($item)->not->toBeNull()
         ->and((float) $item->quantity)->toBe((float) $line['quantity'])
         ->and($item->notes)->toBe($line['reason']);
+});
+
+test('on demand buyer org stock excluded from partner shopping', function () {
+    $seller = $this->orgPartner->partner;
+    $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
+    [, $sellerProduct] = createProduct($sellerShop);
+    $sellerOrgStock = $sellerProduct->orgStocks()->first();
+    $sellerOrgStock->update(['quantity_available' => 50]);
+
+    $buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+    $buyerOrgStock->update(['quantity_available' => 0, 'is_on_demand' => true]);
+    $buyerOrgStock->stats->update(['predicted_daily_usage' => 5.5]);
+
+    PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
+        ->where('state', ShoppingListItemStateEnum::OPEN)
+        ->delete();
+
+    $proposal = SuggestPartnerShoppingList::make()->action($this->orgPartner, 100000);
+    expect(collect($proposal['lines'])->firstWhere('org_stock_id', $sellerOrgStock->id))->toBeNull();
+
+    $outStockIds = GetPartnerStockCoverBuckets::make()->stockIdsInBucket($this->orgPartner, 'out');
+    expect($outStockIds)->not->toContain($sellerOrgStock->stock_id);
+
+    $buyerOrgStock->update(['is_on_demand' => false]);
+
+    $outStockIds = GetPartnerStockCoverBuckets::make()->stockIdsInBucket($this->orgPartner, 'out');
+    expect($outStockIds)->toContain($sellerOrgStock->stock_id);
 });
 
 test('org partner shopping list stats hydrate', function () {

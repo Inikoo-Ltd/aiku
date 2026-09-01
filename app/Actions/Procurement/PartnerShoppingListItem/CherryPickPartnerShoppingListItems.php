@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\SalesChannel\StoreSalesChannel;
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -165,12 +166,9 @@ class CherryPickPartnerShoppingListItems extends OrgAction
 
     private function resolveIntercompanyCustomer(OrgPartner $orgPartner, Shop $shop): ?Customer
     {
-        $customerId = data_get($orgPartner->data, "intercompany_customers.{$shop->id}");
-        if ($customerId) {
-            $customer = Customer::find($customerId);
-            if ($customer) {
-                return $customer;
-            }
+        $customer = GetPartnerIntercompanyCustomer::run($orgPartner, $shop->id);
+        if ($customer) {
+            return $customer;
         }
 
         $buyer        = $orgPartner->organisation;

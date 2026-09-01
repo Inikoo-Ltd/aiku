@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\OrgPartner\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
@@ -152,7 +153,7 @@ class ShowPartnerShoppingDashboard extends OrgAction
 
     public function htmlResponse(array $data, ActionRequest $request): Response
     {
-        $exchange = $this->orgPartner->exchangeToOrgCurrency();
+        $exchange = $this->orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($this->orgPartner);
 
         $data['estimated_total'] = round($data['estimated_total'] * $exchange, 2);
         $data['order_capacity']['list']['value'] = round($data['order_capacity']['list']['value'] * $exchange, 2);

@@ -111,7 +111,7 @@ const shouldNotBeOrdered = (bucket: CoverBucket) => ["ok", "dead"].includes(buck
 
 const segmentWidth = (bucket: CoverBucket, part: number) => (bucket.count ? `${Math.max((part / bucket.count) * 100, part ? 1.5 : 0)}%` : "0%")
 
-const needsAction = (bucket: CoverBucket) => !["ok", "dead", "never"].includes(bucket.bucket) && bucket.untouched > 0
+const needsAction = (bucket: CoverBucket) => !["ok", "dead", "never"].includes(bucket.bucket) && bucket.untouched > 0 && bucket.untouched < bucket.count
 
 const bucketRoute = (bucket: string, rank?: string) => `${route(props.browseRoute.name, props.browseRoute.parameters)}?cover=${bucket}${rank ? `&rank=${rank}` : ""}`
 
@@ -234,9 +234,9 @@ const rankClasses: Record<string, string> = {
                         </button>
                     </span>
                     <span v-else-if="needsAction(bucket)" class="text-xs font-medium tabular-nums">
-                        {{ trans(":count need action", { count: bucket.untouched.toLocaleString() }) }}
+                        {{ trans(":count (:percent%) need action", { count: bucket.untouched.toLocaleString(), percent: Math.floor((bucket.untouched / bucket.count) * 100) }) }}
                     </span>
-                    <span v-else-if="bucket.count && bucket.bucket !== 'ok' && bucket.bucket !== 'dead' && bucket.bucket !== 'never'" class="text-xs tabular-nums opacity-70">
+                    <span v-else-if="bucket.count && bucket.untouched === 0 && !['ok', 'dead', 'never'].includes(bucket.bucket)" class="text-xs tabular-nums opacity-70">
                         {{ trans("all handled") }}
                     </span>
                 </div>

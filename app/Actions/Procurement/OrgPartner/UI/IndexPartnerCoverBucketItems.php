@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\OrgPartner\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
@@ -85,7 +86,9 @@ class IndexPartnerCoverBucketItems extends OrgAction
             ->get()
             ->keyBy('stock_id');
 
-        $paginator->getCollection()->transform(function (OrgStock $orgStock) use ($products, $buyerOrgStocks, $openItems) {
+        $priceFactor = GetPartnerBuyingPriceFactor::run($this->orgPartner);
+
+        $paginator->getCollection()->transform(function (OrgStock $orgStock) use ($products, $buyerOrgStocks, $openItems, $priceFactor) {
             $product       = $products->get($orgStock->id);
             $webImages     = $product ? json_decode($product->web_images ?? 'null', true) : null;
             $buyerOrgStock = $buyerOrgStocks->get($orgStock->stock_id);
@@ -107,7 +110,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
                     ? (int) ceil((float) $buyerOrgStock->stats->recommended_order_quantity)
                     : null,
                 'price'                 => $product && $product->price !== null && $unitsPerSko
-                    ? round((float) $product->price * $this->orgPartner->exchangeToOrgCurrency() / $unitsPerSko, 4)
+                    ? round((float) $product->price * $priceFactor * $this->orgPartner->exchangeToOrgCurrency() / $unitsPerSko, 4)
                     : null,
                 'shopping_list_item_id' => $openItem?->id,
                 'ordered_quantity'      => $openItem ? (float) $openItem->quantity : 0,
