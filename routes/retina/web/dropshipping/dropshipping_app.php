@@ -21,6 +21,7 @@ use App\Actions\Dropshipping\Magento\StoreMagentoUser;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
+use App\Actions\Dropshipping\Wix\User\AuthenticateWixAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Clients\GetRetinaCustomerClientFromWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\TestConnectionWooCommerceUser;
@@ -192,4 +193,8 @@ Route::prefix('tiktok')->as('tiktok.')->group(function () {
 
 Route::prefix('allegro')->as('allegro.')->group(function () {
     Route::get('callback', AuthenticateAllegroAccount::class)->name('callback');
+});
+
+Route::prefix('wix')->as('wix.')->group(function () {
+    Route::get('callback', AuthenticateWixAccount::class)->name('callback');
 });

@@ -51,6 +51,12 @@ return [
         'client_id'     => env('ALLEGRO_CLIENT_ID'),
         'client_secret' => env('ALLEGRO_CLIENT_SECRET')
     ],
+    'wix'       => [
+        'api_url'     => env('WIX_API_URL', 'https://www.wixapis.com'),
+        'install_url' => env('WIX_INSTALL_URL', 'https://www.wix.com/installer/install'),
+        'app_id'      => env('WIX_APP_ID'),
+        'app_secret'  => env('WIX_APP_SECRET'),
+    ],
     'ebay'      => [
         'client_id'       => env('EBAY_CLIENT_ID'),
         'client_secret'   => env('EBAY_CLIENT_SECRET'),

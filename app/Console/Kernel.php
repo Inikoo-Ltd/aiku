@@ -460,6 +460,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('wix:fetch-orders')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'FetchWixOrders',
+                ),
+                name: 'FetchWixOrders',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('fetch:woo-orders')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'FetchWooOrders',
                 ),
@@ -509,6 +518,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'UpdateInventoryInEbayPortfolio',
                 ),
                 name: 'UpdateInventoryInEbayPortfolio',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('wix:update-inventory')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'UpdateInventoryInWixPortfolio',
+                ),
+                name: 'UpdateInventoryInWixPortfolio',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

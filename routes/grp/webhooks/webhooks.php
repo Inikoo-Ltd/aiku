@@ -11,6 +11,7 @@ use App\Actions\Comms\Notifications\GetSnsNotification;
 use App\Actions\CRM\Customer\GoogleAds\CallbackShopGoogleAds;
 use App\Actions\CRM\TrafficSource\ReceiveTrafficSourceCostWebhook;
 use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
+use App\Actions\Dropshipping\Wix\User\AuthenticateWixAccount;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFetchStock;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackProductChanged;
@@ -76,6 +77,10 @@ Route::prefix('tiktok')->as('webhooks.tiktok.')->group(function () {
 
 Route::prefix('allegro')->as('allegro.')->group(function () {
     Route::get('callback', AuthenticateAllegroAccount::class)->name('callback');
+});
+
+Route::prefix('wix')->as('wix.')->group(function () {
+    Route::get('callback', AuthenticateWixAccount::class)->name('callback');
 });
 
 Route::prefix('jira/{group:id}')->as('webhooks.jira.')->group(function () {

@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannel
 use App\Actions\Dropshipping\Ebay\DeleteEbayProduct;
 use App\Actions\Dropshipping\Magento\Product\DeleteProductFromMagento;
 use App\Actions\Dropshipping\Shopify\Product\DeactivateShopifyProduct;
+use App\Actions\Dropshipping\Wix\Product\DeleteProductFromWix;
 use App\Actions\Dropshipping\WooCommerce\Product\DeleteProductFromWooCommerce;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePortfolios;
@@ -42,6 +43,7 @@ class DeletePortfolio extends OrgAction
             PlatformTypeEnum::AMAZON => DeleteAmazonProduct::run($portfolio),
             PlatformTypeEnum::EBAY => DeleteEbayProduct::run($portfolio),
             PlatformTypeEnum::SHOPIFY => DeactivateShopifyProduct::run($portfolio),
+            PlatformTypeEnum::WIX => DeleteProductFromWix::run($portfolio),
             default => null
         };
 
