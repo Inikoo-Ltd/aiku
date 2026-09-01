@@ -9,11 +9,13 @@ namespace App\Actions\Comms\WhatsappCampaign;
 
 use App\Actions\Chat\MetaChatSession\StoreMetaChatMessage;
 use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappTemplatePayload;
+use App\Actions\Chat\Whatsapp\StoreMetaTrackingEvent;
 use App\Actions\Chat\Whatsapp\Templates\ResolveWhatsappTemplateTags;
 use App\Enums\Comms\WhatsappCampaign\WhatsappCampaignStateEnum;
 use App\Enums\Comms\WhatsappDeliveryChannel\WhatsappDeliveryChannelStateEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\CRM\Livechat\MetaTrackingEventTypeEnum;
 use App\Models\Chat\MetaChatSession;
 use App\Models\Comms\WhatsappCampaign;
 use App\Models\Comms\WhatsappDeliveryChannel;
@@ -201,7 +203,7 @@ class SendWhatsappDeliveryChannel
      */
     private function recordFailure(MetaChatSession $session, WhatsappCampaign $campaign, WhatsappRecipient $recipient, string $reason): void
     {
-        StoreMetaChatMessage::run($session, [
+        $metaChatMessage = StoreMetaChatMessage::run($session, [
             'message_type' => ChatMessageTypeEnum::TEXT,
             'sender_type'  => ChatSenderTypeEnum::SYSTEM,
             'metadata'     => [
@@ -211,6 +213,18 @@ class SendWhatsappDeliveryChannel
                 'wa_error'               => $reason,
             ],
         ]);
+
+        /* The send never reached Meta, so no wamid was issued and no status webhook will
+           ever follow; this is the only record these failures get. */
+        StoreMetaTrackingEvent::run(
+            MetaTrackingEventTypeEnum::FAILED,
+            $metaChatMessage,
+            data: [
+                'whatsapp_campaign_id'  => $campaign->id,
+                'whatsapp_recipient_id' => $recipient->id,
+                'error'                 => $reason,
+            ]
+        );
     }
 
     public string $commandSignature = 'whatsapp-campaign:send-channel {channel?}';

@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\Whatsapp;
 
+use App\Enums\CRM\Livechat\MetaTrackingEventTypeEnum;
 use App\Events\BroadcastMetaChatMessageStatus;
 use App\Models\Chat\MetaChatMessage;
 use Illuminate\Support\Arr;
@@ -63,18 +64,25 @@ class UpdateWhatsappMessageStatus
 
         $metaChatMessage = MetaChatMessage::where('meta_message_id', $metaMessageId)->first();
 
-        if (!$metaChatMessage) {
-            Log::info('WhatsApp status for unknown message', [
-                'meta_message_id' => $metaMessageId,
-                'status'          => Arr::get($status, 'status'),
-            ]);
-
-            return;
-        }
-
         $statusName = (string) Arr::get($status, 'status');
         $timestamp  = Arr::get($status, 'timestamp');
         $happenedAt = $timestamp ? Carbon::createFromTimestamp((int) $timestamp) : now();
+        $trackedType = MetaTrackingEventTypeEnum::tryFrom($statusName);
+
+        if (!$metaChatMessage) {
+            Log::info('WhatsApp status for unknown message', [
+                'meta_message_id' => $metaMessageId,
+                'status'          => $statusName,
+            ]);
+
+            /* The message is not ours to update, but the status still happened; the wamid on
+               the row is what lets it be reconciled if the message turns up later. */
+            if ($trackedType) {
+                StoreMetaTrackingEvent::run($trackedType, null, $metaMessageId, $status, $happenedAt);
+            }
+
+            return;
+        }
 
         $metadata     = $metaChatMessage->metadata ?? [];
         $currentRank  = self::STATUS_RANK[Arr::get($metadata, 'wa_status')] ?? 0;
@@ -93,7 +101,9 @@ class UpdateWhatsappMessageStatus
             $metadata['wa_error'] = Arr::get($status, 'errors.0');
         }
 
-        // ponytail: `conversation`, `pricing` and group recipient fields are dropped, nothing consumes them
+        /* metadata keeps only what the live UI reads; `conversation`, `pricing` and the group
+           recipient fields are not copied here because the tracking event below stores the
+           whole status node verbatim. */
         $modelData = ['metadata' => $metadata];
 
         if ($statusName === 'delivered' && !$metaChatMessage->delivered_at) {
@@ -106,6 +116,10 @@ class UpdateWhatsappMessageStatus
         }
 
         $metaChatMessage->update($modelData);
+
+        if ($trackedType) {
+            StoreMetaTrackingEvent::run($trackedType, $metaChatMessage, $metaMessageId, $status, $happenedAt);
+        }
 
         BroadcastMetaChatMessageStatus::dispatch($metaChatMessage->fresh('metaChatSession'));
     }

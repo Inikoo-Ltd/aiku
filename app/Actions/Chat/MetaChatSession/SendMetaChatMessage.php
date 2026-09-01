@@ -9,9 +9,11 @@
 namespace App\Actions\Chat\MetaChatSession;
 
 use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappTemplatePayload;
+use App\Actions\Chat\Whatsapp\StoreMetaTrackingEvent;
 use App\Actions\Chat\Whatsapp\Templates\ResolveWhatsappTemplateTags;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
+use App\Enums\CRM\Livechat\MetaTrackingEventTypeEnum;
 use App\Enums\CRM\Livechat\WhatsappMediaTypeEnum;
 use App\Http\Resources\CRM\Livechat\MetaChatMessageResource;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -177,9 +179,19 @@ class SendMetaChatMessage
         );
 
         if ($response->failed()) {
+            $reason = Arr::get($response->json(), 'error.message') ?: __('Failed to send WhatsApp message.');
+
+            /* The send never reached Meta, so no message row is stored and no status webhook
+               will ever follow; the tracking event is the only record the attempt happened. */
+            StoreMetaTrackingEvent::run(
+                MetaTrackingEventTypeEnum::FAILED,
+                data: ['error' => $reason, 'agent_id' => $agent->id],
+                metaChatSession: $metaChatSession
+            );
+
             return [
                 'ok'      => false,
-                'message' => Arr::get($response->json(), 'error.message') ?: __('Failed to send WhatsApp message.'),
+                'message' => $reason,
                 'code'    => 422,
             ];
         }

@@ -140,4 +140,9 @@ class MetaChatSession extends Model
     {
         return $this->hasMany(MetaChatEvent::class);
     }
+
+    public function trackingEvents(): HasMany
+    {
+        return $this->hasMany(MetaTrackingEvent::class);
+    }
 }
