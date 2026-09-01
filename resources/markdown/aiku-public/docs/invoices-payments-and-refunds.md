@@ -48,7 +48,7 @@ Every invoice carries a payment status you can see at a glance in the **Payment*
 
 Payments live under their own **Payments** area in **Accounting**, and can also be started from a customer's **payment account**. Creating a payment (**New payment**) asks for a reference, the customer, and the payment details, and it is always made against a specific payment account.
 
-When a payment is saved, aiku works out how it was paid: if the payment came through with card, wallet or scheme details (for example from checkout.com), aiku records the wallet or payment type as the **method** and the card scheme as the **sub method**; otherwise it falls back to the type of the payment account itself. A successful payment is linked to the invoice through the invoice's own **Payments** tab, and a payment list — whether you are looking at the whole organisation, a shop, a payment account or a single invoice — always shows the payment's **Status**, **Reference**, **Payment Account**, **Type**, **Method**, **Amount** and **Date**.
+When a payment is saved, aiku works out how it was paid: if the payment came through with card, wallet or scheme details, aiku records the wallet or payment type as the **method** and the card scheme as the **sub method**; otherwise it falls back to the type of the payment account itself. A successful payment is linked to the invoice through the invoice's own **Payments** tab, and a payment list — whether you are looking at the whole organisation, a shop, a payment account or a single invoice — always shows the payment's **Status**, **Reference**, **Payment Account**, **Type**, **Method**, **Amount** and **Date**.
 
 ## Payment accounts and payment service providers
 
@@ -63,7 +63,7 @@ A refund can send the money back in different ways, offered as two options when 
 - **Refund money to customer's credit balance** — the amount is added to the customer's credit balance rather than sent back to a card or account.
 - **Refund money to payment method of the invoice** — the amount is refunded against a specific original payment, through the payment account it was originally taken from.
 
-Where a refund is processed online (through checkout.com), aiku waits for the provider to confirm the refund has actually succeeded before it updates the original payment's **total refund** and marks it as refunded; if the provider does not confirm success, the refund is not accepted.
+Where a refund is processed online through your card payment provider, aiku waits for the provider to confirm the refund has actually succeeded before it updates the original payment's **total refund** and marks it as refunded; if the provider does not confirm success, the refund is not accepted.
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>

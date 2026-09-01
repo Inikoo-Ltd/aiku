@@ -76,5 +76,5 @@ When an order qualifies for an offer, the reward is applied to the order automat
 </aside>
 
 <aside class="permissions"><strong>Permissions you need</strong>
-<p>Viewing a shop's campaigns and offers needs the shop's discounts <b>view</b> permission; seeing the edit controls on a campaign needs the discounts <b>edit</b> permission. Creating or editing an individual offer needs the shop's CRM <b>create</b> or <b>edit</b> permission instead.</p>
+<p>Viewing a shop's campaigns and offers needs view access to that shop's discounts; changing them needs edit access. Ask your organisation admin if the create or edit buttons are missing.</p>
 </aside>
