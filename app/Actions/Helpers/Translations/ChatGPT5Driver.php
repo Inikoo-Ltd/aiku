@@ -24,6 +24,9 @@ class ChatGPT5Driver implements TranslationDriver
 
     private const BUFFER_FACTOR = 2;
 
+    // Below this a retry is not worth the call; the strings just stay English.
+    private const MIN_CHUNK = 4;
+
     private array $config;
 
     private Encoder $encoder;
@@ -51,27 +54,45 @@ class ChatGPT5Driver implements TranslationDriver
         $currentChunk = [];
         $chunks = $this->makeChunks($texts, $sourceLang, $targetLang);
 
-        collect($chunks)
-            ->each(function (array $value) use (&$translations, $sourceLang, $targetLang) {
-                try {
-                    $chunkResult = $this->sendTranslationRequest($value, $sourceLang, $targetLang);
-                } catch (AICreditException $e) {
-                    throw $e;
-                } catch (Throwable $e) {
-                    // One malformed reply used to abort the whole run and discard every
-                    // chunk before it. Skip this batch instead: its strings keep falling
-                    // back to English and a later run retries them.
-                    Sentry::captureMessage('Translation chunk skipped: '.$e->getMessage());
-
-                    return;
-                }
-
-                $translations += is_array($chunkResult) ? $chunkResult : [];
-            });
+        foreach ($chunks as $chunk) {
+            $translations += $this->translateChunk($chunk, $sourceLang, $targetLang);
+        }
 
         if (! empty($currentChunk)) {
             $chunkResult = $this->sendTranslationRequest($currentChunk, $sourceLang, $targetLang);
             $translations += is_array($chunkResult) ? $chunkResult : [];
+        }
+
+        return $translations;
+    }
+
+    /**
+     * A reply is rejected whenever the model drops an entry, which it does for anything it
+     * reads as untranslatable ("CSV", "B2B"). Discarding 800 strings over one acronym
+     * loses almost everything, so halve the batch and retry: the offending entry ends up
+     * alone in a tiny chunk and only it is lost.
+     *
+     * @return array<string, string>
+     */
+    private function translateChunk(array $chunk, string $sourceLang, string $targetLang): array
+    {
+        try {
+            return $this->sendTranslationRequest($chunk, $sourceLang, $targetLang);
+        } catch (AICreditException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            if (count($chunk) <= self::MIN_CHUNK) {
+                Sentry::captureMessage('Translation chunk skipped: '.$e->getMessage());
+
+                return [];
+            }
+        }
+
+        $halves = array_chunk($chunk, (int) ceil(count($chunk) / 2), true);
+        $translations = [];
+
+        foreach ($halves as $half) {
+            $translations += $this->translateChunk($half, $sourceLang, $targetLang);
         }
 
         return $translations;
