@@ -10,7 +10,7 @@ order: 2
 ---
 
 <aside class="tldr">
-El panel es el comienzo de cada sesión de compra. La fila superior dice cuánto margen tienes — dinero y espacio en el almacén. La parte central dice qué productos del socio están a punto de hacerte daño, empezando por los peores. La inferior dice qué está ya en movimiento. No hace falta que recuerdes nada; solo respondes a lo que la pantalla te pregunta. Cursar el pedido en sí se explica en <a href="/docs/buying-from-a-partner">Buying from a partner</a> (en inglés).
+El panel es el comienzo de cada sesión de compra. La fila superior dice cuánto margen tienes — dinero y espacio en el almacén. La parte central dice qué productos del socio están a punto de hacerte daño, empezando por los peores. La inferior dice qué está ya en movimiento. No hace falta que recuerdes nada; solo respondes a lo que la pantalla te pregunta. Cursar el pedido en sí se explica en <a href="/docs/buying-from-a-partner-es">Comprar a un socio</a>.
 </aside>
 
 Se abre en **Procurement → Partners → {socio} → Shopping**. Sustituye la vieja costumbre de abrir la lista de la compra e intentar acordarse de qué faltaba.

@@ -5,7 +5,6 @@ date: 2026-09-01
 source_date: 2026-09-01
 tags: orders, orders lifecycle
 category: orders
-help_routes: grp.org.shops.show.ordering.orders
 ---
 
 <aside class="tldr">

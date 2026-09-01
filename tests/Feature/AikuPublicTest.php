@@ -280,7 +280,8 @@ test('helpFor matches grp routes to docs by longest prefix', function () {
 
 test('helpFor links the reader to the doc in their own language when one exists', function () {
     expect(BlogPosts::helpFor('grp.org.shops.show.ordering.orders.show', 'es')['url'])->toEndWith('/docs/following-an-order-from-basket-to-dispatch-es')
-        ->and(BlogPosts::helpFor('grp.org.shops.show.ordering.orders.show', 'sk')['url'])->toEndWith('/docs/following-an-order-from-basket-to-dispatch')
+        ->and(BlogPosts::helpFor('grp.org.shops.show.ordering.orders.show', 'sk')['url'])->toEndWith('/docs/following-an-order-from-basket-to-dispatch-sk')
+        ->and(BlogPosts::helpFor('grp.org.shops.show.ordering.orders.show', 'hi')['url'])->toEndWith('/docs/following-an-order-from-basket-to-dispatch')
         ->and(BlogPosts::helpFor('grp.org.shops.show.ordering.orders.show', 'en')['url'])->toEndWith('/docs/following-an-order-from-basket-to-dispatch');
 });
 
@@ -294,7 +295,7 @@ test('translated docs are served, linked and kept out of the English listings', 
         ->not->toContain('your-clean-handover-score-zh-hans');
 
     $translations = BlogPosts::translations($english, 'docs');
-    expect($translations->pluck('lang')->all())->toBe(['en', 'hi', 'id', 'ne', 'zh-hans'])
+    expect($translations->pluck('lang')->all())->toBe(['en', 'es', 'hi', 'id', 'ne', 'sk', 'zh-hans'])
         ->and($translations->every(fn (array $doc) => $doc['base_slug'] === 'your-clean-handover-score'))->toBeTrue();
 
     get($this->host.'/docs/your-clean-handover-score-id')->assertOk()
@@ -305,6 +306,16 @@ test('translated docs are served, linked and kept out of the English listings', 
     get($this->host.'/docs/your-clean-handover-score')->assertOk()
         ->assertSee('Bahasa Indonesia', false)
         ->assertDontSee('versi bahasa Inggris yang berlaku', false);
+});
+
+test('every guide has a Spanish and a Slovak translation made from the current English', function () {
+    foreach (BlogPosts::all('docs') as $english) {
+        foreach (['es', 'sk'] as $lang) {
+            $translation = BlogPosts::everything('docs')->firstWhere('slug', $english['slug'].'-'.$lang);
+            expect($translation)->not->toBeNull($english['slug'].' has no '.$lang.' translation')
+                ->and($translation['source_date']?->toDateString())->toBe($english['date']->toDateString(), $english['slug'].'-'.$lang.' is stale');
+        }
+    }
 });
 
 test('a translation older than its English original is flagged as stale', function () {
