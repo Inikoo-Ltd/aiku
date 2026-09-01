@@ -4,7 +4,7 @@ summary: The seller's guide - cherry-pick what you can ship from partner shoppin
 date: 2026-08-31
 tags: procurement, intercompany, dispatch
 category: procurement
-help_routes: grp.org.procurement.org_partners.shipping_list
+help_routes: grp.org.productions.show.partners
 series: Ordering from partners
 order: 4
 ---

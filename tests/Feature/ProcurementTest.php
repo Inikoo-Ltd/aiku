@@ -63,9 +63,11 @@ use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransacti
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
-use App\Actions\Procurement\PartnerShoppingListItem\CherryPickPartnerShoppingListItems;
+use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
+use App\Actions\Production\Production\StoreProduction;
+use App\Models\Production\Production;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
-use App\Actions\Procurement\PartnerShoppingListItem\SendPartnerOrderToWarehouse;
+use App\Actions\Production\PartnerShippingList\SendPartnerOrderToWarehouse;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
@@ -3287,11 +3289,13 @@ test('UI partner shopping list index', function () {
 });
 
 test('UI partner shipping list index', function () {
-    $response = $this->get(route('grp.org.procurement.org_partners.shipping_list.index', [$this->organisation->slug]));
+    $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
+
+    $response = $this->get(route('grp.org.productions.show.partners.index', [$this->organisation->slug, $production->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('Procurement/PartnerShippingList')
+            ->component('Org/Production/PartnerShippingList')
             ->has('title')
             ->has('data');
     });

@@ -6,14 +6,16 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Procurement\PartnerShoppingListItem;
+namespace App\Actions\Production\PartnerShippingList;
 
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
+use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerStockDeliveryFromDeliveryNote;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Ordering\Order;
+use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -61,7 +63,7 @@ class SendPartnerOrderToWarehouse extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(Organisation $organisation, Order $order, ActionRequest $request): ?StockDelivery
+    public function asController(Organisation $organisation, Production $production, Order $order, ActionRequest $request): ?StockDelivery
     {
         $this->initialisation($organisation, $request);
 

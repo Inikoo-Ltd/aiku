@@ -6,15 +6,15 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Procurement\PartnerShoppingListItem\UI;
+namespace App\Actions\Production\PartnerShippingList\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Procurement\UI\ShowProcurementDashboard;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Ordering\Order;
 use App\Models\Procurement\PartnerShoppingListItem;
+use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -26,7 +26,16 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPartnerShippingList extends OrgAction
 {
-    use WithProcurementAuthorisation;
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo([
+            'org-supervisor.'.$this->organisation->id,
+            'productions-view.'.$this->organisation->id,
+            "productions_operations.{$this->production->id}.view",
+            "productions_operations.{$this->production->id}.orchestrate",
+            "productions_procurement.{$this->production->id}.view",
+        ]);
+    }
 
     public function handle(Organisation $seller): LengthAwarePaginator
     {
@@ -83,9 +92,9 @@ class IndexPartnerShippingList extends OrgAction
         };
     }
 
-    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Production $production, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisationFromProduction($production, $request);
 
         return $this->handle($organisation);
     }
@@ -93,7 +102,7 @@ class IndexPartnerShippingList extends OrgAction
     public function htmlResponse(LengthAwarePaginator $items, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Procurement/PartnerShippingList',
+            'Org/Production/PartnerShippingList',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => __('Partner shipping list'),
@@ -141,13 +150,13 @@ class IndexPartnerShippingList extends OrgAction
     public function getBreadcrumbs(array $routeParameters): array
     {
         return array_merge(
-            ShowProcurementDashboard::make()->getBreadcrumbs($routeParameters),
+            ShowProduction::make()->getBreadcrumbs($routeParameters),
             [
                 [
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.procurement.org_partners.shipping_list.index',
+                            'name'       => 'grp.org.productions.show.partners.index',
                             'parameters' => $routeParameters,
                         ],
                         'label' => __('Partner shipping list'),

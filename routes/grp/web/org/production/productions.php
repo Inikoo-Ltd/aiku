@@ -6,6 +6,9 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
+use App\Actions\Production\PartnerShippingList\SendPartnerOrderToWarehouse;
+use App\Actions\Production\PartnerShippingList\UI\IndexPartnerShippingList;
 use App\Actions\Production\Artefact\UI\CreateArtefact;
 use App\Actions\Production\Artefact\UI\EditArtefact;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
@@ -51,6 +54,13 @@ Route::prefix('{production}')
                         Route::get('payroll/export', ExportManufacturePayroll::class)->name('payroll.export');
                         Route::get('job-orders', IndexJobOrders::class)->name('job-orders.index');
                         Route::get('job-orders/{jobOrder}', ShowJobOrder::class)->name('job-orders.show');
+                    });
+
+                Route::name('.partners.')->prefix('partners')
+                    ->group(function () {
+                        Route::get('', IndexPartnerShippingList::class)->name('index');
+                        Route::post('cherry-pick', CherryPickPartnerShoppingListItems::class)->name('cherry_pick');
+                        Route::post('orders/{order}/send-to-warehouse', SendPartnerOrderToWarehouse::class)->name('send_to_warehouse');
                     });
 
                 Route::name('.crafts.')->prefix('crafts')
