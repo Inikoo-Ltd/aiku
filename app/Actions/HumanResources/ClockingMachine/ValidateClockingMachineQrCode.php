@@ -59,7 +59,7 @@ class ValidateClockingMachineQrCode
 
             $effectiveMode = $this->resolveEffectivePolicyMode($clockingMachine, $employee, now());
 
-            if (($config['allow_coordinates'] ?? false) === true && $effectiveMode !== ClockingPolicyModeEnum::REMOTE->value) {
+            if (($config['allow_coordinates'] ?? false) === true && !ClockingPolicyModeEnum::from($effectiveMode)->skipsLocationCheck()) {
                 if ($userLat === null || $userLng === null) {
                     throw new Exception(__('Location access is required to validate this QR code.'));
                 }

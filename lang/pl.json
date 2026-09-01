@@ -11358,5 +11358,10 @@
     "Δ 1Y": "Δ 1Y",
     "— a verification code may be emailed to you, enter it to continue.": "— kod weryfikacyjny może zostać do Ciebie wysłany e-mailem, wprowadź go, aby kontynuować.",
     "— that is :time for you": "— to jest :time dla ciebie",
-    "Your phone reports a location outside the workplace. If you are on site, enable Precise Location for your browser and try again.": "Twój telefon zgłasza lokalizację poza miejscem pracy. Jeśli jesteś na miejscu, włącz dokładną lokalizację w przeglądarce i spróbuj ponownie."
+    "Your phone reports a location outside the workplace. If you are on site, enable Precise Location for your browser and try again.": "Twój telefon zgłasza lokalizację poza miejscem pracy. Jeśli jesteś na miejscu, włącz dokładną lokalizację w przeglądarce i spróbuj ponownie.",
+    "Phone Without Location": "Telefon bez lokalizacji",
+    "Save note": "Zapisz notatkę",
+    "view on map": "zobacz na mapie",
+    "Waiting for your location…": "Czekam na Twoją lokalizację…",
+    "You can still scan, ask HR if it keeps failing": "Nadal możesz skanować, zgłoś do kadr, jeśli to się powtarza"
 }

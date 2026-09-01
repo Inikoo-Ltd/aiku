@@ -11358,5 +11358,10 @@
     "Δ 1Y": "Δ1Y",
     "— a verification code may be emailed to you, enter it to continue.": "",
     "— that is :time for you": "",
-    "Your phone reports a location outside the workplace. If you are on site, enable Precise Location for your browser and try again.": "Váš telefón hlási polohu mimo pracoviska. Ak ste na mieste, zapnite presnú polohu v prehliadači a skúste to znova."
+    "Your phone reports a location outside the workplace. If you are on site, enable Precise Location for your browser and try again.": "Váš telefón hlási polohu mimo pracoviska. Ak ste na mieste, zapnite presnú polohu v prehliadači a skúste to znova.",
+    "Phone Without Location": "Telefón bez polohy",
+    "Save note": "Uložiť poznámku",
+    "view on map": "zobraziť na mape",
+    "Waiting for your location…": "Čaká sa na vašu polohu…",
+    "You can still scan, ask HR if it keeps failing": "Stále môžete skenovať, ak to zlyháva, oznámte to personálnemu oddeleniu"
 }

@@ -78,9 +78,14 @@ const scopeTypeOptions = [
 ]
 
 const policyModeOptions = [
-    { value: "onsite", label: "Onsite" },
-    { value: "remote", label: "Remote" },
-    { value: "hybrid", label: "Hybrid" },
+    { value: "onsite", label: trans("Onsite"), tagClass: "bg-green-100 text-green-700" },
+    { value: "remote", label: trans("Remote"), tagClass: "bg-sky-100 text-sky-700" },
+    { value: "hybrid", label: trans("Hybrid"), tagClass: "bg-violet-100 text-violet-700" },
+    {
+        value: "no_location",
+        label: trans("Phone Without Location"),
+        tagClass: "bg-amber-100 text-amber-700",
+    },
 ]
 
 const dayOfWeekOptions = [
@@ -108,19 +113,7 @@ const modeLabel = (mode?: string | null): string => {
         return "-"
     }
 
-    if (mode === "onsite") {
-        return "Onsite"
-    }
-
-    if (mode === "remote") {
-        return "Remote"
-    }
-
-    if (mode === "hybrid") {
-        return "Hybrid"
-    }
-
-    return mode
+    return policyModeOptions.find((option) => option.value === mode)?.label ?? mode
 }
 
 const scopeLabel = (scopeType?: string | null, scopeId?: number | null): string => {
@@ -137,19 +130,7 @@ const scopeLabel = (scopeType?: string | null, scopeId?: number | null): string 
 }
 
 const modeTagClass = (mode?: string | null): string => {
-    if (mode === "onsite") {
-        return "bg-green-100 text-green-700"
-    }
-
-    if (mode === "remote") {
-        return "bg-sky-100 text-sky-700"
-    }
-
-    if (mode === "hybrid") {
-        return "bg-violet-100 text-violet-700"
-    }
-
-    return "bg-gray-100 text-gray-600"
+    return policyModeOptions.find((option) => option.value === mode)?.tagClass ?? "bg-gray-100 text-gray-600"
 }
 
 const dateLabel = (date?: string | null): string => {

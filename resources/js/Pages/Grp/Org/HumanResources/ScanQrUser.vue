@@ -63,8 +63,15 @@ const loading = ref(false)
 const errorMsg = ref<string | null>(null)
 const lastResult = ref<string | null>(null)
 
+const locationUnavailable = ref(false)
+
 const hasLocation = computed(() => lat.value !== null && lng.value !== null)
-const canOpenCamera = computed(() => hasLocation.value)
+
+/**
+ * A phone that cannot produce a fix must still reach the scanner: whether that is allowed is the
+ * server's call, through the employee's clocking policy, not something to decide on the handset.
+ */
+const canOpenCamera = computed(() => hasLocation.value || locationUnavailable.value)
 
 const locationTitle = computed(() => {
 	if (hasLocation.value) return trans("Location detected")
@@ -75,7 +82,7 @@ const locationTitle = computed(() => {
 const locationSubtitle = computed(() => {
 	if (hasLocation.value) return `${lat.value?.toFixed(6)}, ${lng.value?.toFixed(6)}`
 	if (isDetectingLocation.value) return trans("Please wait a moment")
-	return trans("Required before you can scan")
+	return trans("You can still scan, ask HR if it keeps failing")
 })
 
 const showWorkHourModal = ref(false)
@@ -145,6 +152,7 @@ const detectMyLocation = () => {
 	}
 
 	isDetectingLocation.value = true
+	locationUnavailable.value = false
 
 	const onSuccess = (pos) => {
 		lat.value = pos.coords.latitude
@@ -155,6 +163,7 @@ const detectMyLocation = () => {
 	const onError = (err) => {
 		errorMsg.value = getGeolocationErrorMessage(err)
 		isDetectingLocation.value = false
+		locationUnavailable.value = true
 	}
 
 	const onHighAccuracyError = (err) => {
@@ -412,7 +421,7 @@ const trackFunction = () => ({
 
 			<div class="space-y-2">
 				<p v-if="!canOpenCamera" class="text-center text-[11px] sm:text-xs text-gray-500">
-					{{ trans("Detect your location first to enable scanning") }}
+					{{ trans("Waiting for your location…") }}
 				</p>
 				<Button
 					:label="trans('Open camera')"

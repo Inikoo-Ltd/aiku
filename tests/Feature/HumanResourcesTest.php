@@ -2198,7 +2198,65 @@ test('an employee without a remote policy still gets coordinate validation on an
     actingAs($user);
 
     expect(fn () => ValidateClockingMachineQrCode::make()->handle($qrCode->hash, 51.5, -0.12))
-        ->toThrow(Exception::class, 'Device is too far from the designated clocking location.');
+        ->toThrow(Exception::class, 'Your phone reports a location outside the workplace.');
+});
+
+test('a phone without location policy clocks in on a geofenced machine when the handset sends no coordinates', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'qr-' . uniqid() . '@example.com',
+        'worker_number'   => 'QR' . uniqid(),
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'no-location-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'No Location Workplace ' . $employee->id,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'No Location QR Machine ' . $employee->id,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+    ]);
+
+    $clockingMachine->update([
+        'config' => [
+            'qr' => [
+                'enable'            => true,
+                'allow_coordinates' => true,
+                'coordinates'       => '53.401268237762125, -1.40775203704834',
+                'radius'            => 100,
+            ],
+        ],
+    ]);
+
+    $qrCode = StoreClockingMachineQRCode::make()->handle($clockingMachine, [
+        'label' => 'No location entrance',
+    ]);
+
+    actingAs($user);
+
+    expect(fn () => ValidateClockingMachineQrCode::make()->handle($qrCode->hash))
+        ->toThrow(Exception::class, 'Location access is required to validate this QR code.');
+
+    \App\Models\HumanResources\ClockingMachineCoordinatePolicy::create([
+        'organisation_id' => $this->organisation->id,
+        'scope_type'      => 'employee',
+        'scope_id'        => $employee->id,
+        'mode'            => \App\Enums\HumanResources\ClockingMachine\ClockingPolicyModeEnum::NO_LOCATION,
+        'is_active'       => true,
+    ]);
+
+    $result = ValidateClockingMachineQrCode::make()->handle($qrCode->hash);
+
+    expect($result['effective_mode'])->toBe(\App\Enums\HumanResources\ClockingMachine\ClockingPolicyModeEnum::NO_LOCATION->value)
+        ->and($result['clocking']->subject_id)->toBe($employee->id);
 });
 
 test('get user current employee prefers active record over newer left record', function () {
