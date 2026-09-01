@@ -152,6 +152,14 @@ class ShowPartnerShoppingDashboard extends OrgAction
 
     public function htmlResponse(array $data, ActionRequest $request): Response
     {
+        $exchange = $this->orgPartner->exchangeToOrgCurrency();
+
+        $data['estimated_total'] = round($data['estimated_total'] * $exchange, 2);
+        $data['order_capacity']['list']['value'] = round($data['order_capacity']['list']['value'] * $exchange, 2);
+        if ($data['order_capacity']['partner_capacity']['delivers_to_us_per_30d'] !== null) {
+            $data['order_capacity']['partner_capacity']['delivers_to_us_per_30d'] = round($data['order_capacity']['partner_capacity']['delivers_to_us_per_30d'] * $exchange, 2);
+        }
+
         return Inertia::render(
             'Procurement/PartnerShoppingDashboard',
             [
@@ -170,7 +178,7 @@ class ShowPartnerShoppingDashboard extends OrgAction
                     'id'       => $this->orgPartner->id,
                     'slug'     => $this->orgPartner->partner->slug,
                     'name'     => $this->orgPartner->partner->name,
-                    'currency' => $this->orgPartner->partner->currency->code,
+                    'currency' => $this->orgPartner->organisation->currency->code,
                 ],
                 'browseRoute' => [
                     'name'       => 'grp.org.procurement.org_partners.show.browse.index',

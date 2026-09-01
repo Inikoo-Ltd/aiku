@@ -276,7 +276,9 @@ class ShowPartnerBrowse extends OrgAction
                 ->get()
                 ->keyBy('stock_id');
 
-            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems) {
+            $exchange = $this->orgPartner->exchangeToOrgCurrency();
+
+            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $exchange) {
                 $sellerOrgStock = $sellerOrgStocks[$product->id] ?? null;
                 $buyerOrgStock  = $sellerOrgStock ? $buyerOrgStocks->get($sellerOrgStock->stock_id) : null;
                 $openItem       = $sellerOrgStock ? $openItems->get($sellerOrgStock->stock_id) : null;
@@ -287,7 +289,7 @@ class ShowPartnerBrowse extends OrgAction
                     'code'              => $product->code,
                     'name'              => $product->name,
                     'image'             => Arr::get($product->web_images, 'main.gallery') ?? Arr::get($product->web_images, 'main.thumbnail'),
-                    'price'             => $product->price,
+                    'price'             => round((float) $product->price * $exchange, 2),
                     'available_quantity' => $product->available_quantity,
                     'units'             => $product->units,
                     'org_stock_slug'    => $sellerOrgStock?->slug,
@@ -395,7 +397,7 @@ class ShowPartnerBrowse extends OrgAction
                 'orgPartner' => [
                     'id'       => $this->orgPartner->id,
                     'slug'     => $this->orgPartner->partner->slug,
-                    'currency' => $this->orgPartner->partner->currency->code,
+                    'currency' => $this->orgPartner->organisation->currency->code,
                 ],
                 'addRoute' => [
                     'name'       => 'grp.org.procurement.org_partners.show.shopping_list.store',

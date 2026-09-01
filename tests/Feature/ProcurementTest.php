@@ -2955,6 +2955,7 @@ describe('partner browse', function () {
                 ->where('leadTime.source', 'estimate')
                 ->has('coverBuckets.0.ranks')
                 ->has('openStockDeliveries')
+                ->where('orgPartner.currency', $this->organisation->currency->code)
                 ->has('stockDeliveriesRoute.name');
         });
     });

@@ -107,7 +107,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
                     ? (int) ceil((float) $buyerOrgStock->stats->recommended_order_quantity)
                     : null,
                 'price'                 => $product && $product->price !== null && $unitsPerSko
-                    ? round((float) $product->price / $unitsPerSko, 4)
+                    ? round((float) $product->price * $this->orgPartner->exchangeToOrgCurrency() / $unitsPerSko, 4)
                     : null,
                 'shopping_list_item_id' => $openItem?->id,
                 'ordered_quantity'      => $openItem ? (float) $openItem->quantity : 0,
@@ -157,7 +157,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
                 'orgPartner'  => [
                     'id'       => $this->orgPartner->id,
                     'slug'     => $this->orgPartner->partner->slug,
-                    'currency' => $this->orgPartner->partner->currency->code,
+                    'currency' => $this->orgPartner->organisation->currency->code,
                 ],
                 'addRoute'    => [
                     'name'       => 'grp.org.procurement.org_partners.show.shopping_list.store',
