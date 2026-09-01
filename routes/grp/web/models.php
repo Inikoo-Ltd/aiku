@@ -416,6 +416,8 @@ use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Production\Artefact\StoreArtefactComplianceItem;
 use App\Actions\Production\Artefact\UpdateArtefact;
 use App\Actions\Production\Artefact\UpdateArtefactComplianceItem;
+use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
+use App\Actions\Production\ArtefactFamily\UpdateArtefactFamily;
 use App\Actions\Production\JobOrder\ConfirmJobOrder;
 use App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock;
 use App\Actions\Production\JobOrder\StoreJobOrder;
@@ -1253,6 +1255,7 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
     Route::patch('manufacture-tasks/{manufactureTask:id}', UpdateManufactureTask::class)->name('manufacture_tasks.update');
     Route::post('artefacts', StoreArtefact::class)->name('artefacts.store');
     Route::patch('artefacts/{artefact:id}', UpdateArtefact::class)->name('artefacts.update');
+    Route::post('artefact-families', StoreArtefactFamily::class)->name('artefact_families.store');
     Route::post('artefact-upload', ImportArtefact::class)->name('artefact.import');
 });
 
@@ -1406,6 +1409,8 @@ Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id
     Route::patch('update', UpdateModelHasContent::class)->name('update');
     Route::delete('delete', DeleteModelHasContent::class)->name('delete');
 });
+
+Route::patch('artefact-family/{artefactFamily:id}', UpdateArtefactFamily::class)->name('artefact_family.update');
 
 Route::name('artefact.')->prefix('artefact/{artefact:id}')->group(function () {
     Route::post('tags/store', [StoreTag::class, 'inArtefact'])->name('tags.store');

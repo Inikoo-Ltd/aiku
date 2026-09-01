@@ -12,6 +12,8 @@ namespace Tests\Feature;
 
 use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Production\Artefact\UpdateArtefact;
+use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
+use App\Actions\Production\ArtefactFamily\UpdateArtefactFamily;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Helpers\Tag;
 use App\Actions\Production\JobOrder\ConfirmJobOrder;
@@ -470,21 +472,38 @@ test('UI edit raw material', function () {
 test('update artefact category and tags', function () {
     $tag = Tag::create(['group_id' => $this->group->id, 'name' => 'lavender', 'scope' => TagScopeEnum::ARTEFACT]);
 
+    $family = StoreArtefactFamily::make()->action($this->production, ['code' => 'SOAP', 'name' => 'Soaps']);
+
     $artefact = UpdateArtefact::make()->action($this->artefact, [
-        'category' => 'Soaps',
-        'tags'     => [$tag->id],
+        'artefact_family_id' => $family->id,
+        'tags'               => [$tag->id],
     ]);
 
-    expect($artefact->category)->toBe('Soaps')
+    expect($artefact->artefactFamily->id)->toBe($family->id)
+        ->and($family->refresh()->number_artefacts)->toBe(1)
         ->and($artefact->tags->pluck('name')->all())->toBe(['lavender']);
 
     $artefact = UpdateArtefact::make()->action($artefact, ['tags' => []]);
     expect($artefact->tags)->toHaveCount(0);
 
-    $response = $this->get(route('grp.org.productions.show.crafts.artefacts.index', [$this->organisation->slug, $this->production->slug, 'artefacts_elements[category]' => 'Soaps']));
+    $response = $this->get(route('grp.org.productions.show.crafts.artefact_families.index', [$this->organisation->slug, $this->production->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
-        $page->component('Org/Production/Artefacts')->has('artefacts.data', 1)->where('artefacts.data.0.category', 'Soaps');
+        $page->component('Org/Production/ArtefactFamilies')->has('data.data', 1)->where('data.data.0.code', 'SOAP');
     });
+
+    $response = $this->get(route('grp.org.productions.show.crafts.artefact_families.show', [$this->organisation->slug, $this->production->slug, $family->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Production/ArtefactFamily')->has('artefacts.data', 1)->where('artefacts.data.0.artefact_family_name', 'Soaps');
+    });
+
+    $response = $this->get(route('grp.org.productions.show.crafts.artefact_families.edit', [$this->organisation->slug, $this->production->slug, $family->slug]));
+    $response->assertInertia(fn (AssertableInertia $page) => $page->component('EditModel')->has('formData.blueprint.0.fields', 3));
+
+    $response = $this->get(route('grp.org.productions.show.crafts.artefact_families.create', [$this->organisation->slug, $this->production->slug]));
+    $response->assertInertia(fn (AssertableInertia $page) => $page->component('CreateModel'));
+
+    $family = UpdateArtefactFamily::make()->action($family, ['name' => 'Soap bars']);
+    expect($family->name)->toBe('Soap bars');
 });
 
 test('UI Index artefacts', function () {

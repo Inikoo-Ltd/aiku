@@ -14,7 +14,6 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Ordering\Order;
 use App\Models\Procurement\PartnerShoppingListItem;
-use App\Models\Production\Artefact;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -23,7 +22,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPartnerShippingList extends OrgAction
@@ -51,21 +49,18 @@ class IndexPartnerShippingList extends OrgAction
 
         $queryBuilder = QueryBuilder::for(PartnerShoppingListItem::class)
             ->leftJoin('stocks', 'stocks.id', 'partner_shopping_list_items.stock_id')
-            ->leftJoin('artefacts', function ($join) use ($seller) {
-                $join->on('artefacts.stock_id', 'stocks.id')
-                    ->where('artefacts.organisation_id', $seller->id)
+            ->leftJoin('org_stocks', function ($join) use ($seller) {
+                $join->on('org_stocks.stock_id', 'stocks.id')
+                    ->where('org_stocks.organisation_id', $seller->id);
+            })
+            ->leftJoin('artefacts', function ($join) {
+                $join->on('artefacts.org_stock_id', 'org_stocks.id')
                     ->whereNull('artefacts.deleted_at');
             })
+            ->leftJoin('artefact_families', 'artefacts.artefact_family_id', 'artefact_families.id')
             ->leftJoin('organisations', 'organisations.id', 'partner_shopping_list_items.organisation_id')
             ->where('partner_shopping_list_items.partner_organisation_id', $seller->id);
 
-        foreach ($this->getElementGroups($seller) as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine']
-            );
-        }
 
         return $queryBuilder
             ->select([
@@ -78,47 +73,19 @@ class IndexPartnerShippingList extends OrgAction
                 'partner_shopping_list_items.created_at',
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
-                'artefacts.category as category',
+                'artefact_families.name as family',
                 'organisations.code as buyer_code',
             ])
             ->defaultSort('-created_at')
             ->allowedFilters([$globalSearch])
-            ->allowedSorts(['stock_code', 'category', 'buyer_code', 'priority', 'needed_by', 'state', 'created_at'])
+            ->allowedSorts(['stock_code', 'family', 'buyer_code', 'priority', 'needed_by', 'state', 'created_at'])
             ->withPaginator(null, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    protected function getElementGroups(Organisation $seller): array
+    public function tableStructure(): Closure
     {
-        $categories = Artefact::query()
-            ->where('organisation_id', $seller->id)
-            ->whereNotNull('category')
-            ->groupBy('category')
-            ->orderBy('category')
-            ->pluck(DB::raw('count(*) as count'), 'category');
-
-        if ($categories->isEmpty()) {
-            return [];
-        }
-
-        return [
-            'category' => [
-                'label'    => __('Category'),
-                'elements' => $categories->map(fn ($count, $category) => [$category, $count])->all(),
-                'engine'   => function ($query, $elements) {
-                    $query->whereIn('artefacts.category', $elements);
-                },
-            ],
-        ];
-    }
-
-    public function tableStructure(Organisation $seller): Closure
-    {
-        return function (InertiaTable $table) use ($seller) {
-            foreach ($this->getElementGroups($seller) as $key => $elementGroup) {
-                $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements']);
-            }
-
+        return function (InertiaTable $table) {
             $table
                 ->withGlobalSearch()
                 ->withLabelRecord([__('Shipping list item'), __('Shipping list items')])
@@ -129,7 +96,7 @@ class IndexPartnerShippingList extends OrgAction
                 ->column(key: 'buyer_code', label: __('For'), canBeHidden: false, sortable: true)
                 ->column(key: 'stock_code', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'stock_name', label: __('Name'), canBeHidden: false)
-                ->column(key: 'category', label: __('Category'), canBeHidden: false, sortable: true)
+                ->column(key: 'family', label: __('Family'), canBeHidden: false, sortable: true)
                 ->column(key: 'quantity', label: __('Quantity (SKO)'), canBeHidden: false, align: 'right')
                 ->column(key: 'priority', label: __('Priority'), canBeHidden: false, sortable: true)
                 ->column(key: 'needed_by', label: __('Needed by'), canBeHidden: false, sortable: true)
@@ -163,7 +130,7 @@ class IndexPartnerShippingList extends OrgAction
                 'data'         => $items,
                 'pickedOrders' => $this->getPickedOrders($this->organisation),
             ]
-        )->table($this->tableStructure($this->organisation));
+        )->table($this->tableStructure());
     }
 
     public function getPickedOrders(Organisation $seller): array

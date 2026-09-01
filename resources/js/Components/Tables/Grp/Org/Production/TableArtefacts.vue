@@ -17,6 +17,7 @@ const props = defineProps<{
 function productionRoute(artefact: {}) {
     switch (route().current()) {
         case 'grp.org.productions.show.crafts.artefacts.index':
+        case 'grp.org.productions.show.crafts.artefact_families.show':
             return route(
                 'grp.org.productions.show.crafts.artefacts.show',
                 [route().params['organisation'], route().params['production'], artefact.slug]);
@@ -31,6 +32,11 @@ function productionRoute(artefact: {}) {
         <template #cell(code)="{ item: production }">
             <Link :href="productionRoute(production)" class="primaryLink">
                 {{ production['code'] }}
+            </Link>
+        </template>
+        <template #cell(artefact_family_name)="{ item }">
+            <Link v-if="item.artefact_family_slug" :href="route('grp.org.productions.show.crafts.artefact_families.show', [route().params['organisation'], route().params['production'], item.artefact_family_slug])" class="secondaryLink">
+                {{ item.artefact_family_name }}
             </Link>
         </template>
         <template #cell(tags)="{ item }">

@@ -46,7 +46,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $trade_unit_id
  * @property int|null $org_stock_id
  * @property int|null $recommended_batch_size
- * @property string|null $category
+ * @property int|null $artefact_family_id
+ * @property-read ArtefactFamily|null $artefactFamily
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Tag> $tags
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ArtefactComplianceItem> $complianceItems
@@ -91,7 +92,7 @@ class Artefact extends Model implements Auditable
         'name',
         'description',
         'state',
-        'category',
+        'artefact_family_id',
     ];
 
     public function getRouteKeyName(): string
@@ -105,6 +106,11 @@ class Artefact extends Model implements Auditable
             ->generateSlugsFrom('code')
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug');
+    }
+
+    public function artefactFamily(): BelongsTo
+    {
+        return $this->belongsTo(ArtefactFamily::class);
     }
 
     public function tags(): MorphToMany

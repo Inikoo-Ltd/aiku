@@ -9,6 +9,7 @@
 namespace App\Actions\Production\Artefact;
 
 use App\Actions\Helpers\Tag\AttachTagsToModel;
+use App\Actions\Production\ArtefactFamily\Hydrators\ArtefactFamilyHydrateArtefacts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Production\ArtefactResource;
@@ -33,7 +34,17 @@ class UpdateArtefact extends OrgAction
             AttachTagsToModel::make()->action($artefact, ['tags_id' => Arr::pull($modelData, 'tags')], true);
         }
 
-        return $this->update($artefact, $modelData, ['data', 'settings']);
+        $previousFamily = $artefact->artefactFamily;
+        $artefact       = $this->update($artefact, $modelData, ['data', 'settings']);
+
+        if ($artefact->wasChanged('artefact_family_id')) {
+            $artefact->unsetRelation('artefactFamily');
+            foreach (array_filter([$previousFamily, $artefact->artefactFamily]) as $family) {
+                ArtefactFamilyHydrateArtefacts::run($family);
+            }
+        }
+
+        return $artefact;
 
     }
 
@@ -81,7 +92,7 @@ class UpdateArtefact extends OrgAction
                 Rule::exists('org_stocks', 'id')->where('organisation_id', $this->organisation->id),
             ],
             'recommended_batch_size' => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'category'               => ['sometimes', 'nullable', 'string', 'max:255'],
+            'artefact_family_id'     => ['sometimes', 'nullable', Rule::exists('artefact_families', 'id')->where('organisation_id', $this->organisation->id)],
             'tags'                   => ['sometimes', 'array'],
             'tags.*'                 => ['integer', 'exists:tags,id'],
         ];
