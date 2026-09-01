@@ -49,10 +49,11 @@ const suggestCopy = async () => {
         mailshotForm.subject = data.subject
         if (data.preview_text) mailshotForm.preview_text = data.preview_text
         if (data.name) mailshotForm.name = data.name
-    } catch (error) {
+    } catch (error: any) {
         notify({
             title: trans('Something went wrong'),
-            text: trans('Could not generate a suggestion, add some content first'),
+            text: error?.response?.data?.message
+                || trans('Could not generate a suggestion, add some content first'),
             type: 'error'
         })
     } finally {

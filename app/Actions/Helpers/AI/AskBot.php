@@ -11,6 +11,7 @@
 namespace App\Actions\Helpers\AI;
 
 use App\Actions\Helpers\AI\Traits\WithAIBot;
+use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
 use App\Actions\Helpers\AI\Traits\WithPromptAI;
 use App\Actions\OrgAction;
 use Illuminate\Support\Facades\Response;
@@ -18,12 +19,14 @@ use LLPhant\Chat\OpenAIChat;
 use LLPhant\OpenAIConfig;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
+use Throwable;
 
 class AskBot extends OrgAction
 {
     use AsController;
     use WithAIBot;
     use WithPromptAI;
+    use WithAICreditErrorHandler;
 
     public function handle($q)
     {
@@ -33,7 +36,13 @@ class AskBot extends OrgAction
             $config = new OpenAIConfig();
             $chat = new OpenAIChat($config);
 
-            $stream = $chat->generateStreamOfText($q);
+            try {
+                $stream = $chat->generateStreamOfText($q);
+            } catch (Throwable $e) {
+                $this->rethrowAICreditThrowable($e);
+
+                throw $e;
+            }
 
             return Response::stream(function () use ($stream) {
                 try {

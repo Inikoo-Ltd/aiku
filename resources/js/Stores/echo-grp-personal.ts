@@ -148,7 +148,8 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                 useStaffMessaging().replaceMessage(message)
             })
             .listen('.staff-conversation-archived', (e: {conversation_ulid: string; user_id: number; user_name: string}) => {
-                useStaffMessaging().handleArchivedByOther(e)
+                 console.log('staff-conversation-archived', e)
+                /*   useStaffMessaging().handleArchivedByOther(e) */
             })
         },
 
