@@ -5,12 +5,13 @@
   -->
 
 <script setup lang="ts">
-import { ref, inject } from 'vue'
+import { ref, inject, type Ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage, faExpandArrows, faAlignCenter, faTrash, faStopwatch } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from '@/types/route'
+import { BannerScreenView } from '@/types/BannerWorkshop'
 import { getComponent } from '@/Composables/getBannerFields'
 import { get, set, cloneDeep } from "lodash-es"
 import ScreenView from '@/Components/ScreenView.vue'
@@ -30,7 +31,7 @@ const props = defineProps<{
 
 const emit = defineEmits(["update:modelValue"])
 
-const screenView = inject<any>('screenView')
+const screenView = inject<Ref<BannerScreenView>>('screenView', ref<BannerScreenView>('desktop'))
 const current = ref(0);
 
 const getValue = (fieldData: string | string[]) => {
