@@ -86,6 +86,7 @@ use App\Models\Procurement\ShoppingListItem;
 use App\Models\Catalogue\Shop;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\SupplyChain\Agent\HydrateAgents;
+use App\Actions\SupplyChain\Agent\UI\GetAgentCleanHandoverScore;
 use App\Actions\SupplyChain\Agent\Search\ReindexAgentSearch;
 use App\Actions\SupplyChain\Agent\StoreAgent;
 use App\Actions\SupplyChain\Supplier\HydrateSuppliers;
@@ -405,6 +406,94 @@ test('update agent supplier purchase order', function (AgentSupplierPurchaseOrde
         ->and($updated->deposit_paid_at)->not->toBeNull()
         ->and($updated->estimated_delivery_days)->toBe(14);
 })->depends('create agent supplier purchase order');
+
+test('clean handover score', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder) {
+    $updated = UpdateAgentSupplierPurchaseOrder::make()->action(
+        $agentSupplierPurchaseOrder,
+        [
+            'proposed_ready_at'      => now()->subDays(12),
+            'approved_ready_at'      => now()->subDays(10),
+            'handed_over_at'         => now()->subDays(5),
+            'qc_passed_at'           => now()->subDays(6),
+            'compliance_complete_at' => now()->subDays(6),
+        ]
+    );
+
+    $calculator = GetAgentCleanHandoverScore::make();
+
+    expect($calculator->isCleanHandover($updated))->toBeTrue();
+
+    $score        = $calculator->handle($this->agent);
+    $currentScore = collect($score['quarters'])->firstWhere('quarter', now()->subDays(10)->year.'-Q'.now()->subDays(10)->quarter);
+
+    expect($currentScore['number_pos'])->toBe(1)
+        ->and($currentScore['number_clean'])->toBe(1)
+        ->and($currentScore['chs'])->toEqualWithDelta(100.0, 0.01)
+        ->and($currentScore['commission_rate'])->toEqualWithDelta(3.0, 0.01)
+        ->and($score['hygiene']['avg_ready_date_padding_days'])->toEqualWithDelta(2.0, 0.1)
+        ->and($score['hygiene']['handed_over_missing_checks'])->toBe(0);
+
+    $updated = UpdateAgentSupplierPurchaseOrder::make()->action(
+        $updated,
+        [
+            'handed_over_at' => now()->subDays(1),
+            'qc_passed_at'   => null,
+        ]
+    );
+
+    expect($calculator->isCleanHandover($updated))->toBeFalse();
+
+    $score        = $calculator->handle($this->agent);
+    $currentScore = collect($score['quarters'])->firstWhere('quarter', now()->subDays(10)->year.'-Q'.now()->subDays(10)->quarter);
+
+    expect($currentScore['number_clean'])->toBe(0)
+        ->and($currentScore['chs'])->toEqualWithDelta(0.0, 0.01)
+        ->and($currentScore['commission_rate'])->toEqualWithDelta(2.0, 0.01)
+        ->and($score['hygiene']['handed_over_missing_checks'])->toBe(1);
+
+    UpdateAgentSupplierPurchaseOrder::make()->action(
+        $updated,
+        [
+            'chs_excluded'         => true,
+            'chs_exclusion_reason' => 'AW-approved scope change',
+        ]
+    );
+
+    $score = GetAgentCleanHandoverScore::make()->handle($this->agent);
+    $currentScore = collect($score['quarters'])->firstWhere('quarter', now()->subDays(10)->year.'-Q'.now()->subDays(10)->quarter);
+
+    expect($currentScore['number_pos'])->toBe(0)
+        ->and($currentScore['chs'])->toBeNull()
+        ->and($score['hygiene']['exclusion_rate'])->toEqualWithDelta(100.0, 0.01);
+
+    UpdateAgentSupplierPurchaseOrder::make()->action(
+        $updated,
+        [
+            'chs_excluded'           => false,
+            'chs_exclusion_reason'   => null,
+            'handed_over_at'         => now()->subDays(5),
+            'qc_passed_at'           => now()->subDays(6),
+            'proposed_ready_at'      => null,
+            'approved_ready_at'      => null,
+            'compliance_complete_at' => null,
+        ]
+    );
+})->depends('create agent supplier purchase order');
+
+test('UI agent organisation dashboard shows clean handover score', function () {
+    $this->withoutExceptionHandling();
+
+    $this->get(route('grp.org.dashboard.show', [$this->agent->organisation->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Dashboard/OrganisationDashboard')
+            ->has('cleanHandover.quarters')
+            ->has('cleanHandover.hygiene'));
+
+    $this->get(route('grp.org.dashboard.show', [$this->organisation->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Dashboard/OrganisationDashboard')
+            ->where('cleanHandover', null));
+});
 
 test('add item to purchase order', function (PurchaseOrder $purchaseOrder, OrgSupplierProduct $orgSupplierProduct) {
     $orgStock                     = $this->orgStocks[0];
