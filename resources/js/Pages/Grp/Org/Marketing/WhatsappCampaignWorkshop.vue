@@ -32,6 +32,7 @@ const props = defineProps<{
     campaign: { name: string; meta_message_template_id: number | null; recipients_count: number }
     updateRoute: routeType
     recipientsRoute: routeType
+    createTemplateRoute: routeType
     templates: TemplateOption[]
     mergeTags: { value: string }[]
     businessName: string
@@ -147,6 +148,12 @@ watch(templateId, (value) => persist({ meta_message_template_id: value }))
                         <p v-if="!templates.length" class="text-xs text-gray-500 mt-2">
                             {{ trans("No approved templates yet. Create one and wait for Meta to approve it.") }}
                         </p>
+
+                        <Link
+                            :href="route(createTemplateRoute.name, createTemplateRoute.parameters)"
+                            class="inline-block mt-2">
+                            <Button :label="trans('Create Template')" style="tertiary" size="xs" icon="fal fa-plus" />
+                        </Link>
                     </div>
                 </div>
 

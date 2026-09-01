@@ -44,6 +44,8 @@ class RunWhatsappCampaignScheduled
                 'state'            => WhatsappCampaignStateEnum::SENDING,
                 'start_sending_at' => Carbon::now()->utc(),
             ]);
+
+            PrepareWhatsappCampaignRecipients::dispatch($campaign);
         }
     }
 

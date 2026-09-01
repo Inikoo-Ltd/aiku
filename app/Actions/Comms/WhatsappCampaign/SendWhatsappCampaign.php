@@ -49,10 +49,7 @@ class SendWhatsappCampaign extends OrgAction
             'start_sending_at' => $campaign->start_sending_at ?? Carbon::now()->utc(),
         ]);
 
-        /* ponytail: state transition only. Per-recipient delivery still needs a
-           recipients table plus a chunked dispatch job; SendMetaChatMessage is
-           bound to a MetaChatSession and a ChatAgent, so it cannot yet send to a
-           bare campaign recipient. The campaign stays in SENDING until that lands. */
+        PrepareWhatsappCampaignRecipients::dispatch($campaign);
 
         return $campaign->refresh();
     }
