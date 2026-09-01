@@ -183,6 +183,9 @@ test('page views are logged server-side from the referer header so ad blockers c
         ->and($visit->is_bot)->toBeFalse()
         ->and($bot->user_agent)->toContain('Googlebot');
 
+    get($this->host.'/blog', ['User-Agent' => 'Mozilla/5.0 (compatible)'])->assertOk();
+    expect($visits()->latest('id')->first()->is_bot)->toBeTrue();
+
     $stats = \App\Actions\DevOps\UI\ShowAikuPublicAnalytics::make()->handle();
     expect(collect($stats['bots'])->pluck('user_agent')->first(fn ($ua) => str_contains($ua, 'Googlebot')))->not->toBeNull();
 });

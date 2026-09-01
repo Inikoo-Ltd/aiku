@@ -44,7 +44,7 @@ class LogPublicVisit
                 'referrer'     => $referrer && $referrer !== config('app.domain') ? mb_substr($referrer, 0, 255) : null,
                 'country'      => mb_substr((string) $request->header('CF-IPCountry'), 0, 2) ?: null,
                 'visitor_hash' => mb_substr(hash('sha256', $request->ip().'|'.$userAgent), 0, 16),
-                'is_bot'       => $userAgent === '' || (new CrawlerDetect())->isCrawler($userAgent) || (bool) preg_match('/headless|preview|scrape/i', $userAgent),
+                'is_bot'       => $userAgent === '' || (new CrawlerDetect())->isCrawler($userAgent) || (bool) preg_match('/headless|preview|scrape|^Mozilla\/5\.0 \(compatible\)$/i', $userAgent),
                 'user_agent'   => mb_substr($userAgent, 0, 255),
             ]);
         }
