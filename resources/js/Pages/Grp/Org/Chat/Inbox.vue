@@ -193,6 +193,7 @@ const reloadContacts = async () => {
         const res = await axios.get(sessionsUrl.value, { params: buildParams(1) })
         contacts.value = res.data.data.sessions.map(mapSession)
         hasMore.value = res.data.data.pagination?.has_more ?? false
+        openPendingSession()
     } catch (e) {
         console.error("Failed to reload contacts:", e)
     }
@@ -497,6 +498,38 @@ const notifActive = ref<any[]>([])
 const notifReopen = ref<any[]>([])
 const teamUnreadByShop = ref<Record<number, number>>({})
 
+const notifWaWaiting = ref<any[]>([])
+const notifWaActive = ref<any[]>([])
+const notifWaReopen = ref<any[]>([])
+
+// The messages widget links here with the channel it came from, so a WhatsApp row does
+// not land the agent on the website tab of the right shop.
+const pendingSessionUlid = ref<string | null>(null)
+
+const applyChannelFromUrl = () => {
+    const params = new URLSearchParams(window.location.search)
+    const channel = params.get("channel")
+
+    if (channel === "whatsapp" || channel === "website") {
+        selectedChannel.value = channel
+    }
+
+    pendingSessionUlid.value = params.get("session")
+}
+
+// The linked conversation can only be opened once its list has arrived, so the ulid waits
+// here and is consumed by the first load that contains it.
+const openPendingSession = () => {
+    if (!pendingSessionUlid.value) return
+
+    const contact = contacts.value.find((c) => String(c.ulid) === pendingSessionUlid.value)
+
+    if (!contact) return
+
+    pendingSessionUlid.value = null
+    openChat(contact)
+}
+
 const fetchInboxNotifications = async () => {
     if (!myAgentId) return
     try {
@@ -505,6 +538,9 @@ const fetchInboxNotifications = async () => {
         notifActive.value = data?.data?.active ?? []
         notifReopen.value = data?.data?.reopen ?? []
         teamUnreadByShop.value = data?.data?.team_unread ?? {}
+        notifWaWaiting.value = data?.data?.whatsapp?.waiting ?? []
+        notifWaActive.value = data?.data?.whatsapp?.active ?? []
+        notifWaReopen.value = data?.data?.whatsapp?.reopen ?? []
     } catch (e) {
         // silent — badges are non-critical
     }
@@ -518,29 +554,42 @@ const teamUnreadForShop = computed(() =>
         : 0
 )
 
+// Each channel keeps its own feed, so the tab badges follow whichever inbox is open
+// rather than showing website counts above a WhatsApp list.
 const tabUnread = computed(() => {
     const sid = selectedShopId.value
     const inShop = (arr: any[]) => (sid ? arr.filter((s) => s?.shop?.id === sid) : arr)
+    const isWhatsapp = selectedChannel.value === "whatsapp"
+
     return {
-        waiting: inShop(notifWaiting.value).length,
-        active: inShop(notifActive.value).length,
-        closed: inShop(notifReopen.value).length,
+        waiting: inShop(isWhatsapp ? notifWaWaiting.value : notifWaiting.value).length,
+        active: inShop(isWhatsapp ? notifWaActive.value : notifActive.value).length,
+        closed: inShop(isWhatsapp ? notifWaReopen.value : notifReopen.value).length,
     }
 })
 
-const shopUnread = computed<Record<number, number>>(() => {
+const countByShop = (sessions: any[]) => {
     const map: Record<number, number> = {}
-    for (const s of [...notifWaiting.value, ...notifActive.value, ...notifReopen.value]) {
-        const sid = s?.shop?.id
+    for (const session of sessions) {
+        const sid = session?.shop?.id
         if (!sid) continue
         map[sid] = (map[sid] ?? 0) + 1
     }
     return map
-})
+}
+
+const shopUnread = computed<Record<number, number>>(() =>
+    countByShop([...notifWaiting.value, ...notifActive.value, ...notifReopen.value])
+)
+
+const whatsappUnread = computed<Record<number, number>>(() =>
+    countByShop([...notifWaWaiting.value, ...notifWaActive.value, ...notifWaReopen.value])
+)
 
 const channelUnread = (inbox: { id: number }, channel: { key: string; unread: number }) =>
-    // ponytail: WhatsApp count is the backend stub; website uses the real feed.
-    channel.key === "website" ? (shopUnread.value[inbox.id] ?? 0) : (channel.unread ?? 0)
+    channel.key === "whatsapp"
+        ? (whatsappUnread.value[inbox.id] ?? 0)
+        : (shopUnread.value[inbox.id] ?? 0)
 
 const inboxUnread = computed<Record<number, number>>(() => {
     const map: Record<number, number> = {}
@@ -638,9 +687,12 @@ const onAssignSelfSuccess = async () => {
 }
 
 const updateUrl = (ulid: string) => {
-    // ponytail: the conversation route binds website ChatSession ulids only; no deep-link for meta sessions yet.
-    if (selectedChannel.value === "whatsapp") return
-    const url = route("grp.org.chat.inbox.conversation", [props.organisation.slug, ulid])
+    // The conversation route binds website ChatSession ulids only, so a WhatsApp session
+    // is addressed by query string on the inbox it lives in.
+    const url = selectedChannel.value === "whatsapp"
+        ? `${window.location.pathname}?channel=whatsapp&session=${ulid}`
+        : route("grp.org.chat.inbox.conversation", [props.organisation.slug, ulid])
+
     window.history.replaceState(window.history.state, "", url)
 }
 
@@ -799,6 +851,7 @@ const onMetaChatListEvent = (e: any) => {
 }
 
 onMounted(async () => {
+    applyChannelFromUrl()
     fetchInboxNotifications()
 
     // Preselect the shop when opened from the shop-level nav entry.
@@ -1088,7 +1141,7 @@ onUnmounted(() => {
                         :style="activeTab === 'waiting' ? { color: 'var(--theme-color-4)' } : {}"
                         @click="activeTab = 'waiting'">
                         {{ trans("Waiting") }}
-                        <span v-if="viewMode === 'my' && !highlightView && selectedChannel !== 'whatsapp' && tabUnread.waiting"
+                        <span v-if="viewMode === 'my' && !highlightView && tabUnread.waiting"
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
                             :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.waiting }}</span>
                     </button>
@@ -1098,7 +1151,7 @@ onUnmounted(() => {
                         :style="activeTab === 'active' ? { color: 'var(--theme-color-4)' } : {}"
                         @click="activeTab = 'active'">
                         {{ trans("Active") }}
-                        <span v-if="viewMode === 'my' && !highlightView && selectedChannel !== 'whatsapp' && tabUnread.active"
+                        <span v-if="viewMode === 'my' && !highlightView && tabUnread.active"
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
                             :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.active }}</span>
                     </button>
@@ -1108,7 +1161,7 @@ onUnmounted(() => {
                         :style="activeTab === 'closed' ? { color: 'var(--theme-color-4)' } : {}"
                         @click="activeTab = 'closed'">
                         {{ trans("Closed") }}
-                        <span v-if="viewMode === 'my' && !highlightView && selectedChannel !== 'whatsapp' && tabUnread.closed"
+                        <span v-if="viewMode === 'my' && !highlightView && tabUnread.closed"
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
                             :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.closed }}</span>
                     </button>

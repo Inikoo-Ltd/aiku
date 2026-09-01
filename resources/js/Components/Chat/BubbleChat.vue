@@ -98,6 +98,7 @@ const props = defineProps<{
     formatMarkup?: boolean
     translateUrlBase?: string
     disableSlackForward?: boolean
+    disableImageVerification?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -488,8 +489,12 @@ const translateMessage = async () => {
 // feature verify image
 const isVerifyingImage = ref(false)
 
+// The verify route resolves a website ChatMessage, so a WhatsApp id would land on an
+// unrelated row. Opting out here rather than relying on the resource omitting the flag,
+// which would arm the button the moment that field is copied across.
 const canVerifyImage = computed(() =>
     props.viewerType === "agent" &&
+    !props.disableImageVerification &&
     props.message.message_type === "image" &&
     !!props.message.is_verifiable_image &&
     activeMessage.value.is_validated == null

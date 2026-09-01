@@ -41,6 +41,14 @@ const emit = defineEmits(["close", "toggle", "read"])
 const layout: any = useLayoutStore()
 const baseUrl = layout?.appUrl ?? ""
 
+// The two channels store their conversations in separate tables behind separate
+// endpoints, so every call the window makes has to pick the matching one.
+const isWhatsapp = computed(() => props.chat.channel === "whatsapp")
+
+const sessionApiBase = computed(() =>
+    `${baseUrl}/app/api/chats${isWhatsapp.value ? "/meta" : ""}/sessions/${props.chat.ulid}`
+)
+
 const messages = ref<LocalChatMessage[]>([])
 const newMessage = ref("")
 const messageInput = ref<HTMLTextAreaElement | null>(null)
@@ -142,7 +150,7 @@ const getMessages = async () => {
     isLoading.value = true
     try {
         const { data } = await axios.get(
-            `${baseUrl}/app/api/chats/sessions/${props.chat.ulid}/messages`,
+            `${sessionApiBase.value}/messages`,
             { params: { limit: 20, request_from: "agent" } }
         )
         messages.value = (data?.data?.messages ?? []).map((message: any) => ({
@@ -159,10 +167,14 @@ const getMessages = async () => {
 
 const markAsRead = async () => {
     try {
-        await axios.post(`${baseUrl}/app/api/chats/read`, {
-            session_ulid: props.chat.ulid,
-            request_from: "agent",
-        })
+        if (isWhatsapp.value) {
+            await axios.post(`${sessionApiBase.value}/read`)
+        } else {
+            await axios.post(`${baseUrl}/app/api/chats/read`, {
+                session_ulid: props.chat.ulid,
+                request_from: "agent",
+            })
+        }
         unreadCount.value = 0
         emit("read")
     } catch (e) {
@@ -285,7 +297,12 @@ const sendMessage = async () => {
         }
 
         await axios.post(
-            route("grp.org.chat.agents.messages.send", [props.chat.organisationSlug, props.chat.ulid]),
+            route(
+                isWhatsapp.value
+                    ? "grp.org.chat.agents.whatsapp.messages.send"
+                    : "grp.org.chat.agents.messages.send",
+                [props.chat.organisationSlug, props.chat.ulid]
+            ),
             formData,
             { headers: { "Content-Type": "multipart/form-data" } }
         )
@@ -311,6 +328,8 @@ let remoteTypingTimeout: ReturnType<typeof setTimeout> | null = null
 let isTyping = false
 
 const sendTypingStatus = async (status: boolean) => {
+    if (isWhatsapp.value) return
+
     try {
         await axios.post(`${baseUrl}/app/api/chats/typing`, {
             session_ulid: props.chat.ulid,
@@ -349,7 +368,9 @@ const initSocket = () => {
 
     stopSocket()
 
-    chatChannel = window.Echo.channel(`chat-session.${props.chat.ulid}`)
+    chatChannel = isWhatsapp.value
+        ? window.Echo.private(`meta-chat-session.${props.chat.ulid}`)
+        : window.Echo.channel(`chat-session.${props.chat.ulid}`)
 
     chatChannel.listen(".message", ({ message }: any) => {
         messages.value = messages.value.filter(
@@ -390,8 +411,21 @@ const initSocket = () => {
 }
 
 const openFullConversation = () => {
-    console.log("openFullConversation", props.chat)
     if (!props.chat.organisationSlug) return
+
+    // WhatsApp has no standalone conversation page yet, so it opens the inbox on the
+    // right shop and channel instead.
+    if (isWhatsapp.value) {
+        if (!props.chat.shopSlug) return
+
+        router.visit(
+            route("grp.org.shops.show.chat.inbox", [props.chat.organisationSlug, props.chat.shopSlug])
+            + `?channel=whatsapp&session=${props.chat.ulid}`
+        )
+
+        return
+    }
+
     router.visit(route("grp.org.chat.inbox.conversation", [props.chat.organisationSlug, props.chat.ulid]))
 }
 

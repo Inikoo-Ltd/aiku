@@ -13,6 +13,8 @@ import { useLayoutStore } from "@/Stores/layout"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faMessage } from '@fortawesome/free-solid-svg-icons'
+import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
+import { faGlobe } from '@fortawesome/free-solid-svg-icons'
 import { faUser, faEdit, faChevronDown, faSearch, faSlidersH, faPaperclip, faStoreAlt, faCommentAltLines } from '@fal'
 import Image from '@common/Components/Image.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -35,8 +37,9 @@ interface ChatSessionItem {
     } | null
     web_user?: { id: number; image?: any } | null
     guest_profile?: { image?: any } | null
-    shop?: { id: number; name: string } | null
+    shop?: { id: number; name: string; slug?: string } | null
     organisation?: { id: number; name: string; slug: string } | null
+    channel?: 'website' | 'whatsapp'
 }
 
 const TABS = [
@@ -89,7 +92,7 @@ const fetchSessions = async () => {
     if (!myAgentId) return
     isLoading.value = true
     try {
-        const { data } = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params: buildParams(1) })
+        const { data } = await axios.get(`${baseUrl}/app/api/chats/all/sessions`, { params: buildParams(1) })
         sessions.value = data?.data?.sessions ?? []
         hasMore.value = data?.data?.pagination?.has_more ?? false
         currentPage.value = 1
@@ -105,7 +108,7 @@ const fetchTabCounts = async () => {
     await Promise.all(
         TABS.map(async (tab) => {
             try {
-                const { data } = await axios.get(`${baseUrl}/app/api/chats/sessions`, {
+                const { data } = await axios.get(`${baseUrl}/app/api/chats/all/sessions`, {
                     params: {
                         statuses: tab.statuses,
                         assigned_to_me: myAgentId,
@@ -127,7 +130,7 @@ const loadMore = async () => {
     if (isLoadingMore.value || !hasMore.value) return
     isLoadingMore.value = true
     try {
-        const { data } = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params: buildParams(currentPage.value + 1) })
+        const { data } = await axios.get(`${baseUrl}/app/api/chats/all/sessions`, { params: buildParams(currentPage.value + 1) })
         sessions.value = [...sessions.value, ...(data?.data?.sessions ?? [])]
         hasMore.value = data?.data?.pagination?.has_more ?? false
         currentPage.value += 1
@@ -178,6 +181,8 @@ const closePopover = () => {
 
 const { miniChats, openMiniChat, closeMiniChat, toggleMiniChat, trackNavigation } = useMiniChats()
 
+const isWhatsapp = (item: ChatSessionItem) => item.channel === 'whatsapp'
+
 const openConversation = (item: ChatSessionItem) => {
     openMiniChat({
         ulid: item.ulid,
@@ -186,6 +191,8 @@ const openConversation = (item: ChatSessionItem) => {
         status: item.status,
         organisationSlug: item.organisation?.slug ?? null,
         shopName: item.shop?.name ?? null,
+        shopSlug: item.shop?.slug ?? null,
+        channel: item.channel ?? 'website',
     })
 }
 
@@ -291,7 +298,11 @@ const subscribeChannels = () => {
             const channel = `chat-list.${shopId}`
             if (joinedChannels.includes(channel)) return
             joinedChannels.push(channel)
-            window.Echo.join(channel).listen(".chatlist", handleChatListEvent)
+            window.Echo.join(channel)
+                .listen(".chatlist", handleChatListEvent)
+                // WhatsApp shares the presence channel but broadcasts under its own name,
+                // which is why the bell stayed silent for it.
+                .listen(".meta-chatlist", handleChatListEvent)
         })
 }
 
@@ -435,6 +446,13 @@ onUnmounted(() => {
                             <span v-if="item.unread_count"
                                 class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-none ring-2 ring-white">
                                 {{ item.unread_count > 99 ? '99+' : item.unread_count }}
+                            </span>
+
+                            <span
+                                class="absolute -bottom-0.5 -right-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-white"
+                                :class="isWhatsapp(item) ? 'bg-[#25D366] text-white' : 'bg-gray-200 text-gray-600'"
+                                :title="isWhatsapp(item) ? 'WhatsApp' : trans('Website chat')">
+                                <FontAwesomeIcon :icon="isWhatsapp(item) ? faWhatsapp : faGlobe" class="text-[8px]" />
                             </span>
                         </div>
 
@@ -580,6 +598,13 @@ onUnmounted(() => {
                             <span v-if="item.unread_count"
                                 class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-none ring-2 ring-white">
                                 {{ item.unread_count > 99 ? '99+' : item.unread_count }}
+                            </span>
+
+                            <span
+                                class="absolute -bottom-0.5 -right-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-white"
+                                :class="isWhatsapp(item) ? 'bg-[#25D366] text-white' : 'bg-gray-200 text-gray-600'"
+                                :title="isWhatsapp(item) ? 'WhatsApp' : trans('Website chat')">
+                                <FontAwesomeIcon :icon="isWhatsapp(item) ? faWhatsapp : faGlobe" class="text-[8px]" />
                             </span>
                         </div>
 

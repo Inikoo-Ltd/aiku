@@ -8,6 +8,8 @@ export interface MiniChat {
     status: string
     organisationSlug: string | null
     shopName: string | null
+    shopSlug?: string | null
+    channel?: 'website' | 'whatsapp'
     isMinimised: boolean
 }
 

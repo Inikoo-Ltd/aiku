@@ -802,6 +802,7 @@ onUnmounted(() => {
                             reactionUrlBase="/app/api/chats/meta/messages"
                             translateUrlBase="/app/api/chats/meta/messages"
                             disable-slack-forward
+                            disable-image-verification
                             :viewerReactorId="layout?.user?.id"
                             :canReply="!isClosed && !templateOnly"
                             format-markup
