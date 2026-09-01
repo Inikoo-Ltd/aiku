@@ -11357,5 +11357,6 @@
     "± :currency over live RRP": "",
     "Δ 1Y": "Δ1Y",
     "— a verification code may be emailed to you, enter it to continue.": "",
-    "— that is :time for you": ""
+    "— that is :time for you": "",
+    "Your phone reports a location outside the workplace. If you are on site, enable Precise Location for your browser and try again.": "Tu teléfono indica una ubicación fuera del lugar de trabajo. Si estás en el sitio, activa la ubicación precisa en tu navegador e inténtalo de nuevo."
 }
