@@ -9,6 +9,8 @@ tags: inventory, warehouse, postgres, audits
 
 Ask the system how many lavender candles are in the UK warehouse and it will tell you, instantly, from a counter on the stock row. But that counter is not where the truth lives. The truth is **seventeen million stock movements** — every time a unit came in, went out, moved, was found, was written off or was counted — and the counter is their sum. This note is how that is organised, and why we will not let anyone type a stock figure directly.
 
+*every shelf remembers what it held.*
+
 ## The shape
 
 - A **stock** is the group‑level thing ([a trade unit](/blog/the-triangle-trade-units-products-and-stock), as stock).

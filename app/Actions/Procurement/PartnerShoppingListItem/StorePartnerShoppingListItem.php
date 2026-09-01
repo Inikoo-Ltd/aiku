@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\PartnerShoppingListItem;
 
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
@@ -33,6 +34,8 @@ class StorePartnerShoppingListItem extends OrgAction
             422,
             'Org stock does not belong to the buying organisation or its partner'
         );
+
+        GetPartnerOrderCapacity::guardAdd($orgPartner, $orgStock);
 
         $buyerOrgStock = $orgStock;
         if ($orgStock->organisation_id !== $orgPartner->organisation_id) {

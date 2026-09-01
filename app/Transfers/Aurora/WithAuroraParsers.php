@@ -560,7 +560,9 @@ trait WithAuroraParsers
         if (!$orgSupplierProduct) {
             $supplierProduct = FetchAuroraSupplierProducts::run($this->organisationSource, $sourceData[1]);
             if ($supplierProduct) {
-                $orgSupplierProduct = OrgSupplierProduct::where('supplier_product_id', $supplierProduct->id)->first();
+                $orgSupplierProduct = OrgSupplierProduct::where('supplier_product_id', $supplierProduct->id)
+                    ->where('organisation_id', $sourceData[0])
+                    ->first();
             }
         }
 

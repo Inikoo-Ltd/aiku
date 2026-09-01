@@ -20,6 +20,7 @@ use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuCommercialValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateValueInLocations;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateOutOfStockForecast;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateWeekOfCover;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
@@ -51,6 +52,7 @@ class HydrateOrgStock
         OrgStockHydrateStockValue::run($orgStock);
         OrgStockHydratePurchaseOrders::run($orgStock);
         OrgStockHydrateWeekOfCover::run($orgStock);
+        OrgStockHydrateOutOfStockForecast::run($orgStock);
         OrgStockHydrateProducts::run($orgStock);
         ModelHydrateSingleTradeUnits::run($orgStock);
     }

@@ -4,6 +4,7 @@ namespace App\Actions\UI\Dashboards;
 
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGroupDashboardSalesAuthorisation;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
@@ -30,10 +31,26 @@ class ShowGroupDashboard extends OrgAction
     use WithLatestStockHistory;
     use WithTabsBox;
     use WithPerformanceDateResolution;
+    use WithGroupDashboardSalesAuthorisation;
 
     public function handle(Group $group, ActionRequest $request): Response
     {
-        $userSettings = $request->user()->settings;
+        $user = $request->user();
+
+        if (!$this->canViewGroupDashboardSales($user)) {
+            return Inertia::render(
+                'Dashboard/GrpDashboard',
+                [
+                    'title'       => __('Dashboard Group'),
+                    'breadcrumbs' => $this->getBreadcrumbs(__('Dashboard')),
+                    'dashboard'   => [
+                        'super_blocks' => []
+                    ],
+                ]
+            );
+        }
+
+        $userSettings = $user->settings;
 
         $tabValues      = GroupDashboardSalesTableTabsEnum::values();
         $currentTab     = $this->resolveDashboardTableTab($tabValues, $userSettings, 'group_dashboard_tab');

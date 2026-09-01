@@ -87,9 +87,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('search:propose-synonyms')->weeklyOn(1, '03:00')->onOneServer();
         $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
         $schedule->command('comms:archive_dispatched_emails')->dailyAt('03:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
-        // Off until the historic backlog has been archived by hand, see config/archive.php:
-        // $schedule->command('inventory:archive_stock_histories --dates=5')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping(60)
-        //     ->when(fn () => config('archive.stock_history_nightly'));
+        $schedule->command('inventory:archive_stock_histories --dates=5')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping(60)
+            ->when(fn () => config('archive.stock_history_nightly'));
         $schedule->call(function () {
             foreach (glob(sys_get_temp_dir().'/product_images_*') ?: [] as $leftover) {
                 if (filemtime($leftover) < now()->subHours(2)->timestamp) {
@@ -262,6 +261,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'WarehouseHydratePickingPackingSpeed',
                 ),
                 name: 'WarehouseHydratePickingPackingSpeed',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('hydrate:org-stock-out-of-stock-forecast')->dailyAt('01:30')->timezone('UTC')->onOneServer()->withoutOverlapping(360)->sentryMonitor(
+                    monitorSlug: 'OrgStockHydrateOutOfStockForecast',
+                ),
+                name: 'OrgStockHydrateOutOfStockForecast',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

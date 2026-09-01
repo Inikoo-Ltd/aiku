@@ -27,6 +27,41 @@ class MasterProductCategoryTimeSeriesResource extends JsonResource
             'refunds' => (int) $this->refunds,
             'orders' => (int) $this->orders,
             'customers_invoiced' => (int) $this->customers_invoiced,
+            'total_customers' => (int) $this->total_customers,
+            'sales_grp_currency_external_ly' => (float) ($this->sales_grp_currency_external_ly ?? 0),
+            'sales_grp_currency_external_delta' => $this->calculateDelta((float) $this->sales_grp_currency_external, (float) ($this->sales_grp_currency_external_ly ?? 0)),
+            'organisations_route' => $this->organisationsRoute(),
+        ];
+    }
+
+    protected function organisationsRoute(): ?array
+    {
+        if (!$this->master_product_category_id) {
+            return null;
+        }
+
+        return [
+            'name' => 'grp.json.master_product_category.time_series_organisations',
+            'parameters' => [
+                'masterProductCategory' => $this->master_product_category_id,
+                'record' => $this->id,
+            ],
+        ];
+    }
+
+    protected function calculateDelta(float $current, float $previous): ?array
+    {
+        if (!$previous) {
+            return null;
+        }
+
+        $delta = (($current - $previous) / $previous) * 100;
+
+        return [
+            'value' => $delta,
+            'formatted' => number_format($delta, 1) . '%',
+            'is_positive' => $delta > 0,
+            'is_negative' => $delta < 0,
         ];
     }
 

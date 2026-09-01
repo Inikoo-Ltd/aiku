@@ -132,12 +132,14 @@ class EditSupplierProduct extends OrgAction
                                     'value'   => Arr::get($supplierProduct->data, 'minimum_carton_order'),
                                     'options' => ['inputType' => 'number']
                                 ],
-                                'delivery_time' => [
-                                    'type'    => 'input',
-                                    'label'   => __('Average delivery time (days)'),
-                                    'value'   => Arr::get($supplierProduct->data, 'delivery_time'),
-                                    'options' => ['inputType' => 'number']
-                                ],
+                                ...($supplierProduct->measured_lead_time_days !== null ? [] : [
+                                    'estimated_lead_time_days' => [
+                                        'type'    => 'input',
+                                        'label'   => __('Estimated delivery time (days)'),
+                                        'value'   => $supplierProduct->estimated_lead_time_days,
+                                        'options' => ['inputType' => 'number']
+                                    ],
+                                ]),
                                 'unit_expense' => [
                                     'type'    => 'input',
                                     'label'   => __('Unit expense'),

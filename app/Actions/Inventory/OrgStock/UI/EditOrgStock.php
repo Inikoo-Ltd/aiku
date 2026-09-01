@@ -124,6 +124,14 @@ class EditOrgStock extends OrgAction
                         'value' => $orgStock->is_on_demand,
                         'information'   => __("Products using this SKO are treated as always available: they never go out of stock, the webshop shows 'Unlimited quantity available' (when all the product's SKOs are on demand), and Shopify/WooCommerce keep accepting orders even with empty stock."),
                     ],
+                    ...($orgStock->measured_lead_time_days !== null ? [] : [
+                        'estimated_lead_time_days' => [
+                            'type'    => 'input',
+                            'label'   => __('Estimated delivery time (days)'),
+                            'value'   => $orgStock->estimated_lead_time_days,
+                            'options' => ['inputType' => 'number']
+                        ],
+                    ]),
                 ]
             ],
             [

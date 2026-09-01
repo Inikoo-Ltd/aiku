@@ -11,6 +11,8 @@ Open Horizon's dashboard on a normal afternoon and you see the whole business br
 
 That same dashboard, on a bad morning, shows CPU pinned at 100% and a number in the tens of thousands next to a queue name, and you know — before you know why — that a small bug has found a way to multiply itself. This note is about the queues, and about those mornings, because the second part is what taught us how to run the first.
 
+*the day is a queue; clear it kindly.*
+
 ## The lanes
 
 The supervisors exist because jobs are not alike. A rough map:

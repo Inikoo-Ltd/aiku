@@ -10,7 +10,7 @@ namespace App\Actions\Dropshipping\Portfolio;
 use App\Actions\Helpers\Upload\ImportUpload;
 use App\Actions\Helpers\Upload\StoreUpload;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
+use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Actions\Traits\WithImportModel;
 use App\Imports\Dropshipping\CustomerSalesChannelPortfoliosImport;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -22,7 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ImportBulkPortfolios extends OrgAction
 {
     use WithImportModel;
-    use WithCRMAuthorisation;
+    use WithCRMEditAuthorisation;
 
     public function handle(CustomerSalesChannel $customerSalesChannel, UploadedFile $file): Upload
     {
@@ -64,7 +64,7 @@ class ImportBulkPortfolios extends OrgAction
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Upload
     {
-        $this->initialisation($customerSalesChannel->organisation, $request);
+        $this->initialisationFromShop($customerSalesChannel->shop, $request);
 
         return $this->handle($customerSalesChannel, $request->file('file'));
     }

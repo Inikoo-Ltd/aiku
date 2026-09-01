@@ -45,6 +45,7 @@ class FetchAuroraAgentSupplierPurchaseOrder extends FetchAurora
 
         $state = match ($this->auroraModelData->{'Agent Supplier Purchase Order State'}) {
             'InProcess' => AgentSupplierPurchaseOrderStateEnum::IN_PROCESS,
+            'Submitted' => AgentSupplierPurchaseOrderStateEnum::SUBMITTED,
             'Cancelled' => AgentSupplierPurchaseOrderStateEnum::CANCELLED,
             default => AgentSupplierPurchaseOrderStateEnum::CONFIRMED,
         };

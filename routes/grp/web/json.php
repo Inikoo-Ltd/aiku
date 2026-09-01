@@ -117,6 +117,7 @@ use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
 use App\Actions\Masters\MasterAsset\Json\GetPickFractional;
 use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
+use App\Actions\Masters\MasterProductCategory\Json\GetMasterProductCategoryTimeSeriesOrganisations;
 use App\Actions\CRM\Customer\Json\GetCustomersInShop;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemImage;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPricingSales;
@@ -319,6 +320,7 @@ Route::get('webpage/{webpage:id}/web-block-type/{webBlockType:id}/web-block-hist
 Route::get('master-product-category/{masterProductCategory:id}/recommended-trade-units', GetRecommendedTradeUnits::class)->name('master-product-category.recommended-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory:id}/taken-trade-units', GetTakenTradeUnits::class)->name('master-product-category.taken-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/all-trade-units', GetAllTradeUnitsInGroup::class)->name('master_product_category.all_trade_units');
+Route::get('master-product-category/{masterProductCategory:id}/time-series-organisations', GetMasterProductCategoryTimeSeriesOrganisations::class)->name('master_product_category.time_series_organisations')->withoutScopedBindings();
 
 Route::get('brand/{brand:id}/all-trade-units/', [GetAllTradeUnitsInGroup::class, 'inBrand'])->name('brand.all_trade_units');
 

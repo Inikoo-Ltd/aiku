@@ -11,7 +11,9 @@ namespace App\Actions\Procurement\PartnerShoppingListItem\UI;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\InertiaTable\InertiaTable;
+use App\Models\Ordering\Order;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -102,9 +104,38 @@ class IndexPartnerShippingList extends OrgAction
                     ],
                     'title' => __('Partner shipping list'),
                 ],
-                'data' => $items,
+                'data'         => $items,
+                'pickedOrders' => $this->getPickedOrders($this->organisation),
             ]
         )->table($this->tableStructure());
+    }
+
+    public function getPickedOrders(Organisation $seller): array
+    {
+        return Order::query()
+            ->join('sales_channels', 'sales_channels.id', 'orders.sales_channel_id')
+            ->join('customers', 'customers.id', 'orders.customer_id')
+            ->where('orders.organisation_id', $seller->id)
+            ->where('orders.state', OrderStateEnum::CREATING)
+            ->where('sales_channels.code', 'intercompany')
+            ->select([
+                'orders.id',
+                'orders.reference',
+                'orders.net_amount',
+                'orders.currency_id',
+                'customers.name as buyer_name',
+            ])
+            ->withCount('transactions')
+            ->get()
+            ->map(fn (Order $order) => [
+                'id'                 => $order->id,
+                'reference'          => $order->reference,
+                'net_amount'         => $order->net_amount,
+                'currency_code'      => $order->currency->code,
+                'buyer_name'         => $order->buyer_name,
+                'transactions_count' => $order->transactions_count,
+            ])
+            ->all();
     }
 
     public function getBreadcrumbs(array $routeParameters): array

@@ -135,6 +135,7 @@ class UpdateOrgStock extends OrgAction
         $rules = [
             'state'        => ['sometimes', Rule::enum(OrgStockStateEnum::class)],
             'is_on_demand' => ['sometimes', 'boolean'],
+            'estimated_lead_time_days' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],
             'name'         => ['sometimes', 'string', 'max:255'],
             'packed_in'    => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'barcode'      => [
