@@ -38,9 +38,8 @@ class UpdateWixUser extends RetinaAction
             'email'                  => ['sometimes', 'nullable', 'email'],
             'wix_site_id'            => ['sometimes', 'nullable', 'string'],
             'site_url'               => ['sometimes', 'nullable', 'string'],
-            'access_token'           => ['sometimes', 'string'],
-            'access_token_expire_in' => ['sometimes'],
-            'refresh_token'          => ['sometimes', 'string'],
+            'access_token'           => ['sometimes', 'nullable', 'string'],
+            'access_token_expire_in' => ['sometimes', 'nullable'],
             'data'                   => ['sometimes'],
             'settings'               => ['sometimes'],
         ];

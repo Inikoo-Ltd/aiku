@@ -9,6 +9,7 @@ namespace App\Actions\Dropshipping\Wix\Product;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\Wix\Traits\WithWixStockLevel;
 use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -28,6 +29,7 @@ class StoreProductToWix extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
     use WithPortfolioErrorResponse;
+    use WithWixStockLevel;
 
     public function handle(Portfolio $portfolio): Portfolio
     {
@@ -46,9 +48,11 @@ class StoreProductToWix extends RetinaAction
         ]);
 
         try {
-            $wixProduct = $wixUser->createProduct($this->productPayload($portfolio));
+            $quantity = $this->wixStockLevel($portfolio);
 
-            $wixProductId = Arr::get($wixProduct, 'product.id');
+            $wixProduct = $wixUser->catalog()->createProduct($portfolio, $quantity);
+
+            $wixProductId = Arr::get($wixProduct, 'id');
 
             if (!$wixProductId) {
                 throw new \Exception(Arr::get($wixProduct, 'message', 'Failed to create Wix product: no product id returned.'));
@@ -57,7 +61,9 @@ class StoreProductToWix extends RetinaAction
             UpdatePortfolio::run($portfolio, [
                 'platform_product_id'         => $wixProductId,
                 'platform_product_variant_id' => $wixProductId,
-                'errors_response'             => null
+                'errors_response'             => null,
+                'last_stock_value'            => $quantity,
+                'stock_last_updated_at'       => now(),
             ]);
 
             $this->pushImages($wixUser, $portfolio, $wixProductId);
@@ -96,24 +102,6 @@ class StoreProductToWix extends RetinaAction
         }
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function productPayload(Portfolio $portfolio): array
-    {
-        return [
-            'name'         => $portfolio->customer_product_name ?: $portfolio->item_name,
-            'productType'  => 'physical',
-            'sku'          => $portfolio->sku,
-            'description'  => $portfolio->customer_description ?: '',
-            'visible'      => true,
-            'priceData'    => [
-                'price' => (float) $portfolio->customer_price
-            ],
-            'manageVariants' => false,
-        ];
-    }
-
     private function pushImages(WixUser $wixUser, Portfolio $portfolio, string $wixProductId): void
     {
         $item = $portfolio->item;
@@ -122,18 +110,16 @@ class StoreProductToWix extends RetinaAction
             return;
         }
 
-        $media = [];
+        $imageUrls = [];
 
         foreach ($item->images as $image) {
-            $imageUrl = UploadProductImageToWix::run($image);
-
-            if ($imageUrl) {
-                $media[] = ['url' => $imageUrl];
+            if ($imageUrl = UploadProductImageToWix::run($image)) {
+                $imageUrls[] = $imageUrl;
             }
         }
 
-        if ($media) {
-            $wixUser->addProductMedia($wixProductId, $media);
+        if ($imageUrls) {
+            $wixUser->catalog()->addProductMedia($wixProductId, $imageUrls);
         }
     }
 }

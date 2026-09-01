@@ -11,6 +11,7 @@ use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
 use App\Actions\Dropshipping\Aiku\CloneMultipleManualPortfolios;
 use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
 use App\Actions\Dropshipping\Allegro\Product\StoreRetinaNewProductToCurrentAllegro;
+use App\Actions\Dropshipping\Wix\Product\MatchRetinaPortfolioToCurrentWixProduct;
 use App\Actions\Dropshipping\Wix\Product\StoreRetinaNewProductToCurrentWix;
 use App\Actions\Retina\Wix\GetRetinaOrdersFromWix;
 use App\Actions\Dropshipping\Amazon\Orders\GetRetinaOrdersFromAmazon;
@@ -480,6 +481,7 @@ Route::post('portfolio/{portfolio:id}/match-to-existing-tiktok-product', MatchRe
 
 Route::post('portfolio/{portfolio:id}/store-new-allegro-product', StoreRetinaNewProductToCurrentAllegro::class)->name('portfolio.store_new_allegro_product')->withoutScopedBindings()->whereNumber('portfolio');
 Route::post('portfolio/{portfolio:id}/store-new-wix-product', StoreRetinaNewProductToCurrentWix::class)->name('portfolio.store_new_wix_product')->withoutScopedBindings()->whereNumber('portfolio');
+Route::post('portfolio/{portfolio:id}/match-to-existing-wix-product', MatchRetinaPortfolioToCurrentWixProduct::class)->name('portfolio.match_to_existing_wix_product')->withoutScopedBindings()->whereNumber('portfolio');
 
 Route::post('portfolios/update-new-product-price/publish', UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::class)->name('portfolios.update_new_product_price.publish');
 Route::post('portfolios/update-new-product-price/draft', [UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::class, 'asDraft'])->name('portfolios.update_new_product_price.draft');

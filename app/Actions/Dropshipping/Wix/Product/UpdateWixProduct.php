@@ -30,14 +30,7 @@ class UpdateWixProduct extends OrgAction
             return $portfolio;
         }
 
-        $response = $wixUser->updateProduct($portfolio->platform_product_id, [
-            'name'        => $portfolio->customer_product_name ?: $portfolio->item_name,
-            'description' => $portfolio->customer_description ?: '',
-            'sku'         => $portfolio->sku,
-            'priceData'   => [
-                'price' => (float) $portfolio->customer_price
-            ],
-        ]);
+        $response = $wixUser->catalog()->updateProduct($portfolio->platform_product_id, $portfolio);
 
         if ($message = Arr::get($response, 'message')) {
             UpdatePortfolio::run($portfolio, [

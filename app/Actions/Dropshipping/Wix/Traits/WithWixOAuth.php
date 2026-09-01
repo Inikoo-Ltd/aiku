@@ -12,77 +12,78 @@ use Illuminate\Support\Facades\Http;
 
 trait WithWixOAuth
 {
-    /**
-     * Wix access tokens are short lived, refresh tokens are not. The refresh token is the
-     * only credential worth persisting long term.
-     */
+    /** Wix access tokens are valid for 4 hours. */
     protected const int WIX_ACCESS_TOKEN_TTL = 14400;
 
-    public function wixInstallUrl(): string
-    {
-        return config('services.wix.install_url', 'https://www.wix.com/installer/install');
-    }
+    /** Renew a little early so a token cannot expire mid-request. */
+    protected const int WIX_ACCESS_TOKEN_SKEW = 300;
 
     public function wixTokenUrl(): string
     {
-        return config('services.wix.api_url').'/oauth/access';
+        return config('services.wix.api_url').'/oauth2/token';
     }
 
-    /**
-     * Step 1 — the URL that sends the seller to Wix to pick a site and grant permissions.
-     */
-    public function getAuthorizationUrl(string $redirectUri, ?string $state = null): string
+    public function getInstallUrl(?string $postInstallationUrl = null): string
     {
-        $params = [
-            'appId'       => config('services.wix.app_id'),
-            'redirectUrl' => $redirectUri,
-        ];
+        $base = config('services.wix.install_url') ?: 'https://www.wix.com/app-installer';
 
-        if ($state) {
-            $params['state'] = $state;
+       [$path, $query] = array_pad(explode('?', $base, 2), 2, '');
+        parse_str($query, $params);
+
+        $params['appId'] ??= config('services.wix.app_id');
+
+        if ($postInstallationUrl) {
+            $params['postInstallationUrl'] = $postInstallationUrl;
         }
 
-        return $this->wixInstallUrl().'?'.http_build_query($params);
+        return $path.'?'.http_build_query(array_filter($params));
     }
 
     /**
-     * Step 2 — swap the authorization code for the instance's token pair.
+     * Create an access token for one app instance.
      *
-     * @return array{access_token?: string, refresh_token?: string, message?: string}
+     * @return array{access_token?: string, expires_in?: int, message?: string}
      */
-    public function exchangeCodeForTokens(string $code): array
+    public function createAccessToken(string $instanceId): array
     {
-        return $this->postToTokenEndpoint([
-            'grant_type'    => 'authorization_code',
-            'client_id'     => config('services.wix.app_id'),
-            'client_secret' => config('services.wix.app_secret'),
-            'code'          => $code,
-        ]);
+        try {
+            $response = Http::acceptJson()->post($this->wixTokenUrl(), [
+                'grant_type'    => 'client_credentials',
+                'client_id'     => config('services.wix.app_id'),
+                'client_secret' => config('services.wix.app_secret'),
+                'instance_id'   => $instanceId,
+            ]);
+
+            if ($response->failed()) {
+                return [
+                    'message' => Arr::get($response->json(), 'error_description')
+                        ?? Arr::get($response->json(), 'message')
+                        ?? Arr::get($response->json(), 'error')
+                        ?? 'Wix access token request failed',
+                ];
+            }
+
+            return $response->json() ?? [];
+        } catch (\Exception $e) {
+            return ['message' => $e->getMessage()];
+        }
     }
 
     /**
-     * @return array{access_token?: string, refresh_token?: string, message?: string}
+     * Mint a token for this WixUser and cache it until it expires.
+     *
+     * @return array{access_token?: string, expires_in?: int, message?: string}
      */
-    public function refreshAccessToken(?string $refreshToken): array
+    public function renewAccessToken(): array
     {
-        if (blank($refreshToken)) {
-            return ['message' => 'Missing Wix refresh token'];
-        }
+        $result = $this->createAccessToken($this->wix_instance_id);
 
-        $result = $this->postToTokenEndpoint([
-            'grant_type'    => 'refresh_token',
-            'client_id'     => config('services.wix.app_id'),
-            'client_secret' => config('services.wix.app_secret'),
-            'refresh_token' => $refreshToken,
-        ]);
-
-        if (blank($result) || Arr::get($result, 'message')) {
+        if (!Arr::get($result, 'access_token')) {
             return $result;
         }
 
         UpdateWixUser::make()->handle($this, [
             'access_token'           => Arr::get($result, 'access_token'),
-            'refresh_token'          => Arr::get($result, 'refresh_token', $refreshToken),
             'access_token_expire_in' => $this->wixAccessTokenExpiry($result),
         ], false);
 
@@ -91,27 +92,47 @@ trait WithWixOAuth
         return $result;
     }
 
-    public function wixAccessTokenExpiry(array $tokenData): int
+    public function hasFreshAccessToken(): bool
     {
-        return now()->addSeconds((int) Arr::get($tokenData, 'expires_in', self::WIX_ACCESS_TOKEN_TTL))->timestamp;
+        return $this->access_token
+            && $this->access_token_expire_in
+            && $this->access_token_expire_in > now()->timestamp;
     }
 
-    protected function postToTokenEndpoint(array $payload): array
+    public function wixAccessTokenExpiry(array $tokenData): int
     {
-        try {
-            $response = Http::acceptJson()->post($this->wixTokenUrl(), $payload);
+        $ttl = (int) Arr::get($tokenData, 'expires_in', self::WIX_ACCESS_TOKEN_TTL);
 
-            if ($response->failed()) {
-                return [
-                    'message' => Arr::get($response->json(), 'message')
-                        ?? Arr::get($response->json(), 'errorDescription')
-                        ?? 'Wix OAuth request failed',
-                ];
-            }
+        return now()->addSeconds(max($ttl - self::WIX_ACCESS_TOKEN_SKEW, 60))->timestamp;
+    }
 
-            return $response->json() ?? [];
-        } catch (\Exception $e) {
-            return ['message' => $e->getMessage()];
+    public function verifySignedInstance(?string $signedInstance): ?array
+    {
+        if (blank($signedInstance) || !str_contains($signedInstance, '.')) {
+            return null;
         }
+
+        $appSecret = config('services.wix.app_secret');
+
+        if (blank($appSecret)) {
+            return null;
+        }
+
+        [$signature, $payload] = explode('.', $signedInstance, 2);
+
+        $expected = hash_hmac('sha256', $payload, $appSecret, true);
+
+        if (!hash_equals($expected, $this->base64UrlDecode($signature))) {
+            return null;
+        }
+
+        $decoded = json_decode($this->base64UrlDecode($payload), true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    private function base64UrlDecode(string $value): string
+    {
+        return (string) base64_decode(strtr($value, '-_', '+/'));
     }
 }

@@ -34,7 +34,7 @@ class CheckWixPortfolio
         $wixProduct         = null;
 
         if ($hasValidProductId) {
-            $wixProduct         = Arr::get($wixUser->getProduct($portfolio->platform_product_id), 'product');
+            $wixProduct         = $wixUser->catalog()->getProduct($portfolio->platform_product_id);
             $productExistsInWix = (bool) $wixProduct;
         }
 

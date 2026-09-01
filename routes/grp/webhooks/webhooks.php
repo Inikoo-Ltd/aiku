@@ -11,7 +11,7 @@ use App\Actions\Comms\Notifications\GetSnsNotification;
 use App\Actions\CRM\Customer\GoogleAds\CallbackShopGoogleAds;
 use App\Actions\CRM\TrafficSource\ReceiveTrafficSourceCostWebhook;
 use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
-use App\Actions\Dropshipping\Wix\User\AuthenticateWixAccount;
+use App\Actions\Dropshipping\Wix\Webhooks\HandleWixAppInstanceInstalled;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFetchStock;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackProductChanged;
@@ -79,8 +79,8 @@ Route::prefix('allegro')->as('allegro.')->group(function () {
     Route::get('callback', AuthenticateAllegroAccount::class)->name('callback');
 });
 
-Route::prefix('wix')->as('wix.')->group(function () {
-    Route::get('callback', AuthenticateWixAccount::class)->name('callback');
+Route::prefix('wix')->as('webhooks.wix.')->group(function () {
+    Route::post('app-instance-installed', HandleWixAppInstanceInstalled::class)->name('app_instance_installed');
 });
 
 Route::prefix('jira/{group:id}')->as('webhooks.jira.')->group(function () {

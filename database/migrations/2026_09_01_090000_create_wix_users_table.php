@@ -30,7 +30,6 @@ return new class () extends Migration {
             $table->string('site_url')->nullable();
             $table->text('access_token')->nullable();
             $table->string('access_token_expire_in')->nullable();
-            $table->text('refresh_token')->nullable();
             $table->string('auth_type')->default(WebUserAuthTypeEnum::DEFAULT->value);
             $table->string('state')->default(WebUserTypeEnum::WEB->value);
             $table->jsonb('data');

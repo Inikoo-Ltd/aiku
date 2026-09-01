@@ -6,9 +6,14 @@
 
 namespace App\Actions\Dropshipping\Wix\Traits;
 
+use App\Actions\Dropshipping\Wix\Catalog\WixCatalog;
+use App\Actions\Dropshipping\Wix\Catalog\WixCatalogV1;
+use App\Actions\Dropshipping\Wix\Catalog\WixCatalogV3;
+use App\Enums\Dropshipping\WixCatalogVersionEnum;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 trait WithWixApiServices
 {
@@ -16,8 +21,8 @@ trait WithWixApiServices
 
     public function restApi(array $params = []): PendingRequest
     {
-        if (!$this->access_token_expire_in || $this->access_token_expire_in < now()->timestamp) {
-            $this->refreshAccessToken($this->refresh_token);
+        if (!$this->hasFreshAccessToken()) {
+            $this->renewAccessToken();
         }
 
         $http = Http::withHeaders([
@@ -50,11 +55,14 @@ trait WithWixApiServices
             if ($response->failed()) {
                 $json = $response->json();
 
+                $message = Arr::get($json, 'message')
+                    ?? Arr::get($json, 'details.applicationError.description')
+                    ?? Arr::get($json, 'error')
+                    ?? 'Unknown Wix API error';
+
                 return [
-                    'message' => Arr::get($json, 'message')
-                        ?? Arr::get($json, 'details.applicationError.description')
-                        ?? Arr::get($json, 'error')
-                        ?? 'Unknown Wix API error',
+                    'message'          => $this->translateWixError($message).$this->violationSuffix($json),
+                    'field_violations' => $this->fieldViolations($json),
                 ];
             }
 
@@ -62,6 +70,95 @@ trait WithWixApiServices
         } catch (\Exception $e) {
             return ['message' => $e->getMessage()];
         }
+    }
+
+    public function fieldViolations(mixed $json): array
+    {
+        if (!is_array($json)) {
+            return [];
+        }
+
+        $violations = Arr::get($json, 'details.validationError.fieldViolations')
+            ?? Arr::get($json, 'details.applicationError.data.fieldViolations')
+            ?? [];
+
+        return collect($violations)
+            ->map(fn ($violation) => [
+                'field'       => Arr::get($violation, 'field'),
+                'description' => Arr::get($violation, 'description'),
+            ])
+            ->all();
+    }
+
+    private function violationSuffix(mixed $json): string
+    {
+        $violations = collect($this->fieldViolations($json))
+            ->map(fn ($violation) => trim($violation['field'].' '.$violation['description']))
+            ->filter()
+            ->join('; ');
+
+        return $violations ? ' ('.$violations.')' : '';
+    }
+
+    // -------------------------------------------------------------------------
+    // Catalogue version
+    // -------------------------------------------------------------------------
+
+    /**
+     * Which Wix Stores catalogue the site answers. Permanent per site once set, so it is read
+     * once and remembered rather than asked on every call.
+     *
+     * @see https://dev.wix.com/docs/rest/business-solutions/stores/catalog-versioning/introduction
+     */
+    public function getCatalogVersion(bool $fresh = false): WixCatalogVersionEnum
+    {
+        $cached = Arr::get($this->data, 'catalog_version');
+
+        if (!$fresh && $cached && $cached !== WixCatalogVersionEnum::STORES_NOT_INSTALLED->value) {
+            return WixCatalogVersionEnum::from($cached);
+        }
+
+        $response = $this->makeApiRequest('GET', '/stores/v3/provision/version');
+
+        $version = WixCatalogVersionEnum::tryFrom((string) Arr::get($response, 'catalogVersion'))
+            ?? WixCatalogVersionEnum::STORES_NOT_INSTALLED;
+
+        if ($cached !== $version->value) {
+            $data = $this->data ?? [];
+            data_set($data, 'catalog_version', $version->value);
+            $this->forceFill(['data' => $data])->saveQuietly();
+        }
+
+        return $version;
+    }
+
+    public function catalog(): WixCatalog
+    {
+        return match ($this->getCatalogVersion()) {
+            WixCatalogVersionEnum::V3 => new WixCatalogV3($this),
+            default => new WixCatalogV1($this),
+        };
+    }
+
+    /**
+     * Whether the site can serve the catalogue this integration depends on.
+     */
+    public function hasWixStores(): bool
+    {
+        return $this->getCatalogVersion(true) !== WixCatalogVersionEnum::STORES_NOT_INSTALLED;
+    }
+
+    /**
+     * Wix answers a call to a business solution the site does not have with an internal
+     * "TPA <app id> is not installed" string, which says nothing to the seller reading it.
+     */
+    public function translateWixError(string $message): string
+    {
+        if (preg_match('/TPA .* is not installed/i', $message)) {
+            return __('Wix Stores is not installed on this site. Add the Wix Stores app to the site, then reconnect the channel.');
+        }
+
+        return $message;
     }
 
     // -------------------------------------------------------------------------
@@ -93,87 +190,11 @@ trait WithWixApiServices
     }
 
     // -------------------------------------------------------------------------
-    // Products
+    // Catalogue
+    //
+    // Products and inventory are reached through catalog(), never from here: the endpoints and
+    // payloads differ between catalogue V1 and V3, and only the drivers know which is which.
     // -------------------------------------------------------------------------
-
-    public function queryProducts(array $query = []): array
-    {
-        return $this->makeApiRequest('POST', '/stores/v1/products/query', [
-            'query' => $query,
-        ]);
-    }
-
-    public function getProduct(string $productId): array
-    {
-        return $this->makeApiRequest('GET', "/stores/v1/products/$productId");
-    }
-
-    public function searchProductsBySku(string $sku): array
-    {
-        $response = $this->queryProducts([
-            'filter' => json_encode(['sku' => ['$eq' => $sku]]),
-            'paging' => ['limit' => 10, 'offset' => 0],
-        ]);
-
-        return Arr::get($response, 'products', []);
-    }
-
-    public function createProduct(array $productData): array
-    {
-        return $this->makeApiRequest('POST', '/stores/v1/products', [
-            'product' => $productData,
-        ]);
-    }
-
-    public function updateProduct(string $productId, array $productData): array
-    {
-        return $this->makeApiRequest('PATCH', "/stores/v1/products/$productId", [
-            'product' => $productData,
-        ]);
-    }
-
-    public function deleteProduct(string $productId): array
-    {
-        return $this->makeApiRequest('DELETE', "/stores/v1/products/$productId");
-    }
-
-    public function addProductMedia(string $productId, array $media): array
-    {
-        return $this->makeApiRequest('POST', "/stores/v1/products/$productId/media", [
-            'media' => $media,
-        ]);
-    }
-
-    // -------------------------------------------------------------------------
-    // Inventory
-    // -------------------------------------------------------------------------
-
-    public function queryInventoryItems(array $query = []): array
-    {
-        return $this->makeApiRequest('POST', '/stores/v2/inventoryItems/query', [
-            'query' => $query,
-        ]);
-    }
-
-    public function getInventoryItemIdForProduct(string $productId): ?string
-    {
-        $response = $this->queryInventoryItems([
-            'filter' => json_encode(['productId' => ['$eq' => $productId]]),
-            'paging' => ['limit' => 1, 'offset' => 0],
-        ]);
-
-        return Arr::get($response, 'inventoryItems.0.id');
-    }
-
-    public function updateInventoryVariants(string $inventoryItemId, array $variants): array
-    {
-        return $this->makeApiRequest('PATCH', "/stores/v2/inventoryItems/$inventoryItemId", [
-            'inventoryItem' => [
-                'trackQuantity' => true,
-                'variants'      => $variants,
-            ],
-        ]);
-    }
 
     // -------------------------------------------------------------------------
     // Orders

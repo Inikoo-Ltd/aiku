@@ -37,7 +37,8 @@ class SaveShopDataWixChannel
             data_set($data, 'locale', Arr::get($instance, 'site.locale'));
             data_set($data, 'currency', Arr::get($instance, 'site.paymentCurrency'));
             data_set($data, 'url', Arr::get($instance, 'site.url'));
-            data_set($data, 'owner_email', Arr::get($instance, 'site.ownerEmail'));
+            data_set($data, 'owner_email', Arr::get($instance, 'site.ownerInfo.email'));
+            data_set($data, 'origin_instance_id', Arr::get($instance, 'instance.originInstanceId'));
 
             $modelData = [
                 'data'        => $data,
@@ -50,7 +51,7 @@ class SaveShopDataWixChannel
                 $modelData['name'] = $name;
             }
 
-            $email = Arr::get($instance, 'site.ownerEmail');
+            $email = Arr::get($instance, 'site.ownerInfo.email');
             if ($email) {
                 $modelData['email'] = $email;
             }

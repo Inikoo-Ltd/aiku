@@ -53,10 +53,8 @@ class StoreWixUser extends RetinaAction
             'name'                   => ['required', 'string'],
             'email'                  => ['sometimes', 'nullable', 'email'],
             'site_url'               => ['sometimes', 'nullable', 'string'],
-            'access_token'           => ['required', 'string'],
-            'access_token_expire_in' => ['required'],
-            'refresh_token'          => ['required', 'string'],
-            'auth_type'              => ['sometimes', 'string'],
+            'access_token'           => ['sometimes', 'nullable', 'string'],
+            'access_token_expire_in' => ['sometimes', 'nullable'],
         ];
     }
 

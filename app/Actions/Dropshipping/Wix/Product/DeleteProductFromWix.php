@@ -26,7 +26,7 @@ class DeleteProductFromWix extends OrgAction
         }
 
         try {
-            $wixUser->deleteProduct($portfolio->platform_product_id);
+            $wixUser->catalog()->deleteProduct($portfolio->platform_product_id);
         } catch (\Exception $e) {
             Sentry::captureException($e);
         }

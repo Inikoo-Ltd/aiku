@@ -9,7 +9,7 @@ namespace App\Actions\Dropshipping\Wix\Product;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WixUser;
-use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
@@ -22,8 +22,10 @@ class CheckIfProductExistInWix extends RetinaAction
     public function handle(WixUser $wixUser, Portfolio $portfolio): array
     {
         try {
+            $catalog = $wixUser->catalog();
+
             if ($portfolio->platform_product_id) {
-                $product = Arr::get($wixUser->getProduct($portfolio->platform_product_id), 'product');
+                $product = $catalog->getProduct($portfolio->platform_product_id);
 
                 return $product ? [$product] : [];
             }
@@ -32,7 +34,10 @@ class CheckIfProductExistInWix extends RetinaAction
                 return [];
             }
 
-            return $wixUser->searchProductsBySku($portfolio->sku);
+            return collect($catalog->searchProducts($portfolio->sku))
+                ->filter(fn ($product) => Str::lower((string) $product['sku']) === Str::lower($portfolio->sku))
+                ->values()
+                ->all();
         } catch (\Exception $e) {
             Sentry::captureMessage('Failed to look the product up in Wix due to: '.$e->getMessage());
 

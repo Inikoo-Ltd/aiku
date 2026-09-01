@@ -460,6 +460,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         PlatformTypeEnum::ALLEGRO => [
                             'name' => 'retina.json.dropshipping.customer_sales_channel.allegro_products'
                         ],
+                        PlatformTypeEnum::WIX => [
+                            'name' => 'retina.json.dropshipping.customer_sales_channel.wix_products'
+                        ],
                         default => false
                     },
                     'single_create_new'           => match ($this->customerSalesChannel->platform->type) {
@@ -478,6 +481,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         PlatformTypeEnum::ALLEGRO => [
                             'name' => 'retina.models.portfolio.store_new_allegro_product'
                         ],
+                        PlatformTypeEnum::WIX => [
+                            'name' => 'retina.models.portfolio.store_new_wix_product'
+                        ],
                         default => false
                     },
                     'single_match'                => match ($this->customerSalesChannel->platform->type) {
@@ -495,6 +501,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         ],
                         PlatformTypeEnum::ALLEGRO => [
                             'name' => 'retina.models.portfolio.match_to_existing_allegro_product'
+                        ],
+                        PlatformTypeEnum::WIX => [
+                            'name' => 'retina.models.portfolio.match_to_existing_wix_product'
                         ],
                         default => false
                     },

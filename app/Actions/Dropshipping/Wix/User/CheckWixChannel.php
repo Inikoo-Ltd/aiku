@@ -28,9 +28,17 @@ class CheckWixChannel
             return null;
         }
 
+        $reason = null;
+
         try {
             if ($wixUser->getUserInfo()) {
-                $platformStatus = $canConnectToPlatform = $existInPlatform = true;
+                $canConnectToPlatform = $existInPlatform = true;
+
+                if ($wixUser->hasWixStores()) {
+                    $platformStatus = true;
+                } else {
+                    $reason = __('Wix Stores is not installed on this site. Add the Wix Stores app to the site, then reconnect the channel.');
+                }
             }
         } catch (\Exception $e) {
             Sentry::captureException($e);
@@ -41,6 +49,10 @@ class CheckWixChannel
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform
         ];
+
+        $settings = $customerSalesChannel->settings ?? [];
+        data_set($settings, 'wix.not_ready_reason', $reason);
+        $data['settings'] = $settings;
 
         if ($platformStatus) {
             $data['state']                 = CustomerSalesChannelStateEnum::AUTHENTICATED;

@@ -212,6 +212,9 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                         PlatformTypeEnum::ALLEGRO => [
                             'name' => 'grp.json.dropshipping.customer_sales_channel.allegro_products'
                         ],
+                        PlatformTypeEnum::WIX => [
+                            'name' => 'grp.json.dropshipping.customer_sales_channel.wix_products'
+                        ],
                         default => false
                     },
                     'single_create_new' => match ($this->customerSalesChannel->platform->type) {

@@ -21,9 +21,9 @@ use Spatie\Sluggable\SlugOptions;
 
 /**
  * @property int $id
- * @property int $group_id
- * @property int $organisation_id
- * @property int $customer_id
+ * @property int|null $group_id
+ * @property int|null $organisation_id
+ * @property int|null $customer_id
  * @property string $slug
  * @property bool $status
  * @property string $name
@@ -33,7 +33,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $site_url
  * @property string|null $access_token
  * @property string|null $access_token_expire_in
- * @property string|null $refresh_token
  * @property array<array-key, mixed> $data
  * @property array<array-key, mixed> $settings
  * @property int|null $customer_sales_channel_id

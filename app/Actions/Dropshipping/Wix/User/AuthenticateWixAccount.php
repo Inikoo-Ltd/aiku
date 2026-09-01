@@ -11,17 +11,17 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\WixUser;
-use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Response;
+use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
-use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class AuthenticateWixAccount extends OrgAction
 {
@@ -33,28 +33,21 @@ class AuthenticateWixAccount extends OrgAction
     /**
      * @throws ValidationException
      */
-    public function handle(array $modelData): Response|string|RedirectResponse|null
+    public function handle(array $modelData, ?Customer $customer = null): RedirectResponse|string|null
     {
         try {
-            return DB::transaction(function () use ($modelData) {
-                $customer = null;
+            return DB::transaction(function () use ($modelData, $customer) {
+                $instancePayload = $this->verifySignedInstance(
+                    Arr::get($modelData, 'instance') ?? Arr::get($modelData, 'signedInstance')
+                );
 
-                if (Arr::get($modelData, 'state')) {
-                    $stateData = json_decode(base64_decode(Arr::get($modelData, 'state')), true);
-                    $customer  = Customer::find(Arr::get($stateData, 'customer_id'));
-                }
-
-                $tokenData = $this->exchangeCodeForTokens(Arr::get($modelData, 'code'));
-
-                if (!Arr::get($tokenData, 'access_token')) {
+                if (!$instancePayload) {
                     throw ValidationException::withMessages([
-                        'message' => Arr::get($tokenData, 'message', __('Wix did not return an access token'))
+                        'message' => __('Wix sent an instance we could not verify')
                     ]);
                 }
 
-                $instance = $this->getInstanceFromApi($tokenData['access_token']);
-
-                $instanceId = Arr::get($instance, 'instance.instanceId') ?: Arr::get($modelData, 'instanceId');
+                $instanceId = Arr::get($instancePayload, 'instanceId');
 
                 if (!$instanceId) {
                     throw ValidationException::withMessages([
@@ -62,27 +55,47 @@ class AuthenticateWixAccount extends OrgAction
                     ]);
                 }
 
-                $userData = [
-                    'wix_instance_id'        => $instanceId,
-                    'wix_site_id'            => Arr::get($instance, 'site.siteId'),
-                    'name'                   => Arr::get($instance, 'site.siteDisplayName') ?: $instanceId,
-                    'email'                  => Arr::get($instance, 'site.ownerEmail'),
-                    'site_url'               => Arr::get($instance, 'site.url'),
-                    'access_token'           => $tokenData['access_token'],
-                    'access_token_expire_in' => $this->wixAccessTokenExpiry($tokenData),
-                    'refresh_token'          => Arr::get($tokenData, 'refresh_token'),
-                ];
-
                 $wixUser = WixUser::where('wix_instance_id', $instanceId)->first();
 
-                if (!$wixUser && $customer?->id) {
-                    $wixUser = StoreWixUser::make()->action($customer, $userData);
-                } elseif ($wixUser) {
-                    $wixUser = UpdateWixUser::make()->handle($wixUser, $userData, false);
+                $customer ??= $wixUser?->customer;
+
+                $tokenData   = $this->createAccessToken($instanceId);
+                $accessToken = Arr::get($tokenData, 'access_token');
+
+                if (!$accessToken) {
+                    throw ValidationException::withMessages([
+                        'message' => Arr::get($tokenData, 'message', __('Wix did not issue an access token'))
+                    ]);
+                }
+
+                $appInstance = $this->getInstanceFromApi($accessToken);
+
+                $userData = [
+                    'wix_site_id'            => Arr::get($appInstance, 'site.siteId'),
+                    'name'                   => Arr::get($appInstance, 'site.siteDisplayName') ?: $instanceId,
+                    'email'                  => Arr::get($appInstance, 'site.ownerInfo.email'),
+                    'site_url'               => Arr::get($appInstance, 'site.url'),
+                    'access_token'           => $accessToken,
+                    'access_token_expire_in' => $this->wixAccessTokenExpiry($tokenData),
+                ];
+
+                if (!$wixUser && !$customer) {
+                   WixUser::create(array_merge($userData, ['wix_instance_id' => $instanceId]));
+
+                    return null;
                 }
 
                 if (!$wixUser) {
-                    return null;
+                    $wixUser = StoreWixUser::make()->action(
+                        $customer,
+                        array_merge($userData, ['wix_instance_id' => $instanceId])
+                    );
+                } else {
+                    $wixUser = UpdateWixUser::make()->handle($wixUser, $userData, false);
+
+                    if ($customer && !$wixUser->customer_id) {
+                        $wixUser = AttachWixUserToCustomer::run($wixUser, $customer);
+                    }
                 }
 
                 SaveShopDataWixChannel::run($wixUser);
@@ -97,9 +110,8 @@ class AuthenticateWixAccount extends OrgAction
                 }
 
                 $domain = "https://{$customerSalesChannel->shop->website->domain}";
-                $path   = "/app/dropshipping/channels/$customerSalesChannel->slug";
 
-                return Redirect::away($domain.$path);
+                return Redirect::away($domain."/app/dropshipping/channels/$customerSalesChannel->slug");
             });
         } catch (\Exception $e) {
             \Sentry::captureException($e);
@@ -108,10 +120,6 @@ class AuthenticateWixAccount extends OrgAction
         }
     }
 
-    /**
-     * The instance endpoint is called with the freshly minted token, before any WixUser exists
-     * to carry it, so it cannot go through the model's api trait.
-     */
     private function getInstanceFromApi(string $accessToken): array
     {
         $response = Http::withHeaders([
@@ -126,48 +134,42 @@ class AuthenticateWixAccount extends OrgAction
         return $response->json() ?? [];
     }
 
-    public function getRedirectUrl(): string
-    {
-        return route('wix.callback');
-    }
-
     public function redirectToWix(Customer $customer): string
     {
-        $state = base64_encode(json_encode([
-            'customer_id' => $customer->id
-        ]));
+        $callback = URL::temporarySignedRoute('wix.link', now()->addHours(2), [
+            'customer' => $customer->id,
+        ]);
 
-        return $this->getAuthorizationUrl($this->getRedirectUrl(), $state);
+        return $this->getInstallUrl($callback);
     }
+
+    public const array WIX_APPENDED_QUERY = ['appId', 'tenantId', 'instanceId', 'signedInstance'];
 
     public function checkIsAuthenticated(WixUser $wixUser): bool
     {
         return $wixUser->customerSalesChannel?->platform_status ?? false;
     }
 
-    public function checkIsAuthenticatedExpired(WixUser $wixUser): bool
-    {
-        if (!$wixUser->access_token_expire_in) {
-            return true;
-        }
-
-        return now()->greaterThanOrEqualTo(Carbon::createFromTimestamp($wixUser->access_token_expire_in));
-    }
-
     public function rules(): array
     {
         return [
-            'code'       => ['required', 'string'],
-            'state'      => ['nullable', 'string'],
-            'instanceId' => ['nullable', 'string'],
+            'signedInstance' => ['required_without:instance', 'string'],
+            'instance'       => ['required_without:signedInstance', 'string'],
         ];
     }
 
-    public function asController(ActionRequest $request): Response|string|RedirectResponse|null
+    public function asController(Customer $customer, Request $request): RedirectResponse|string|null
     {
-        $this->fillFromRequest($request);
-        $validatedData = $this->validateAttributes();
+        if (!$request->hasValidSignatureWhileIgnoring(self::WIX_APPENDED_QUERY)) {
+            throw new AccessDeniedHttpException('Invalid Wix install callback');
+        }
 
-        return $this->handle($validatedData);
+        if (!$request->query('instanceId') || !$request->query('signedInstance')) {
+            return __('The Wix installation was not completed');
+        }
+
+        $this->fillFromRequest($request);
+
+        return $this->handle($this->validateAttributes(), $customer);
     }
 }
