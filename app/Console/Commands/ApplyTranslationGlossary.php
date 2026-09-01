@@ -15,6 +15,13 @@ use Illuminate\Console\Command;
  * short commerce terms: "Charge" became आरोप (a legal accusation) in Hindi and
  * "Close" became Cerca (nearby) in Spanish. resources/translation-glossary.json holds the corrections;
  * this reapplies them after any translate:default run or POEditor download.
+ *
+ * `translation:download` overwrites lang/<code>.json wholesale, so the corrections are
+ * lost on every download until this runs again. Pair it with lang:strip-empty:
+ *
+ *     php artisan translation:download
+ *     php artisan lang:strip-empty
+ *     php artisan lang:apply-glossary
  */
 class ApplyTranslationGlossary extends Command
 {

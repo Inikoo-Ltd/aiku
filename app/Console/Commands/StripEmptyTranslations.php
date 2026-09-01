@@ -14,8 +14,20 @@ use Illuminate\Console\Command;
  * Laravel resolves an empty translation to the English key ($line ?: $key), but
  * laravel-vue-i18n treats "" as a valid message and renders a blank label, so every
  * untranslated string in grp shows as nothing at all. Deleting the key restores the
- * English fallback on both sides. POEditor downloads reintroduce them, so this is
- * meant to run after `translation:download`.
+ * English fallback on both sides.
+ *
+ * `translation:download` writes each POEditor export over lang/<code>.json wholesale,
+ * with no merge, so it reintroduces every empty string and reverts the glossary. Always
+ * follow a download with both repair steps:
+ *
+ *     php artisan translation:download
+ *     php artisan lang:strip-empty
+ *     php artisan lang:apply-glossary
+ *
+ * Only the languages held in POEditor are overwritten (as of Sept 2026: bg, cs, de, en,
+ * es, fr, hr, hu, id, it, nl, pl, pt, ro, sk, sv, uk, zh-Hans). hi and ne are absent from
+ * the project, so they are untouched — adding either one there would overwrite the
+ * locally generated file with an empty export.
  */
 class StripEmptyTranslations extends Command
 {
