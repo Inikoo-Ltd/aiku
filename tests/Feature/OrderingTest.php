@@ -3253,3 +3253,26 @@ test('make queue ranks paid blocked stock with suggested quantity', function () 
 
     $this->organisation->update(['settings' => $settings]);
 });
+
+test('repair order charge flags sets premium flag from orphan charge line', function (Order $order) {
+    $charge = StoreCharge::make()->action($order->shop, [
+        'code'        => 'PREMIUM-REPAIR',
+        'name'        => 'Premium Dispatch',
+        'description' => 'premium dispatch',
+        'state'       => ChargeStateEnum::ACTIVE,
+        'trigger'     => ChargeTriggerEnum::ORDER,
+        'type'        => ChargeTypeEnum::PREMIUM,
+    ]);
+    StoreTransactionFromCharge::make()->action($order, $charge, [
+        'date'             => Carbon::now(),
+        'quantity_ordered' => 1,
+    ]);
+
+    expect($order->refresh()->is_premium_dispatch)->toBeFalse();
+
+    $this->artisan('repair:order_charge_flags')->assertSuccessful();
+    expect($order->refresh()->is_premium_dispatch)->toBeFalse();
+
+    $this->artisan('repair:order_charge_flags --commit')->assertSuccessful();
+    expect($order->refresh()->is_premium_dispatch)->toBeTrue();
+})->depends('create order');
