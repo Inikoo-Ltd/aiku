@@ -44,6 +44,14 @@ When the delivery note is actually dispatched from the warehouse, the order's st
 
 An order can be cancelled instead of following the states above — for example if a shop closes before the order was actioned. A cancelled order stops moving through the pipeline.
 
+## Changing an address after the order is submitted
+
+When an order is submitted, aiku takes a copy of the customer's billing and delivery addresses and keeps them with the order. Tax and shipping were calculated on those addresses, so the order does not change on its own afterwards. Editing the address on the customer's record updates baskets that are still open, but it never touches an order that has already been submitted.
+
+To change the address on a submitted order, do it on the order itself. Open the order and, next to the address block, click **Edit** to change the delivery address or **Edit billing address** to change the billing one. If the order shows a single combined address, both links sit under it. The change is applied to the order and its delivery note, and the totals are recalculated if the tax treatment changes. This is possible right up until the order is dispatched.
+
+Once the order is dispatched, the order's addresses are fixed for good. If the customer then needs a different address on their invoice, correct it on the invoice: open the invoice from the order's **Invoices** tab and use the pencil next to the address.
+
 ## Finding an order and checking its progress
 
 Open a shop and go to **Orders → Orders** to see every order for that shop. Each row shows the order's state as an icon, its reference, when it was submitted or dispatched, the customer, the payment status, delivery information and the net amount. You can filter the list by state, and search by reference or tracking number.
@@ -65,6 +73,8 @@ Open any order to see its full record. The page shows the order's reference as t
 <li><b>See every order:</b> your shop → <b>Orders</b> (top menu) → <b>Orders</b> tab. Filter by state or search by reference.</li>
 <li><b>Check one order's progress:</b> click into it from the list — the state shows next to its reference, and the <b>Delivery notes</b> and <b>Invoices</b> tabs show what has happened downstream.</li>
 <li><b>See what is waiting to be worked:</b> your shop → <b>Orders</b> (top menu) → <b>Backlog</b> tab.</li>
+<li><b>Change an address on a submitted order:</b> open the order → <b>Edit</b> or <b>Edit billing address</b> under the address block, until it is dispatched.</li>
+<li><b>Correct the address on an issued invoice:</b> open the order → <b>Invoices</b> tab → open the invoice → pencil next to the address.</li>
 </ul>
 </aside>
 

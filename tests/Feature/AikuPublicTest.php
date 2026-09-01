@@ -278,6 +278,12 @@ test('helpFor matches grp routes to docs by longest prefix', function () {
         ->and(BlogPosts::helpFor(null))->toBeNull();
 });
 
+test('helpFor links the reader to the doc in their own language when one exists', function () {
+    expect(BlogPosts::helpFor('grp.org.shops.show.ordering.orders.show', 'es')['url'])->toEndWith('/docs/following-an-order-from-basket-to-dispatch-es')
+        ->and(BlogPosts::helpFor('grp.org.shops.show.ordering.orders.show', 'sk')['url'])->toEndWith('/docs/following-an-order-from-basket-to-dispatch')
+        ->and(BlogPosts::helpFor('grp.org.shops.show.ordering.orders.show', 'en')['url'])->toEndWith('/docs/following-an-order-from-basket-to-dispatch');
+});
+
 test('translated docs are served, linked and kept out of the English listings', function () {
     $english = BlogPosts::all('docs')->firstWhere('slug', 'your-clean-handover-score');
     expect($english)->not->toBeNull()

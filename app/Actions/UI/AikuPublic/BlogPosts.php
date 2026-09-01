@@ -94,7 +94,7 @@ class BlogPosts
         return $post && $post['date']->isFuture() ? null : $post;
     }
 
-    public static function helpFor(?string $routeName): ?array
+    public static function helpFor(?string $routeName, ?string $language = null): ?array
     {
         if (!$routeName) {
             return null;
@@ -106,10 +106,19 @@ class BlogPosts
             ->sortByDesc(fn (array $candidate) => strlen($candidate['prefix']))
             ->first();
 
-        return $match ? [
-            'title' => $match['doc']['title'],
-            'url' => 'https://'.config('app.domain').'/docs/'.$match['doc']['slug'],
-        ] : null;
+        if (!$match) {
+            return null;
+        }
+
+        $doc = $match['doc'];
+        if ($language && strtolower($language) !== 'en') {
+            $doc = self::translations($doc, 'docs')->firstWhere('lang', strtolower($language)) ?? $doc;
+        }
+
+        return [
+            'title' => $doc['title'],
+            'url' => 'https://'.config('app.domain').'/docs/'.$doc['slug'],
+        ];
     }
 
     /**
