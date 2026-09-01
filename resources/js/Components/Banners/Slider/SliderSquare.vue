@@ -149,6 +149,34 @@ const getCardScale = computed(() => {
   return 1
 })
 
+const contentAlignClasses: Record<string, string> = {
+  top: 'justify-start',
+  middle: 'justify-center',
+  bottom: 'justify-end',
+  spread: 'justify-between'
+}
+
+const contentAlignClass = (card: any) => contentAlignClasses[card?.contentAlign] ?? contentAlignClasses.top
+
+/**
+ * The edge gap is a margin on the card instead of padding on its layer, so `card.width`
+ * always resolves against the full banner width and left, center and right cards end up
+ * the same size.
+ */
+const CARD_EDGE_GAP = 40
+
+const cardEdgeMargin = (card: any) => {
+  if (card?.horizontal === 'left') {
+    return { marginLeft: `${CARD_EDGE_GAP}px` }
+  }
+
+  if (card?.horizontal === 'right') {
+    return { marginRight: `${CARD_EDGE_GAP}px` }
+  }
+
+  return {}
+}
+
 const isMounted = ref(false)
 
 
@@ -266,9 +294,9 @@ onMounted(() => {
                                 class="absolute inset-0 flex pointer-events-none"
                                 :class="[
                                 {
-                                    'justify-start pl-10': card.horizontal === 'left',
+                                    'justify-start': card.horizontal === 'left',
                                     'justify-center': card.horizontal === 'center',
-                                    'justify-end pr-10': card.horizontal === 'right'
+                                    'justify-end': card.horizontal === 'right'
                                 },
                                 {
                                     'items-start pt-10': card.vertical === 'top',
@@ -281,6 +309,7 @@ onMounted(() => {
                                 <div
                                 class="relative pointer-events-auto"
                                 :style="{
+                                    ...cardEdgeMargin(card),
                                     width: (card.width || 60) + '%',
                                     height: (card.height || 300) + 'px',
                                     background: card.hideCard ? 'transparent' : (card.background || '#ffffff'),
@@ -292,9 +321,10 @@ onMounted(() => {
                                 }"
                                 :class="card.shadow && !card.hideCard ? 'shadow-2xl' : ''"
                                 >
-                                    <div v-html="card.titles[0].text"></div>
+                                    <div class="flex flex-col h-full overflow-hidden" :class="contentAlignClass(card)">
+                                        <div v-html="card.titles[0].text"></div>
 
-                                     <div v-if="card.button?.show" class="mt-4 flex" :class="{
+                                        <div v-if="card.button?.show" class="mt-4 flex" :class="{
                                                 'justify-start': card.button?.align === 'left',
                                                 'justify-center': !card.button?.align || card.button?.align === 'center',
                                                 'justify-end': card.button?.align === 'right'
@@ -317,6 +347,7 @@ onMounted(() => {
                                                     {{ card.button?.text || 'Button' }}
                                                 </a>
                                             </div>
+                                    </div>
                                 </div>
                             </div>
 
