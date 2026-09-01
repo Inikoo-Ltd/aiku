@@ -76,7 +76,11 @@ const panelSession = computed(() => {
     if (!s) return null
     return {
         ulid: String(s.ulid),
-        contact_name: s.contact_name || (s as any).metadata?.name || s.guest_profile?.name || s.guest_identifier || "Guest",
+        // Registered customer: use the customer/web-user name (same as the chat list).
+        // Guest: prefer the name they submitted (metadata / guest profile) over the placeholder id.
+        contact_name: s.web_user?.id
+            ? (s.contact_name || s.guest_identifier || "Customer")
+            : ((s as any).metadata?.name || s.guest_profile?.name || s.guest_identifier || "Guest"),
         is_guest: !s.web_user?.id,
         web_user_id: s.web_user?.id ?? null,
         guest_email: (s as any).metadata?.email ?? s.guest_profile?.email ?? null,
