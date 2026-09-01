@@ -8,11 +8,13 @@
 
 namespace App\Actions\Procurement\PartnerShoppingListItem;
 
+use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Enums\Catalogue\HealthRankEnum;
 use App\Actions\OrgAction;
+use App\Exceptions\AICreditException;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -27,6 +29,8 @@ use Throwable;
 
 class SuggestPartnerShoppingList extends OrgAction
 {
+    use WithAICreditErrorHandler;
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
@@ -334,14 +338,17 @@ class SuggestPartnerShoppingList extends OrgAction
 
         for ($attempt = 0; $attempt < 3; $attempt++) {
             try {
-                $content = Http::withToken(config('services.openai.api_key'))
+                $response = Http::withToken(config('services.openai.api_key'))
                     ->timeout(300)
                     ->post('https://api.openai.com/v1/chat/completions', [
                         'model'            => 'gpt-5-nano',
                         'reasoning_effort' => 'low',
                         'messages'         => [['role' => 'user', 'content' => $prompt]],
-                    ])
-                    ->json('choices.0.message.content') ?? '';
+                    ]);
+
+                $this->guardAICreditResponse($response);
+
+                $content = $response->json('choices.0.message.content') ?? '';
 
                 $start = strpos($content, '[');
                 $end   = strrpos($content, ']');
@@ -375,6 +382,8 @@ class SuggestPartnerShoppingList extends OrgAction
                 }
 
                 return $lines;
+            } catch (AICreditException $e) {
+                throw $e;
             } catch (Throwable) {
                 sleep(3);
             }

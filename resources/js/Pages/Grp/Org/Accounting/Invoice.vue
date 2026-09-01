@@ -583,8 +583,7 @@ const submitEditAddress = async () => {
 
             <!-- Field: Address -->
             <dl class="pl-1 flex items-start w-full gap-x-2">
-                <dt v-tooltip="'Phone'" class="flex-none">
-                    <span class="sr-only">Phone</span>
+                <dt v-tooltip="'Invoice address'" class="flex-none">
                     <FontAwesomeIcon icon="fal fa-map-marker-alt" size="xs" class="text-gray-400" fixed-width
                                      aria-hidden="true"/>
                 </dt>
@@ -595,7 +594,7 @@ const submitEditAddress = async () => {
                             v-if="props.can?.editInvoiceAddress"
                             icon="fal fa-pencil"
                             class="absolute bottom-2 right-2 text-gray-400 hover:text-gray-600 cursor-pointer text-sm"
-                            v-tooltip="trans('Edit invoice address')"
+                            v-tooltip="ctrans('Edit invoice address')"
                             @click="openEditAddressModal"
                             aria-hidden="true"
                         />
