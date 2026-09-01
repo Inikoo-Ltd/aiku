@@ -79,6 +79,12 @@ class ShowWhatsappCampaign extends OrgAction
                     'name'       => "$routeBase.cancel-schedule",
                     'parameters' => $routeParameters,
                 ],
+                'deleteRoute'         => [
+                    'name'       => "$routeBase.delete",
+                    'parameters' => $routeParameters,
+                    'method'     => 'delete',
+                ],
+                'isDeletable'         => $campaign->isUnsent(),
                 'isConfigured'        => filled(Arr::get($shop->settings, 'whatsapp.phone_number_id')),
                 'timeZoneOptions'     => GetTimeZoneSelectOptions::run(),
                 'defaultShopTimezone' => $shop->timezone?->name ?? 'UTC',

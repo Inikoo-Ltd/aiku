@@ -89,7 +89,7 @@ class UpdateWhatsappCampaign extends OrgAction
      */
     protected function assertEditable(WhatsappCampaign $campaign): void
     {
-        if (in_array($campaign->state, [WhatsappCampaignStateEnum::IN_PROCESS, WhatsappCampaignStateEnum::READY])) {
+        if ($campaign->isUnsent()) {
             return;
         }
 

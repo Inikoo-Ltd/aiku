@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\MetaMessageTemplate;
-use App\Enums\Comms\WhatsappCampaign\WhatsappCampaignStateEnum;
 use App\Models\Comms\WhatsappCampaign;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -92,7 +91,17 @@ class ShowWhatsappCampaignWorkshop extends OrgAction
                 'mergeTags'    => GetWhatsappTemplateTags::run($shop),
                 'businessName' => $shop->name,
                 'isConfigured' => filled(Arr::get($shop->settings, 'whatsapp.phone_number_id')),
-                'isEditable'   => in_array($campaign->state, [WhatsappCampaignStateEnum::IN_PROCESS, WhatsappCampaignStateEnum::READY]),
+                'isEditable'   => $campaign->isUnsent(),
+                'isDeletable'  => $campaign->isUnsent(),
+                'deleteRoute'  => [
+                    'name'       => 'grp.org.shops.show.marketing.whatsapp_campaigns.delete',
+                    'parameters' => [
+                        'organisation'     => $shop->organisation->slug,
+                        'shop'             => $shop->slug,
+                        'whatsappCampaign' => $campaign->slug,
+                    ],
+                    'method'     => 'delete',
+                ],
             ]
         );
     }

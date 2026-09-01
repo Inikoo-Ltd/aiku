@@ -13,6 +13,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import WhatsappTemplatePreview from "@/Components/Chat/WhatsappTemplatePreview.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { routeType } from "@/types/route"
 
 type TemplateOption = {
@@ -38,6 +39,8 @@ const props = defineProps<{
     businessName: string
     isConfigured: boolean
     isEditable: boolean
+    isDeletable: boolean
+    deleteRoute: routeType
 }>()
 
 const name = ref(props.campaign.name)
@@ -85,6 +88,22 @@ watch(templateId, (value) => persist({ meta_message_template_id: value }))
     <PageHeading :data="pageHeadData">
         <template #afterTitle2>
             <MailshotJourney :steps="journey" :disabledTooltip="trans('Choose a template first')" class="ml-4" />
+        </template>
+        <template #other>
+            <ModalConfirmationDelete
+                v-if="isDeletable"
+                :routeDelete="deleteRoute"
+                :title="trans('Are you sure you want to delete this campaign?')"
+                :description="trans('This campaign and its draft audience will be removed.')"
+                :noLabel="trans('Delete campaign')">
+                <template #default="{ changeModel }">
+                    <Button
+                        icon="fal fa-trash-alt"
+                        style="negative"
+                        :tooltip="trans('Delete campaign')"
+                        @click="changeModel" />
+                </template>
+            </ModalConfirmationDelete>
         </template>
     </PageHeading>
 

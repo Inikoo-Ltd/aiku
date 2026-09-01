@@ -82,6 +82,17 @@ class WhatsappCampaign extends Model
         return 'slug';
     }
 
+    /**
+     * Nothing has left the building yet, so the campaign is still the author's to change or
+     * throw away. From SCHEDULED onwards it is part of the sending record and stays.
+     *
+     * Not to be confused with the narrower isDraft in the Vue pages, which means IN_PROCESS alone.
+     */
+    public function isUnsent(): bool
+    {
+        return in_array($this->state, [WhatsappCampaignStateEnum::IN_PROCESS, WhatsappCampaignStateEnum::READY]);
+    }
+
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()

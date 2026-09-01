@@ -15,6 +15,7 @@ import MailshotJourney from "@/Components/Navigation/MailshotJourney.vue"
 import WhatsappTemplatePreview from "@/Components/Chat/WhatsappTemplatePreview.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from "@/types/route"
 
@@ -42,6 +43,8 @@ const props = defineProps<{
     sendRoute: routeType
     scheduleRoute: routeType
     cancelScheduleRoute: routeType
+    deleteRoute: routeType
+    isDeletable: boolean
     isConfigured: boolean
     timeZoneOptions: { label: string; value: string }[]
     defaultShopTimezone: string
@@ -220,6 +223,22 @@ const handleCancelSchedule = async () => {
     <PageHeading :data="pageHead">
         <template #afterTitle2>
             <MailshotJourney :steps="journey" :disabledTooltip="trans('Choose a template first')" class="ml-4" />
+        </template>
+        <template #other>
+            <ModalConfirmationDelete
+                v-if="isDeletable"
+                :routeDelete="deleteRoute"
+                :title="trans('Are you sure you want to delete this campaign?')"
+                :description="trans('This campaign and its draft audience will be removed.')"
+                :noLabel="trans('Delete campaign')">
+                <template #default="{ changeModel }">
+                    <Button
+                        icon="fal fa-trash-alt"
+                        style="negative"
+                        :tooltip="trans('Delete campaign')"
+                        @click="changeModel" />
+                </template>
+            </ModalConfirmationDelete>
         </template>
     </PageHeading>
 

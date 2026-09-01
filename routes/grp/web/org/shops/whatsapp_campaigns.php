@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Comms\WhatsappCampaign\CancelWhatsappCampaignSchedule;
+use App\Actions\Comms\WhatsappCampaign\DeleteWhatsappCampaign;
 use App\Actions\Comms\WhatsappCampaign\ScheduleWhatsappCampaign;
 use App\Actions\Comms\WhatsappCampaign\SendWhatsappCampaign;
 use App\Actions\Comms\WhatsappCampaign\StoreWhatsappCampaign;
@@ -22,3 +23,4 @@ Route::post('/{whatsappCampaign}/schedule', ScheduleWhatsappCampaign::class)->na
 Route::post('/{whatsappCampaign}/cancel-schedule', CancelWhatsappCampaignSchedule::class)->name('cancel-schedule');
 Route::get('/{whatsappCampaign}', ShowWhatsappCampaign::class)->name('show');
 Route::patch('/{whatsappCampaign}', UpdateWhatsappCampaign::class)->name('update');
+Route::delete('/{whatsappCampaign}', DeleteWhatsappCampaign::class)->name('delete');
