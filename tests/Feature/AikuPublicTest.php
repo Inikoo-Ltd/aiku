@@ -277,3 +277,36 @@ test('helpFor matches grp routes to docs by longest prefix', function () {
         ->and(BlogPosts::helpFor('grp.dashboard.show'))->toBeNull()
         ->and(BlogPosts::helpFor(null))->toBeNull();
 });
+
+test('translated docs are served, linked and kept out of the English listings', function () {
+    $english = BlogPosts::all('docs')->firstWhere('slug', 'your-clean-handover-score');
+    expect($english)->not->toBeNull()
+        ->and($english['lang'])->toBe('en');
+
+    expect(BlogPosts::all('docs')->pluck('slug'))
+        ->not->toContain('your-clean-handover-score-id')
+        ->not->toContain('your-clean-handover-score-zh-hans');
+
+    $translations = BlogPosts::translations($english, 'docs');
+    expect($translations->pluck('lang')->all())->toBe(['en', 'id', 'zh-hans'])
+        ->and($translations->every(fn (array $doc) => $doc['base_slug'] === 'your-clean-handover-score'))->toBeTrue();
+
+    get($this->host.'/docs/your-clean-handover-score-id')->assertOk()
+        ->assertSee('Skor Serah Terima Bersih', false)
+        ->assertSee('versi bahasa Inggris yang berlaku', false)
+        ->assertSee(route('aiku-public.docs.show', 'your-clean-handover-score-zh-hans'), false);
+
+    get($this->host.'/docs/your-clean-handover-score')->assertOk()
+        ->assertSee('Bahasa Indonesia', false)
+        ->assertDontSee('versi bahasa Inggris yang berlaku', false);
+});
+
+test('a translation older than its English original is flagged as stale', function () {
+    $english = BlogPosts::all('docs')->firstWhere('slug', 'your-clean-handover-score');
+    $translation = BlogPosts::everything('docs')->firstWhere('slug', 'your-clean-handover-score-id');
+
+    expect($translation['source_date']->toDateString())->toBe($english['date']->toDateString());
+
+    get($this->host.'/docs/your-clean-handover-score-id')->assertOk()
+        ->assertDontSee('telah berubah setelah terjemahan ini', false);
+});

@@ -15,14 +15,63 @@ use Illuminate\Support\Str;
 class BlogPosts
 {
     /**
+     * URL suffix => language shown in the switcher. Keys match the app's locale files.
+     */
+    public const array LANGUAGES = [
+        'zh-hans' => [
+            'name'   => '中文',
+            'notice' => '本页为方便阅读而翻译。如有出入，以英文版为准。',
+            'stale'  => '英文原文在本译文之后已有更新。请以英文版为准。',
+        ],
+        'id' => [
+            'name'   => 'Bahasa Indonesia',
+            'notice' => 'Diterjemahkan untuk kemudahan. Bila ada perbedaan, versi bahasa Inggris yang berlaku.',
+            'stale'  => 'Versi bahasa Inggris telah berubah setelah terjemahan ini dibuat. Versi bahasa Inggris yang berlaku.',
+        ],
+        'es' => [
+            'name'   => 'Español',
+            'notice' => 'Traducido por comodidad. Si algo difiere, la versión en inglés es la que prevalece.',
+            'stale'  => 'El original en inglés ha cambiado desde esta traducción. La versión en inglés es la que prevalece.',
+        ],
+        'sk' => [
+            'name'   => 'Slovenčina',
+            'notice' => 'Preložené pre pohodlie. V prípade rozdielov platí anglická verzia.',
+            'stale'  => 'Anglický originál sa od tohto prekladu zmenil. Platí anglická verzia.',
+        ],
+    ];
+
+    /**
      * @return Collection<int, array{slug:string,title:string,summary:string,date:Carbon,tags:array<int,string>,body:string,html:string}>
      */
     public static function all(string $dir = 'blog'): Collection
+    {
+        return self::everything($dir)
+            ->where('lang', 'en')
+            ->values();
+    }
+
+    /**
+     * Every file including translations. Only the language switcher needs these.
+     */
+    public static function everything(string $dir = 'blog'): Collection
     {
         return collect(glob(resource_path("markdown/aiku-public/{$dir}/*.md")))
             ->map(fn (string $path) => self::parse($path))
             ->reject(fn (array $post) => $post['date']->isFuture())
             ->sortByDesc('date')
+            ->values();
+    }
+
+    /**
+     * The same article in every language it exists in, English first.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public static function translations(array $doc, string $dir = 'blog'): Collection
+    {
+        return self::everything($dir)
+            ->where('base_slug', $doc['base_slug'])
+            ->sortBy(fn (array $other) => $other['lang'] === 'en' ? '' : $other['lang'])
             ->values();
     }
 
@@ -64,8 +113,14 @@ class BlogPosts
                 return [$key => $value];
             });
 
+        $slug = basename($path, '.md');
+        $lang = collect(array_keys(self::LANGUAGES))->first(fn (string $code) => str_ends_with($slug, '-'.$code)) ?? 'en';
+
         return [
-            'slug' => basename($path, '.md'),
+            'slug' => $slug,
+            'lang' => $lang,
+            'base_slug' => $lang === 'en' ? $slug : Str::beforeLast($slug, '-'.$lang),
+            'source_date' => isset($meta['source_date']) ? Carbon::parse($meta['source_date']) : null,
             'title' => $meta['title'],
             'summary' => $meta['summary'],
             'date' => Carbon::parse($meta['date']),
