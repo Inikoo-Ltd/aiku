@@ -50,6 +50,7 @@ const createDefaultCard = () => ({
     titles: [{ text: '<h3>NEW IN</h3><p>Nymph gemstone rings</p>' }],
     horizontal: 'center',
     vertical: 'middle',
+    contentAlign: 'top',
     width: 50,
     height: 160,
     padding: 30,
@@ -194,19 +195,19 @@ const normalizedCards = computed(() => Object.fromEntries(
                             <div>
                                 <label class="block mb-2">Width ({{ card.width }}%)</label>
                                 <Slider :modelValue="card.width" @update:modelValue="v => updateCard(key, { width: v })"
-                                    :min="10" :max="100" :step="10" />
+                                    :min="10" :max="100" :step="5" />
                             </div>
 
                             <div>
                                 <label class="block mb-2">Height ({{ card.height }}px)</label>
                                 <Slider :modelValue="card.height" @update:modelValue="v => updateCard(key, { height: v })"
-                                    :min="10" :max="800" :step="10" />
+                                    :min="10" :max="800" :step="5" />
                             </div>
 
                             <div>
                                 <label class="block mb-2">Padding ({{ card.padding }}px)</label>
                                 <Slider :modelValue="card.padding" @update:modelValue="v => updateCard(key, { padding: v })"
-                                    :min="10" :max="100" :step="5" />
+                                    :min="0" :max="100" :step="5" />
                             </div>
 
                             <div>
@@ -258,6 +259,20 @@ const normalizedCards = computed(() => Object.fromEntries(
                                         @update:modelValue="v => updateCard(key, { vertical: v })" /><label>Middle</label>
                                     <RadioButton :modelValue="card.vertical" value="bottom"
                                         @update:modelValue="v => updateCard(key, { vertical: v })" /><label>Bottom</label>
+                                </div>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block mb-2 font-medium">Content inside card</label>
+                                <div class="flex flex-wrap gap-3">
+                                    <RadioButton :modelValue="card.contentAlign ?? 'top'" value="top"
+                                        @update:modelValue="v => updateCard(key, { contentAlign: v })" /><label>Top</label>
+                                    <RadioButton :modelValue="card.contentAlign ?? 'top'" value="middle"
+                                        @update:modelValue="v => updateCard(key, { contentAlign: v })" /><label>Middle</label>
+                                    <RadioButton :modelValue="card.contentAlign ?? 'top'" value="bottom"
+                                        @update:modelValue="v => updateCard(key, { contentAlign: v })" /><label>Bottom</label>
+                                    <RadioButton :modelValue="card.contentAlign ?? 'top'" value="spread"
+                                        @update:modelValue="v => updateCard(key, { contentAlign: v })" /><label>Text top, button bottom</label>
                                 </div>
                             </div>
                         </div>

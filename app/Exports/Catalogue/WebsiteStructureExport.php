@@ -114,13 +114,13 @@ class WebsiteStructureExport implements FromArray, ShouldAutoSize, WithHeadings
             ],
             'seo_title'              => [
                 'heading'          => 'SEO title',
-                'product_category' => 'webpages.seo_title',
-                'collection'       => 'webpages.seo_title',
+                'product_category' => 'webpages.title',
+                'collection'       => 'webpages.title',
             ],
             'seo_description'        => [
                 'heading'          => 'SEO description',
-                'product_category' => 'webpages.seo_description',
-                'collection'       => 'webpages.seo_description',
+                'product_category' => 'webpages.description',
+                'collection'       => 'webpages.description',
             ],
             'description_title'      => [
                 'heading'          => 'Description title',

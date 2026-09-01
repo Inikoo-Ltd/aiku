@@ -13,6 +13,7 @@ use App\Actions\Goods\TradeUnit\UpdateTradeUnitImages;
 use App\Actions\Goods\TradeUnit\UploadAudioToTradeUnit;
 use App\Actions\Goods\TradeUnit\UploadImagesToTradeUnit;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
+use App\Actions\Helpers\Media\AttachImagesToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +21,7 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit:id}')->group(function 
     Route::patch('update', UpdateTradeUnit::class)->name('update')->withoutScopedBindings();
     Route::patch('update-images', UpdateTradeUnitImages::class)->name('update_images')->withoutScopedBindings();
     Route::post('upload-images', UploadImagesToTradeUnit::class)->name('upload_images');
+    Route::post('attach-images', [AttachImagesToModel::class, 'inTradeUnit'])->name('attach_images');
     Route::post('upload-audio', UploadAudioToTradeUnit::class)->name('upload_audio');
     Route::delete('detach-image/{media:id}', DeleteImageFromTradeUnit::class)->name('detach_image')->withoutScopedBindings();
     Route::patch('media/{media:id}/alt', UpdateTradeUnitImageAlt::class)->name('update_image_alt')->withoutScopedBindings();

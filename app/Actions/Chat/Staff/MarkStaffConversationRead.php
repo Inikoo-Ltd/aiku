@@ -19,7 +19,7 @@ class MarkStaffConversationRead
 
     public function handle(StaffConversation $conversation, User $user): void
     {
-        $conversation->participants()->updateExistingPivot($user->id, ['last_read_at' => now()]);
+        $conversation->participants()->updateExistingPivot($user->id, ['last_read_at' => now(), 'archived_at' => null]);
     }
 
     public function authorize(ActionRequest $request): bool
