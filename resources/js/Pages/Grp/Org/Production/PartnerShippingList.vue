@@ -41,7 +41,7 @@ function toggle(item: { id: number, quantity: number }) {
 
 function sendToWarehouse(orderId: number) {
     router.post(
-        route("grp.org.procurement.org_partners.shipping_list.send_to_warehouse", [route().params["organisation"], orderId]),
+        route("grp.org.productions.show.partners.send_to_warehouse", [route().params["organisation"], route().params["production"], orderId]),
         {},
         { preserveScroll: true }
     )
@@ -50,7 +50,7 @@ function sendToWarehouse(orderId: number) {
 function submitCherryPick() {
     const lines = Object.entries(selected).map(([id, quantity]) => ({ id: Number(id), quantity }))
     router.post(
-        route("grp.org.procurement.org_partners.shipping_list.cherry_pick", [route().params["organisation"]]),
+        route("grp.org.productions.show.partners.cherry_pick", [route().params["organisation"], route().params["production"]]),
         { lines },
         { preserveScroll: true, onSuccess: () => { for (const k in selected) delete selected[k] } }
     )

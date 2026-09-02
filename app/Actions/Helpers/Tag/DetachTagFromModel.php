@@ -16,6 +16,7 @@ use App\Actions\OrgAction;
 use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
+use App\Models\Production\Artefact;
 use Exception;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -26,6 +27,26 @@ class DetachTagFromModel extends OrgAction
         try {
             $this->initialisationFromGroup($tradeUnit->group, $request);
             $this->handle($tradeUnit, $tag);
+
+            request()->session()->flash('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tags successfully detached.'),
+            ]);
+        } catch (Exception $e) {
+            request()->session()->flash('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function inArtefact(Artefact $artefact, Tag $tag, ActionRequest $request): void
+    {
+        try {
+            $this->initialisationFromGroup($artefact->group, $request);
+            $this->handle($artefact, $tag);
 
             request()->session()->flash('notification', [
                 'status'  => 'success',
@@ -81,7 +102,7 @@ class DetachTagFromModel extends OrgAction
         }
     }
 
-    public function handle(Customer|TradeUnit $model, Tag $tag): void
+    public function handle(Customer|TradeUnit|Artefact $model, Tag $tag): void
     {
         $model->tags()->detach([$tag->id]);
 

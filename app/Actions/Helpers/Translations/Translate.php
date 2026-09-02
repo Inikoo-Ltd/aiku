@@ -25,7 +25,7 @@ class Translate extends OrgAction
     /**
      * @throws \Exception
      */
-    public function handle(?string $text, Language $languageFrom, Language $languageTo, ?string $translationDriver = null): string
+    public function handle(?string $text, Language $languageFrom, Language $languageTo, ?string $translationDriver = null, bool $throwOnFailure = false): string
     {
         try {
             if ($text == null || $text == '' || $languageFrom->code == $languageTo->code) {
@@ -60,6 +60,9 @@ class Translate extends OrgAction
             return $text;
         } catch (\Throwable $e) {
             Sentry::captureMessage($e->getMessage());
+            if ($throwOnFailure) {
+                abort(503, __('Translation failed, please try again'));
+            }
 
             return $text;
         }
@@ -157,7 +160,7 @@ class Translate extends OrgAction
         $text         = Arr::get($this->validatedData, 'text');
 
 
-        return $this->handle($text, $languageFrom, $languageTo);
+        return $this->handle($text, $languageFrom, $languageTo, throwOnFailure: true);
     }
 
     /**

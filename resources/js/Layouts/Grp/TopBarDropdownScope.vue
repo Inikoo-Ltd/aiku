@@ -47,85 +47,95 @@ const sortedMenuItems = computed(() => {
     })
 })
 
-// Method: on click Organisation/Agents/Digital Agency
-const onClickOrg = async (slug?: string) => {
-    if (!slug) return
+const findEntityBySlug = (slug: string) =>
+    layout.organisations.data.find((org: any) => org.slug === slug) ||
+    layout.agents.data.find((agent: any) => agent.slug === slug)
+
+const resolveRouteOrFallback = (routeName: string, routeParams: Record<string, string>, fallbackHref: string): string => {
+    try {
+        return route(routeName, routeParams)
+    } catch {
+        return fallbackHref
+    }
+}
+
+const isOrgRouteNeedingPermissionCheck = (currentRoute: string, currentRouteParams: Record<string, string>): boolean =>
+    !currentRouteParams.shop &&
+    !currentRouteParams.fulfilment &&
+    !currentRouteParams.warehouse &&
+    (currentRoute.includes('grp.org.') || currentRoute.includes('grp.agent.'))
+
+const getOrgHref = (slug?: string): string | undefined => {
+    if (!slug) return undefined
 
     const currentRoute = layout.currentRoute || route().current() || ''
     const currentRouteParams = layout.currentParams || { ...route().params }
+    const dashboardHref = route('grp.org.dashboard.show', { organisation: slug })
+    const targetEntity = findEntityBySlug(slug) as any
+    const orgState = layout.organisationsState?.[slug]
 
-    // If user currently in Shop page
     if (currentRouteParams.shop) {
-        const rememberedShop = layout.organisationsState?.[slug]?.currentShop
-        const targetEntity = layout.organisations.data.find((org: any) => org.slug === slug) ||
-                            layout.agents.data.find((agent: any) => agent.slug === slug)
-        const shopIsValid = (targetEntity as any)?.authorised_shops?.find(
+        const rememberedShop = orgState?.currentShop
+        const shopIsValid = targetEntity?.authorised_shops?.find(
             (s: any) => s.slug === rememberedShop && s.state !== 'closed'
         )
-
-        if (rememberedShop && shopIsValid) {
-            router.visit(route(currentRoute, { ...currentRouteParams, organisation: slug, shop: rememberedShop }))
-        } else {
-            router.visit(route('grp.org.dashboard.show', { organisation: slug }))
-        }
-        return
+        return rememberedShop && shopIsValid
+            ? resolveRouteOrFallback(currentRoute, { ...currentRouteParams, organisation: slug, shop: rememberedShop }, dashboardHref)
+            : dashboardHref
     }
 
-    // If user currently in Fulfilment page
     if (currentRouteParams.fulfilment) {
-        const rememberedFulfilment = layout.organisationsState?.[slug]?.currentFulfilment
-        const targetEntity = layout.organisations.data.find((org: any) => org.slug === slug) ||
-                            layout.agents.data.find((agent: any) => agent.slug === slug)
-        const fulfilmentIsValid = (targetEntity as any)?.authorised_fulfilments?.find(
+        const rememberedFulfilment = orgState?.currentFulfilment
+        const fulfilmentIsValid = targetEntity?.authorised_fulfilments?.find(
             (f: any) => f.slug === rememberedFulfilment
         )
-
-        if (rememberedFulfilment && fulfilmentIsValid) {
-            router.visit(route(currentRoute, { ...currentRouteParams, organisation: slug, fulfilment: rememberedFulfilment }))
-        } else {
-            router.visit(route('grp.org.dashboard.show', { organisation: slug }))
-        }
-        return
+        return rememberedFulfilment && fulfilmentIsValid
+            ? resolveRouteOrFallback(currentRoute, { ...currentRouteParams, organisation: slug, fulfilment: rememberedFulfilment }, dashboardHref)
+            : dashboardHref
     }
 
-    // If user currently in Warehouse page
     if (currentRouteParams.warehouse) {
-        const rememberedWarehouse = layout.organisationsState?.[slug]?.currentWarehouse
-        const targetEntity = layout.organisations.data.find((org: any) => org.slug === slug) ||
-                            layout.agents.data.find((agent: any) => agent.slug === slug)
-        const warehouseIsValid = (targetEntity as any)?.authorised_warehouses?.find(
+        const rememberedWarehouse = orgState?.currentWarehouse
+        const warehouseIsValid = targetEntity?.authorised_warehouses?.find(
             (w: any) => w.slug === rememberedWarehouse
         )
-
-        if (rememberedWarehouse && warehouseIsValid) {
-            router.visit(route(currentRoute, { ...currentRouteParams, organisation: slug, warehouse: rememberedWarehouse }))
-        } else {
-            router.visit(route('grp.org.dashboard.show', { organisation: slug }))
-        }
-        return
+        return rememberedWarehouse && warehouseIsValid
+            ? resolveRouteOrFallback(currentRoute, { ...currentRouteParams, organisation: slug, warehouse: rememberedWarehouse }, dashboardHref)
+            : dashboardHref
     }
 
+    if (!isOrgRouteNeedingPermissionCheck(currentRoute, currentRouteParams)) {
+        return dashboardHref
+    }
 
-    if (!currentRoute.includes('grp.org.') && !currentRoute.includes('grp.agent.')) {
-        router.visit(route('grp.org.dashboard.show', { organisation: slug }))
+    return resolveRouteOrFallback(currentRoute, { ...currentRouteParams, organisation: slug }, dashboardHref)
+}
+
+// Method: on click Organisation/Agents/Digital Agency
+const onClickOrg = async (event: MouseEvent, slug?: string) => {
+    if (!slug) return
+
+    const isOpeningInNewTabOrWindow = event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
+    if (isOpeningInNewTabOrWindow) return
+
+    event.preventDefault()
+
+    const currentRoute = layout.currentRoute || route().current() || ''
+    const currentRouteParams = layout.currentParams || { ...route().params }
+    const dashboardHref = route('grp.org.dashboard.show', { organisation: slug })
+    const targetHref = getOrgHref(slug) ?? dashboardHref
+
+    if (!isOrgRouteNeedingPermissionCheck(currentRoute, currentRouteParams)) {
+        router.visit(targetHref)
         return
     }
 
     try {
         const response = await axios.get(route('grp.profile.can_visit'))
-
-        if (response.data) {
-            try {
-                router.visit(route(currentRoute, { ...currentRouteParams, organisation: slug }))
-            } catch {
-                router.visit(route('grp.org.dashboard.show', { organisation: slug }))
-            }
-        } else {
-            router.visit(route('grp.org.dashboard.show', { organisation: slug }))
-        }
+        router.visit(response.data ? targetHref : dashboardHref)
     } catch (error) {
         console.error(error)
-        router.visit(route('grp.org.dashboard.show', { organisation: slug }))
+        router.visit(dashboardHref)
     }
 }
 
@@ -288,7 +298,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                     sortedMenuItems[0].slug == layout.currentParams?.organisation ? 'bg-slate-300 text-slate-600' : 'text-slate-600 hover:bg-slate-200/75 hover:text-indigo-600',
                     'group flex gap-x-2 w-full justify-start items-center rounded pl-2 pr-4 py-2 text-sm cursor-pointer',
                 ]">
-                    <FontAwesomeIcon icon="fal fa-city" class="" ariaa-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-city" class="" aria-hidden="true" />
                     <div class="space-x-1 whitespace-nowrap">
                         <span class="font-semibold">{{ layout.group?.label }}</span>
                         <span class="text-[9px] leading-none text-gray-400">({{ trans("Group") }})</span>
@@ -299,10 +309,11 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
 
             <template v-else>
                 <MenuItem v-for="(item, index) in sortedMenuItems" :key="item.slug || index" v-slot="{ active }">
-                <div
+                <a
+                    :href="getOrgHref(item.slug)"
                     @mouseenter="(e) => showFlyout(item, e as MouseEvent)"
                     @mouseleave="hideFlyout"
-                    @click="() => onClickOrg(item.slug)"
+                    @click="(e) => onClickOrg(e as MouseEvent, item.slug)"
                     :class="[
                         item.slug == layout.currentParams?.organisation
                             ? 'bg-slate-300 text-slate-600'
@@ -339,7 +350,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                         :class="hoveredOrgSlug === item.slug ? '' : 'text-gray-400'"
                         aria-hidden="true"
                     />
-                </div>
+                </a>
                 </MenuItem>
             </template>
         </div>

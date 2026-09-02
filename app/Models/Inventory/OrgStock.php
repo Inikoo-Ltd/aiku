@@ -75,6 +75,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $source_quantity_in_submitted_orders
  * @property numeric $source_quantity_to_be_picked
  * @property bool $is_on_demand
+ * @property bool $is_excluded_from_auto_ordering
  * @property bool $has_been_in_warehouse
  * @property HealthRankEnum|null $health_rank
  * @property bool $movements_fixed
@@ -184,6 +185,7 @@ class OrgStock extends Model implements Auditable
         'name',
         'state',
         'is_on_demand',
+        'is_excluded_from_auto_ordering',
         'packed_in',
         'barcode',
     ];
