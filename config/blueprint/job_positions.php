@@ -413,6 +413,7 @@ return [
             'team'               => 'production',
             'department'         => 'production',
             'roles'              => [
+                RolesEnum::MANUFACTURING_LINE_MANAGER,
             ],
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,
@@ -425,6 +426,7 @@ return [
             'team'               => 'production',
             'department'         => 'production',
             'roles'              => [
+                RolesEnum::MANUFACTURING_ORCHESTRATOR,
             ],
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,
@@ -436,9 +438,8 @@ return [
             'scope'      => JobPositionScopeEnum::PRODUCTIONS,
             'team'       => 'production',
             'department' => 'production',
-
-            'roles'              => [
-
+            'roles'      => [
+                RolesEnum::MANUFACTURING_OPERATOR,
             ],
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,

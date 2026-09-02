@@ -18,6 +18,9 @@ use App\Actions\Production\ArtefactFamily\UpdateArtefactFamily;
 use App\Actions\Production\Artisan\AttachArtisan;
 use App\Actions\Production\Artisan\DetachArtisan;
 use App\Actions\Production\Artisan\ToggleArtisanInRoster;
+use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
+use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
+use App\Models\HumanResources\JobPosition;
 use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
 use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
@@ -1903,4 +1906,32 @@ test('a task that is not piece rate snapshots a zero rate when its session close
         ->and((float) $session->quantity_made)->toBe(4.0);
 
     $this->manufactureTask->update(['is_piece_rate' => true]);
+});
+
+test('production job positions carry the factory roles all the way to the user', function () {
+    SeedJobPositions::make()->handle($this->organisation);
+
+    $supervisorPosition = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'prod-m')->first();
+    $operativePosition  = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'prod-c')->first();
+    expect($supervisorPosition->roles()->pluck('name')->all())->toContain('production-orchestrator-'.$this->production->id)
+        ->and($operativePosition->roles()->pluck('name')->all())->toContain('production-operator-'.$this->production->id);
+
+    $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+    $modelData['worker_number']   = 'W'.rand(1000, 9999);
+    $modelData['alias']           = 'Alias '.rand(1000, 9999);
+    $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+    $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+    $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+    $modelData['username']        = 'lucy'.rand(1000, 9999);
+    $modelData['password']        = 'secret-password';
+    $employee = StoreEmployee::make()->action($this->organisation, $modelData);
+    $user     = $employee->users()->first();
+    expect($user)->not->toBeNull();
+
+    SyncEmployeeJobPositions::make()->handle($employee, [
+        $supervisorPosition->id => ['Production' => [$this->production->id]],
+    ]);
+
+    expect($user->refresh()->hasRole('production-orchestrator-'.$this->production->id))->toBeTrue()
+        ->and($user->authorisedProductions()->where('productions.id', $this->production->id)->exists())->toBeTrue();
 });
