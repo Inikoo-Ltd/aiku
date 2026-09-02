@@ -1951,4 +1951,12 @@ test('production job positions carry the factory roles all the way to the user',
     expect($user->refresh()->hasRole('production-operator-'.$this->production->id))->toBeTrue()
         ->and($user->hasRole('production-orchestrator-'.$this->production->id))->toBeFalse()
         ->and(GetEmployeeJobPositionsData::run($employee->refresh()))->toBe(['prod-c' => ['productions' => [$this->production->slug]]]);
+
+    UpdateEmployee::make()->action($employee, [
+        'job_positions' => [
+            ['slug' => $operativePosition->slug, 'scopes' => []],
+        ],
+    ]);
+
+    expect($user->refresh()->hasRole('production-operator-'.$this->production->id))->toBeFalse();
 });
