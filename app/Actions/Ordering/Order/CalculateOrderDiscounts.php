@@ -799,9 +799,12 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             return;
         }
 
+        $isStepDiscount = false;
+
         if ($steps = Arr::get($allowanceOpsData, 'steps')) {
-            $totalQuantity = (int)$productTransactions->sum('quantity_ordered');
-            $percentageOff = 0.0;
+            $isStepDiscount = true;
+            $totalQuantity  = (int)$productTransactions->sum('quantity_ordered');
+            $percentageOff  = 0.0;
             foreach (collect($steps)->sortBy('min_quantity') as $step) {
                 if ($totalQuantity >= (int)Arr::get($step, 'min_quantity', PHP_INT_MAX)) {
                     $percentageOff = (float)Arr::get($step, 'percentage_off', 0);
@@ -832,7 +835,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     $transaction,
                     $percentageOff,
                     $offerData['offer_label'],
-                    $allowanceData
+                    $allowanceData,
+                    $isStepDiscount ? 'sd' : null
                 );
             }
         }

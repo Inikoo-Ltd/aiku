@@ -18,6 +18,7 @@ use App\Models\Helpers\Media;
  * @property mixed $slug
  * @property mixed $code
  * @property mixed $name
+ * @property mixed $description
  * @property mixed $canonical_url
  * @property mixed $web_images
  * @property mixed $title
@@ -45,6 +46,7 @@ class WebBlockCollectionResource extends JsonResource
             'code'       => $this->code,
             'name'       => $this->name,
             'title'      => $this->title ?? $this->name ?? $this->code,
+            'description' => $this->description,
             'url'        => $this->canonical_url,
             'web_images' => $webImages,
             'image'      => $imageSources
