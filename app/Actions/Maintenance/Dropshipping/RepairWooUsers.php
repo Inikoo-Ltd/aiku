@@ -14,6 +14,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairWooUsers
 {
@@ -32,6 +33,7 @@ class RepairWooUsers
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->argument('slug')) {
             $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('slug'))->first();
             $this->handle($customerSalesChannel->user);

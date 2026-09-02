@@ -14,6 +14,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairTransactionSubmittedQuantityOrdered
 {
@@ -34,6 +35,7 @@ class RepairTransactionSubmittedQuantityOrdered
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $count = Order::whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])->count();
 
         $bar = $command->getOutput()->createProgressBar($count);

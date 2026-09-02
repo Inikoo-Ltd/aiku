@@ -15,6 +15,7 @@ use App\Models\CRM\Prospect;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class DeleteProspectWithoutAnyInfo
 {
@@ -44,6 +45,7 @@ class DeleteProspectWithoutAnyInfo
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $shopSlug = $command->argument('shop_slug');
         $shop = null;
 

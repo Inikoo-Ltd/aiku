@@ -15,6 +15,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMissingSubDepartments
 {
@@ -64,6 +65,7 @@ class RepairMissingSubDepartments
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $filePath = $command->argument('file');
 
         if (!$filePath) {

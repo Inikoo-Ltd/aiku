@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Accounting;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairInvoiceSourceInventoryCategory
 {
@@ -37,6 +38,7 @@ class RepairInvoiceSourceInventoryCategory
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
 
         $count = Invoice::whereNotNull('source_id')->count();
 

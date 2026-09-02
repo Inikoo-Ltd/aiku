@@ -17,6 +17,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Exception;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairProductsWithNoWebpage
 {
@@ -58,6 +59,7 @@ class RepairProductsWithNoWebpage
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
 
         $count = Product::where('shop_id', $shop->id)->whereNull('webpage_id')

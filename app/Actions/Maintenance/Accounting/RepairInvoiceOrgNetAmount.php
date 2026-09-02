@@ -10,6 +10,7 @@ namespace App\Actions\Maintenance\Accounting;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairInvoiceOrgNetAmount
 {
@@ -26,6 +27,7 @@ class RepairInvoiceOrgNetAmount
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $from = $command->option('from');
 
         $query = Invoice::query()

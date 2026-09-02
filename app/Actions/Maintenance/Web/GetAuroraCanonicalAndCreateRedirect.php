@@ -21,6 +21,7 @@ use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class GetAuroraCanonicalAndCreateRedirect
 {
@@ -89,6 +90,7 @@ class GetAuroraCanonicalAndCreateRedirect
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         if ($command->argument('website')) {
             $website = Website::where('slug', $command->argument('website'))->first();
             $this->handle($website, $command);

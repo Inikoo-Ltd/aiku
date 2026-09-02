@@ -16,6 +16,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class AddMissingStatsToDigitalAgencyOrganisation
 {
@@ -44,6 +45,7 @@ class AddMissingStatsToDigitalAgencyOrganisation
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         try {
             $this->handle();
         } catch (Throwable $e) {

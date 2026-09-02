@@ -15,6 +15,7 @@ use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairEbayProductPublish
 {
@@ -33,6 +34,7 @@ class RepairEbayProductPublish
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
         $portfolio = Portfolio::where('item_code', $command->argument('portfolio'))->first();
 

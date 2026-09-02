@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Database;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Redis;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 /**
  * One-time cleanup after the 28 Aug 2026 Redis incident: unique-job locks created
@@ -80,6 +81,7 @@ class PruneOrphanedUniqueJobLocks
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $this->handle((bool) $command->option('dry-run'), $command);
 
         return 0;

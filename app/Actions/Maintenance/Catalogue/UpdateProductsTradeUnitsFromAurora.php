@@ -24,6 +24,7 @@ use App\Models\SysAdmin\Organisation;
 use DB;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class UpdateProductsTradeUnitsFromAurora
 {
@@ -123,6 +124,7 @@ class UpdateProductsTradeUnitsFromAurora
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $organisation = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
 
         $shops = Shop::where('organisation_id', $organisation->id)->where('state', ShopStateEnum::OPEN)

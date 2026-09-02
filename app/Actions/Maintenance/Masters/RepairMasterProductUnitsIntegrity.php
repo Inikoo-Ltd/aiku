@@ -17,6 +17,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMasterProductUnitsIntegrity
 {
@@ -301,6 +302,7 @@ class RepairMasterProductUnitsIntegrity
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         ini_set('memory_limit', '2G');
         DB::connection()->disableQueryLog();
 

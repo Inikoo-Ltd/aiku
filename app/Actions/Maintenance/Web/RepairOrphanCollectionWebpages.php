@@ -12,6 +12,7 @@ use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairOrphanCollectionWebpages
 {
@@ -57,6 +58,7 @@ class RepairOrphanCollectionWebpages
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
 
         $dry = (bool)$command->option('dry-run');
         $force = (bool)$command->option('force');

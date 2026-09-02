@@ -14,6 +14,7 @@ use App\Models\Masters\MasterAsset;
 use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMasterProductIsSingleTradeUnit extends OrgAction
 {
@@ -39,6 +40,7 @@ class RepairMasterProductIsSingleTradeUnit extends OrgAction
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
 
         $command->info('Fix master product is single trade unit');
 

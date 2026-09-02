@@ -14,6 +14,7 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairPortfoliosSKUBarcodes
 {
@@ -42,6 +43,7 @@ class RepairPortfoliosSKUBarcodes
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $totalPortfolios = Portfolio::whereNull('sku')->count();
         $processedCount = 0;
 

@@ -12,6 +12,7 @@ use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairOrgStockMovementCostPerSkuFromOrgAmount
 {
@@ -24,6 +25,7 @@ class RepairOrgStockMovementCostPerSkuFromOrgAmount
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $updated = DB::table('org_stock_movements')
             ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
             ->whereNull('cost_per_sku')

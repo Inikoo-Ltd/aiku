@@ -13,6 +13,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairFamilyDepartment
 {
@@ -54,6 +55,7 @@ class RepairFamilyDepartment
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         ProductCategory::where('type', ProductCategoryTypeEnum::FAMILY)
             ->orderBy('id')
             ->chunkById(500, function ($families) {

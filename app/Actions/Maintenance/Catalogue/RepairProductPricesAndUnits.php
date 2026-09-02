@@ -15,6 +15,7 @@ use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairProductPricesAndUnits
 {
@@ -86,6 +87,7 @@ class RepairProductPricesAndUnits
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $toShop = Shop::where('slug', $command->argument('to'))->firstOrFail();
 
         $fromShop = Shop::where('slug', $command->argument('from'))->firstOrFail();

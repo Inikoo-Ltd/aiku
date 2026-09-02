@@ -19,6 +19,7 @@ use App\Models\Catalogue\Shop;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairProductCategoryWebpages
 {
@@ -80,6 +81,7 @@ class RepairProductCategoryWebpages
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $shops = Shop::where('state', ShopStateEnum::OPEN)
             ->where(function ($query) {
                 $query->where('is_aiku', true)

@@ -12,6 +12,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\Payment\PaymentClassEnum;
 use App\Models\Accounting\Payment;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairClassInPayments
 {
@@ -28,6 +29,7 @@ class RepairClassInPayments
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $count = Payment::has('creditTransaction')
             ->count();
 

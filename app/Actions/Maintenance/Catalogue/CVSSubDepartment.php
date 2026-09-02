@@ -12,6 +12,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class CVSSubDepartment
 {
@@ -23,6 +24,7 @@ class CVSSubDepartment
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->option('export-csv')) {
             $this->exportToCSV($command);
 

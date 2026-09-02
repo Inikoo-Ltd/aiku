@@ -15,6 +15,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairExcessPaymentRefundsNotAttachedToInvoice
 {
@@ -29,6 +30,7 @@ class RepairExcessPaymentRefundsNotAttachedToInvoice
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $apply    = $command->option('apply');
         $repaired = 0;
         $skipped  = [];

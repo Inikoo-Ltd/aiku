@@ -18,6 +18,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairDiscontinueVariants
 {
@@ -49,6 +50,7 @@ class RepairDiscontinueVariants
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $dropshippingShops = Shop::where('type', ShopTypeEnum::DROPSHIPPING)->pluck('id')->toArray();
         Product::whereNot('is_main')->whereIn('shop_id', $dropshippingShops)->orderBy('products.id')
             ->chunk(100, function (Collection $models) use ($command) {

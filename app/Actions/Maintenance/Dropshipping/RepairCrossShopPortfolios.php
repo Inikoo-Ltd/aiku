@@ -16,6 +16,7 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Ordering\Transaction;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairCrossShopPortfolios
 {
@@ -145,6 +146,7 @@ class RepairCrossShopPortfolios
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $summary = $this->handle(
             (bool)$command->option('apply'),
             (bool)$command->option('transactions'),

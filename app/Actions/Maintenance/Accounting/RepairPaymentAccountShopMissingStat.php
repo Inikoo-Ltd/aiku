@@ -14,6 +14,7 @@ use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairPaymentAccountShopMissingStat
 {
@@ -32,6 +33,7 @@ class RepairPaymentAccountShopMissingStat
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->argument('shop')) {
             $shop = Shop::where('slug', $command->argument('shop'))->first();
 

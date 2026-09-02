@@ -20,6 +20,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class UpdateProductIsMainFromAurora
 {
@@ -39,6 +40,7 @@ class UpdateProductIsMainFromAurora
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $organisation       = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
         $organisationSource = $this->getOrganisationSource($organisation);
         $organisationSource->initialisation($organisation);

@@ -11,6 +11,7 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairInvoiceTransactionDates
 {
@@ -101,6 +102,7 @@ class RepairInvoiceTransactionDates
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $organisationId = $command->option('organisation') ? (int) $command->option('organisation') : null;
         $shopId         = $command->option('shop') ? (int) $command->option('shop') : null;
 

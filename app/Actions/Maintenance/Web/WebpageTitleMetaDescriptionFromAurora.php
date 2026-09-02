@@ -17,6 +17,7 @@ use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class WebpageTitleMetaDescriptionFromAurora
 {
@@ -76,6 +77,7 @@ class WebpageTitleMetaDescriptionFromAurora
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $shop = Shop::where('slug', $command->argument('shop'))->first();
         $this->handle($shop, $command);
 

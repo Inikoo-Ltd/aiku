@@ -17,6 +17,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairDiscontinuedDepartmentWebpages
 {
@@ -48,6 +49,7 @@ class RepairDiscontinuedDepartmentWebpages
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $query = ProductCategory::query()
             ->with(['webpage', 'shop'])
             ->where('type', ProductCategoryTypeEnum::DEPARTMENT)

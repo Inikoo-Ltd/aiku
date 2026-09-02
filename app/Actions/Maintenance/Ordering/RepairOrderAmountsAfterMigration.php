@@ -15,6 +15,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairOrderAmountsAfterMigration
 {
@@ -73,6 +74,7 @@ class RepairOrderAmountsAfterMigration
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->argument('order')) {
             $order = Order::where('slug', $command->argument('order'))->firstOrFail();
             $command->info("Processing Order: $order->slug");

@@ -13,6 +13,7 @@ use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Discounts\Offer;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class FixDiscretionaryOffersStatus
 {
@@ -26,6 +27,7 @@ class FixDiscretionaryOffersStatus
      */
     public function asCommand(): void
     {
+        Nightwatch::dontSample();
         $offers = Offer::where('type', 'Discretionary')->get();
 
 

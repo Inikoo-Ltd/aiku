@@ -13,6 +13,7 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairPalletsLocationAfterDispatch
 {
@@ -22,6 +23,7 @@ class RepairPalletsLocationAfterDispatch
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $commit = (bool)$command->option('commit');
 
         $summary = $this->stalePalletsQuery()

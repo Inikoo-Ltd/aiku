@@ -28,6 +28,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class SplitExcessPaymentOverCreditNote
 {
@@ -85,6 +86,7 @@ class SplitExcessPaymentOverCreditNote
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $payment = Payment::find($command->argument('payment'));
 
         if (!$payment || $payment->invoices()->exists()) {

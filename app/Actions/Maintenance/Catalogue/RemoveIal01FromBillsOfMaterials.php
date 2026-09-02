@@ -16,6 +16,7 @@ use App\Models\Masters\MasterAsset;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 /**
  * Final step of retiring the IAL01 "Import Address Labels" hack: takes the label out of the product
@@ -186,6 +187,7 @@ class RemoveIal01FromBillsOfMaterials
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $tradeUnit = $this->getTradeUnit();
 
         if (!$tradeUnit) {

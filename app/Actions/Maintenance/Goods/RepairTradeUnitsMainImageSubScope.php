@@ -19,6 +19,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairTradeUnitsMainImageSubScope
 {
@@ -43,6 +44,7 @@ class RepairTradeUnitsMainImageSubScope
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $total = DB::table('trade_units')->count();
         $command->info("Repairing main image sub_scope for $total trade units...");
         $start = microtime(true);

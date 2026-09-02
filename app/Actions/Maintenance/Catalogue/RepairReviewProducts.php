@@ -10,6 +10,7 @@ namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Shop;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairReviewProducts
 {
@@ -31,6 +32,7 @@ class RepairReviewProducts
 
     public function asCommand(): void
     {
+        Nightwatch::dontSample();
         $shops = Shop::all();
 
         foreach ($shops as $shop) {

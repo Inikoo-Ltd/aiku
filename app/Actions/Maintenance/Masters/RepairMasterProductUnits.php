@@ -19,6 +19,7 @@ use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMasterProductUnits extends OrgAction
 {
@@ -155,6 +156,7 @@ class RepairMasterProductUnits extends OrgAction
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         if ($command->argument('masterAsset')) {
             $masterAsset = MasterAsset::where('slug', $command->argument('masterAsset'))->firstOrFail();
             $command->info("Fixing units value from trade units for $masterAsset->code");
