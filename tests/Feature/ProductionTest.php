@@ -842,6 +842,53 @@ test('UI show manufacture floor', function () {
     });
 });
 
+test('floor shows job orders addressed to the worker first and the dashboard lists artisans with nothing queued', function () {
+    $employees = collect(range(1, 2))->map(function () {
+        $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+        $modelData['worker_number']   = 'W'.rand(1000, 9999);
+        $modelData['alias']           = 'Alias '.rand(1000, 9999);
+        $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+        $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+        $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+
+        return StoreEmployee::make()->action($this->organisation, $modelData);
+    });
+    [$worker, $idle] = $employees;
+
+    $this->guest->getUser()->employees()->attach($worker->id, [
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+    ]);
+    AttachArtisan::make()->action($this->artefact, ['employee_id' => $idle->id]);
+
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+
+    $addressed = StoreJobOrder::make()->action($this->production, ['employee_id' => $worker->id]);
+    StoreJobOrderItem::make()->action($addressed, ['artefact_id' => $this->artefact->id, 'quantity' => 3]);
+    ConfirmJobOrder::make()->action($addressed);
+
+    $pool = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($pool, ['artefact_id' => $this->artefact->id, 'quantity' => 2]);
+    ConfirmJobOrder::make()->action($pool);
+
+    $props = get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->viewData('page')['props'];
+    $tasks = collect($props['tasks']);
+
+    expect($props['artisan'])->toBe($worker->contact_name)
+        ->and($tasks->where('is_mine', true)->pluck('job_order_reference')->all())->toBe([$addressed->reference])
+        ->and($tasks->where('is_mine', false)->pluck('job_order_reference'))->toContain($pool->reference);
+
+    $artisans = collect(get(route('grp.org.productions.show.operations.dashboard', [$this->organisation->slug, $this->production->slug]))
+        ->viewData('page')['props']['command_control']['artisans']);
+
+    expect($artisans->firstWhere('id', $worker->id)['queued'])->toBe(1)
+        ->and($artisans->firstWhere('id', $idle->id)['queued'])->toBe(0)
+        ->and($artisans->first()['queued'])->toBe(0);
+});
+
 test('UI index job orders', function () {
     $response = get(route('grp.org.productions.show.operations.job-orders.index', [
         $this->organisation->slug,

@@ -9,9 +9,11 @@
 namespace App\Actions\Production\JobOrderItemTask\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
+use App\Models\HumanResources\Employee;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufacturePayBand;
 use App\Models\Production\ManufactureTaskSession;
@@ -23,6 +25,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowManufactureFloor extends OrgAction
 {
+    private ?Employee $employee = null;
+
     public function handle(Production $production): Production
     {
         return $production;
@@ -46,23 +50,32 @@ class ShowManufactureFloor extends OrgAction
 
     public function htmlResponse(Production $production, ActionRequest $request): Response
     {
-        $user = $request->user();
+        $user           = $request->user();
+        $this->employee = GetUserCurrentEmployee::run($user, $production->organisation_id);
 
         $openSession = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::OPEN)
-            ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'manufactureTask'])
+            ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder.employee', 'manufactureTask'])
             ->first();
+
+        $workingOnBy = ManufactureTaskSession::where('production_id', $production->id)
+            ->where('state', ManufactureTaskSessionStateEnum::OPEN)
+            ->where('user_id', '!=', $user->id)
+            ->with('user')
+            ->get()
+            ->groupBy('job_order_item_task_id')
+            ->map(fn ($sessions) => $sessions->map(fn (ManufactureTaskSession $session) => $session->user->contact_name ?: $session->user->username)->values()->all());
 
         $tasks = JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
             ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
-            ->with(['jobOrderItem.artefact', 'jobOrder', 'manufactureTask'])
+            ->with(['jobOrderItem.artefact', 'jobOrder.employee', 'manufactureTask'])
             ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
             ->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
             ->orderBy('job_orders.date')
             ->orderBy('job_order_item_tasks.position')
             ->select('job_order_item_tasks.*')
             ->get()
-            ->map(fn (JobOrderItemTask $task) => $this->serializeTask($task));
+            ->map(fn (JobOrderItemTask $task) => $this->serializeTask($task) + ['working_on_by' => $workingOnBy->get($task->id, [])]);
 
         $todayTotals = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
@@ -93,6 +106,7 @@ class ShowManufactureFloor extends OrgAction
                     ],
                     'band_feedback' => $this->bandFeedback($openSession),
                 ] : null,
+                'artisan'      => $this->employee?->contact_name,
                 'tasks'        => $tasks,
                 'today'        => [
                     'sessions'      => (int)$todayTotals->sessions,
@@ -133,6 +147,7 @@ class ShowManufactureFloor extends OrgAction
         }
 
         return [
+            'currency_symbol'   => $this->production->organisation->currency->symbol,
             'band0_hourly_rate' => $band0 ? (float)$band0->hourly_rate : 0.0,
             'bands'             => $measuredBands->all(),
             'session'           => [
@@ -154,6 +169,8 @@ class ShowManufactureFloor extends OrgAction
             'artefact_code'       => $task->jobOrderItem->artefact->code,
             'artefact_name'       => $task->jobOrderItem->artefact->name,
             'job_order_reference' => $task->jobOrder->reference,
+            'artisan'             => $task->jobOrder->employee?->contact_name,
+            'is_mine'             => $this->employee && $task->jobOrder->employee_id == $this->employee->id,
             'quantity_required'   => (float)$task->quantity_required,
             'quantity_made'       => (float)$task->quantity_made,
             'start_route'         => [
