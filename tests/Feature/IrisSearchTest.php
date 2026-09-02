@@ -16,6 +16,7 @@ use App\Actions\Search\Search;
 use App\Actions\Search\SearchCatalogue;
 use App\Actions\Search\SearchIrisInvoices;
 use App\Actions\Search\SearchIrisOrders;
+use App\Actions\Search\PurgeStaffWebsiteSearchLogs;
 use App\Actions\Search\StoreWebsiteSearchLog;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -27,6 +28,8 @@ use App\Models\Accounting\Invoice;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\WebsiteSearchLog;
+use App\Models\SysAdmin\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -544,4 +547,38 @@ test('a family created empty is out of the website until its first product arriv
 
     expect($family->refresh()->state)->toBe(\App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::ACTIVE)
         ->and((bool) $family->is_in_website)->toBeTrue();
+});
+
+test('staff customers never leave a search log and the purge removes the old ones', function () {
+    config(['marketing.staff_email_domains' => ['staff.test']]);
+    Cache::forget('marketing:staff_email_domains');
+
+    $makeLog = fn (Customer $customer) => [
+        'ulid'            => (string) Str::ulid(),
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => $this->shop->id,
+        'website_id'      => $this->website->id,
+        'customer_id'     => $customer->id,
+        'scope'           => 'catalogue',
+        'query'           => 'candles',
+        'results_count'   => 3,
+    ];
+
+    $newCustomer = fn (string $email) => StoreCustomer::make()->action(
+        $this->shop,
+        array_merge(Customer::factory()->definition(), ['email' => $email])
+    );
+    $staffByDomain = $newCustomer('tester@staff.test');
+    $staffByUser   = $newCustomer(User::query()->firstOrFail()->email);
+    $shopper       = $newCustomer('shopper@example.com');
+
+    expect(StoreWebsiteSearchLog::run($makeLog($staffByDomain)))->toBeNull()
+        ->and(StoreWebsiteSearchLog::run($makeLog($staffByUser)))->toBeNull()
+        ->and(StoreWebsiteSearchLog::run($makeLog($shopper)))->not->toBeNull();
+
+    $legacy = WebsiteSearchLog::create($makeLog($staffByDomain));
+    expect(PurgeStaffWebsiteSearchLogs::run())->toBe(1)
+        ->and(WebsiteSearchLog::find($legacy->id))->toBeNull()
+        ->and(WebsiteSearchLog::where('customer_id', $shopper->id)->count())->toBe(1);
 });
