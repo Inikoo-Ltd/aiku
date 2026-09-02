@@ -10,14 +10,39 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\WixUser;
 use App\Models\Ordering\Order;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ValidateIncomingWixOrder extends RetinaAction
 {
     use WithActionUpdate;
 
+    private const int LOCK_SECONDS = 120;
+
+    private const int LOCK_WAIT_SECONDS = 15;
+
     public function handle(WixUser $wixUser, array $order = []): void
+    {
+        $platformOrderId = Arr::get($order, 'id');
+
+        if (blank($platformOrderId)) {
+            return;
+        }
+
+        $lock = Cache::lock('wix_order_'.$wixUser->id.'_'.$platformOrderId, self::LOCK_SECONDS);
+
+        try {
+            $lock->block(self::LOCK_WAIT_SECONDS, function () use ($wixUser, $order) {
+                $this->processOrder($wixUser, $order);
+            });
+        } catch (LockTimeoutException) {
+            return;
+        }
+    }
+
+    private function processOrder(WixUser $wixUser, array $order): void
     {
         $wixUser->debugWebhooks()->create([
             'data' => $order

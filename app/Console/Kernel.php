@@ -460,15 +460,6 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('wix:fetch-orders')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
-                    monitorSlug: 'FetchWixOrders',
-                ),
-                name: 'FetchWixOrders',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
                 $schedule->command('fetch:woo-orders')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'FetchWooOrders',
                 ),
