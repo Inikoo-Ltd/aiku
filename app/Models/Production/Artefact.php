@@ -124,9 +124,12 @@ class Artefact extends Model implements Auditable
         return $this->belongsTo(TradeUnit::class);
     }
 
-    public function maker(): BelongsTo
+    public function artisans(): MorphToMany
     {
-        return $this->belongsTo(Employee::class, 'maker_employee_id');
+        return $this->morphToMany(Employee::class, 'artisanable', 'artisan_assignments')
+            ->withPivot('position')
+            ->withTimestamps()
+            ->orderByPivot('position');
     }
 
     public function orgStock(): BelongsTo

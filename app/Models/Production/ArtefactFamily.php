@@ -12,7 +12,7 @@ use App\Models\Traits\HasHistory;
 use App\Models\Traits\InProduction;
 use App\Models\HumanResources\Employee;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -75,9 +75,12 @@ class ArtefactFamily extends Model implements Auditable
             ->saveSlugsTo('slug');
     }
 
-    public function maker(): BelongsTo
+    public function artisans(): MorphToMany
     {
-        return $this->belongsTo(Employee::class, 'maker_employee_id');
+        return $this->morphToMany(Employee::class, 'artisanable', 'artisan_assignments')
+            ->withPivot('position')
+            ->withTimestamps()
+            ->orderByPivot('position');
     }
 
     public function artefacts(): HasMany

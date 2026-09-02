@@ -8,8 +8,6 @@
 
 namespace App\Actions\Production\Artefact\UI;
 
-use App\Enums\HumanResources\Employee\EmployeeStateEnum;
-use App\Models\HumanResources\Employee;
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
 use App\Http\Resources\Fulfilment\PalletResource;
@@ -154,15 +152,6 @@ class EditArtefact extends OrgAction
                                     'labelProp' => 'code',
                                     'required'  => false,
                                     'value'     => $artefact->trade_unit_id,
-                                ],
-                                'maker_employee_id' => [
-                                    'type'      => 'select',
-                                    'label'     => __('Usually made by'),
-                                    'searchable' => true,
-                                    'mode'      => 'single',
-                                    'options'   => Employee::where('organisation_id', $artefact->organisation_id)->where('state', EmployeeStateEnum::WORKING)->orderBy('contact_name')->get(['id', 'contact_name'])->map(fn ($employee) => ['value' => $employee->id, 'label' => $employee->contact_name])->all(),
-                                    'value'     => $artefact->maker_employee_id,
-                                    'required'  => false,
                                 ],
                                 'org_stock_id' => [
                                     'type'       => 'select_infinite',

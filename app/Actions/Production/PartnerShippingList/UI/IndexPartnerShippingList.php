@@ -62,7 +62,10 @@ class IndexPartnerShippingList extends OrgAction
                     ->whereNull('artefacts.deleted_at');
             })
             ->leftJoin('artefact_families', 'artefacts.artefact_family_id', 'artefact_families.id')
-            ->leftJoin('employees', 'employees.id', DB::raw('coalesce(artefacts.maker_employee_id, artefact_families.maker_employee_id)'))
+            ->leftJoin('employees', 'employees.id', DB::raw("coalesce(
+                (select employee_id from artisan_assignments where artisanable_type = 'Artefact' and artisanable_id = artefacts.id order by position limit 1),
+                (select employee_id from artisan_assignments where artisanable_type = 'ArtefactFamily' and artisanable_id = artefact_families.id order by position limit 1)
+            )"))
             ->leftJoin('organisations', function ($join) {
                 $join->on('organisations.id', 'partner_shopping_list_items.organisation_id')
                     ->whereNotNull('partner_shopping_list_items.partner_organisation_id');

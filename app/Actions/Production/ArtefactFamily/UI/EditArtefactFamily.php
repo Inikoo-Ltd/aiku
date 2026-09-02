@@ -8,8 +8,6 @@
 
 namespace App\Actions\Production\ArtefactFamily\UI;
 
-use App\Enums\HumanResources\Employee\EmployeeStateEnum;
-use App\Models\HumanResources\Employee;
 use App\Actions\OrgAction;
 use App\Models\Production\ArtefactFamily;
 use App\Models\Production\Production;
@@ -55,15 +53,6 @@ class EditArtefactFamily extends OrgAction
                                 'code'        => ['type' => 'input', 'label' => __('Code'), 'value' => $artefactFamily->code, 'required' => true],
                                 'name'        => ['type' => 'input', 'label' => __('Name'), 'value' => $artefactFamily->name, 'required' => true],
                                 'description' => ['type' => 'textarea', 'label' => __('Description'), 'value' => $artefactFamily->description, 'required' => false],
-                                'maker_employee_id' => [
-                                    'type'      => 'select',
-                                    'label'     => __('Usually made by'),
-                                    'searchable' => true,
-                                    'mode'      => 'single',
-                                    'options'   => Employee::where('organisation_id', $artefactFamily->organisation_id)->where('state', EmployeeStateEnum::WORKING)->orderBy('contact_name')->get(['id', 'contact_name'])->map(fn ($employee) => ['value' => $employee->id, 'label' => $employee->contact_name])->all(),
-                                    'value'     => $artefactFamily->maker_employee_id,
-                                    'required'  => false,
-                                ],
                             ]
                         ]
                     ],

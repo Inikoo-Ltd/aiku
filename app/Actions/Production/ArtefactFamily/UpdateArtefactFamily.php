@@ -13,7 +13,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Production\ArtefactFamily;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateArtefactFamily extends OrgAction
@@ -54,7 +53,6 @@ class UpdateArtefactFamily extends OrgAction
             ],
             'name'        => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string', 'max:1024'],
-            'maker_employee_id' => ['sometimes', 'nullable', Rule::exists('employees', 'id')->where('organisation_id', $this->organisation->id)],
         ];
     }
 

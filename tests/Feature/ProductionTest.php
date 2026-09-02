@@ -15,6 +15,10 @@ use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\UpdateArtefact;
 use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
 use App\Actions\Production\ArtefactFamily\UpdateArtefactFamily;
+use App\Actions\Production\Artisan\AttachArtisan;
+use App\Actions\Production\Artisan\DetachArtisan;
+use App\Actions\HumanResources\Employee\StoreEmployee;
+use App\Models\HumanResources\Employee;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Helpers\Tag;
 use App\Actions\Production\JobOrder\ConfirmJobOrder;
@@ -1733,4 +1737,31 @@ test('create job order from gate shortfall', function () {
         ->and($result['job_order']->jobOrderItems()->first()->artefact_id)->toBe($this->artefact->id)
         ->and((int) $result['job_order']->jobOrderItems()->first()->quantity)->toBe(8)
         ->and($result['skipped'])->toHaveCount(1);
+});
+
+test('artisans can be attached and detached from a family and an artefact, first one is primary', function () {
+    $family   = StoreArtefactFamily::make()->action($this->production, ['code' => 'ARTS', 'name' => 'Artisan family']);
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'ARTS-1', 'name' => 'Artisan artefact', 'artefact_family_id' => $family->id]);
+
+    $employees = collect(range(1, 2))->map(function () {
+        $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+        $modelData['worker_number']   = 'W'.rand(1000, 9999);
+        $modelData['alias']           = 'Alias '.rand(1000, 9999);
+        $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+        $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+        $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+
+        return StoreEmployee::make()->action($this->organisation, $modelData);
+    });
+
+    AttachArtisan::make()->action($family, ['employee_id' => $employees[0]->id]);
+    AttachArtisan::make()->action($family, ['employee_id' => $employees[1]->id]);
+    AttachArtisan::make()->action($family, ['employee_id' => $employees[1]->id]);
+    expect($family->artisans()->pluck('employees.id')->all())->toBe([$employees[0]->id, $employees[1]->id]);
+
+    DetachArtisan::make()->action($family, $employees[0]);
+    expect($family->artisans()->pluck('employees.id')->all())->toBe([$employees[1]->id]);
+
+    AttachArtisan::make()->action($artefact, ['employee_id' => $employees[0]->id]);
+    expect($artefact->artisans()->pluck('employees.id')->all())->toBe([$employees[0]->id]);
 });
