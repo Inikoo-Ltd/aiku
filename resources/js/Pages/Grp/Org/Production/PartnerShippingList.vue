@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
-import { reactive } from "vue"
+import { reactive, ref, watch } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -32,6 +32,15 @@ const props = defineProps<{
 }>()
 
 const selected = reactive<Record<number, number>>({})
+
+const hiddenGroupsKey = `to-produce-hidden-${props.groupBy}`
+const hiddenGroups = ref<string[]>(JSON.parse(localStorage.getItem(hiddenGroupsKey) || "[]"))
+watch(hiddenGroups, (value) => localStorage.setItem(hiddenGroupsKey, JSON.stringify(value)), { deep: true })
+
+function toggleGroup(label: string) {
+    const index = hiddenGroups.value.indexOf(label)
+    index === -1 ? hiddenGroups.value.push(label) : hiddenGroups.value.splice(index, 1)
+}
 
 function toggle(item: { id: number, quantity: number }) {
     if (item.id in selected) {
@@ -88,7 +97,18 @@ function submitCherryPick() {
     </div>
 
     <div v-if="groups" class="mx-4 mt-5 space-y-6">
-        <div v-for="group in groups" :key="group.label" class="rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="flex flex-wrap gap-1.5">
+            <button
+                v-for="group in groups"
+                :key="group.label"
+                type="button"
+                class="rounded-full border px-2.5 py-px text-xs"
+                :class="hiddenGroups.includes(group.label) ? 'border-gray-200 text-gray-400 hover:bg-gray-50' : 'border-indigo-500 bg-indigo-50 text-indigo-700'"
+                @click="toggleGroup(group.label)">
+                {{ group.items.length }} {{ group.label }}
+            </button>
+        </div>
+        <div v-for="group in groups.filter(group => !hiddenGroups.includes(group.label))" :key="group.label" class="rounded-lg border border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-2 font-medium dark:border-gray-700 dark:bg-gray-800">
                 <span>{{ group.label }}</span>
                 <span class="text-gray-500">{{ group.items.length }} {{ trans("lines") }}</span>
