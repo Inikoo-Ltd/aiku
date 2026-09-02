@@ -20,6 +20,7 @@ const props = defineProps<{
     title: string
     data: object
     groupBy: string | null
+    artisanWorkload: { id: number, name: string, open_job_orders: number }[] | null
     groups: { label: string, items: { id: number, quantity: number, state: string, stock_code: string, stock_name: string, family: string | null, maker: string | null, buyer_code: string | null, customer_name: string | null, order_reference: string | null, job_order_reference: string | null, job_order_slug: string | null, priority: string, needed_by: string | null }[] }[] | null
     pickedOrders: {
         id: number
@@ -110,6 +111,19 @@ function submitCherryPick() {
             <button type="button" class="rounded bg-indigo-600 px-3 py-1 text-white" @click="sendToWarehouse(order.id)">
                 {{ trans("Send to warehouse") }}
             </button>
+        </div>
+    </div>
+
+    <div v-if="artisanWorkload" class="mx-4 mt-5 rounded-lg border border-gray-200 px-4 py-3 dark:border-gray-700">
+        <div class="mb-2 text-sm text-gray-500">{{ trans("Open job orders per artisan") }} <span class="text-gray-400">· {{ trans("everyone should have at least two") }}</span></div>
+        <div class="flex flex-wrap gap-1.5">
+            <span
+                v-for="artisan in artisanWorkload"
+                :key="artisan.id"
+                class="rounded-full border px-2.5 py-px text-xs"
+                :class="artisan.open_job_orders === 0 ? 'border-red-300 bg-red-50 text-red-700' : artisan.open_job_orders === 1 ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-600'">
+                {{ artisan.name }} · {{ artisan.open_job_orders }}
+            </span>
         </div>
     </div>
 

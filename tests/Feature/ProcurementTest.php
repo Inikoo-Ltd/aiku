@@ -3411,7 +3411,8 @@ test('UI to produce list grouped by artisan, family and for', function () {
                 $page
                     ->component('Org/Production/PartnerShippingList')
                     ->where('groupBy', $groupBy)
-                    ->has('groups');
+                    ->has('groups')
+                    ->where('artisanWorkload', fn ($workload) => $groupBy === 'maker' ? $workload !== null : $workload === null);
             });
     }
 });

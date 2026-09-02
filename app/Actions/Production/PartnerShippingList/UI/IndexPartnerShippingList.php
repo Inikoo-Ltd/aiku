@@ -10,7 +10,10 @@ namespace App\Actions\Production\PartnerShippingList\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Production\Production\UI\ShowProduction;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Models\HumanResources\Employee;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Ordering\Order;
@@ -212,6 +215,28 @@ class IndexPartnerShippingList extends OrgAction
             ->all();
     }
 
+    /** @return array<int, array{id: int, name: string, open_job_orders: int}> */
+    public function getArtisanWorkload(): array
+    {
+        return Employee::query()
+            ->where('employees.organisation_id', $this->organisation->id)
+            ->where('employees.state', EmployeeStateEnum::WORKING)
+            ->leftJoin('job_orders', function ($join) {
+                $join->on('job_orders.employee_id', 'employees.id')
+                    ->where('job_orders.production_id', $this->production->id)
+                    ->whereIn('job_orders.state', [JobOrderStateEnum::IN_PROCESS->value, JobOrderStateEnum::SUBMITTED->value, JobOrderStateEnum::CONFIRMED->value]);
+            })
+            ->groupBy('employees.id', 'employees.contact_name')
+            ->orderByRaw('count(job_orders.id), employees.contact_name')
+            ->get(['employees.id', 'employees.contact_name', DB::raw('count(job_orders.id) as open_job_orders')])
+            ->map(fn (Employee $employee) => [
+                'id'              => $employee->id,
+                'name'            => $employee->contact_name,
+                'open_job_orders' => (int) $employee->open_job_orders,
+            ])
+            ->all();
+    }
+
     public function getSubNavigation(array $routeParameters): array
     {
         $tab = fn (string $label, string $route, string $icon, ?int $number = null) => array_filter([
@@ -256,6 +281,7 @@ class IndexPartnerShippingList extends OrgAction
                     'subNavigation' => $this->getSubNavigation($request->route()->originalParameters()),
                 ],
                 'groupBy'      => $this->groupBy,
+                'artisanWorkload' => $this->groupBy === 'maker' ? $this->getArtisanWorkload() : null,
                 'groups'       => $this->groupBy ? $this->getGroups($items) : null,
                 'data'         => $items,
                 'pickedOrders' => $this->getPickedOrders($this->organisation),
