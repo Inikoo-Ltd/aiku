@@ -33,7 +33,7 @@ interface AttendanceRow {
 	id: number
 	employee_name: string
 	job_title: string | null
-	avatar: string
+	avatar: string | null
 	start_at: string | null
 	end_at: string | null
 	notes: string | null
@@ -50,7 +50,7 @@ interface BirthdayRow {
 	id: number
 	name: string
 	job_title: string | null
-	avatar: string
+	avatar: string | null
 	day: number
 	date_label: string
 	is_today: boolean
@@ -69,7 +69,7 @@ interface PersonRow {
 	id: number
 	name: string
 	job_title: string | null
-	avatar: string
+	avatar: string | null
 	detail: string | null
 	route: { name: string; parameters: Record<string, unknown> }
 }
@@ -89,7 +89,7 @@ interface LeaveOverviewDay {
 interface EmployeeLeave {
 	id: number
 	name: string
-	avatar: string
+	avatar: string | null
 	type_name: string
 	type_color: string
 	date_label: string
@@ -163,6 +163,9 @@ const showPeople = computed(() => ["annual", "sick", "absent"].includes(props.sh
 const visibleAttendance = computed(() =>
 	props.show === "late" ? props.attendance.filter((row) => row.is_late) : props.attendance
 )
+const initials = (name: string) =>
+	name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join("")
+
 const activeCard = computed(() => props.attendanceStats.find((card) => card.key === props.show))
 
 const shiftDay = (days: number) => {
@@ -370,7 +373,8 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 						<tr v-for="row in people" :key="row.id" class="hover:bg-gray-50">
 							<td class="py-2 pr-3">
 								<div class="flex items-center gap-3">
-									<img :src="row.avatar" :alt="row.name" class="h-9 w-9 rounded-full object-cover bg-gray-100" />
+									<img v-if="row.avatar" :src="row.avatar" :alt="row.name" class="h-9 w-9 rounded-full object-cover bg-gray-100" />
+<div v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(row.name) }}</div>
 									<div class="min-w-0">
 										<Link
 											:href="route(row.route.name, row.route.parameters)"
@@ -409,7 +413,8 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 						<tr v-for="row in visibleAttendance" :key="row.id" class="hover:bg-gray-50">
 							<td class="py-2 pr-3">
 								<div class="flex items-center gap-3">
-									<img :src="row.avatar" :alt="row.employee_name" class="h-9 w-9 rounded-full object-cover bg-gray-100" />
+									<img v-if="row.avatar" :src="row.avatar" :alt="row.employee_name" class="h-9 w-9 rounded-full object-cover bg-gray-100" />
+<div v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(row.employee_name) }}</div>
 									<div class="min-w-0">
 										<Link
 											:href="route(row.route.name, row.route.parameters)"
@@ -472,7 +477,8 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 			<h2 class="text-lg font-bold text-gray-800 mb-3">{{ trans("Employee leaves") }}</h2>
 			<ul v-if="employeeLeaves.length" class="divide-y divide-gray-100 max-h-64 overflow-y-auto pr-1">
 				<li v-for="leave in employeeLeaves" :key="leave.id" class="flex items-center gap-3 py-2.5">
-					<img :src="leave.avatar" :alt="leave.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" />
+					<img v-if="leave.avatar" :src="leave.avatar" :alt="leave.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" />
+<div v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(leave.name) }}</div>
 					<div class="min-w-0 flex-1">
 						<div class="font-medium text-gray-900 truncate">{{ leave.name }}</div>
 						<div class="text-xs font-medium truncate" :style="{ color: leave.type_color }">{{ leave.type_name }}</div>
@@ -530,7 +536,8 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 					:key="person.id"
 					class="flex items-center gap-3 py-2.5"
 					:class="{ 'bg-pink-50 -mx-2 px-2 rounded': person.is_today }">
-					<img :src="person.avatar" :alt="person.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" />
+					<img v-if="person.avatar" :src="person.avatar" :alt="person.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" />
+<div v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(person.name) }}</div>
 					<div class="min-w-0 flex-1">
 						<div class="font-medium text-gray-900 truncate">{{ person.name }}</div>
 						<div class="text-xs text-gray-500 truncate">{{ person.job_title || "—" }}</div>

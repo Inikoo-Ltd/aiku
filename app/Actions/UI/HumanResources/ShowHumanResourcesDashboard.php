@@ -303,9 +303,7 @@ class ShowHumanResourcesDashboard extends OrgAction
             return [
                 'id'          => $leave->id,
                 'name'        => $leave->employee?->contact_name ?: $leave->employee_name,
-                'avatar'      => $leave->employee
-                    ? $this->getAvatar($leave->employee)
-                    : 'https://api.dicebear.com/7.x/avataaars/svg?seed='.rawurlencode((string)$leave->employee_name),
+                'avatar'      => $leave->employee ? $this->getAvatar($leave->employee) : null,
                 'type_name'   => $this->resolveLeaveTypeName($leave),
                 'type_color'  => $this->leaveColorHex($leave->leaveType?->color),
                 'date_label'  => $this->formatLeaveRange($leave),
@@ -620,13 +618,10 @@ class ShowHumanResourcesDashboard extends OrgAction
         })->values()->all();
     }
 
-    private function getAvatar(Employee $employee): string
+    private function getAvatar(Employee $employee): ?string
     {
-        return Arr::get(
-            $employee->imageSources(120, 120),
-            'original',
-            'https://api.dicebear.com/7.x/avataaars/svg?seed='.rawurlencode((string)$employee->slug)
-        );
+        return Arr::get($employee->imageSources(120, 120), 'original')
+            ?? Arr::get($employee->getUser()?->imageSources(120, 120), 'original');
     }
 
 
