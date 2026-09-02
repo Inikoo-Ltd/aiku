@@ -309,7 +309,7 @@ test('docs index shows the clickable module map', function () {
     get($this->host.'/docs')->assertOk()
         ->assertSee('Map of aiku modules', false)
         ->assertSee(route('aiku-public.docs.index', ['category' => 'procurement']), false)
-        ->assertSee('soon', false);
+        ->assertSee(route('aiku-public.docs.index', ['category' => 'production']), false);
 
     get($this->host.'/docs?category=procurement')->assertOk()
         ->assertSee('docsmap-mini', false)

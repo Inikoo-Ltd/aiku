@@ -21,7 +21,7 @@
             <div class="eyebrow">Documentation</div>
             <h1 style="font-size:clamp(34px,4.6vw,52px)">{{ $doc['title'] }}</h1>
             <div class="meta">
-                <time datetime="{{ $doc['date']->toDateString() }}">Last reviewed {{ $doc['date']->format('j F Y') }}</time> · {{ $doc['reading_minutes'] }} min read
+                {{ $doc['reading_minutes'] }} min read
                 @foreach ($doc['tags'] as $tag) · <a href="{{ route('aiku-public.docs.index', ['tag' => $tag]) }}">#{{ $tag }}</a> @endforeach
             </div>
             @if ($translations->isNotEmpty())
@@ -65,10 +65,9 @@
         @if ($more->isNotEmpty())
             <section class="chapter">
                 <h2 style="font-size:26px">Related documentation</h2>
-                <ul class="posts">
+                <ul class="posts no-date">
                     @foreach ($more as $other)
                         <li>
-                            <time datetime="{{ $other['date']->toDateString() }}" title="Last reviewed">{{ $other['date']->format('j M Y') }}</time>
                             <div>
                                 <h3 style="font-size:20px"><a href="{{ route('aiku-public.docs.show', $other['slug']) }}">{{ $other['title'] }}</a></h3>
                                 <p>{{ $other['summary'] }}</p>
