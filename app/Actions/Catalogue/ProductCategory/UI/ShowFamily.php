@@ -22,6 +22,7 @@ use App\Actions\Reviews\UI\IndexReviews;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\OffersResource;
@@ -112,6 +113,8 @@ class ShowFamily extends OrgAction
 
     public function htmlResponse(ProductCategory $family, ActionRequest $request): Response
     {
+        $categoryOfferCampaign = $family->shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::CATEGORY_OFFERS)->first();
+
         $parentTag = [];
 
         if ($this->parent instanceof ProductCategory) {
@@ -291,6 +294,8 @@ class ShowFamily extends OrgAction
                 'shop_data' => [
                     'id'       => $family->shop->id,
                     'slug'          => $family->shop->slug,
+                    'organisation' => $family->shop->organisation->slug,
+                    'offercampaign' => $categoryOfferCampaign?->slug,
                     'currency_code' => $family->shop->currency->code,
                     'default_dates' => [
                         'start' => now()->toDateString(),
