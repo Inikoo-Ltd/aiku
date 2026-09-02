@@ -23,6 +23,7 @@ import {
     faStopwatch,
     faLayerGroup,
     faChevronRight,
+    faChevronDown,
     faMagic,
     faTrashAlt,
     faCheck,
@@ -45,6 +46,7 @@ library.add(
     faStopwatch,
     faLayerGroup,
     faChevronRight,
+    faChevronDown,
     faMagic,
     faTrashAlt,
     faCheck,
@@ -101,6 +103,12 @@ const tonePalette: Record<Tone, { text: string, soft: string, accent: string, ch
     green: { text: "text-green-700", soft: "bg-green-50", accent: "bg-green-500", chip: "bg-green-100 text-green-700", hex: "#22c55e" },
     violet: { text: "text-violet-700", soft: "bg-violet-50", accent: "bg-violet-400", chip: "bg-violet-100 text-violet-700", hex: "#a78bfa" },
     gray: { text: "text-gray-600", soft: "bg-gray-100", accent: "bg-gray-300", chip: "bg-gray-100 text-gray-600", hex: "#d1d5db" },
+}
+
+const stockCoverOpen = ref(localStorage.getItem("partnerShopping.stockCoverOpen") !== "0")
+const toggleStockCover = () => {
+    stockCoverOpen.value = !stockCoverOpen.value
+    localStorage.setItem("partnerShopping.stockCoverOpen", stockCoverOpen.value ? "1" : "0")
 }
 
 const passiveBucketKeys = ["ok", "dead", "never"]
@@ -328,10 +336,11 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
         <section v-if="canBrowse" class="rounded-r bg-indigo-300/5 border-l-4 border-indigo-500">
             <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
                 <div>
-                    <h3 class="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                    <button type="button" class="flex items-center gap-2 text-sm font-semibold text-gray-800" :aria-expanded="stockCoverOpen" @click="toggleStockCover">
                         <FontAwesomeIcon :icon="faLayerGroup" class="text-gray-400" fixed-width aria-hidden="true" />
                         {{ ctrans("Stock cover") }}
-                    </h3>
+                        <FontAwesomeIcon :icon="faChevronDown" class="text-[10px] text-gray-400 transition-transform" :class="{ '-rotate-90': !stockCoverOpen }" aria-hidden="true" />
+                    </button>
                     <p class="mt-0.5 text-xs text-gray-500">
                         {{ ctrans(":total products in their catalogue, grouped by how long our stock lasts against a :days day lead time", { total: locale.number(coverTotal), days: leadTime.days }) }}
                     </p>
@@ -342,9 +351,9 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                 </Link>
             </div>
 
-            <div class="flex flex-col gap-5 p-4">
-                <div v-if="donutSegments.length" class="flex flex-col items-center gap-x-8 gap-y-4 sm:flex-row">
-                    <div class="relative h-44 w-44 shrink-0">
+            <div class="flex flex-col gap-3 px-4 py-3">
+                <div v-if="donutSegments.length" v-show="stockCoverOpen" class="flex flex-col items-center gap-x-6 gap-y-3 sm:flex-row">
+                    <div class="relative h-24 w-24 shrink-0">
                         <svg viewBox="0 0 180 180" class="h-full w-full" role="img" :aria-label="ctrans('Stock cover distribution')">
                             <path
                                 v-for="segment in donutSegments"
@@ -359,16 +368,16 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                             />
                         </svg>
                         <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                            <span class="text-2xl font-semibold leading-none tabular-nums text-gray-900">{{ locale.number(coverTotal) }}</span>
-                            <span class="mt-1 text-[11px] text-gray-500">{{ ctrans("products") }}</span>
+                            <span class="text-base font-semibold leading-none tabular-nums text-gray-900">{{ locale.number(coverTotal) }}</span>
+                            <span class="mt-0.5 text-[10px] text-gray-500">{{ ctrans("products") }}</span>
                         </div>
                     </div>
-                    <div class="grid w-full min-w-0 grow grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
+                    <div class="grid w-full min-w-0 grow grid-cols-1 gap-x-6 gap-y-0 sm:grid-cols-2 xl:grid-cols-4">
                         <Link
                             v-for="bucket in coverBuckets"
                             :key="bucket.bucket"
                             :href="bucketRoute(bucket.bucket)"
-                            class="group flex items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-gray-50"
+                            class="group flex items-center gap-2 rounded-md px-2 py-0.5 text-xs hover:bg-gray-50"
                         >
                             <span class="h-2.5 w-2.5 shrink-0 rounded-sm" :class="tonePalette[bucket.tone].accent" />
                             <span class="min-w-0 grow truncate font-medium text-gray-700 group-hover:text-indigo-600 group-hover:underline">{{ bucket.label }}</span>
@@ -378,7 +387,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                     </div>
                 </div>
 
-                <div class="border-t border-dashed border-indigo-500/30" />
+                <div v-show="stockCoverOpen" class="border-t border-dashed border-indigo-500/30" />
 
                 <div class="">
                     <div class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
