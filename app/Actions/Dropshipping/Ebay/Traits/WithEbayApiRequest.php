@@ -215,9 +215,6 @@ trait WithEbayApiRequest
                         $product->attributes['style'] ??
                         ['Not Specified'];
                     break;
-                case 'Brand':
-                    $attributes['Brand'] = [$brand?->name ?? 'Ancient Wisdom'];
-                    break;
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
                     break;
@@ -242,7 +239,8 @@ trait WithEbayApiRequest
             }
         }
 
-        // Use this as default value and always included
+        $attributes['Brand'] = [$brand?->name ?? 'Ancient Wisdom'];
+
         if ($product->country_of_origin) {
             $attributes['Country/Region of Manufacture'] = [$product->country_of_origin];
         }
@@ -260,8 +258,7 @@ trait WithEbayApiRequest
 
     public function getDefaultValueForAspect($aspect)
     {
-        // Return the first recommended value or "Not Specified"
-        return $aspect['aspectValues'][0]['localizedValue'] ?? ['Not Specified'];
+        return Arr::get($aspect, 'aspectValues.0.localizedValue') ?? 'Not Specified';
     }
 
     public function parseMissingAspects($errorMessage)
@@ -317,9 +314,23 @@ trait WithEbayApiRequest
         try {
             $endpoint = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_item_aspects_for_category";
 
-            return $this->makeEbayRequest('get', $endpoint, [
+            $response = $this->makeEbayRequest('get', $endpoint, [
                 'category_id' => $categoryId
             ]);
+
+            // makeEbayRequest hands back eBay's error body rather than throwing, so a failure
+            // here would otherwise pass silently and strip every aspect from the listing.
+            if (!is_array($response) || !array_key_exists('aspects', $response)) {
+                \Log::error('eBay category aspects unavailable, listing will carry no category aspects', [
+                    'category_id'      => $categoryId,
+                    'category_tree_id' => $categoryTree,
+                    'response'         => $response
+                ]);
+
+                return ['aspects' => []];
+            }
+
+            return $response;
         } catch (\Exception $e) {
             \Log::error('Failed to get eBay category aspects', [
                 'category_id' => $categoryId,

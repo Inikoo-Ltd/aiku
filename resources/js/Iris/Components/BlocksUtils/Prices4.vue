@@ -550,7 +550,7 @@ const onHideStepsPopover = () => {
 
 <style scoped>
 .step-discount-scope {
-    --step-discount-color: var(--theme-color-4, #8E44AD);
+    --step-discount-color: #C48497;
     --step-discount-surface: color-mix(in srgb, var(--step-discount-color) 12%, white);
     --step-discount-surface-soft: color-mix(in srgb, var(--step-discount-color) 6%, white);
     --step-discount-border-soft: color-mix(in srgb, var(--step-discount-color) 40%, #9ca3af);

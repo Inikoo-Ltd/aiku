@@ -59,7 +59,7 @@ class ValidateClockingMachineQrCode
 
             $effectiveMode = $this->resolveEffectivePolicyMode($clockingMachine, $employee, now());
 
-            if (($config['allow_coordinates'] ?? false) === true && $effectiveMode !== ClockingPolicyModeEnum::REMOTE->value) {
+            if (($config['allow_coordinates'] ?? false) === true && !ClockingPolicyModeEnum::from($effectiveMode)->skipsLocationCheck()) {
                 if ($userLat === null || $userLng === null) {
                     throw new Exception(__('Location access is required to validate this QR code.'));
                 }
@@ -232,7 +232,7 @@ class ValidateClockingMachineQrCode
         $distance = $this->calculateDistance($userLat, $userLng, (float)$targetLat, (float)$targetLng);
 
         if ($distance > $radius) {
-            throw new Exception(__('Device is too far from the designated clocking location.'));
+            throw new Exception(__('Your phone reports a location outside the workplace. If you are on site, enable Precise Location for your browser and try again.'));
         }
     }
 

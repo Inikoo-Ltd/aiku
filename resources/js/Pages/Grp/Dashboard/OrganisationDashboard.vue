@@ -19,11 +19,13 @@ import DashboardTable from "@/Components/DataDisplay/Dashboard/DashboardTable.vu
 import DashboardWidget from "@/Components/DataDisplay/Dashboard/DashboardWidget.vue"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 import { Dashboard as DashboardTS } from "@/types/Components/Dashboard"
+import CleanHandoverPanel, { type CleanHandoverData } from "@/Components/Procurement/CleanHandoverPanel.vue"
 
 library.add(faTriangle, faChevronDown, faSortDown, faSortUp, faPlay, faSitemap)
 
 const props = defineProps<{
 	dashboard: DashboardTS
+	cleanHandover?: CleanHandoverData
 }>()
 
 const isLoadingOnTable = ref(false)
@@ -65,6 +67,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 <template>
 	<Head :title="trans('Dashboard')" />
 	<div>
+		<CleanHandoverPanel v-if="props.cleanHandover" class="mx-4 mt-4" :data="props.cleanHandover" />
 		<KeepAlive v-if="props.dashboard?.super_blocks?.[0]?.tabs_box">
 			<TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" />
 		</KeepAlive>

@@ -1,7 +1,7 @@
 ---
 title: Ordering from a partner organisation
 summary: Why trade between sister organisations uses a shopping list instead of purchase orders, and how the whole loop works from listed need to booked-in stock.
-date: 2026-08-31
+date: 2026-09-01
 tags: procurement, warehouse, intercompany
 category: procurement
 help_routes: grp.org.procurement.org_partners
@@ -40,7 +40,7 @@ There are no separate supplier invoices between organisations. The seller's own 
 
 - The first time a seller picks for a partner, a customer account named after the buying organisation is created in the seller's shop. That is expected — it is how the shipment travels through the seller's normal machinery.
 - Partial picks are normal. A line picked in part leaves the remainder open for a later shipment; nothing is lost.
-- Prices are the seller's current shop prices, shown to the buyer in the buyer's own currency. If that ever changes, it will be announced — don't negotiate line by line.
+- Prices are the seller's current shop prices with the buying organisation's standing intercompany discount applied, shown in the buyer's own currency. Nothing is negotiated line by line; if the arrangement changes, it will be announced.
 
 <aside class="wayfinder"><strong>Permissions you need</strong>
 <ul>

@@ -9,6 +9,8 @@
 namespace App\Actions\Procurement\OrgPartner\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\GetPartnerCustomerDiscount;
+use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
 use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
@@ -20,6 +22,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Product;
+use App\Models\CRM\Customer;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Inventory\OrgStock;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
@@ -39,6 +42,8 @@ class ShowPartnerBrowse extends OrgAction
 
     private OrgPartner $orgPartner;
     private ?int $shopId;
+    private ?Customer $intercompanyCustomer = null;
+    private float $priceFactor = 1.0;
 
     public function handle(OrgPartner $orgPartner, int $shopId, array $filters): array
     {
@@ -141,7 +146,7 @@ class ShowPartnerBrowse extends OrgAction
     {
         $query = Product::query()
             ->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
-            ->where('is_for_sale', true)
+            ->where($this->forSaleOrExclusiveToUs(...))
             ->where('shop_id', $shopId)
             ->whereHas('orgStocks');
 
@@ -168,6 +173,22 @@ class ShowPartnerBrowse extends OrgAction
             'products.available_quantity',
             'products.units',
         ]);
+    }
+
+    /**
+     * Products exclusive to the intercompany customer are not for sale to the public but must
+     * still be shoppable by the partner organisation they were made for.
+     */
+    private function forSaleOrExclusiveToUs($query): void
+    {
+        $query->where('is_for_sale', true);
+        if ($this->intercompanyCustomer) {
+            $query->orWhereExists(
+                fn ($sub) => $sub->from('product_has_exclusive_customers')
+                    ->whereColumn('product_has_exclusive_customers.product_id', 'products.id')
+                    ->where('product_has_exclusive_customers.customer_id', $this->intercompanyCustomer->id)
+            );
+        }
     }
 
     /**
@@ -221,7 +242,7 @@ class ShowPartnerBrowse extends OrgAction
 
         return Product::query()
             ->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
-            ->where('is_for_sale', true)
+            ->where($this->forSaleOrExclusiveToUs(...))
             ->where('shop_id', $shopId)
             ->whereHas('orgStocks')
             ->whereIn('id', $productIds)
@@ -276,7 +297,9 @@ class ShowPartnerBrowse extends OrgAction
                 ->get()
                 ->keyBy('stock_id');
 
-            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems) {
+            $exchange = $this->orgPartner->exchangeToOrgCurrency();
+
+            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $exchange) {
                 $sellerOrgStock = $sellerOrgStocks[$product->id] ?? null;
                 $buyerOrgStock  = $sellerOrgStock ? $buyerOrgStocks->get($sellerOrgStock->stock_id) : null;
                 $openItem       = $sellerOrgStock ? $openItems->get($sellerOrgStock->stock_id) : null;
@@ -287,7 +310,7 @@ class ShowPartnerBrowse extends OrgAction
                     'code'              => $product->code,
                     'name'              => $product->name,
                     'image'             => Arr::get($product->web_images, 'main.gallery') ?? Arr::get($product->web_images, 'main.thumbnail'),
-                    'price'             => $product->price,
+                    'price'             => round((float) $product->price * $exchange * $this->priceFactor, 2),
                     'available_quantity' => $product->available_quantity,
                     'units'             => $product->units,
                     'org_stock_slug'    => $sellerOrgStock?->slug,
@@ -371,6 +394,11 @@ class ShowPartnerBrowse extends OrgAction
         $this->shopId = Arr::get($orgPartner->partner->settings, 'procurement.shop_id');
         abort_unless($this->shopId, 404);
 
+        $this->intercompanyCustomer = GetPartnerIntercompanyCustomer::run($orgPartner, $this->shopId);
+        if ($this->intercompanyCustomer) {
+            $this->priceFactor = GetPartnerCustomerDiscount::run($this->intercompanyCustomer);
+        }
+
         $this->initialisation($organisation, $request);
 
         return $this->withOrgStock($this->handle($orgPartner, $this->shopId, $request->only(['q', 'department', 'sub_department', 'family', 'collection', 'cover', 'rank'])));
@@ -393,9 +421,10 @@ class ShowPartnerBrowse extends OrgAction
                     'subNavigation' => $this->getPartnerShoppingNavigation($this->orgPartner),
                 ],
                 'orgPartner' => [
-                    'id'       => $this->orgPartner->id,
-                    'slug'     => $this->orgPartner->partner->slug,
-                    'currency' => $this->orgPartner->partner->currency->code,
+                    'id'                  => $this->orgPartner->id,
+                    'slug'                => $this->orgPartner->partner->slug,
+                    'currency'            => $this->orgPartner->organisation->currency->code,
+                    'discount_percentage' => $this->priceFactor < 1 ? round((1 - $this->priceFactor) * 100, 1) : null,
                 ],
                 'addRoute' => [
                     'name'       => 'grp.org.procurement.org_partners.show.shopping_list.store',

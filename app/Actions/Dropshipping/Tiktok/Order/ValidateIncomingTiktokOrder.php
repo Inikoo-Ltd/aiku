@@ -90,7 +90,7 @@ class ValidateIncomingTiktokOrder extends RetinaAction
         $hasOutProducts = DB::table('portfolios')
             ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
             ->whereIn('platform_product_id', $lineItems)
-            ->orWhereIn('id', $externalProductIds)
+            ->orWhereIn('id', array_filter($externalProductIds, 'is_numeric'))
             ->first();
 
         if ($hasOutProducts) {

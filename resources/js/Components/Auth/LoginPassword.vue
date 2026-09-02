@@ -21,8 +21,10 @@ const props = withDefaults(defineProps<{
     'placeholder'?: string
     'options'?: {} | []
     'fieldData'?: {} | []
+    'autocomplete'?: string
 }>(), {
-    showProcessing: true
+    showProcessing: true,
+    autocomplete: 'current-password'
 })
 
 const handleChange = (form) => {
@@ -40,7 +42,7 @@ const showPassword = ref(true);
 <template>
     <div class="w-full relative rounded-md shadow-sm">
         <div class="flex" :class="form.errors[fieldName] ? 'errorShake' : ''">
-            <input v-bind="$attrs" @input="handleChange(form)" v-model="form[fieldName]" :type="showPassword ? 'password' : 'text'" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"
+            <input v-bind="$attrs" @input="handleChange(form)" v-model="form[fieldName]" :type="showPassword ? 'password' : 'text'" :autocomplete="autocomplete" autocapitalize="none" autocorrect="off" spellcheck="false"
                 :placeholder="(props.placeholder ? trans(props.placeholder) : '')" class="text-gray-700 placeholder-gray-400 shadow-sm focus:ring-gray-500 focus:border-gray-500 w-full border-gray-300 rounded-l-md" />
             <button type="button" @click="showPassword = !showPassword" :id="'show-password-' +  fieldName"
                 class="w-min px-3 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500">

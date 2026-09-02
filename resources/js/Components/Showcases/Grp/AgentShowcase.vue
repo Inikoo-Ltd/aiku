@@ -35,6 +35,7 @@ import Image from '@common/Components/Image.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import DepositRequestsPanel from '@/Components/Procurement/DepositRequestsPanel.vue'
+import CleanHandoverPanel, { type CleanHandoverData } from '@/Components/Procurement/CleanHandoverPanel.vue'
 
 library.add(
     faBoxUsd,
@@ -99,6 +100,7 @@ const props = defineProps<{
             }
         }[]
         depositWorkspace?: object
+        cleanHandover?: CleanHandoverData
     }
 }>()
 
@@ -388,6 +390,8 @@ const supplierInfo = computed(() => {
                 </p>
             </div>
         </div>
+
+        <CleanHandoverPanel v-if="data.cleanHandover" :data="data.cleanHandover" :showHygiene="true" />
 
         <DepositRequestsPanel v-if="data.depositWorkspace" :data="(data.depositWorkspace as any)" />
     </div>
