@@ -1,7 +1,7 @@
 ---
 title: Following an order from basket to dispatch
 summary: See the whole journey a sales order takes in aiku, from a customer's basket through picking and packing to invoicing and dispatch, and where to check on it at each step.
-date: 2026-09-01
+date: 2026-09-02
 tags: orders, orders lifecycle
 category: orders
 help_routes: grp.org.shops.show.ordering.orders
@@ -52,6 +52,22 @@ So if you need to change the address on a submitted order, change it on the orde
 
 After dispatch, the addresses on the order are locked for good. If the customer then asks for a different address on their invoice, fix it on the invoice instead: open it from the order's **Invoices** tab and use the pencil next to the address.
 
+## Notes on an order, and what prints on the shipping label
+
+Open any order and you will see a row of coloured note boxes at the top. Each one goes somewhere different, so it matters which one you write in. Double-click a box to edit it.
+
+- **Shipping Label (From Customer)** — the text printed on the courier label under the address. Only the first 34 characters fit, so keep it to what the driver needs: "Ring bell at side door", "Open 9-5 Mon-Fri". It normally comes from the customer, who fills it in as *delivery instructions* in their basket, but staff can edit it too.
+- **Customer Instructions** — what the customer typed when ordering. Read-only.
+- **Public Note** — visible to the customer as well as staff.
+- **CRMs Note (Private)** — for staff only, not shown on the delivery note.
+- **Warehouse Note (Private)** — for staff only, and printed on the delivery note for the pickers and packers.
+
+Some customers need the same label text on every parcel, typically their opening hours. Do not retype it on each order. Open the customer's record and fill in **Shipping Label (Permanent)** in the notes row at the top. From then on, every new basket that customer opens starts with that text already in its delivery instructions, so the customer sees exactly what will print and can change it for that one order if they need to. If they leave it as it is, that is what goes on the label. Orders that were already in the basket before you set it pick it up at checkout, as long as nobody typed a label note on them.
+
+The customer's own text always wins over the permanent note. That is deliberate: the person receiving the parcel knows best what the driver should read that day.
+
+The same row on the customer record has a **Warehouse Note (Permanent)**, which works the same way for the warehouse note, and a **Warehouse Note (Temporary)**, which is used once, on the next order only.
+
 ## Finding an order and checking how it is doing
 
 Open a shop and head to **Orders → Orders** to see everything that shop has taken. Each row tells you the state as an icon, the reference, when it was submitted or dispatched, who the customer is, whether it is paid, the delivery details and the net amount. You can filter by state, and search by reference or tracking number.
@@ -75,6 +91,8 @@ Click any order to open its full record. The title is the order's reference, wit
 <li><b>See what is still waiting to be worked on:</b> your shop → <b>Orders</b> (top menu) → <b>Backlog</b> tab.</li>
 <li><b>Change an address on a submitted order:</b> open the order → <b>Edit</b> or <b>Edit billing address</b> under the address block, any time before it is dispatched.</li>
 <li><b>Correct the address on an invoice already issued:</b> open the order → <b>Invoices</b> tab → open the invoice → pencil next to the address.</li>
+<li><b>Change what prints on the courier label for one order:</b> open the order → double-click <b>Shipping Label (From Customer)</b> in the notes row → save. First 34 characters print.</li>
+<li><b>Set a permanent label note for a customer:</b> your shop → <b>Customers</b> → open the customer → <b>Shipping Label (Permanent)</b> in the notes row at the top. It pre-fills the delivery instructions of every new basket.</li>
 </ul>
 </aside>
 

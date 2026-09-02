@@ -297,6 +297,14 @@ class ShowCustomer extends OrgAction
                     "editable"    => true,
                     "field"       => "warehouse_internal_notes",
                     ...NotesEnum::WAREHOUSE->boilerPlate()
+                ],
+                [
+                    "label"       => __("Shipping Label (Permanent)"),
+                    "note"        => $customer->shipping_notes ?? '',
+                    "information" => __("Printed on the shipping label of every new order unless the customer writes their own label note. First 34 characters."),
+                    "editable"    => true,
+                    "field"       => "shipping_notes",
+                    ...NotesEnum::SHIPPING_LABEL->boilerPlate()
                 ]
             ],
             "temporary_note"   => [

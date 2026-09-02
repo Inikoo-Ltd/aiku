@@ -75,6 +75,7 @@ class SubmitOrder extends OrgAction
                 ->filter()
                 ->unique()
                 ->implode(' — ') ?: null,
+            'shipping_notes' => $order->shipping_notes ?: $order->customer->shipping_notes,
         ];
 
         $date = now();

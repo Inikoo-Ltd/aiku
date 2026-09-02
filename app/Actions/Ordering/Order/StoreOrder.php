@@ -99,7 +99,7 @@ class StoreOrder extends OrgAction
             $modelData['phone']            = $parent->phone;
             $modelData['contact_name']     = $parent->contact_name;
             $modelData['company_name']     = $parent->company_name;
-
+            data_set($modelData, 'shipping_notes', $parent->shipping_notes, overwrite: false);
 
             $shop = $parent->shop;
         } elseif ($parent instanceof CustomerClient) {

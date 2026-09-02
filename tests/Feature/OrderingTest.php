@@ -3287,3 +3287,34 @@ test('repair order charge flags sets premium flag from orphan charge line', func
     $this->artisan('repair:order_charge_flags --commit')->assertSuccessful();
     expect($order->refresh()->is_premium_dispatch)->toBeTrue();
 })->depends('create order');
+
+test('submitting an order stamps the customer permanent shipping label note unless the order has its own', function () {
+    $this->customer->update(['shipping_notes' => 'Open Mon-Fri 9-5']);
+
+    $newOrder = function () {
+        $modelData = Order::factory()->definition();
+        data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+        data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+        return StoreOrder::make()->action($this->customer, $modelData);
+    };
+
+    $order = $newOrder();
+    expect($order->shipping_notes)->toBe('Open Mon-Fri 9-5');
+    $order = SubmitOrder::make()->action($order);
+    expect($order->shipping_notes)->toBe('Open Mon-Fri 9-5');
+
+    $this->customer->update(['shipping_notes' => null]);
+    $order = $newOrder();
+    expect($order->shipping_notes)->toBeNull();
+    $this->customer->update(['shipping_notes' => 'Open Mon-Fri 9-5']);
+    $order = SubmitOrder::make()->action($order->refresh());
+    expect($order->shipping_notes)->toBe('Open Mon-Fri 9-5');
+
+    $order = $newOrder();
+    UpdateOrder::make()->action($order, ['shipping_notes' => 'Leave at reception']);
+    $order = SubmitOrder::make()->action($order->refresh());
+    expect($order->shipping_notes)->toBe('Leave at reception');
+
+    $this->customer->update(['shipping_notes' => null]);
+});

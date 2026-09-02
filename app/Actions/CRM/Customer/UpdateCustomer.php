@@ -274,7 +274,7 @@ class UpdateCustomer extends OrgAction
             CustomerHydrateIsStaff::run($customer);
         }
 
-        if (Arr::hasAny($changes, ['internal_notes', 'warehouse_internal_notes', 'warehouse_temporary_notes'])) {
+        if (Arr::hasAny($changes, ['internal_notes', 'warehouse_internal_notes', 'warehouse_temporary_notes', 'shipping_notes'])) {
             $customer->auditEvent    = AuditEventEnum::CUSTOMER_NOTE->value;
             $customer->isCustomEvent = true;
 
@@ -350,6 +350,7 @@ class UpdateCustomer extends OrgAction
             'internal_notes'                                        => ['sometimes', 'nullable', 'string'],
             'warehouse_internal_notes'                              => ['sometimes', 'nullable', 'string'],
             'warehouse_public_notes'                                => ['sometimes', 'nullable', 'string'],
+            'shipping_notes'                                        => ['sometimes', 'nullable', 'string', 'max:4000'],
             'warehouse_temporary_notes'                             => ['sometimes', 'nullable', 'string'],
             'tax_number'                                            => ['sometimes', 'nullable', 'array'],
             'tags'                                                  => ['sometimes', 'array'],
