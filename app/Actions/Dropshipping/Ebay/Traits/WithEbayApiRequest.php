@@ -1991,8 +1991,12 @@ trait WithEbayApiRequest
     public function getUser($data = [], $queryParams = [])
     {
         try {
+            $config = $this->getEbayConfig();
+
+            $baseUrl = $config['sandbox'] ? "https://apiz.sandbox.ebay.com" : "https://apiz.ebay.com";
+
             $token = $this->getEbayAccessToken();
-            $url   = "https://apiz.ebay.com/commerce/identity/v1/user/";
+            $url   = $baseUrl . "/commerce/identity/v1/user/";
 
             $response = Http::withHeaders([
                 'Authorization'    => 'Bearer '.$token,

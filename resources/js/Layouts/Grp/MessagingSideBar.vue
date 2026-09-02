@@ -76,7 +76,7 @@ const presence = (c: StaffCoworker) => isOnline(c.id) ? (isActive(c) ? 'online' 
 
 const fetchCoworkers = async (q: string) => {
     const { data } = await axios.get(route("grp.chat.staff.coworkers.index"), { params: q ? { q } : {} })
-    coworkers.value = data.data
+    coworkers.value = data.data ?? []
 }
 
 const fetchSearchResults = async (q: string) => {
@@ -85,7 +85,7 @@ const fetchSearchResults = async (q: string) => {
         return
     }
     const { data } = await axios.get(route("grp.chat.staff.coworkers.index"), { params: { q } })
-    searchResults.value = data.data
+    searchResults.value = data.data ?? []
 }
 
 // ponytail: "+" search hits the server (needs offline matches too); the auto filter (>10 online) just narrows the already-fetched list client side

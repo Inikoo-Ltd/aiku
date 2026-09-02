@@ -26,10 +26,6 @@ class CheckEbayChannel
 
     public function handle(EbayUser $ebayUser): CustomerSalesChannel
     {
-        if (!app()->isProduction()) {
-            return $ebayUser->customerSalesChannel;
-        }
-
         $platformStatus = $canConnectToPlatform = $existInPlatform = false;
 
         if (!$ebayUser->fulfillment_policy_id || !$ebayUser->return_policy_id || !$ebayUser->payment_policy_id || !$ebayUser->location_key) {
