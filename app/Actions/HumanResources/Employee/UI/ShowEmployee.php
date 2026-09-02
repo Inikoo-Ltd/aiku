@@ -21,6 +21,12 @@ use App\Http\Resources\History\HistoryResource;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
+use App\Http\Resources\HumanResources\EmployeeChatMessagesResource;
+use App\Http\Resources\HumanResources\EmployeeSearchLogsResource;
+use App\Http\Resources\SysAdmin\McpRequestsResource;
+use App\Http\Resources\SysAdmin\UserRequestLogsResource;
+use App\Models\SysAdmin\User;
+use Closure;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -46,8 +52,8 @@ class ShowEmployee extends OrgAction
 
     public function htmlResponse(Employee $employee, ActionRequest $request): Response
     {
-
-        return Inertia::render(
+        $user     = $employee->getUser();
+        $response = Inertia::render(
             'Org/HumanResources/Employee',
             [
                 'title' => __('Employee'),
@@ -114,7 +120,7 @@ class ShowEmployee extends OrgAction
                 ],
                 'tabs' => [
                     'current' => $this->tab,
-                    'navigation' => EmployeeTabsEnum::navigation()
+                    'navigation' => $user ? EmployeeTabsEnum::navigation() : EmployeeTabsEnum::navigationExcept(EmployeeTabsEnum::userActivityTabs())
                 ],
                 'employee_id'   => $employee->id,
                 EmployeeTabsEnum::SHOWCASE->value => $this->tab == EmployeeTabsEnum::SHOWCASE->value ?
@@ -126,11 +132,39 @@ class ShowEmployee extends OrgAction
                 EmployeeTabsEnum::ATTACHMENTS->value => $this->tab == EmployeeTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($employee))
                     : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($employee))),
-
+                ...$this->getUserActivityProps($user),
             ]
         )->table(
             IndexHistory::make()->tableStructure(prefix: EmployeeTabsEnum::HISTORY->value)
         )->table(IndexAttachments::make()->tableStructure(prefix: EmployeeTabsEnum::ATTACHMENTS->value));
+
+        if ($user) {
+            $activity = IndexEmployeeUserActivity::make();
+            $response
+                ->table($activity->requestsTableStructure(EmployeeTabsEnum::REQUESTS->value))
+                ->table($activity->searchesTableStructure(EmployeeTabsEnum::SEARCHES->value))
+                ->table($activity->chatsTableStructure(EmployeeTabsEnum::CHATS->value))
+                ->table($activity->aiQueriesTableStructure(EmployeeTabsEnum::AI_QUERIES->value));
+        }
+
+        return $response;
+    }
+
+    private function getUserActivityProps(?User $user): array
+    {
+        if (!$user) {
+            return [];
+        }
+
+        $activity = IndexEmployeeUserActivity::make();
+        $tabs     = [
+            EmployeeTabsEnum::REQUESTS->value   => fn () => UserRequestLogsResource::collection($activity->requests($user, EmployeeTabsEnum::REQUESTS->value)),
+            EmployeeTabsEnum::SEARCHES->value   => fn () => EmployeeSearchLogsResource::collection($activity->searches($user, EmployeeTabsEnum::SEARCHES->value)),
+            EmployeeTabsEnum::CHATS->value      => fn () => EmployeeChatMessagesResource::collection($activity->chats($user, EmployeeTabsEnum::CHATS->value)),
+            EmployeeTabsEnum::AI_QUERIES->value => fn () => McpRequestsResource::collection($activity->aiQueries($user, EmployeeTabsEnum::AI_QUERIES->value)),
+        ];
+
+        return collect($tabs)->map(fn (Closure $resolver, string $tab) => $this->tab == $tab ? $resolver : Inertia::optional($resolver))->all();
     }
 
 

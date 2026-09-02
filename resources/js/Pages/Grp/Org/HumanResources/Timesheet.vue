@@ -14,24 +14,19 @@ import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import type { Navigation } from "@/types/Tabs"
-import type { routeType } from "@/types/route"
 import TableTimeTrackers from "@/Components/Tables/Grp/Org/HumanResources/TableTimeTrackers.vue"
 import TableClockings from "@/Components/Tables/Grp/Org/HumanResources/TableClockings.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVoteYea, faArrowsH, faTrash } from '@fal'
-import { format, parseISO } from 'date-fns'
+import { faVoteYea, faArrowsH } from '@fal'
 import { useSecondsToMS, useHMAP } from '@/Composables/useFormatTime'
 import { trans } from 'laravel-vue-i18n'
 
-library.add( faVoteYea, faArrowsH, faTrash )
+library.add( faVoteYea, faArrowsH )
 
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
-    delete_route?: routeType | false
     tabs: {
         current: string
         navigation: Navigation
@@ -64,6 +59,17 @@ const props = defineProps<{
 }>()
 
 const formatHM = (value: string | null | undefined): string => value ? value.slice(0, 5) : "-"
+const duration = (seconds: number | undefined): string => seconds ? useSecondsToMS(seconds) : "-"
+
+const summary = computed(() => [
+    { label: trans('Start'), value: useHMAP(props.timesheet.work_start_at) || '-' },
+    { label: trans('End'), value: useHMAP(props.timesheet.work_end_at) || '-' },
+    { label: trans('Breaks'), value: duration(props.timesheet.breaks_duration as unknown as number) },
+    { label: trans('Total worktime'), value: duration(props.timesheet.total_duration) },
+    { label: trans('Paid time'), value: duration(props.timesheet.paid_duration) },
+    { label: trans('Unpaid overtime'), value: duration(props.timesheet.unpaid_overtime_duration) },
+    { label: trans('Paid overtime'), value: duration(props.timesheet.paid_overtime_duration) },
+])
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -94,102 +100,34 @@ const extraProps = computed(() => {
 
 <template>
     <Head :title="capitalize(title)" />
-    <div class="flex items-start justify-between">
-        <PageHeading :data="pageHead" class="grow" />
+    <PageHeading :data="pageHead" />
 
-        <ModalConfirmationDelete
-            v-if="delete_route"
-            :routeDelete="delete_route"
-            :title="trans('Delete this timesheet?')"
-            :description="trans('This will permanently delete all clockings and time tracker sessions recorded for this day. This action cannot be undone.')"
-            class="mt-4 mr-4 shrink-0"
-        >
-            <template #default="{ changeModel }">
-                <Button type="cancel" :label="trans('Delete Timesheet')" size="xs" :icon="faTrash" @click="changeModel(true)" />
-            </template>
-        </ModalConfirmationDelete>
-    </div>
-
-    <div class="grid grid-cols-2 divide-x divide-gray-200 px-3 py-5">
-        <div>
-            
-        </div>
-
-        <div class="px-5 py-1">
-            <div class="px-4 sm:px-0">
-                <h3 class="text-lg font-semibold">Review Time</h3>
-                <p class="mt-1 max-w-2xl text-sm  text-gray-500">The detail of employee's worktime in a day</p>
+    <div class="px-4 pt-4 space-y-3">
+        <dl class="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
+            <div v-for="item in summary" :key="item.label" class="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-gray-100">
+                <dd class="text-xl font-bold tabular-nums tracking-tight text-gray-800">{{ item.value }}</dd>
+                <dt class="mt-0.5 truncate text-sm text-gray-500">{{ item.label }}</dt>
             </div>
-            
-            <div class="mt-4 border-t border-gray-100">
-                <dl class="divide-y divide-gray-100">
-                    <div v-if="timesheet.scheduled_hours?.source" class="bg-gray-50 px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
-                        <dt class="text-sm text-gray-500">
-                            {{ trans('Scheduled hours') }}
-                            <span class="block text-xs text-gray-400 italic">
-                                {{ timesheet.scheduled_hours.source === 'organisation' ? trans('From organisation default') : trans('Employee schedule') }}
-                            </span>
-                        </dt>
-                        <dd class="mt-1 text-sm font-medium sm:col-span-2 sm:mt-0">
-                            <template v-if="timesheet.scheduled_hours.start_time || timesheet.scheduled_hours.end_time">
-                                {{ formatHM(timesheet.scheduled_hours.start_time) }} – {{ formatHM(timesheet.scheduled_hours.end_time) }}
-                                <div v-if="timesheet.scheduled_hours.breaks?.length" class="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-                                    <span
-                                        v-for="(brk, index) in timesheet.scheduled_hours.breaks"
-                                        :key="index"
-                                        class="text-xs text-gray-400"
-                                    >
-                                        {{ brk.name || trans('Break') }} {{ formatHM(brk.start_time) }}–{{ formatHM(brk.end_time) }}
-                                    </span>
-                                </div>
-                            </template>
-                            <span v-else class="text-gray-400 italic font-light">{{ trans('Not a working day') }}</span>
-                        </dd>
-                    </div>
-                    <div class="bg-gray-50 px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
-                        <dt class="text-sm text-gray-500">Start</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ useHMAP(timesheet.work_start_at) }}</dd>
-                    </div>
-                    <div class="bg-white px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
-                        <dt class="text-sm text-gray-500">End</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ useHMAP(timesheet.work_end_at) || '-'}}</dd>
-                    </div>
-                    <div class="bg-gray-50 px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
-                        <dt class="text-sm text-gray-500">Breaks</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ timesheet.breaks_duration ? useSecondsToMS(timesheet.breaks_duration) : '-'}}</dd>
-                    </div>
-                    <div class="bg-white px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
-                        <dt class="text-sm text-gray-500">Total worktime</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ useSecondsToMS(timesheet.total_duration) }}</dd>
-                    </div>
-                    <div class="bg-gray-50 px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
-                        <dt class="text-sm text-gray-500">Paid time</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ timesheet.paid_duration ? useSecondsToMS(timesheet.paid_duration) : '-'}}</dd>
-                    </div>
-                    <div class="bg-white px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
-                        <dt class="text-sm text-gray-500">Unpaid overtime</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ timesheet.unpaid_overtime_duration ? useSecondsToMS(timesheet.unpaid_overtime_duration) : '-'}}</dd>
-                    </div>
-                    <div class="bg-gray-50 px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
-                        <dt class="text-sm text-gray-500">Paid overtime</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ timesheet.paid_overtime_duration ? useSecondsToMS(timesheet.paid_overtime_duration) : '-'}}</dd>
-                    </div>
+        </dl>
 
-                    <div class="bg-white px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
-                        <dt class="text-sm text-gray-500">About</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">
-                            <span v-if="timesheet.about">{{ timesheet.about }}</span>
-                            <span v-else class="text-gray-400 italic font-light">{{ trans('No note.') }}</span>
-                        </dd>
-                    </div>
-                    
-                </dl>
+        <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500">
+            <div v-if="timesheet.scheduled_hours?.source">
+                <span class="font-medium text-gray-700">{{ trans('Scheduled') }}:</span>
+                <template v-if="timesheet.scheduled_hours.start_time || timesheet.scheduled_hours.end_time">
+                    {{ formatHM(timesheet.scheduled_hours.start_time) }} – {{ formatHM(timesheet.scheduled_hours.end_time) }}
+                    <span v-for="(brk, index) in timesheet.scheduled_hours.breaks" :key="index" class="text-gray-400">
+                        · {{ brk.name || trans('Break') }} {{ formatHM(brk.start_time) }}–{{ formatHM(brk.end_time) }}
+                    </span>
+                </template>
+                <span v-else class="italic">{{ trans('Not a working day') }}</span>
+                <span class="text-xs text-gray-400">({{ timesheet.scheduled_hours.source === 'organisation' ? trans('organisation default') : trans('employee schedule') }})</span>
+            </div>
+            <div v-if="timesheet.about">
+                <span class="font-medium text-gray-700">{{ trans('Note') }}:</span> {{ timesheet.about }}
             </div>
         </div>
     </div>
 
-    <hr class="border-t border-gray-200">
-
-    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" class="mt-4" />
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" v-bind="extraProps"></component>
 </template>
