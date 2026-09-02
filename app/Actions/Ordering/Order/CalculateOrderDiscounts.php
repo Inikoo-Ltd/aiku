@@ -958,6 +958,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 ->where('collection_id', Arr::get($allowanceOpsData, 'collection_id'))
                 ->where('model_type', 'Product')
                 ->pluck('model_id')
+                ->flip()
                 ->all();
             if ($collectionProductIds === []) {
                 return collect();
@@ -969,7 +970,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 'family' => Arr::get($allowanceOpsData, 'category_id') == $transaction->family_id,
                 'department' => Arr::get($allowanceOpsData, 'category_id') == $transaction->department_id,
                 'sub_department' => Arr::get($allowanceOpsData, 'category_id') == $transaction->sub_department_id,
-                'collection' => in_array($transaction->model_id, $collectionProductIds),
+                'collection' => isset($collectionProductIds[$transaction->model_id]),
                 'product' => Arr::get($allowanceOpsData, 'product_id') == $transaction->model_id,
                 default => true,
             }

@@ -9,6 +9,7 @@ import { reset, trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
+import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import axios from 'axios'
 
@@ -41,6 +42,11 @@ const offerQtyItems = ref<number | null>(1)
 const offerAmount = ref<number | null>(0)
 const discountPercentage = ref<number | null>(null)
 const dateType = ref<'permanent' | 'interval'>('permanent')
+const collectionId = ref<number | null>(null)
+const collectionRoute = {
+    name: 'grp.json.shop.catalogue.collections',
+    parameters: { shop: props.shop_data.slug, scope: props.shop_data.slug }
+}
 
 const today = new Date(new Date().setHours(0, 0, 0, 0))
 
@@ -80,6 +86,7 @@ const submitShopOffer = () => {
         trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
         trigger_data_item_amount: offerAmount.value,
         percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
+        collection_id: collectionId.value,
         duration: dateType.value,
         start_at: formatDate(startDate.value),
         end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
@@ -140,6 +147,7 @@ const resetForm = () => {
     discountPercentage.value = null
     offerAmount.value = 0
     offerQtyItems.value = 1
+    collectionId.value = null
 }
 
 const isFormInvalid = computed(() => {
@@ -238,6 +246,14 @@ resetForm();
                     </div>
                 </div>
                 
+                <div class="space-y-2">
+                    <label class="font-medium mb-2 flex items-center gap-x-1">
+                        {{ trans('Only products in collection') }}
+                        <InformationIcon :information="trans('Leave empty to discount every product in the order')" />:
+                    </label>
+                    <PureMultiselectInfiniteScroll v-model="collectionId" :fetchRoute="collectionRoute" valueProp="id" labelProp="name" />
+                </div>
+
                 <!-- Section: Discount -->
                 <div class="space-y-2">
                     <div class="font-medium flex items-center gap-x-1">

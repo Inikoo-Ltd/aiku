@@ -18,6 +18,7 @@ use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class GetCollections extends OrgAction
 {
@@ -59,8 +60,16 @@ class GetCollections extends OrgAction
 
 
 
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereAnyWordStartWith('collections.name', $value)
+                    ->orWhereStartWith('collections.code', $value);
+            });
+        });
+
         return $queryBuilder
             ->allowedSorts(['code', 'name'])
+            ->allowedFilters([$globalSearch])
             ->withPaginator($prefix)
             ->withQueryString();
     }
