@@ -135,7 +135,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   removeStructuredDataScript(departmentStructuredDataScript.value)
 })
-console.log('SubDepartmentsIris4.vue mounted with props:', props)
 </script>
 
 <template>
@@ -191,7 +190,7 @@ console.log('SubDepartmentsIris4.vue mounted with props:', props)
             </h3>
           </LinkIris>
 
-          <p
+          <div
             v-if="hasDescription(item)"
             class="mt-3 line-clamp-3 text-sm leading-relaxed text-slate-500"
             v-html="item?.description"
