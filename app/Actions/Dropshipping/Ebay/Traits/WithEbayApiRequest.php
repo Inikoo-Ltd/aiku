@@ -215,9 +215,6 @@ trait WithEbayApiRequest
                         $product->attributes['style'] ??
                         ['Not Specified'];
                     break;
-                case 'Brand':
-                    $attributes['Brand'] = [$brand?->name ?? 'Ancient Wisdom'];
-                    break;
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
                     break;
@@ -244,7 +241,6 @@ trait WithEbayApiRequest
 
         $attributes['Brand'] = [$brand?->name ?? 'Ancient Wisdom'];
 
-        // Use this as default value and always included
         if ($product->country_of_origin) {
             $attributes['Country/Region of Manufacture'] = [$product->country_of_origin];
         }
