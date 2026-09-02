@@ -287,6 +287,24 @@ test('production docs render and paint the production island', function () {
     get($this->host.'/docs?category=production')->assertOk()->assertSee('/docs/who-makes-what', false);
 });
 
+test('related docs on a translated article link to the same language when it exists', function () {
+    $response = get($this->host.'/docs/factory-positions-ro')->assertOk();
+    $response->assertSee('/docs/who-makes-what-ro', false)
+        ->assertDontSee('href="/docs/who-makes-what"', false);
+});
+
+test('the partner and factory series is complete in every worker language', function () {
+    $series = BlogPosts::all('docs')->where('series', 'Ordering from partners');
+    expect($series)->not->toBeEmpty();
+    foreach ($series as $english) {
+        foreach (['es', 'sk', 'ro', 'pl', 'lv', 'cs'] as $lang) {
+            $translation = BlogPosts::everything('docs')->firstWhere('slug', $english['slug'].'-'.$lang);
+            expect($translation)->not->toBeNull($english['slug'].' has no '.$lang.' translation')
+                ->and($translation['source_date']?->toDateString())->toBe($english['date']->toDateString(), $english['slug'].'-'.$lang.' is stale');
+        }
+    }
+});
+
 test('docs index shows the clickable module map', function () {
     get($this->host.'/docs')->assertOk()
         ->assertSee('Map of aiku modules', false)
