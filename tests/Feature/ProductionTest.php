@@ -20,6 +20,8 @@ use App\Actions\Production\Artisan\DetachArtisan;
 use App\Actions\Production\Artisan\ToggleArtisanInRoster;
 use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
 use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
+use App\Actions\HumanResources\Employee\UpdateEmployee;
+use App\Actions\HumanResources\Employee\GetEmployeeJobPositionsData;
 use App\Models\HumanResources\JobPosition;
 use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
 use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
@@ -1934,4 +1936,14 @@ test('production job positions carry the factory roles all the way to the user',
 
     expect($user->refresh()->hasRole('production-orchestrator-'.$this->production->id))->toBeTrue()
         ->and($user->authorisedProductions()->where('productions.id', $this->production->id)->exists())->toBeTrue();
+
+    UpdateEmployee::make()->action($employee, [
+        'job_positions' => [
+            ['slug' => $operativePosition->slug, 'scopes' => ['productions' => ['slug' => [$this->production->slug]]]],
+        ],
+    ]);
+
+    expect($user->refresh()->hasRole('production-operator-'.$this->production->id))->toBeTrue()
+        ->and($user->hasRole('production-orchestrator-'.$this->production->id))->toBeFalse()
+        ->and(GetEmployeeJobPositionsData::run($employee->refresh()))->toBe(['prod-c' => ['productions' => [$this->production->slug]]]);
 });

@@ -30,6 +30,9 @@ class GetEmployeeJobPositionsData
                     'Fulfilment' => [
                         'fulfilments' => $organisation->fulfilments->whereIn('id', $scopeIds)->pluck('slug')->toArray()
                     ],
+                    'Production' => [
+                        'productions' => $organisation->productions->whereIn('id', $scopeIds)->pluck('slug')->toArray()
+                    ],
                     default => []
                 };
             });

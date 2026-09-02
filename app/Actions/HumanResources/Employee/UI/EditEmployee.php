@@ -22,6 +22,7 @@ use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\EmergencyFormFieldsResource;
 use App\Http\Resources\HumanResources\JobPositionResource;
 use App\Http\Resources\Inventory\WarehouseResource;
+use App\Http\Resources\Production\ProductionsResource;
 use App\Http\Resources\SysAdmin\Organisation\OrganisationsResource;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
@@ -215,6 +216,7 @@ class EditEmployee extends OrgAction
                                 'shops' => ShopResource::collection($this->organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get()),
                                 'fulfilments' => ShopResource::collection($this->organisation->shops()->where('type', '=', ShopTypeEnum::FULFILMENT)->get()),
                                 'warehouses' => WarehouseResource::collection($this->organisation->warehouses),
+                                'productions' => ProductionsResource::collection($this->organisation->productions),
                             ],
                         ],
                         'is_in_organisation' => true,  // To remove parameter
