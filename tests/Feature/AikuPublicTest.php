@@ -280,6 +280,13 @@ test('docs index and article render with layout nav', function () {
     get($this->host.'/docs/does-not-exist')->assertNotFound();
 });
 
+test('production docs render and paint the production island', function () {
+    foreach (['fulfilling-partner-orders' => 'To produce', 'who-makes-what' => 'Usually made by'] as $slug => $text) {
+        get($this->host.'/docs/'.$slug)->assertOk()->assertSee($text, false);
+    }
+    get($this->host.'/docs?category=production')->assertOk()->assertSee('/docs/who-makes-what', false);
+});
+
 test('docs index shows the clickable module map', function () {
     get($this->host.'/docs')->assertOk()
         ->assertSee('Map of aiku modules', false)
