@@ -13,12 +13,14 @@ use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Http\Resources\Comms\WhatsappCampaignSentRecipientsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
+use App\Models\Chat\MetaChatSession;
 use App\Models\Comms\WhatsappCampaign;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -71,6 +73,17 @@ class IndexWhatsappCampaignSentRecipients extends OrgAction
             ->withQueryString();
     }
 
+    /**
+     * The session is resolved per recipient rather than read off the joined message, because
+     * a failed send leaves meta_chat_message_id null so a re-run can retry it; reaching the
+     * session through that column would hide the conversation for exactly the failures an
+     * agent needs to open. A subselect rather than a join: phone numbers are not unique per
+     * shop, so joining would multiply recipient rows and desync the list from its counts.
+     *
+     * The shop scope, normalisation and latest('id') tie-break mirror
+     * SendWhatsappDeliveryChannel::resolveSession(); these two must agree, or this links to
+     * a different session than the one the message was written to.
+     */
     private function baseQuery(WhatsappCampaign $campaign): \Illuminate\Database\Eloquent\Builder
     {
         return $this->recipientStatusBaseQuery($campaign)
@@ -82,15 +95,22 @@ class IndexWhatsappCampaignSentRecipients extends OrgAction
                 'meta_chat_messages.delivered_at',
                 'meta_chat_messages.read_at',
                 'meta_chat_messages.metadata',
-                'meta_chat_sessions.ulid as meta_chat_session_ulid',
-            ]);
+            ])
+            ->addSelect(['meta_chat_session_ulid' => MetaChatSession::select('ulid')
+                ->where('shop_id', $campaign->shop_id)
+                ->whereColumn(
+                    DB::raw("regexp_replace(meta_chat_sessions.phone_number, '[^0-9]', '', 'g')"),
+                    'whatsapp_recipients.phone'
+                )
+                ->latest('id')
+                ->limit(1)]);
     }
 
     protected function getElementGroups(WhatsappCampaign $campaign): array
     {
         $counts = [];
 
-        foreach (['delivered', 'read', 'failed'] as $status) {
+        foreach (['sent', 'delivered', 'read', 'failed'] as $status) {
             $counts[$status] = $this->countRecipientsWithStatus($campaign, $status);
         }
 
@@ -98,6 +118,7 @@ class IndexWhatsappCampaignSentRecipients extends OrgAction
             'status' => [
                 'label'    => __('Status'),
                 'elements' => [
+                    'sent'      => [__('Sent'), $counts['sent']],
                     'delivered' => [__('Delivered'), $counts['delivered']],
                     'read'      => [__('Read'), $counts['read']],
                     'failed'    => [__('Failed'), $counts['failed']],
