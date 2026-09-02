@@ -2015,6 +2015,15 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width
                                     aria-hidden="true" />
                                 {{ ctrans("Order cancelled, payments returned to balance") }}
+
+                                <div v-if="data.data?.cancellation?.label || data.data?.cancellation?.notes"
+                                    class="mt-1 pt-1 border-t border-yellow-500/50 text-sm">
+                                    <span class="font-medium">{{ ctrans("Reason") }}:</span>
+                                    <span v-if="data.data?.cancellation?.label">{{ data.data.cancellation.label }}</span>
+                                    <span v-if="data.data?.cancellation?.notes" class="italic">
+                                        {{ data.data.cancellation.notes }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 

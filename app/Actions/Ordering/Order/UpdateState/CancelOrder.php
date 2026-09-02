@@ -59,16 +59,29 @@ class CancelOrder extends OrgAction
     {
         $oldState = $order->state;
 
-        $modelData = [
+        $date = now();
+
+        $reason = $this->getCancellationReason($modelData);
+        $notes  = trim((string)Arr::get($modelData, 'cancellation_notes'));
+
+        $orderData = [
             'state' => OrderStateEnum::CANCELLED,
         ];
 
-        $date = now();
-
         if ($order->cancelled_at == null) {
-            data_set($modelData, 'cancelled_at', $date);
+            data_set($orderData, 'cancelled_at', $date);
         }
-        $this->update($order, $modelData);
+
+        if ($reason || $notes !== '') {
+            data_set($orderData, 'data', array_merge((array)$order->data, [
+                'cancellation' => [
+                    'reason' => $reason?->value,
+                    'notes'  => $notes !== '' ? $notes : null,
+                ],
+            ]));
+        }
+
+        $this->update($order, $orderData);
 
         $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
 
@@ -88,7 +101,7 @@ class CancelOrder extends OrgAction
                 'amount' => $order->payment_amount,
                 'type'   => CreditTransactionTypeEnum::MONEY_BACK,
                 'reason' => CreditTransactionReasonEnum::ORDER_CANCELLED,
-                'notes'  => $this->getCreditTransactionNotes($order, $modelData),
+                'notes'  => $this->getCreditTransactionNotes($order, $reason, $notes),
             ]);
 
 
@@ -122,7 +135,7 @@ class CancelOrder extends OrgAction
             CustomerHydrateBasket::run($order->customer_id);
         }
 
-        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
+        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING && app()->isProduction()) {
             if ($order->customerSalesChannel?->user) {
                 match ($order->customerSalesChannel->platform->type) {
                     PlatformTypeEnum::SHOPIFY => CloseFulfillOrderToShopify::run($order),
@@ -170,22 +183,21 @@ class CancelOrder extends OrgAction
         }
     }
 
-    /**
-     * The note is what the customer reads in the credit balance notification email, so the
-     * selected reason and any typed detail are spelled out there instead of leaving them
-     * with the generic "money returned as store credit" line.
-     */
-    private function getCreditTransactionNotes(Order $order, array $modelData): string
+    private function getCancellationReason(array $modelData): ?OrderCancellationReasonEnum
     {
-        $reason      = Arr::get($modelData, 'cancellation_reason');
-        $reasonLabel = $reason instanceof OrderCancellationReasonEnum
-            ? $reason->label()
-            : OrderCancellationReasonEnum::tryFrom((string)$reason)?->label();
+        $reason = Arr::get($modelData, 'cancellation_reason');
 
+        if ($reason instanceof OrderCancellationReasonEnum) {
+            return $reason;
+        }
+
+        return OrderCancellationReasonEnum::tryFrom((string)$reason);
+    }
+
+    private function getCreditTransactionNotes(Order $order, ?OrderCancellationReasonEnum $reason, string $notes): string
+    {
         $explanation = rtrim(
-            collect([$reasonLabel, trim((string)Arr::get($modelData, 'cancellation_notes'))])
-                ->filter()
-                ->implode('. '),
+            collect([$reason?->label(), $notes])->filter()->implode('. '),
             " \t\n."
         );
 
