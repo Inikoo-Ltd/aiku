@@ -15,6 +15,9 @@ use App\Actions\Billables\Service\UpdateService;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
+use Illuminate\Support\Facades\DB;
+use App\Actions\Iris\Catalogue\IndexIrisCatalogue;
+use App\Actions\Catalogue\Collection\AttachModelToCollection;
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Product\HydrateProducts;
@@ -1207,4 +1210,44 @@ test('retina new arrivals hide exclusive products from other customers and famil
     DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
     expect($codesFor($customerA))->toContain($product->code)
         ->and($codesFor($customerB))->not->toContain($product->code);
+});
+
+test('iris collection lists the product that owns a member product webpage', function () {
+    list($organisation, $user, $shop) = createShop();
+    $website = createWebsite($shop);
+
+    createProduct($shop);
+    $bulk   = $shop->products()->orderBy('id')->first();
+    $sample = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+
+    $webpage = StoreProductWebpage::make()->action($sample);
+    DB::table('products')->whereIn('id', [$bulk->id, $sample->id])->update([
+        'is_for_sale' => true,
+        'state'       => ProductStateEnum::ACTIVE->value,
+        'webpage_id'  => $webpage->id,
+    ]);
+
+    $collection = StoreCollection::make()->action($shop, [
+        'code'        => 'Oils',
+        'name'        => 'Oils',
+        'description' => 'Oils',
+    ]);
+    AttachModelToCollection::make()->action($collection, $bulk);
+
+    $request = \Lorisleiva\Actions\ActionRequest::createFrom(request());
+    $request->merge(['website' => $website]);
+    $listed = fn () => collect(IndexIrisCatalogue::make()->initialisation($request)->handle([
+        'scope'      => 'product',
+        'parent'     => 'collection',
+        'parent_key' => $collection->id,
+    ])->items())->pluck('code');
+
+    expect($listed()->all())->toBe([$sample->code]);
+
+    AttachModelToCollection::make()->action($collection, $sample);
+
+    expect($listed()->all())->toBe([$sample->code]);
 });
