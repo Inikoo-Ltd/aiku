@@ -48,6 +48,7 @@ import { faStar, faFilter, faImages, faSparkles } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faCheck, faCross } from "@far"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import PlatformLogResponse from "@/Components/Dropshipping/PlatformLogResponse.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { notify } from "@kyvg/vue3-notification"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -684,8 +685,10 @@ const generateAITitle = async () => {
 			text: trans('Success generate AI'),
 			type: 'success'
 		})
-	} catch (e) {
-		aiTitleError.value = trans('The OpenAI service is currently unreachable, please try again later.')
+	} catch (e: any) {
+		aiTitleError.value =
+			e?.response?.data?.message
+			|| trans('The OpenAI service is currently unreachable, please try again later.')
 		// notify({
 		// 	title: trans('Error'),
 		// 	text: trans('Failed to generate AI'),
@@ -725,11 +728,13 @@ const generateAIDescription = async () => {
 			text: trans('Success generate AI'),
 			type: 'success'
 		})
-	} catch (e) {
-		aiDescError.value = trans('The OpenAI service is currently unreachable, please try again later.')
+	} catch (e: any) {
+		aiDescError.value =
+			e?.response?.data?.message
+			|| trans('The OpenAI service is currently unreachable, please try again later.')
 		notify({
 			title: trans('Error'),
-			text: trans('Failed to generate AI'),
+			text: aiDescError.value,
 			type: 'error'
 		})
 	} finally {
@@ -1065,12 +1070,12 @@ onBeforeUnmount(() => {
 				</FontAwesomeLayers>
 			</div>
 			<div class="whitespace min-w-[50px] font-medium whitespace-break-spaces flex items-center text-center w-full"
-				v-else-if="item.message">
-				<FontAwesomeIcon v-tooltip="item.message" v-if="item.message === 'OK'" icon="fal fa-check-circle"
+				v-else-if="item.message === 'OK'">
+				<FontAwesomeIcon v-tooltip="item.message" icon="fal fa-check-circle"
 					class="text-green-500 text-xl" style="width: 100% !important" fixed-width aria-hidden="true" />
-				<FontAwesomeIcon v-tooltip="item.message" v-else icon="fal fa-exclamation-circle"
-					class="text-red-500 text-xl" style="width: 100% !important" fixed-width aria-hidden="true" />
 			</div>
+			<PlatformLogResponse v-else-if="item.message || item.message_hint" :message="item.message"
+				:hint="item.message_hint" status="fail" :platformName="item.platform" :itemCode="item.code" />
 			<div v-else />
 		</template>
 

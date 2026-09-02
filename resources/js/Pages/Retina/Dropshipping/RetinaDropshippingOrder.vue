@@ -296,6 +296,19 @@ const syncOrderCancellationShopify = async (order) => {
         <Timeline v-if="timelines" :options="timelines" :state="props.order?.data?.state" :slidesPerView="6"/>
     </div>
     
+    <!-- Section: Alert why the order was cancelled -->
+    <Message v-if="order?.data?.state === 'cancelled' && (order?.data?.cancellation?.label || order?.data?.cancellation?.notes)" severity="error" class="mx-4 mt-4">
+        <template #icon>
+            <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-xl" fixed-width aria-hidden="true"/>
+        </template>
+
+        <div class="ml-2 font-normal text-sm">
+            <span class="font-bold">{{ trans("Order cancelled") }}:</span>
+            <span v-if="order?.data?.cancellation?.label">{{ order.data.cancellation.label }}</span>
+            <span v-if="order?.data?.cancellation?.notes" class="italic">{{ order.data.cancellation.notes }}</span>
+        </div>
+    </Message>
+
     <!-- Section: Alert if unpaid -->
     <Message v-if="!(box_stats.products.payment.paid_amount >= box_stats.products.payment.total_amount) && !(order.data.state === 'cancelled' || order.data.state === 'creating') && (!is_forbidden_delivery && !is_forbidden_billing)" severity="warn" class="mx-4 mt-4 ">
         <template #icon>

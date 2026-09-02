@@ -118,3 +118,27 @@ it('strips an echoed newline only when the source proves it cannot be a literal'
        guard that gates the historic repair must keep refusing it. */
     expect(App\Actions\Helpers\Translations\Translate::hasOnlyJsonEchoEscapes('line\nbreak'))->toBeFalse();
 });
+
+class BrokenTranslationDriver implements TranslationDriver
+{
+    public function __construct(public array $config)
+    {
+    }
+
+    public function translate(array $texts, string $sourceLang, string $targetLang): array
+    {
+        throw new RuntimeException('engine down');
+    }
+}
+
+it('falls back to the source text on engine failure, but the interactive button gets an error', function () {
+    config()->set('auto-translations.drivers.broken', ['class' => BrokenTranslationDriver::class]);
+    $english = App\Models\Helpers\Language::firstWhere('code', 'en');
+    $polish  = App\Models\Helpers\Language::firstWhere('code', 'pl');
+    $text    = 'hello '.uniqid();
+
+    expect(App\Actions\Helpers\Translations\Translate::make()->handle($text, $english, $polish, 'broken'))->toBe($text);
+
+    expect(fn () => App\Actions\Helpers\Translations\Translate::make()->handle($text, $english, $polish, 'broken', throwOnFailure: true))
+        ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
+});

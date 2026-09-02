@@ -19,6 +19,7 @@ use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
+use App\Models\Production\Artefact;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -42,6 +43,14 @@ class IndexTags extends OrgAction
         $this->initialisationFromGroup($tradeUnit->group, $request);
 
         return $this->handle($tradeUnit);
+    }
+
+    public function inArtefact(Artefact $artefact, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->forcedScope = TagScopeEnum::ARTEFACT;
+        $this->initialisationFromGroup($artefact->group, $request);
+
+        return $this->handle($artefact);
     }
 
     public function inCustomer(Customer $customer, ActionRequest $request): LengthAwarePaginator
@@ -89,7 +98,7 @@ class IndexTags extends OrgAction
         return $this->handle($shop);
     }
 
-    public function handle(Shop|TradeUnit $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Shop|TradeUnit|Artefact $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {

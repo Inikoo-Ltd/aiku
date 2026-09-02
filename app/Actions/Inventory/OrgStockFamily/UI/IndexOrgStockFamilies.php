@@ -252,7 +252,7 @@ class IndexOrgStockFamilies extends OrgAction
             ->where('org_stock_families.organisation_id', $organisation->id)
             ->where('org_stock_family_time_series.frequency', TimeSeriesFrequencyEnum::MONTHLY->value)
             ->where('org_stock_family_time_series_records.frequency', TimeSeriesFrequencyEnum::MONTHLY->singleLetter())
-            ->where('org_stock_family_time_series_records.from', '>=', now()->subMonths(3)->startOfMonth())
+            ->where('org_stock_family_time_series_records.from', '>=', now()->startOfMonth()->subMonths(3))
             ->where('org_stock_family_time_series_records.from', '<=', now()->startOfMonth())
             ->groupBy('org_stock_family_time_series.org_stock_family_id')
             ->select('org_stock_family_time_series.org_stock_family_id')

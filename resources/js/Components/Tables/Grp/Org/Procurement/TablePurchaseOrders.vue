@@ -18,6 +18,10 @@ defineProps<{
 }>()
 
 function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
+	if (!purchaseOrder?.slug) {
+		return null
+	}
+
 	switch (route().current()) {
 		case "grp.org.procurement.purchase_orders.index":
 		case "grp.org.procurement.org_supplier_products.show":
@@ -66,11 +70,19 @@ function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
 function SupplierRoute(purchaseOrder: PurchaseOrder) {
 	switch (route().current()) {
 		case "grp.org.procurement.purchase_orders.index":
+			if (!purchaseOrder?.parent_slug) {
+				return null
+			}
+
 			return route("grp.org.procurement.org_suppliers.show", [
 				route().params["organisation"],
 				purchaseOrder.parent_slug,
 			])
 		case "grp.org.procurement.org_agents.show.purchase-orders.index":
+			if (!purchaseOrder?.parent_slug) {
+				return null
+			}
+
 			return route("grp.org.procurement.org_agents.show.suppliers.show", [
 				route().params["organisation"],
 				route().params["orgAgent"],
@@ -79,6 +91,10 @@ function SupplierRoute(purchaseOrder: PurchaseOrder) {
 		case "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show":
 		case "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show":
 		case "grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show":
+			if (!purchaseOrder?.supplier_slug) {
+				return null
+			}
+
 			return route("grp.supply-chain.suppliers.show", [purchaseOrder.supplier_slug])
 		case "grp.org.procurement.org_suppliers.show.purchase_orders.index":
 			return route("grp.org.procurement.org_suppliers.show", [
@@ -91,6 +107,10 @@ function SupplierRoute(purchaseOrder: PurchaseOrder) {
 }
 
 function AgentRoute(purchaseOrder: PurchaseOrder) {
+	if (!purchaseOrder?.parent_slug && !purchaseOrder?.agent_slug) {
+		return null
+	}
+
 	switch (route().current()) {
 		case "grp.org.procurement.purchase_orders.index":
 			return route("grp.org.procurement.org_agents.show", [

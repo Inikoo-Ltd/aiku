@@ -33,7 +33,7 @@ class UpdateEbayUserData extends OrgAction
      */
     public function handle(EbayUser $ebayUser): EbayUser
     {
-        if ($ebayUser->fulfillment_policy_id && $ebayUser->return_policy_id && $ebayUser->payment_policy_id && $ebayUser->location_key) {
+        if ($ebayUser->fulfillment_policy_id && $ebayUser->return_policy_id && $ebayUser->payment_policy_id && $ebayUser->hasUsableLocationKey()) {
             return $ebayUser;
         }
 
@@ -63,14 +63,37 @@ class UpdateEbayUserData extends OrgAction
             'country' => $country->code
         ];
 
-        $ebayUser->createInventoryLocation($defaultLocationData);
-
         return UpdateEbayUser::run($ebayUser, [
             'fulfillment_policy_id' => $fulfilmentPolicyId,
             'payment_policy_id' => $paymentPolicyId,
             'return_policy_id' => $returnPolicyId,
-            'location_key' => Arr::get($defaultLocationData, 'locationKey'),
+            'location_key' => $this->provisionLocationKey($ebayUser, $defaultLocationData),
         ]);
+    }
+
+    private function provisionLocationKey(EbayUser $ebayUser, array $locationData): ?string
+    {
+        $locationKey = Arr::get($locationData, 'locationKey');
+        $response    = $ebayUser->createInventoryLocation($locationData);
+
+        if (!Arr::has($response, 'error')) {
+            return $locationKey;
+        }
+
+        return $this->hasLocationOnEbay($ebayUser, $locationKey) ? $locationKey : null;
+    }
+
+    private function hasLocationOnEbay(EbayUser $ebayUser, string $locationKey): bool
+    {
+        $locations = $ebayUser->getInventoryLocations();
+
+        if (Arr::has($locations, 'error')) {
+            return false;
+        }
+
+        return collect(Arr::get($locations, 'locations', []))
+            ->pluck('merchantLocationKey')
+            ->contains($locationKey);
     }
 
     public function asCommand(Command $command): void

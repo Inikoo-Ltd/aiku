@@ -9,11 +9,10 @@
 namespace App\Actions\Procurement\PartnerShoppingListItem\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
-use App\Enums\Catalogue\Product\ProductStateEnum;
-use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
@@ -22,7 +21,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -38,17 +36,6 @@ class IndexPartnerShoppingListItems extends OrgAction
     /**
      * Price of one SKO in the selling partner's catalogue, correlated to the item's row.
      */
-    private function pricePerSkoSubQuery(): string
-    {
-        return "(select pr.price / nullif(phos.quantity, 0)
-            from product_has_org_stocks phos
-            join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."'
-            join org_stocks sos on sos.id = phos.org_stock_id
-            where sos.stock_id = partner_shopping_list_items.stock_id
-                and sos.organisation_id = partner_shopping_list_items.partner_organisation_id
-            limit 1)";
-    }
-
     public function handle(OrgPartner $orgPartner): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -61,6 +48,11 @@ class IndexPartnerShoppingListItems extends OrgAction
         $paginator = QueryBuilder::for(PartnerShoppingListItem::class)
             ->leftJoin('org_stocks', 'org_stocks.id', 'partner_shopping_list_items.org_stock_id')
             ->leftJoin('users', 'users.id', 'partner_shopping_list_items.added_by_user_id')
+            ->leftJoin('org_stock_stats', 'org_stock_stats.org_stock_id', 'partner_shopping_list_items.org_stock_id')
+            ->leftJoin('org_stocks as partner_org_stocks', function ($join) {
+                $join->on('partner_org_stocks.stock_id', 'partner_shopping_list_items.stock_id')
+                    ->on('partner_org_stocks.organisation_id', 'partner_shopping_list_items.partner_organisation_id');
+            })
             ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
             ->select([
                 'partner_shopping_list_items.id',
@@ -75,8 +67,10 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'org_stocks.name as org_stock_name',
                 'org_stocks.quantity_available as buyer_available',
                 'users.contact_name as added_by_name',
+                'org_stock_stats.days_of_cover',
+                'partner_org_stocks.quantity_available as their_available',
             ])
-            ->selectRaw($this->pricePerSkoSubQuery().' as price_per_sko')
+            ->selectRaw(PartnerShoppingListItem::pricePerSkoSql().' as price_per_sko')
             ->defaultSort('-created_at')
             ->allowedFilters([$globalSearch])
             ->allowedSorts(['org_stock_code', 'priority', 'needed_by', 'state', 'created_at'])
@@ -100,10 +94,12 @@ class IndexPartnerShoppingListItems extends OrgAction
         }
 
         $orgStocks = OrgStock::with('tradeUnits.image')->whereIn('id', $orgStockIds)->get()->keyBy('id');
+        $exchange  = $this->orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($this->orgPartner);
 
-        $paginator->getCollection()->transform(function ($row) use ($orgStocks) {
+        $paginator->getCollection()->transform(function ($row) use ($orgStocks, $exchange) {
             $tradeUnit = $orgStocks->get($row->org_stock_id)?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
             $row->image_sources = $tradeUnit?->imageSources(48, 48);
+            $row->price_per_sko = $row->price_per_sko === null ? null : round((float) $row->price_per_sko * $exchange, 4);
 
             return $row;
         });
@@ -120,31 +116,19 @@ class IndexPartnerShoppingListItems extends OrgAction
                 ])
                 ->withFooterNote(
                     __('Open items value').': '
-                    .$orgPartner->partner->currency->code.' '
-                    .number_format($this->openItemsValue($orgPartner), 2)
+                    .$orgPartner->organisation->currency->code.' '
+                    .number_format((float) $orgPartner->stats->open_shopping_list_items_value * $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner), 2)
                 )
-                ->column(key: 'image', label: __('Image'), canBeHidden: false)
-                ->column(key: 'org_stock_code', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false)
+                ->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'info', label: __('Info'), canBeHidden: false)
                 ->column(key: 'quantity', label: __('Quantity (SKO)'), canBeHidden: false, align: 'right')
                 ->column(key: 'amount', label: __('Amount'), canBeHidden: false, align: 'right')
                 ->column(key: 'priority', label: __('Priority'), canBeHidden: false, sortable: true)
-                ->column(key: 'needed_by', label: __('Needed by'), canBeHidden: false, sortable: true)
                 ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true)
                 ->column(key: 'created_at', label: __('Added'), canBeHidden: false, sortable: true)
                 ->column(key: 'actions', label: '', canBeHidden: false, align: 'right')
                 ->defaultSort('-created_at');
         };
-    }
-
-    private function openItemsValue(OrgPartner $orgPartner): float
-    {
-        return (float) DB::table('partner_shopping_list_items')
-            ->where('org_partner_id', $orgPartner->id)
-            ->where('state', ShoppingListItemStateEnum::OPEN->value)
-            ->whereNull('deleted_at')
-            ->selectRaw('coalesce(sum(quantity * coalesce('.$this->pricePerSkoSubQuery().', 0)), 0) as total')
-            ->value('total');
     }
 
     public function asController(Organisation $organisation, OrgPartner $orgPartner, ActionRequest $request): LengthAwarePaginator
@@ -174,7 +158,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'orgPartner'         => [
                     'id'       => $this->orgPartner->id,
                     'slug'     => $this->orgPartner->partner->slug,
-                    'currency' => $this->orgPartner->partner->currency->code,
+                    'currency' => $this->orgPartner->organisation->currency->code,
                 ],
                 'orgStockFetchRoute' => [
                     'name'       => 'grp.json.org_partner.shopping_list_org_stocks',

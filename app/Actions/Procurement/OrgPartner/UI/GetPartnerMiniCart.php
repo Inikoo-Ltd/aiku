@@ -8,11 +8,10 @@
 
 namespace App\Actions\Procurement\OrgPartner\UI;
 
-use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetPartnerMiniCart
@@ -21,19 +20,6 @@ class GetPartnerMiniCart
 
     public function handle(OrgPartner $orgPartner): array
     {
-        $estimatedTotal = (float) DB::table('partner_shopping_list_items')
-            ->where('org_partner_id', $orgPartner->id)
-            ->where('state', ShoppingListItemStateEnum::OPEN->value)
-            ->whereNull('deleted_at')
-            ->selectRaw("coalesce(sum(quantity * coalesce((select pr.price / nullif(phos.quantity, 0)
-                from product_has_org_stocks phos
-                join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."'
-                join org_stocks sos on sos.id = phos.org_stock_id
-                where sos.stock_id = partner_shopping_list_items.stock_id
-                    and sos.organisation_id = partner_shopping_list_items.partner_organisation_id
-                limit 1), 0)), 0) as total")
-            ->value('total');
-
         $items = PartnerShoppingListItem::query()
             ->leftJoin('org_stocks', 'org_stocks.id', 'partner_shopping_list_items.org_stock_id')
             ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
@@ -50,14 +36,13 @@ class GetPartnerMiniCart
                 where phos.org_stock_id = org_stocks.id
                 limit 1) as family_name")
             ->orderByDesc('partner_shopping_list_items.created_at')
-            ->limit(10)
             ->get();
 
         return [
             'partner_name' => $orgPartner->partner->name,
             'count'      => $orgPartner->stats->number_open_shopping_list_items,
-            'total'      => $estimatedTotal,
-            'currency'   => $orgPartner->partner->currency->code,
+            'total'      => round((float) $orgPartner->stats->open_shopping_list_items_value * $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner), 2),
+            'currency'   => $orgPartner->organisation->currency->code,
             'items'      => $items,
             'listRoute'  => [
                 'name'       => 'grp.org.procurement.org_partners.show.shopping_list.index',

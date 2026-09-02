@@ -116,13 +116,40 @@ class EditTag extends OrgAction
             ],
         ];
 
-        if ($this->forcedScope === TagScopeEnum::PRODUCT_PROPERTY) {
+        $isProductProperty = $this->forcedScope === TagScopeEnum::PRODUCT_PROPERTY;
+
+        if ($isProductProperty) {
             $fields['label'] = [
                 'type'          => 'input_translation_use_option',
                 'label'         => __('Label'),
                 'language_from' => 'en',
                 'languages'     => GetLanguagesOptions::make()->all(),
                 'value'         => $tag->getTranslations('label')
+            ];
+        }
+
+        $blueprint = [
+            [
+                'label'  => __('Properties'),
+                'title'  => __('Properties'),
+                'icon'   => 'fa-light fa-fingerprint',
+                'fields' => $fields,
+            ],
+        ];
+
+        if ($isProductProperty) {
+            $blueprint[] = [
+                'label'  => __('Media'),
+                'title'  => __('Media'),
+                'icon'   => 'fa-light fa-camera',
+                'fields' => [
+                    'image' => [
+                        'type'     => 'image_crop_square',
+                        'label'    => __('Image'),
+                        'required' => false,
+                        'value'    => $tag->imageSources(640, 640),
+                    ],
+                ]
             ];
         }
 
@@ -133,6 +160,7 @@ class EditTag extends OrgAction
                 'title'       => __('Edit Tag'),
                 'pageHead'    => [
                     'title'   => $tag->name,
+                    'model'   => __('Tags'),
                     'icon'    => [
                         'title' => __('Tags'),
                         'icon'  => 'fal fa-tags'
@@ -146,13 +174,7 @@ class EditTag extends OrgAction
                     ]
                 ],
                 'formData'    => [
-                    'blueprint' => [
-                        [
-                            'label'  => __('Name'),
-                            'title'  => __('Edit Name'),
-                            'fields' => $fields,
-                        ],
-                    ],
+                    'blueprint' => $blueprint,
                     'args' => [
                         'updateRoute' => $updateRoute
                     ]

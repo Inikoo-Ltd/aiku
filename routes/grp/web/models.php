@@ -289,6 +289,7 @@ use App\Actions\Helpers\Brand\UpdateBrand;
 use App\Actions\Helpers\Dashboard\BreakDashboardTimeSeriesCache;
 use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
+use App\Actions\Helpers\Media\AttachImagesToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\Helpers\Snapshot\ApplyWebsiteMenuSnapshot;
 use App\Actions\Helpers\Snapshot\SetSnapshotAsLive;
@@ -411,10 +412,13 @@ use App\Actions\Production\Artefact\DeleteArtefactComplianceItem;
 use App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact;
 use App\Actions\Production\Artefact\DetachRawMaterialFromRecipeStep;
 use App\Actions\Production\Artefact\ImportArtefact;
+use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Production\Artefact\StoreArtefactComplianceItem;
 use App\Actions\Production\Artefact\UpdateArtefact;
 use App\Actions\Production\Artefact\UpdateArtefactComplianceItem;
+use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
+use App\Actions\Production\ArtefactFamily\UpdateArtefactFamily;
 use App\Actions\Production\JobOrder\ConfirmJobOrder;
 use App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock;
 use App\Actions\Production\JobOrder\StoreJobOrder;
@@ -645,6 +649,7 @@ Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(functi
 
 Route::prefix('master-product-category/{masterProductCategory:id}')->name('master_product_category.')->group(function () {
     Route::post('upload-images', UploadImagesToMasterProductCategory::class)->name('upload_images');
+    Route::post('attach-images', [AttachImagesToModel::class, 'inMasterProductCategory'])->name('attach_images');
     Route::patch('update-images', UpdateMasterProductCategoryImages::class)->name('update_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterProductCategory::class)->name('delete_images')->withoutScopedBindings();
     Route::post('master-collection', [StoreMasterCollection::class, 'inMasterProductCategory'])->name('master_collection.store');
@@ -660,6 +665,7 @@ Route::prefix('master-collection/{masterCollection:id}')->name('master_collectio
     Route::post('attach-parents', AttachMultipleParentsToAMasterCollection::class)->name('attach_parents');
 
     Route::post('upload-images', UploadImagesToMasterCollection::class)->name('upload_images');
+    Route::post('attach-images', [AttachImagesToModel::class, 'inMasterCollection'])->name('attach_images');
     Route::patch('update-images', UpdateMasterCollectionImages::class)->name('update_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterCollection::class)->name('delete_images')->withoutScopedBindings();
 });
@@ -1251,6 +1257,8 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
     Route::patch('manufacture-tasks/{manufactureTask:id}', UpdateManufactureTask::class)->name('manufacture_tasks.update');
     Route::post('artefacts', StoreArtefact::class)->name('artefacts.store');
     Route::patch('artefacts/{artefact:id}', UpdateArtefact::class)->name('artefacts.update');
+    Route::post('artefact-families', StoreArtefactFamily::class)->name('artefact_families.store');
+    Route::post('artefacts/move-to-family', MoveArtefactsToFamily::class)->name('artefacts.move_to_family');
     Route::post('artefact-upload', ImportArtefact::class)->name('artefact.import');
 });
 
@@ -1405,6 +1413,16 @@ Route::patch('product/{product:id}/repair-images', HydrateProductImagesFromTrade
 Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id}')->group(function () {
     Route::patch('update', UpdateModelHasContent::class)->name('update');
     Route::delete('delete', DeleteModelHasContent::class)->name('delete');
+});
+
+Route::patch('artefact-family/{artefactFamily:id}', UpdateArtefactFamily::class)->name('artefact_family.update');
+
+Route::name('artefact.')->prefix('artefact/{artefact:id}')->group(function () {
+    Route::post('tags/store', [StoreTag::class, 'inArtefact'])->name('tags.store');
+    Route::patch('tags/{tag:id}/update', [UpdateTag::class, 'inArtefact'])->name('tags.update');
+    Route::delete('tags/{tag:id}/delete', [DeleteTag::class, 'inArtefact'])->name('tags.delete');
+    Route::post('tags/attach', [AttachTagsToModel::class, 'inArtefact'])->name('tags.attach');
+    Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inArtefact'])->name('tags.detach');
 });
 
 Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () {

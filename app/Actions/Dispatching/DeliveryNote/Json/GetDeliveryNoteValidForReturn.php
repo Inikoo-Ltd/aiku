@@ -41,40 +41,66 @@ class GetDeliveryNoteValidForReturn extends OrgAction
         $term = is_array($term) ? implode(' ', $term) : (string) $term;
         $ids  = $this->indexHits($term, $warehouse->organisation_id);
 
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($ids) {
+
+            $exactRefSearch = null;
+
+            if (str_starts_with($value, 'ref:')) {
+                $value = substr($value, 4);
+
+                [$exactRefSearch, $value] = array_pad(
+                    preg_split('/\s+/', $value, 2),
+                    2,
+                    ''
+                );
+            }
+
             $value = is_array($value) ? implode(' ', $value) : $value;
 
-            $query->where(function ($query) use ($value, $ids) {
-                if ($ids) {
-                    $query->whereIn('delivery_notes.id', $ids);
-                }
-                $query->orWhereWith('delivery_notes.reference', $value)
-                    ->orWhereWith('delivery_notes.tracking_number', $value)
-                    ->orWhereWith('delivery_notes.contact_name', $value)
-                    ->orWhereWith('delivery_notes.company_name', $value)
-                    ->orWhereWith('customers.reference', $value)
-                    ->orWhereWith('customers.name', $value)
-                    ->orWhereWith('customers.company_name', $value)
-                    ->orWhereWith('customers.contact_name', $value)
-                    ->orWhereWith('addresses.address_line_1', $value)
-                    ->orWhereWith('addresses.address_line_2', $value)
-                    ->orWhereWith('addresses.locality', $value)
-                    ->orWhereWith('addresses.postal_code', $value)
-                    ->orWhereHas('orders', function ($orders) use ($value) {
-                        $orders->where(function ($orders) use ($value) {
-                            $orders->whereWith('orders.reference', $value)
-                                ->orWhereWith('orders.customer_reference', $value)
-                                ->orWhereWith('orders.external_id', $value)
-                                ->orWhereWith('orders.tracking_number', $value);
+            if ($exactRefSearch) {
+                $query->where('delivery_notes.reference', $exactRefSearch);
+            }
+
+            $query
+                ->where(function ($query) use ($value, $ids, $exactRefSearch) {
+                    if ($ids) {
+                        $query->whereIn('delivery_notes.id', $ids);
+                    }
+                
+                    if (!$exactRefSearch) {
+                        $query->orWhereWith('delivery_notes.reference', $value);
+                    }
+
+                    if (!$value) return;
+
+                    $query
+                        ->orWhereWith('delivery_notes.tracking_number', $value)
+                        ->orWhereWith('delivery_notes.contact_name', $value)
+                        ->orWhereWith('delivery_notes.company_name', $value)
+                        ->orWhereWith('customers.reference', $value)
+                        ->orWhereWith('customers.name', $value)
+                        ->orWhereWith('customers.company_name', $value)
+                        ->orWhereWith('customers.contact_name', $value)
+                        ->orWhereWith('addresses.address_line_1', $value)
+                        ->orWhereWith('addresses.address_line_2', $value)
+                        ->orWhereWith('addresses.locality', $value)
+                        ->orWhereWith('addresses.postal_code', $value)
+                        ->orWhereHas('orders', function ($orders) use ($value) {
+                            $orders->where(function ($orders) use ($value) {
+                                $orders->whereWith('orders.reference', $value)
+                                    ->orWhereWith('orders.customer_reference', $value)
+                                    ->orWhereWith('orders.external_id', $value)
+                                    ->orWhereWith('orders.tracking_number', $value);
+                            });
+                        })
+                        ->orWhereHas('shipments', function ($shipments) use ($value) {
+                            $shipments->where(function ($shipments) use ($value) {
+                                $shipments->whereWith('shipments.tracking', $value)
+                                    ->orWhereWith('shipments.reference', $value);
+                            });
                         });
-                    })
-                    ->orWhereHas('shipments', function ($shipments) use ($value) {
-                        $shipments->where(function ($shipments) use ($value) {
-                            $shipments->whereWith('shipments.tracking', $value)
-                                ->orWhereWith('shipments.reference', $value);
-                        });
-                    });
-            });
+                });
         });
 
         $query = QueryBuilder::for(DeliveryNote::class);

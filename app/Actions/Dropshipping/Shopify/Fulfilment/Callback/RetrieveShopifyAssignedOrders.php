@@ -35,6 +35,10 @@ class RetrieveShopifyAssignedOrders extends OrgAction
         foreach ($fulfillmentOrders as $edge) {
             $fulfillmentOrder = $edge['node'];
 
+            $shopifyUser->debugWebhooks()->create([
+                'data' => $fulfillmentOrder
+            ]);
+
             $fulfillmentOrderRequested = SplitShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder);
 
             if (Arr::has($fulfillmentOrderRequested, 'id')) {

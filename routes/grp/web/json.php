@@ -109,6 +109,7 @@ use App\Actions\Helpers\Brand\Json\GetBrands;
 use App\Actions\Helpers\Brand\Json\GetGrpBrands;
 use App\Actions\Helpers\Tag\Json\GetGrpTags;
 use App\Actions\Helpers\Tag\UI\IndexTags;
+use App\Actions\Production\ArtefactFamily\UI\IndexArtefactFamilies;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Inventory\OrgStock\Json\FetchOrgStockStocksManagement;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
@@ -117,6 +118,7 @@ use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
 use App\Actions\Masters\MasterAsset\Json\GetPickFractional;
 use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
+use App\Actions\Masters\MasterProductCategory\Json\GetMasterProductCategoryTimeSeriesOrganisations;
 use App\Actions\CRM\Customer\Json\GetCustomersInShop;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemImage;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPricingSales;
@@ -129,6 +131,7 @@ use App\Actions\Masters\MasterCollection\UI\GetMasterFamilies;
 use App\Actions\Masters\MasterCollection\UI\GetMasterProductsNotAttachedToAMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\GetMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\Json\GetFamiliesInMasterProductCategory;
+use App\Actions\Masters\MasterProductCategory\Json\GetShopsContentInMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\Json\GetMasterDepartmentAndMasterSubDepartments;
 use App\Actions\Ordering\Order\GetChargesInOrder;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
@@ -218,6 +221,7 @@ Route::get('organisation/{organisation}/employees/picker-users', GetPickerUsers:
 
 Route::get('product-category/{productCategory}/families', GetFamiliesInProductCategory::class)->name('product_category.families.index');
 Route::get('master-product-category/{masterProductCategory}/families', GetFamiliesInMasterProductCategory::class)->name('master_product_category.families.index');
+Route::get('master-product-category/{masterProductCategory:id}/shops-content', GetShopsContentInMasterProductCategory::class)->name('master_product_category.shops_content.index')->withoutScopedBindings();
 Route::get('org-partner/{orgPartner}/shopping-list-org-stocks', IndexPartnerShoppingListOrgStocks::class)->name('org_partner.shopping_list_org_stocks');
 Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgAgent'])->name('org-agent.org-supplier-products');
 Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
@@ -237,6 +241,8 @@ Route::get('organisation/{organisation:id}/org-stock/{orgStock:id}/batch-codes',
 Route::get('warehouse/{warehouse}/org-stock/{orgStock:id}/stocks-management', FetchOrgStockStocksManagement::class)->name('warehouse.org_stock.stocks_management')->withoutScopedBindings();
 
 Route::get('trade-units/{tradeUnit}/tags', [IndexTags::class, 'inTradeUnit'])->name('trade_units.tags.index');
+Route::get('artefacts/{artefact:id}/tags', [IndexTags::class, 'inArtefact'])->name('artefacts.tags.index');
+Route::get('production/{production:id}/artefact-families', [IndexArtefactFamilies::class, 'inJson'])->name('production.artefact_families.index');
 Route::get('brands', GetBrands::class)->name('brands.index');
 
 Route::get('workshop/department/{department}/sub-departments', GetSubDepartmentsInWorkshop::class)->name('workshop.sub_departments.index');
@@ -317,6 +323,7 @@ Route::get('webpage/{webpage:id}/web-block-type/{webBlockType:id}/web-block-hist
 Route::get('master-product-category/{masterProductCategory:id}/recommended-trade-units', GetRecommendedTradeUnits::class)->name('master-product-category.recommended-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory:id}/taken-trade-units', GetTakenTradeUnits::class)->name('master-product-category.taken-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/all-trade-units', GetAllTradeUnitsInGroup::class)->name('master_product_category.all_trade_units');
+Route::get('master-product-category/{masterProductCategory:id}/time-series-organisations', GetMasterProductCategoryTimeSeriesOrganisations::class)->name('master_product_category.time_series_organisations')->withoutScopedBindings();
 
 Route::get('brand/{brand:id}/all-trade-units/', [GetAllTradeUnitsInGroup::class, 'inBrand'])->name('brand.all_trade_units');
 

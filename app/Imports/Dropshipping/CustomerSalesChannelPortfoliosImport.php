@@ -98,7 +98,6 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
                 'max:64',
                 'string',
                 Rule::notIn(['export', 'create', 'upload']),
-                Rule::exists('products', 'code')
             ],
             'title'                    => ['nullable'],
             'platform_status'          => ['nullable'],

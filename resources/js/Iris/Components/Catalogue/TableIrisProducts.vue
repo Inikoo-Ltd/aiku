@@ -28,6 +28,8 @@ const page = usePage()
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 
+const isLoggedIn = computed(() => !!layout?.iris?.is_logged_in)
+
 const labelMap: Record<string, string> = {
     department: 'Department',
     sub_department: 'Sub Department',
@@ -155,7 +157,7 @@ const parentInfo = computed(() => {
                     <FontAwesomeIcon :icon="faExternalLink" />
                 </a>
 
-                <div class="flex flex-shrink-0 items-center gap-1">
+                <div v-if="isLoggedIn" class="flex flex-shrink-0 items-center gap-1">
                     <CatalogueDownloadLink scope="product" :slug="item.slug" type="csv" variant="card" />
                     <CatalogueDownloadLink scope="product" :slug="item.slug" type="images" variant="card" />
                 </div>

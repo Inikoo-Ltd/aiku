@@ -119,7 +119,7 @@ function createOrganisation(): Organisation
 
     $group = createGroup();
 
-    $organisation = Organisation::first();
+    $organisation = Organisation::where('code', 'acme')->first();
     if (!$organisation) {
         $modelData = Organisation::factory()->definition();
         data_set($modelData, 'code', 'acme');

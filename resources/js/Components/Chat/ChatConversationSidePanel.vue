@@ -9,9 +9,9 @@ import CustomerTimeline from '@/Components/Showcases/Grp/CustomerTimeline.vue'
 import ChatActivityTimeline from '@/Components/Chat/ChatActivityTimeline.vue'
 import HistoryChatList from '@/Components/Chat/HistoryChatList.vue'
 import MessageHistory from '@/Components/Chat/MessageHistory.vue'
-import { faArrowLeft } from '@fal'
+import { faArrowLeft, faLink } from '@fal'
 
-library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft)
+library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink)
 
 type SidePanelTab = 'profile' | 'statistics' | 'timeline' | 'log' | 'history'
 
@@ -20,6 +20,8 @@ interface PanelSession {
     contact_name: string
     is_guest: boolean
     web_user_id?: number | null
+    guest_email?: string | null
+    guest_phone?: string | null
     shop_name?: string | null
     status: string
     priority?: string | null
@@ -54,7 +56,11 @@ const props = defineProps<{
     session: PanelSession
 }>()
 
-const emit = defineEmits<{ (e: 'close'): void; (e: 'priority-updated', value: string): void }>()
+const emit = defineEmits<{
+    (e: 'close'): void
+    (e: 'priority-updated', value: string): void
+    (e: 'synced', webUser: { id: number; name: string; email: string | null }): void
+}>()
 
 const PRIORITIES: Array<{ value: string; label: string; color: string; icon: any }> = [
     { value: 'urgent', label: 'Urgent', color: '#ef4444', icon: faAnglesUp },
@@ -195,6 +201,36 @@ watch(activeTab, async (tab) => {
 
 onMounted(() => loadCustomerProfile())
 
+// When a guest gets matched to a registered Aiku customer, refresh the customer data.
+watch(() => props.session.is_guest, (isGuest) => {
+    if (!isGuest) resetAndLoad()
+})
+
+const isSyncing = ref(false)
+const syncError = ref<string | null>(null)
+
+const syncGuestEmail = async () => {
+    if (!props.session.guest_email || isSyncing.value) return
+    isSyncing.value = true
+    syncError.value = null
+    try {
+        const res = await axios.put(
+            `${baseUrl}/app/api/chats/sessions/${props.session.ulid}/sync-by-email`,
+            { email: props.session.guest_email },
+            { withCredentials: true }
+        )
+        if (res.data?.success && res.data?.data?.web_user) {
+            emit('synced', res.data.data.web_user)
+        } else {
+            syncError.value = res.data?.message ?? 'No matching Aiku customer for this email'
+        }
+    } catch (e: any) {
+        syncError.value = e?.response?.data?.message ?? 'No matching Aiku customer for this email'
+    } finally {
+        isSyncing.value = false
+    }
+}
+
 const getInitials = (name: string): string =>
     (name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
@@ -269,6 +305,29 @@ const copyChatId = async () => {
                         <div class="text-gray-500 text-xs">Email</div>
                         <div class="col-span-2 text-xs font-medium text-gray-800 break-all">
                             <a :href="`mailto:${customerProfile.email}`" class="hover:underline" :style="{ color: themePrimary }">{{ customerProfile.email }}</a>
+                        </div>
+                    </div>
+                    <div v-if="session.is_guest && session.guest_email" class="grid grid-cols-3 gap-2 items-start">
+                        <div class="text-gray-500 text-xs">Email</div>
+                        <div class="col-span-2 text-xs font-medium text-gray-800 break-all">
+                            <a :href="`mailto:${session.guest_email}`" class="hover:underline" :style="{ color: themePrimary }">{{ session.guest_email }}</a>
+                        </div>
+                    </div>
+                    <div v-if="session.is_guest && session.guest_phone" class="grid grid-cols-3 gap-2 items-start">
+                        <div class="text-gray-500 text-xs">Phone</div>
+                        <div class="col-span-2 text-xs font-medium text-gray-800 break-all">{{ session.guest_phone }}</div>
+                    </div>
+                    <div v-if="session.is_guest && session.guest_email" class="grid grid-cols-3 gap-2 items-start">
+                        <div></div>
+                        <div class="col-span-2">
+                            <button type="button" :disabled="isSyncing"
+                                class="inline-flex items-center gap-1 text-[11px] font-medium rounded border px-1.5 py-0.5 transition-colors disabled:opacity-60 hover:bg-gray-50"
+                                :style="{ color: themePrimary, borderColor: themePrimary }"
+                                @click="syncGuestEmail">
+                                <FontAwesomeIcon :icon="['fal', 'fa-link']" class="text-[9px]" />
+                                {{ isSyncing ? 'Matching…' : 'Match to Aiku customer' }}
+                            </button>
+                            <p v-if="syncError" class="text-[10px] text-amber-600 mt-1">{{ syncError }}</p>
                         </div>
                     </div>
                     <div v-if="session.shop_name" class="grid grid-cols-3 gap-2 items-start">

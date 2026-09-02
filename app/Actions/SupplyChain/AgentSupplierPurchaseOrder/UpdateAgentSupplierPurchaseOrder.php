@@ -69,6 +69,13 @@ class UpdateAgentSupplierPurchaseOrder extends OrgAction
             'balance_paid_at'          => ['sometimes', 'nullable', 'date'],
             'estimated_delivery_days'  => ['sometimes', 'nullable', 'integer', 'min:0'],
             'estimated_received_at'   => ['sometimes', 'nullable', 'date'],
+            'proposed_ready_at'        => ['sometimes', 'nullable', 'date'],
+            'approved_ready_at'        => ['sometimes', 'nullable', 'date'],
+            'handed_over_at'           => ['sometimes', 'nullable', 'date'],
+            'qc_passed_at'             => ['sometimes', 'nullable', 'date'],
+            'compliance_complete_at'   => ['sometimes', 'nullable', 'date'],
+            'chs_excluded'             => ['sometimes', 'boolean'],
+            'chs_exclusion_reason'     => ['sometimes', 'nullable', 'string'],
         ];
 
         if ($this->strict) {

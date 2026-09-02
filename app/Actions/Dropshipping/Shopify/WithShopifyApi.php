@@ -15,6 +15,7 @@ trait WithShopifyApi
     public function doPost(ShopifyUser $shopifyUser, $mutation, $variables): array
     {
         $client   = $shopifyUser->getShopifyClient();
+
         $response = $client->request('POST', '/admin/api/2025-07/graphql.json', [
             'json' => [
                 'query'     => $mutation,

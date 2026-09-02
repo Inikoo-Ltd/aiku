@@ -141,6 +141,35 @@ const getCard = (component) => {
     return card
 }
 
+const contentAlignClasses: Record<string, string> = {
+    top: 'justify-start',
+    middle: 'justify-center',
+    bottom: 'justify-end',
+    spread: 'justify-between'
+}
+
+const contentAlignClass = (card: any) => contentAlignClasses[card?.contentAlign] ?? contentAlignClasses.top
+
+/**
+ * The edge gap is a margin on the card instead of padding on its layer, so `card.width`
+ * always resolves against the full banner width and left, center and right cards end up
+ * the same size.
+ */
+const CARD_EDGE_GAP = 48
+
+const cardEdgeMargin = (card: any) => {
+    if (card?.horizontal === 'left') {
+        return { marginLeft: `${CARD_EDGE_GAP}px` }
+    }
+
+    if (card?.horizontal === 'right') {
+        return { marginRight: `${CARD_EDGE_GAP}px` }
+    }
+
+    return {}
+}
+
+
 const isYoutube = (url: string) =>
     url?.includes("youtube.com") || url?.includes("youtu.be")
 
@@ -318,27 +347,29 @@ onBeforeUnmount(() => {
 
                                     <div class="absolute inset-0 flex pointer-events-none" :class="[
                                         {
-                                            'justify-start pl-10': card.horizontal === 'left',
-                                            'justify-center': card.horizontal === 'center',
-                                            'justify-end pr-10': card.horizontal === 'right'
+                                            'justify-start': card.horizontal === 'left',
+                                            'justify-center py-3': card.horizontal === 'center',
+                                            'justify-end': card.horizontal === 'right'
                                         },
                                         {
-                                            'items-start pt-10': card.vertical === 'top',
+                                            'items-start pt-12': card.vertical === 'top',
                                             'items-center': card.vertical === 'middle',
-                                            'items-end pb-10': card.vertical === 'bottom'
+                                            'items-end pb-12': card.vertical === 'bottom'
                                         }
                                     ]">
 
                                         <div class="relative editor-class pointer-events-auto" :style="{
+                                            ...cardEdgeMargin(card),
                                             width: (card.width || 60) + '%',
                                             height: (card.height || 300) + 'px',
                                             background: card.hideCard ? 'transparent' : (card.background || '#ffffff'),
-                                            padding: (card.padding || 30) + 'px',
+                                            padding: (card.padding || 0) + 'px',
                                             borderRadius: (card.radius || 10) + 'px',
                                             opacity: card.opacity ?? 1,
                                             transform: `translate(${card.offsetX || 0}px, ${card.offsetY || 0}px) scale(${getCardScale})`,
                                             transformOrigin: 'center'
                                         }" :class="card.shadow && !card.hideCard ? 'shadow-2xl' : ''">
+                                            <div class="flex flex-col h-full overflow-hidden" :class="contentAlignClass(card)">
                                             <div v-html="card.titles[0].text"></div>
 
                                             <!-- BUTTON -->
@@ -375,6 +406,7 @@ onBeforeUnmount(() => {
                                                     />
                                                     {{ card.button?.text || 'Button' }}
                                                 </a>
+                                            </div>
                                             </div>
                                         </div>
 

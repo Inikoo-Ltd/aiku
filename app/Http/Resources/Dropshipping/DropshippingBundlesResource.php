@@ -140,6 +140,10 @@ class DropshippingBundlesResource extends JsonResource
             }
         }
 
+        $platformError = $this->platform_status
+            ? []
+            : PlatformResponseFormatter::make()->format($this->errors_response);
+
         return [
             'id'                    => $this->id,
             'item_id'               => $itemId,
@@ -166,7 +170,8 @@ class DropshippingBundlesResource extends JsonResource
             'updated_at'            => $this->updated_at,
             'platform_product_id'   => $this->platform_product_id,
             'upload_warning'        => $this->upload_warning,
-            'message'               => $this->platform_status ? 'OK' : PlatformResponseFormatter::make()->message($this->errors_response),
+            'message'               => $this->platform_status ? 'OK' : Arr::get($platformError, 'message'),
+            'message_hint'          => Arr::get($platformError, 'hint'),
             'shopify_product_data'  => Arr::get($this->data, 'shopify_product', []),
             'platform_product_data' => match ($this->platform->type) {
                 PlatformTypeEnum::WOOCOMMERCE => Arr::get($this->data, 'woo_product', []),

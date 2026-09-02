@@ -9,6 +9,8 @@ tags: accounting, invoices, ordering, architecture
 
 There are about **1.08 million invoices** and **53,000 credit notes** in the system, going back to the start of the migration, and one rule governs how all of them are made and kept: **an invoice is a snapshot.** It is a frozen picture of an order — lines, quantities, prices, discounts, tax per line, addresses, the customer's tax number and the category it was rated under — at the moment it was billed. Everything downstream of that moment is designed so the picture cannot move.
 
+*invoices are memories with totals.*
+
 ## Minted from the order, then detached
 
 An invoice is generated from an order when the order is dispatched (or, for services and fulfilment, when the bill consolidates). Generation copies: each order line becomes an **invoice transaction** with its own net, tax and gross, the historic product version it was sold at, and the offer allowances that discounted it. The order's addresses are copied; the customer's tax number and its validation status at that moment are copied; the tax category that was [resolved for the order](/blog/you-think-you-had-a-bad-day-tax-in-europe) is copied. The invoice then lives on its own. The order can be edited for the warehouse's sake; the invoice does not follow.

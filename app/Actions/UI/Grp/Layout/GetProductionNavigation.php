@@ -91,6 +91,18 @@ class GetProductionNavigation
             ];
 
 
+            $navigation['partners'] = [
+                'root'  => 'grp.org.productions.show.partners.',
+                'label' => __('Partners'),
+                'icon'  => ['fal', 'fa-truck-loading'],
+
+                'route' => [
+                    'name'       => 'grp.org.productions.show.partners.index',
+                    'parameters' => [$production->organisation->slug, $production->slug]
+                ],
+            ];
+
+
             $navigation['operations'] = [
                 'root'  => 'grp.org.productions.show.operations.',
                 'label' => __('Operations'),
