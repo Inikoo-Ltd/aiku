@@ -29,13 +29,16 @@ use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -52,7 +55,7 @@ class CancelOrder extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order): Order
+    public function handle(Order $order, array $modelData = []): Order
     {
         $oldState = $order->state;
 
@@ -84,8 +87,8 @@ class CancelOrder extends OrgAction
             StoreCreditTransaction::make()->action($order->customer, [
                 'amount' => $order->payment_amount,
                 'type'   => CreditTransactionTypeEnum::MONEY_BACK,
-                'reason' => CreditTransactionReasonEnum::MONEY_BACK,
-                'notes'  => "Order #$order->reference cancelled. Money returned as store credit.",
+                'reason' => CreditTransactionReasonEnum::ORDER_CANCELLED,
+                'notes'  => $this->getCreditTransactionNotes($order, $modelData),
             ]);
 
 
@@ -167,6 +170,40 @@ class CancelOrder extends OrgAction
         }
     }
 
+    /**
+     * The note is what the customer reads in the credit balance notification email, so the
+     * selected reason and any typed detail are spelled out there instead of leaving them
+     * with the generic "money returned as store credit" line.
+     */
+    private function getCreditTransactionNotes(Order $order, array $modelData): string
+    {
+        $reason      = Arr::get($modelData, 'cancellation_reason');
+        $reasonLabel = $reason instanceof OrderCancellationReasonEnum
+            ? $reason->label()
+            : OrderCancellationReasonEnum::tryFrom((string)$reason)?->label();
+
+        $explanation = rtrim(
+            collect([$reasonLabel, trim((string)Arr::get($modelData, 'cancellation_notes'))])
+                ->filter()
+                ->implode('. '),
+            " \t\n."
+        );
+
+        if ($explanation === '') {
+            return "Order #$order->reference cancelled. Money returned as store credit.";
+        }
+
+        return "Order #$order->reference cancelled: $explanation. Money returned as store credit.";
+    }
+
+    public function rules(): array
+    {
+        return [
+            'cancellation_reason' => ['sometimes', 'nullable', Rule::enum(OrderCancellationReasonEnum::class)],
+            'cancellation_notes'  => ['sometimes', 'nullable', 'string', 'max:4000'],
+        ];
+    }
+
     public function afterValidator(Validator $validator): void
     {
         $order = $this->order;
@@ -189,13 +226,13 @@ class CancelOrder extends OrgAction
         }
     }
 
-    public function action(Order $order): Order
+    public function action(Order $order, array $modelData = []): Order
     {
         $this->asAction = true;
         $this->order    = $order;
-        $this->initialisationFromShop($order->shop, []);
+        $this->initialisationFromShop($order->shop, $modelData);
 
-        return $this->handle($order);
+        return $this->handle($order, $this->validatedData);
     }
 
     public function asController(Order $order, ActionRequest $request): Order
@@ -203,6 +240,6 @@ class CancelOrder extends OrgAction
         $this->order = $order;
         $this->initialisationFromShop($order->shop, $request);
 
-        return $this->handle($order);
+        return $this->handle($order, $this->validatedData);
     }
 }
