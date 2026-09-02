@@ -17,6 +17,7 @@ use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
 use App\Actions\Production\ArtefactFamily\UpdateArtefactFamily;
 use App\Actions\Production\Artisan\AttachArtisan;
 use App\Actions\Production\Artisan\DetachArtisan;
+use App\Actions\Production\Artisan\ToggleArtisanInRoster;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Models\HumanResources\Employee;
 use App\Enums\Helpers\Tag\TagScopeEnum;
@@ -1764,4 +1765,23 @@ test('artisans can be attached and detached from a family and an artefact, first
 
     AttachArtisan::make()->action($artefact, ['employee_id' => $employees[0]->id]);
     expect($artefact->artisans()->pluck('employees.id')->all())->toBe([$employees[0]->id]);
+});
+
+test('an employee can be hidden from and restored to the artisan roster', function () {
+    $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+    $modelData['worker_number']   = 'W'.rand(1000, 9999);
+    $modelData['alias']           = 'Alias '.rand(1000, 9999);
+    $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+    $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+    $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+    $employee = StoreEmployee::make()->action($this->organisation, $modelData);
+
+    $production = ToggleArtisanInRoster::make()->action($this->production, $employee, true);
+    expect($production->data['hidden_artisan_ids'])->toBe([$employee->id]);
+
+    $production = ToggleArtisanInRoster::make()->action($production, $employee, true);
+    expect($production->data['hidden_artisan_ids'])->toBe([$employee->id]);
+
+    $production = ToggleArtisanInRoster::make()->action($production, $employee, false);
+    expect($production->data['hidden_artisan_ids'])->toBe([]);
 });

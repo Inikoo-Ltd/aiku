@@ -22,6 +22,7 @@ use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
@@ -215,9 +216,11 @@ class IndexPartnerShippingList extends OrgAction
             ->all();
     }
 
-    /** @return array<int, array{id: int, name: string, open_job_orders: int}> */
+    /** @return array<int, array{id: int, name: string, open_job_orders: int, hidden: bool}> */
     public function getArtisanWorkload(): array
     {
+        $hiddenIds = Arr::get($this->production->data, 'hidden_artisan_ids', []);
+
         return Employee::query()
             ->where('employees.organisation_id', $this->organisation->id)
             ->where('employees.state', EmployeeStateEnum::WORKING)
@@ -233,6 +236,7 @@ class IndexPartnerShippingList extends OrgAction
                 'id'              => $employee->id,
                 'name'            => $employee->contact_name,
                 'open_job_orders' => (int) $employee->open_job_orders,
+                'hidden'          => in_array($employee->id, $hiddenIds),
             ])
             ->all();
     }
