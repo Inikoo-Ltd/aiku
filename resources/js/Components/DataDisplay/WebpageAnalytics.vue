@@ -33,19 +33,37 @@ const eventStyle = {
 }
 
 
+const rangeDays = computed(() => Math.round((new Date(props.data.end_date).getTime() - new Date(props.data.start_date).getTime()) / 86400000) + 1)
+const granularity = ref<"day" | "week">(rangeDays.value > 60 ? "week" : "day")
+
+const bucketOf = (date: string) => {
+	if (granularity.value === "day") return date
+	const day = new Date(date)
+	day.setDate(day.getDate() - ((day.getDay() + 6) % 7))
+	return day.toISOString().slice(0, 10)
+}
+
 const labels = computed(() => {
-	const days: string[] = []
+	const buckets: string[] = []
 	for (let day = new Date(props.data.start_date); day <= new Date(props.data.end_date); day.setDate(day.getDate() + 1)) {
-		days.push(day.toISOString().slice(0, 10))
+		const bucket = bucketOf(day.toISOString().slice(0, 10))
+		if (buckets.at(-1) !== bucket) buckets.push(bucket)
 	}
-	return days
+	return buckets
 })
 
-const byDate = <T extends { [key: string]: any }>(rows: T[], dateKey: string) =>
-	Object.fromEntries(rows.map((row) => [row[dateKey], row]))
+const sumBy = (rows: Array<Record<string, any>>, dateOf: (row: any) => string, field: string) => {
+	const totals: Record<string, number> = {}
+	for (const row of rows) {
+		const bucket = bucketOf(dateOf(row))
+		totals[bucket] = (totals[bucket] ?? 0) + (row[field] ?? 0)
+	}
+	return totals
+}
 
-const searchRows = computed(() => Object.fromEntries((props.data.search ?? []).map((row) => [row.keys[0], row])))
-const salesRows = computed(() => byDate(props.data.sales ?? [], "date"))
+const clicksByBucket = computed(() => sumBy(props.data.search ?? [], (row) => row.keys[0], "clicks"))
+const impressionsByBucket = computed(() => sumBy(props.data.search ?? [], (row) => row.keys[0], "impressions"))
+const salesByBucket = computed(() => sumBy(props.data.sales ?? [], (row) => row.date, "sales"))
 
 const totals = computed(() => ({
 	clicks: (props.data.search ?? []).reduce((sum, row) => sum + row.clicks, 0),
@@ -58,7 +76,7 @@ const visible = ref({ clicks: totals.value.clicks > 0, impressions: totals.value
 const eventsByDate = computed(() => {
 	const grouped: Record<string, typeof props.data.events> = {}
 	for (const event of props.data.events ?? []) {
-		;(grouped[event.date] ??= []).push(event)
+		;(grouped[bucketOf(event.date)] ??= []).push(event)
 	}
 	return grouped
 })
@@ -67,26 +85,27 @@ const chartData = computed(() => ({
 	labels: labels.value,
 	datasets: [
 		visible.value.clicks && {
+			type: "bar",
 			label: series.clicks.label,
-			data: labels.value.map((day) => searchRows.value[day]?.clicks ?? 0),
-			borderColor: series.clicks.color,
-			borderWidth: 2,
-			pointRadius: 0,
-			cubicInterpolationMode: "monotone",
+			data: labels.value.map((bucket) => clicksByBucket.value[bucket] ?? 0),
+			backgroundColor: series.clicks.color + "99",
+			borderRadius: 2,
 			yAxisID: "y2",
+			order: 3,
 		},
 		visible.value.impressions && {
 			label: series.impressions.label,
-			data: labels.value.map((day) => searchRows.value[day]?.impressions ?? 0),
+			data: labels.value.map((bucket) => impressionsByBucket.value[bucket] ?? 0),
 			borderColor: series.impressions.color,
 			borderWidth: 2,
 			pointRadius: 0,
 			cubicInterpolationMode: "monotone",
 			yAxisID: "y1",
+			order: 2,
 		},
 		visible.value.sales && {
 			label: series.sales.label,
-			data: labels.value.map((day) => salesRows.value[day]?.sales ?? 0),
+			data: labels.value.map((bucket) => Math.round((salesByBucket.value[bucket] ?? 0) * 100) / 100),
 			borderColor: series.sales.color,
 			backgroundColor: "#0F9D5822",
 			borderWidth: 2,
@@ -94,6 +113,7 @@ const chartData = computed(() => ({
 			fill: true,
 			cubicInterpolationMode: "monotone",
 			yAxisID: "y3",
+			order: 1,
 		},
 	].filter(Boolean),
 }))
@@ -140,7 +160,7 @@ const chartOptions = computed(() => ({
 			borderWidth: 1,
 			padding: 10,
 			callbacks: {
-				title: (items: any[]) => useFormatTime(items[0].label, { formatTime: "PPP" }),
+				title: (items: any[]) => (granularity.value === "week" ? trans("Week of") + " " : "") + useFormatTime(items[0].label, { formatTime: "PPP" }),
 				label: (item: any) =>
 					item.dataset.yAxisID === "y3"
 						? `${item.dataset.label}: ${locale.currencyFormat(props.data.currency, item.raw)}`
@@ -178,6 +198,17 @@ const formatTotal = (key: keyof typeof series) =>
 				<span class="text-gray-500">{{ trans("To") }}</span>
 				<input type="date" v-model="range.endDate" :min="range.startDate" class="rounded border-gray-300 text-sm" @change="reload" />
 			</label>
+			<div class="flex rounded border border-gray-300 text-xs">
+				<button
+					v-for="option in ['day', 'week']"
+					:key="option"
+					type="button"
+					class="px-3 py-1.5"
+					:class="granularity === option ? 'bg-gray-800 text-white' : 'text-gray-600'"
+					@click="granularity = option">
+					{{ option === "day" ? trans("Daily") : trans("Weekly") }}
+				</button>
+			</div>
 			<div class="ml-auto flex items-center gap-4 text-xs text-gray-500">
 				<span v-for="(style, type) in eventStyle" :key="type" class="flex items-center gap-1">
 					<span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: style.color }" />
