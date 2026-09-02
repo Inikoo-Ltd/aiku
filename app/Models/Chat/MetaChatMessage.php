@@ -2,6 +2,7 @@
 
 namespace App\Models\Chat;
 
+use App\Enums\CRM\Livechat\ChatMessageStateEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Models\Helpers\Language;
@@ -20,6 +21,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property int $meta_channel_id
  * @property int|null $meta_chat_session_id
  * @property ChatMessageTypeEnum $message_type
+ * @property ChatMessageStateEnum $state
  * @property ChatSenderTypeEnum $sender_type
  * @property int|null $sender_id
  * @property string|null $message_text
@@ -52,6 +54,7 @@ class MetaChatMessage extends Model implements HasMedia
 
     protected $casts = [
         'message_type' => ChatMessageTypeEnum::class,
+        'state' => ChatMessageStateEnum::class,
         'sender_type' => ChatSenderTypeEnum::class,
         'is_ai_generated' => 'boolean',
         'is_validated' => 'boolean',

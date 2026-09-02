@@ -10,6 +10,7 @@ use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -46,6 +47,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read User|null $publisher
  * @property-read \Illuminate\Database\Eloquent\Collection<int, WhatsappRecipient> $recipients
  * @property-read \Illuminate\Database\Eloquent\Collection<int, WhatsappDeliveryChannel> $deliveryChannels
+ * @property-read WhatsappCampaignStats|null $stats
  */
 class WhatsappCampaign extends Model
 {
@@ -120,5 +122,10 @@ class WhatsappCampaign extends Model
     public function deliveryChannels(): HasMany
     {
         return $this->hasMany(WhatsappDeliveryChannel::class);
+    }
+
+    public function stats(): HasOne
+    {
+        return $this->hasOne(WhatsappCampaignStats::class);
     }
 }

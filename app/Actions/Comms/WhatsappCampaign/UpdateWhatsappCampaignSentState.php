@@ -7,6 +7,7 @@
 
 namespace App\Actions\Comms\WhatsappCampaign;
 
+use App\Actions\Comms\WhatsappCampaign\Hydrators\WhatsappCampaignHydrateStats;
 use App\Enums\Comms\WhatsappCampaign\WhatsappCampaignStateEnum;
 use App\Enums\Comms\WhatsappDeliveryChannel\WhatsappDeliveryChannelStateEnum;
 use App\Models\Comms\WhatsappCampaign;
@@ -48,6 +49,10 @@ class UpdateWhatsappCampaignSentState
             'state'   => WhatsappCampaignStateEnum::SENT,
             'sent_at' => $campaign->deliveryChannels()->max('sent_at'),
         ]);
+
+        /* A finished campaign settles on correct totals even if a delivery webhook was
+           missed while it was still sending. */
+        WhatsappCampaignHydrateStats::dispatch($campaign->id);
 
         return ['msg' => 'campaign sent'];
     }

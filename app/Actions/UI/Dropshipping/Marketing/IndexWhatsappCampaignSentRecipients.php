@@ -7,18 +7,17 @@
 
 namespace App\Actions\UI\Dropshipping\Marketing;
 
+use App\Actions\Comms\WhatsappCampaign\WithWhatsappRecipientStatusQuery;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Http\Resources\Comms\WhatsappCampaignSentRecipientsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\WhatsappCampaign;
-use App\Models\Comms\WhatsappRecipient;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -32,6 +31,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexWhatsappCampaignSentRecipients extends OrgAction
 {
     use WithMarketingEditAuthorisation;
+    use WithWhatsappRecipientStatusQuery;
 
     private WhatsappCampaign $campaign;
 
@@ -73,10 +73,7 @@ class IndexWhatsappCampaignSentRecipients extends OrgAction
 
     private function baseQuery(WhatsappCampaign $campaign): \Illuminate\Database\Eloquent\Builder
     {
-        return WhatsappRecipient::query()
-            ->where('whatsapp_recipients.whatsapp_campaign_id', $campaign->id)
-            ->leftJoin('meta_chat_messages', 'meta_chat_messages.id', '=', 'whatsapp_recipients.meta_chat_message_id')
-            ->leftJoin('meta_chat_sessions', 'meta_chat_sessions.id', '=', 'meta_chat_messages.meta_chat_session_id')
+        return $this->recipientStatusBaseQuery($campaign)
             ->select([
                 'whatsapp_recipients.id',
                 'whatsapp_recipients.recipient_name',
@@ -89,36 +86,12 @@ class IndexWhatsappCampaignSentRecipients extends OrgAction
             ]);
     }
 
-    /**
-     * The same precedence the resource reads a status with, expressed as SQL so a tab
-     * narrows the list to exactly the rows that render with that status.
-     */
-    private function statusCondition(Builder|\Illuminate\Database\Eloquent\Builder $query, string $status): void
-    {
-        match ($status) {
-            'failed' => $query->where(function ($query) {
-                $query->whereNull('whatsapp_recipients.meta_chat_message_id')
-                    ->orWhereRaw("meta_chat_messages.metadata->>'wa_status' = 'failed'");
-            }),
-            'read' => $query->whereNotNull('whatsapp_recipients.meta_chat_message_id')
-                ->whereNotNull('meta_chat_messages.read_at')
-                ->whereRaw("coalesce(meta_chat_messages.metadata->>'wa_status', '') <> 'failed'"),
-            'delivered' => $query->whereNotNull('whatsapp_recipients.meta_chat_message_id')
-                ->whereNotNull('meta_chat_messages.delivered_at')
-                ->whereNull('meta_chat_messages.read_at')
-                ->whereRaw("coalesce(meta_chat_messages.metadata->>'wa_status', '') <> 'failed'"),
-            default => $query->whereRaw('1 = 0'),
-        };
-    }
-
     protected function getElementGroups(WhatsappCampaign $campaign): array
     {
         $counts = [];
 
         foreach (['delivered', 'read', 'failed'] as $status) {
-            $countQuery = $this->baseQuery($campaign);
-            $this->statusCondition($countQuery, $status);
-            $counts[$status] = $countQuery->count();
+            $counts[$status] = $this->countRecipientsWithStatus($campaign, $status);
         }
 
         return [
@@ -133,7 +106,7 @@ class IndexWhatsappCampaignSentRecipients extends OrgAction
                     $query->where(function ($query) use ($elements) {
                         foreach ($elements as $status) {
                             $query->orWhere(function ($query) use ($status) {
-                                $this->statusCondition($query, $status);
+                                $this->recipientStatusCondition($query, $status);
                             });
                         }
                     });
