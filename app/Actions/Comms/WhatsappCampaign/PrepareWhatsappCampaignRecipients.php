@@ -56,6 +56,7 @@ class PrepareWhatsappCampaignRecipients
      */
     private function resolveRecipients(WhatsappCampaign $campaign, array $phoneKeys): array
     {
+        // TODO: need to check does need to check  recipients_recipe or just use recipients_list? because recipients_list is already filtered by recipients_recipe
         $query = GetWhatsappRecipientsQuery::run(
             $campaign->shop,
             $this->readChannels($campaign),

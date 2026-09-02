@@ -11,6 +11,9 @@ use App\Actions\Chat\Whatsapp\Templates\GetWhatsappTemplateTags;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZoneSelectOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
+use App\Enums\Comms\WhatsappCampaign\WhatsappCampaignStateEnum;
+use App\Enums\UI\Marketing\WhatsappCampaignTabsEnum;
+use App\Http\Resources\Comms\WhatsappCampaignSentRecipientsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\WhatsappCampaign;
 use App\Models\SysAdmin\Organisation;
@@ -38,7 +41,18 @@ class ShowWhatsappCampaign extends OrgAction
 
         $routeBase = 'grp.org.shops.show.marketing.whatsapp_campaigns';
 
-        return Inertia::render(
+        $hasBeenSent = in_array($campaign->state, [
+            WhatsappCampaignStateEnum::SENDING,
+            WhatsappCampaignStateEnum::SENT,
+        ]);
+
+        $recipientsPrefix = WhatsappCampaignTabsEnum::RECIPIENTS->value;
+
+        $recipients = fn () => WhatsappCampaignSentRecipientsResource::collection(
+            IndexWhatsappCampaignSentRecipients::run($campaign, $recipientsPrefix)
+        );
+
+        $response = Inertia::render(
             'Org/Marketing/WhatsappCampaign',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($campaign, $request->route()->originalParameters()),
@@ -54,12 +68,20 @@ class ShowWhatsappCampaign extends OrgAction
                     ],
                 ],
                 'journey'      => $this->getWhatsappCampaignJourney($campaign, 'review'),
+                'tabs'         => [
+                    'current'    => $this->tab,
+                    'navigation' => WhatsappCampaignTabsEnum::navigation($campaign),
+                ],
+                $recipientsPrefix => $hasBeenSent
+                    ? ($this->tab == $recipientsPrefix ? $recipients : Inertia::optional($recipients))
+                    : null,
                 'campaign'     => [
                     'name'             => $campaign->name,
                     'state'            => $campaign->state,
                     'state_label'      => $campaign->state->labels()[$campaign->state->value],
                     'recipients_count' => $campaign->recipients_count,
                     'scheduled_at'     => $campaign->scheduled_at?->toIso8601String(),
+                    'sent_at'          => $campaign->sent_at?->toIso8601String(),
                 ],
                 'status'       => $campaign->state->value,
                 'template'     => $template ? $this->whatsappTemplatePreview($template) : null,
@@ -88,15 +110,27 @@ class ShowWhatsappCampaign extends OrgAction
                 'isConfigured'        => filled(Arr::get($shop->settings, 'whatsapp.phone_number_id')),
                 'timeZoneOptions'     => GetTimeZoneSelectOptions::run(),
                 'defaultShopTimezone' => $shop->timezone?->name ?? 'UTC',
-                'mergeTags'    => GetWhatsappTemplateTags::run($shop),
-                'businessName' => $shop->name,
+                'mergeTags'      => GetWhatsappTemplateTags::run($shop),
+                'businessName'   => $shop->name,
+                'inboxRoute'     => [
+                    'name'       => 'grp.org.shops.show.chat.inbox',
+                    'parameters' => Arr::only($routeParameters, ['organisation', 'shop']),
+                ],
             ]
+        );
+
+        if (!$hasBeenSent) {
+            return $response;
+        }
+
+        return $response->table(
+            IndexWhatsappCampaignSentRecipients::make()->tableStructure($recipientsPrefix, $campaign)
         );
     }
 
     public function asController(Organisation $organisation, Shop $shop, WhatsappCampaign $whatsappCampaign, ActionRequest $request): Response
     {
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(WhatsappCampaignTabsEnum::values());
 
         return $this->handle($whatsappCampaign, $request);
     }
