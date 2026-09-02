@@ -29,28 +29,27 @@ trait WithOrgPartnerSubNavigation
                 "isAnchor" => true,
             ],
             [
-                "label"    => __("Shopping List"),
+                "label"    => __("Shopping"),
                 "route"    => [
-                    "name"       => "grp.org.procurement.org_partners.show.shopping_list.index",
+                    "name"       => "grp.org.procurement.org_partners.show.shopping.dashboard",
                     "parameters" => [$parent->organisation->slug, $parent->id],
                 ],
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-shopping-basket"],
-                    "tooltip" => __("Shopping List"),
+                    "tooltip" => __("Shopping"),
                 ],
                 "number"   => $parent->stats->number_open_shopping_list_items,
             ],
             [
-                "label"    => __("Purchase Orders"),
+                "align"    => "right",
                 "route"    => [
                     "name"       => "grp.org.procurement.org_partners.show.purchase-orders.index",
                     "parameters" => [$parent->organisation->slug, $parent->id],
                 ],
                 "leftIcon" => [
-                    "icon"    => ["fal", "fa-clipboard"],
+                    "icon"    => ["fal", "fa-clipboard-list"],
                     "tooltip" => __("Purchase Orders"),
                 ],
-                "number"   => $parent->partner->procurementStats->number_purchase_orders,
             ],
             [
                 "label"    => __("Org Stocks"),

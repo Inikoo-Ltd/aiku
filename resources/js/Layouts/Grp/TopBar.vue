@@ -200,7 +200,7 @@ const label = {
                                     icon="fal fa-user-tie"
                                 />
 
-                                <!-- Dropdown: Organisation -->
+                                <!-- Dropdown: Organisation (E-Commerce) -->
                                 <TopBarDropdownScope
                                     v-if="layoutStore.organisations.data?.length"
                                     :menuItems="layoutStore.organisations.data"

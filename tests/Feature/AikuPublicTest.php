@@ -23,7 +23,7 @@ test('home renders server side with drawings and latest notes', function () {
     $response->assertOk()
         ->assertSee('open source operating system for commerce', false)
         ->assertSee('draw-dashboard.svg', false)
-        ->assertSee(BlogPosts::all()->first()['title'], false);
+        ->assertSee(BlogPosts::all()->first()['title']);
 });
 
 test('blog index paginates twenty per page, newest first', function () {
@@ -142,7 +142,7 @@ test('llms.txt and home JSON-LD are served', function () {
         ->assertSee('"@type":"WebSite"', false);
 });
 
-test('visit beacon logs humans with referrer and country, skips bots', function () {
+test('visit beacon logs humans with referrer and country', function () {
     $visits = fn () => \Illuminate\Support\Facades\DB::table('aiku_public_visits');
     $before = $visits()->count();
 
@@ -154,12 +154,40 @@ test('visit beacon logs humans with referrer and country, skips bots', function 
         ->and($visit->country)->toBe('ES')
         ->and(mb_strlen($visit->visitor_hash))->toBe(16);
 
-    get($this->host.'/visit.json?p=/blog', ['User-Agent' => 'Googlebot/2.1'])->assertNoContent();
     get($this->host.'/visit.json?p=https://evil.example/x')->assertNoContent();
     get($this->host.'/visit.json')->assertNoContent();
     expect($visits()->count())->toBe($before + 1);
 
-    get($this->host.'/blog')->assertSee(route('aiku-public.visit'), false);
+    get($this->host.'/blog')->assertDontSee('document.referrer', false);
+});
+
+test('page views are logged server-side from the referer header so ad blockers cannot hide them', function () {
+    $visits = fn () => \Illuminate\Support\Facades\DB::table('aiku_public_visits');
+    $before = $visits()->count();
+
+    get($this->host.'/blog?msclkid=10f2b6be38c513c19b70dc2834d4cb88', ['Referer' => 'https://laravel-news.com/links/x', 'CF-IPCountry' => 'MY'])->assertOk();
+    $visit = $visits()->latest('id')->first();
+    expect($visits()->count())->toBe($before + 1)
+        ->and($visit->path)->toBe('/blog')
+        ->and($visit->referrer)->toBe('laravel-news.com')
+        ->and($visit->country)->toBe('MY');
+
+    get($this->host.'/feed.xml')->assertOk();
+    get($this->host.'/nope-'.uniqid())->assertNotFound();
+    expect($visits()->count())->toBe($before + 1);
+
+    get($this->host.'/blog', ['User-Agent' => 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'])->assertOk();
+    $bot = $visits()->latest('id')->first();
+    expect($visits()->count())->toBe($before + 2)
+        ->and($bot->is_bot)->toBeTrue()
+        ->and($visit->is_bot)->toBeFalse()
+        ->and($bot->user_agent)->toContain('Googlebot');
+
+    get($this->host.'/blog', ['User-Agent' => 'Mozilla/5.0 (compatible)'])->assertOk();
+    expect($visits()->latest('id')->first()->is_bot)->toBeTrue();
+
+    $stats = \App\Actions\DevOps\UI\ShowAikuPublicAnalytics::make()->handle();
+    expect(collect($stats['bots'])->pluck('user_agent')->first(fn ($ua) => str_contains($ua, 'Googlebot')))->not->toBeNull();
 });
 
 test('visit stats aggregate for devops dashboard widget and analytics page', function () {
@@ -222,4 +250,116 @@ test('analytics articles tab lists every note with real commit date and visit st
         ->and($row['url'])->toBe('https://aiku.io/blog/anatomy-of-a-deploy')
         ->and($row['date'])->toBe('2026-08-19')
         ->and($row['committed_at'])->toStartWith('2026-08-');
+});
+
+test('blog post shows related notes ranked by shared tags', function () {
+    $post = BlogPosts::all()->first(fn (array $candidate) => count($candidate['tags']) > 0);
+
+    $bestMatch = BlogPosts::all()
+        ->where('slug', '!=', $post['slug'])
+        ->sortByDesc(fn (array $other) => count(array_intersect($other['tags'], $post['tags'])) * 1e12 + $other['date']->timestamp)
+        ->first();
+
+    get($this->host.'/blog/'.$post['slug'])
+        ->assertOk()
+        ->assertSee('Related notes', false)
+        ->assertSee(route('aiku-public.blog.show', $bestMatch['slug']), false);
+});
+
+test('docs index and article render with layout nav', function () {
+    $docs = BlogPosts::all('docs');
+    expect($docs)->not->toBeEmpty();
+
+    get($this->host.'/docs')->assertOk()
+        ->assertSee('Documentation', false)
+        ->assertSee(route('aiku-public.docs.show', $docs->first()['slug']), false);
+
+    get($this->host.'/docs/'.$docs->first()['slug'])->assertOk()
+        ->assertSee($docs->first()['title'], false);
+
+    get($this->host.'/docs/does-not-exist')->assertNotFound();
+});
+
+test('docs index shows the clickable module map', function () {
+    get($this->host.'/docs')->assertOk()
+        ->assertSee('Map of aiku modules', false)
+        ->assertSee(route('aiku-public.docs.index', ['category' => 'procurement']), false)
+        ->assertSee('soon', false);
+
+    get($this->host.'/docs?category=procurement')->assertOk()
+        ->assertSee('docsmap-mini', false)
+        ->assertDontSee('docsmap"', false)
+        ->assertSee('Buying from a partner', false)
+        ->assertDontSee('Setting up a new employee', false);
+
+    get($this->host.'/docs?tag=clocking')->assertOk()
+        ->assertSee('docsmap-mini', false)
+        ->assertSee('Types of clocking machines', false);
+});
+
+test('helpFor matches grp routes to docs by longest prefix', function () {
+    expect(BlogPosts::helpFor('grp.org.procurement.org_partners.show.shopping.dashboard')['title'])->toBe('Reading the partner shopping dashboard')
+        ->and(BlogPosts::helpFor('grp.org.procurement.org_partners.show.shopping_list.index')['title'])->toBe('Buying from a partner')
+        ->and(BlogPosts::helpFor('grp.org.procurement.org_partners.index')['title'])->toBe('Ordering from a partner organisation')
+        ->and(BlogPosts::helpFor('grp.org.shops.show.chat.dashboard')['url'])->toContain('/docs/customer-chat')
+        ->and(BlogPosts::helpFor('grp.dashboard.show'))->toBeNull()
+        ->and(BlogPosts::helpFor(null))->toBeNull();
+});
+
+test('helpFor links the reader to the doc in their own language when one exists', function () {
+    expect(BlogPosts::helpFor('grp.org.shops.show.ordering.orders.show', 'es')['url'])->toEndWith('/docs/following-an-order-from-basket-to-dispatch-es')
+        ->and(BlogPosts::helpFor('grp.org.shops.show.ordering.orders.show', 'sk')['url'])->toEndWith('/docs/following-an-order-from-basket-to-dispatch-sk')
+        ->and(BlogPosts::helpFor('grp.org.shops.show.ordering.orders.show', 'hi')['url'])->toEndWith('/docs/following-an-order-from-basket-to-dispatch')
+        ->and(BlogPosts::helpFor('grp.org.shops.show.ordering.orders.show', 'en')['url'])->toEndWith('/docs/following-an-order-from-basket-to-dispatch');
+});
+
+test('translated docs are served, linked and kept out of the English listings', function () {
+    $english = BlogPosts::all('docs')->firstWhere('slug', 'your-clean-handover-score');
+    expect($english)->not->toBeNull()
+        ->and($english['lang'])->toBe('en');
+
+    expect(BlogPosts::all('docs')->pluck('slug'))
+        ->not->toContain('your-clean-handover-score-id')
+        ->not->toContain('your-clean-handover-score-zh-hans');
+
+    $translations = BlogPosts::translations($english, 'docs');
+    expect($translations->pluck('lang')->all())->toBe(['en', 'es', 'hi', 'id', 'ne', 'sk', 'zh-hans'])
+        ->and($translations->every(fn (array $doc) => $doc['base_slug'] === 'your-clean-handover-score'))->toBeTrue();
+
+    get($this->host.'/docs/your-clean-handover-score-id')->assertOk()
+        ->assertSee('Skor Serah Terima Bersih', false)
+        ->assertSee('versi bahasa Inggris yang berlaku', false)
+        ->assertSee(route('aiku-public.docs.show', 'your-clean-handover-score-zh-hans'), false);
+
+    get($this->host.'/docs/your-clean-handover-score')->assertOk()
+        ->assertSee('Bahasa Indonesia', false)
+        ->assertDontSee('versi bahasa Inggris yang berlaku', false);
+});
+
+test('every guide has a Spanish and a Slovak translation made from the current English', function () {
+    foreach (BlogPosts::all('docs') as $english) {
+        foreach (['es', 'sk'] as $lang) {
+            $translation = BlogPosts::everything('docs')->firstWhere('slug', $english['slug'].'-'.$lang);
+            expect($translation)->not->toBeNull($english['slug'].' has no '.$lang.' translation')
+                ->and($translation['source_date']?->toDateString())->toBe($english['date']->toDateString(), $english['slug'].'-'.$lang.' is stale');
+        }
+    }
+});
+
+test('a translation older than its English original is flagged as stale', function () {
+    $english = BlogPosts::all('docs')->firstWhere('slug', 'your-clean-handover-score');
+    $translation = BlogPosts::everything('docs')->firstWhere('slug', 'your-clean-handover-score-id');
+
+    expect($translation['source_date']->toDateString())->toBe($english['date']->toDateString());
+
+    get($this->host.'/docs/your-clean-handover-score-id')->assertOk()
+        ->assertDontSee('telah berubah setelah terjemahan ini', false);
+});
+
+test('reading time counts non-latin scripts instead of reporting one minute', function () {
+    $devanagari = BlogPosts::everything('docs')->firstWhere('slug', 'your-clean-handover-score-hi');
+    $chinese = BlogPosts::everything('docs')->firstWhere('slug', 'your-clean-handover-score-zh-hans');
+
+    expect($devanagari['reading_minutes'])->toBeGreaterThan(3)
+        ->and($chinese['reading_minutes'])->toBeGreaterThan(3);
 });

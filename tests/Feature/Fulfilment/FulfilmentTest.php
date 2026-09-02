@@ -1858,7 +1858,7 @@ test('pick whole pallet in return by scanning its reference', function (PalletRe
     SendPalletReturnNotification::shouldRun()
         ->andReturn();
 
-    $pallet = $palletReturn->pallets->first();
+    $pallet = $palletReturn->pallets->firstWhere('reference', '!=', null);
 
     $scan = fn (string $barcode) => \App\Actions\Fulfilment\PalletReturnItem\PickPalletReturnItemByScan::make()
         ->handle($palletReturn->refresh(), $this->user, ['barcode' => $barcode]);
@@ -2952,6 +2952,27 @@ test('consolidate recurring bill', function ($fulfilmentCustomer) {
 
     return $fulfilmentCustomer;
 })->depends('check current recurring bill');
+
+test('consolidating stale duplicate current bill does not clear pointer nor spawn extra bill', function ($fulfilmentCustomer) {
+    $fulfilmentCustomer->refresh();
+    $currentRecurringBill = $fulfilmentCustomer->currentRecurringBill;
+
+    $staleBill = $fulfilmentCustomer->recurringBills()
+        ->where('id', '!=', $currentRecurringBill->id)
+        ->first();
+    $staleBill->update(['status' => RecurringBillStatusEnum::CURRENT]);
+
+    ConsolidateRecurringBill::make()->action($staleBill);
+
+    $fulfilmentCustomer->refresh();
+    $staleBill->refresh();
+
+    expect($staleBill->status)->toBe(RecurringBillStatusEnum::FORMER)
+        ->and($fulfilmentCustomer->current_recurring_bill_id)->toBe($currentRecurringBill->id)
+        ->and($fulfilmentCustomer->recurringBills()->where('status', RecurringBillStatusEnum::CURRENT)->count())->toBe(1);
+
+    return $fulfilmentCustomer;
+})->depends('consolidate recurring bill');
 
 test('update third rental agreement cause', function ($fulfilmentCustomer) {
     $recurringBillTransaction = $fulfilmentCustomer->currentRecurringBill->transactions->first();

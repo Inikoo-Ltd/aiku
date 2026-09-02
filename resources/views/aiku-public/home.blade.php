@@ -3,7 +3,7 @@
         <script type="application/ld+json">{!! json_encode([
             '@context' => 'https://schema.org',
             '@graph' => [
-                ['@type' => 'Organization', 'name' => 'aiku', 'url' => route('aiku-public.home'), 'logo' => url('art/logo-sketch.svg'), 'sameAs' => ['https://github.com/Inikoo-Ltd/aiku']],
+                ['@type' => 'Organization', 'name' => 'aiku', 'url' => route('aiku-public.home'), 'logo' => url('art/invader-sketch.svg'), 'sameAs' => ['https://github.com/Inikoo-Ltd/aiku']],
                 ['@type' => 'WebSite', 'name' => 'aiku', 'url' => route('aiku-public.home')],
             ],
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
@@ -11,7 +11,7 @@
     <div class="wrap">
         <section class="hero">
             <div class="eyebrow">Open source software for people who ship things</div>
-            <h1>The open source operating system for commerce.</h1>
+            <h1>The operating system for commerce.</h1>
             <p class="lede">One codebase that runs wholesale, retail, dropshipping, marketplaces, third‑party fulfilment and your own storefronts — across many companies, warehouses, countries and currencies. Built by a team that runs it every day.</p>
             <div class="actions">
                 <a class="btn" href="https://github.com/Inikoo-Ltd/aiku" rel="noopener">Read the source</a>
@@ -84,17 +84,6 @@
             <p>Around six thousand actions, one per thing the business can do; hydrators that keep every count and total honest at the point of change; time‑series tables for every dimension anyone has ever asked a question about.</p>
             <h3>On AI</h3>
             <p>We believe AI is a tool to empower human ingenuity, not to replace it. aiku ships a permission‑scoped MCP server so assistants can answer questions about the business; the decisions stay with people. <a href="{{ route('aiku-public.blog.show', 'rag-is-dead-give-the-model-the-tools') }}">How we drew that line →</a></p>
-        </section>
-
-        <section class="chapter">
-            <h2>Yes, it's real. It's in production right now.</h2>
-            <p style="color:var(--muted);max-width:40em">Some of the other screens, small on purpose.</p>
-            <div class="tease">
-                @foreach (['invoices','families','employees','marketing','delivery-notes','warehouse-inventory','departments','masters'] as $thumb)
-                    <img src="{{ url("art/readme/thumb-{$thumb}.jpg") }}" alt="Screenshot of the {{ str_replace('-', ' ', $thumb) }} screen" width="320" height="200" loading="lazy">
-                @endforeach
-            </div>
-            <p style="font-size:13px;color:var(--muted);margin-top:10px">A demo group seeded with generated data; nothing here belongs to a real customer.</p>
         </section>
 
         @if ($posts->isNotEmpty())

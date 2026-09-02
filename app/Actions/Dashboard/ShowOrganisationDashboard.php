@@ -19,7 +19,10 @@ use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\OrganisationDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Actions\SupplyChain\Agent\UI\GetAgentCleanHandoverScore;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Enums\UI\Organisation\OrgDashboardIntervalTabsEnum;
+use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -100,11 +103,23 @@ class ShowOrganisationDashboard extends OrgAction
         return Inertia::render(
             'Dashboard/OrganisationDashboard',
             [
-                'title'       => __('Dashboard').' '.$organisation->name,
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters(), __('Dashboard')),
-                'dashboard'   => $dashboard
+                'title'         => __('Dashboard').' '.$organisation->name,
+                'breadcrumbs'   => $this->getBreadcrumbs($request->route()->originalParameters(), __('Dashboard')),
+                'dashboard'     => $dashboard,
+                'cleanHandover' => $this->getCleanHandover($organisation),
             ]
         );
+    }
+
+    private function getCleanHandover(Organisation $organisation): ?array
+    {
+        if ($organisation->type !== OrganisationTypeEnum::AGENT) {
+            return null;
+        }
+
+        $agent = Agent::where('organisation_id', $organisation->id)->first();
+
+        return $agent ? GetAgentCleanHandoverScore::run($agent) : null;
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): Response

@@ -142,5 +142,18 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('iris-search', function (Request $request) {
             return Limit::perMinute(6000)->by($request->ip());
         });
+
+        /*
+         * A catalogue feed reads every image of a category and zips it, so one request is worth
+         * thousands of ordinary ones. An unauthenticated scraper walked 84 categories on a loop and
+         * took boro's disk to 100%; the limit stands even behind the login, since the volume that
+         * hurt was never about who was asking.
+         */
+        RateLimiter::for('iris-feeds', function (Request $request) {
+            return [
+                Limit::perMinute(3)->by($request->user()?->id ?: $request->ip()),
+                Limit::perDay(200)->by($request->user()?->id ?: $request->ip()),
+            ];
+        });
     }
 }

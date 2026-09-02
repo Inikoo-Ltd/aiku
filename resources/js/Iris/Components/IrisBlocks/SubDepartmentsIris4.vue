@@ -115,6 +115,9 @@ const itemImageSizes = computed(
 
 const getItemImage = (item: SubDepartmentItem) => item?.web_images?.main?.gallery || item?.image
 
+const hasDescription = (item: SubDepartmentItem) =>
+  Boolean(item?.description?.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim())
+
 const idxLoading = ref<number | null>(null)
 
 const { mountDepartmentStructuredData, removeStructuredDataScript } = useDepartmentStructuredData()
@@ -132,7 +135,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   removeStructuredDataScript(departmentStructuredDataScript.value)
 })
-console.log('SubDepartmentsIris4.vue mounted with props:', props)
 </script>
 
 <template>
@@ -188,9 +190,11 @@ console.log('SubDepartmentsIris4.vue mounted with props:', props)
             </h3>
           </LinkIris>
 
-          <p v-if="item?.description" class="mt-3 line-clamp-3 text-sm leading-relaxed text-slate-500" v-html="item?.description">
-              
-          </p>
+          <div
+            v-if="hasDescription(item)"
+            class="mt-3 line-clamp-3 text-sm leading-relaxed text-slate-500"
+            v-html="item?.description"
+          />
 
           <LinkIris
             :href="`${item?.url}`"

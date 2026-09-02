@@ -121,13 +121,28 @@ class EditOrgStock extends OrgAction
                     'is_on_demand'        => [
                         'type'  => 'toggle',
                         'label' => __('Is On Demand'),
-                        'value' => $orgStock->is_on_demand
+                        'value' => $orgStock->is_on_demand,
+                        'information'   => __("Products using this SKO are treated as always available: they never go out of stock, the webshop shows 'Unlimited quantity available' (when all the product's SKOs are on demand), and Shopify/WooCommerce keep accepting orders even with empty stock."),
                     ],
+                    'is_excluded_from_auto_ordering' => [
+                        'type'        => 'toggle',
+                        'label'       => __('Do not auto order'),
+                        'value'       => $orgStock->is_excluded_from_auto_ordering,
+                        'information' => __('Procurement auto-fill proposals skip this SKO. It can still be added to shopping lists by hand.'),
+                    ],
+                    ...($orgStock->measured_lead_time_days !== null ? [] : [
+                        'estimated_lead_time_days' => [
+                            'type'    => 'input',
+                            'label'   => __('Estimated delivery time (days)'),
+                            'value'   => $orgStock->estimated_lead_time_days,
+                            'options' => ['inputType' => 'number']
+                        ],
+                    ]),
                 ]
             ],
             [
                 'label'  => __('Warehouse instructions'),
-                'icon'   => 'fa-light fa-note-sticky',
+                'icon'   => 'fal fa-sticky-note',
                 'fields' => [
                     'note_to_pickers' => [
                         'type'        => 'textarea',

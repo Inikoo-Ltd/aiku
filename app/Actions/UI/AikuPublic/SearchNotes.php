@@ -58,7 +58,7 @@ class SearchNotes
                 'title'     => $document['title'],
                 'summary'   => $document['summary'],
                 'tags'      => $document['tags'],
-                'url'       => route('aiku-public.blog.show', $document['slug']),
+                'url'       => $document['url'] ?? route('aiku-public.blog.show', $document['slug']),
                 'highlight' => [
                     'title'   => $highlights->get('title')['snippet'] ?? $document['title'],
                     'summary' => $highlights->get('summary')['snippet'] ?? $document['summary'],
@@ -72,17 +72,18 @@ class SearchNotes
     protected function searchFallback(string $query): array
     {
         $needle = mb_strtolower($query);
-        $hits = BlogPosts::all()
-            ->filter(fn (array $post) => str_contains(mb_strtolower($post['title'].' '.$post['summary'].' '.$post['body']), $needle))
+        $hits = collect(['blog' => 'aiku-public.blog.show', 'docs' => 'aiku-public.docs.show'])
+            ->flatMap(fn (string $routeName, string $section) => BlogPosts::all($section)
+                ->filter(fn (array $post) => str_contains(mb_strtolower($post['title'].' '.$post['summary'].' '.$post['body']), $needle))
+                ->map(fn (array $post) => [
+                    'slug'      => $post['slug'],
+                    'title'     => $post['title'],
+                    'summary'   => $post['summary'],
+                    'tags'      => $post['tags'],
+                    'url'       => route($routeName, $post['slug']),
+                    'highlight' => ['title' => $post['title'], 'summary' => $post['summary']],
+                ]))
             ->take(8)
-            ->map(fn (array $post) => [
-                'slug'      => $post['slug'],
-                'title'     => $post['title'],
-                'summary'   => $post['summary'],
-                'tags'      => $post['tags'],
-                'url'       => route('aiku-public.blog.show', $post['slug']),
-                'highlight' => ['title' => $post['title'], 'summary' => $post['summary']],
-            ])
             ->values()
             ->all();
 

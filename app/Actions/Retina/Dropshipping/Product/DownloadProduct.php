@@ -45,6 +45,8 @@ class DownloadProduct extends RetinaAction
 
             $zipPath = ProductZipExport::make()->handle($parent, $filename);
 
+            app()->terminating(fn () => is_file($zipPath) && @unlink($zipPath));
+
             return response()->download($zipPath, $filename, [
                 'Content-Type' => 'application/zip',
             ])->deleteFileAfterSend(true);

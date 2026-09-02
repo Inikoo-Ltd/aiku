@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
 use App\Actions\Helpers\AI\Traits\WithPromptAI;
 use App\Events\BroadcastRealtimeChat;
 use App\Http\Resources\CRM\Livechat\ChatMessageResource;
@@ -21,11 +22,13 @@ use LLPhant\Chat\Vision\ImageSource;
 use LLPhant\Chat\Vision\VisionMessage;
 use LLPhant\OpenAIConfig;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Throwable;
 
 class VerifyChatImageMessage
 {
     use AsAction;
     use WithPromptAI;
+    use WithAICreditErrorHandler;
 
 
     private const int NOT_AI_GENERATED_CONFIDENCE_THRESHOLD = 70;
@@ -108,7 +111,14 @@ class VerifyChatImageMessage
             ),
         ];
 
-        $response = trim((string) $chat->generateChat($messages));
+        try {
+            $response = trim((string) $chat->generateChat($messages));
+        } catch (Throwable $e) {
+            $this->rethrowAICreditThrowable($e);
+
+            throw $e;
+        }
+
         $response = trim((string) preg_replace('/^```(?:json)?|```$/m', '', $response));
         $decoded = json_decode($response, true);
 

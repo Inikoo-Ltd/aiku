@@ -321,7 +321,8 @@ watch(
 							<Image
 								:src="fieldValue.department.showcase_image"
 								:alt="fieldValue.department.name || 'showcase image'"
-								class="w-full h-full object-cover" />
+								:imageCover="true"
+								class="w-full h-full" />
 						</template>
 
 						<template v-else>
@@ -374,7 +375,8 @@ watch(
 							<Image
 								:src="fieldValue.department.showcase_image"
 								:alt="fieldValue.department.name"
-								class="w-full h-full object-cover" />
+								:imageCover="true"
+								class="w-full h-full" />
 						</template>
 
 						<template v-else>

@@ -49,6 +49,7 @@ npm-debug.log
 yarn-error.log
 /.idea
 /.vscode
+/.phpactor.json
 /resources/private/
 lang/php_*.json
 prod-diff.sh
@@ -113,6 +114,7 @@ rgb.icc
 /storage/app/robots/*
 /slim_restore.sh
 /get_slim.sh
+/get_aiku.sh
 /devops/varnish/warm_up.sh
 /.output.txt
 laradumps.yaml
@@ -134,3 +136,5 @@ storage/oauth-*.key
 /docs/gsl-es
 /devops/search
 public/art/logo-source.png
+docs/procurement/agents/AW_Nepal_Purchasing_Production_Coordination_Agreement_Final.pdf
+lang/texts_to_translate.json

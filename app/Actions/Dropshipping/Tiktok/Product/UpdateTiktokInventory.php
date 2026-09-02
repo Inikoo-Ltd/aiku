@@ -53,11 +53,14 @@ class UpdateTiktokInventory implements ShouldBeUnique
 
     public function handle(Portfolio $portfolio, CustomerSalesChannel $customerSalesChannel): void
     {
-        /** @var Product $product */
         $product = $portfolio->item;
 
         /** @var TiktokUser $tiktokUser */
         $tiktokUser = $customerSalesChannel->user;
+
+        if (!$product instanceof Product || !$tiktokUser instanceof TiktokUser) {
+            return;
+        }
 
         $platformPortfolioLog = StorePlatformPortfolioLog::run($portfolio, []);
 

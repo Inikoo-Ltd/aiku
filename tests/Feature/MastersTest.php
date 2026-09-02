@@ -15,6 +15,8 @@ use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\DeleteMasterAsset;
 use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
+use App\Actions\Catalogue\Collection\StoreCollection;
+use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMultipleMasterProductsFamily;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
@@ -933,6 +935,33 @@ test('Hydrate master collections', function (MasterCollection $masterCollection)
 
     // And ensure the artisan command runs successfully
     $this->artisan('hydrate:master_collections')->assertSuccessful();
+})->depends('create master collection');
+
+test('linking shop collection to master collection hydrates collection stats', function (MasterCollection $masterCollection) {
+    $collection = StoreCollection::make()->action(
+        $this->shop,
+        [
+            'code' => 'LinkMC1',
+            'name' => 'Linked to master collection',
+        ]
+    );
+
+    UpdateCollection::make()->action($collection, [
+        'master_collection_id' => $masterCollection->id,
+    ]);
+
+    $masterCollection->refresh();
+    expect($masterCollection->stats->number_collections)->toBe(1)
+        ->and($masterCollection->stats->number_current_collections)->toBe(0);
+
+    UpdateCollection::make()->action($collection, [
+        'master_collection_id' => null,
+    ]);
+
+    $masterCollection->refresh();
+    expect($masterCollection->stats->number_collections)->toBe(0);
+
+    return $masterCollection;
 })->depends('create master collection');
 
 // UI: Index master collections in a master shop
@@ -2551,7 +2580,7 @@ test('master asset time series stores no row for periods without activity and dr
     $customer      = createCustomer($this->shop);
     $taxCategoryId = DB::table('tax_categories')->value('id');
     $soldMonth     = now()->subMonth()->startOfMonth();
-    $emptyMonth    = now()->subMonths(2)->startOfMonth();
+    $emptyMonth    = now()->startOfMonth()->subMonths(2);
 
     $transactionId = DB::table('invoice_transactions')->insertGetId([
         'group_id'        => $this->shop->group_id,

@@ -34,6 +34,7 @@ use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\DevOps\MonitorQueueBacklogs;
 use App\Actions\DevOps\WebsiteHealthLog\MonitorWebsitesUptime;
 use App\Actions\Discounts\Offer\ActivateScheduledOffers;
 use App\Actions\Web\Website\Cloudflare\FetchFirewallBlockedCountryEvents;
@@ -84,7 +85,19 @@ class Kernel extends ConsoleKernel
         $schedule->call(fn () => \Illuminate\Support\Facades\DB::table('traffic_source_clicks')->where('created_at', '<', now()->subDays(90))->delete())
             ->name('prune-traffic-source-clicks')->dailyAt('04:30')->timezone('UTC')->onOneServer();
         $schedule->command('search:propose-synonyms')->weeklyOn(1, '03:00')->onOneServer();
-        $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping();
+        $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
+        $schedule->command('comms:archive_dispatched_emails')->dailyAt('03:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
+        $schedule->command('inventory:archive_stock_histories --dates=5')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping(60)
+            ->when(fn () => config('archive.stock_history_nightly'));
+        $schedule->call(function () {
+            foreach (glob(sys_get_temp_dir().'/product_images_*') ?: [] as $leftover) {
+                if (filemtime($leftover) < now()->subHours(2)->timestamp) {
+                    @unlink($leftover);
+                }
+            }
+        })->name('prune-product-image-zips')->hourly()->onOneServer();
+        $schedule->call(fn () => \Illuminate\Support\Facades\DB::table('fetch_stacks')->where('state', 'success')->where('created_at', '<', now()->subDays(7))->delete())
+            ->name('prune-fetch-stacks')->dailyAt('04:15')->timezone('UTC')->onOneServer();
 
         if (config('app.master')) {
             $this->logSchedule(
@@ -157,6 +170,15 @@ class Kernel extends ConsoleKernel
                 ),
                 name: 'MonitorWebsitesUptime',
                 type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(MonitorQueueBacklogs::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'MonitorQueueBacklogs',
+                ),
+                name: 'MonitorQueueBacklogs',
+                type: 'job',
                 scheduledAt: now()->format('H:i')
             );
 
@@ -239,6 +261,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'WarehouseHydratePickingPackingSpeed',
                 ),
                 name: 'WarehouseHydratePickingPackingSpeed',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('hydrate:org-stock-out-of-stock-forecast')->dailyAt('01:30')->timezone('UTC')->onOneServer()->withoutOverlapping(360)->sentryMonitor(
+                    monitorSlug: 'OrgStockHydrateOutOfStockForecast',
+                ),
+                name: 'OrgStockHydrateOutOfStockForecast',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

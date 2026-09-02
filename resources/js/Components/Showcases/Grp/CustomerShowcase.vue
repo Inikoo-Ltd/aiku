@@ -21,7 +21,6 @@ import {
     faArrowAltFromTop,
     faArrowAltFromBottom,
     faReceipt,
-    faCopy,
     faChartLine,
     faExclamationTriangle,
     faShoppingCart,
@@ -47,6 +46,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue"
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import ModalRejected from "@/Components/Utils/ModalRejected.vue"
+import CopyButton from "@/Components/Utils/CopyButton.vue"
 import ButtonPrimeVue from "primevue/button"
 import { Link, router } from "@inertiajs/vue3"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -67,7 +67,7 @@ import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import UpcomingTransactionsPanel from "@/Components/CRM/UpcomingTransactionsPanel.vue"
 import { PDRNotes } from "@/types/Pallet"
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck, faGlobeEurope, faIslandTropical, faGift, faBadgePercent, faHistory, faPaperclip)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck, faGlobeEurope, faIslandTropical, faGift, faBadgePercent, faHistory, faPaperclip)
 
 interface Customer {
     slug: string
@@ -284,24 +284,6 @@ const getStatusText = (status: string, valid: boolean) => {
     return trans("Pending")
 }
 
-// Function: Copy to clipboard
-const copyToClipboard = async (text: string, label: string) => {
-    try {
-        await navigator.clipboard.writeText(text)
-        notify({
-            title: trans("Copied!"),
-            text: trans(`:label copied to clipboard`, { label: label }),
-            type: "success"
-        })
-    } catch (error) {
-        notify({
-            title: trans("Failed"),
-            text: trans("Failed to copy to clipboard"),
-            type: "error"
-        })
-    }
-}
-
 const churnRiskLevel = computed(() => {
     const risk = props.data?.stats?.churn_risk_prediction ?? 0
     if (risk < 0.33) {
@@ -506,7 +488,7 @@ const submitNote = async () => {
     <!-- Quick Actions Bar -->
     <div class="px-4 pt-6 md:px-6 lg:px-8">
         <div class="flex flex-wrap items-center gap-3">
-            <BoxNote :noteData="data.internal_note" :updateRoute="data.update_route" :alternativeStyle="true" class="h-full">
+            <BoxNote v-if="data.shop.type !== 'external'" :noteData="data.internal_note" :updateRoute="data.update_route" :alternativeStyle="true" class="h-full">
                 <template #mainIcon>
                     <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" />
                     {{ trans("Add Note") }}
@@ -529,7 +511,7 @@ const submitNote = async () => {
                 {{ trans("Full Timeline") }}
             </button>
             <a
-                v-if="data.customer.email"
+                v-if="data.customer.email && data.shop.type !== 'external'"
                 :href="`mailto:${data.customer.email}`"
                 class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
             >
@@ -546,7 +528,7 @@ const submitNote = async () => {
             </button>
 
             <UpcomingTransactionsPanel
-                v-if="data.upcoming_transaction_route"
+                v-if="data.upcoming_transaction_route && data.shop.type !== 'external'"
                 :routes="data.upcoming_transaction_route"
                 :shopSlug="data.shop.slug"
                 :temporaryNote="temporaryNote"
@@ -638,11 +620,7 @@ const submitNote = async () => {
                                 <FontAwesomeIcon icon="fal fa-male" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">{{ data?.customer?.contact_name }}</dd>
-                            <button @click="copyToClipboard(data?.customer?.contact_name, 'Contact name')"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="data?.customer?.contact_name" />
                         </div>
 
                         <!-- Field: Company name -->
@@ -653,11 +631,7 @@ const submitNote = async () => {
                                 <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">{{ data?.customer?.company_name }}</dd>
-                            <button @click="copyToClipboard(data?.customer?.company_name, 'Company name')"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="data?.customer?.company_name" />
                         </div>
 
                         <!-- Field: Created at -->
@@ -669,11 +643,7 @@ const submitNote = async () => {
                             <dd class="text-gray-500">
                                 <time datetime="2023-01-31">{{ useFormatTime(data?.customer?.created_at) }}</time>
                             </dd>
-                            <button @click="copyToClipboard(useFormatTime(data?.customer?.created_at), 'Created at')"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="useFormatTime(data?.customer?.created_at)" />
                         </div>
 
                         <!-- Field: Email -->
@@ -685,11 +655,7 @@ const submitNote = async () => {
                             <dd class="text-gray-500">
                                 <a :href="`mailto:${data.customer.email}`">{{ data?.customer?.email }}</a>
                             </dd>
-                            <button @click="copyToClipboard(data?.customer?.email, 'Email')"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="data?.customer?.email" />
                         </div>
 
                         <!-- Field: Phone -->
@@ -701,11 +667,7 @@ const submitNote = async () => {
                             <dd class="text-gray-500">
                                 <a :href="`tel:${data.customer.phone}`">{{ data?.customer?.phone }}</a>
                             </dd>
-                            <button @click="copyToClipboard(data?.customer?.phone, 'Phone')"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="data?.customer?.phone" />
                         </div>
 
                         <!-- Field: Website -->
@@ -717,11 +679,7 @@ const submitNote = async () => {
                             <dd class="text-gray-500">
                                 <a :href="data.customer.contact_website.startsWith('http') ? data.customer.contact_website : `https://${data.customer.contact_website}`" target="_blank" rel="noopener noreferrer">{{ data?.customer?.contact_website }}</a>
                             </dd>
-                            <button @click="copyToClipboard(data?.customer?.contact_website, 'Website')"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="data?.customer?.contact_website" />
                         </div>
 
                         <!-- Field: Address -->
@@ -830,11 +788,7 @@ const submitNote = async () => {
                     <div class="space-y-2">
                         <div class="flex items-center gap-x-2">
                             <div class="text-gray-900 font-medium">{{ data.customer.tax_number.number }}</div>
-                            <button @click="copyToClipboard(data.customer.tax_number.number, 'Tax Number')"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="data.customer.tax_number.number" />
                             <span class="text-xs text-gray-400 ml-1">{{ trans("Tax number") }}</span>
                         </div>
                         <div class="p-3 bg-gray-50 rounded-lg border">
@@ -887,11 +841,7 @@ const submitNote = async () => {
                     <div class="space-y-2">
                         <div class="flex items-center gap-x-2">
                             <div class="text-gray-900 font-medium">{{ data.customer.identity_document_number?.number }}</div>
-                            <button @click="copyToClipboard(data.customer.identity_document_number?.number, data.customer.identity_document_number?.label)"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="data.customer.identity_document_number?.number" />
                             <span class="text-xs text-gray-400 ml-1">{{ data.customer.identity_document_number?.label }}</span>
                         </div>
                     </div>
@@ -909,11 +859,7 @@ const submitNote = async () => {
                     <div class="space-y-2">
                         <div class="flex items-center gap-x-2">
                             <div class="text-gray-900 font-medium">{{ data.customer.identity_document_number_alt?.number }}</div>
-                            <button @click="copyToClipboard(data.customer.identity_document_number_alt?.number, data.customer.identity_document_number_alt?.label)"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="data.customer.identity_document_number_alt?.number" />
                             <span class="text-xs text-gray-400 ml-1">{{ data.customer.identity_document_number_alt?.label }}</span>
                         </div>
                     </div>
@@ -1166,7 +1112,8 @@ const submitNote = async () => {
 
             <!-- Email Subscriptions -->
             <EmailSubscription v-if="data?.customer?.email_subscriptions"
-                               :emailSubscriptions="data.customer.email_subscriptions" />
+                               :emailSubscriptions="data.customer.email_subscriptions"
+                               :showEditButton="data.shop.type !== 'external'" />
         </div>
     </div>
 

@@ -18,19 +18,22 @@ class GenerateGptImagesProgressEvent implements ShouldBroadcastNow
 
     public array $images;
     private int $userId;
+    private ?string $errorMessage;
 
-    public function __construct(array $images, int $userId)
+    public function __construct(array $images, int $userId, ?string $errorMessage = null)
     {
         $this->userId = $userId;
         $this->images = $images;
+        $this->errorMessage = $errorMessage;
     }
 
     public function broadcastWith(): array
     {
         if (blank($this->images)) {
             return [
-                'images' => [],
-                'status' => 'failed'
+                'images'  => [],
+                'status'  => 'failed',
+                'message' => $this->errorMessage
             ];
         }
 

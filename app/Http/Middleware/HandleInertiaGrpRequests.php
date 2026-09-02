@@ -10,6 +10,7 @@
 namespace App\Http\Middleware;
 
 use App\Actions\SysAdmin\User\UI\GetLoggedUser;
+use App\Actions\UI\AikuPublic\BlogPosts;
 use App\Actions\UI\Grp\GetFirstLoadProps;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\Request;
@@ -54,6 +55,7 @@ class HandleInertiaGrpRequests extends Middleware
                     'notification' => fn () => $request->session()->get('notification'),
                     'modal'        => fn () => $request->session()->get('modal')
                 ],
+                'help' => fn () => BlogPosts::helpFor($routeName, $user?->language?->code),
                 'ziggy' => [
                     'location' => $request->url(),
                 ],

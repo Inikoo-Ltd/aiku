@@ -156,6 +156,8 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
         'state'           => PurchaseOrderStateEnum::class,
         'delivery_state' => PurchaseOrderDeliveryStateEnum::class,
         'date'            => 'datetime',
+        'deposit_paid_at' => 'datetime',
+        'balance_paid_at' => 'datetime',
         'submitted_at'    => 'datetime',
         'confirmed_at'    => 'datetime',
         'manufactured_at' => 'datetime',

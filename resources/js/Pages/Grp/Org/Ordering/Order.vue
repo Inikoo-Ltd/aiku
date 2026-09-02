@@ -129,7 +129,6 @@ interface UploadSection {
 const props = defineProps<{
     title: string
     tabs: TSTabs
-
     products?: TableTS
     marketing?: InstanceType<typeof OrderMarketingJourney>['$props']['data']
     shop_type: 'b2b' | 'dropshipping'
@@ -286,6 +285,7 @@ const props = defineProps<{
     invoices?: {}
     attachmentRoutes?: {}
     address_update_route?: routeType
+    billing_address_update_route?: routeType
     addresses?: {}
     contact_address?: Address | null
     upload_excel: UploadSection
@@ -338,6 +338,7 @@ const component = computed(() => {
 
 const isLoadingButton = ref<string | boolean>(false)
 const isModalAddress = ref<boolean>(false)
+const isModalBillingAddress = ref<boolean>(false)
 
 // Tabs: Products
 const formProducts = useForm({ historicAssetId: null, quantity_ordered: 1 })
@@ -1745,6 +1746,12 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         <AlertMessage :alert />
     </div>
 
+    <!-- Section: API order held for payment -->
+    <div v-if="pageHead.api_order?.held_unpaid" class="mx-2 mt-2 rounded-md border border-orange-300 bg-orange-50 px-3 py-2 text-sm text-orange-800">
+        <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />
+        {{ pageHead.api_order.held_message }}
+    </div>
+
     <!-- Section: Box Note -->
     <div class="relative">
         <Transition name="headlessui">
@@ -1863,6 +1870,11 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             <div v-if="is_forbidden_billing" v-tooltip="ctrans('This billing address was banned (listed in Shop settings)')" class="absolute top-2 right-2">
                                 <FontAwesomeIcon icon='fal fa-exclamation-triangle' class='text-red-500' fixed-width aria-hidden='true' />
                             </div>
+                            <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched' && billing_address_update_route"
+                                @click="() => isModalBillingAddress = true"
+                                class="w-fit pr-4 cursor-pointer underline text-gray-500 hover:text-blue-700 whitespace-nowrap">
+                                <span>{{ ctrans("Edit") }}</span>
+                            </div>
                         </dd>
                     </dl>
 
@@ -1951,10 +1963,15 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             <dd
                                 class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                                 <div v-html="box_stats?.customer?.addresses?.delivery?.formatted_address"></div>
-                                <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
-                                    @click="() => isModalAddress = true"
-                                    class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-                                    <span>{{ ctrans("Edit") }}</span>
+                                <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'" class="flex gap-x-3">
+                                    <div @click="() => isModalAddress = true"
+                                        class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                                        <span>{{ ctrans("Edit") }}</span>
+                                    </div>
+                                    <div v-if="billing_address_update_route" @click="() => isModalBillingAddress = true"
+                                        class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                                        <span>{{ ctrans("Edit billing address") }}</span>
+                                    </div>
                                 </div>
                             </dd>
                             <CopyButton
@@ -2672,6 +2689,14 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             @onDone="() => (isModalAddress = false)" />
     </Modal>
 
+
+    <!-- Section: billing address edit -->
+    <Modal :isOpen="isModalBillingAddress" @onClose="() => (isModalBillingAddress = false)" width="w-full max-w-xl">
+        <AddressEditModal v-if="billing_address_update_route" :addresses="delivery_address_management.addresses"
+            :address="box_stats?.customer.addresses.billing" :title="ctrans('Billing address')"
+            :updateRoute="billing_address_update_route" @submitted="() => (isModalBillingAddress = false)"
+            closeButton />
+    </Modal>
 
     <!-- Modal: Add Voucher -->
     <Modal :isOpen="isOpenModalAddVoucher" @onClose="isOpenModalAddVoucher = false" width="w-full max-w-md">

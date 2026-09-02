@@ -6,6 +6,7 @@ import { faCartPlus, faUsers, faGlobe } from "@fal"
 library.add(faCartPlus, faUsers, faGlobe)
 
 defineProps<{
+    bare?: boolean
     demand?: {
         days: number
         opportunities: {
@@ -20,13 +21,13 @@ defineProps<{
 </script>
 
 <template>
-    <div v-if="demand" class="bg-white rounded-lg p-4 shadow-sm border border-gray-300">
-        <h3 class="text-lg font-semibold flex items-center gap-2">
+    <div v-if="demand" :class="bare ? '' : 'bg-white rounded-lg p-4 shadow-sm border border-gray-300'">
+        <h3 v-if="!bare" class="text-lg font-semibold flex items-center gap-2">
             <FontAwesomeIcon icon="fal fa-cart-plus" class="text-green-600" fixed-width aria-hidden="true" />
             {{ ctrans("Customers asked for, we do not sell") }}
             <span class="text-xs font-normal text-gray-400">{{ ctrans("last :days days", { days: String(demand.days) }) }}</span>
         </h3>
-        <p class="text-sm text-gray-500 mb-3">
+        <p v-if="!bare" class="text-sm text-gray-500 mb-3">
             {{ ctrans("Searched on our websites, no matching product in any of our shops.") }}
         </p>
 

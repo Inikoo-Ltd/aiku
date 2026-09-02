@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
+use App\Actions\Accounting\Invoice\GetInvoicePdfColumns;
 use App\Actions\Accounting\Invoice\WithInvoicePayBox;
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactions;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
@@ -206,8 +207,7 @@ class ShowInvoice extends OrgAction
 
     public function getDownloadPdfColumns(Invoice $invoice): array
     {
-        $shopSettings = $invoice->shop->settings ?? [];
-        $savedColumns = Arr::get($shopSettings, 'invoicing.download_pdf_columns', []);
+        $savedColumns = GetInvoicePdfColumns::run($invoice);
 
         $columns = [
             [
@@ -258,10 +258,18 @@ class ShowInvoice extends OrgAction
                 'label' => __('Batch Code'),
                 'value' => 'show_batch_code',
             ],
+            [
+                'label' => __('Out of stock items in a separate block'),
+                'value' => 'separate_out_of_stock',
+            ],
+            [
+                'label' => __('Discounts'),
+                'value' => 'show_discounts',
+            ],
         ];
 
         return array_map(function (array $column) use ($savedColumns) {
-            $column['is_checked'] = (bool)Arr::get($savedColumns, $column['value'], false);
+            $column['is_checked'] = $savedColumns[$column['value']] ?? false;
 
             return $column;
         }, $columns);
@@ -280,10 +288,6 @@ class ShowInvoice extends OrgAction
                 'parameters' => [
                     'organisation'         => $invoice->organisation->slug,
                     'invoice'              => $invoice->slug,
-                    'country_of_origin'    => true,
-                    'weight'               => true,
-                    'commodity_codes'      => true,
-                    'show_dispatch_totals' => true,
                 ]
             ],
             [

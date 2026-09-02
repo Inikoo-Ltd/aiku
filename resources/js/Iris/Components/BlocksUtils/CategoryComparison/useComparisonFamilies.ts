@@ -25,7 +25,13 @@ export const useComparisonFamilies = (
     const details = ref<Record<string, ComparisonFamily>>({})
     const requestedSlugs = new Set<string>()
 
+    const isRouteAvailable = () => typeof window !== "undefined" && typeof route === "function"
+
     const loadFamilies = async () => {
+        if (!isRouteAvailable()) {
+            return
+        }
+
         details.value = {}
         requestedSlugs.clear()
 
@@ -51,7 +57,7 @@ export const useComparisonFamilies = (
     const loadDetails = async (slugs: string[]) => {
         const missingSlugs = slugs.filter(slug => !requestedSlugs.has(slug))
 
-        if (!fetchParameters.value || !missingSlugs.length) {
+        if (!isRouteAvailable() || !fetchParameters.value || !missingSlugs.length) {
             return
         }
 

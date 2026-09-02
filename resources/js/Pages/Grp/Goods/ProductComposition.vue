@@ -93,7 +93,7 @@ const triangleProductsCount = computed(() => {
                 <div class="px-4 sm:px-6" :class="section.compact ? 'py-2 divide-y divide-gray-100' : 'py-4'">
                     <FieldForm v-for="(fieldData, fieldName) in section.fields"
                         :key="`${sectionIdx}-${fieldName}`"
-                        :field="fieldName as string"
+                        :field="(fieldName as string)"
                         :fieldData="fieldData"
                         :args="formData.args"
                         :refForms="undefined"

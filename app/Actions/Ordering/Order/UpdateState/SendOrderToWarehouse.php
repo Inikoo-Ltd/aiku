@@ -12,6 +12,7 @@ use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
+use App\Actions\Dispatching\FulfilmentGate\GetGateCoverage;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\UpdateOrder;
@@ -46,6 +47,8 @@ class SendOrderToWarehouse extends OrgAction
 
     private Order $order;
 
+    private bool $releaseFromGate = false;
+
 
     /**
      * @throws \Throwable
@@ -53,6 +56,10 @@ class SendOrderToWarehouse extends OrgAction
     public function handle(Order $order, array $modelData): ?DeliveryNote
     {
         data_set($modelData, 'state', OrderStateEnum::IN_WAREHOUSE);
+
+        if ($this->releaseFromGate && $order->at_gate_at) {
+            $this->update($order, ['at_gate_at' => null]);
+        }
         $date = now();
 
 
@@ -89,6 +96,17 @@ class SendOrderToWarehouse extends OrgAction
             return null;
         }
 
+
+        if (!$this->releaseFromGate
+            && $order->organisation->hasFulfilmentGate()
+            && !GetGateCoverage::make()->isFullyCoverable($order)
+        ) {
+            if (!$order->at_gate_at) {
+                $this->update($order, ['at_gate_at' => $date]);
+            }
+
+            return null;
+        }
 
         $deliveryNoteData = [
             'delivery_address'          => $order->deliveryAddress,
@@ -276,10 +294,11 @@ class SendOrderToWarehouse extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Order $order, array $modelData): ?DeliveryNote
+    public function action(Order $order, array $modelData, bool $releaseFromGate = false): ?DeliveryNote
     {
-        $this->asAction = true;
-        $this->order    = $order;
+        $this->asAction        = true;
+        $this->releaseFromGate = $releaseFromGate;
+        $this->order           = $order;
         $this->initialisationFromShop($order->shop, $modelData);
 
         return $this->handle($order, $this->validatedData);

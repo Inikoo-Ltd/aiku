@@ -61,7 +61,7 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
             $deliveryDays = $purchaseOrder->purchaseOrderTransactions()
                 ->where('purchase_order_transactions.state', PurchaseOrderTransactionStateEnum::SUBMITTED)
                 ->join('supplier_products', 'supplier_products.id', 'purchase_order_transactions.supplier_product_id')
-                ->selectRaw("max((supplier_products.data->>'delivery_time')::int) as delivery_days")
+                ->selectRaw("max(coalesce(supplier_products.measured_lead_time_days, supplier_products.estimated_lead_time_days, case when supplier_products.data->>'delivery_time' ~ '^[0-9]+$' then (supplier_products.data->>'delivery_time')::int end)) as delivery_days")
                 ->value('delivery_days');
 
             if ($deliveryDays !== null) {

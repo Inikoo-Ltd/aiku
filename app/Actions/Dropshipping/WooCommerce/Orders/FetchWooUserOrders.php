@@ -47,16 +47,26 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
             return;
         }
 
-        $wooOrders = $wooCommerceUser->getWooCommerceOrders(
-            [
-                'status'   => 'processing',
-                'per_page' => 100,
-                'after'    => now()->subDays(14)->toISOString(),
-            ]
-        );
+        $wooOrders = [];
+        for ($page = 1; $page <= 10; $page++) {
+            $pageOrders = $wooCommerceUser->getWooCommerceOrders(
+                [
+                    'status'   => 'processing',
+                    'per_page' => 100,
+                    'page'     => $page,
+                    'after'    => now()->subDays(14)->toISOString(),
+                ]
+            );
 
-        if ($wooOrders === null) {
-            return;
+            if (!is_array($pageOrders)) {
+                break;
+            }
+
+            $wooOrders = array_merge($wooOrders, $pageOrders);
+
+            if (count($pageOrders) < 100) {
+                break;
+            }
         }
 
         foreach ($wooOrders as $wooOrder) {

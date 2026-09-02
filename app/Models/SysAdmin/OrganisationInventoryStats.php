@@ -41,6 +41,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_org_stock_families_state_discontinuing
  * @property int $number_org_stock_families_state_discontinued
  * @property int $number_org_stocks
+ * @property int $number_org_stocks_excluded_from_auto_ordering
  * @property int $number_current_org_stocks active + discontinuing
  * @property int $number_dropped_org_stocks discontinued + abnormality
  * @property int $number_org_stocks_state_active

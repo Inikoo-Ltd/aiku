@@ -26,7 +26,7 @@ class IndexWebLayoutTemplates extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('web_layout_templates.name', $value)
-                    ->orWhereStartWith('user.username', $value);
+                    ->orWhereStartWith('users.username', $value);
             });
         });
 

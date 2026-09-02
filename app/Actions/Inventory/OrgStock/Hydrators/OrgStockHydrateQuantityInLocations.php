@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock\Hydrators;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Dispatching\FulfilmentGate\ReleaseCoverableOrdersAtGate;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLowStockAudits;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateReplenishments;
 use App\Actions\Production\RawMaterial\Hydrators\RawMaterialHydrateFromOrgStock;
@@ -44,7 +45,7 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
             return;
         }
 
-        //        $oldQuantityAvailable   = $orgStock->quantity_available;
+        $oldQuantityAvailable = $orgStock->quantity_available;
         //        $oldQuantityInLocations = $orgStock->quantity_in_locations;
 
         $quantityInLocations = DB::table('location_org_stocks')->where('org_stock_id', $orgStock->id)->sum('quantity');
@@ -72,6 +73,12 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
         ]);
 
         if ($orgStock->wasChanged('quantity_available')) {
+            OrgStockHydrateOutOfStockForecast::dispatch($orgStock)->delay(30);
+
+            if ($quantityAvailable > $oldQuantityAvailable && $orgStock->organisation->hasFulfilmentGate()) {
+                ReleaseCoverableOrdersAtGate::dispatch($orgStock->organisation_id)->delay(5);
+            }
+
             //            DB::table('debug_stock_updates')->insert([
             //                'org_stock_id'              => $orgStock->id,
             //                'slug'                      => $orgStock->slug,

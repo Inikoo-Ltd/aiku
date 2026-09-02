@@ -323,7 +323,9 @@
 
 @php($hidePriceQtyColumns = $isRefund && $transactions->every(fn ($t) => $t->is_refund && !($t->net_amount == 0 && $t->tax_amount != 0) && refundQuantityLabel($t->quantity, soldPackUnits($t->historicAsset?->units, $t->model?->units)) === null))
 @php($isTaxOnlyRefund = $isRefund && $invoice->is_tax_only)
+@php($showDiscountColumn = !empty($show_discounts) && !$hidePriceQtyColumns && !$isTaxOnlyRefund)
 @php($totalsFillerColspan = $hidePriceQtyColumns ? 2 : ($isTaxOnlyRefund ? 3 : 4))
+@php($totalsLabelColspan = $showDiscountColumn ? 2 : 1)
 <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
     <thead>
     <tr>
@@ -334,11 +336,15 @@
         @elseif($isTaxOnlyRefund)
             <td style="text-align:left;width:20%">{{ __('Notes') }}</td>
         @elseif($pro_mode)
-            <td style="text-align:right;width:20%">{{ __('Unit Price') }}</td>
+            <td style="text-align:right;width:18%">{{ __('Unit Price') }}</td>
             <td style="text-align:right">{{ __('Units') }}</td>
         @else
-            <td style="text-align:left;width:20%">{{ __('Price') }}</td>
+            <td style="text-align:left;width:18%">{{ __('Price') }}</td>
             <td style="text-align:left">{{ __('Qty') }}.</td>
+        @endif
+
+        @if($showDiscountColumn)
+            <td style="text-align:right;width:11%">{{ __('Discount') }}</td>
         @endif
 
         <td style="width:14%;text-align:right">{{ __('Amount') }}</td>
@@ -355,7 +361,7 @@
         @foreach($transactionGroups as $tariffCode => $groupTransactions)
             @if($group_by_tariff_code)
                 <tr>
-                    <td colspan="6" style="background-color:#EEEEEE;font-weight:bold;border:0.1mm solid #000000;">
+                    <td colspan="{{ $showDiscountColumn ? 7 : 6 }}" style="background-color:#EEEEEE;font-weight:bold;border:0.1mm solid #000000;">
                         {{ __('Tariff Code') }}: {{ $tariffCode }}
                     </td>
                 </tr>
@@ -459,6 +465,14 @@
                             <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : trimDecimalZeros($transaction->quantity) }}</td>
                         @endif
                     @endif
+                    @if($showDiscountColumn)
+                        <td style="text-align:right">
+                            {{ discountPercentageLabel($transaction->gross_amount, $transaction->net_amount) }}
+                            @if(!empty($discountOfferNames[$transaction->id]))
+                                <br><span style="font-size:7pt;color:#555">{{ $discountOfferNames[$transaction->id] }}</span>
+                            @endif
+                        </td>
+                    @endif
                     @if($taxOnlyRefundLine)
                         <td style="text-align:right">{{ $invoice->currency->symbol . number_format(-$transaction->tax_amount, 2) }}</td>
                     @elseif ($sameGrossNet)
@@ -513,6 +527,10 @@
                                 </td>
                             @endif
 
+                            @if($showDiscountColumn)
+                                <td></td>
+                            @endif
+
                             <td style="text-align:right; font-size:8pt; color:#555;">
                                 {{ $invoice->currency->symbol . number_format($lineTotal, 2) }}
                             </td>
@@ -528,105 +546,105 @@
 
             <tr class="total_net">
                 <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
-                <td>{{ __('Total Net') }}</td>
+                <td colspan="{{ $totalsLabelColspan }}">{{ __('Total Net') }}</td>
                 <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
             </tr>
 
-            @include('invoices.templates.pdf.tax-rows', ['document' => $invoice, 'fillerColspan' => $totalsFillerColspan])
+            @include('invoices.templates.pdf.tax-rows', ['document' => $invoice, 'fillerColspan' => $totalsFillerColspan, 'labelColspan' => $totalsLabelColspan])
 
             <tr class="total">
                 <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
-                <td><b>{{ __('Total') }}</b></td>
+                <td colspan="{{ $totalsLabelColspan }}"><b>{{ __('Total') }}</b></td>
                 <td>{{ $invoice->currency->symbol . $invoice->total_amount }}</td>
             </tr>
 
         @elseif ($order && ($order?->goods_amount != $order->gross_amount))
 
             <tr>
-                <td style="border:none" colspan="4"></td>
-                <td>{{ __('Total Gross') }}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{ __('Total Gross') }}</td>
                 <td>{{ $invoice->currency->symbol . $order->gross_amount }}</td>
             </tr>
 
             <tr>
-                <td style="border:none" colspan="4"></td>
-                <td style="color: #16a34a">{{ __('Discounts') }}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}" style="color: #16a34a">{{ __('Discounts') }}</td>
                 <td style="color: #16a34a">- {{ $invoice->currency->symbol . number_format($order->gross_amount - $order->goods_amount, 2) }}</td>
             </tr>
 
             <tr>
-                <td style="border:none" colspan="4"></td>
-                <td>{{ __('Items Net') }}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{ __('Items Net') }}</td>
                 <td>{{ $invoice->currency->symbol . $order->goods_amount }}</td>
             </tr>
 
             <tr>
-                <td style="border:none" colspan="4"></td>
-                <td>{{ __('Charges') }}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{ __('Charges') }}</td>
                 <td>{{ $invoice->currency->symbol . $invoice->charges_amount }}</td>
             </tr>
 
             <tr>
-                <td style="border:none" colspan="4"></td>
-                <td>{{ __('Shipping') }}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{ __('Shipping') }}</td>
                 <td>{{ $invoice->currency->symbol . $invoice->shipping_amount }}</td>
             </tr>
 
 
             @if(($adjustmentsNet = $invoice->invoiceTransactions->where('model_type', 'Adjustment')->sum('net_amount')) != 0)
                 <tr>
-                    <td style="border:none" colspan="4"></td>
-                    <td>{{ __('Adjustments') }}</td>
+                    <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                    <td colspan="{{ $totalsLabelColspan }}">{{ __('Adjustments') }}</td>
                     <td>{{ $invoice->currency->symbol . number_format($adjustmentsNet, 2) }}</td>
                 </tr>
             @endif
             <tr class="total_net">
-                <td style="border:none" colspan="4"></td>
-                <td>{{__('Total Net')}}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{__('Total Net')}}</td>
                 <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
             </tr>
 
-            @include('invoices.templates.pdf.tax-rows', ['document' => $invoice])
+            @include('invoices.templates.pdf.tax-rows', ['document' => $invoice, 'fillerColspan' => $totalsFillerColspan, 'labelColspan' => $totalsLabelColspan])
 
             <tr class="total">
-                <td style="border:none" colspan="4"></td>
-                <td><b>{{ __('Total') }}</b></td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}"><b>{{ __('Total') }}</b></td>
                 <td>{{ $invoice->currency->symbol . $invoice->total_amount }}</td>
             </tr>
 
         @else
 
             <tr>
-                <td style="border:none" colspan="4"></td>
-                <td>{{ __('Charges') }}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{ __('Charges') }}</td>
                 <td>{{ $invoice->currency->symbol . $invoice->charges_amount }}</td>
             </tr>
 
             <tr>
-                <td style="border:none" colspan="4"></td>
-                <td>{{ __('Shipping') }}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{ __('Shipping') }}</td>
                 <td>{{ $invoice->currency->symbol . $invoice->shipping_amount }}</td>
             </tr>
 
 
             @if(($adjustmentsNet = $invoice->invoiceTransactions->where('model_type', 'Adjustment')->sum('net_amount')) != 0)
                 <tr>
-                    <td style="border:none" colspan="4"></td>
-                    <td>{{ __('Adjustments') }}</td>
+                    <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                    <td colspan="{{ $totalsLabelColspan }}">{{ __('Adjustments') }}</td>
                     <td>{{ $invoice->currency->symbol . number_format($adjustmentsNet, 2) }}</td>
                 </tr>
             @endif
             <tr class="total_net">
-                <td style="border:none" colspan="4"></td>
-                <td>{{__('Total Net')}}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{__('Total Net')}}</td>
                 <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
             </tr>
 
-            @include('invoices.templates.pdf.tax-rows', ['document' => $invoice])
+            @include('invoices.templates.pdf.tax-rows', ['document' => $invoice, 'fillerColspan' => $totalsFillerColspan, 'labelColspan' => $totalsLabelColspan])
 
             <tr class="total">
-                <td style="border:none" colspan="4"></td>
-                <td><b>{{ __('Total') }}</b></td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}"><b>{{ __('Total') }}</b></td>
                 <td>{{ $invoice->currency->symbol . $invoice->total_amount }}</td>
             </tr>
         @endif
@@ -635,6 +653,41 @@
 </table>
 
 <br>
+@if(!empty($outOfStockTransactions) && count($outOfStockTransactions))
+    <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
+        <tr class="title">
+            <td colspan="5">{{ __('Ordered but not supplied (out of stock)') }}</td>
+        </tr>
+
+        <tr class="title">
+            <td style="width:14%;text-align:left">{{ __('Code') }}</td>
+            <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
+            <td style="width:14%;text-align:right">{{ __('Qty ordered') }}</td>
+            <td style="width:14%;text-align:right">{{ __('Qty not supplied') }}</td>
+        </tr>
+
+        <tbody class="out_of_stock">
+        @foreach($outOfStockTransactions as $transaction)
+            <tr class="@if($loop->last) last @endif">
+                <td style="text-align:left">{{ $transaction->historicAsset?->code }}</td>
+                <td style="text-align:left" colspan="2">
+                    @if(!$pro_mode && $transaction->model && $transaction->model->units > 1)
+                        {{ trimDecimalZeros($transaction->model->units) }}x
+                    @endif
+                    {{ $transaction->historicAsset?->name }}
+                </td>
+                <td style="text-align:right">{{ trimDecimalZeros($transaction->transaction?->quantity_ordered ?? 0) }}</td>
+                <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity_not_supplied ?? 0) }}</td>
+            </tr>
+        @endforeach
+        </tbody>
+    </table>
+    <div style="font-size: 8pt; color: #777; margin-top: 2mm;">
+        {{ __('These quantities were out of stock, have not been supplied and are not charged on this invoice.') }}
+    </div>
+    <br>
+@endif
+
 @if (!empty($refunds))
     <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
         <tr class="title">
@@ -644,7 +697,7 @@
         <tr class="title">
             <td style="width:14%;text-align:left">{{ __('Code') }}</td>
             <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
-            <td style="text-align:left;width:20%">{{ __('Price') }}</td>
+            <td style="text-align:left;width:18%">{{ __('Price') }}</td>
             <td style="text-align:left">{{ __('Qty') }}</td>
             <td style="width:14%;text-align:right">{{ __('Amount') }}</td>
         </tr>
@@ -670,7 +723,7 @@
 <br>
 
 @if($invoice->payments->count() >0)
-    <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
+    <table class="items" width="100%" style="font-size: 7pt; border-collapse: collapse;" cellpadding="4">
         <tr class="title">
             <td colspan="5">{{ __('Payments') }}</td>
         </tr>
@@ -687,10 +740,14 @@
         @foreach($invoice->payments as $payment)
             <tr class="@if($loop->last) last @endif">
                 <td style="text-align:left">
-                    {{ $payment->paymentAccount['name'] }}
+                    @if($payment->paymentAccount->type == \App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum::ACCOUNT)
+                        {{ __('Credit Balance') }}
+                    @else
+                        {{ \App\Models\Accounting\Payment::methodLabel($payment->sub_method ?: $payment->method) ?: $payment->paymentAccount['name'] }}
+                    @endif
                 </td>
                 <td style="text-align:right">
-                    {{ $payment->updated_at?->copy()->setTimezone($shop->timezone->name)->format('F j, Y H:i a') }}
+                    {{ $payment->updated_at?->copy()->setTimezone($shop->timezone->name)->format('M j, Y H:i') }}
                 </td>
                 <td style="text-align:left">{{ $payment->state->labels()[$payment->state->value] }}</td>
                 <td style="text-align:left">{{ $payment->reference }}</td>
@@ -698,6 +755,11 @@
             </tr>
         @endforeach
         </tbody>
+        @if($invoice->payments->contains(fn ($payment) => $payment->paymentAccount->type == \App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum::ACCOUNT && $payment->amount < 0))
+            <tr>
+                <td colspan="5" style="text-align:left; font-size: 7pt;">{{ __('Any outstanding balance has been applied to your customer account balance unless otherwise requested. Please contact Customer Service if you require any assistance.') }}</td>
+            </tr>
+        @endif
 
     </table>
 @endif

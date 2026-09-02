@@ -81,7 +81,7 @@ trait UpsertsTimeSeriesRecords
      * @param array<int, array<string, mixed>> $rows
      * @param array<int, string> $uniqueBy
      */
-    protected function upsertTimeSeriesRecords(Model $timeSeries, array $rows, array $uniqueBy): void
+    protected function upsertTimeSeriesRecords(Model $timeSeries, array $rows, array $uniqueBy, string $relation = 'records'): void
     {
         if ($rows === []) {
             return;
@@ -90,7 +90,7 @@ trait UpsertsTimeSeriesRecords
         $updateColumns = array_values(array_diff(array_keys($rows[0]), $uniqueBy));
 
         foreach (array_chunk($rows, 500) as $chunk) {
-            $timeSeries->records()->upsert($chunk, $uniqueBy, $updateColumns);
+            $timeSeries->{$relation}()->upsert($chunk, $uniqueBy, $updateColumns);
         }
     }
 }

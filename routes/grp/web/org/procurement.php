@@ -16,11 +16,19 @@ use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
 use App\Actions\Procurement\OrgAgent\ExportOrgAgents;
 use App\Actions\Procurement\OrgAgent\UI\EditOrgAgent;
 use App\Actions\Procurement\OrgAgent\UI\IndexOrgAgents;
+use App\Actions\Procurement\OrgAgent\RemoveMisplacedAgentShoppingListItems;
+use App\Actions\Procurement\OrgAgent\StoreAgentShoppingListItems;
+use App\Actions\Procurement\OrgAgent\SuggestAgentShoppingList;
+use App\Actions\Procurement\OrgAgent\UI\IndexAgentCoverBucketItems;
+use App\Actions\Procurement\OrgAgent\UI\ShowAgentShoppingDashboard;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgPartner\UI\IndexOrgPartners;
-use App\Actions\Procurement\PartnerShoppingListItem\CherryPickPartnerShoppingListItems;
+use App\Actions\Procurement\OrgPartner\UI\IndexPartnerCoverBucketItems;
+use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
+use App\Actions\Procurement\OrgPartner\UI\ShowPartnerShoppingDashboard;
+use App\Actions\Procurement\OrgPartner\RemoveMisplacedShoppingListItems;
+use App\Actions\Procurement\OrgPartner\UpdatePartnerLeadTimeEstimate;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
-use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexPartnerShippingList;
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexPartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
@@ -32,7 +40,12 @@ use App\Actions\Procurement\OrgSupplier\UI\CreateOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UI\EditOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UI\IndexOrgAgentSuppliers;
 use App\Actions\Procurement\OrgSupplier\UI\IndexOrgSuppliers;
+use App\Actions\Procurement\OrgSupplier\UI\IndexSupplierCoverBucketItems;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
+use App\Actions\Procurement\OrgSupplier\UI\ShowSupplierShoppingDashboard;
+use App\Actions\Procurement\OrgSupplier\RemoveMisplacedSupplierShoppingListItems;
+use App\Actions\Procurement\ShoppingListItem\StoreShoppingListItems;
+use App\Actions\Procurement\ShoppingListItem\SuggestSupplierShoppingList;
 use App\Actions\SupplyChain\Supplier\UI\CreateSupplier;
 use App\Actions\Procurement\OrgSupplierProducts\UI\EditOrgSupplierProduct;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\EditAgentSupplierPurchaseOrder;
@@ -75,6 +88,13 @@ Route::prefix('agents')->as('org_agents.')->group(function () {
         Route::get('supplier-products', [IndexOrgSupplierProducts::class, 'inOrgAgent'])->name('.supplier_products.index');
         Route::get('supplier-products/{orgSupplierProduct}', [ShowOrgSupplierProduct::class, 'inOrgAgent'])->name('.supplier_products.show');
         Route::get('agent-supplier-purchase-orders', [IndexAgentSupplierPurchaseOrders::class, 'inOrgAgent'])->name('.agent_supplier_purchase_orders.index');
+        Route::prefix('shopping')->as('.shopping.')->group(function () {
+            Route::get('', ShowAgentShoppingDashboard::class)->name('dashboard');
+            Route::get('items', IndexAgentCoverBucketItems::class)->name('items.index');
+            Route::post('suggest', SuggestAgentShoppingList::class)->name('suggest');
+            Route::post('bulk', StoreAgentShoppingListItems::class)->name('bulk_store');
+            Route::delete('misplaced', RemoveMisplacedAgentShoppingListItems::class)->name('misplaced.destroy');
+        });
     });
 });
 
@@ -93,13 +113,18 @@ Route::prefix('suppliers')->as('org_suppliers.')->group(function () {
     Route::get('{orgSupplier}/purchase-orders', [IndexPurchaseOrders::class, 'inOrgSupplier'])->name('show.purchase_orders.index');
     Route::get('{orgSupplier}/purchase-orders/create', CreatePurchaseOrder::class)->name('show.purchase_orders.create');
     Route::get('{orgSupplier}/stock-deliveries', [IndexStockDeliveries::class, 'inOrgSupplier'])->name('show.stock_deliveries.index');
+    Route::get('{orgSupplier}/shopping-list', [IndexShoppingListItems::class, 'inOrgSupplier'])->name('show.shopping_list.index');
 
+    Route::prefix('{orgSupplier}/shopping')->as('show.shopping.')->group(function () {
+        Route::get('', ShowSupplierShoppingDashboard::class)->name('dashboard');
+        Route::get('items', IndexSupplierCoverBucketItems::class)->name('items.index');
+        Route::post('suggest', SuggestSupplierShoppingList::class)->name('suggest');
+        Route::delete('misplaced', RemoveMisplacedSupplierShoppingListItems::class)->name('misplaced.destroy');
+    });
 });
 
 Route::prefix('partners')->as('org_partners.')->group(function () {
     Route::get('', IndexOrgPartners::class)->name('index');
-    Route::get('shipping-list', IndexPartnerShippingList::class)->name('shipping_list.index');
-    Route::post('shipping-list/cherry-pick', CherryPickPartnerShoppingListItems::class)->name('shipping_list.cherry_pick');
     Route::prefix('{orgPartner}')->as('show')->group(function () {
         Route::get('', ShowOrgPartner::class);
         Route::prefix('purchase-orders')->as('.purchase-orders.')->group(function () {
@@ -111,6 +136,16 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
         });
         Route::prefix('stock-deliveries')->as('.stock-deliveries.')->group(function () {
             Route::get('index', [IndexStockDeliveries::class, 'inOrgPartner'])->name('index');
+            Route::get('{stockDelivery}', [ShowStockDelivery::class, 'inOrgPartner'])->name('show');
+        });
+        Route::prefix('shopping')->as('.shopping.')->group(function () {
+            Route::get('', ShowPartnerShoppingDashboard::class)->name('dashboard');
+            Route::patch('lead-time', UpdatePartnerLeadTimeEstimate::class)->name('lead_time.update');
+            Route::delete('misplaced', RemoveMisplacedShoppingListItems::class)->name('misplaced.destroy');
+            Route::get('items', IndexPartnerCoverBucketItems::class)->name('items.index');
+        });
+        Route::prefix('browse')->as('.browse.')->group(function () {
+            Route::get('', ShowPartnerBrowse::class)->name('index');
         });
         Route::prefix('shopping-list')->as('.shopping_list.')->group(function () {
             Route::get('', IndexPartnerShoppingListItems::class)->name('index');
@@ -132,6 +167,7 @@ Route::prefix('supplier-products')->as('org_supplier_products.')->group(function
 
 Route::prefix('shopping-list')->as('shopping_list.')->group(function () {
     Route::get('', IndexShoppingListItems::class)->name('index');
+    Route::post('bulk', StoreShoppingListItems::class)->name('bulk_store');
     Route::get('board', ShowShoppingListBoard::class)->name('board');
     Route::post('cherry-pick', [CherryPickShoppingListItems::class, 'inOrganisation'])->name('cherry_pick');
     Route::post('{orgSupplierProduct}', StoreShoppingListItem::class)->name('store');

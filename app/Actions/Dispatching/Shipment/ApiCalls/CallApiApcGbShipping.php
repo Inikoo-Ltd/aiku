@@ -168,16 +168,14 @@ class CallApiApcGbShipping extends OrgAction
             return $this->sizeFailure();
         }
 
-        // ponytail: LQ and NC keep their code on remote routes; confirm with APC whether TDAY has equivalents
-        if (
-            !in_array($productCode, ['NC16', 'LQ16'])
-            && !preg_match('/^(BT51|IV(\d\s|20|25|30|31|32|33|34|35|36|37|63)|AB(41|51|52)|PA79)/', $postalCode)
-            && preg_match(
-                '/^((JE|GG|IM|KW|HS|ZE|IV)\d+)|AB(30|33|34|35|36|37|38)|AB[4-5]\d|DD[89]|FK(16)|PA(20|36|4\d|6\d|7\d)|PH((15|16|17|18|19)|[2-5]\d)|KA(27|28)/',
-                $postalCode
-            )
-        ) {
-            $productCode = 'TDAY';
+        // ponytail: LQ16 and XS16 keep their code on 2-5 day routes; APC lists no TD limited-quantity or excess service
+        if ($this->isTwoToFiveDayPostcode($postalCode)) {
+            $productCode = match ($productCode) {
+                'LW16' => 'TDLW',
+                'ND16' => 'TDAY',
+                'NC16' => 'TDNC',
+                default => $productCode,
+            };
         }
 
 
@@ -298,6 +296,25 @@ class CallApiApcGbShipping extends OrgAction
             'modelData' => $modelData,
             'errorData' => $errorData,
         ];
+    }
+
+    public function isTwoToFiveDayPostcode(string $postalCode): bool
+    {
+        if (!preg_match('/^([A-Z]{1,2})(\d{1,2})/', strtoupper(trim($postalCode)), $matches)) {
+            return false;
+        }
+        $area     = $matches[1];
+        $district = (int)$matches[2];
+
+        return match ($area) {
+            'JE', 'GG', 'IM', 'KW', 'HS', 'ZE' => true,
+            'AB' => in_array($district, [37, 38, 43, 44, 45, 55, 56]),
+            'IV' => in_array($district, [21, 22, 26, 27, 28]) || ($district >= 40 && $district <= 49) || ($district >= 51 && $district <= 56),
+            'PA' => $district == 20 || ($district >= 41 && $district <= 49) || ($district >= 60 && $district <= 78),
+            'PH' => $district >= 42 && $district <= 44,
+            'KA' => $district == 27 || $district == 28,
+            default => false,
+        };
     }
 
     public function sizeFailure(): array

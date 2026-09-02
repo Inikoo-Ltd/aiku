@@ -11,13 +11,17 @@ namespace App\Actions\Procurement\UI;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\UI\GetPartnerMiniCart;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Search\GetSearchDemandOpportunities;
 use App\Actions\UI\WithInertia;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Dispatching\Shipper;
 use App\Models\GoodsIn\StockDelivery;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgAgent;
+use App\Models\Procurement\ShoppingListItem;
+use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
@@ -167,6 +171,77 @@ class ShowProcurementDashboard extends OrgAction
         ];
     }
 
+    private function getShoppingLists(): array
+    {
+        $withItems = [];
+        $empty     = [];
+
+        foreach (OrgPartner::where('organisation_id', $this->organisation->id)->get() as $orgPartner) {
+            $miniCart = GetPartnerMiniCart::run($orgPartner);
+
+            if ($miniCart['count'] > 0) {
+                $withItems[] = $miniCart;
+
+                continue;
+            }
+
+            $shopId = Arr::get($orgPartner->partner->settings, 'procurement.shop_id');
+
+            $empty[] = [
+                'name'  => $miniCart['partner_name'],
+                'route' => [
+                    'name'       => $shopId ? 'grp.org.procurement.org_partners.show.browse.index' : 'grp.org.procurement.org_partners.show.shopping_list.index',
+                    'parameters' => [$this->organisation->slug, $orgPartner->id],
+                ],
+            ];
+        }
+
+        foreach (OrgAgent::where('organisation_id', $this->organisation->id)->where('status', true)->with('agent')->get() as $orgAgent) {
+            $openItems = ShoppingListItem::query()
+                ->join('supplier_products', 'supplier_products.id', 'shopping_list_items.supplier_product_id')
+                ->where('shopping_list_items.organisation_id', $this->organisation->id)
+                ->where('shopping_list_items.agent_id', $orgAgent->agent_id)
+                ->where('shopping_list_items.state', ShoppingListItemStateEnum::OPEN->value)
+                ->select([
+                    'shopping_list_items.id',
+                    'shopping_list_items.quantity_units',
+                    'supplier_products.code',
+                    'supplier_products.name',
+                ])
+                ->orderByDesc('shopping_list_items.created_at')
+                ->get();
+
+            if ($openItems->isEmpty()) {
+                $empty[] = [
+                    'name'  => $orgAgent->agent->name,
+                    'route' => $this->dashboardRoute('grp.org.procurement.shopping_list.index'),
+                ];
+
+                continue;
+            }
+
+            $withItems[] = [
+                'partner_name' => $orgAgent->agent->name,
+                'count'        => $openItems->count(),
+                'total'        => 0,
+                'currency'     => $this->organisation->currency->code,
+                'items'        => $openItems->take(10)->map(fn (ShoppingListItem $item) => [
+                    'id'             => $item->id,
+                    'quantity'       => $item->quantity_units,
+                    'org_stock_code' => $item->code,
+                    'org_stock_name' => $item->name,
+                    'family_name'    => null,
+                ])->values()->all(),
+                'listRoute'    => $this->dashboardRoute('grp.org.procurement.shopping_list.index'),
+            ];
+        }
+
+        return [
+            'withItems' => $withItems,
+            'empty'     => $empty,
+        ];
+    }
+
     private function dashboardCard(
         string $label,
         string $description,
@@ -235,6 +310,7 @@ class ShowProcurementDashboard extends OrgAction
                 'shippers' => Shipper::query()->get(),
                 'search_demand' => GetSearchDemandOpportunities::run($this->group, $this->organisation),
                 'dashboardCards' => $this->getDashboardCards($numbers),
+                'shoppingLists' => $this->getShoppingLists(),
 
             ]
         );

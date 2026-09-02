@@ -367,7 +367,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     <a v-else-if="conversation.context_url" :href="conversation.context_url" :class="fullScreen ? 'text-indigo-600 hover:underline' : 'text-[var(--chat-accent)] hover:underline'">{{ conversation.context_label }}</a>
                 </div>
             </div>
-            <button v-if="!fullScreen" v-tooltip="trans('Open full view')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="store.dismissWindow(conversation.ulid); router.visit(route('grp.chat.staff.show', conversation.ulid))">
+            <button v-if="!fullScreen" v-tooltip="trans('Open full view')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="emit('close'); router.visit(route('grp.chat.staff.show', conversation.ulid))">
                 <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
             </button>
             <button v-if="!fullScreen" v-tooltip="trans('Minimize')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="emit('minimise')">

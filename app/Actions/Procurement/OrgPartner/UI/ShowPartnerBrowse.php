@@ -1,0 +1,465 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 29 Aug 2026 Malaga, Spain
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Procurement\OrgPartner\UI;
+
+use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\GetPartnerCustomerDiscount;
+use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
+use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
+use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
+use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
+use App\Actions\Search\SearchCatalogue;
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
+use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\Shop;
+use App\Models\Catalogue\Product;
+use App\Models\CRM\Customer;
+use App\Models\Catalogue\ProductCategory;
+use App\Models\Inventory\OrgStock;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Models\Procurement\OrgPartner;
+use App\Models\Procurement\PartnerShoppingListItem;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Arr;
+use Inertia\Inertia;
+use Inertia\Response;
+use Lorisleiva\Actions\ActionRequest;
+
+class ShowPartnerBrowse extends OrgAction
+{
+    use WithProcurementAuthorisation;
+    use WithPartnerShoppingSubNavigation;
+
+    private OrgPartner $orgPartner;
+    private ?int $shopId;
+    private ?Customer $intercompanyCustomer = null;
+    private float $priceFactor = 1.0;
+
+    public function handle(OrgPartner $orgPartner, int $shopId, array $filters): array
+    {
+        $q              = Arr::get($filters, 'q');
+        $department     = Arr::get($filters, 'department');
+        $subDepartment  = Arr::get($filters, 'sub_department');
+        $family         = Arr::get($filters, 'family');
+        $collection     = Arr::get($filters, 'collection');
+        $cover          = Arr::get($filters, 'cover');
+        $rank           = Arr::get($filters, 'rank');
+
+        if ($cover && array_key_exists($cover, GetPartnerStockCoverBuckets::BUCKETS)) {
+            return [
+                'level'       => 'cover',
+                'categories'  => [],
+                'collections' => [],
+                'products'    => $this->coverProducts($orgPartner, $shopId, $cover, in_array($rank, ['A', 'B', 'C', 'D', 'Z'], true) ? $rank : null),
+            ];
+        }
+
+        if ($q) {
+            return [
+                'level'       => 'search',
+                'categories'  => [],
+                'collections' => [],
+                'products'    => $this->searchProducts($shopId, $q),
+            ];
+        }
+
+        if ($family || $collection) {
+            return [
+                'level'       => $family ? 'family' : 'collection',
+                'categories'  => [],
+                'collections' => [],
+                'products'    => $this->productsQuery($shopId, $family, $collection)->paginate(24)->withQueryString(),
+            ];
+        }
+
+        if ($subDepartment) {
+            return [
+                'level'       => 'sub_department',
+                'categories'  => $this->categoriesQuery($shopId, 'family', 'sub_department_id', $subDepartment)->get(),
+                'collections' => [],
+                'products'    => null,
+            ];
+        }
+
+        if ($department) {
+            return [
+                'level'       => 'department',
+                'categories'  => $this->categoriesQuery($shopId, 'sub_department', 'department_id', $department)
+                    ->get()
+                    ->concat($this->categoriesQuery($shopId, 'family', 'department_id', $department)->get()),
+                'collections' => [],
+                'products'    => null,
+            ];
+        }
+
+        return [
+            'level'       => 'root',
+            'categories'  => $this->categoriesQuery($shopId, 'department')->get(),
+            'collections' => $this->collectionsQuery($shopId)->get(),
+            'products'    => null,
+        ];
+    }
+
+    private function categoriesQuery(int $shopId, string $type, ?string $parentColumn = null, ?string $parentKey = null)
+    {
+        $query = ProductCategory::query()
+            ->whereIn('state', [ProductCategoryStateEnum::ACTIVE->value, ProductCategoryStateEnum::DISCONTINUING->value])
+            ->where('type', $type)
+            ->where('shop_id', $shopId)
+            ->join('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
+            ->select([
+                'product_categories.id',
+                'product_categories.slug',
+                'product_categories.code',
+                'product_categories.name',
+                'product_categories.web_images',
+                'product_categories.type',
+                'product_category_stats.number_current_products',
+            ]);
+
+        if ($parentColumn) {
+            $query->where("product_categories.$parentColumn", is_numeric($parentKey) ? $parentKey : ProductCategory::where('slug', $parentKey)->value('id'));
+        }
+
+        return $query;
+    }
+
+    private function collectionsQuery(int $shopId)
+    {
+        return Collection::query()
+            ->where('state', CollectionStateEnum::ACTIVE)
+            ->where('shop_id', $shopId)
+            ->select(['id', 'slug', 'code', 'name', 'web_images']);
+    }
+
+    private function productsQuery(int $shopId, ?string $family, ?string $collection)
+    {
+        $query = Product::query()
+            ->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
+            ->where($this->forSaleOrExclusiveToUs(...))
+            ->where('shop_id', $shopId)
+            ->whereHas('orgStocks');
+
+        if ($family) {
+            $query->where('family_id', is_numeric($family) ? $family : ProductCategory::where('slug', $family)->value('id'));
+        }
+
+        if ($collection) {
+            $collectionId = is_numeric($collection) ? $collection : Collection::where('slug', $collection)->value('id');
+            $query->join('collection_has_models', function ($join) use ($collectionId) {
+                $join->on('products.id', '=', 'collection_has_models.model_id')
+                    ->where('collection_has_models.model_type', class_basename(Product::class))
+                    ->where('collection_has_models.collection_id', $collectionId);
+            });
+        }
+
+        return $query->select([
+            'products.id',
+            'products.slug',
+            'products.code',
+            'products.name',
+            'products.web_images',
+            'products.price',
+            'products.available_quantity',
+            'products.units',
+        ]);
+    }
+
+    /**
+     * Products exclusive to the intercompany customer are not for sale to the public but must
+     * still be shoppable by the partner organisation they were made for.
+     */
+    private function forSaleOrExclusiveToUs($query): void
+    {
+        $query->where('is_for_sale', true);
+        if ($this->intercompanyCustomer) {
+            $query->orWhereExists(
+                fn ($sub) => $sub->from('product_has_exclusive_customers')
+                    ->whereColumn('product_has_exclusive_customers.product_id', 'products.id')
+                    ->where('product_has_exclusive_customers.customer_id', $this->intercompanyCustomer->id)
+            );
+        }
+    }
+
+    /**
+     * Never stocked has no cover of ours to sort by, so lead with what sells fastest for the partner.
+     */
+    private function coverOrder(OrgPartner $orgPartner, string $cover): string
+    {
+        if ($cover === 'never') {
+            return "products.available_quantity > 0 desc,
+                (select max(ps.predicted_daily_usage)
+                from product_has_org_stocks phos
+                join org_stocks po on po.id = phos.org_stock_id and po.organisation_id = ".(int) $orgPartner->partner_id."
+                join org_stock_stats ps on ps.org_stock_id = po.id
+                where phos.product_id = products.id) desc nulls last";
+        }
+
+        return "(select min(case bo.health_rank when 'A' then 1 when 'B' then 2 when 'C' then 3 when 'D' then 4 when 'Z' then 5 end)
+            from product_has_org_stocks phos
+            join org_stocks po on po.id = phos.org_stock_id and po.organisation_id = ".(int) $orgPartner->partner_id."
+            join org_stocks bo on bo.stock_id = po.stock_id and bo.organisation_id = ".(int) $orgPartner->organisation_id."
+            where phos.product_id = products.id) asc nulls last,
+            (select min(bs.days_of_cover)
+            from product_has_org_stocks phos
+            join org_stocks po on po.id = phos.org_stock_id and po.organisation_id = ".(int) $orgPartner->partner_id."
+            join org_stocks bo on bo.stock_id = po.stock_id and bo.organisation_id = ".(int) $orgPartner->organisation_id."
+            join org_stock_stats bs on bs.org_stock_id = bo.id
+            where phos.product_id = products.id) asc nulls last";
+    }
+
+    private function coverProducts(OrgPartner $orgPartner, int $shopId, string $cover, ?string $rank = null): LengthAwarePaginator
+    {
+        $stockIds = GetPartnerStockCoverBuckets::make()->stockIdsInBucket($orgPartner, $cover, $rank);
+
+        return $this->productsQuery($shopId, null, null)
+            ->whereIn('products.id', function ($query) use ($orgPartner, $stockIds) {
+                $query->select('product_has_org_stocks.product_id')
+                    ->from('product_has_org_stocks')
+                    ->join('org_stocks', 'org_stocks.id', 'product_has_org_stocks.org_stock_id')
+                    ->where('org_stocks.organisation_id', $orgPartner->partner_id)
+                    ->whereIn('org_stocks.stock_id', $stockIds);
+            })
+            ->orderByRaw($this->coverOrder($orgPartner, $cover))
+            ->paginate(24)
+            ->withQueryString();
+    }
+
+    private function searchProducts(int $shopId, string $q): LengthAwarePaginator
+    {
+        $productIds = collect(Arr::get(SearchCatalogue::run($q, ['shop_id' => $shopId]), 'results.products', []))
+            ->pluck('id');
+
+        return Product::query()
+            ->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
+            ->where($this->forSaleOrExclusiveToUs(...))
+            ->where('shop_id', $shopId)
+            ->whereHas('orgStocks')
+            ->whereIn('id', $productIds)
+            ->select(['id', 'slug', 'code', 'name', 'web_images', 'price', 'available_quantity', 'units'])
+            ->paginate(24)
+            ->withQueryString();
+    }
+
+    /**
+     * @param  array{categories: iterable, collections: iterable, products: LengthAwarePaginator|null}  $data
+     */
+    private function withOrgStock(array $data): array
+    {
+        $categories = collect($data['categories'])->map(fn ($category) => [
+            'id'                     => $category->id,
+            'slug'                   => $category->slug,
+            'code'                   => $category->code,
+            'name'                   => $category->name,
+            'image'                  => Arr::get($category->web_images, 'main.gallery') ?? Arr::get($category->web_images, 'main.thumbnail'),
+            'type'                   => $category->type->value,
+            'number_current_products' => $category->number_current_products,
+        ])->values();
+
+        $collections = collect($data['collections'])->map(fn ($collection) => [
+            'id'    => $collection->id,
+            'slug'  => $collection->slug,
+            'code'  => $collection->code,
+            'name'  => $collection->name,
+            'image' => Arr::get($collection->web_images, 'main.gallery') ?? Arr::get($collection->web_images, 'main.thumbnail'),
+        ])->values();
+
+        $products = $data['products'];
+        if ($products) {
+            $productIds        = collect($products->items())->pluck('id');
+            $sellerComponents  = Product::whereIn('id', $productIds)
+                ->with(['orgStocks' => fn ($query) => $query->where('org_stocks.organisation_id', $this->orgPartner->partner_id)->with('stats')])
+                ->get()
+                ->mapWithKeys(fn (Product $product) => [$product->id => $product->orgStocks]);
+
+            $buyerOrgStocks = OrgStock::with('stats')->where('organisation_id', $this->orgPartner->organisation_id)
+                ->whereIn('stock_id', $sellerComponents->flatten()->pluck('stock_id')->unique()->values())
+                ->get()
+                ->keyBy('stock_id');
+
+            $sellerOrgStocks = $sellerComponents->map(fn ($components) => $this->tightestComponent($components, $buyerOrgStocks));
+
+            $usage = SuggestPartnerShoppingList::make()->buyerQuarterlyUsage($buyerOrgStocks->pluck('id')->all());
+
+            $openItems = PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
+                ->where('state', ShoppingListItemStateEnum::OPEN)
+                ->whereIn('stock_id', $buyerOrgStocks->keys())
+                ->get()
+                ->keyBy('stock_id');
+
+            $exchange = $this->orgPartner->exchangeToOrgCurrency();
+
+            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $exchange) {
+                $sellerOrgStock = $sellerOrgStocks[$product->id] ?? null;
+                $buyerOrgStock  = $sellerOrgStock ? $buyerOrgStocks->get($sellerOrgStock->stock_id) : null;
+                $openItem       = $sellerOrgStock ? $openItems->get($sellerOrgStock->stock_id) : null;
+
+                return [
+                    'id'                => $product->id,
+                    'slug'              => $product->slug,
+                    'code'              => $product->code,
+                    'name'              => $product->name,
+                    'image'             => Arr::get($product->web_images, 'main.gallery') ?? Arr::get($product->web_images, 'main.thumbnail'),
+                    'price'             => round((float) $product->price * $exchange * $this->priceFactor, 2),
+                    'available_quantity' => $product->available_quantity,
+                    'units'             => $product->units,
+                    'org_stock_slug'    => $sellerOrgStock?->slug,
+                    'our_stock'         => $buyerOrgStock ? (float) $buyerOrgStock->quantity_available : null,
+                    'their_daily_usage' => $sellerOrgStock?->stats?->predicted_daily_usage !== null
+                        ? round((float) $sellerOrgStock->stats->predicted_daily_usage, 1)
+                        : null,
+                    'our_quarterly_usage' => $buyerOrgStock ? round($usage[$buyerOrgStock->id] ?? 0, 1) : null,
+                    'our_days_of_cover' => $buyerOrgStock?->stats?->days_of_cover !== null
+                        ? (int) $buyerOrgStock->stats->days_of_cover
+                        : null,
+                    'recommended_quantity'  => $buyerOrgStock?->stats?->recommended_order_quantity !== null
+                        ? (int) ceil((float) $buyerOrgStock->stats->recommended_order_quantity)
+                        : null,
+                    'shopping_list_item_id' => $openItem?->id,
+                    'ordered_quantity'      => $openItem ? (float) $openItem->quantity : 0,
+                ];
+            });
+        }
+
+        return [
+            'level'       => $data['level'],
+            'categories'  => $categories,
+            'collections' => $collections,
+            'products'    => $products,
+        ];
+    }
+
+    /**
+     * The component that runs out first is the one the buyer has to decide about.
+     *
+     * @param  \Illuminate\Support\Collection<int, OrgStock>  $components
+     * @param  \Illuminate\Support\Collection<int, OrgStock>  $buyerOrgStocks  keyed by stock id
+     */
+    public function tightestComponent($components, $buyerOrgStocks): ?OrgStock
+    {
+        return $components->sortBy(function (OrgStock $component) use ($buyerOrgStocks) {
+            $daysOfCover = $buyerOrgStocks->get($component->stock_id)?->stats?->days_of_cover;
+
+            return $daysOfCover ?? PHP_INT_MAX;
+        })->first();
+    }
+
+    private function miniCart(): array
+    {
+        return GetPartnerMiniCart::run($this->orgPartner);
+    }
+
+    /**
+     * @return array{products: int, in_stock: int, departments: int, collections: int}
+     */
+    private function browseStats(): array
+    {
+        $shopStats = Shop::find($this->shopId)->stats;
+
+        return [
+            'products'    => $shopStats->number_current_products,
+            'in_stock'    => $shopStats->number_products_status_for_sale,
+            'departments' => $shopStats->number_current_departments,
+            'collections' => $shopStats->number_collections,
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function filterNames(array $filters): array
+    {
+        $categorySlugs = Arr::only($filters, ['department', 'sub_department', 'family']);
+        $names         = ProductCategory::whereIn('slug', $categorySlugs)->pluck('name', 'slug');
+        if ($collection = Arr::get($filters, 'collection')) {
+            $names[$collection] = Collection::where('slug', $collection)->value('name');
+        }
+
+        return collect($filters)->map(fn ($slug) => $names[$slug] ?? $slug)->all();
+    }
+
+    public function asController(Organisation $organisation, OrgPartner $orgPartner, ActionRequest $request): array
+    {
+        $this->orgPartner = $orgPartner;
+        $this->shopId = Arr::get($orgPartner->partner->settings, 'procurement.shop_id');
+        abort_unless($this->shopId, 404);
+
+        $this->intercompanyCustomer = GetPartnerIntercompanyCustomer::run($orgPartner, $this->shopId);
+        if ($this->intercompanyCustomer) {
+            $this->priceFactor = GetPartnerCustomerDiscount::run($this->intercompanyCustomer);
+        }
+
+        $this->initialisation($organisation, $request);
+
+        return $this->withOrgStock($this->handle($orgPartner, $this->shopId, $request->only(['q', 'department', 'sub_department', 'family', 'collection', 'cover', 'rank'])));
+    }
+
+    public function htmlResponse(array $data, ActionRequest $request): Response
+    {
+        return Inertia::render(
+            'Procurement/PartnerBrowse',
+            [
+                'breadcrumbs' => $this->getBreadcrumbs($this->orgPartner, $request->route()->originalParameters()),
+                'title'       => __('Browse'),
+                'pageHead'    => [
+                    'icon'          => [
+                        'icon'  => ['fal', 'fa-store'],
+                        'title' => __('Browse'),
+                    ],
+                    'model'         => $this->orgPartner->partner->name,
+                    'title'         => __('Browse'),
+                    'subNavigation' => $this->getPartnerShoppingNavigation($this->orgPartner),
+                ],
+                'orgPartner' => [
+                    'id'                  => $this->orgPartner->id,
+                    'slug'                => $this->orgPartner->partner->slug,
+                    'currency'            => $this->orgPartner->organisation->currency->code,
+                    'discount_percentage' => $this->priceFactor < 1 ? round((1 - $this->priceFactor) * 100, 1) : null,
+                ],
+                'addRoute' => [
+                    'name'       => 'grp.org.procurement.org_partners.show.shopping_list.store',
+                    'parameters' => [$this->orgPartner->organisation->slug, $this->orgPartner->id],
+                ],
+                'miniCart'    => $this->miniCart(),
+                'browseStats' => $this->browseStats(),
+                'filters'     => $request->only(['q', 'department', 'sub_department', 'family', 'collection', 'cover', 'rank']),
+                'filterNames' => $this->filterNames($request->only(['department', 'sub_department', 'family', 'collection'])),
+                'coverLabel'  => __(Arr::get(GetPartnerStockCoverBuckets::BUCKETS, $request->input('cover', '').'.label', '')),
+                'level'       => $data['level'],
+                'categories'  => $data['categories'],
+                'collections' => $data['collections'],
+                'products'    => $data['products'],
+            ]
+        );
+    }
+
+    public function getBreadcrumbs(OrgPartner $orgPartner, array $routeParameters): array
+    {
+        return array_merge(
+            ShowOrgPartner::make()->getBreadcrumbs($orgPartner, $routeParameters),
+            [
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => [
+                            'name'       => 'grp.org.procurement.org_partners.show.browse.index',
+                            'parameters' => $routeParameters,
+                        ],
+                        'label' => __('Browse'),
+                        'icon'  => 'fal fa-store',
+                    ],
+                ],
+            ]
+        );
+    }
+}

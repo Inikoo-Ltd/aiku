@@ -73,7 +73,9 @@ class ChatSessionListResource extends JsonResource
             'created_at' => $this->created_at,
             'priority' => $this->priority,
             'contact_name' => $webUser?->customer?->contact_name
+                ?? $webUser?->contact_name
                 ?? $webUser?->username
+                ?? Arr::get($this->metadata ?? [], 'name')
                 ?? Arr::get($guestProfile ?? [], 'name')
                 ?? $this->guest_identifier
                 ?? 'Guest',

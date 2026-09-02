@@ -7,6 +7,8 @@ interface ArtefactShowcaseData {
     state: string
     compliance_status: string
     compliance_label: string
+    artefact_family: { slug: string, name: string } | null
+    tags: string[]
     trade_unit: { id: number, code: string, name: string } | null
     org_stock: { id: number, code: string, quantity_in_locations: number | string } | null
     manufacture_tasks: {
@@ -40,6 +42,17 @@ defineProps<{
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('State') }}</div>
                     <div class="text-sm text-gray-900">{{ data.state }}</div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Family') }}</div>
+                    <div class="text-sm text-gray-900">{{ data.artefact_family?.name || '-' }}</div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Tags') }}</div>
+                    <div class="text-sm text-gray-900 flex flex-wrap gap-1">
+                        <span v-for="tag in data.tags" :key="tag" class="px-1.5 py-0.5 rounded bg-gray-100 text-xs">#{{ tag }}</span>
+                        <span v-if="!data.tags?.length">-</span>
+                    </div>
                 </div>
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Trade unit') }}</div>

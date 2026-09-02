@@ -26,6 +26,10 @@ export interface ProductCategoryMenu {
         id: string
         url: string
         name: string
+        families?: {
+            name: string
+            url: string
+        }[]
     }[]
     sub_departments: ProductCategoryMenuSub[]
 }
@@ -63,18 +67,28 @@ interface CustomMenu {
 
 
 
+const byName = (a: { name?: string }, b: { name?: string }) =>
+    (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
+
 // Method: Convert structure menu Product Categories to Menu structure
+// Mirrors the sidebar panels (IrisSidebar.vue): departments sorted, second level
+// is sub_departments merged with collections, third level is sorted families
 export const menuCategoriesToMenuStructure = (categories: ProductCategoryMenu[]) => {
 
     if (!categories || categories.length === 0) {
         return []
     }
 
-    const aaa = categories.map((department) => {
+    return [...categories].sort(byName).map((department) => {
+        const children = [
+            ...(department.sub_departments || []),
+            ...(department.collections || [])
+        ].filter((child) => child?.name).sort(byName)
+
         return {
             id: `menu_dept_${department.name.toLowerCase().replace(/\s+/g, '_')}`,
             icon: {},
-            type: department.sub_departments.length ? 'multiple' : 'single',
+            type: children.length ? 'multiple' : 'single',
             label: department.name,
             link: {
                 href: department.url,
@@ -82,18 +96,18 @@ export const menuCategoriesToMenuStructure = (categories: ProductCategoryMenu[])
                 type: "internal",
             },
             collections: department.collections,
-            subnavs: department.sub_departments.length ? department.sub_departments.map((subDept) => {
+            subnavs: children.length ? children.map((child) => {
                 return {
-                    id: `menu_subdept_${subDept.name.toLowerCase().replace(/\s+/g, '_')}`,
+                    id: `menu_subdept_${child.name.toLowerCase().replace(/\s+/g, '_')}`,
                     link: {
                         id: null,
-                        href: subDept.url,
+                        href: child.url,
                         type: "internal",
                         target: "_self",
                         workshop: null
                     },
-                    collections: subDept.collections,
-                    links: subDept.families.length ? subDept.families.map((family) => {
+                    collections: 'collections' in child ? child.collections : undefined,
+                    links: child.families?.length ? [...child.families].sort(byName).map((family) => {
                         return {
                             id: `menu_family_${family.name.toLowerCase().replace(/\s+/g, '_')}`,
                             icon: {},
@@ -107,11 +121,9 @@ export const menuCategoriesToMenuStructure = (categories: ProductCategoryMenu[])
                             label: family.name
                         }
                     }) : undefined,
-                    title: subDept.name
+                    title: child.name
                 }
             }) : undefined
         }
     })
-
-    return aaa
 }

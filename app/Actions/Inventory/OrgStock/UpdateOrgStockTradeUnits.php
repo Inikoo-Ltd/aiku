@@ -14,6 +14,7 @@ use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\OrgStock;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
@@ -70,7 +71,7 @@ class UpdateOrgStockTradeUnits extends OrgAction
                     ->map(fn ($locationOrgStock) => $locationOrgStock->location->code.': '
                         .(float) $locationOrgStock->quantity.' → '
                         .round($locationOrgStock->quantity * $conversionRatio, 3))
-                    ->all();
+                    ->implode("\n");
             }
 
             throw ValidationException::withMessages($errors);
@@ -150,7 +151,7 @@ class UpdateOrgStockTradeUnits extends OrgAction
             'trade_units'            => ['required', 'array'],
             'trade_units.*.id'       => ['required', 'exists:trade_units,id'],
             'trade_units.*.quantity' => ['required', 'numeric', 'gt:0'],
-            'stock_strategy'         => ['sometimes', 'in:keep,convert'],
+            'stock_strategy'         => ['sometimes', 'nullable', 'in:keep,convert'],
         ];
     }
 
@@ -160,5 +161,10 @@ class UpdateOrgStockTradeUnits extends OrgAction
         $this->initialisationFromGroup($orgStock->group, $request);
 
         return $this->handle($orgStock, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 }

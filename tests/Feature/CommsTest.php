@@ -3750,3 +3750,22 @@ describe('email retention', function () {
             ->and(DB::table('dispatched_emails')->where('id', $emailId)->exists())->toBeTrue();
     });
 });
+
+describe('mailshot template gallery previews', function () {
+    test('the layout endpoint returns compiled html only when asked for a preview', function () {
+        $template = EmailTemplate::where('builder', EmailTemplateBuilderEnum::BEEFREE->value)->first()
+            ?? EmailTemplate::first();
+
+        $template->update(['compiled_layout' => '<html><body>Preview me</body></html>']);
+
+        $layout = \App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout::make()
+            ->asController($template, new \Lorisleiva\Actions\ActionRequest());
+
+        expect($layout)->toBe($template->layout);
+
+        $preview = \App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout::make()
+            ->asController($template, \Lorisleiva\Actions\ActionRequest::create('/', 'GET', ['preview' => 1]));
+
+        expect($preview)->toBe(['html' => '<html><body>Preview me</body></html>']);
+    });
+});

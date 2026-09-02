@@ -80,6 +80,7 @@ import {
     faTemperatureLow,
     faBalanceScale,
     faNotEqual,
+    faCamera
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -162,6 +163,7 @@ library.add(
     faChessClock,
     faCameraRetro,
     faBalanceScale,
+    faCamera
 )
 
 const props = defineProps<{

@@ -56,7 +56,6 @@ jobs:
       - name: Run tests with coverage
         run: /usr/bin/php8.4 -d memory_limit=-1 -d newrelic.enabled=0 vendor/bin/pest --parallel --processes=8 --coverage-clover clover.xml --log-junit junit.xml
       - name: Upload coverage to Codecov
-        if: ${{ !cancelled() }}
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

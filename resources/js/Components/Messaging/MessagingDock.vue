@@ -220,7 +220,7 @@ onUnmounted(() => {
                 <MessagingConversation
                     :conversation="store.conversationByUlid(store.openWindowsVisible[0].ulid)!"
                     full-screen
-                    @close="store.closeConversation(store.openWindowsVisible[0].ulid)"
+                    @close="store.dismissWindow(store.openWindowsVisible[0].ulid)"
                     @minimise="store.minimiseConversation(store.openWindowsVisible[0].ulid, true)"
                 />
             </div>
@@ -232,7 +232,7 @@ onUnmounted(() => {
                 <div v-for="(w, index) in store.openWindowsVisible" :key="w.ulid" class="w-[22rem] lg:w-[28rem] h-[26rem] lg:h-[38rem] max-h-[calc(100dvh-6rem)]">
                     <MessagingConversation
                         :conversation="store.conversationByUlid(w.ulid)!"
-                        @close="store.closeConversation(w.ulid)"
+                        @close="store.dismissWindow(w.ulid)"
                         @minimise="store.minimiseConversation(w.ulid, true)"
                     />
                 </div>

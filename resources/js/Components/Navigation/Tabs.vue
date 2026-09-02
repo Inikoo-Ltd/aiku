@@ -245,7 +245,7 @@ const tabIconClass = function (
 							v-if="tab.align !== 'right'"
 							@click="onChangeTab(tabSlug)"
 							:class="tabButtonClass(tab, tabSlug === currentTab)"
-							class="relative group flex items-center py-2 px-1 font-medium text-left text-sm md:text-base w-fit"
+							class="relative group flex items-center py-2 px-1 font-medium text-left text-sm md:text-base w-fit focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
 							:aria-current="tabSlug === currentTab ? 'page' : undefined">
 							<FontAwesomeIcon
 								v-if="tabLoading === tabSlug"
@@ -317,7 +317,7 @@ const tabIconClass = function (
 							:class="[
 								tabSlug === currentTab ? 'tabNavigationActive' : 'tabNavigation',
 							]"
-							class="relative group inline-flex gap-x-1.5 justify-center items-center py-2 px-2 border-b-2 font-medium text-sm"
+							class="relative group inline-flex gap-x-1.5 justify-center items-center py-2 px-2 border-b-2 font-medium text-sm focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
 							:aria-current="tabSlug === currentTab ? 'page' : undefined"
 							v-tooltip="tab.title">
 							<FontAwesomeIcon

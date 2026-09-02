@@ -179,7 +179,7 @@ const layout = inject('layout')
                     :updateRoute="updateRoute"
                 />
                 <UpcomingTransactionsPanel
-                    v-if="props.showcase.upcoming_transaction_route"
+                    v-if="props.showcase.upcoming_transaction_route && shop_data.type !== 'external'"
                     :routes="props.showcase.upcoming_transaction_route"
                     :shopSlug="props.showcase.shop.slug"
                     :temporaryNote="notes?.temporary_note"

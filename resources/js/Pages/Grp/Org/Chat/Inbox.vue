@@ -76,9 +76,15 @@ const panelSession = computed(() => {
     if (!s) return null
     return {
         ulid: String(s.ulid),
-        contact_name: s.contact_name || s.guest_identifier || "Guest",
+        // Registered customer: use the customer/web-user name (same as the chat list).
+        // Guest: prefer the name they submitted (metadata / guest profile) over the placeholder id.
+        contact_name: s.web_user?.id
+            ? (s.contact_name || s.guest_identifier || "Customer")
+            : ((s as any).metadata?.name || s.guest_profile?.name || s.guest_identifier || "Guest"),
         is_guest: !s.web_user?.id,
         web_user_id: s.web_user?.id ?? null,
+        guest_email: (s as any).metadata?.email ?? s.guest_profile?.email ?? null,
+        guest_phone: (s as any).metadata?.phone ?? s.guest_profile?.phone ?? null,
         shop_name: s.shop?.name ?? null,
         status: s.status,
         priority: s.priority ?? null,
@@ -131,6 +137,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     webUser: s.web_user,
     priority: s.priority,
     guest_profile: s.guest_profile,
+    metadata: (s as any).metadata ?? null,
     agent: s.assigned_agent,
     shop: s.shop,
     organisation: s.organisation,
@@ -385,6 +392,22 @@ const onPriorityUpdated = (value: string) => {
     if (found) found.priority = value
 }
 
+// A guest was matched to a registered Aiku customer by email: promote it to a customer.
+const onSessionSynced = (webUser: { id: number; name: string; email: string | null }) => {
+    if (!selectedSession.value || !webUser) return
+    const ulid = selectedSession.value.ulid
+    selectedSession.value = {
+        ...selectedSession.value,
+        web_user: { id: webUser.id, name: webUser.name, email: webUser.email } as any,
+        contact_name: webUser.name || (selectedSession.value as any).contact_name,
+    } as SessionAPI
+    const found = contacts.value.find((x) => x.ulid === ulid)
+    if (found) {
+        found.webUser = { id: webUser.id, name: webUser.name } as any
+        found.name = webUser.name || found.name
+    }
+}
+
 const trashChat = async (c: Contact) => {
     openMenuUlid.value = null
     if (await patchSession(c, "grp.org.chat.agents.sessions.trash", "delete")) {
@@ -474,6 +497,7 @@ const openChat = (c: Contact) => {
         priority: c.priority,
         web_user: c.webUser,
         guest_profile: c.guest_profile,
+        metadata: c.metadata,
         assigned_agent: c.agent,
         shop: c.shop,
         organisation: c.organisation,
@@ -1042,7 +1066,8 @@ onUnmounted(() => {
 
         <!-- RIGHT: conversation profile panel (Conversation-style) -->
         <ChatConversationSidePanel v-if="panelSession && sidePanelVisible"
-            :session="panelSession" @close="closeSidePanel" @priority-updated="onPriorityUpdated" />
+            :session="panelSession" @close="closeSidePanel" @priority-updated="onPriorityUpdated"
+            @synced="onSessionSynced" />
 
         <!-- Row action menu (teleported so it is never clipped by the list's overflow) -->
         <Teleport to="body">

@@ -11,6 +11,12 @@
 namespace Tests\Feature;
 
 use App\Actions\Production\Artefact\StoreArtefact;
+use App\Actions\Production\Artefact\MoveArtefactsToFamily;
+use App\Actions\Production\Artefact\UpdateArtefact;
+use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
+use App\Actions\Production\ArtefactFamily\UpdateArtefactFamily;
+use App\Enums\Helpers\Tag\TagScopeEnum;
+use App\Models\Helpers\Tag;
 use App\Actions\Production\JobOrder\ConfirmJobOrder;
 use App\Actions\Production\JobOrder\StoreJobOrder;
 use App\Actions\Production\JobOrder\UpdateJobOrder;
@@ -464,6 +470,50 @@ test('UI edit raw material', function () {
     });
 });
 
+test('update artefact category and tags', function () {
+    $tag = Tag::create(['group_id' => $this->group->id, 'name' => 'lavender', 'scope' => TagScopeEnum::ARTEFACT]);
+
+    $family = StoreArtefactFamily::make()->action($this->production, ['code' => 'SOAP', 'name' => 'Soaps']);
+
+    $artefact = UpdateArtefact::make()->action($this->artefact, [
+        'artefact_family_id' => $family->id,
+        'tags'               => [$tag->id],
+    ]);
+
+    expect($artefact->artefactFamily->id)->toBe($family->id)
+        ->and($family->refresh()->number_artefacts)->toBe(1)
+        ->and($artefact->tags->pluck('name')->all())->toBe(['lavender']);
+
+    $artefact = UpdateArtefact::make()->action($artefact, ['tags' => []]);
+    expect($artefact->tags)->toHaveCount(0);
+
+    $response = $this->get(route('grp.org.productions.show.crafts.artefact_families.index', [$this->organisation->slug, $this->production->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Production/ArtefactFamilies')->has('data.data', 1)->where('data.data.0.code', 'SOAP');
+    });
+
+    $response = $this->get(route('grp.org.productions.show.crafts.artefact_families.show', [$this->organisation->slug, $this->production->slug, $family->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Production/ArtefactFamily')->has('artefacts.data', 1)->where('artefacts.data.0.artefact_family_name', 'Soaps');
+    });
+
+    $response = $this->get(route('grp.org.productions.show.crafts.artefact_families.edit', [$this->organisation->slug, $this->production->slug, $family->slug]));
+    $response->assertInertia(fn (AssertableInertia $page) => $page->component('EditModel')->has('formData.blueprint.0.fields', 3));
+
+    $response = $this->get(route('grp.org.productions.show.crafts.artefact_families.create', [$this->organisation->slug, $this->production->slug]));
+    $response->assertInertia(fn (AssertableInertia $page) => $page->component('CreateModel'));
+
+    $family = UpdateArtefactFamily::make()->action($family, ['name' => 'Soap bars']);
+    expect($family->name)->toBe('Soap bars');
+
+    $otherFamily = StoreArtefactFamily::make()->action($this->production, ['code' => 'BOMB', 'name' => 'Bath bombs']);
+    $moved = MoveArtefactsToFamily::make()->action($this->production, ['artefacts' => [$artefact->id], 'artefact_family_id' => $otherFamily->id]);
+    expect($moved)->toBe(1)
+        ->and($artefact->refresh()->artefact_family_id)->toBe($otherFamily->id)
+        ->and($family->refresh()->number_artefacts)->toBe(0)
+        ->and($otherFamily->refresh()->number_artefacts)->toBe(1);
+});
+
 test('UI Index artefacts', function () {
     $response = $this->get(route('grp.org.productions.show.crafts.artefacts.index', [$this->organisation->slug, $this->production->slug]));
 
@@ -532,7 +582,7 @@ test('UI edit artefact', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 5)
+            ->has('formData.blueprint.0.fields', 7)
             ->has('pageHead')
             ->has('breadcrumbs', 4);
     });
@@ -1658,4 +1708,29 @@ describe('reward sheet import', function () {
 
         expect(\App\Models\Production\ManufactureTask::where('production_id', $this->production->id)->where('code', 'ORPHAN1')->count())->toBe(1);
     });
+});
+
+test('create job order from gate shortfall', function () {
+    $organisation = $this->production->organisation;
+
+    $orgStock = \App\Models\Inventory\OrgStock::where('organisation_id', $organisation->id)->first();
+    if (!$orgStock) {
+        $stocks   = createStocks($organisation->group);
+        $orgStock = createOrgStocks($organisation, $stocks)[0];
+    }
+    $this->artefact->update(['org_stock_id' => $orgStock->id]);
+
+    $result = \App\Actions\Dispatching\FulfilmentGate\StoreJobOrderFromShortfall::make()->action(
+        $organisation,
+        [
+            ['org_stock_id' => $orgStock->id, 'quantity' => 7.3],
+            ['org_stock_id' => -1, 'quantity' => 5],
+        ]
+    );
+
+    expect($result['job_order'])->toBeInstanceOf(\App\Models\Production\JobOrder::class)
+        ->and($result['job_order']->jobOrderItems()->count())->toBe(1)
+        ->and($result['job_order']->jobOrderItems()->first()->artefact_id)->toBe($this->artefact->id)
+        ->and((int) $result['job_order']->jobOrderItems()->first()->quantity)->toBe(8)
+        ->and($result['skipped'])->toHaveCount(1);
 });

@@ -10,6 +10,7 @@
 
 use App\Actions\Accounting\CreditTransaction\DecreaseCreditTransactionCustomer;
 use App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer;
+use App\Actions\Catalogue\Shop\External\Shopify\StoreCustomerFromShopify;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\BackInStockReminder\DeleteBackInStockReminder;
 use App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder;
@@ -1487,3 +1488,42 @@ describe('EU VAT re-validation (HELP-2374)', function () {
         Queue::assertNothingPushed();
     });
 });
+
+test('store customer from shopify payload', function () {
+    $customer = StoreCustomerFromShopify::make()->handle($this->shop, [
+        'id'             => 'gid://shopify/Customer/987654321',
+        'email'          => 'shopify-customer@example.com',
+        'firstName'      => 'Sho',
+        'lastName'       => 'Pify',
+        'phone'          => '+15551234567',
+        'defaultAddress' => [
+            'address1'      => '1 Test St',
+            'city'          => 'Testville',
+            'zip'           => '12345',
+            'provinceCode'  => 'CA',
+            'countryCodeV2' => 'US',
+            'company'       => 'Acme',
+        ],
+    ]);
+
+    expect($customer)->toBeInstanceOf(Customer::class)
+        ->and($customer->external_id)->toBe('987654321')
+        ->and($customer->contact_name)->toBe('Sho Pify')
+        ->and($customer->company_name)->toBe('Acme')
+        ->and($customer->email)->toBe('shopify-customer@example.com')
+        ->and($customer->address->locality)->toBe('Testville');
+
+    return $customer;
+});
+
+test('store customer from shopify dedups on external id', function (Customer $customer) {
+    $again = StoreCustomerFromShopify::make()->handle($this->shop, [
+        'id'    => 'gid://shopify/Customer/987654321',
+        'email' => 'other-email@example.com',
+    ]);
+
+    expect($again->id)->toBe($customer->id)
+        ->and(
+            Customer::where('shop_id', $this->shop->id)->where('external_id', '987654321')->count()
+        )->toBe(1);
+})->depends('store customer from shopify payload');

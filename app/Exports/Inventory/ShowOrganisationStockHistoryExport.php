@@ -8,6 +8,7 @@
 
 namespace App\Exports\Inventory;
 
+use App\Actions\Traits\WithStockHistoryArchiveRead;
 use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Models\Inventory\OrganisationStockHistory;
 use Illuminate\Database\Query\Builder;
@@ -19,12 +20,24 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
+/**
+ * One day's rows, so the whole export is served by whichever database holds that day: beyond the
+ * retention window every day except the monthly snapshot lives in the archive, and reading only
+ * the operational database would hand back an empty spreadsheet rather than an error.
+ */
 class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSize, WithColumnFormatting
 {
+    use WithStockHistoryArchiveRead;
+
     public function __construct(
         protected OrganisationStockHistory $organisationStockHistory,
         protected string $tab = 'org_stocks'
     ) {
+    }
+
+    private function dayConnection(): ?string
+    {
+        return $this->stockHistoryDayConnection($this->organisationStockHistory);
     }
 
     public function query(): Builder
@@ -33,7 +46,7 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
             // TODO: after running repair:location_org_stock_histories_organisation_stock_history_id, remove the join to org_stock_histories and use this instead:
             // ->where('location_org_stock_histories.organisation_stock_history_id', $this->organisationStockHistory->id)
 
-            return DB::table('location_org_stock_histories')
+            return DB::connection($this->dayConnection())->table('location_org_stock_histories')
                 ->join('org_stock_histories', 'location_org_stock_histories.org_stock_history_id', '=', 'org_stock_histories.id')
                 ->join('org_stocks', 'location_org_stock_histories.org_stock_id', '=', 'org_stocks.id')
                 ->join('locations', 'location_org_stock_histories.location_id', '=', 'locations.id')
@@ -51,7 +64,7 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
                 ->orderBy('locations.code');
         }
 
-        $query = DB::table('org_stock_histories')
+        $query = DB::connection($this->dayConnection())->table('org_stock_histories')
             ->join('org_stocks', 'org_stock_histories.org_stock_id', '=', 'org_stocks.id')
             ->select([
                 'org_stocks.code',

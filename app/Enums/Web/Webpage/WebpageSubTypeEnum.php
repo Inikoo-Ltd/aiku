@@ -89,7 +89,6 @@ enum WebpageSubTypeEnum: string
             [
                 'value'       => self::NEWSLETTERS->value,
                 'label'       => __('Newsletters'),
-                'description' => __("David's Travel Blog"),
             ],
             [
                 'value' => self::PRODUCT_GUIDES->value,
@@ -140,7 +139,7 @@ enum WebpageSubTypeEnum: string
 
     /**
      * Legacy sub types that were used as a catch all and therefore do not identify a blog
-     * category on their own; the webpage code and url are read before falling back to the alias.
+     * category on their own; they are read as the alias they are mapped to.
      *
      * @return array<int, string>
      */
@@ -150,31 +149,11 @@ enum WebpageSubTypeEnum: string
     }
 
     /**
-     * Case insensitive code, url and title fragments identifying a blog category, read when the
-     * stored sub type is ambiguous. Underscores are normalised to hyphens before matching.
-     *
-     * @return array<string, array<int, string>>
+     * Resolves the blog category of a webpage. A catch all sub type does not identify a category on
+     * its own and is read as its alias, unless $withAmbiguousFallback is disabled, which callers
+     * persisting the result use to leave undecidable webpages alone.
      */
-    public static function blogCategoryCodePatterns(): array
-    {
-        return [
-            self::NEWSLETTERS->value => [
-                'david-blog',
-                'david-aw-news',
-                'davids-aw-news',
-                'david-nl',
-                'davids-travel',
-                'newsletter',
-            ],
-        ];
-    }
-
-    /**
-     * Resolves the blog category of a webpage. When the stored sub type is a catch all and neither
-     * the code, url nor title identify a category, the alias is used unless $withAmbiguousFallback
-     * is disabled, which callers persisting the result use to leave undecidable webpages alone.
-     */
-    public static function resolveBlogCategory(?string $subType, ?string $code = null, ?string $url = null, ?string $title = null, bool $withAmbiguousFallback = true): ?self
+    public static function resolveBlogCategory(?string $subType, bool $withAmbiguousFallback = true): ?self
     {
         if ($subType === null) {
             return null;
@@ -182,32 +161,22 @@ enum WebpageSubTypeEnum: string
 
         $aliases = self::legacyBlogCategoryAliases();
 
-        if (!in_array($subType, self::ambiguousBlogSubTypes(), true)) {
-            $category = self::tryFrom($subType);
-
-            if ($category && in_array($category, self::blogCategories(), true)) {
-                return $category;
-            }
-
-            return $aliases[$subType] ?? null;
+        if (in_array($subType, self::ambiguousBlogSubTypes(), true)) {
+            return $withAmbiguousFallback ? ($aliases[$subType] ?? null) : null;
         }
 
-        $haystack = str_replace('_', '-', strtolower(($code ?? '').' '.($url ?? '').' '.($title ?? '')));
+        $category = self::tryFrom($subType);
 
-        foreach (self::blogCategoryCodePatterns() as $categoryValue => $patterns) {
-            foreach ($patterns as $pattern) {
-                if (str_contains($haystack, $pattern)) {
-                    return self::from($categoryValue);
-                }
-            }
+        if ($category && in_array($category, self::blogCategories(), true)) {
+            return $category;
         }
 
-        return $withAmbiguousFallback ? ($aliases[$subType] ?? null) : null;
+        return $aliases[$subType] ?? null;
     }
 
     /**
      * SQL expression resolving the blog category of a webpage row, applying the same rules as
-     * resolveBlogCategory so queries and counts never read the stored sub type on its own.
+     * resolveBlogCategory so queries and counts read the legacy sub types the same way.
      */
     public static function blogCategorySqlExpression(string $table = 'webpages'): string
     {
@@ -228,17 +197,6 @@ enum WebpageSubTypeEnum: string
             }
 
             $branches[] = "WHEN $table.sub_type IN ({$list($storedValues)}) THEN {$quote($category->value)}";
-        }
-
-        $haystack = "lower(replace(coalesce($table.code, '') || ' ' || coalesce($table.url, '') || ' ' || coalesce($table.title, ''), '_', '-'))";
-
-        foreach (self::blogCategoryCodePatterns() as $categoryValue => $patterns) {
-            $matches = implode(' OR ', array_map(
-                fn (string $pattern) => "$haystack like {$quote('%'.$pattern.'%')}",
-                $patterns
-            ));
-
-            $branches[] = "WHEN $table.sub_type IN ({$list($ambiguous)}) AND ($matches) THEN {$quote($categoryValue)}";
         }
 
         foreach ($ambiguous as $legacyValue) {

@@ -877,6 +877,17 @@ const compTableFilterForSale = computed(() => {
 			</div>
 			<div
 				class="whitespace min-w-[50px] font-medium whitespace-break-spaces flex items-center text-center w-full"
+				v-else-if="item.is_platform_draft">
+				<FontAwesomeIcon
+					v-tooltip="trans('Draft: uploaded to eBay but not published yet')"
+					icon="fal fa-exclamation-circle"
+					class="text-amber-500 text-xl"
+					style="width: 100% !important"
+					fixed-width
+					aria-hidden="true" />
+			</div>
+			<div
+				class="whitespace min-w-[50px] font-medium whitespace-break-spaces flex items-center text-center w-full"
 				v-else-if="item.message">
 				<FontAwesomeIcon
 					v-tooltip="item.message"
@@ -901,7 +912,25 @@ const compTableFilterForSale = computed(() => {
 		<!-- Column: Actions (connect) -->
 		<template #cell(matches)="{ item }">
 			<template v-if="item.customer_sales_channel_platform_status">
-				<template v-if="!item.platform_status">
+				<template v-if="item.is_platform_draft">
+					<ButtonWithLink
+						v-if="!disabled"
+						v-tooltip="trans('Publish this draft listing on eBay')"
+						:routeTarget="{
+							method: 'post',
+							name: 'retina.models.portfolio.publish_ebay_product',
+							parameters: {
+								portfolio: item.id,
+							},
+						}"
+						:bindToLink="{ preserveScroll: true }"
+						type="primary"
+						:label="trans('Publish on eBay')"
+						size="xxs"
+						icon="fal fa-upload"
+						:disabled="disableButtons(item)" />
+				</template>
+				<template v-else-if="!item.platform_status">
 					<div
 						v-if="item.platform_possible_matches?.number_matches"
 						class="border rounded p-1"
@@ -1122,7 +1151,7 @@ const compTableFilterForSale = computed(() => {
 		<template #cell(create_new)="{ item }" v-if="!disabled">
 			<!-- {{ item.customer_sales_channel_platform_status }} --- {{ !item.platform_status }} -->
 			<div
-				v-if="item.customer_sales_channel_platform_status && !item.platform_status"
+				v-if="item.customer_sales_channel_platform_status && !item.platform_status && !item.is_platform_draft"
 				class="flex gap-x-2 items-center">
 				<ButtonWithLink
 					v-tooltip="

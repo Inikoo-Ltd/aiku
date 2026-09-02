@@ -737,6 +737,44 @@ test('ebay channel do not update prices setting is stored', function () {
     expect(\Illuminate\Support\Arr::get($customerSalesChannel->settings, 'do_not_update_prices'))->toBeFalse();
 });
 
+test('ebay channel upload as draft setting is stored', function () {
+    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-user-draft']);
+    $customerSalesChannel = $ebayUser->customerSalesChannel;
+
+    CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
+
+    expect(\Illuminate\Support\Arr::get($customerSalesChannel->settings, 'upload_as_draft'))->toBeNull();
+
+    $customerSalesChannel = UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'upload_as_draft' => true
+    ]);
+    expect(\Illuminate\Support\Arr::get($customerSalesChannel->settings, 'upload_as_draft'))->toBeTrue();
+
+    $customerSalesChannel = UpdateEbayCustomerSalesChannel::make()->action($customerSalesChannel, [
+        'upload_as_draft' => false
+    ]);
+    expect(\Illuminate\Support\Arr::get($customerSalesChannel->settings, 'upload_as_draft'))->toBeFalse();
+});
+
+test('bulk publish queues a publish job only for draft ebay portfolios', function () {
+    Queue::fake();
+
+    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-bulk-publish']);
+    $customerSalesChannel = $ebayUser->customerSalesChannel;
+
+    CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
+
+    $portfolio = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+
+    \App\Actions\Retina\Ebay\PublishAllRetinaEbayDraftPortfolios::make()->handle($customerSalesChannel);
+    \App\Actions\Retina\Ebay\PublishRetinaEbayPortfolio::assertPushed(0);
+
+    $portfolio->update(['data' => ['is_platform_draft' => true]]);
+
+    \App\Actions\Retina\Ebay\PublishAllRetinaEbayDraftPortfolios::make()->handle($customerSalesChannel);
+    \App\Actions\Retina\Ebay\PublishRetinaEbayPortfolio::assertPushed(1);
+});
+
 test('channel percent pricing rule prices new portfolios honestly', function () {
     $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-pricing-store']);
     $customerSalesChannel = $ebayUser->customerSalesChannel;
@@ -883,4 +921,30 @@ test('bulk price rule prices each product from its own rrp', function () {
     expect((float) $portfolioA->refresh()->customer_price)->toBe(9.0)
         ->and((float) $portfolioB->refresh()->customer_price)->toBe(18.0)
         ->and(\Illuminate\Support\Arr::get($portfolioA->settings, 'pricing_opt_out'))->toBeTrue();
+});
+
+test('platform portfolio logs are only reachable through the retina portfolios logs tab', function () {
+    expect(\Illuminate\Support\Facades\Route::has('retina.dropshipping.customer_sales_channels.platform_portfolio_logs.index'))->toBeFalse();
+
+    $platform             = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'test_ebay_logs']);
+    $portfolio            = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+
+    \App\Models\Dropshipping\PlatformPortfolioLogs::create([
+        'group_id'                  => $customerSalesChannel->group_id,
+        'organisation_id'           => $customerSalesChannel->organisation_id,
+        'shop_id'                   => $customerSalesChannel->shop_id,
+        'customer_id'               => $customerSalesChannel->customer_id,
+        'customer_sales_channel_id' => $customerSalesChannel->id,
+        'portfolio_id'              => $portfolio->id,
+        'platform_id'               => $platform->id,
+        'platform_type'             => $platform->type->value,
+        'type'                      => \App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum::UPLOAD,
+        'status'                    => \App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum::OK,
+    ]);
+
+    $logs = \App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs::run($customerSalesChannel);
+
+    expect($logs->total())->toBe(1)
+        ->and($logs->first()->item_code)->toBe($portfolio->item_code);
 });

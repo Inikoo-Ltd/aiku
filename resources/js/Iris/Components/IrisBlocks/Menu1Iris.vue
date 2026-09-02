@@ -212,7 +212,14 @@ const imageCol = computed(() => {
     const pos = Number(hoveredNavigation.value?.image_position)
     if (pos >= 1 && pos <= 4) return pos
 
-    return 4 
+    return 4
+})
+
+const subnavColumns = computed(() => {
+    const subnavs = hoveredNavigation.value?.subnavs || []
+    const colCount = hoveredNavigation.value?.image ? 3 : 4
+    const perCol = Math.ceil(subnavs.length / colCount) || 1
+    return Array.from({ length: colCount }, (_, i) => subnavs.slice(i * perCol, (i + 1) * perCol))
 })
 </script>
 
@@ -372,10 +379,10 @@ const imageCol = computed(() => {
 
                         <div v-else>
                             <template
-                                v-if="getSubnavIndex(col) >= 0 && hoveredNavigation?.subnavs?.[getSubnavIndex(col)]">
-                                <div>
-                                    <template
-                                        v-for="(subnav, idxSub) in [hoveredNavigation.subnavs[getSubnavIndex(col)]]"
+                                v-if="getSubnavIndex(col) >= 0 && subnavColumns[getSubnavIndex(col)]?.length">
+                                <div class="space-y-6">
+                                    <div
+                                        v-for="(subnav, idxSub) in subnavColumns[getSubnavIndex(col)]"
                                         :key="subnav.id || subnav.title">
                                         <!-- TITLE -->
                                         <component :is="subnav?.link?.href ? LinkIris : 'div'"
@@ -407,12 +414,12 @@ const imageCol = computed(() => {
                                             <LinkIris v-if="linkData.link?.href" :id="linkData.id"
                                                 :href="internalHref(linkData.link.href)"
                                                 :canonical_url="linkData.link.canonical_url" :type="linkData.link.type"
-                                                @start="() => loadingItem = `${col}_${idxFam}`"
+                                                @start="() => loadingItem = `${subnav.id || subnav.title}_${idxFam}`"
                                                 @finish="() => loadingItem = null">
                                                 <template #default>
                                                     <div class="py-1 relative">
                                                         <div class="top-1/2 -translate-y-1/2 absolute -left-6">
-                                                            <LoadingIcon v-if="loadingItem == `${col}_${idxFam}`" />
+                                                            <LoadingIcon v-if="loadingItem == `${subnav.id || subnav.title}_${idxFam}`" />
                                                         </div>
                                                         {{ linkData.label }}
                                                     </div>
@@ -424,7 +431,7 @@ const imageCol = computed(() => {
                                             </div>
                                         </div>
 
-                                    </template>
+                                    </div>
                                 </div>
                             </template>
                         </div>

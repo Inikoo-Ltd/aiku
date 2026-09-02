@@ -52,6 +52,7 @@ class PaymentsResource extends JsonResource
             'method'     => $payment->method,
             'sub_method' => $payment->sub_method,
             'method_label' => Payment::methodLabel($payment->method, $payment->sub_method),
+            'is_mit'     => $payment->is_mit,
             'amount'     => $payment->amount,
             'route' => match ($request->route()->getName()) {
                 'grp.org.shops.show.crm.customers.show' => [

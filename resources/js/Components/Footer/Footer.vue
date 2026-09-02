@@ -50,7 +50,9 @@ const deploymentTooltip = computed(() => {
                         class="py-1 font-normal leading-none tabular-nums hover:text-white">
                         {{ layout?.app?.last_deployment_version ?? trans('unreleased') }}
                     </Link>
-                    <img class="h-3 select-none hidden lg:inline pl-1 pr-1" src="/art/logo-yellow.svg" alt="aiku" />
+                    <a href="https://aiku.io/" target="_blank" rel="noopener" aria-label="aiku.io" class="hidden lg:inline">
+                        <img class="h-3 select-none inline pl-1 pr-1" src="/art/invader.svg" alt="aiku" />
+                    </a>
                     <span class="hidden lg:inline whitespace-nowrap"
                         v-tooltip="trans('With help from the teams in the UK, Spain and Slovakia')">
                         {{ trans('Made with') }}

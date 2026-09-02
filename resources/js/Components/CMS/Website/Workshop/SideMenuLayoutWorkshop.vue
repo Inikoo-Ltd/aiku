@@ -66,29 +66,25 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="overflow-y-auto p-4 space-y-6">
-    <div id="theme_colors" class="rounded pb-4 transition-all duration-1000" :class="fieldGroupAnimateSection">
-      <div class="flex items-center gap-2 mb-4">
-        <hr class="h-0.5 rounded-full w-full bg-gray-300" />
-        <span class="whitespace-nowrap text-sm text-gray-600 font-semibold">{{ trans('Select Theme') }}</span>
-        <hr class="h-0.5 rounded-full w-full bg-gray-300" />
-      </div>
+  <div class="overflow-y-auto p-3 space-y-4">
+    <div id="theme_colors" class="rounded transition-all duration-1000" :class="fieldGroupAnimateSection">
+      <p class="mb-2 text-xxs font-semibold uppercase tracking-wide text-gray-400">{{ trans('Select Theme') }}</p>
 
       <div class="relative">
         <button
           @click="isColorDropdownOpen = !isColorDropdownOpen"
-          class="w-full flex items-center justify-between gap-2 p-3 border border-gray-300 rounded-md bg-white hover:bg-gray-50 transition"
+          class="w-full flex items-center justify-between gap-2 px-2.5 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 transition"
         >
           <div class="flex items-center gap-2">
             <div class="flex ring-1 ring-gray-300 rounded-md overflow-hidden">
               <div
                 v-for="(color, i) in layout?.color"
                 :key="i"
-                class="h-5 w-5"
+                class="h-4 w-4"
                 :style="{ backgroundColor: color }"
               />
             </div>
-            <span class="text-sm text-gray-700">{{ trans('Theme') }} {{ colorThemes.findIndex(t => isEqual(t, layout?.color)) + 1 }}</span>
+            <span class="text-xs text-gray-700">{{ trans('Theme') }} {{ colorThemes.findIndex(t => isEqual(t, layout?.color)) + 1 }}</span>
           </div>
           <FontAwesomeIcon
             icon="fal fa-chevron-down"
@@ -101,26 +97,26 @@ onMounted(() => {
         <Transition name="fade">
           <div
             v-if="isColorDropdownOpen"
-            class="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-md shadow-lg z-10"
+            class="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-300 rounded-md shadow-lg z-10"
           >
-            <div class="max-h-48 overflow-y-auto p-2 space-y-2">
+            <div class="max-h-52 overflow-y-auto p-1.5 space-y-1">
               <button
                 v-for="(colorTheme, index) in colorThemes"
                 :key="index"
                 @click="() => { handleColorThemeSelect(colorTheme); isColorDropdownOpen = false }"
-                class="w-full flex items-center justify-between gap-3 p-3 rounded-md hover:bg-gray-50 transition border-2 border-transparent"
+                class="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-gray-50 transition border border-transparent"
                 :class="{ 'bg-indigo-50 border-indigo-500': isEqual(layout?.color, colorTheme) }"
               >
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2">
                   <div class="flex ring-1 ring-gray-300 rounded-md overflow-hidden">
                     <div
                       v-for="(color, i) in colorTheme"
                       :key="i"
-                      class="h-5 w-5"
+                      class="h-4 w-4"
                       :style="{ backgroundColor: color }"
                     />
                   </div>
-                  <span class="text-sm font-medium text-gray-700">{{ trans('Theme') }} {{ index + 1 }}</span>
+                  <span class="text-xs font-medium text-gray-700">{{ trans('Theme') }} {{ index + 1 }}</span>
                 </div>
                 <FontAwesomeIcon
                   v-if="isEqual(layout?.color, colorTheme)"
@@ -136,18 +132,14 @@ onMounted(() => {
     </div>
 
     <div>
-      <div class="flex items-center gap-2 mb-4">
-        <hr class="h-0.5 rounded-full w-full bg-gray-300" />
-        <span class="whitespace-nowrap text-sm text-gray-600 font-semibold">{{ trans('Select Layout') }}</span>
-        <hr class="h-0.5 rounded-full w-full bg-gray-300" />
-      </div>
+      <p class="mb-2 text-xxs font-semibold uppercase tracking-wide text-gray-400">{{ trans('Select Layout') }}</p>
 
-      <div class="flex gap-4 justify-center flex-wrap">
+      <div class="grid grid-cols-2 gap-2">
         <label
           v-for="layoutOption in LAYOUT_OPTIONS"
           :key="layoutOption.value"
           :for="`radio-layout-${layoutOption.value}`"
-          class="flex flex-col items-center gap-2 p-4 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 transition"
+          class="flex flex-col items-center gap-1.5 p-2 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 transition"
           :class="{ 'border-indigo-500 bg-indigo-50': layout?.layout === layoutOption.value }"
         >
           <input
@@ -158,14 +150,14 @@ onMounted(() => {
             @change="handleLayoutChange(layoutOption.value)"
             class="hidden"
           />
-          <div class="w-20 h-12 bg-gray-200 rounded-md flex items-center justify-center overflow-hidden">
+          <div class="w-full h-10 bg-gray-200 rounded flex items-center justify-center overflow-hidden">
             <div
               :class="layoutOption.width || 'w-full'"
               class="h-full rounded"
               :style="{ background: layoutOption.pattern }"
             />
           </div>
-          <span class="text-sm font-semibold">{{ trans(layoutOption.label) }}</span>
+          <span class="text-xs font-medium">{{ trans(layoutOption.label) }}</span>
         </label>
       </div>
     </div>

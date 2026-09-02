@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -39,6 +40,16 @@ class EditOrganisation extends OrgAction
 
     public function htmlResponse(Organisation $organisation, ActionRequest $request): Response
     {
+        $staffOptions = User::where('group_id', $organisation->group_id)
+            ->where('status', true)
+            ->orderBy('contact_name')
+            ->get(['id', 'contact_name', 'username', 'nickname'])
+            ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->chatName()]);
+
+        $shopOptions = $organisation->shops()
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->mapWithKeys(fn ($shop) => [$shop->id => ['id' => $shop->id, 'label' => $shop->name]]);
 
         return Inertia::render("EditModel", [
             "title"       => __("Organisation"),
@@ -118,6 +129,60 @@ class EditOrganisation extends OrgAction
                                 "label"       => __("Break-even margin (%)"),
                                 "information" => __("Orders with a margin below this are flagged as unprofitable once staff, rent and other running costs are counted. Industry guideline for this kind of shop is around 30%."),
                                 "value"       => Arr::get($organisation->settings, 'margins.break_even_pct', 30),
+                            ],
+                        ],
+                    ],
+                    [
+                        "label"  => __("Procurement"),
+                        "icon"   => "fal fa-box-usd",
+                        "fields" => [
+                            "procurement_shop_id" => [
+                                "type"        => "select",
+                                "label"       => __("Procurement shop"),
+                                "information" => __("Shop whose catalogue partner organisations browse when buying intercompany. Leave empty to disable the Browse tab."),
+                                "placeholder" => __("Select a shop"),
+                                "options"     => $shopOptions,
+                                "value"       => Arr::get($organisation->settings, "procurement.shop_id"),
+                            ],
+                        ],
+                    ],
+                    [
+                        "label"  => __("Staff chat"),
+                        "icon"   => "fal fa-comments",
+                        "fields" => [
+                            "staff_chat_crm_user_ids" => [
+                                "type"        => "multiselect-tags",
+                                "label"       => __("Ask CRM goes to"),
+                                "information" => __("Used when the shop has no list of its own. Leave empty to fall back to everyone holding a customer service role."),
+                                "options"     => $staffOptions,
+                                "labelProp"   => "name",
+                                "valueProp"   => "id",
+                                "value"       => Arr::get($organisation->settings, "staff_chat.crm_user_ids", []),
+                            ],
+                            "staff_chat_crm_backup_user_ids" => [
+                                "type"      => "multiselect-tags",
+                                "label"     => __("Ask CRM backup"),
+                                "options"   => $staffOptions,
+                                "labelProp" => "name",
+                                "valueProp" => "id",
+                                "value"     => Arr::get($organisation->settings, "staff_chat.crm_backup_user_ids", []),
+                            ],
+                            "staff_chat_warehouse_user_ids" => [
+                                "type"        => "multiselect-tags",
+                                "label"       => __("Ask warehouse goes to"),
+                                "information" => __("Leave empty to fall back to everyone holding a dispatch or stock controller role."),
+                                "options"     => $staffOptions,
+                                "labelProp"   => "name",
+                                "valueProp"   => "id",
+                                "value"       => Arr::get($organisation->settings, "staff_chat.warehouse_user_ids", []),
+                            ],
+                            "staff_chat_warehouse_backup_user_ids" => [
+                                "type"      => "multiselect-tags",
+                                "label"     => __("Ask warehouse backup"),
+                                "options"   => $staffOptions,
+                                "labelProp" => "name",
+                                "valueProp" => "id",
+                                "value"     => Arr::get($organisation->settings, "staff_chat.warehouse_backup_user_ids", []),
                             ],
                         ],
                     ],

@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onBeforeUnmount } from "vue"
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from "vue"
 import { QrcodeStream } from "vue-qrcode-reader"
-import { LMap, LTileLayer, LMarker, LTooltip } from "@vue-leaflet/vue-leaflet"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTimes, faCheck, faMapMarkerAlt, faSyncAlt, faCamera } from "@fal"
-import { Dialog } from "primevue"
 import InputText from "primevue/inputtext"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -59,18 +57,21 @@ interface WorkSchedule {
 
 const lat = ref<number | null>(null)
 const lng = ref<number | null>(null)
-const mapZoom = ref(15)
 const isDetectingLocation = ref(false)
-let geolocationPermission: PermissionStatus | null = null
-let isPanelMounted = true
-
 const cameraOn = ref(false)
 const loading = ref(false)
 const errorMsg = ref<string | null>(null)
 const lastResult = ref<string | null>(null)
 
+const locationUnavailable = ref(false)
+
 const hasLocation = computed(() => lat.value !== null && lng.value !== null)
-const canOpenCamera = computed(() => hasLocation.value)
+
+/**
+ * A phone that cannot produce a fix must still reach the scanner: whether that is allowed is the
+ * server's call, through the employee's clocking policy, not something to decide on the handset.
+ */
+const canOpenCamera = computed(() => hasLocation.value || locationUnavailable.value)
 
 const locationTitle = computed(() => {
 	if (hasLocation.value) return trans("Location detected")
@@ -81,7 +82,7 @@ const locationTitle = computed(() => {
 const locationSubtitle = computed(() => {
 	if (hasLocation.value) return `${lat.value?.toFixed(6)}, ${lng.value?.toFixed(6)}`
 	if (isDetectingLocation.value) return trans("Please wait a moment")
-	return trans("Required before you can scan")
+	return trans("You can still scan, ask HR if it keeps failing")
 })
 
 const showWorkHourModal = ref(false)
@@ -90,11 +91,18 @@ const isVisitingOffice = ref(false)
 const notes = ref<string>("")
 const scanTime = ref<string | null>(null)
 const scanTimeRaw = ref<string | null>(null)
-const now = new Date()
 const clockType = ref<"clock_in" | "clock_out" | null>(null)
 const clockingId = ref<number | null>(null)
 const workingHours = ref<{ start: string; end: string } | null>(null)
 const isProcessing = ref(false)
+let successAutoCloseTimer: ReturnType<typeof setTimeout> | null = null
+
+const cancelSuccessAutoClose = () => {
+	if (successAutoCloseTimer) {
+		clearTimeout(successAutoCloseTimer)
+		successAutoCloseTimer = null
+	}
+}
 const shiftSchedules = ref<WorkSchedule[]>([])
 const selectedWorkScheduleId = ref<number | null>(null)
 
@@ -117,6 +125,8 @@ const getGeolocationErrorMessage = (err?: GeolocationPositionError) => {
 	}
 }
 
+let shiftSchedulesRequest: Promise<void> | null = null
+
 const fetchShiftSchedules = async () => {
 	try {
 		const { data } = await axios.get(route("grp.models.work-schedule.index"))
@@ -127,18 +137,13 @@ const fetchShiftSchedules = async () => {
 }
 
 onMounted(() => {
-	fetchShiftSchedules()
-	detectLocationIfAlreadyAllowed()
+	shiftSchedulesRequest = fetchShiftSchedules()
+	detectMyLocation()
 })
 
 onBeforeUnmount(() => {
 	stopCamera()
-	isPanelMounted = false
-
-	if (geolocationPermission) {
-		geolocationPermission.onchange = null
-		geolocationPermission = null
-	}
+	cancelSuccessAutoClose()
 })
 
 const detectMyLocation = () => {
@@ -150,6 +155,7 @@ const detectMyLocation = () => {
 	}
 
 	isDetectingLocation.value = true
+	locationUnavailable.value = false
 
 	const onSuccess = (pos) => {
 		lat.value = pos.coords.latitude
@@ -160,6 +166,7 @@ const detectMyLocation = () => {
 	const onError = (err) => {
 		errorMsg.value = getGeolocationErrorMessage(err)
 		isDetectingLocation.value = false
+		locationUnavailable.value = true
 	}
 
 	const onHighAccuracyError = (err) => {
@@ -181,35 +188,6 @@ const detectMyLocation = () => {
 	})
 }
 
-const detectLocationIfAlreadyAllowed = async () => {
-	if (!navigator.geolocation || !navigator.permissions?.query) return
-
-	let permission: PermissionStatus
-
-	try {
-		permission = await navigator.permissions.query({ name: "geolocation" as PermissionName })
-	} catch {
-		return
-	}
-
-	if (!isPanelMounted) return
-
-	geolocationPermission = permission
-
-	const detectWhenGranted = () => {
-		if (
-			geolocationPermission?.state === "granted" &&
-			!hasLocation.value &&
-			!isDetectingLocation.value
-		) {
-			detectMyLocation()
-		}
-	}
-
-	detectWhenGranted()
-	geolocationPermission.onchange = detectWhenGranted
-}
-
 const startCamera = async () => {
 	errorMsg.value = null
 
@@ -218,7 +196,14 @@ const startCamera = async () => {
 		return
 	}
 
-	showWorkHourModal.value = true
+	await shiftSchedulesRequest
+
+	const hasActiveShifts = shiftSchedules.value.some((s) => s.type === "shift" && s.is_active)
+	if (hasActiveShifts) {
+		showWorkHourModal.value = true
+	} else {
+		handleWorkHourConfirm(null)
+	}
 }
 
 const openCamera = async () => {
@@ -308,6 +293,7 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
 		}
 
 		showSuccessModal.value = true
+		successAutoCloseTimer = setTimeout(() => window.location.reload(), 6000)
 	} catch (e: any) {
 		notify({
 			title: trans("Failed Scan QR"),
@@ -338,12 +324,6 @@ const onStreamError = (err: Error) => {
 	}
 }
 
-const modalTitle = computed(() => {
-	if (clockType.value === "clock_in") return trans("Clock-in successful")
-	if (clockType.value === "clock_out") return trans("Clock-out successful")
-	return trans("Scan successful")
-})
-
 const workingHoursFormatted = computed(() => {
 	if (!workingHours.value) return "-"
 
@@ -353,7 +333,7 @@ const workingHoursFormatted = computed(() => {
 	return `${start} - ${end}`
 })
 
-const notesLabel = computed(() => trans("Notes (optional)"))
+watch(notes, cancelSuccessAutoClose)
 
 const notesPlaceholder = computed(() => trans("Input Notes"))
 
@@ -419,23 +399,17 @@ const trackFunction = () => ({
 							:class="hasLocation ? 'text-green-800' : 'text-gray-700'">
 							{{ locationTitle }}
 						</p>
-						<p class="text-[11px] sm:text-xs text-gray-500 truncate">
+						<a
+							v-if="hasLocation"
+							:href="`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`"
+							target="_blank"
+							class="block text-[11px] sm:text-xs text-green-700 underline truncate">
+							{{ locationSubtitle }} — {{ trans("view on map") }}
+						</a>
+						<p v-else class="text-[11px] sm:text-xs text-gray-500 truncate">
 							{{ locationSubtitle }}
 						</p>
 					</div>
-				</div>
-
-				<div
-					v-if="hasLocation"
-					class="h-44 sm:h-52 md:h-64 rounded-lg overflow-hidden border border-green-200">
-					<LMap :zoom="mapZoom" :center="[lat, lng]" style="height: 100%">
-						<LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-						<LMarker :lat-lng="[lat, lng]">
-							<LTooltip>
-								Lat: {{ lat?.toFixed(6) }}<br />Lng: {{ lng?.toFixed(6) }}
-							</LTooltip>
-						</LMarker>
-					</LMap>
 				</div>
 
 				<Button
@@ -452,7 +426,7 @@ const trackFunction = () => ({
 
 			<div class="space-y-2">
 				<p v-if="!canOpenCamera" class="text-center text-[11px] sm:text-xs text-gray-500">
-					{{ trans("Detect your location first to enable scanning") }}
+					{{ trans("Waiting for your location…") }}
 				</p>
 				<Button
 					:label="trans('Open camera')"
@@ -514,72 +488,42 @@ const trackFunction = () => ({
 			:shift-schedules="shiftSchedules"
 			@confirm="handleWorkHourConfirm" />
 
-		<Dialog
-			v-model:visible="showSuccessModal"
-			modal
-			:closable="false"
-			class="w-[95vw] max-w-[95vw] sm:w-[480px] sm:max-w-[480px]"
-			appendTo="body">
-			<div class="text-center space-y-4 py-2 sm:py-4">
-				<!-- ICON -->
-				<div class="flex justify-center">
-					<div
-						class="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center bg-green-100">
-						<FontAwesomeIcon :icon="faCheck" class="text-3xl sm:text-4xl text-green-600" />
-					</div>
+		<Teleport to="body">
+			<div
+				v-if="showSuccessModal"
+				class="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-6 px-6 text-center text-white"
+				:class="clockType === 'clock_out' ? 'bg-sky-600' : 'bg-green-600'">
+				<FontAwesomeIcon :icon="faCheck" class="text-[7rem] sm:text-[9rem]" />
+				<div class="text-4xl sm:text-6xl font-extrabold uppercase tracking-wide">
+					{{ clockType === "clock_out" ? trans("Clocked out") : trans("Clocked in") }}
 				</div>
-
-				<!-- TITLE -->
-				<h3 class="text-lg sm:text-xl font-semibold text-gray-800">
-					{{ modalTitle }}
-				</h3>
-
-				<div v-if="isVisitingOffice" class="text-sm text-amber-600">
+				<div class="text-5xl sm:text-7xl font-black tabular-nums">{{ scanTime ?? "-" }}</div>
+				<div v-if="isVisitingOffice" class="text-base opacity-90">
 					{{ trans("Hey, you're in the wrong office \u2014 but we don't mind!") }}
 				</div>
-
-				<!-- INFO -->
-				<div class="text-xs sm:text-sm text-gray-600 space-y-2 bg-gray-50 p-3 rounded-lg">
-					<div class="flex justify-between gap-3 text-left">
-						<span class="text-gray-500">{{ trans("Schedule ") }}</span>
-						<span class="text-right font-semibold text-gray-800">
-							{{ useFormatTime(now) ?? "-" }}
-						</span>
-					</div>
-					<div class="flex justify-between gap-3 text-left">
-						<span class="text-gray-500">{{ trans("Working Office Hour ") }}</span>
-						<span class="text-right font-semibold text-gray-800">{{ workingHoursFormatted }}</span>
-					</div>
-					<div class="flex justify-between gap-3 text-left">
-						<span class="text-gray-500">{{ trans("Scan Time") }}</span>
-						<span class="text-right font-semibold text-gray-800">{{ scanTime ?? "-" }}</span>
-					</div>
+				<div v-if="workingHours" class="text-base opacity-90">
+					{{ trans("Working hours") }}: {{ workingHoursFormatted }}
 				</div>
 
-				<!-- NOTES INPUT -->
-				<div class="pt-3">
-					<label class="text-sm text-gray-600 block mb-1 text-left">
-						{{ notesLabel }}
-					</label>
+				<div class="w-full max-w-sm space-y-2 pt-4" @click.stop>
 					<InputText v-model="notes" class="w-full" :placeholder="notesPlaceholder" />
-				</div>
-
-				<!-- ACTIONS -->
-				<div class="flex gap-2 pt-4">
-					<Button
-						label="Close"
-						type="exit"
-						@click="
-							() => {
-								showSuccessModal = false
-								window.location.reload()
-							}
-						"
-						full />
-					<Button label="Submit" type="save" @click="submitNotes" full />
+					<div class="flex gap-2">
+						<Button
+							:label="trans('Close')"
+							type="exit"
+							@click="
+								() => {
+									cancelSuccessAutoClose()
+									showSuccessModal = false
+									window.location.reload()
+								}
+							"
+							full />
+						<Button v-if="notes.trim()" :label="trans('Save note')" type="save" @click="submitNotes" full />
+					</div>
 				</div>
 			</div>
-		</Dialog>
+		</Teleport>
 
 		<div
 			v-if="errorMsg"
@@ -589,19 +533,6 @@ const trackFunction = () => ({
 	</div>
 </template>
 <style scoped>
-.leaflet-pane {
-	z-index: 1 !important;
-}
-
-.leaflet-top,
-.leaflet-bottom {
-	z-index: 1 !important;
-}
-
-.p-dialog {
-	z-index: 9999 !important;
-}
-
 /* ===== CORNERS ===== */
 .corner {
 	position: absolute;

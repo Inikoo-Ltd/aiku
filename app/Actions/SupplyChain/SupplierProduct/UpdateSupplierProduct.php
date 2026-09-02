@@ -129,6 +129,7 @@ class UpdateSupplierProduct extends OrgAction
             'units_per_carton' => ['sometimes', 'nullable'],
             'cbm'              => ['sometimes', 'nullable', 'numeric'],
             'extra_costs'      => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'estimated_lead_time_days' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],
         ];
 
         $rules = array_merge($rules, $this->supplierProductJsonFieldRules());

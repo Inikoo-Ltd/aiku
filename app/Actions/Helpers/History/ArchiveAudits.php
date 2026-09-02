@@ -19,8 +19,13 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Moves dead audit trails to the archive database: everything belonging to a closed shop
- * (audits.shop_id covers every audited model of that shop) and the audits of discontinued
- * products and org stocks in live shops, and the Aurora loop noise (see auroraLoopObjects).
+ * (audits.shop_id covers every audited model of that shop), the audits of discontinued
+ * products and org stocks in live shops, the Aurora loop noise (see auroraLoopObjects) and the
+ * whole trails of the closed records (order, delivery note, invoice, payment, stock delivery,
+ * purchase order, historic asset, mailshot) that are themselves older than the age cutoff. The record's own age decides, not the age of each audit
+ * row: a two year old order still collects machine audits from backfills, history imports and
+ * hydrators, and the History tab falls back to the archive only for a record with no live audits
+ * at all, so archiving half of one record's trail would hide that half behind a footer note.
  * The History tab falls back to the archive when the operational database has no rows for a
  * record, so the trail stays readable.
  *
@@ -34,9 +39,9 @@ class ArchiveAudits
     use AsAction;
     use WithArchiveOperations;
 
-    public string $commandSignature = 'helpers:archive_audits {--c|chunk=5000} {--l|limit=} {--d|dry-run} {--closed-shops} {--discontinued} {--aurora-loops}';
+    public string $commandSignature = 'helpers:archive_audits {--c|chunk=5000} {--l|limit=} {--d|dry-run} {--closed-shops} {--discontinued} {--aurora-loops} {--aged} {--age-days=}';
 
-    public string $commandDescription = 'Copy audits of closed shops, discontinued products/org stocks and Aurora loop noise to the archive database and delete them';
+    public string $commandDescription = 'Copy audits of closed shops, discontinued products/org stocks, Aurora loop noise and aged transactional trails to the archive database and delete them';
 
     public string $archiveConnection = 'archive';
 
@@ -50,6 +55,17 @@ class ArchiveAudits
 
     private const AURORA_LOOP_TYPES = ['Product', 'TradeUnit', 'OrgStock', 'Barcode', 'StockDelivery'];
 
+    private const AGED_TYPES = [
+        'Order'        => 'orders',
+        'DeliveryNote' => 'delivery_notes',
+        'Invoice'      => 'invoices',
+        'Payment'      => 'payments',
+        'StockDelivery' => 'stock_deliveries',
+        'PurchaseOrder' => 'purchase_orders',
+        'HistoricAsset' => 'historic_assets',
+        'Mailshot'      => 'mailshots',
+    ];
+
     /** @var array<string, array<int, int>>|null */
     private ?array $auroraLoopObjects = null;
 
@@ -59,15 +75,17 @@ class ArchiveAudits
         bool $closedShops = true,
         bool $discontinued = true,
         bool $auroraLoops = false,
+        bool $aged = false,
+        ?int $ageDays = null,
         bool $dryRun = false,
         ?Command $command = null
     ): int {
-        if (!$closedShops && !$discontinued && !$auroraLoops) {
-            throw new Exception('Nothing selected: enable at least one of closed shops, discontinued or Aurora loops.');
+        if (!$closedShops && !$discontinued && !$auroraLoops && !$aged) {
+            throw new Exception('Nothing selected: enable at least one of closed shops, discontinued, Aurora loops or aged.');
         }
 
         if ($dryRun) {
-            $total = $this->countEligible($this->selectors($closedShops, $discontinued, $auroraLoops));
+            $total = $this->countEligible($this->selectors($closedShops, $discontinued, $auroraLoops, $aged, $ageDays));
             $command?->info("Dry run: $total audits would be archived");
 
             return $total;
@@ -84,7 +102,7 @@ class ArchiveAudits
             'create index if not exists audits_auditable_archive_idx on "audits" ("auditable_type", "auditable_id")'
         );
 
-        $selectors = $this->selectors($closedShops, $discontinued, $auroraLoops);
+        $selectors = $this->selectors($closedShops, $discontinued, $auroraLoops, $aged, $ageDays);
 
         $progress = null;
         if ($command) {
@@ -146,7 +164,7 @@ class ArchiveAudits
      *
      * @return array<int, callable(): Builder>
      */
-    private function selectors(bool $closedShops, bool $discontinued, bool $auroraLoops): array
+    private function selectors(bool $closedShops, bool $discontinued, bool $auroraLoops, bool $aged = false, ?int $ageDays = null): array
     {
         $selectors = [];
 
@@ -162,6 +180,18 @@ class ArchiveAudits
                         ->where('auditable_id', $auditableId)
                         ->where('url', 'like', self::AURORA_IMPORT_URL);
                 }
+            }
+        }
+
+        if ($aged) {
+            $cutoff = now()->subDays($ageDays ?? config('archive.audit_retention_days'));
+            foreach (self::AGED_TYPES as $auditableType => $table) {
+                $selectors[] = fn (): Builder => DB::table('audits')
+                    ->where('auditable_type', $auditableType)
+                    ->whereIn(
+                        'auditable_id',
+                        DB::table($table)->select('id')->where('created_at', '<', $cutoff)
+                    );
             }
         }
 
@@ -244,7 +274,8 @@ class ArchiveAudits
         $onlyClosedShops  = (bool) $command->option('closed-shops');
         $onlyDiscontinued = (bool) $command->option('discontinued');
         $onlyAuroraLoops  = (bool) $command->option('aurora-loops');
-        $all              = !$onlyClosedShops && !$onlyDiscontinued && !$onlyAuroraLoops;
+        $onlyAged         = (bool) $command->option('aged');
+        $all              = !$onlyClosedShops && !$onlyDiscontinued && !$onlyAuroraLoops && !$onlyAged;
 
         $archived = $this->handle(
             chunkSize: (int) $command->option('chunk'),
@@ -252,6 +283,8 @@ class ArchiveAudits
             closedShops: $all || $onlyClosedShops,
             discontinued: $all || $onlyDiscontinued,
             auroraLoops: $all || $onlyAuroraLoops,
+            aged: $all || $onlyAged,
+            ageDays: $command->option('age-days') ? (int) $command->option('age-days') : null,
             dryRun: (bool) $command->option('dry-run'),
             command: $command
         );

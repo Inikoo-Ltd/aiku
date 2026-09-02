@@ -128,6 +128,7 @@ const showLinkDialog = ref<boolean>()
 const CustomLinkConfirm = ref(false)
 const attrsCustomLink = ref<Object>(null)
 const tippyOptions = {
+    theme: 'tiptap-bubble',
     placement: 'bottom',
     offset: [0, 8],
     appendTo: () => document.body,
@@ -1238,6 +1239,18 @@ onMounted(async () => {
     </div>
 </template>
 
+
+<style>
+.tippy-box[data-theme~='tiptap-bubble'] {
+    background-color: transparent;
+    color: inherit;
+    border-radius: 0;
+}
+
+.tippy-box[data-theme~='tiptap-bubble'] > .tippy-content {
+    padding: 0;
+}
+</style>
 
 <style scoped>
 

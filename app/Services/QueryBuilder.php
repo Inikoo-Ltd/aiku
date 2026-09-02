@@ -16,6 +16,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * @method self whereAnyWordStartWith(string $column, string|array $value)
@@ -154,15 +155,14 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
     public function withBetweenDates(array $allowedColumns, ?string $prefix = null): static
     {
         $table          = $this->getModel()->getTable();
-        $defaultColumn  = $allowedColumns[0] ?? null;
         $allowedColumns = array_merge($allowedColumns, ['created_at', 'updated_at']);
         $argumentName   = ($prefix ? $prefix . '_' : '') . 'between';
 
-        $filters  = StickyBetweenDates::apply(request()->input($argumentName, []), $allowedColumns, $defaultColumn, $prefix);
+        $filters  = request()->input($argumentName, []);
         $timezone = resolveTimezoneHeader();
 
         foreach ($allowedColumns as $column) {
-            $filterKey = StickyBetweenDates::filterKey($column);
+            $filterKey = Str::afterLast($column, '.');
 
             if (array_key_exists($filterKey, $filters)) {
                 $range = $filters[$filterKey];
@@ -333,8 +333,6 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         if (empty($filters) && $prefix) {
             $filters = request()->input('between', []);
         }
-
-        $filters = StickyBetweenDates::apply($filters, ['from', 'date'], 'date');
 
         $hasDateFilter = false;
         $startDate = null;

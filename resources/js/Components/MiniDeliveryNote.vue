@@ -12,6 +12,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { onMounted } from "vue";
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
+import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
 import { trans } from "laravel-vue-i18n"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -209,6 +210,16 @@ onMounted(() => {
 
     <PageHeading v-if="props.deliveryNote" :data="pageHead" isButtonGroupWithBorder :key="props.deliveryNote?.state">
         <template #other>
+            <StaffChatContextButtons
+                v-if="props.deliveryNote?.delivery_note_id"
+                :context="{
+                    context_type: 'DeliveryNote',
+                    context_id: Number(props.deliveryNote.delivery_note_id),
+                    audiences: [{ key: 'crm', label: trans('Ask CRM') }],
+                }"
+                class="mr-3"
+            />
+
             <Button v-if="props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state === 'packed'"
                 type="save" label="Finalise and Dispatch" :loading="loadingFinal" @click="handleFinaliseAndDispatch" />
 
