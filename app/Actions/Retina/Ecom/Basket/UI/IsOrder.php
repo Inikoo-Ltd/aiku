@@ -18,6 +18,7 @@ use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Actions\Traits\WithLineTaxCategories;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
@@ -52,7 +53,7 @@ trait IsOrder
         }
 
         $notPickedNet = 0;
-        $items        = DeliveryNoteItem::whereIn('delivery_note_id', $order->deliveryNotes()->pluck('delivery_notes.id'))
+        $items        = DeliveryNoteItem::whereIn('delivery_note_id', $order->deliveryNotes()->where('delivery_notes.state', '!=', DeliveryNoteStateEnum::CANCELLED)->pluck('delivery_notes.id'))
             ->where('quantity_not_picked', '>', 0)
             ->with('transaction')
             ->get();
