@@ -272,11 +272,11 @@ class EditCollection extends OrgAction
                             'label'  => __('Name/Description'),
                             'icon'   => 'fa-light fa-tag',
                             'fields' => array_merge([
-                                // 'code' => [
-                                //     'type'  => 'input',
-                                //     'label' => __('Code'),
-                                //     'value' => $collection->code
-                                // ],
+                                'code' => [
+                                    'type'  => 'input',
+                                    'label' => __('Code'),
+                                    'value' => $collection->code
+                                ],
                             ], $nameFields)
                         ],
                         // [

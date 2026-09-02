@@ -651,12 +651,14 @@ test('update collection', function ($collection) {
     expect($collection->name)->not->toBe('Updated Collection Name');
 
     $collectionData = [
+        'code'        => 'updated-code',
         'name'        => 'Updated Collection Name',
         'description' => 'Updated Collection Description',
     ];
     $collection     = UpdateCollection::make()->action($collection, $collectionData);
 
-    expect($collection->name)->toBe('Updated Collection Name');
+    expect($collection->name)->toBe('Updated Collection Name')
+        ->and($collection->code)->toBe('updated-code');
 
     return $collection;
 })->depends('create collection');

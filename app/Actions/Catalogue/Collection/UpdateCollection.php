@@ -116,7 +116,7 @@ class UpdateCollection extends OrgAction
                 'max:32',
                 new AlphaDashDot(),
                 new IUnique(
-                    table: 'product_categories',
+                    table: 'collections',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
                         ['column' => 'deleted_at', 'operator' => 'null'],
