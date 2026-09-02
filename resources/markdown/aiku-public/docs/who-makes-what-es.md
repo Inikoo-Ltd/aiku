@@ -51,6 +51,6 @@ Así que la forma barata de configurar una fábrica es: asignar artesanos a las 
 
 <aside class="wayfinder"><strong>Permisos que necesitas</strong>
 <ul>
-<li>Asignar y quitar artesanos: derechos de orquestación sobre las operaciones de la fábrica, o supervisor de la organización. Todo el que puede ver la página ve los nombres.</li>
+<li>Asignar y quitar artesanos: puesto <b>Production floor supervisor</b> (supervisor de planta) para la fábrica, o supervisor de la organización. Los puestos se asignan en la ficha del empleado en Human Resources. Todo el que puede ver la página ve los nombres.</li>
 </ul>
 </aside>

@@ -64,7 +64,8 @@ Ticking an own-customer line does nothing useful. It is skipped when you press P
 
 <aside class="wayfinder"><strong>Permissions you need</strong>
 <ul>
-<li>Seeing the list: view rights on the factory's operations or procurement, or organisation supervisor.</li>
-<li>Picking and sending: orchestrate rights on the factory's operations, or organisation supervisor.</li>
+<li>Positions are set on the employee record under Human Resources and carry the rights with them.</li>
+<li>Seeing the list: <b>Production operative</b> for the factory, or above.</li>
+<li>Picking, sending and creating job orders: <b>Production floor supervisor</b> for the factory, or organisation supervisor.</li>
 </ul>
 </aside>

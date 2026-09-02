@@ -45,7 +45,7 @@ Odškrtnite zmesi na prípravu, upravte množstvo, ak dávka nesedí presne s ne
 
 ## Čo robí prípravár
 
-Prípravár pracuje ako každý remeselník: jeho úlohy sa zobrazia na obrazovke dielne, stláča START a DONE, a keď je dokončený posledný krok, pracovný príkaz sa prijme na sklad s kódom dávky. Od tej chvíle je zmes na sklade a remeselníci môžu vyrábať svoje produkty.
+Prípravár vedie vlastnú linku, preto má pozíciu <b>Production floor supervisor</b> (vedúci dielne) pre továreň, rovnako ako plánovač. Vďaka tomu môže otvoriť záložku Mixes, vytvárať a uvoľňovať vlastné pracovné príkazy a prijímať ich na sklad bez čakania na kohokoľvek. V dielni pracuje ako každý remeselník: jeho úlohy sa zobrazia na obrazovke dielne, stláča START a DONE, a keď je dokončený posledný krok, pracovný príkaz sa prijme na sklad s kódom dávky. Od tej chvíle je zmes na sklade a remeselníci môžu vyrábať svoje produkty.
 
 Ak prípravár nie je platený úkolovo, je to nastavenie mzdy, nie dôvod preskočiť dielňu. Záznam o tom, kto akú dávku pripravil a kedy, je to, čo dáva vysledovateľnosť od hotového produktu späť k jeho surovinám.
 
@@ -66,8 +66,8 @@ Ak prípravár nie je platený úkolovo, je to nastavenie mzdy, nie dôvod presk
 
 <aside class="wayfinder"><strong>Aké oprávnenia potrebujete</strong>
 <ul>
-<li>Prepojenie suroviny s artefaktom: úpravové práva na crafts továrne, alebo organisation supervisor.</li>
-<li>Vidieť záložku Mixes: práva na zobrazenie prevádzky alebo nákupu továrne.</li>
-<li>Vytváranie a uvoľňovanie pracovných príkazov: orchestračné práva na prevádzku továrne, alebo organisation supervisor.</li>
+<li>Pozície sa nastavujú v karte zamestnanca v Human Resources a nesú so sebou oprávnenia.</li>
+<li>Vidieť záložku Mixes a pracovať v dielni: pozícia <b>Production operative</b> (operátor) pre továreň, alebo vyššia.</li>
+<li>Vytváranie, uvoľňovanie a prijímanie pracovných príkazov a prepojenie suroviny s artefaktom: pozícia <b>Production floor supervisor</b> (vedúci dielne) pre továreň, alebo organisation supervisor. Prípravár potrebuje túto.</li>
 </ul>
 </aside>

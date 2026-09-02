@@ -45,7 +45,7 @@ Bifează amestecurile de preparat, ajustează cantitatea dacă lipsa nu e chiar 
 
 ## Ce face preparatorul
 
-Preparatorul lucrează ca orice artizan: sarcinile lui apar pe ecranul halei, apasă START și DONE, și când ultimul pas e gata, ordinul de lucru e recepționat în stoc cu un cod de lot. Din acel moment amestecul apare ca fiind în stoc și artizanii pot face produsele lor.
+Preparatorul își conduce propria linie, așa că are poziția <b>Production floor supervisor</b> (supervizor de hală) pentru fabrică, la fel ca planificatorul. Asta îi permite să deschidă fila Mixes, să creeze și să trimită propriile ordine de lucru și să le recepționeze în stoc, fără să aștepte pe nimeni. În hală lucrează ca orice artizan: sarcinile lui apar pe ecranul halei, apasă START și DONE, și când ultimul pas e gata, ordinul de lucru e recepționat în stoc cu un cod de lot. Din acel moment amestecul apare ca fiind în stoc și artizanii pot face produsele lor.
 
 Dacă preparatorul nu e plătit cu bucata, asta e o setare de salarizare, nu un motiv să sară peste hală. Înregistrarea cine a preparat ce lot și când este ceea ce oferă trasabilitatea de la produsul finit înapoi la ingredientele lui.
 
@@ -66,8 +66,8 @@ Dacă preparatorul nu e plătit cu bucata, asta e o setare de salarizare, nu un 
 
 <aside class="wayfinder"><strong>Permisiuni de care ai nevoie</strong>
 <ul>
-<li>Legarea unei materii prime de artefactul ei: drepturi de editare pe meșteșugurile fabricii, sau supervizor de organizație.</li>
-<li>Vizualizarea filei Mixes: drepturi de vizualizare pe operațiunile sau achizițiile fabricii.</li>
-<li>Crearea și trimiterea ordinelor de lucru: drepturi de coordonare pe operațiunile fabricii, sau supervizor de organizație.</li>
+<li>Pozițiile se setează pe fișa angajatului în Human Resources și aduc cu ele drepturile.</li>
+<li>Vizualizarea filei Mixes și lucrul în hală: poziția <b>Production operative</b> (operator) pentru fabrică, sau mai sus.</li>
+<li>Crearea, trimiterea și recepționarea ordinelor de lucru, și legarea unei materii prime de artefactul ei: poziția <b>Production floor supervisor</b> (supervizor de hală) pentru fabrică, sau supervizor de organizație. Preparatorul are nevoie de aceasta.</li>
 </ul>
 </aside>

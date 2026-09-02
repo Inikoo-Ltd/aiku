@@ -45,7 +45,7 @@ Tick the mixes to prepare, adjust the quantity if the shortfall is not the right
 
 ## What the preparer does
 
-The preparer works like any artisan: their tasks appear on the floor screen, they press START and DONE, and when the last step is done the job order is received into stock with a batch code. From that moment the mix shows as on hand and the artisans' products can be made.
+The preparer runs their own line, so they hold the <b>Production floor supervisor</b> position for the factory, the same as the planner. That lets them open the Mixes tab, create and release their own job orders, and receive them into stock, without waiting for anyone. On the floor they work like any artisan: their tasks appear on the floor screen, they press START and DONE, and when the last step is done the job order is received into stock with a batch code. From that moment the mix shows as on hand and the artisans' products can be made.
 
 If the preparer is not paid by piece rate, that is a payroll setting, not a reason to skip the floor. The record of who prepared which batch and when is what gives traceability from the finished product back to its ingredients.
 
@@ -66,8 +66,8 @@ If the preparer is not paid by piece rate, that is a payroll setting, not a reas
 
 <aside class="wayfinder"><strong>Permissions you need</strong>
 <ul>
-<li>Linking a raw material to its artefact: edit rights on the factory's crafts, or organisation supervisor.</li>
-<li>Seeing the Mixes tab: view rights on the factory's operations or procurement.</li>
-<li>Creating and releasing job orders: orchestrate rights on the factory's operations, or organisation supervisor.</li>
+<li>Positions are set on the employee record under Human Resources and carry the rights with them.</li>
+<li>Seeing the Mixes tab and working the floor: <b>Production operative</b> for the factory, or above.</li>
+<li>Creating, releasing and receiving job orders, and linking a raw material to its artefact: <b>Production floor supervisor</b> for the factory, or organisation supervisor. The preparer needs this one.</li>
 </ul>
 </aside>

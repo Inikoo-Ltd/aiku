@@ -51,6 +51,6 @@ So the cheap way to set up a factory is: attach artisans to categories, and only
 
 <aside class="wayfinder"><strong>Permissions you need</strong>
 <ul>
-<li>Attaching and detaching artisans: orchestrate rights on the factory's operations, or organisation supervisor. Everyone who can see the page sees the names.</li>
+<li>Attaching and detaching artisans: the <b>Production floor supervisor</b> position for the factory, or organisation supervisor. Positions are set on the employee record under Human Resources. Everyone who can see the page sees the names.</li>
 </ul>
 </aside>

@@ -64,7 +64,8 @@ Marcar una línea de cliente propio no sirve de nada. Se ignora al pulsar Pick i
 
 <aside class="wayfinder"><strong>Permisos que necesitas</strong>
 <ul>
-<li>Ver la lista: derechos de vista sobre las operaciones o compras de la fábrica, o supervisor de la organización.</li>
-<li>Recoger y enviar: derechos de orquestación sobre las operaciones de la fábrica, o supervisor de la organización.</li>
+<li>Los puestos se asignan en la ficha del empleado en Human Resources y llevan los permisos consigo.</li>
+<li>Ver la lista: puesto <b>Production operative</b> (operario) para la fábrica, o superior.</li>
+<li>Recoger, enviar y crear órdenes de trabajo: puesto <b>Production floor supervisor</b> (supervisor de planta) para la fábrica, o supervisor de la organización.</li>
 </ul>
 </aside>

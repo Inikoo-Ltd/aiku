@@ -51,6 +51,6 @@ Najlacnejší spôsob, ako nastaviť továreň, je teda: pripojte remeselníkov 
 
 <aside class="wayfinder"><strong>Aké oprávnenia potrebujete</strong>
 <ul>
-<li>Pripájanie a odpájanie remeselníkov: orchestračné práva na prevádzku továrne, alebo organisation supervisor. Mená vidí každý, kto vidí stránku.</li>
+<li>Pripájanie a odpájanie remeselníkov: pozícia <b>Production floor supervisor</b> (vedúci dielne) pre továreň, alebo organisation supervisor. Pozície sa nastavujú v karte zamestnanca v Human Resources. Mená vidí každý, kto vidí stránku.</li>
 </ul>
 </aside>

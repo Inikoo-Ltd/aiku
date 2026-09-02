@@ -64,7 +64,8 @@ Zaškrtnutie riadku vlastného zákazníka nemá žiadny účinok. Pri stlačen�
 
 <aside class="wayfinder"><strong>Aké oprávnenia potrebujete</strong>
 <ul>
-<li>Vidieť zoznam: práva na zobrazenie prevádzky alebo nákupu továrne, alebo organisation supervisor.</li>
-<li>Vychystávať a odosielať: orchestračné práva na prevádzku továrne, alebo organisation supervisor.</li>
+<li>Pozície sa nastavujú v karte zamestnanca v Human Resources a nesú so sebou oprávnenia.</li>
+<li>Vidieť zoznam: pozícia <b>Production operative</b> (operátor) pre továreň, alebo vyššia.</li>
+<li>Vychystávanie, odosielanie a vytváranie pracovných príkazov: pozícia <b>Production floor supervisor</b> (vedúci dielne) pre továreň, alebo organisation supervisor.</li>
 </ul>
 </aside>

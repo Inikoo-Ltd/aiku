@@ -51,6 +51,6 @@ Deci varianta simplă de a configura o fabrică este: atașează artizani la cat
 
 <aside class="wayfinder"><strong>Permisiuni de care ai nevoie</strong>
 <ul>
-<li>Atașarea și detașarea artizanilor: drepturi de coordonare pe operațiunile fabricii, sau supervizor de organizație. Oricine poate vedea pagina vede și numele.</li>
+<li>Atașarea și detașarea artizanilor: poziția <b>Production floor supervisor</b> (supervizor de hală) pentru fabrică, sau supervizor de organizație. Pozițiile se setează pe fișa angajatului în Human Resources. Oricine poate vedea pagina vede și numele.</li>
 </ul>
 </aside>
