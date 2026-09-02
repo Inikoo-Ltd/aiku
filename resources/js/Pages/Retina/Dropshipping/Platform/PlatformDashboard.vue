@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import CountUp from "vue-countup-v3"
-import {faArrowRight, faCube, faInfoCircle, faLink} from "@fal"
+import {faArrowRight, faCube, faInfoCircle, faLink, faSyncAlt} from "@fal"
 import {faArrowRight as farArrowRight} from "@far"
 import {library} from "@fortawesome/fontawesome-svg-core"
 import {Link, router} from "@inertiajs/vue3"
-import {inject} from "vue"
+import {inject, ref} from "vue"
 import Timeline from '@/Components/Utils/Timeline.vue'
 
 import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
@@ -16,6 +16,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
 import PlatformEbayWarningNotComplete from "@/Components/Retina/Platform/PlatformEbayWarningNotComplete.vue"
 import PlatformTiktokWarningNotComplete from "@/Components/Retina/Platform/PlatformTiktokWarningNotComplete.vue"
+import { routeType } from "@/types/route"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure";
@@ -23,7 +24,23 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { sub } from "date-fns"
 
-library.add(faArrowRight, faCube, faInfoCircle, faLink, farArrowRight)
+library.add(faArrowRight, faCube, faInfoCircle, faLink, faSyncAlt, farArrowRight)
+
+const isFetchingOrders = ref(false)
+
+const onFetchOrders = () => {
+    if (!props.fetch_orders_route) return
+
+    router.post(
+        route(props.fetch_orders_route.name, props.fetch_orders_route.parameters),
+        {},
+        {
+            preserveScroll: true,
+            onStart: () => { isFetchingOrders.value = true },
+            onFinish: () => { isFetchingOrders.value = false },
+        }
+    )
+}
 
 
 const props = defineProps<{
@@ -33,6 +50,7 @@ const props = defineProps<{
         }
     }
     platform_status: boolean
+    fetch_orders_route?: routeType | null
     exist_in_platform: boolean
     can_connect_to_platform: boolean
     platform_logo: string,
@@ -421,6 +439,18 @@ const layout = inject('layout', layoutStructure)
                         </div>
                     </div>
                 </div>
+                <div v-if="fetch_orders_route" class="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <Button
+                        :label="trans('Fetch orders')"
+                        :icon="faSyncAlt"
+                        type="tertiary"
+                        :loading="isFetchingOrders"
+                        @click="onFetchOrders" />
+                    <span class="text-xs text-gray-500">
+                        {{ trans("Checks :platform for orders that have not reached us yet.", { platform: platform.name }) }}
+                    </span>
+                </div>
+
                 <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl">
                     <Link v-for="platform in platformData" :key="platform.id"
                           :href="route(platform.route.name, platform.route.parameters)"

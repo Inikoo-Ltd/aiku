@@ -99,9 +99,9 @@ class PlatformResponseFormatter
         'manufacturer is required'           => 'TikTok requires a manufacturer for this category. Add one in TikTok Shop Seller Center under compliance, then upload again.',
         'responsible person is required'     => 'TikTok requires a responsible person for this category. Add one in TikTok Shop Seller Center under compliance, then upload again.',
         'incorrect price'                    => 'The price of this product falls outside the range TikTok allows for your shop. Adjust the price in AW, then upload again.',
-        'request timeout'                    => 'The channel did not answer in time. Nothing is wrong with this product, upload it again in a few minutes.',
-        'timeout was reached'                => 'The channel did not answer in time. Nothing is wrong with this product, upload it again in a few minutes.',
-        'internal error'                     => 'The channel hit a problem on its own side. Nothing is wrong with this product, upload it again in a few minutes.',
+        'request timeout'                    => 'The channel did not answer in time. Nothing is wrong on your side, try again in a few minutes.',
+        'timeout was reached'                => 'The channel did not answer in time. Nothing is wrong on your side, try again in a few minutes.',
+        'internal error'                     => 'The channel hit a problem on its own side. Nothing is wrong on your side, try again in a few minutes.',
     ];
 
     /**
