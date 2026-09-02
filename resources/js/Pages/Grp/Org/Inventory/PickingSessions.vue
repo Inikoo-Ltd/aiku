@@ -88,7 +88,7 @@ function referenceRoute(item: any) {
 
       <FontAwesomeIcon 
         v-if="item.is_done_waiting"
-        v-tooltip='ctrans("This picking session is just finished from Waiting")'
+        v-tooltip='ctrans("Waiting items are ready to pack")'
         :icon="faExclamationTriangle"
         class="text-red-400 ml-1"
       />

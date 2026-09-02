@@ -13,10 +13,6 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('delivery_notes', function (Blueprint $table) {
-            $table->boolean('is_done_waiting')->default(false)->index();
-        });
-
         Schema::table('picking_sessions', function (Blueprint $table) {
             $table->boolean('is_done_waiting')->default(false)->index();
         });
@@ -29,12 +25,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('delivery_notes', function (Blueprint $table) {
-            $table->dropColumn([
-                'is_done_waiting'
-            ]);
-        });
-
         Schema::table('picking_sessions', function (Blueprint $table) {
             $table->dropColumn([
                 'is_done_waiting'

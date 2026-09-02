@@ -57,6 +57,7 @@ use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
+use App\Actions\Dispatching\PickingSession\AutoFinishPickingPickingSession;
 use App\Actions\Dispatching\PickingSession\CalculatePickingSessionPicks;
 use App\Actions\Dispatching\PickingSession\StartPickPickingSession;
 use App\Actions\Dispatching\PickingSession\StorePickingSession;
@@ -1854,6 +1855,64 @@ test('picking waiting warehouse and crm flow', function () {
     $item->update(['quantity_waiting_crm' => 2]);
     $sentBack = \App\Actions\Dispatching\Picking\SendBackWaitingWarehouse::make()->action($item->refresh(), $this->user, []);
     expect($sentBack->has_waiting_crm)->toBeFalse();
+});
+
+test('picking session flags done waiting without holding the session away from packing', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    // 6 of the 10 go in the tote, so there is something left for the warehouse to wait on.
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $pickingSession = StartPickPickingSession::run($pickingSession, []);
+
+    \App\Actions\Dispatching\Picking\SetAsWaitingWarehouse::make()->action($item->refresh(), $this->user, ['quantity' => 4]);
+    \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+
+    /*
+     * The waiting line is handled, so the session has finished picking even though the note it
+     * holds is blocked. Blocking is a fact about the note, and the session staying at
+     * PICKING_FINISHED is what leaves the packer able to pack the notes that are ready.
+     */
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED)
+        ->and($deliveryNote->handling_blocked_at)->not->toBeNull()
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PICKING_FINISHED)
+        ->and($pickingSession->is_done_waiting)->toBeFalse();
+
+    // The stock turns up and the wait is picked: the session takes the flag the list draws its icon from.
+    $item->refresh()->update(['locked_at' => null]);
+    \App\Actions\Dispatching\Picking\PickAllItemFromWaitingWarehouse::run(
+        $item->refresh(),
+        $this->user,
+        ['location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id]
+    );
+    AutoFinishPickingPickingSession::run($pickingSession->fresh());
+
+    expect($item->refresh()->state)->not->toBe(DeliveryNoteItemStateEnum::HANDLING_BLOCKED)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PICKING_FINISHED)
+        ->and($pickingSession->is_done_waiting)->toBeTrue();
+
+    // A line going dirty under the picker blocks the note again, and the flag goes with it.
+    $item->refresh()->update(['is_dirty' => true, 'is_handled' => false, 'quantity_required' => 12]);
+    AutoFinishPickingPickingSession::run($pickingSession->fresh());
+    expect($pickingSession->refresh()->is_done_waiting)->toBeFalse();
+
+    $item->refresh()->update(['is_dirty' => false, 'is_handled' => true, 'quantity_required' => 10]);
+    AutoFinishPickingPickingSession::run($pickingSession->fresh());
+    expect($pickingSession->refresh()->is_done_waiting)->toBeTrue();
+
+    // Packing is the answer to the question the icon asks, so it clears the flag.
+    $deliveryNote->refresh()->update(['state' => DeliveryNoteStateEnum::PACKED]);
+    AutoFinishPackingPickingSession::run($pickingSession->fresh());
+
+    expect($pickingSession->refresh()->is_done_waiting)->toBeFalse()
+        ->and($pickingSession->state)->toBe(PickingSessionStateEnum::PACKING_FINISHED);
 });
 
 test('delete picking on blocked line partly waiting with crm does not abort', function () {
