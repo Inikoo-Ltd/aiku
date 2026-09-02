@@ -7,9 +7,11 @@
 
 namespace App\Actions\Chat\Whatsapp;
 
+use App\Actions\Comms\WhatsappCampaign\Hydrators\WhatsappCampaignHydrateStats;
 use App\Enums\CRM\Livechat\MetaTrackingEventTypeEnum;
 use App\Events\BroadcastMetaChatMessageStatus;
 use App\Models\Chat\MetaChatMessage;
+use App\Models\Comms\WhatsappRecipient;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -117,10 +119,29 @@ class UpdateWhatsappMessageStatus
 
         $metaChatMessage->update($modelData);
 
+        $this->hydrateCampaignStats($metaChatMessage);
+
         if ($trackedType) {
             StoreMetaTrackingEvent::run($trackedType, $metaChatMessage, $metaMessageId, $status, $happenedAt);
         }
 
         BroadcastMetaChatMessageStatus::dispatch($metaChatMessage->fresh('metaChatSession'));
+    }
+
+    /**
+     * Campaign counters are recomputed, not incremented, so a burst of callbacks for the
+     * same campaign collapses into one recount: this action runs on the urgent queue once
+     * per message, and the hydrator is ShouldBeUnique on the analytics queue.
+     */
+    protected function hydrateCampaignStats(MetaChatMessage $metaChatMessage): void
+    {
+        $campaignId = Arr::get($metaChatMessage->metadata ?? [], 'whatsapp_campaign_id')
+            ?: WhatsappRecipient::where('meta_chat_message_id', $metaChatMessage->id)->value('whatsapp_campaign_id');
+
+        if (!$campaignId) {
+            return;
+        }
+
+        WhatsappCampaignHydrateStats::dispatch((int) $campaignId)->delay(now()->addSeconds(5));
     }
 }

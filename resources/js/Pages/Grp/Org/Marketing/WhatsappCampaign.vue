@@ -18,6 +18,8 @@ const props = defineProps<{
     title: string
     pageHead: any
     journey: any
+    timeline: Record<string, any>
+    stats: { label: string; key: string; icon: string; value: number }[]
     tabs: TSTabs
     campaign: {
         name: string
@@ -81,6 +83,8 @@ const component = computed(() => {
 const showcaseProps = computed(() => ({
     campaign: props.campaign,
     status: props.status,
+    timeline: props.timeline,
+    stats: props.stats,
     template: props.template,
     workshopRoute: props.workshopRoute,
     sendRoute: props.sendRoute,

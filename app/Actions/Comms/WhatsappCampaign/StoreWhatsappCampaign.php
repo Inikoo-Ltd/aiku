@@ -13,6 +13,7 @@ use App\Enums\Comms\WhatsappCampaign\WhatsappCampaignTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\WhatsappCampaign;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
@@ -85,7 +86,12 @@ class StoreWhatsappCampaign extends OrgAction
         $modelData['organisation_id'] = $shop->organisation_id;
         $modelData['shop_id']         = $shop->id;
 
-        return WhatsappCampaign::create($modelData);
+        return DB::transaction(function () use ($modelData) {
+            $campaign = WhatsappCampaign::create($modelData);
+            $campaign->stats()->create();
+
+            return $campaign;
+        });
     }
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): WhatsappCampaign

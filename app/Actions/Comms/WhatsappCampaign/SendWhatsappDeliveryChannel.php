@@ -7,6 +7,7 @@
 
 namespace App\Actions\Comms\WhatsappCampaign;
 
+use App\Actions\Comms\WhatsappCampaign\Hydrators\WhatsappCampaignHydrateStats;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatMessage;
 use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappTemplatePayload;
 use App\Actions\Chat\Whatsapp\StoreMetaTrackingEvent;
@@ -97,6 +98,8 @@ class SendWhatsappDeliveryChannel
             'state'   => WhatsappDeliveryChannelStateEnum::SENT,
             'sent_at' => now(),
         ]);
+
+        WhatsappCampaignHydrateStats::dispatch($campaign->id);
 
         UpdateWhatsappCampaignSentState::run($campaign->refresh());
     }

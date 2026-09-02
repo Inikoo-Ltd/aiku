@@ -26,6 +26,7 @@ class ShowWhatsappCampaign extends OrgAction
 {
     use WithMarketingEditAuthorisation;
     use WithWhatsappCampaignJourney;
+    use WithWhatsappCampaignTimeline;
     use WithWhatsappTemplatePreview;
 
     public function handle(WhatsappCampaign $campaign, ActionRequest $request): Response
@@ -68,6 +69,8 @@ class ShowWhatsappCampaign extends OrgAction
                     ],
                 ],
                 'journey'      => $this->getWhatsappCampaignJourney($campaign, 'review'),
+                'timeline'     => $this->getWhatsappCampaignTimeline($campaign),
+                'stats'        => $this->getWhatsappCampaignStats($campaign),
                 'tabs'         => [
                     'current'    => $this->tab,
                     'navigation' => WhatsappCampaignTabsEnum::navigation($campaign),

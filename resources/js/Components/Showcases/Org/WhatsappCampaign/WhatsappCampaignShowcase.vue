@@ -15,13 +15,21 @@ import { faUsers } from "@fortawesome/free-solid-svg-icons"
 import { Message, Popover } from "primevue"
 import VueDatePicker from "@vuepic/vue-datepicker"
 import { toZonedTime, formatInTimeZone } from "date-fns-tz"
+import { Pie } from "vue-chartjs"
+import { Chart as ChartJS, Title, Tooltip as ChartTooltip, Legend, ArcElement } from "chart.js"
+import Timeline from "@/Components/Utils/Timeline.vue"
+import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 import WhatsappTemplatePreview from "@/Components/Chat/WhatsappTemplatePreview.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from "@/types/route"
 
+ChartJS.register(Title, ChartTooltip, Legend, ArcElement)
+
 const props = defineProps<{
+    timeline: Record<string, any>
+    stats: { label: string; key: string; icon: string; value: number }[]
     campaign: {
         name: string
         state: string
@@ -61,6 +69,60 @@ const nowUtc = ref(new Date())
 const selectedTimezone = ref(props.defaultShopTimezone || "UTC")
 
 const isReady = computed(() => props.status === "ready")
+// Timeline, stats and chart only say anything once a campaign has left the drafting stage.
+const hasLeftDraft = computed(() => !["in_process", "ready"].includes(props.status))
+
+const tabsBox = computed(() => [
+    {
+        label: trans("Delivery"),
+        tabs: props.stats.map((stat) => ({
+            tab_slug: stat.key,
+            label: stat.label,
+            value: stat.value ?? 0,
+            type: "number",
+            icon: stat.icon,
+            icon_data: { icon: stat.icon, tooltip: stat.label },
+        })),
+    },
+])
+
+// Clicked has no data source yet, so it would only ever add an empty slice and a dead legend row.
+const chartStats = computed(() => props.stats.filter((stat) => stat.key !== "number_clicked"))
+
+const totalValue = computed(() =>
+    chartStats.value.reduce((total, stat) => total + (stat.value || 0), 0)
+)
+
+const statusColors: Record<string, string> = {
+    number_sent: "#6b7280",
+    number_delivered: "#38bdf8",
+    number_read: "#22c55e",
+    number_failed: "#fb7185",
+}
+
+const dataSet = computed(() => ({
+    labels: chartStats.value.map((stat) => stat.label),
+    datasets: [
+        {
+            data: chartStats.value.map((stat) => stat.value || 0),
+            backgroundColor: chartStats.value.map((stat) => statusColors[stat.key] ?? "#6b7280"),
+            hoverOffset: 4,
+        },
+    ],
+}))
+
+const pieOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            labels: {
+                usePointStyle: true,
+                pointStyle: "circle",
+            },
+        },
+    },
+}
 const isScheduled = computed(() => props.status === "scheduled")
 const isDraft = computed(() => props.status === "in_process")
 
@@ -224,10 +286,16 @@ const handleCancelSchedule = async () => {
 </script>
 
 <template>
-    <div class="w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div class="w-full px-4 sm:px-6 py-8 space-y-6">
         <Message v-if="isScheduled && scheduledAtLabel" severity="info" :closable="false">
             {{ trans("This campaign is scheduled for") }} {{ scheduledAtLabel }} ({{ selectedTimezone }}).
         </Message>
+
+        <template v-if="hasLeftDraft">
+            <Timeline :options="timeline" :state="status" :slidesPerView="5" />
+
+            <TabsBoxDisplay :tabs_box="tabsBox" />
+        </template>
 
         <div class="flex flex-col lg:flex-row gap-6">
             <section class="flex-1 rounded-xl border border-gray-200 overflow-hidden self-start w-full">
@@ -375,6 +443,16 @@ const handleCancelSchedule = async () => {
                     :businessName="businessName"
                     :mergeTags="mergeTags"
                     :placeholder="trans('No template chosen yet…')" />
+            </div>
+
+            <div v-if="hasLeftDraft" class="w-full lg:w-[330px] shrink-0">
+                <div class="relative flex h-full min-h-[20rem] items-center justify-center rounded-xl border border-gray-200 bg-white p-4">
+                    <Pie :data="dataSet" :options="pieOptions" />
+                    <div v-if="totalValue === 0"
+                        class="absolute inset-0 flex items-center justify-center rounded-xl bg-gray-50">
+                        <span class="text-gray-500">{{ trans("No data available") }}</span>
+                    </div>
+                </div>
             </div>
         </div>
 
