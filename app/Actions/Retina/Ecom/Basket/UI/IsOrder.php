@@ -24,6 +24,7 @@ use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\Accounting\Invoice;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use App\Helpers\NaturalLanguage;
@@ -36,6 +37,44 @@ trait IsOrder
     use WithPreferredShipperResolver;
 
     use GetPlatformLogo;
+
+    /**
+     * Value of the lines the warehouse has already marked as not picked while the order is still
+     * being picked. Order amounts stay at the submitted figure until Picked, so this is the only
+     * early sign customer service gets of what will come back to the customer's balance.
+     *
+     * @return array{amount: float, expected_return: float}|null
+     */
+    private function notPickedSoFar(Order $order, float $totalToPay): ?array
+    {
+        if (!in_array($order->state, [OrderStateEnum::IN_WAREHOUSE, OrderStateEnum::HANDLING, OrderStateEnum::HANDLING_BLOCKED])) {
+            return null;
+        }
+
+        $notPickedNet = 0;
+        $items        = DeliveryNoteItem::whereIn('delivery_note_id', $order->deliveryNotes()->pluck('delivery_notes.id'))
+            ->where('quantity_not_picked', '>', 0)
+            ->with('transaction')
+            ->get();
+        foreach ($items as $item) {
+            $transaction = $item->transaction;
+            if (!$transaction || $transaction->quantity_ordered <= 0) {
+                continue;
+            }
+            $notPickedNet += $item->quantity_not_picked * $transaction->net_amount / $transaction->quantity_ordered;
+        }
+        if ($notPickedNet <= 0) {
+            return null;
+        }
+
+        $taxFactor = $order->net_amount > 0 ? 1 + $order->tax_amount / $order->net_amount : 1;
+        $amount    = round($notPickedNet * $taxFactor, 2);
+
+        return [
+            'amount'          => $amount,
+            'expected_return' => round(max(0, $order->payment_amount - ($totalToPay - $amount)), 2),
+        ];
+    }
 
     public function getOrderBoxStats(Order $order): array
     {
@@ -406,6 +445,7 @@ trait IsOrder
                         ]
                     ] : null,
                 ],
+                'not_picked'       => $this->notPickedSoFar($order, $totalToPay),
                 'excesses_payment' => [
                     'amount'               => round($order->payment_amount - $totalToPay, 2),
                     'route_to_add_balance' => [

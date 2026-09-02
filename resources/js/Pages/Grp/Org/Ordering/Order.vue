@@ -223,6 +223,10 @@ const props = defineProps<{
                 paid_amount: number
                 pay_amount: number
             }
+            not_picked?: {
+                amount: number
+                expected_return: number
+            } | null
             excesses_payment?: {
                 amount: number
                 route_to_add_balance?: routeType
@@ -2044,6 +2048,18 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     <template #default>
                                     </template>
                                 </NeedToPayV2>
+
+                                <div v-if="box_stats.products.not_picked?.amount > 0"
+                                    class="mt-2 pt-2 border-t-2 border-yellow-500 text-xs text-yellow-700 px-2.5 pb-2">
+                                    <div class="flex justify-between">
+                                        <span>{{ ctrans("Marked out of stock so far") }}</span>
+                                        <strong>{{ locale.currencyFormat(currency.code, Number(box_stats.products.not_picked.amount)) }}</strong>
+                                    </div>
+                                    <div v-if="box_stats.products.not_picked.expected_return > 0" class="flex justify-between">
+                                        <span>{{ ctrans("Expected back to balance when picking finishes") }}</span>
+                                        <strong>{{ locale.currencyFormat(currency.code, Number(box_stats.products.not_picked.expected_return)) }}</strong>
+                                    </div>
+                                </div>
 
 
 
