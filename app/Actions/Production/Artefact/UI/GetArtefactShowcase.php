@@ -24,6 +24,8 @@ class GetArtefactShowcase
             'code'              => $artefact->code,
             'name'              => $artefact->name,
             'state'             => $artefact->state,
+            'artefact_family'   => $artefact->artefactFamily ? ['slug' => $artefact->artefactFamily->slug, 'name' => $artefact->artefactFamily->name] : null,
+            'tags'              => $artefact->tags->pluck('name'),
             'compliance_status' => $compliance['status'],
             'compliance_label'  => $compliance['label'],
             'trade_unit' => $artefact->tradeUnit ? [

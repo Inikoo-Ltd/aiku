@@ -55,7 +55,7 @@ class HandleInertiaGrpRequests extends Middleware
                     'notification' => fn () => $request->session()->get('notification'),
                     'modal'        => fn () => $request->session()->get('modal')
                 ],
-                'help' => fn () => BlogPosts::helpFor($routeName),
+                'help' => fn () => BlogPosts::helpFor($routeName, $user?->language?->code),
                 'ziggy' => [
                     'location' => $request->url(),
                 ],

@@ -54,6 +54,20 @@ class EditArtefact extends OrgAction
     }
 
 
+    private function getTagRoutes(Artefact $artefact): array
+    {
+        $parameters = ['artefact' => $artefact->id];
+
+        return [
+            'index_tag'  => ['name' => 'grp.json.artefacts.tags.index', 'parameters' => $parameters],
+            'store_tag'  => ['name' => 'grp.models.artefact.tags.store', 'parameters' => $parameters],
+            'update_tag' => ['name' => 'grp.models.artefact.tags.update', 'parameters' => $parameters, 'method' => 'patch'],
+            'delete_tag' => ['name' => 'grp.models.artefact.tags.delete', 'parameters' => $parameters, 'method' => 'delete'],
+            'attach_tag' => ['name' => 'grp.models.artefact.tags.attach', 'parameters' => $parameters, 'method' => 'post'],
+            'detach_tag' => ['name' => 'grp.models.artefact.tags.detach', 'parameters' => $parameters, 'method' => 'delete'],
+        ];
+    }
+
     public function htmlResponse(Artefact $artefact, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -100,6 +114,29 @@ class EditArtefact extends OrgAction
                                     'label'    => __('Recommended batch size'),
                                     'value'    => $artefact->recommended_batch_size,
                                     'required' => false
+                                ],
+                                'artefact_family_id' => [
+                                    'type'       => 'select_infinite',
+                                    'label'      => __('Family'),
+                                    'options'    => array_filter([
+                                        $artefact->artefactFamily ? ['id' => $artefact->artefactFamily->id, 'name' => $artefact->artefactFamily->name] : null,
+                                    ]),
+                                    'fetchRoute' => [
+                                        'name'       => 'grp.json.production.artefact_families.index',
+                                        'parameters' => ['production' => $artefact->production_id]
+                                    ],
+                                    'valueProp' => 'id',
+                                    'labelProp' => 'name',
+                                    'required'  => false,
+                                    'value'     => $artefact->artefact_family_id,
+                                ],
+                                'tags' => [
+                                    'type'                   => 'tags-trade-unit',
+                                    'label'                  => __('Tags'),
+                                    'value'                  => $artefact->tags->pluck('id')->toArray(),
+                                    'tag_routes'             => $this->getTagRoutes($artefact),
+                                    'noSaveButton'           => true,
+                                    'isWithRefreshFieldForm' => true
                                 ],
                                 'trade_unit_id' => [
                                     'type'       => 'select_infinite',

@@ -29,7 +29,11 @@ import { Collapse } from 'vue-collapsed'
 import { trans } from 'laravel-vue-i18n'
 import WeblockList from '@/Components/CMS/Webpage/WeblockList.vue'
 import WebpageTemplateList from '@/Components/Workshop/WebpageTemplateList.vue'
-import { WebLayoutTemplate, WebLayoutTemplateList } from '@/types/WebLayoutTemplate'
+import {
+	WebLayoutTemplate,
+	WebLayoutTemplateFilter,
+	WebLayoutTemplateList,
+} from '@/types/WebLayoutTemplate'
 
 import {
 	faBrowser,
@@ -74,6 +78,7 @@ const props = withDefaults(
 		templatesErrorMessage?: string | null
 		applyingTemplateId?: number | null
 		deletingTemplateId?: number | null
+		templatesFilter?: WebLayoutTemplateFilter
 	}>(),
 	{
 		canUseTemplate: true,
@@ -82,6 +87,7 @@ const props = withDefaults(
 		templatesErrorMessage: null,
 		applyingTemplateId: null,
 		deletingTemplateId: null,
+		templatesFilter: 'all',
 	}
 )
 
@@ -100,6 +106,7 @@ const emits = defineEmits<{
 	(e: 'navigateTemplates', value: string): void
 	(e: 'useTemplate', value: WebLayoutTemplate): void
 	(e: 'deleteTemplate', value: WebLayoutTemplate): void
+	(e: 'filterTemplates', value: WebLayoutTemplateFilter): void
 }>()
 
 const confirm = useConfirm()
@@ -162,6 +169,8 @@ const onNavigateTemplates = (url: string) => emits('navigateTemplates', url)
 const onUseTemplate = (template: WebLayoutTemplate) => emits('useTemplate', template)
 
 const onDeleteTemplate = (template: WebLayoutTemplate) => emits('deleteTemplate', template)
+
+const onFilterTemplates = (value: WebLayoutTemplateFilter) => emits('filterTemplates', value)
 
 const filterOptions = [
 	{ label: 'All', value: 'all' },
@@ -852,11 +861,13 @@ const blockNotEditableVisible = [
 						:applyingTemplateId="applyingTemplateId"
 						:deletingTemplateId="deletingTemplateId"
 						:editable="editable"
+						:filter="templatesFilter"
 						@refresh="requestTemplates"
 						@search="onSearchTemplates"
 						@navigate="onNavigateTemplates"
 						@use="onUseTemplate"
-						@delete="onDeleteTemplate" />
+						@delete="onDeleteTemplate"
+						@filter="onFilterTemplates" />
 				</TabPanel>
 			</TabPanels>
 		</TabGroup>

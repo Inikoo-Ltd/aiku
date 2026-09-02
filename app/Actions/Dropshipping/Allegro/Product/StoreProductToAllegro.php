@@ -82,7 +82,11 @@ class StoreProductToAllegro extends RetinaAction
                 }
 
                 $getRecommendedCategory = $allegroUser->getRecommendedCategory($parent);
-                $categoryId = Arr::get($getRecommendedCategory, 'matchingCategories.0.id', '12');
+                $categoryId = Arr::get($getRecommendedCategory, 'matchingCategories.0.id');
+
+                if (!$categoryId) {
+                    throw new \Exception(Arr::get($getRecommendedCategory, 'message', "Allegro has no matching category for \"$parent\"."));
+                }
             }
 
             $getParameters = $allegroUser->getCategoryParameters($categoryId);
@@ -97,20 +101,31 @@ class StoreProductToAllegro extends RetinaAction
                 $allegroProductId = Arr::get($proposedProduct, 'id');
 
                 if (!$allegroProductId && Str::contains((string)Arr::get($proposedProduct, 'message'), 'Product already exists')) {
+                    if (!$product->barcode) {
+                        throw new \Exception('Allegro reports this product already exists, but there is no barcode to find it with.');
+                    }
+
                     $proposedProduct = $allegroUser->searchProducts([
-                        'phrase' => $portfolio->barcode,
+                        'phrase' => $product->barcode,
                         'mode' => 'GTIN'
                     ]);
 
                     $allegroProductId = Arr::get($proposedProduct, 'products.0.id');
+                }
 
-                    if (!$allegroProductId) {
-                        throw new \Exception(Arr::get($proposedProduct, 'message', 'Failed to propose product to Allegro: no product ID returned.'));
-                    }
+                if (!$allegroProductId) {
+                    throw new \Exception(Arr::get($proposedProduct, 'message', 'Failed to propose product to Allegro: no product ID returned.'));
                 }
             } catch (\Exception $e) {
                 throw new \Exception($e->getMessage());
             }
+
+            $offerCategoryId = $this->resolveOfferCategoryId(
+                $allegroUser,
+                is_array($proposedProduct) ? $proposedProduct : [],
+                $allegroProductId,
+                $categoryId
+            );
 
             $availableQuantity = $product->available_quantity;
 
@@ -162,7 +177,7 @@ class StoreProductToAllegro extends RetinaAction
                 ],
                 'name' => Str::substr($portfolio->customer_product_name, 0, 75),
                 'category' => [
-                    'id' => $categoryId
+                    'id' => $offerCategoryId
                 ],
                 'sellingMode' => [
                     'format' => 'BUY_NOW',
@@ -259,5 +274,22 @@ class StoreProductToAllegro extends RetinaAction
 
             return $portfolio;
         }
+    }
+
+    private function resolveOfferCategoryId(
+        AllegroUser $allegroUser,
+        array $productResponse,
+        ?string $allegroProductId,
+        string $categoryId
+    ): string {
+        $productCategoryId = Arr::get($productResponse, 'category.id')
+            ?? Arr::get($productResponse, 'product.category.id')
+            ?? Arr::get($productResponse, 'products.0.category.id');
+
+        if (!$productCategoryId && $allegroProductId) {
+            $productCategoryId = Arr::get($allegroUser->getProduct($allegroProductId), 'category.id');
+        }
+
+        return (string) ($productCategoryId ?: $categoryId);
     }
 }

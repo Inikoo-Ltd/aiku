@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
+use App\Exports\Catalogue\ProductsWithNoImageExport;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -187,6 +188,42 @@ class IndexProductsWithNoImage extends OrgAction
         };
     }
 
+    /**
+     * @return array<int, array{key: string, label: string}>
+     */
+    public function getExportFields(): array
+    {
+        $definitions = ProductsWithNoImageExport::fieldDefinitions();
+
+        return array_map(fn ($key) => [
+            'key'   => $key,
+            'label' => __($definitions[$key]),
+        ], array_keys($definitions));
+    }
+
+    public function getProductsExport(Shop $shop): array
+    {
+        $parameters = [
+            'organisation' => $shop->organisation->slug,
+            'shop'         => $shop->slug,
+            'prefix'       => ProductsTabsEnum::INDEX->value,
+        ];
+
+        return [
+            'fields'         => $this->getExportFields(),
+            'download_route' => [
+                'xlsx' => [
+                    'name'       => 'grp.org.shops.show.catalogue.products.no_image_product.export',
+                    'parameters' => array_merge($parameters, ['type' => 'xlsx']),
+                ],
+                'csv'  => [
+                    'name'       => 'grp.org.shops.show.catalogue.products.no_image_product.export',
+                    'parameters' => array_merge($parameters, ['type' => 'csv']),
+                ],
+            ],
+        ];
+    }
+
     public function htmlResponse(LengthAwarePaginator $products, ActionRequest $request): Response
     {
         /** @var Shop $shop */
@@ -222,6 +259,7 @@ class IndexProductsWithNoImage extends OrgAction
                     'iconRight'     => $iconRight,
                 ],
                 'data'                         => ProductsResource::collection($products),
+                'products_export'              => $this->getProductsExport($shop),
                 'tabs'                         => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,

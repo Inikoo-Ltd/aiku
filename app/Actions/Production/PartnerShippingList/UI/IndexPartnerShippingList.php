@@ -6,15 +6,15 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Procurement\PartnerShoppingListItem\UI;
+namespace App\Actions\Production\PartnerShippingList\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Procurement\UI\ShowProcurementDashboard;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Ordering\Order;
 use App\Models\Procurement\PartnerShoppingListItem;
+use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -26,7 +26,16 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPartnerShippingList extends OrgAction
 {
-    use WithProcurementAuthorisation;
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo([
+            'org-supervisor.'.$this->organisation->id,
+            'productions-view.'.$this->organisation->id,
+            "productions_operations.{$this->production->id}.view",
+            "productions_operations.{$this->production->id}.orchestrate",
+            "productions_procurement.{$this->production->id}.view",
+        ]);
+    }
 
     public function handle(Organisation $seller): LengthAwarePaginator
     {
@@ -38,10 +47,22 @@ class IndexPartnerShippingList extends OrgAction
             });
         });
 
-        return QueryBuilder::for(PartnerShoppingListItem::class)
+        $queryBuilder = QueryBuilder::for(PartnerShoppingListItem::class)
             ->leftJoin('stocks', 'stocks.id', 'partner_shopping_list_items.stock_id')
+            ->leftJoin('org_stocks', function ($join) use ($seller) {
+                $join->on('org_stocks.stock_id', 'stocks.id')
+                    ->where('org_stocks.organisation_id', $seller->id);
+            })
+            ->leftJoin('artefacts', function ($join) {
+                $join->on('artefacts.org_stock_id', 'org_stocks.id')
+                    ->whereNull('artefacts.deleted_at');
+            })
+            ->leftJoin('artefact_families', 'artefacts.artefact_family_id', 'artefact_families.id')
             ->leftJoin('organisations', 'organisations.id', 'partner_shopping_list_items.organisation_id')
-            ->where('partner_shopping_list_items.partner_organisation_id', $seller->id)
+            ->where('partner_shopping_list_items.partner_organisation_id', $seller->id);
+
+
+        return $queryBuilder
             ->select([
                 'partner_shopping_list_items.id',
                 'partner_shopping_list_items.quantity',
@@ -52,11 +73,12 @@ class IndexPartnerShippingList extends OrgAction
                 'partner_shopping_list_items.created_at',
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
+                'artefact_families.name as family',
                 'organisations.code as buyer_code',
             ])
             ->defaultSort('-created_at')
             ->allowedFilters([$globalSearch])
-            ->allowedSorts(['stock_code', 'buyer_code', 'priority', 'needed_by', 'state', 'created_at'])
+            ->allowedSorts(['stock_code', 'family', 'buyer_code', 'priority', 'needed_by', 'state', 'created_at'])
             ->withPaginator(null, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -74,6 +96,7 @@ class IndexPartnerShippingList extends OrgAction
                 ->column(key: 'buyer_code', label: __('For'), canBeHidden: false, sortable: true)
                 ->column(key: 'stock_code', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'stock_name', label: __('Name'), canBeHidden: false)
+                ->column(key: 'family', label: __('Family'), canBeHidden: false, sortable: true)
                 ->column(key: 'quantity', label: __('Quantity (SKO)'), canBeHidden: false, align: 'right')
                 ->column(key: 'priority', label: __('Priority'), canBeHidden: false, sortable: true)
                 ->column(key: 'needed_by', label: __('Needed by'), canBeHidden: false, sortable: true)
@@ -83,9 +106,9 @@ class IndexPartnerShippingList extends OrgAction
         };
     }
 
-    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Production $production, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisationFromProduction($production, $request);
 
         return $this->handle($organisation);
     }
@@ -93,7 +116,7 @@ class IndexPartnerShippingList extends OrgAction
     public function htmlResponse(LengthAwarePaginator $items, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Procurement/PartnerShippingList',
+            'Org/Production/PartnerShippingList',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => __('Partner shipping list'),
@@ -141,13 +164,13 @@ class IndexPartnerShippingList extends OrgAction
     public function getBreadcrumbs(array $routeParameters): array
     {
         return array_merge(
-            ShowProcurementDashboard::make()->getBreadcrumbs($routeParameters),
+            ShowProduction::make()->getBreadcrumbs($routeParameters),
             [
                 [
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.procurement.org_partners.shipping_list.index',
+                            'name'       => 'grp.org.productions.show.partners.index',
                             'parameters' => $routeParameters,
                         ],
                         'label' => __('Partner shipping list'),

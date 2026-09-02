@@ -285,6 +285,7 @@ const props = defineProps<{
     invoices?: {}
     attachmentRoutes?: {}
     address_update_route?: routeType
+    billing_address_update_route?: routeType
     addresses?: {}
     contact_address?: Address | null
     upload_excel: UploadSection
@@ -337,6 +338,7 @@ const component = computed(() => {
 
 const isLoadingButton = ref<string | boolean>(false)
 const isModalAddress = ref<boolean>(false)
+const isModalBillingAddress = ref<boolean>(false)
 
 // Tabs: Products
 const formProducts = useForm({ historicAssetId: null, quantity_ordered: 1 })
@@ -541,52 +543,51 @@ const generateRouteDeliveryNote = (slug: string) => {
 }
 
 const cancelLoading = ref(false)
-const confirm2 = (action) => {
-    confirm.require({
-        message: ctrans('Do you want to cancel this order?'),
-        header: ctrans('Cancel Order'),
-        rejectLabel: ctrans('Cancel'),
-        rejectProps: {
-            label: ctrans('No'),
-            severity: 'secondary',
-            outlined: true
-        },
-        acceptProps: {
-            label: ctrans('Yes'),
-            severity: 'danger'
-        },
-        accept: () => {
-            router[action.route.method](
-                route(action.route.name, action.route.parameters),
-                {},
-                {
-                    onStart: () => {
-                        cancelLoading.value = true
-                    },
-                    onFinish: () => {
-                        cancelLoading.value = true
-                    },
-                    onSuccess: () => {
-                        notify({
-                            title: ctrans("Success"),
-                            text: ctrans("Successfully cancel order"),
-                            type: "success",
-                        })
-                    },
-                    onError: (e) => {
-                        console.log(e);
-                        notify({
-                            title: ctrans("Error"),
-                            text: ctrans("Failed to cancel order"),
-                            type: "error",
-                        })
-                    }
-                }
-            )
-        },
+const isModalCancelOrder = ref(false)
+const cancelOrderAction = ref<any>(null)
+const cancelOrderData = ref<{ cancellation_reason: string | null, cancellation_notes: string }>({
+    cancellation_reason: null,
+    cancellation_notes: ''
+})
 
-    });
-};
+const openCancelOrderModal = (action) => {
+    cancelOrderAction.value = action
+    cancelOrderData.value = { cancellation_reason: null, cancellation_notes: '' }
+    isModalCancelOrder.value = true
+}
+
+const onSubmitCancelOrder = () => {
+    const action = cancelOrderAction.value
+    if (!action) return
+
+    router[action.route.method](
+        route(action.route.name, action.route.parameters),
+        { ...cancelOrderData.value },
+        {
+            onStart: () => {
+                cancelLoading.value = true
+            },
+            onFinish: () => {
+                cancelLoading.value = false
+            },
+            onSuccess: () => {
+                isModalCancelOrder.value = false
+                notify({
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully cancel order"),
+                    type: "success",
+                })
+            },
+            onError: () => {
+                notify({
+                    title: ctrans("Error"),
+                    text: ctrans("Failed to cancel order"),
+                    type: "error",
+                })
+            }
+        }
+    )
+}
 
 const invoiceOnlyLoading = ref(false)
 const confirmInvoiceOnly = (action) => {
@@ -1543,7 +1544,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         <template #button-cancel="{ action }">
             <div class="relative" v-if="!is_faire_order">
                 <Button :style="action.style" :label="action.label" :icon="action.icon" :loading="cancelLoading"
-                    @click="() => confirm2(action)" :key="`ActionButton${action.label}${action.style}`"
+                    @click="() => openCancelOrderModal(action)" :key="`ActionButton${action.label}${action.style}`"
                     :tooltip="action.tooltip" />
             </div>
             <div class="relative" v-else>
@@ -1868,6 +1869,11 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             <div v-if="is_forbidden_billing" v-tooltip="ctrans('This billing address was banned (listed in Shop settings)')" class="absolute top-2 right-2">
                                 <FontAwesomeIcon icon='fal fa-exclamation-triangle' class='text-red-500' fixed-width aria-hidden='true' />
                             </div>
+                            <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched' && billing_address_update_route"
+                                @click="() => isModalBillingAddress = true"
+                                class="w-fit pr-4 cursor-pointer underline text-gray-500 hover:text-blue-700 whitespace-nowrap">
+                                <span>{{ ctrans("Edit") }}</span>
+                            </div>
                         </dd>
                     </dl>
 
@@ -1956,10 +1962,15 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             <dd
                                 class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                                 <div v-html="box_stats?.customer?.addresses?.delivery?.formatted_address"></div>
-                                <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
-                                    @click="() => isModalAddress = true"
-                                    class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-                                    <span>{{ ctrans("Edit") }}</span>
+                                <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'" class="flex gap-x-3">
+                                    <div @click="() => isModalAddress = true"
+                                        class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                                        <span>{{ ctrans("Edit") }}</span>
+                                    </div>
+                                    <div v-if="billing_address_update_route" @click="() => isModalBillingAddress = true"
+                                        class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                                        <span>{{ ctrans("Edit billing address") }}</span>
+                                    </div>
                                 </div>
                             </dd>
                             <CopyButton
@@ -2004,6 +2015,15 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width
                                     aria-hidden="true" />
                                 {{ ctrans("Order cancelled, payments returned to balance") }}
+
+                                <div v-if="data.data?.cancellation?.label || data.data?.cancellation?.notes"
+                                    class="mt-1 pt-1 border-t border-yellow-500/50 text-sm">
+                                    <span class="font-medium">{{ ctrans("Reason") }}:</span>
+                                    <span v-if="data.data?.cancellation?.label">{{ data.data.cancellation.label }}</span>
+                                    <span v-if="data.data?.cancellation?.notes" class="italic">
+                                        {{ data.data.cancellation.notes }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
@@ -2678,6 +2698,14 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
     </Modal>
 
 
+    <!-- Section: billing address edit -->
+    <Modal :isOpen="isModalBillingAddress" @onClose="() => (isModalBillingAddress = false)" width="w-full max-w-xl">
+        <AddressEditModal v-if="billing_address_update_route" :addresses="delivery_address_management.addresses"
+            :address="box_stats?.customer.addresses.billing" :title="ctrans('Billing address')"
+            :updateRoute="billing_address_update_route" @submitted="() => (isModalBillingAddress = false)"
+            closeButton />
+    </Modal>
+
     <!-- Modal: Add Voucher -->
     <Modal :isOpen="isOpenModalAddVoucher" @onClose="isOpenModalAddVoucher = false" width="w-full max-w-md">
         <div class="bg-white px-2">
@@ -2830,6 +2858,48 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">
                         *{{ errorPaymentMethod }}</p>
                 </Transition>
+            </div>
+        </div>
+    </Modal>
+
+    <Modal :isOpen="isModalCancelOrder" @onClose="isModalCancelOrder = false" width="w-[600px]">
+        <div class="isolate bg-white px-6 lg:px-8">
+            <div class="mx-auto max-w-2xl text-center">
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
+                    {{ ctrans("Cancel Order") }}
+                </h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    {{ ctrans("The reason will be shown to the customer in the credit balance notification.") }}
+                </p>
+            </div>
+
+            <div class="mt-7 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium leading-6">
+                        <span class="text-red-500">*</span> {{ ctrans("Reason for cancelling") }}
+                    </label>
+                    <div class="mt-1">
+                        <PureMultiselect v-model="cancelOrderData.cancellation_reason"
+                            :options="cancelOrderAction?.cancellation_reasons ?? []"
+                            :placeholder="ctrans('Select a reason')" required caret />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium leading-6">
+                        {{ ctrans("Details") }}
+                    </label>
+                    <div class="mt-1">
+                        <PureTextarea v-model="cancelOrderData.cancellation_notes" rows="3" full
+                            :placeholder="ctrans('Add more detail for the customer, e.g. which item is out of stock')" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 mb-4 flex justify-end gap-x-2">
+                <Button type="tertiary" :label="ctrans('No')" @click="isModalCancelOrder = false" />
+                <Button :label="ctrans('Yes, cancel order')" :disabled="!cancelOrderData.cancellation_reason"
+                    :loading="cancelLoading" @click="onSubmitCancelOrder" />
             </div>
         </div>
     </Modal>

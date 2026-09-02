@@ -102,6 +102,47 @@ class EditAgentSupplierPurchaseOrder extends OrgAction
                                 ],
                             ]
                         ],
+                        [
+                            'title'  => __('Clean handover'),
+                            'icon'   => 'fal fa-handshake',
+                            'fields' => [
+                                'proposed_ready_at' => [
+                                    'type'  => 'date',
+                                    'label' => __('Proposed ready date (agent)'),
+                                    'value' => $agentSupplierPurchaseOrder->proposed_ready_at,
+                                ],
+                                'approved_ready_at' => [
+                                    'type'  => 'date',
+                                    'label' => __('Approved ready date'),
+                                    'value' => $agentSupplierPurchaseOrder->approved_ready_at,
+                                ],
+                                'handed_over_at' => [
+                                    'type'  => 'date',
+                                    'label' => __('Handed over to shipping agent'),
+                                    'value' => $agentSupplierPurchaseOrder->handed_over_at,
+                                ],
+                                'qc_passed_at' => [
+                                    'type'  => 'date',
+                                    'label' => __('QC passed'),
+                                    'value' => $agentSupplierPurchaseOrder->qc_passed_at,
+                                ],
+                                'compliance_complete_at' => [
+                                    'type'  => 'date',
+                                    'label' => __('Compliance pack complete'),
+                                    'value' => $agentSupplierPurchaseOrder->compliance_complete_at,
+                                ],
+                                'chs_excluded' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Excluded from CHS'),
+                                    'value' => $agentSupplierPurchaseOrder->chs_excluded,
+                                ],
+                                'chs_exclusion_reason' => [
+                                    'type'  => 'textarea',
+                                    'label' => __('Exclusion reason'),
+                                    'value' => $agentSupplierPurchaseOrder->chs_exclusion_reason,
+                                ],
+                            ]
+                        ],
                     ],
                     'args' => [
                         'updateRoute' => [

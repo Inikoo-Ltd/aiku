@@ -1,7 +1,3 @@
-@php
-    $consentCountries = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH'];
-    $needsConsent = in_array(mb_strtoupper((string) request()->header('CF-IPCountry')), $consentCountries, true);
-@endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -26,35 +22,6 @@
     <link rel="alternate" type="application/rss+xml" title="aiku — engineering notes" href="{{ route('aiku-public.feed') }}">
     <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
     <link rel="stylesheet" href="https://fonts.bunny.net/css?family=newsreader:400,400i,600|inter:400,500,600|jetbrains-mono:400&display=swap">
-    @production
-        <script>
-            (function(w, d, t, u, o) {
-                w[u] = w[u] || [], o.ts = (new Date).getTime();
-                var n = d.createElement(t);
-                n.src = "https://bat.bing.net/bat.js?ti=" + o.ti + ("uetq" != u ? "&q=" + u : ""),
-                n.async = 1, n.onload = n.onreadystatechange = function() {
-                    var s = this.readyState;
-                    s && "loaded" !== s && "complete" !== s ||
-                    (o.q = w[u], w[u] = new UET(o), w[u].push("pageLoad"),
-                    n.onload = n.onreadystatechange = null)
-                };
-                var i = d.getElementsByTagName(t)[0];
-                i.parentNode.insertBefore(n, i);
-            })(window, document, "script", "uetq", {
-                ti: "343269034",
-                enableAutoSpaTracking: true
-            });
-        </script>
-        <script>
-            window.uetq = window.uetq || [];
-            window.aikuNeedsConsent = @json($needsConsent);
-            window.aikuConsent = null;
-            try { window.aikuConsent = localStorage.getItem('aiku-consent'); } catch (e) {}
-            window.uetq.push('consent', 'default', {
-                'ad_storage': (!window.aikuNeedsConsent || window.aikuConsent === 'granted') ? 'granted' : 'denied'
-            });
-        </script>
-    @endproduction
     {!! $head ?? '' !!}
     <style>
         :root {
@@ -368,7 +335,6 @@
 </div>
 
 <script>
-    fetch('{{ route('aiku-public.visit') }}?p=' + encodeURIComponent(location.pathname + location.search) + '&r=' + encodeURIComponent(document.referrer), {keepalive: true});
     window.wireNotesSearch = function (input, results) {
         if (!input || !results) return;
         var timer = null;
@@ -526,73 +492,5 @@
     })();
 </script>
 
-@production
-    @if ($needsConsent)
-        <style>
-            .consent {
-                position: fixed; left: 20px; bottom: 20px; z-index: 60;
-                width: min(330px, calc(100vw - 40px));
-                padding: 16px 18px 14px;
-                border: 1px solid var(--rule); border-radius: 14px;
-                background:
-                    radial-gradient(120% 90% at 8% 0%, rgba(217, 148, 74, 0.16), transparent 60%),
-                    radial-gradient(110% 100% at 100% 100%, rgba(90, 150, 150, 0.16), transparent 62%),
-                    var(--paper);
-                box-shadow: 0 10px 34px rgba(28, 27, 34, 0.14);
-                font-size: 13.5px; line-height: 1.55; color: var(--muted);
-                opacity: 0; transform: translateY(10px);
-                transition: opacity .5s ease, transform .5s ease;
-            }
-            .consent.in { opacity: 1; transform: none; }
-            .consent p { margin: 0 0 12px; }
-            .consent-actions { display: flex; align-items: center; gap: 14px; }
-            .consent button {
-                font: inherit; cursor: pointer; border-radius: 8px;
-                padding: 6px 14px; border: 0;
-                background: var(--accent); color: var(--paper);
-            }
-            .consent button.plain {
-                background: none; color: var(--muted); padding: 6px 0;
-                text-decoration: underline; text-underline-offset: 3px;
-            }
-            @media (prefers-reduced-motion: reduce) {
-                .consent { transition: none; }
-            }
-        </style>
-
-        <div class="consent" id="consent" hidden>
-            <p>We use one Microsoft cookie to see whether our ads bring anyone here. Nothing else, and nothing about you.</p>
-            <div class="consent-actions">
-                <button type="button" data-consent="granted">Allow</button>
-                <button type="button" class="plain" data-consent="denied">No thanks</button>
-            </div>
-        </div>
-
-        <script>
-            (function () {
-                var el = document.getElementById('consent');
-                if (!el || window.aikuConsent) { return; }
-
-                el.hidden = false;
-                requestAnimationFrame(function () { el.classList.add('in'); });
-
-                el.addEventListener('click', function (event) {
-                    var choice = event.target.getAttribute('data-consent');
-                    if (!choice) { return; }
-
-                    try { localStorage.setItem('aiku-consent', choice); } catch (e) {}
-
-                    if (choice === 'granted') {
-                        window.uetq = window.uetq || [];
-                        window.uetq.push('consent', 'update', { 'ad_storage': 'granted' });
-                    }
-
-                    el.classList.remove('in');
-                    setTimeout(function () { el.hidden = true; }, 500);
-                });
-            })();
-        </script>
-    @endif
-@endproduction
 </body>
 </html>

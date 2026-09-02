@@ -129,7 +129,7 @@ class ShowAikuPublicAnalytics extends OrgAction
     /** @return array<string, array<int, string>> */
     private function getArticleVisitorHashes(): array
     {
-        return DB::table('aiku_public_visits')->where('path', 'like', '/blog/%')
+        return DB::table('aiku_public_visits')->where('is_bot', false)->where('path', 'like', '/blog/%')
             ->selectRaw('substr(path, 7) as slug, visitor_hash')
             ->distinct()->get()
             ->groupBy('slug')
@@ -169,12 +169,15 @@ class ShowAikuPublicAnalytics extends OrgAction
         };
     }
 
-    /** @return array{daily: array<int, object>, pages: array<int, object>, searches: array<int, object>, referrers: array<int, object>, page_referrers: array<int, object>, countries: array<int, object>, articles: array<int, array<string, mixed>>} */
+    /** @return array{daily: array<int, object>, pages: array<int, object>, searches: array<int, object>, referrers: array<int, object>, page_referrers: array<int, object>, countries: array<int, object>, bots: array<int, object>, articles: array<int, array<string, mixed>>} */
     public function handle(int $days = 30): array
     {
-        $visits = fn () => DB::table('aiku_public_visits')->where('created_at', '>', now()->subDays($days));
+        $visits = fn () => DB::table('aiku_public_visits')->where('is_bot', false)->where('created_at', '>', now()->subDays($days));
 
         return [
+            'bots' => DB::table('aiku_public_visits')->where('is_bot', true)->where('created_at', '>', now()->subDays($days))
+                ->selectRaw('user_agent, count(*) as views, count(distinct visitor_hash) as visitors, max(created_at) as last_visited_at')
+                ->groupBy('user_agent')->orderByDesc(DB::raw('count(*)'))->limit(25)->get()->all(),
             'daily' => $visits()
                 ->selectRaw('created_at::date as day, count(*) as views, count(distinct visitor_hash) as visitors')
                 ->groupBy('day')->orderBy('day')->get()->all(),

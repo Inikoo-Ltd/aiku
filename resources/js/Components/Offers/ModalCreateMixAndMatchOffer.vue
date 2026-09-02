@@ -20,6 +20,8 @@ const props = defineProps<{
     shop_data: {
         id: number
         slug: string
+        organisation?: string
+        offercampaign?: string
         currency_code: string
         default_dates?: {
             start: string
@@ -120,13 +122,24 @@ const submitOffer = () => {
         route('grp.models.bogo_offer.store', { shop: props.shop_data.id }),
         payload
     )
-        .then(() => {
+        .then((response) => {
             notify({
                 title: trans('Success'),
                 text: trans('Successfully submit the data'),
                 type: 'success'
             })
             closeModal()
+
+            if (props.shop_data.offercampaign && response.data?.slug) {
+                router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
+                    organisation: props.shop_data.organisation,
+                    shop: props.shop_data.slug,
+                    offerCampaign: props.shop_data.offercampaign,
+                    offer: response.data.slug
+                }))
+                return
+            }
+
             router.reload()
         })
         .catch((error) => {
