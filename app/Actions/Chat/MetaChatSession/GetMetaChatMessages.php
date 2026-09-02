@@ -7,7 +7,9 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
+use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatTimelineEventResource;
 use App\Http\Resources\CRM\Livechat\MetaChatMessageResource;
 use App\Models\Chat\MetaChatSession;
@@ -96,13 +98,26 @@ class GetMetaChatMessages
 
     public function jsonResponse(array $result): JsonResponse
     {
+        $session = $result['metaChatSession'];
+        $status  = $session->status;
+
+        if ($status !== ChatSessionStatusEnum::CLOSED) {
+            $hasActiveAssignment = $session->assignments()
+                ->where('status', ChatAssignmentStatusEnum::ACTIVE)
+                ->exists();
+
+            if (!$hasActiveAssignment) {
+                $status = ChatSessionStatusEnum::WAITING;
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Chat messages retrieved successfully',
             'data'    => [
-                'session_ulid'   => $result['metaChatSession']->ulid,
-                'session_status' => $result['metaChatSession']->status->value,
-                'can_send_non_template_message' => $result['metaChatSession']->can_send_non_template_message,
+                'session_ulid'   => $session->ulid,
+                'session_status' => $status->value,
+                'can_send_non_template_message' => $session->can_send_non_template_message,
                 'messages'       => MetaChatMessageResource::collection($result['messages']),
                 'events'         => ChatTimelineEventResource::collection($result['events']),
                 'pagination'     => $result['pagination'],

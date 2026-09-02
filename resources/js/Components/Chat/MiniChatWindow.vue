@@ -20,7 +20,6 @@ import {
 import { faJira } from "@fortawesome/free-brands-svg-icons"
 import { faUser } from "@fal"
 import { faCheck, faCheckDouble, faExclamationCircle } from "@far"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { useLayoutStore } from "@/Stores/layout"
 import Image from "@common/Components/Image.vue"
@@ -52,6 +51,9 @@ const sessionApiBase = computed(() =>
 )
 
 const messages = ref<LocalChatMessage[]>([])
+const hasMore = ref(false)
+const nextCursor = ref<string | null>(null)
+const isLoadingOlder = ref(false)
 const newMessage = ref("")
 const messageInput = ref<HTMLTextAreaElement | null>(null)
 
@@ -107,9 +109,37 @@ const isWaiting = computed(() => props.chat.status === "waiting")
 const canSend = computed(() => !isClosed.value && !isWaiting.value)
 const hasAttachment = computed(() => !!selectedFile.value)
 
-const onChatEnded = () => {
-    isOptionMenuOpen.value = false
+const isEndingChat = ref(false)
+const showEndConfirm = ref(false)
+const endChat = async () => {
+    if (isEndingChat.value) return
+    isEndingChat.value = true
+    try {
+        const routeName = isWhatsapp.value
+            ? "grp.org.chat.agents.whatsapp.sessions.close"
+            : "grp.org.chat.agents.sessions.close"
+        const url = route(routeName, [props.chat.organisationSlug, props.chat.ulid])
+        await axios.patch(url, {}, {
+            withCredentials: true,
+            headers: { Accept: "application/json" },
+        })
+    } catch (e: any) {
+        const status = e?.response?.status ?? 0
+        if (status >= 400) {
+            notify({
+                title: trans("Error"),
+                text: e?.response?.data?.message ?? trans("Failed to end chat"),
+                type: "error",
+            })
+            isEndingChat.value = false
+            return
+        }
+    }
     props.chat.status = "closed"
+    isOptionMenuOpen.value = false
+    showEndConfirm.value = false
+    await getMessages()
+    isEndingChat.value = false
 }
 
 const isAssigningSelf = ref(false)
@@ -148,7 +178,7 @@ const reopenChat = async () => {
             { withCredentials: true }
         )
         props.chat.status = "active"
-        await fetchMessages()
+        await getMessages()
     } catch (e: any) {
         notify({
             title: trans("Error"),
@@ -165,10 +195,18 @@ const jiraSession = computed(() => ({
     contact_name: props.chat.contactName,
 }))
 
-const scrollBottom = () =>
+const messagesReady = ref(false)
+
+const scrollBottom = (instant = false) =>
     nextTick(() => {
-        if (messagesContainer.value) {
-            messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+        const el = messagesContainer.value
+        if (!el) return
+        el.scrollTop = el.scrollHeight
+        if (!messagesReady.value) {
+            messagesReady.value = true
+        }
+        if (!instant) {
+            setTimeout(() => { if (el) el.scrollTop = el.scrollHeight }, 350)
         }
     })
 
@@ -200,11 +238,56 @@ const getMessages = async () => {
             ...message,
             _status: "sent",
         }))
+
+        hasMore.value = data?.data?.pagination?.has_more ?? false
+        nextCursor.value = data?.data?.pagination?.next_cursor ?? null
+
+        const serverStatus = data?.data?.session_status
+        if (serverStatus) {
+            props.chat.status = serverStatus
+        }
+
         scrollBottom()
     } catch (e) {
         console.error("Failed to fetch mini chat messages", e)
     } finally {
         isLoading.value = false
+    }
+}
+
+const loadOlderMessages = async () => {
+    if (isLoadingOlder.value || !hasMore.value || !nextCursor.value) return
+    isLoadingOlder.value = true
+
+    const container = messagesContainer.value
+    const prevHeight = container?.scrollHeight ?? 0
+
+    try {
+        const { data } = await axios.get(
+            `${sessionApiBase.value}/messages`,
+            { params: { limit: 20, cursor: nextCursor.value, request_from: "agent" } }
+        )
+        const older = (data?.data?.messages ?? []).map((message: any) => ({
+            ...message,
+            _status: "sent",
+        }))
+
+        const existingIds = new Set(messages.value.map((m) => m.id))
+        const newMessages = older.filter((m: any) => !existingIds.has(m.id))
+        messages.value = [...newMessages, ...messages.value]
+
+        hasMore.value = data?.data?.pagination?.has_more ?? false
+        nextCursor.value = data?.data?.pagination?.next_cursor ?? null
+
+        nextTick(() => {
+            if (container) {
+                container.scrollTop = container.scrollHeight - prevHeight
+            }
+        })
+    } catch (e) {
+        console.error("Failed to load older messages", e)
+    } finally {
+        isLoadingOlder.value = false
     }
 }
 
@@ -415,7 +498,7 @@ const initSocket = () => {
         ? window.Echo.private(`meta-chat-session.${props.chat.ulid}`)
         : window.Echo.channel(`chat-session.${props.chat.ulid}`)
 
-    chatChannel.listen(".message", ({ message }: any) => {
+    chatChannel.listen(".message", ({ message, session_status }: any) => {
         messages.value = messages.value.filter(
             (item) => !(item._status === "sending" && item.sender_type === "agent")
         )
@@ -424,12 +507,15 @@ const initSocket = () => {
 
         if (index !== -1) {
             messages.value[index] = { ...messages.value[index], ...message, _status: "sent" }
-            return
+        } else {
+            messages.value.push({ ...message, _status: "sent" })
         }
 
-        messages.value.push({ ...message, _status: "sent" })
+        if (session_status) {
+            props.chat.status = typeof session_status === "object" ? session_status.value : session_status
+        }
 
-        if (message.sender_type !== "agent") {
+        if (message.sender_type !== "agent" && message.sender_type !== "system") {
             if (props.chat.isMinimised) {
                 unreadCount.value += 1
             } else {
@@ -539,7 +625,8 @@ onUnmounted(() => {
             class="flex flex-col min-h-0 overflow-hidden transition-[height,opacity] duration-300 ease-in-out"
             :class="chat.isMinimised ? 'h-0 opacity-0' : 'h-[320px] max-h-[60vh] opacity-100'">
             <div ref="messagesContainer"
-                class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-2 py-1.5 space-y-1 bg-[#F0F4F8]">
+                class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-2 py-1.5 space-y-1 bg-[#F0F4F8]"
+                :class="{ 'invisible': !isLoading && sortedMessages.length > 0 && !messagesReady }">
                 <div v-if="isLoading" class="h-full flex items-center justify-center">
                     <LoadingIcon class="w-4 h-4 text-gray-400" />
                 </div>
@@ -550,6 +637,14 @@ onUnmounted(() => {
                 </div>
 
                 <template v-else>
+                    <div v-if="hasMore" class="flex justify-center py-1">
+                        <button type="button"
+                            class="text-[10px] text-gray-500 hover:text-gray-700 border border-gray-300 rounded-full px-3 py-0.5 hover:bg-gray-50 disabled:opacity-50"
+                            :disabled="isLoadingOlder" @click="loadOlderMessages">
+                            <LoadingIcon v-if="isLoadingOlder" class="w-3 h-3 inline mr-1" />
+                            {{ trans('Load older messages') }}
+                        </button>
+                    </div>
                     <template v-for="message in sortedMessages" :key="message.id">
                         <ChatTimelineEvent
                             v-if="message.sender_type === 'system'"
@@ -557,11 +652,11 @@ onUnmounted(() => {
                         />
 
                         <div v-else class="flex"
-                            :class="message.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
+                            :class="['guest', 'user'].includes(message.sender_type) ? 'justify-start' : 'justify-end'">
                             <div class="max-w-[85%] min-w-0 px-2 py-1 rounded-lg text-[11px] leading-snug shadow-sm"
-                                :class="message.sender_type === 'agent'
-                                    ? 'bg-indigo-500 text-white rounded-br-sm'
-                                    : 'bg-white text-gray-800 rounded-bl-sm'">
+                                :class="['guest', 'user'].includes(message.sender_type)
+                                    ? 'bg-white text-gray-800 rounded-bl-sm'
+                                    : 'bg-indigo-500 text-white rounded-br-sm'">
                                 <p v-if="messageText(message)" class="whitespace-pre-wrap break-words">
                                     {{ messageText(message) }}
                                 </p>
@@ -578,13 +673,13 @@ onUnmounted(() => {
                                 </button>
 
                                 <div class="flex items-center justify-end gap-1 mt-0.5 text-[9px]"
-                                    :class="message.sender_type === 'agent' ? 'text-white/70' : 'text-gray-400'">
+                                    :class="['guest', 'user'].includes(message.sender_type) ? 'text-gray-400' : 'text-white/70'">
                                     <span>{{ formatTime(message.created_at) }}</span>
                                     <LoadingIcon v-if="message._status === 'sending'" class="w-2.5 h-2.5" />
                                     <span v-else-if="message._status === 'failed'" class="text-red-300">
                                         <FontAwesomeIcon :icon="faExclamationCircle" class="text-[9px]" />
                                     </span>
-                                    <span v-else-if="message.sender_type === 'agent'" class="leading-none">
+                                    <span v-else-if="!['guest', 'user'].includes(message.sender_type)" class="leading-none">
                                         <FontAwesomeIcon
                                             :icon="waReadIcon(message)"
                                             class="text-[9px]"
@@ -714,26 +809,32 @@ onUnmounted(() => {
 
                             <div class="my-1 border-t border-gray-100"></div>
 
-                            <ModalConfirmationDelete
-                                :routeDelete="{
-                                    name: 'grp.org.chat.agents.sessions.close',
-                                    parameters: [chat.organisationSlug, chat.ulid],
-                                    method: 'patch',
-                                }"
-                                :title="trans('Are you sure you want to end this chat?')"
-                                :description="trans('This will close the chat session. The conversation history will be preserved.')"
-                                :noLabel="trans('End chat')"
-                                :noIcon="faTimesCircle"
-                                @success="onChatEnded">
-                                <template #default="{ changeModel }">
-                                    <button type="button"
-                                        class="w-full flex items-center gap-2 px-2 py-1 text-[10px] text-red-600 hover:bg-red-50"
-                                        @click="changeModel">
-                                        <FontAwesomeIcon :icon="faTimesCircle" class="text-[9px]" />
-                                        {{ trans('End chat') }}
-                                    </button>
-                                </template>
-                            </ModalConfirmationDelete>
+                            <template v-if="!showEndConfirm">
+                                <button type="button"
+                                    class="w-full flex items-center gap-2 px-2 py-1 text-[10px] text-red-600 hover:bg-red-50"
+                                    @click="showEndConfirm = true">
+                                    <FontAwesomeIcon :icon="faTimesCircle" class="text-[9px]" />
+                                    {{ trans('End chat') }}
+                                </button>
+                            </template>
+                            <template v-else>
+                                <div class="px-2 py-1 space-y-1">
+                                    <p class="text-[10px] text-gray-600">{{ trans('End this chat session?') }}</p>
+                                    <div class="flex gap-1">
+                                        <button type="button"
+                                            class="flex-1 text-[10px] py-0.5 rounded bg-red-500 text-white hover:bg-red-600 disabled:opacity-60"
+                                            :disabled="isEndingChat" @click="endChat">
+                                            <LoadingIcon v-if="isEndingChat" class="w-2.5 h-2.5 inline" />
+                                            {{ trans('Yes') }}
+                                        </button>
+                                        <button type="button"
+                                            class="flex-1 text-[10px] py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                            @click="showEndConfirm = false">
+                                            {{ trans('No') }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
 
