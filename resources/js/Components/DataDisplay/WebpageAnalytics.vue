@@ -25,7 +25,7 @@ const locale = useLocaleStore()
 const series = {
 	clicks: { label: trans("Clicks"), color: "#4285F4", axis: "y2" },
 	impressions: { label: trans("Impressions"), color: "#5E35B1", axis: "y1" },
-	sales: { label: trans("Sales"), color: "#0F9D58", axis: "y3" },
+	sales: { label: trans("Net sales"), color: "#0F9D58", axis: "y3" },
 }
 const eventStyle = {
 	publish: { label: trans("Page published"), color: "#F4B400", icon: faRocketLaunch },
@@ -151,9 +151,9 @@ const chartOptions = computed(() => ({
 	},
 	scales: {
 		x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, color: "#6b7280" } },
-		y1: { type: "linear", position: "left", display: visible.value.impressions, grid: { color: "#EDE7F6" }, ticks: { color: series.impressions.color }, beginAtZero: true },
-		y2: { type: "linear", position: "right", display: visible.value.clicks, grid: { drawOnChartArea: false }, ticks: { color: series.clicks.color, precision: 0 }, beginAtZero: true },
-		y3: { type: "linear", position: "right", display: visible.value.sales, grid: { drawOnChartArea: false }, ticks: { color: series.sales.color }, beginAtZero: true },
+		y1: { type: "linear", position: "left", display: visible.value.impressions, grid: { color: "#EDE7F6" }, ticks: { color: series.impressions.color }, beginAtZero: true, title: { display: true, text: series.impressions.label, color: series.impressions.color } },
+		y2: { type: "linear", position: "right", display: visible.value.clicks, grid: { drawOnChartArea: false }, ticks: { color: series.clicks.color, precision: 0 }, beginAtZero: true, title: { display: true, text: series.clicks.label, color: series.clicks.color } },
+		y3: { type: "linear", position: "right", display: visible.value.sales, grid: { drawOnChartArea: false }, ticks: { color: series.sales.color }, beginAtZero: true, title: { display: true, text: `${series.sales.label} (${props.data.currency})`, color: series.sales.color } },
 	},
 }))
 
