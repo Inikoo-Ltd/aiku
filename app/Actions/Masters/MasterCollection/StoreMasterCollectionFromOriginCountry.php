@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
+use App\Actions\Catalogue\Collection\SyncIndirectProductsToCollection;
 use App\Models\Helpers\Country;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterShop;
@@ -24,6 +25,16 @@ class StoreMasterCollectionFromOriginCountry
     {
         $masterCollection = MasterCollection::where('master_shop_id', $masterShop->id)->where('code', $code)->first()
             ?? StoreMasterCollection::make()->action($masterShop, ['code' => $code, 'name' => $name]);
+
+        foreach ($masterCollection->masterFamilies as $masterFamily) {
+            DetachMasterModelFromMasterCollection::make()->action($masterCollection, $masterFamily);
+        }
+        foreach ($masterCollection->childrenCollections as $collection) {
+            SyncIndirectProductsToCollection::run($collection);
+        }
+        foreach ($masterCollection->masterProducts()->where(fn ($query) => $query->whereNot('origin_country_id', $country->id)->orWhereNull('origin_country_id'))->get() as $foreignMasterAsset) {
+            DetachMasterModelFromMasterCollection::make()->action($masterCollection, $foreignMasterAsset);
+        }
 
         $masterAssetIds = $masterShop->masterAssets()
             ->where('origin_country_id', $country->id)
