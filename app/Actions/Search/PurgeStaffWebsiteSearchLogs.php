@@ -8,7 +8,6 @@
 
 namespace App\Actions\Search;
 
-use App\Actions\CRM\Customer\IsStaffCustomer;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\WebsiteSearchLog;
 use Illuminate\Console\Command;
@@ -27,7 +26,7 @@ class PurgeStaffWebsiteSearchLogs
     {
         return WebsiteSearchLog::whereIn(
             'customer_id',
-            IsStaffCustomer::filter(Customer::query())->select('customers.id')
+            Customer::query()->where('is_staff', true)->select('customers.id')
         )->delete();
     }
 

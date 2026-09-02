@@ -10,6 +10,12 @@ use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\CRM\Customer\UpdateCustomer;
+use App\Actions\HumanResources\Employee\StoreEmployee;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
+use App\Models\HumanResources\Employee;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Search\GetWebsiteSearchAnalytics;
 use App\Actions\Search\Search;
@@ -573,7 +579,10 @@ test('staff customers never leave a search log and the purge removes the old one
     $staffByUser   = $newCustomer(User::query()->firstOrFail()->email);
     $shopper       = $newCustomer('shopper@example.com');
 
-    expect(StoreWebsiteSearchLog::run($makeLog($staffByDomain)))->toBeNull()
+    expect($staffByDomain->is_staff)->toBeTrue()
+        ->and($staffByUser->is_staff)->toBeTrue()
+        ->and($shopper->is_staff)->toBeFalse()
+        ->and(StoreWebsiteSearchLog::run($makeLog($staffByDomain)))->toBeNull()
         ->and(StoreWebsiteSearchLog::run($makeLog($staffByUser)))->toBeNull()
         ->and(StoreWebsiteSearchLog::run($makeLog($shopper)))->not->toBeNull();
 
@@ -581,4 +590,24 @@ test('staff customers never leave a search log and the purge removes the old one
     expect(PurgeStaffWebsiteSearchLogs::run())->toBe(1)
         ->and(WebsiteSearchLog::find($legacy->id))->toBeNull()
         ->and(WebsiteSearchLog::where('customer_id', $shopper->id)->count())->toBe(1);
+
+    UpdateCustomer::make()->action($shopper, ['email' => 'now-staff@staff.test']);
+    expect($shopper->fresh()->is_staff)->toBeTrue();
+
+    $employee = StoreEmployee::make()->action($this->organisation, array_merge(
+        Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray(),
+        [
+            'worker_number'   => 'W-staff',
+            'alias'           => 'staff-alias',
+            'type'            => EmployeeTypeEnum::EMPLOYEE,
+            'employment_type' => EmploymentTypeEnum::FULL_TIME,
+            'state'           => EmployeeStateEnum::WORKING,
+        ]
+    ));
+    $linked = $newCustomer('private-mail@example.com');
+    expect($linked->is_staff)->toBeFalse();
+    UpdateCustomer::make()->action($linked, ['as_employee_id' => $employee->id]);
+    expect($linked->fresh()->is_staff)->toBeTrue();
+    UpdateCustomer::make()->action($linked, ['as_employee_id' => null]);
+    expect($linked->fresh()->is_staff)->toBeFalse();
 });

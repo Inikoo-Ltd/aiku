@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateIsStaff;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\Dropshipping\Platform\RedoPlatformTimeSeries;
@@ -269,6 +270,10 @@ class UpdateCustomer extends OrgAction
             MatchCustomerProspects::run($customer);
         }
 
+        if (Arr::hasAny($changes, ['email', 'as_employee_id', 'as_organisation_id'])) {
+            CustomerHydrateIsStaff::run($customer);
+        }
+
         if (Arr::hasAny($changes, ['internal_notes', 'warehouse_internal_notes', 'warehouse_temporary_notes'])) {
             $customer->auditEvent    = AuditEventEnum::CUSTOMER_NOTE->value;
             $customer->isCustomEvent = true;
@@ -364,6 +369,11 @@ class UpdateCustomer extends OrgAction
             'gr_extended_until'                                     => ['sometimes', 'nullable', 'date'],
             'fiscal_name'                                           => ['sometimes', 'nullable', 'string', 'max:255'],
             'is_vip'                                                => ['sometimes', 'boolean'],
+            'as_employee_id'                                        => [
+                'sometimes',
+                'nullable',
+                Rule::exists('employees', 'id')->where('organisation_id', $this->organisation->id),
+            ],
         ];
 
         if ($this?->asAction) {
@@ -373,7 +383,6 @@ class UpdateCustomer extends OrgAction
 
         if (!$this->strict) {
             $rules['as_organisation_id'] = ['sometimes', 'nullable', 'integer'];
-            $rules['as_employee_id']     = ['sometimes', 'nullable', 'integer'];
             $rules['registered_at']      = ['sometimes', 'nullable', 'date'];
             $rules['reference']          = ['sometimes', 'string', 'max:255'];
 

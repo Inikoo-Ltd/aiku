@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateIsStaff;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
@@ -163,6 +164,7 @@ class StoreCustomer extends OrgAction
             return $customer;
         });
 
+        CustomerHydrateIsStaff::run($customer);
         ShopHydrateCrmStats::dispatch($customer->shop)->delay($this->hydratorsDelay);
         ShopHydrateCustomers::dispatch($customer->shop)->delay($this->hydratorsDelay);
         ShopHydrateCustomerInvoices::dispatch($customer->shop)->delay($this->hydratorsDelay);
@@ -297,6 +299,7 @@ class StoreCustomer extends OrgAction
             'internal_notes'                                        => ['sometimes', 'nullable', 'string'],
             'warehouse_internal_notes'                              => ['sometimes', 'nullable', 'string'],
             'warehouse_public_notes'                                => ['sometimes', 'nullable', 'string'],
+            'shipping_notes'                                        => ['sometimes', 'nullable', 'string', 'max:4000'],
             'email_subscriptions'                                   => ['sometimes', 'array'],
             'email_subscriptions.is_subscribed_to_newsletter'       => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_marketing'        => ['sometimes', 'boolean'],
