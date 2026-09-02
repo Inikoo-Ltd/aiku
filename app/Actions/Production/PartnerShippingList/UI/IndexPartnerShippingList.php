@@ -229,7 +229,7 @@ class IndexPartnerShippingList extends OrgAction
             $tab(__('All'), 'grp.org.productions.show.partners.index', 'fa-bars', $openItems) + ['isAnchor' => true],
             $tab(__('By artisan'), 'grp.org.productions.show.partners.by_artisan', 'fa-user-hard-hat'),
             $tab(__('By category'), 'grp.org.productions.show.partners.by_family', 'fa-layer-group'),
-            $tab(__('For'), 'grp.org.productions.show.partners.by_for', 'fa-building'),
+            $tab(__('By buyer'), 'grp.org.productions.show.partners.by_for', 'fa-building'),
         ];
     }
 
