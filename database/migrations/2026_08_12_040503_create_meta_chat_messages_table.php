@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\CRM\Livechat\ChatMessageStateEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Stubs\Migrations\HasSoftDeletes;
 use Illuminate\Database\Migrations\Migration;
@@ -22,6 +23,7 @@ return new class () extends Migration {
             $table->foreign('meta_chat_session_id')->references('id')->on('meta_chat_sessions')->nullOnDelete();
 
             $table->string('message_type')->index()->default(ChatMessageTypeEnum::TEXT->value);
+            $table->string('state')->index()->default(ChatMessageStateEnum::IN_PROCESS->value);
 
             $table->string('sender_type');
             $table->unsignedInteger('sender_id')->nullable();
@@ -45,6 +47,9 @@ return new class () extends Migration {
             $table->text('original_text')->nullable();
 
             $table->json('metadata')->nullable();
+
+            $table->unsignedInteger('whatsapp_campaign_id')->index()->nullable();
+            $table->foreign('whatsapp_campaign_id')->references('id')->on('whatsapp_campaigns')->nullOnDelete();
 
             $table->timestampsTz();
             $this->softDeletes($table);
