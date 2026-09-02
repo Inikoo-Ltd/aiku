@@ -90,6 +90,7 @@ const chartData = computed(() => ({
 			data: labels.value.map((bucket) => clicksByBucket.value[bucket] ?? 0),
 			backgroundColor: series.clicks.color + "99",
 			borderRadius: 2,
+			barPercentage: 0.25,
 			yAxisID: "y2",
 			order: 3,
 		},
