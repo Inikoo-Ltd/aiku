@@ -68,23 +68,12 @@ const currentPage = ref(1)
 const hasMore = ref(false)
 const tabUnread = ref<Record<string, number>>({ active: 0, waiting: 0 })
 
-const currentOrganisation = computed(() =>
-    layout?.organisations?.data?.find((organisation: any) => organisation.slug === layout?.currentParams?.organisation) ?? null
-)
-
-const currentShopId = computed(() =>
-    currentOrganisation.value?.authorised_shops?.find((shop: any) => shop.slug === layout?.currentParams?.shop)?.id ?? null
-)
-
 const activeStatuses = computed(() => TABS.find(tab => tab.key === activeTab.value)?.statuses ?? [])
 
 const buildParams = (page: number) => ({
     statuses: activeStatuses.value,
     assigned_to_me: myAgentId,
     page,
-    
-    ...(currentOrganisation.value?.id ? { organisation_id: currentOrganisation.value.id } : {}),
-    ...(currentShopId.value ? { shop_id: currentShopId.value } : {}),
     ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
 })
 
@@ -113,8 +102,6 @@ const fetchTabCounts = async () => {
                         statuses: tab.statuses,
                         assigned_to_me: myAgentId,
                         page: 1,
-                        ...(currentOrganisation.value?.id ? { organisation_id: currentOrganisation.value.id } : {}),
-                        ...(currentShopId.value ? { shop_id: currentShopId.value } : {}),
                     },
                 })
                 const list = data?.data?.sessions ?? []
@@ -276,7 +263,14 @@ const handleChatListEvent = async (e: any) => {
         return
     }
 
-    if (msg.sender_type === "agent") return
+    // Agent's own messages still need to refresh the session list (last message
+    // preview, ordering) and the unread badge, just without a notification sound.
+    if (msg.sender_type === "agent") {
+        await refreshUnread()
+        await fetchTabCounts()
+        if (showPopover.value) await fetchSessions()
+        return
+    }
 
     // Spam chats never ring; they are hidden from the normal inbox anyway.
     if (msg.is_spam) return

@@ -200,7 +200,7 @@ const reloadContacts = async () => {
         const res = await axios.get(sessionsUrl.value, { params: buildParams(1) })
         contacts.value = res.data.data.sessions.map(mapSession)
         hasMore.value = res.data.data.pagination?.has_more ?? false
-        openPendingSession()
+        await openPendingSession()
     } catch (e) {
         console.error("Failed to reload contacts:", e)
     }
@@ -344,10 +344,15 @@ const toggleInbox = (shopId: number) => {
 }
 
 // Select + expand an inbox without reloading — callers on mount reload once afterwards.
-const revealInbox = (shopId: number) => {
+// When `channelKey` is provided (e.g. from URL params) it takes precedence over the
+// default first channel so that deep-links like `?channel=whatsapp` are honoured.
+const revealInbox = (shopId: number, channelKey?: string | null) => {
     selectedShopId.value = shopId
     const inbox = props.inboxes?.find((i) => i.id === shopId)
-    selectedChannel.value = inbox?.channels?.[0]?.key ?? null
+    const resolved = channelKey && inbox?.channels?.some((ch) => ch.key === channelKey)
+        ? channelKey
+        : inbox?.channels?.[0]?.key ?? null
+    selectedChannel.value = resolved
     if (!expandedInboxIds.value.includes(shopId)) {
         expandedInboxIds.value.push(shopId)
     }
@@ -542,15 +547,52 @@ const applyChannelFromUrl = () => {
 
 // The linked conversation can only be opened once its list has arrived, so the ulid waits
 // here and is consumed by the first load that contains it.
-const openPendingSession = () => {
+const openPendingSession = async () => {
     if (!pendingSessionUlid.value) return
 
     const contact = contacts.value.find((c) => String(c.ulid) === pendingSessionUlid.value)
 
-    if (!contact) return
+    if (contact) {
+        pendingSessionUlid.value = null
+        openChat(contact)
+        return
+    }
 
-    pendingSessionUlid.value = null
-    openChat(contact)
+    // Session not in the current tab — fetch all statuses from the API to find it
+    // and switch to the matching tab before opening.
+    const ulid = pendingSessionUlid.value
+    try {
+        const url = selectedChannel.value === "whatsapp"
+            ? `${baseUrl}/app/api/chats/meta/sessions`
+            : `${baseUrl}/app/api/chats/sessions`
+
+        const { data } = await axios.get(url, {
+            params: {
+                assigned_to_me: myAgentId,
+                organisation_id: props.organisation.id,
+                ...(selectedShopId.value ? { shop_id: selectedShopId.value } : {}),
+                page: 1,
+                limit: 50,
+            },
+        })
+
+        const sessions = data?.data?.sessions ?? []
+        const found = sessions.find((s: any) => String(s.ulid) === ulid)
+
+        if (found) {
+            const mapped = mapSession(found)
+
+            if (mapped.status && ["waiting", "active", "closed"].includes(mapped.status) && activeTab.value !== mapped.status) {
+                activeTab.value = mapped.status as "waiting" | "active" | "closed"
+                await reloadContacts()
+            }
+
+            pendingSessionUlid.value = null
+            openChat(mapped)
+        }
+    } catch (e) {
+        console.error("Failed to fetch pending session:", e)
+    }
 }
 
 const fetchInboxNotifications = async () => {
@@ -848,8 +890,11 @@ const onChatListEvent = (e: any) => {
 }
 
 const onMetaChatListEvent = (e: any) => {
-    // WhatsApp sessions only surface in the meta list; ignore the event while the
-    // agent is looking at the website channel.
+    // Always refresh notification badges so the sidebar unread counts stay current
+    // regardless of which channel is selected.
+    fetchInboxNotifications()
+
+    // Contact list only needs a full reload when viewing the WhatsApp channel.
     if (selectedChannel.value !== "whatsapp") return
 
     reloadContacts()
@@ -878,16 +923,18 @@ onMounted(async () => {
     applyChannelFromUrl()
     fetchInboxNotifications()
 
+    const urlChannel = selectedChannel.value
+
     // Preselect the shop when opened from the shop-level nav entry.
     if (props.preselectShopId && props.inboxes?.some((i) => i.id === props.preselectShopId)) {
-        revealInbox(props.preselectShopId)
+        revealInbox(props.preselectShopId, urlChannel)
     }
 
     const init = props.initialSession
 
     // Jump to the shop (inbox) the opened chat belongs to.
     if (init?.shop?.id) {
-        revealInbox(init.shop.id)
+        revealInbox(init.shop.id, urlChannel)
     }
 
     if (init && ["waiting", "active", "closed"].includes(init.status) && activeTab.value !== init.status) {
