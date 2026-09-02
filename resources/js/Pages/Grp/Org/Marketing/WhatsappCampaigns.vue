@@ -19,7 +19,7 @@ defineProps<{
     <Table :resource="data" class="mt-5">
         <template #cell(name)="{ item: campaign }">
             <Link class="primaryLink"
-                :href="route('grp.org.shops.show.marketing.whatsapp_campaigns.workshop',
+                :href="route(`grp.org.shops.show.marketing.whatsapp_campaigns.${['sending', 'sent'].includes(campaign.state) ? 'show' : 'workshop'}`,
                     [route().params.organisation, route().params.shop, campaign.slug])">
                 {{ campaign.name }}
             </Link>
