@@ -18,12 +18,13 @@ import {
 } from "@fortawesome/free-solid-svg-icons"
 import { faJira } from "@fortawesome/free-brands-svg-icons"
 import { faUser } from "@fal"
-import { faCheck, faCheckDouble } from "@far"
+import { faCheck, faCheckDouble, faExclamationCircle } from "@far"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { useLayoutStore } from "@/Stores/layout"
 import Image from "@common/Components/Image.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import JiraTicketModal from "@/Components/Chat/Agent/JiraTicketModal.vue"
 import type { MiniChat } from "@/Composables/useMiniChats"
 
@@ -84,6 +85,21 @@ const FILE_TYPES = [
 ]
 
 const MAX_SIZE = 10 * 1024 * 1024
+
+const waReadIcon = (message: LocalChatMessage) => {
+    const waStatus = message.metadata?.wa_status
+    if (waStatus === 'failed') return faExclamationCircle
+    if (waStatus === 'delivered' || waStatus === 'read') return faCheckDouble
+    if (waStatus === 'sent') return faCheck
+    return message.is_read ? faCheckDouble : faCheck
+}
+
+const waReadIconClass = (message: LocalChatMessage): string => {
+    const waStatus = message.metadata?.wa_status
+    if (waStatus === 'failed') return 'text-red-500'
+    if (waStatus === 'read') return 'text-sky-400'
+    return ''
+}
 
 const isClosed = computed(() => props.chat.status === "closed")
 const isWaiting = computed(() => props.chat.status === "waiting")
@@ -507,37 +523,50 @@ onUnmounted(() => {
                 </div>
 
                 <template v-else>
-                    <div v-for="message in sortedMessages" :key="message.id" class="flex"
-                        :class="message.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
-                        <div class="max-w-[85%] min-w-0 px-2 py-1 rounded-lg text-[11px] leading-snug shadow-sm"
-                            :class="message.sender_type === 'agent'
-                                ? 'bg-indigo-500 text-white rounded-br-sm'
-                                : 'bg-white text-gray-800 rounded-bl-sm'">
-                            <p v-if="messageText(message)" class="whitespace-pre-wrap break-words">
-                                {{ messageText(message) }}
-                            </p>
+                    <template v-for="message in sortedMessages" :key="message.id">
+                        <ChatTimelineEvent
+                            v-if="message.sender_type === 'system'"
+                            :event="{ description: trans(message.message_text), created_at: message.created_at }"
+                        />
 
-                            <img v-if="message.message_type === 'image' && message.media_url"
-                                :src="message.media_url.webp ?? message.media_url.original" :alt="trans('Attachment')"
-                                class="mt-1 rounded max-w-full max-h-28 object-contain cursor-pointer bg-gray-50"
-                                @click="openAttachment(message)" />
+                        <div v-else class="flex"
+                            :class="message.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
+                            <div class="max-w-[85%] min-w-0 px-2 py-1 rounded-lg text-[11px] leading-snug shadow-sm"
+                                :class="message.sender_type === 'agent'
+                                    ? 'bg-indigo-500 text-white rounded-br-sm'
+                                    : 'bg-white text-gray-800 rounded-bl-sm'">
+                                <p v-if="messageText(message)" class="whitespace-pre-wrap break-words">
+                                    {{ messageText(message) }}
+                                </p>
 
-                            <button v-else-if="message.message_type === 'file' && message.media_url" type="button"
-                                class="mt-1 flex items-center gap-1 max-w-full text-[10px] underline truncate"
-                                @click="openAttachment(message)">
-                                📄 {{ message.file_name || message.media_url.name || trans('Attachment') }}
-                            </button>
+                                <img v-if="message.message_type === 'image' && message.media_url"
+                                    :src="message.media_url.webp ?? message.media_url.original" :alt="trans('Attachment')"
+                                    class="mt-1 rounded max-w-full max-h-28 object-contain cursor-pointer bg-gray-50"
+                                    @click="openAttachment(message)" />
 
-                            <div class="flex items-center justify-end gap-1 mt-0.5 text-[9px]"
-                                :class="message.sender_type === 'agent' ? 'text-white/70' : 'text-gray-400'">
-                                <span>{{ formatTime(message.created_at) }}</span>
-                                <LoadingIcon v-if="message._status === 'sending'" class="w-2.5 h-2.5" />
-                                <span v-else-if="message._status === 'failed'" class="text-red-300">!</span>
-                                <FontAwesomeIcon v-else-if="message.sender_type === 'agent'"
-                                    :icon="message.is_read ? faCheckDouble : faCheck" class="text-[9px]" />
+                                <button v-else-if="message.message_type === 'file' && message.media_url" type="button"
+                                    class="mt-1 flex items-center gap-1 max-w-full text-[10px] underline truncate"
+                                    @click="openAttachment(message)">
+                                    📄 {{ message.file_name || message.media_url.name || trans('Attachment') }}
+                                </button>
+
+                                <div class="flex items-center justify-end gap-1 mt-0.5 text-[9px]"
+                                    :class="message.sender_type === 'agent' ? 'text-white/70' : 'text-gray-400'">
+                                    <span>{{ formatTime(message.created_at) }}</span>
+                                    <LoadingIcon v-if="message._status === 'sending'" class="w-2.5 h-2.5" />
+                                    <span v-else-if="message._status === 'failed'" class="text-red-300">
+                                        <FontAwesomeIcon :icon="faExclamationCircle" class="text-[9px]" />
+                                    </span>
+                                    <span v-else-if="message.sender_type === 'agent'" class="leading-none">
+                                        <FontAwesomeIcon
+                                            :icon="waReadIcon(message)"
+                                            class="text-[9px]"
+                                            :class="waReadIconClass(message)" />
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </template>
                 </template>
             </div>
 
