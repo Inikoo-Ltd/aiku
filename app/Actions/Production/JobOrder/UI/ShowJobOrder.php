@@ -8,6 +8,8 @@
 
 namespace App\Actions\Production\JobOrder\UI;
 
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Models\HumanResources\Employee;
 use App\Actions\OrgAction;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Production\Artefact;
@@ -105,7 +107,19 @@ class ShowJobOrder extends OrgAction
                     'date'        => $jobOrder->date,
                     'created_at'  => $jobOrder->created_at,
                     'public_notes' => $jobOrder->public_notes,
+                    'employee_id'  => $jobOrder->employee_id,
+                    'artisan'      => $jobOrder->employee?->contact_name,
                 ],
+                'artisan_options' => $this->canEdit ? Employee::where('organisation_id', $this->organisation->id)
+                    ->where('state', EmployeeStateEnum::WORKING)
+                    ->orderBy('contact_name')
+                    ->get(['id', 'contact_name'])
+                    ->map(fn (Employee $employee) => ['id' => $employee->id, 'name' => $employee->contact_name])
+                    ->all() : [],
+                'update_route' => $this->canEdit ? [
+                    'name'       => 'grp.models.job-order.update',
+                    'parameters' => ['jobOrder' => $jobOrder->id],
+                ] : null,
                 'items'            => $items,
                 'artefact_options' => $this->canEdit ? $artefactOptions : [],
                 'add_item_route'   => $this->canEdit ? [

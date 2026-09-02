@@ -73,6 +73,7 @@ class IndexPartnerShippingList extends OrgAction
             ->leftJoin('transactions', 'transactions.id', 'partner_shopping_list_items.transaction_id')
             ->leftJoin('orders', 'orders.id', 'transactions.order_id')
             ->leftJoin('customers', 'customers.id', 'orders.customer_id')
+            ->leftJoin('job_orders', 'job_orders.id', 'partner_shopping_list_items.job_order_id')
             ->where(function ($query) use ($seller) {
                 $query->where('partner_shopping_list_items.partner_organisation_id', $seller->id)
                     ->orWhere(function ($query) use ($seller) {
@@ -106,6 +107,8 @@ class IndexPartnerShippingList extends OrgAction
                 'organisations.code as buyer_code',
                 'customers.name as customer_name',
                 'orders.reference as order_reference',
+                'job_orders.reference as job_order_reference',
+                'job_orders.slug as job_order_slug',
             ])
             ->defaultSort('-created_at')
             ->allowedFilters([$globalSearch])
@@ -158,6 +161,7 @@ class IndexPartnerShippingList extends OrgAction
                 ->column(key: 'priority', label: __('Priority'), canBeHidden: false, sortable: true)
                 ->column(key: 'needed_by', label: __('Needed by'), canBeHidden: false, sortable: true)
                 ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true)
+                ->column(key: 'job_order_reference', label: __('Job order'), canBeHidden: false)
                 ->column(key: 'created_at', label: __('Added'), canBeHidden: false, sortable: true)
                 ->defaultSort('-created_at');
         };

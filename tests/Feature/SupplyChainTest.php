@@ -20,7 +20,18 @@ use App\Actions\SupplyChain\Supplier\DeleteSupplier;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
+use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Actions\SysAdmin\User\StoreUser;
+use App\Actions\UI\Grp\Layout\GetOrganisationsLayout;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
+use App\Enums\SysAdmin\User\UserAuthTypeEnum;
+use App\Models\HumanResources\JobPosition;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Helpers\Import\UploadRecordStatusEnum;
@@ -73,6 +84,49 @@ test('create agent', function () {
 
     return $agent;
 });
+
+test('agent org admin can log in with aurora legacy password', function (Agent $agent) {
+    $organisation = $agent->organisation;
+    $orgAdmin     = JobPosition::where('organisation_id', $organisation->id)->where('code', 'org-admin')->firstOrFail();
+
+    $employee = StoreEmployee::make()->action($organisation, [
+        'worker_number'   => 'coco',
+        'alias'           => 'coco',
+        'contact_name'    => 'Coco',
+        'state'           => EmployeeStateEnum::WORKING,
+        'type'            => EmployeeTypeEnum::EMPLOYEE,
+        'employment_type' => EmploymentTypeEnum::FULL_TIME,
+        'positions'       => [['slug' => $orgAdmin->slug, 'scopes' => []]],
+    ]);
+
+    $user = StoreUser::make()->action($employee, [
+        'username'        => 'coco',
+        'password'        => Str::random(64),
+        'status'          => true,
+        'reset_password'  => false,
+        'auth_type'       => UserAuthTypeEnum::AURORA,
+        'legacy_password' => hash('sha256', 'aurora-password'),
+    ], strict: false);
+
+    expect($user->roles()->pluck('name')->all())->toBe(["org-admin-{$organisation->id}"])
+        ->and($user->authorisedOrganisations()->pluck('organisations.id')->all())->toBe([$organisation->id]);
+
+    Auth::logout();
+    Config::set('app.with_user_legacy_passwords', true);
+    $response = $this->post(route('grp.login.store'), [
+        'username' => 'coco',
+        'password' => 'aurora-password',
+    ]);
+
+    $response->assertRedirect(route('grp.org.dashboard.show', [$organisation->slug]));
+    $this->assertAuthenticatedAs($user);
+
+    $user->refresh();
+    expect($user->auth_type)->toBe(UserAuthTypeEnum::DEFAULT)
+        ->and($user->legacy_password)->toBeNull()
+        ->and(Hash::check('aurora-password', $user->password))->toBeTrue()
+        ->and(array_keys(GetOrganisationsLayout::run($user)[$organisation->slug]))->toContain('procurement', 'hr');
+})->depends('create agent');
 
 test('update agent', function (Agent $agent) {
     $modelData    = [

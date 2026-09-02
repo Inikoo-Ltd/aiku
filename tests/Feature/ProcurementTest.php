@@ -66,6 +66,14 @@ use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListIt
 use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
 use App\Actions\Production\Production\StoreProduction;
 use App\Actions\Production\Artefact\StoreArtefact;
+use App\Actions\Production\Artisan\AttachArtisan;
+use App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems;
+use App\Actions\HumanResources\Employee\StoreEmployee;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
+use App\Models\HumanResources\Employee;
+use App\Models\Production\Artefact;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
 use App\Models\Production\Production;
@@ -2815,6 +2823,39 @@ describe('partner shopping list', function () {
 
         DispatchOrder::make()->action($order->refresh(), null);
         expect($item->refresh()->state)->toBe(ShoppingListItemStateEnum::ORDERED);
+    });
+
+    test('to produce lines become one job order per artisan', function () {
+        $seller         = $this->orgPartner->partner;
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $production     = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
+        $artefact = Artefact::where('production_id', $production->id)->where('org_stock_id', $sellerOrgStock->id)->first()
+            ?? StoreArtefact::make()->action($production, ['code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
+
+        $employeeData = Employee::factory()->make(['organisation_id' => $seller->id])->toArray();
+        $employeeData['worker_number']   = 'W'.rand(1000, 9999);
+        $employeeData['alias']           = 'Alias '.rand(1000, 9999);
+        $employeeData['type']            = EmployeeTypeEnum::EMPLOYEE;
+        $employeeData['employment_type'] = EmploymentTypeEnum::FULL_TIME;
+        $employeeData['state']           = EmployeeStateEnum::WORKING;
+        $artisan = StoreEmployee::make()->action($seller, $employeeData);
+        AttachArtisan::make()->action($artefact, ['employee_id' => $artisan->id]);
+
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 7.5]);
+
+        $result = StoreJobOrdersFromToProduceItems::make()->action($production, [$item->id]);
+
+        expect($result['job_orders'])->toHaveCount(1)
+            ->and($result['skipped'])->toBe([]);
+        $jobOrder = $result['job_orders'][0];
+        expect($jobOrder->employee_id)->toBe($artisan->id)
+            ->and($jobOrder->jobOrderItems()->count())->toBe(1)
+            ->and($jobOrder->jobOrderItems()->first()->quantity)->toBe(8)
+            ->and($item->refresh()->job_order_id)->toBe($jobOrder->id);
+
+        $again = StoreJobOrdersFromToProduceItems::make()->action($production, [$item->id]);
+        expect($again['job_orders'])->toBe([]);
     });
 
     test('store partner shopping list item denormalises', function () {

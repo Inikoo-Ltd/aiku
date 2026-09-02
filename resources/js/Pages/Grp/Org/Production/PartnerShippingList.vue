@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, router } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import { reactive, ref, watch } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
@@ -20,7 +20,7 @@ const props = defineProps<{
     title: string
     data: object
     groupBy: string | null
-    groups: { label: string, items: { id: number, quantity: number, state: string, stock_code: string, stock_name: string, family: string | null, maker: string | null, buyer_code: string | null, customer_name: string | null, order_reference: string | null, priority: string, needed_by: string | null }[] }[] | null
+    groups: { label: string, items: { id: number, quantity: number, state: string, stock_code: string, stock_name: string, family: string | null, maker: string | null, buyer_code: string | null, customer_name: string | null, order_reference: string | null, job_order_reference: string | null, job_order_slug: string | null, priority: string, needed_by: string | null }[] }[] | null
     pickedOrders: {
         id: number
         reference: string
@@ -58,6 +58,18 @@ function sendToWarehouse(orderId: number) {
     )
 }
 
+function createJobOrders() {
+    router.post(
+        route("grp.org.productions.show.partners.job_orders.store", [route().params["organisation"], route().params["production"]]),
+        { ids: Object.keys(selected).map(Number) },
+        { preserveScroll: true, onSuccess: () => { for (const k in selected) delete selected[k] } }
+    )
+}
+
+function jobOrderHref(item: { job_order_slug: string }) {
+    return route("grp.org.productions.show.operations.job-orders.show", [route().params["organisation"], route().params["production"], item.job_order_slug])
+}
+
 function submitCherryPick() {
     const lines = Object.entries(selected).map(([id, quantity]) => ({ id: Number(id), quantity }))
     router.post(
@@ -74,9 +86,14 @@ function submitCherryPick() {
 
     <div v-if="Object.keys(selected).length" class="sticky top-0 z-10 mx-4 mt-4 flex items-center justify-between rounded-lg bg-indigo-600 px-4 py-2 text-white">
         <span>{{ Object.keys(selected).length }} {{ trans("lines selected") }}</span>
-        <button type="button" class="rounded bg-white px-3 py-1 text-indigo-600" @click="submitCherryPick">
-            {{ trans("Pick into order") }}
-        </button>
+        <div class="flex gap-2">
+            <button type="button" class="rounded bg-white px-3 py-1 text-indigo-600" @click="createJobOrders">
+                {{ trans("Create job orders") }}
+            </button>
+            <button type="button" class="rounded bg-white px-3 py-1 text-indigo-600" @click="submitCherryPick">
+                {{ trans("Pick into order") }}
+            </button>
+        </div>
     </div>
 
     <div v-if="pickedOrders?.length" class="mx-4 mt-4 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -131,6 +148,7 @@ function submitCherryPick() {
                         <td class="w-24 px-2 py-1.5 text-gray-500">{{ item.priority }}</td>
                         <td class="w-28 px-2 py-1.5 text-gray-500">{{ item.needed_by ? useFormatTime(item.needed_by, { formatTime: "mdy" }) : "-" }}</td>
                         <td class="w-20 px-4 py-1.5 text-gray-500">{{ item.state }}</td>
+                        <td class="w-32 px-2 py-1.5"><Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink">{{ item.job_order_reference }}</Link></td>
                     </tr>
                 </tbody>
             </table>
@@ -141,6 +159,9 @@ function submitCherryPick() {
         <template #cell(buyer_code)="{ item }">
             <span v-if="item.buyer_code">{{ item.buyer_code }}</span>
             <span v-else>{{ item.customer_name }} <span class="text-gray-500">{{ item.order_reference }}</span></span>
+        </template>
+        <template #cell(job_order_reference)="{ item }">
+            <Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink">{{ item.job_order_reference }}</Link>
         </template>
         <template #cell(pick)="{ item }">
             <div class="flex items-center gap-2">

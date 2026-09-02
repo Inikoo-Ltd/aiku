@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
+use App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems;
 use App\Actions\Production\PartnerShippingList\SendPartnerOrderToWarehouse;
 use App\Actions\Production\PartnerShippingList\UI\IndexPartnerShippingList;
 use App\Actions\Production\Artefact\UI\CreateArtefact;
@@ -67,6 +68,7 @@ Route::prefix('{production}')
                         Route::get('by-category', [IndexPartnerShippingList::class, 'byFamily'])->name('by_category');
                         Route::get('for', [IndexPartnerShippingList::class, 'byFor'])->name('by_for');
                         Route::post('cherry-pick', CherryPickPartnerShoppingListItems::class)->name('cherry_pick');
+                        Route::post('job-orders', StoreJobOrdersFromToProduceItems::class)->name('job_orders.store');
                         Route::post('orders/{order}/send-to-warehouse', SendPartnerOrderToWarehouse::class)->name('send_to_warehouse');
                     });
 
