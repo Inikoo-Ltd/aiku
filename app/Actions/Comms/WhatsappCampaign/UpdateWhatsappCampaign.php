@@ -29,8 +29,12 @@ class UpdateWhatsappCampaign extends OrgAction
 
     /**
      * Reduces the selected recipients to the same digits only form the audience query
-     * groups by, dropping blanks and duplicates. Normalising here rather than in the page
-     * means every write path gets it, not just the one the recipients table posts from.
+     * groups by, dropping blanks, duplicates and anything WhatsApp cannot deliver to.
+     * Normalising here rather than in the page means every write path gets it, not just
+     * the one the recipients table posts from.
+     *
+     * Unsendable numbers are dropped rather than rejected: selecting a whole page should
+     * not fail on one bad row, and recipients_count is derived from what survives.
      */
     public function prepareForValidation(ActionRequest $request): void
     {
@@ -44,7 +48,11 @@ class UpdateWhatsappCampaign extends OrgAction
             function ($recipient) {
                 $phoneNumber = Arr::get($recipient, 'phone_number');
 
-                return is_scalar($phoneNumber) ? GetWhatsappRecipientsQuery::normalisePhoneKey((string) $phoneNumber) : '';
+                if (!is_scalar($phoneNumber) || !GetWhatsappRecipientsQuery::isSendablePhone((string) $phoneNumber)) {
+                    return '';
+                }
+
+                return GetWhatsappRecipientsQuery::normalisePhoneKey((string) $phoneNumber);
             },
             $recipientsList
         ));
@@ -152,8 +160,17 @@ class UpdateWhatsappCampaign extends OrgAction
             'recipients_recipe.customer_filters' => ['sometimes', 'array'],
             'recipients_list'                    => ['sometimes', 'array'],
             'recipients_list.*'                  => ['array'],
-            'recipients_list.*.phone_number'     => ['required', 'string'],
+            'recipients_list.*.phone_number'     => ['required', 'string', 'regex:/^[1-9][0-9]{3,14}$/'],
         ];
+    }
+
+    public function action(WhatsappCampaign $campaign, array $modelData): WhatsappCampaign
+    {
+        $this->asAction = true;
+        $this->campaign = $campaign;
+        $this->initialisationFromShop($campaign->shop, $modelData);
+
+        return $this->handle($campaign, $this->validatedData);
     }
 
     public function asController(Organisation $organisation, Shop $shop, WhatsappCampaign $whatsappCampaign, ActionRequest $request): WhatsappCampaign

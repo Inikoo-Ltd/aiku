@@ -3,7 +3,7 @@ import { inject, computed, ref, onMounted, onUnmounted, watch } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faCheckDouble, faExclamationCircle, faLanguage, faRobot, faShieldCheck } from "@far"
-import { faShare, faFaceSmile, faReply, faLocationDot, faPhone, faCopy, faCircleExclamation } from "@fortawesome/free-solid-svg-icons"
+import { faShare, faFaceSmile, faReply, faLocationDot, faPhone, faCopy, faCircleExclamation, faBullhorn } from "@fortawesome/free-solid-svg-icons"
 import axios from "axios"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import Image from "primevue/image"
@@ -15,7 +15,7 @@ import AudioPlayer from "@/Components/Chat/AudioPlayer.vue"
 import { formatWhatsappMarkup } from "@/Composables/useWhatsappMarkup"
 import { useCopyText } from "@/Composables/useCopyText"
 
-type SenderType = "guest" | "user" | "agent" | "system"
+type SenderType = "guest" | "user" | "agent" | "system" | "system_campaign"
 type MessageStatus = "sending" | "sent" | "failed"
 type ViewerType = "user" | "agent"
 
@@ -148,9 +148,13 @@ const currentOrganisation = computed(
 
 const { languages, fetchLanguages, getLanguageIdByCode } = useChatLanguages(baseUrl)
 
+// A campaign message went out from this side of the conversation, so to an agent it reads
+// as one of theirs; to the customer it is an ordinary incoming message.
+const isCampaign = computed(() => props.message.sender_type === "system_campaign")
+
 const isFromViewer = computed(() => {
     if (props.viewerType === "agent") {
-        return props.message.sender_type === "agent"
+        return ["agent", "system_campaign"].includes(props.message.sender_type)
     }
 
     return ["user", "guest"].includes(props.message.sender_type)
@@ -232,6 +236,10 @@ const firstName = (name?: string | null): string =>
     (name ?? "").trim().split(/\s+/)[0] || ""
 
 const senderLabel = computed(() => {
+    if (isCampaign.value) {
+        return trans("Campaign")
+    }
+
     if (props.message.sender_type === "agent") {
         const fullName = props.message.sender_name ?? props.agentName ?? layout?.user?.contact_name ?? "Agent"
         return firstName(fullName) || "Agent"
@@ -745,7 +753,8 @@ watch(selectedLanguage, async (val) => {
             <div class="flex flex-col gap-0.5 text-sm leading-relaxed shadow-sm px-3.5 py-2.5 rounded-2xl"
                 :class="[bubbleClass, showHoverToolbar && viewerType === 'agent' ? 'min-w-[260px]' : '']">
 
-            <div v-if="showSenderLabel" class="text-[11px] font-semibold mb-0.5 opacity-70">
+            <div v-if="showSenderLabel" class="flex items-center gap-1 text-[11px] font-semibold mb-0.5 opacity-70">
+                <FontAwesomeIcon v-if="isCampaign" :icon="faBullhorn" class="text-[10px]" />
                 {{ senderLabel }}
             </div>
 

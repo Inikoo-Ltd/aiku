@@ -341,6 +341,11 @@ const getMessages = async (loadMore = false) => {
     }
 }
 
+// Agent replies and campaign blasts both left this side of the conversation, so both sit
+// on the outgoing side of the thread.
+const isOutgoing = (message: { sender_type?: string }) =>
+    message.sender_type === "agent" || message.sender_type === "system_campaign"
+
 type TimelineEntry =
     | { kind: "message"; at: number; key: string; message: LocalChatMessage }
     | { kind: "event"; at: number; key: string; event: any }
@@ -662,7 +667,7 @@ const initSocket = () => {
             messagesLocal.value.push({ ...message, _status: "sent" })
         }
 
-        if (message.sender_type !== "agent" && message.sender_type !== "system") {
+        if (!isOutgoing(message) && message.sender_type !== "system") {
             markIncomingAsRead()
         }
 
@@ -795,7 +800,7 @@ onUnmounted(() => {
                 <template v-for="entry in entries" :key="entry.key">
                     <ChatTimelineEvent v-if="entry.kind === 'event'" :event="entry.event" />
                     <div v-else class="flex"
-                        :class="entry.message.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
+                        :class="isOutgoing(entry.message) ? 'justify-end' : 'justify-start'">
                         <BubbleChat :message="entry.message" viewerType="agent"
                             :contactName="session?.contact_name || session?.guest_identifier"
                             :canEdit="false"

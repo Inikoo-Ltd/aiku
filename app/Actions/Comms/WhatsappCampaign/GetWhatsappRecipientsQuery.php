@@ -32,6 +32,23 @@ class GetWhatsappRecipientsQuery
     private const PHONE_KEY = "regexp_replace(%s, '[^0-9]', '', 'g')";
 
     /**
+     * Two checks, because they catch different things. The shape runs on the raw column
+     * and is what rejects an email or a street address typed into a phone field: reducing
+     * those to digits first would throw the letters away and leave something long enough
+     * to look like a number. The digits run on the key and require a country code.
+     *
+     * A key starting with 0 is rejected whatever the zero means: a national trunk prefix
+     * WhatsApp cannot route, and equally the 00 international prefix, which is only ever
+     * a longhand for + and is expected to be stored in the + form.
+     *
+     * ponytail: 4 digit floor, looser than the 8 StoreMetaChatSession enforces at send.
+     * Raise it here, or lower it there, if the two are ever wanted in step.
+     */
+    private const PHONE_SHAPE = '^[+(]?[0-9+() .\-]*[0-9][0-9+() .\-]*$';
+
+    private const PHONE_DIGITS = '^[1-9][0-9]{3,14}$';
+
+    /**
      * @param  array<string, bool>  $channels
      *
      * @throws \Exception
@@ -97,6 +114,31 @@ class GetWhatsappRecipientsQuery
     }
 
     /**
+     * The PHP twin of the PHONE_SHAPE and PHONE_DIGITS filter the branches apply, so a
+     * selection saved against the audience is judged by the same rule that put the
+     * audience together. A number failing this is one WhatsApp has no way to deliver to.
+     */
+    public static function isSendablePhone(?string $phone): bool
+    {
+        $raw = trim((string) $phone);
+
+        return preg_match('/'.self::PHONE_SHAPE.'/', $raw) === 1
+            && preg_match('/'.self::PHONE_DIGITS.'/', self::normalisePhoneKey($raw)) === 1;
+    }
+
+    /**
+     * Applied per branch rather than as an outer having, so a blank phone never reaches
+     * the union. Grouping by the digits only key would otherwise collapse every blank
+     * row in every branch into one empty keyed recipient.
+     */
+    private function wherePhoneSendable(Builder $query, string $column): Builder
+    {
+        return $query
+            ->whereRaw(sprintf("btrim(%s) ~ ?", $column), [self::PHONE_SHAPE])
+            ->whereRaw($this->phoneKey($column).' ~ ?', [self::PHONE_DIGITS]);
+    }
+
+    /**
      * Every branch has to expose the same column list in the same order for the UNION ALL
      * to line up, so the flags are selected as literals rather than omitted.
      */
@@ -127,11 +169,12 @@ class GetWhatsappRecipientsQuery
 
     private function contactedBranch(Shop $shop): Builder
     {
-        return DB::table('meta_chat_sessions')
+        $query = DB::table('meta_chat_sessions')
             ->leftJoin('customers', 'meta_chat_sessions.customer_id', '=', 'customers.id')
             ->where('meta_chat_sessions.shop_id', $shop->id)
-            ->whereNotNull('meta_chat_sessions.phone_number')
-            ->whereNull('meta_chat_sessions.deleted_at')
+            ->whereNull('meta_chat_sessions.deleted_at');
+
+        return $this->wherePhoneSendable($query, 'meta_chat_sessions.phone_number')
             ->select($this->branchColumns(
                 'meta_chat_sessions.phone_number',
                 'coalesce(customers.contact_name, meta_chat_sessions.guest_identifier)',
@@ -151,7 +194,7 @@ class GetWhatsappRecipientsQuery
      */
     private function whatsappSubscribersBranch(Shop $shop): Builder
     {
-        return DB::table('whatsapp_subscribers')
+        $query = DB::table('whatsapp_subscribers')
             ->leftJoin('customers', function ($join) {
                 $join->on('whatsapp_subscribers.parent_id', '=', 'customers.id')
                     ->where('whatsapp_subscribers.parent_type', '=', 'Customer');
@@ -161,8 +204,9 @@ class GetWhatsappRecipientsQuery
                     ->where('whatsapp_subscribers.parent_type', '=', 'MetaChatSession');
             })
             ->where('whatsapp_subscribers.shop_id', $shop->id)
-            ->whereNull('whatsapp_subscribers.deleted_at')
-            ->whereNotNull(DB::raw('coalesce(customers.phone, meta_chat_sessions.phone_number)'))
+            ->whereNull('whatsapp_subscribers.deleted_at');
+
+        return $this->wherePhoneSendable($query, 'coalesce(customers.phone, meta_chat_sessions.phone_number)')
             ->select($this->branchColumns(
                 'coalesce(customers.phone, meta_chat_sessions.phone_number)',
                 'coalesce(customers.contact_name, meta_chat_sessions.guest_identifier)',
@@ -177,12 +221,13 @@ class GetWhatsappRecipientsQuery
 
     private function newsletterSubscribersBranch(Shop $shop): Builder
     {
-        return DB::table('customers')
+        $query = DB::table('customers')
             ->join('customer_comms', 'customer_comms.customer_id', '=', 'customers.id')
             ->where('customers.shop_id', $shop->id)
             ->where('customer_comms.is_subscribed_to_whatsapp_newsletter', true)
-            ->whereNotNull('customers.phone')
-            ->whereNull('customers.deleted_at')
+            ->whereNull('customers.deleted_at');
+
+        return $this->wherePhoneSendable($query, 'customers.phone')
             ->select($this->branchColumns('customers.phone', 'customers.contact_name', [
                 'customer_id'   => DB::raw('customers.id as customer_id'),
                 'created_at'    => DB::raw('customers.created_at as created_at'),
@@ -195,10 +240,12 @@ class GetWhatsappRecipientsQuery
      */
     private function customersBranch(Shop $shop, array $customerFilters): Builder
     {
-        $query = DB::table('customers')
-            ->where('customers.shop_id', $shop->id)
-            ->whereNotNull('customers.phone')
-            ->whereNull('customers.deleted_at');
+        $query = $this->wherePhoneSendable(
+            DB::table('customers')
+                ->where('customers.shop_id', $shop->id)
+                ->whereNull('customers.deleted_at'),
+            'customers.phone'
+        );
 
         if (!empty($customerFilters)) {
             $recipeQuery = GetWhatsappCustomersQueryByRecipe::run($shop->id, $customerFilters);

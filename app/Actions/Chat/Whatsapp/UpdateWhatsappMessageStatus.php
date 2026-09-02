@@ -8,6 +8,7 @@
 namespace App\Actions\Chat\Whatsapp;
 
 use App\Actions\Comms\WhatsappCampaign\Hydrators\WhatsappCampaignHydrateStats;
+use App\Enums\CRM\Livechat\ChatMessageStateEnum;
 use App\Enums\CRM\Livechat\MetaTrackingEventTypeEnum;
 use App\Events\BroadcastMetaChatMessageStatus;
 use App\Models\Chat\MetaChatMessage;
@@ -89,9 +90,11 @@ class UpdateWhatsappMessageStatus
         $metadata     = $metaChatMessage->metadata ?? [];
         $currentRank  = self::STATUS_RANK[Arr::get($metadata, 'wa_status')] ?? 0;
         $incomingRank = self::STATUS_RANK[$statusName] ?? 0;
+        $state        = null;
 
         if ($incomingRank >= $currentRank) {
             $metadata['wa_status'] = $statusName;
+            $state                 = ChatMessageStateEnum::tryFrom($statusName);
         }
 
         $metadata['wa_status_at'] = array_merge(
@@ -107,6 +110,12 @@ class UpdateWhatsappMessageStatus
            recipient fields are not copied here because the tracking event below stores the
            whole status node verbatim. */
         $modelData = ['metadata' => $metadata];
+
+        /* The enum's sent/delivered/read/failed cases carry Meta's own status names, so a
+           status outside that set (there is no `clicked` webhook) simply leaves state alone. */
+        if ($state) {
+            $modelData['state'] = $state;
+        }
 
         if ($statusName === 'delivered' && !$metaChatMessage->delivered_at) {
             $modelData['delivered_at'] = $happenedAt;

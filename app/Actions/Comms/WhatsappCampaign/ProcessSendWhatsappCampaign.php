@@ -65,13 +65,17 @@ class ProcessSendWhatsappCampaign
      * a session there is nothing to attach the sent message to, and the unique index on
      * (campaign, phone) means the row would block a later retry from succeeding.
      *
+     * The format check repeats the one the audience and the selection already applied. It
+     * is the last line before the Meta call, and by here there is no session to hang a
+     * failure record on, so an unsendable number can only be skipped quietly.
+     *
      * @param  array<string, mixed>  $row
      */
     private function storeRecipient(WhatsappCampaign $campaign, WhatsappDeliveryChannel $channel, array $row): void
     {
         $phone = (string) Arr::get($row, 'phone');
 
-        if ($phone === '') {
+        if (!GetWhatsappRecipientsQuery::isSendablePhone($phone)) {
             return;
         }
 

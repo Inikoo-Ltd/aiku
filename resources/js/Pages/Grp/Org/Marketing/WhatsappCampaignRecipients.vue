@@ -109,7 +109,7 @@ const onSelect = async () => {
             </template>
         </Table>
 
-        <div class="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
+        <div class="sticky bottom-0 z-10 mt-6 flex items-center justify-between border-t border-gray-200 bg-white py-4">
             <Button :label="trans('Back')" style="tertiary" @click="goBack" />
             <Button
                 :label="trans('Select')"

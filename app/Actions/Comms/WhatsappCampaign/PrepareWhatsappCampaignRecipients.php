@@ -35,8 +35,11 @@ class PrepareWhatsappCampaignRecipients
 
     public function handle(WhatsappCampaign $campaign): void
     {
+        /* Re-checked here rather than trusted from the selection: a list saved before the
+           audience started filtering unsendable numbers still holds them. */
         $phoneKeys = array_values(array_filter(
-            Arr::pluck($campaign->recipients_list ?? [], 'phone_number')
+            Arr::pluck($campaign->recipients_list ?? [], 'phone_number'),
+            fn ($phone) => GetWhatsappRecipientsQuery::isSendablePhone((string) $phone)
         ));
 
         if (!$phoneKeys) {

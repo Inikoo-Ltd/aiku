@@ -14,6 +14,7 @@ use App\Actions\Chat\Whatsapp\StoreMetaTrackingEvent;
 use App\Actions\Chat\Whatsapp\Templates\ResolveWhatsappTemplateTags;
 use App\Enums\Comms\WhatsappCampaign\WhatsappCampaignStateEnum;
 use App\Enums\Comms\WhatsappDeliveryChannel\WhatsappDeliveryChannelStateEnum;
+use App\Enums\CRM\Livechat\ChatMessageStateEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\MetaTrackingEventTypeEnum;
@@ -124,10 +125,15 @@ class SendWhatsappDeliveryChannel
             ? ResolveWhatsappTemplateTags::run($session, $tags)
             : ['values' => [], 'missing' => []];
 
+        /* Rendered before the send is attempted so a failure keeps the text it was going to
+           send; an unresolved tag stays as its {{n}} placeholder, which is what shows the
+           agent the slot that had no value. */
+        $messageText = $this->renderTemplateBody($campaign->shop_id, $template->name, $language, $merged['values']);
+
         // WhatsApp rejects a blank parameter, so a template whose tags cannot all be
         // filled for this contact is not sent to them rather than sent broken.
         if ($merged['missing']) {
-            $this->recordFailure($session, $campaign, $recipient, __('Missing :tags', [
+            $this->recordFailure($session, $campaign, $recipient, $messageText, __('Missing :tags', [
                 'tags' => implode(', ', $merged['missing']),
             ]));
 
@@ -145,7 +151,7 @@ class SendWhatsappDeliveryChannel
         );
 
         if (!$built['ok']) {
-            $this->recordFailure($session, $campaign, $recipient, $built['message']);
+            $this->recordFailure($session, $campaign, $recipient, $messageText, $built['message']);
 
             return;
         }
@@ -160,6 +166,7 @@ class SendWhatsappDeliveryChannel
                 $session,
                 $campaign,
                 $recipient,
+                $messageText,
                 Arr::get($response->json(), 'error.message') ?: __('Failed to send WhatsApp message.')
             );
 
@@ -171,8 +178,9 @@ class SendWhatsappDeliveryChannel
         $metaChatMessage = StoreMetaChatMessage::run($session, [
             'meta_message_id' => Arr::get($response->json(), 'messages.0.id'),
             'message_type'    => $headerMedia ? $this->headerMessageType($headerMedia) : ChatMessageTypeEnum::TEXT,
-            'sender_type'     => ChatSenderTypeEnum::SYSTEM,
-            'message_text'    => $this->renderTemplateBody($campaign->shop_id, $template->name, $language, $merged['values']) ?: null,
+            'sender_type'     => ChatSenderTypeEnum::SYSTEM_CAMPAIGN,
+            'state'           => ChatMessageStateEnum::SENT,
+            'message_text'    => $messageText ?: null,
             'media_id'        => $headerMedia?->id,
             'metadata'        => [
                 'template'             => $template->name,
@@ -200,20 +208,25 @@ class SendWhatsappDeliveryChannel
     }
 
     /**
-     * A failure is kept against the contact's thread rather than dropped, so the reason a
-     * campaign missed someone is visible where the rest of their history is. The recipient
-     * keeps a null meta_chat_message_id, which is what lets a re-run retry it.
+     * A failure is kept against the contact's thread rather than dropped, carrying the text
+     * that was going to be sent, so both what was missed and why are visible where the rest
+     * of their history is. The recipient keeps a null meta_chat_message_id, which is what
+     * lets a re-run retry it.
      */
-    private function recordFailure(MetaChatSession $session, WhatsappCampaign $campaign, WhatsappRecipient $recipient, string $reason): void
+    private function recordFailure(MetaChatSession $session, WhatsappCampaign $campaign, WhatsappRecipient $recipient, string $messageText, string $reason): void
     {
         $metaChatMessage = StoreMetaChatMessage::run($session, [
             'message_type' => ChatMessageTypeEnum::TEXT,
-            'sender_type'  => ChatSenderTypeEnum::SYSTEM,
+            'sender_type'  => ChatSenderTypeEnum::SYSTEM_CAMPAIGN,
+            'state'        => ChatMessageStateEnum::FAILED,
+            'message_text' => $messageText ?: null,
             'metadata'     => [
                 'whatsapp_campaign_id'   => $campaign->id,
                 'whatsapp_recipient_id'  => $recipient->id,
                 'wa_status'              => 'failed',
-                'wa_error'               => $reason,
+                /* Shaped like the webhook's `errors.0` so the chat UI reads the reason from
+                   the same wa_error.message path whichever way the failure arrived. */
+                'wa_error'               => ['message' => $reason],
             ],
         ]);
 
