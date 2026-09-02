@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
+use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
 use App\Models\Production\JobOrderItem;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\Production;
@@ -63,6 +64,7 @@ class ShowJobOrder extends OrgAction
                 'artefact_name'     => $item->artefact->name,
                 'quantity'          => (int)$item->quantity,
                 'produced_quantity' => (float)($item->tasks->sortByDesc('position')->first()->quantity_made ?? 0),
+                'waiting_for'       => GetJobOrderItemMissingMixes::run($item),
                 'tasks'             => $item->tasks->map(fn (JobOrderItemTask $task) => [
                     'id'                => $task->id,
                     'position'          => $task->position,

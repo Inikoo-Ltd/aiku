@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\JobOrderItemTask\UI;
 
+use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
@@ -75,7 +76,9 @@ class ShowManufactureFloor extends OrgAction
             ->orderBy('job_order_item_tasks.position')
             ->select('job_order_item_tasks.*')
             ->get()
-            ->map(fn (JobOrderItemTask $task) => $this->serializeTask($task) + ['working_on_by' => $workingOnBy->get($task->id, [])]);
+            ->map(fn (JobOrderItemTask $task) => $this->serializeTask($task) + ['working_on_by' => $workingOnBy->get($task->id, [])])
+            ->sortBy(fn (array $task) => count($task['waiting_for']) > 0)
+            ->values();
 
         $todayTotals = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
@@ -171,6 +174,7 @@ class ShowManufactureFloor extends OrgAction
             'job_order_reference' => $task->jobOrder->reference,
             'artisan'             => $task->jobOrder->employee?->contact_name,
             'is_mine'             => $this->employee && $task->jobOrder->employee_id == $this->employee->id,
+            'waiting_for'         => array_column(GetJobOrderItemMissingMixes::run($task->jobOrderItem), 'code'),
             'quantity_required'   => (float)$task->quantity_required,
             'quantity_made'       => (float)$task->quantity_made,
             'start_route'         => [

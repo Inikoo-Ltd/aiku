@@ -24,6 +24,7 @@ interface FloorTask {
     job_order_reference: string
     artisan: string | null
     is_mine: boolean
+    waiting_for: string[]
     working_on_by: string[]
     quantity_required: number
     quantity_made: number
@@ -124,6 +125,9 @@ function startTask(task: FloorTask) {
                                 · {{ task.quantity_made }} / {{ task.quantity_required }}
                                 <span v-if="task.artisan && !task.is_mine" class="ml-2">
                                     {{ trans('For') }} {{ task.artisan }}
+                                </span>
+                                <span v-if="task.waiting_for.length" class="ml-2 text-amber-600 font-medium">
+                                    {{ trans('Waiting for mix') }}: {{ task.waiting_for.join(', ') }}
                                 </span>
                                 <span v-if="task.working_on_by.length" class="ml-2 text-amber-600 font-medium">
                                     {{ trans('Working') }}: {{ task.working_on_by.join(', ') }}

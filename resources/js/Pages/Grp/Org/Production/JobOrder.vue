@@ -50,6 +50,7 @@ const props = defineProps<{
         artefact_name: string
         quantity: number
         produced_quantity: number
+        waiting_for: { code: string, needed: number, on_hand: number }[]
         tasks: ItemTask[]
     }[]
     artefact_options: { id: number, code: string, name: string, has_recipe: boolean, recommended_batch_size: number | null }[]
@@ -195,6 +196,9 @@ function receiveIntoStock() {
                 <div class="tabular-nums text-gray-700">× {{ item.quantity }}</div>
             </div>
 
+            <div v-if="item.waiting_for.length" class="mt-2 text-sm text-amber-600">
+                {{ trans('Waiting for mix') }}: <span v-for="mix in item.waiting_for" :key="mix.code" class="mr-2">{{ mix.code }} ({{ mix.on_hand }} / {{ mix.needed }})</span>
+            </div>
             <div v-if="!item.tasks.length" class="mt-2 text-sm text-amber-600">
                 {{ trans('This artefact has no recipe, no tasks were generated') }}
             </div>

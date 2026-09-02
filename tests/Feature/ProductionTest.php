@@ -19,6 +19,7 @@ use App\Actions\Production\Artisan\AttachArtisan;
 use App\Actions\Production\Artisan\DetachArtisan;
 use App\Actions\Production\Artisan\ToggleArtisanInRoster;
 use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
+use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Models\HumanResources\Employee;
@@ -56,6 +57,7 @@ use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
+use App\Models\Production\JobOrderItem;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
 use App\Models\Production\RawMaterial;
@@ -1850,19 +1852,55 @@ test('mixes to prepare are derived from open job orders and become job orders', 
     $jobOrder = StoreJobOrder::make()->action($this->production, []);
     StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
 
+    $openQuantity = JobOrderItem::where('artefact_id', $this->artefact->id)
+        ->whereHas('jobOrder', fn ($query) => $query->whereIn('state', [JobOrderStateEnum::IN_PROCESS, JobOrderStateEnum::SUBMITTED, JobOrderStateEnum::CONFIRMED]))
+        ->sum('quantity');
+    $expectedNeeded = round($openQuantity * 0.5, 3);
+
     $mixes = collect(GetMixesToPrepare::run($this->production))->keyBy('code');
     expect($mixes->get('MIX-BASE'))->not->toBeNull()
-        ->and($mixes->get('MIX-BASE')['needed'])->toBe(5.0)
+        ->and($mixes->get('MIX-BASE')['needed'])->toBe($expectedNeeded)
         ->and($mixes->get('MIX-BASE')['on_hand'])->toBe(2.0)
-        ->and($mixes->get('MIX-BASE')['shortfall'])->toBe(3.0)
+        ->and($mixes->get('MIX-BASE')['shortfall'])->toBe(round($expectedNeeded - 2, 3))
         ->and($mixes->get('MIX-BASE')['needed_for'])->toBe([$this->artefact->code]);
 
-    $created = StoreJobOrdersForMixes::make()->action($this->production, [['artefact_id' => $mixArtefact->id, 'quantity' => 3]]);
+    $shortfall = $mixes->get('MIX-BASE')['shortfall'];
+    $created   = StoreJobOrdersForMixes::make()->action($this->production, [['artefact_id' => $mixArtefact->id, 'quantity' => $shortfall]]);
     expect($created)->toHaveCount(1)
         ->and($created[0]->jobOrderItems()->first()->artefact_id)->toBe($mixArtefact->id)
-        ->and($created[0]->jobOrderItems()->first()->quantity)->toBe(3);
+        ->and($created[0]->jobOrderItems()->first()->quantity)->toBe((int) ceil($shortfall));
 
     $mixes = collect(GetMixesToPrepare::run($this->production))->keyBy('code');
-    expect($mixes->get('MIX-BASE')['in_progress'])->toBe(3.0)
+    expect($mixes->get('MIX-BASE')['in_progress'])->toBe((float) ceil($shortfall))
         ->and($mixes->get('MIX-BASE')['shortfall'])->toBe(0.0);
+
+    $missing = GetJobOrderItemMissingMixes::run($jobOrder->jobOrderItems()->first());
+    expect($missing)->toHaveCount(1)
+        ->and($missing[0]['code'])->toBe('MIX-BASE')
+        ->and($missing[0]['needed'])->toBe(5.0)
+        ->and($missing[0]['on_hand'])->toBe(2.0);
+
+    $mix->update(['quantity_on_location' => 50]);
+    expect(GetJobOrderItemMissingMixes::run($jobOrder->jobOrderItems()->first()))->toBe([]);
+});
+
+test('a task that is not piece rate snapshots a zero rate when its session closes', function () {
+    $this->manufactureTask->update(['is_piece_rate' => false]);
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $item = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 4]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task = $item->tasks()->first();
+    $user = createAdminGuest($this->group)->getUser();
+
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    $session = CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 4]);
+
+    expect((float) $session->task_work_cost)->toBe(0.0)
+        ->and((float) $session->operative_reward_amount)->toBe(0.0)
+        ->and((float) $session->quantity_made)->toBe(4.0);
+
+    $this->manufactureTask->update(['is_piece_rate' => true]);
 });
