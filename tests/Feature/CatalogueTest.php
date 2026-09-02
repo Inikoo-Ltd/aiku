@@ -1165,3 +1165,46 @@ test('noise audit purge deletes flag only audits and keeps real history', functi
         ->and(DB::table('audits')->whereIn('auditable_id', [989001, 989004, 989005])->exists())->toBeFalse()
         ->and(DB::table('audits')->whereIn('auditable_id', [989002, 989003, 989006])->count())->toBe(3);
 });
+
+test('retina new arrivals hide exclusive products from other customers and families off the website', function () {
+    list($organisation, $user, $shop) = createShop();
+
+    $newCustomer = fn () => \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $shop,
+        \App\Models\CRM\Customer::factory()->definition(),
+    );
+    $customerA = $newCustomer();
+    $customerB = $newCustomer();
+
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+    DB::table('products')->where('id', $product->id)->update([
+        'price'             => 10,
+        'is_for_sale'       => true,
+        'is_minion_variant' => false,
+        'is_in_website'     => true,
+        'state'             => ProductStateEnum::ACTIVE->value,
+        'status'            => \App\Enums\Catalogue\Product\ProductStatusEnum::FOR_SALE->value,
+    ]);
+    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
+
+    $codesFor = fn (\App\Models\CRM\Customer $customer) => collect(
+        \App\Actions\Retina\Ecom\NewArrival\UI\IndexRetinaEcomNewArrivals::make()->handle($customer)->items()
+    )->pluck('code');
+
+    expect($codesFor($customerA))->toContain($product->code)
+        ->and($codesFor($customerB))->toContain($product->code);
+
+    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => false]);
+    expect($codesFor($customerA))->not->toContain($product->code);
+    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
+
+    \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($product, [
+        'customer_ids' => [$customerA->id],
+    ]);
+    DB::table('products')->where('id', $product->id)->update(['is_for_sale' => true, 'is_in_website' => true, 'status' => \App\Enums\Catalogue\Product\ProductStatusEnum::FOR_SALE->value]);
+
+    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
+    expect($codesFor($customerA))->toContain($product->code)
+        ->and($codesFor($customerB))->not->toContain($product->code);
+});
