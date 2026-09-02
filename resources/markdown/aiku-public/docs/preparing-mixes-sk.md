@@ -45,7 +45,7 @@ Odškrtnite zmesi na prípravu, upravte množstvo, ak dávka nesedí presne s ne
 
 ## Čo robí prípravár
 
-Prípravár vedie vlastnú linku, preto má pozíciu <b>Production floor supervisor</b> (vedúci dielne) pre továreň, rovnako ako plánovač. Vďaka tomu môže otvoriť záložku Mixes, vytvárať a uvoľňovať vlastné pracovné príkazy a prijímať ich na sklad bez čakania na kohokoľvek. V dielni pracuje ako každý remeselník: jeho úlohy sa zobrazia na obrazovke dielne, stláča START a DONE, a keď je dokončený posledný krok, pracovný príkaz sa prijme na sklad s kódom dávky. Od tej chvíle je zmes na sklade a remeselníci môžu vyrábať svoje produkty.
+Prípravár vedie vlastnú linku, preto má pozíciu <b>Mix preparer</b> (prípravár zmesí) pre továreň. Vďaka tomu môže otvoriť záložku Mixes, vytvárať a uvoľňovať vlastné pracovné príkazy a prijímať ich na sklad bez čakania na kohokoľvek. Na pracovné príkazy adresované iným ľuďom nesiaha; tie ostávajú plánovačovi. V dielni pracuje ako každý remeselník: jeho úlohy sa zobrazia na obrazovke dielne, stláča START a DONE, a keď je dokončený posledný krok, pracovný príkaz sa prijme na sklad s kódom dávky. Od tej chvíle je zmes na sklade a remeselníci môžu vyrábať svoje produkty.
 
 Ak prípravár nie je platený úkolovo, je to nastavenie mzdy, nie dôvod preskočiť dielňu. Záznam o tom, kto akú dávku pripravil a kedy, je to, čo dáva vysledovateľnosť od hotového produktu späť k jeho surovinám.
 
@@ -68,6 +68,7 @@ Ak prípravár nie je platený úkolovo, je to nastavenie mzdy, nie dôvod presk
 <ul>
 <li>Pozície sa nastavujú v karte zamestnanca v Human Resources a nesú so sebou oprávnenia.</li>
 <li>Vidieť záložku Mixes a pracovať v dielni: pozícia <b>Production operative</b> (operátor) pre továreň, alebo vyššia.</li>
-<li>Vytváranie, uvoľňovanie a prijímanie pracovných príkazov a prepojenie suroviny s artefaktom: pozícia <b>Production floor supervisor</b> (vedúci dielne) pre továreň, alebo organisation supervisor. Prípravár potrebuje túto.</li>
+<li>Vytváranie pracovných príkazov na zmesi a uvoľňovanie a prijímanie vlastných: pozícia <b>Mix preparer</b> (prípravár zmesí) pre továreň. Prípravár potrebuje túto.</li>
+<li>Všetko ostatné vrátane pracovných príkazov iných ľudí a prepojenia suroviny s artefaktom: pozícia <b>Production floor supervisor</b> (vedúci dielne) pre továreň, alebo organisation supervisor.</li>
 </ul>
 </aside>

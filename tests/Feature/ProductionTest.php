@@ -23,6 +23,7 @@ use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
 use App\Actions\HumanResources\Employee\UpdateEmployee;
 use App\Actions\HumanResources\Employee\GetEmployeeJobPositionsData;
 use App\Models\HumanResources\JobPosition;
+use App\Models\SysAdmin\Role;
 use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
 use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
@@ -1915,8 +1916,12 @@ test('production job positions carry the factory roles all the way to the user',
 
     $supervisorPosition = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'prod-m')->first();
     $operativePosition  = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'prod-c')->first();
+    $preparerPosition = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'prod-p')->first();
     expect($supervisorPosition->roles()->pluck('name')->all())->toContain('production-orchestrator-'.$this->production->id)
-        ->and($operativePosition->roles()->pluck('name')->all())->toContain('production-operator-'.$this->production->id);
+        ->and($operativePosition->roles()->pluck('name')->all())->toContain('production-operator-'.$this->production->id)
+        ->and($preparerPosition->roles()->pluck('name')->all())->toContain('production-preparer-'.$this->production->id)
+        ->and(Role::where('name', 'production-preparer-'.$this->production->id)->first()->permissions()->pluck('name')->all())
+        ->toEqualCanonicalizing(['productions_operations.'.$this->production->id.'.view', 'productions_operations.'.$this->production->id.'.prepare']);
 
     $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
     $modelData['worker_number']   = 'W'.rand(1000, 9999);

@@ -60,6 +60,7 @@ class StoreJobOrdersForMixes extends OrgAction
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
+            "productions_operations.{$this->production->id}.prepare",
         ]);
     }
 

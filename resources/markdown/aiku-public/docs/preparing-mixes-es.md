@@ -45,7 +45,7 @@ Marca las mezclas que hay que preparar, ajusta la cantidad si la falta no coinci
 
 ## Qué hace el preparador
 
-El preparador lleva su propia línea, así que tiene el puesto de <b>Production floor supervisor</b> (supervisor de planta) para la fábrica, igual que el planificador. Eso le permite abrir la pestaña Mixes, crear y liberar sus propias órdenes de trabajo y recibirlas en el stock sin esperar a nadie. En la planta trabaja como cualquier artesano: sus tareas aparecen en la pantalla de planta, pulsa START y DONE, y cuando el último paso está hecho, la orden de trabajo se recibe en el stock con un código de hornada. Desde ese momento la mezcla aparece como disponible y los artesanos pueden hacer sus productos.
+El preparador lleva su propia línea, así que tiene el puesto de <b>Mix preparer</b> (preparador de mezclas) para la fábrica. Eso le permite abrir la pestaña Mixes, crear y liberar sus propias órdenes de trabajo y recibirlas en el stock sin esperar a nadie. No puede tocar las órdenes de trabajo dirigidas a otras personas; eso queda para el planificador. En la planta trabaja como cualquier artesano: sus tareas aparecen en la pantalla de planta, pulsa START y DONE, y cuando el último paso está hecho, la orden de trabajo se recibe en el stock con un código de hornada. Desde ese momento la mezcla aparece como disponible y los artesanos pueden hacer sus productos.
 
 Si al preparador no se le paga a destajo, eso es un ajuste de nómina, no un motivo para saltarse la planta. El registro de quién preparó cada hornada y cuándo es lo que da trazabilidad desde el producto terminado hasta sus ingredientes.
 
@@ -68,6 +68,7 @@ Si al preparador no se le paga a destajo, eso es un ajuste de nómina, no un mot
 <ul>
 <li>Los puestos se asignan en la ficha del empleado en Human Resources y llevan los permisos consigo.</li>
 <li>Ver la pestaña Mixes y trabajar en planta: puesto <b>Production operative</b> (operario) para la fábrica, o superior.</li>
-<li>Crear, liberar y recibir órdenes de trabajo, y enlazar una materia prima con su artefacto: puesto <b>Production floor supervisor</b> (supervisor de planta) para la fábrica, o supervisor de la organización. El preparador necesita este.</li>
+<li>Crear órdenes de trabajo de mezclas y liberar y recibir las propias: puesto <b>Mix preparer</b> (preparador de mezclas) para la fábrica. El preparador necesita este.</li>
+<li>Todo lo demás, incluidas las órdenes de trabajo de otras personas y enlazar una materia prima con su artefacto: puesto <b>Production floor supervisor</b> (supervisor de planta) para la fábrica, o supervisor de la organización.</li>
 </ul>
 </aside>

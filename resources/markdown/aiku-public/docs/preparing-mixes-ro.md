@@ -45,7 +45,7 @@ Bifează amestecurile de preparat, ajustează cantitatea dacă lipsa nu e chiar 
 
 ## Ce face preparatorul
 
-Preparatorul își conduce propria linie, așa că are poziția <b>Production floor supervisor</b> (supervizor de hală) pentru fabrică, la fel ca planificatorul. Asta îi permite să deschidă fila Mixes, să creeze și să trimită propriile ordine de lucru și să le recepționeze în stoc, fără să aștepte pe nimeni. În hală lucrează ca orice artizan: sarcinile lui apar pe ecranul halei, apasă START și DONE, și când ultimul pas e gata, ordinul de lucru e recepționat în stoc cu un cod de lot. Din acel moment amestecul apare ca fiind în stoc și artizanii pot face produsele lor.
+Preparatorul își conduce propria linie, așa că are poziția <b>Mix preparer</b> (preparator de amestecuri) pentru fabrică. Asta îi permite să deschidă fila Mixes, să creeze și să trimită propriile ordine de lucru și să le recepționeze în stoc, fără să aștepte pe nimeni. Nu poate umbla la ordinele de lucru adresate altor persoane; acelea rămân la planificator. În hală lucrează ca orice artizan: sarcinile lui apar pe ecranul halei, apasă START și DONE, și când ultimul pas e gata, ordinul de lucru e recepționat în stoc cu un cod de lot. Din acel moment amestecul apare ca fiind în stoc și artizanii pot face produsele lor.
 
 Dacă preparatorul nu e plătit cu bucata, asta e o setare de salarizare, nu un motiv să sară peste hală. Înregistrarea cine a preparat ce lot și când este ceea ce oferă trasabilitatea de la produsul finit înapoi la ingredientele lui.
 
@@ -68,6 +68,7 @@ Dacă preparatorul nu e plătit cu bucata, asta e o setare de salarizare, nu un 
 <ul>
 <li>Pozițiile se setează pe fișa angajatului în Human Resources și aduc cu ele drepturile.</li>
 <li>Vizualizarea filei Mixes și lucrul în hală: poziția <b>Production operative</b> (operator) pentru fabrică, sau mai sus.</li>
-<li>Crearea, trimiterea și recepționarea ordinelor de lucru, și legarea unei materii prime de artefactul ei: poziția <b>Production floor supervisor</b> (supervizor de hală) pentru fabrică, sau supervizor de organizație. Preparatorul are nevoie de aceasta.</li>
+<li>Crearea ordinelor de lucru pentru amestecuri și trimiterea și recepționarea celor proprii: poziția <b>Mix preparer</b> (preparator de amestecuri) pentru fabrică. Preparatorul are nevoie de aceasta.</li>
+<li>Tot restul, inclusiv ordinele de lucru ale altor persoane și legarea unei materii prime de artefactul ei: poziția <b>Production floor supervisor</b> (supervizor de hală) pentru fabrică, sau supervizor de organizație.</li>
 </ul>
 </aside>

@@ -21,16 +21,21 @@ use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowJobOrder extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
+        $jobOrder      = $request->route('jobOrder');
+        $isOwnJobOrder = $jobOrder instanceof JobOrder && $jobOrder->employee_id
+            && $jobOrder->employee_id == GetUserCurrentEmployee::run($request->user(), $this->organisation->id)?->id;
+
         $this->canEdit = $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
-        ]);
+        ]) || ($isOwnJobOrder && $request->user()->authTo("productions_operations.{$this->production->id}.prepare"));
 
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,

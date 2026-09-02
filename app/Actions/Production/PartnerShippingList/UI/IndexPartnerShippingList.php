@@ -42,6 +42,7 @@ class IndexPartnerShippingList extends OrgAction
             'productions-view.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.view",
             "productions_operations.{$this->production->id}.orchestrate",
+            "productions_operations.{$this->production->id}.prepare",
             "productions_procurement.{$this->production->id}.view",
         ]);
     }

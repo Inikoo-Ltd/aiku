@@ -45,7 +45,7 @@ Tick the mixes to prepare, adjust the quantity if the shortfall is not the right
 
 ## What the preparer does
 
-The preparer runs their own line, so they hold the <b>Production floor supervisor</b> position for the factory, the same as the planner. That lets them open the Mixes tab, create and release their own job orders, and receive them into stock, without waiting for anyone. On the floor they work like any artisan: their tasks appear on the floor screen, they press START and DONE, and when the last step is done the job order is received into stock with a batch code. From that moment the mix shows as on hand and the artisans' products can be made.
+The preparer runs their own line, so they hold the <b>Mix preparer</b> position for the factory. That lets them open the Mixes tab, create and release their own job orders, and receive them into stock, without waiting for anyone. They cannot touch job orders addressed to other people; that stays with the planner. On the floor they work like any artisan: their tasks appear on the floor screen, they press START and DONE, and when the last step is done the job order is received into stock with a batch code. From that moment the mix shows as on hand and the artisans' products can be made.
 
 If the preparer is not paid by piece rate, that is a payroll setting, not a reason to skip the floor. The record of who prepared which batch and when is what gives traceability from the finished product back to its ingredients.
 
@@ -68,6 +68,7 @@ If the preparer is not paid by piece rate, that is a payroll setting, not a reas
 <ul>
 <li>Positions are set on the employee record under Human Resources and carry the rights with them.</li>
 <li>Seeing the Mixes tab and working the floor: <b>Production operative</b> for the factory, or above.</li>
-<li>Creating, releasing and receiving job orders, and linking a raw material to its artefact: <b>Production floor supervisor</b> for the factory, or organisation supervisor. The preparer needs this one.</li>
+<li>Creating mix job orders and releasing and receiving your own: <b>Mix preparer</b> for the factory. The preparer needs this one.</li>
+<li>Everything else, including other people's job orders and linking a raw material to its artefact: <b>Production floor supervisor</b> for the factory, or organisation supervisor.</li>
 </ul>
 </aside>
