@@ -94,6 +94,8 @@ class PlatformResponseFormatter
         'incorrect decimal placement'        => 'TikTok rejected the number of decimals on the price. Check the price of this product in AW, then upload again.',
         'field is required as you'           => 'TikTok wants a follow-up answer to one of the category attributes, both named in the message. Fill it in for this product in TikTok Shop Seller Center, then upload again.',
         'seller is inactived'                => 'TikTok has this shop marked as inactive, so it will not accept products. Check the shop status in TikTok Shop Seller Center.',
+        'create a seller account'            => 'eBay will not list anything until your seller account is finished. Sign in to eBay and complete the remaining registration details, usually billing and identity, then upload again.',
+        'nothing to publish'                 => 'Publishing only works once the product exists on the channel. Upload the product first and fix whatever error the upload reports.',
         'mainimages is a required field'     => 'This product has no image. Add at least one image in AW, then upload again.',
         'must be at least 300:300'           => 'One of the product images is too small for TikTok. Replace it in AW with an image of at least 300 by 300 pixels, then upload again.',
         'manufacturer is required'           => 'TikTok requires a manufacturer for this category. Add one in TikTok Shop Seller Center under compliance, then upload again.',

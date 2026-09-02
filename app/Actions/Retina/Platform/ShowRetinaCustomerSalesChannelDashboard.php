@@ -125,6 +125,8 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                     ]
                 ]
             ],
+            'ebay_registration_notice' => $customerSalesChannel->platform->type == PlatformTypeEnum::EBAY
+                && Arr::get($customerSalesChannel->user?->data, 'seller_registration_completed') === false,
             'ebay_seller_notice'      => $customerSalesChannel->platform->type == PlatformTypeEnum::EBAY && !in_array('ebay_seller', Arr::get($customerSalesChannel->settings, 'dismissed_notices', [])) ? [
                 'dismiss_route' => [
                     'name'       => 'retina.models.customer_sales_channel.dismiss_notice',

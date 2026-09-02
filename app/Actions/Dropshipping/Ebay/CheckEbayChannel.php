@@ -23,6 +23,7 @@ class CheckEbayChannel
 {
     use asAction;
     use WithActionUpdate;
+    use WithEbaySellerRegistration;
 
     public function handle(EbayUser $ebayUser): CustomerSalesChannel
     {
@@ -56,6 +57,8 @@ class CheckEbayChannel
             $canConnectToPlatform = true;
             $existInPlatform = true;
             $step = EbayUserStepEnum::AUTH;
+
+            $this->refreshEbaySellerRegistration($ebayUser);
 
             if ($ebayUser->fulfillment_policy_id && $ebayUser->return_policy_id && $ebayUser->payment_policy_id && $ebayUser->hasUsableLocationKey()) {
                 $step = EbayUserStepEnum::COMPLETED;
