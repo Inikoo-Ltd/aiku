@@ -11,6 +11,7 @@ namespace App\Actions\Search;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\WebsiteSearchLog;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -32,6 +33,7 @@ class PurgeStaffWebsiteSearchLogs
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $command->info('Deleted '.$this->handle().' staff search logs');
 
         return 0;
