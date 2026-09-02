@@ -3082,6 +3082,19 @@ describe('partner shopping list', function () {
         expect(PartnerShoppingListItem::find($item->id))->toBeNull();
     });
 
+    test('delete all open partner shopping list items keeps items already taken', function () {
+        $open  = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        $taken = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 7]);
+        $taken->update(['state' => ShoppingListItemStateEnum::ORDERED]);
+
+        actingAs($this->adminGuest->getUser());
+        $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy_open', [$this->organisation->slug, $this->orgPartner->id]))
+            ->assertRedirect();
+
+        expect(PartnerShoppingListItem::find($open->id))->toBeNull()
+            ->and(PartnerShoppingListItem::find($taken->id))->not->toBeNull();
+    });
+
 });
 
 describe('partner browse', function () {
