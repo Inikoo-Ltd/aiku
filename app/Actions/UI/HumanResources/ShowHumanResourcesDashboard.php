@@ -207,7 +207,7 @@ class ShowHumanResourcesDashboard extends OrgAction
                 ],
                 'quickActions'  => [
                     [
-                        'label' => __('Create employee'),
+                        'label' => __('New employee'),
                         'icon'  => ['fal', 'fa-user-plus'],
                         'route' => [
                             'name'       => 'grp.org.hr.employees.create',
@@ -215,7 +215,8 @@ class ShowHumanResourcesDashboard extends OrgAction
                         ],
                     ],
                     [
-                        'label' => __('Record leave (sick, annual...)'),
+                        'label' => __('Record leave'),
+                        'hint'  => __('sick, annual…'),
                         'icon'  => ['fal', 'fa-notes-medical'],
                         'route' => [
                             'name'       => 'grp.org.hr.leaves.index',

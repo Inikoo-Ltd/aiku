@@ -76,6 +76,7 @@ interface PersonRow {
 
 interface QuickAction {
 	label: string
+	hint?: string
 	icon: [string, string]
 	route: { name: string; parameters: Record<string, unknown> }
 }
@@ -296,16 +297,16 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 			</div>
 		</div>
 
-		<div class="flex shrink-0 flex-col overflow-hidden rounded-xl bg-white px-4 py-4 shadow-sm ring-1 ring-gray-100 xl:w-64">
-			<h3 class="mb-2.5 text-sm font-semibold text-gray-700">{{ trans("Quick actions") }}</h3>
-			<div class="flex flex-col gap-2">
+		<div class="flex shrink-0 flex-col overflow-hidden justify-center rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-100 xl:w-[30rem]">
+			<div class="grid grid-cols-2 gap-2">
 				<Link
 					v-for="action in quickActions"
 					:key="action.label"
 					:href="route(action.route.name, action.route.parameters)"
-					class="flex items-center gap-2.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-100 hover:text-indigo-900">
+					class="flex min-w-0 items-center gap-2 whitespace-nowrap rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-100 hover:text-indigo-900">
 					<FontAwesomeIcon :icon="action.icon" class="text-indigo-500" fixed-width />
 					{{ action.label }}
+					<span v-if="action.hint" class="truncate text-xs font-normal text-indigo-400">{{ action.hint }}</span>
 				</Link>
 			</div>
 		</div>
@@ -313,7 +314,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 
 	<!-- Today's attendance (full width) -->
 	<div class="mt-6 px-4 pb-6">
-		<div class="bg-white shadow-sm rounded-lg p-4">
+		<div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-100 p-4">
 			<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
 				<div>
 					<h2 class="text-lg font-bold text-gray-800">
@@ -341,7 +342,8 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 						showIcon
 						iconDisplay="input"
 						:maxDate="maxDate"
-						class="w-44"
+						size="small"
+						class="w-36 text-sm"
 						@update:modelValue="onDatePicked" />
 					<button
 						type="button"
@@ -358,7 +360,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 						@click="goToDate(maxDate)">
 						{{ trans("Today") }}
 					</button>
-					<span class="inline-flex items-center rounded-full bg-green-100 px-3 py-0.5 text-sm font-medium text-green-800">
+					<span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
 						{{ attendance.length }} {{ trans("present") }}
 					</span>
 				</div>
@@ -465,7 +467,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 
 	<div class="grid grid-cols-1 gap-5 px-4 pb-8 md:grid-cols-2 xl:grid-cols-4">
 		<!-- Leave overview -->
-		<div class="bg-white shadow-sm rounded-lg p-4 flex flex-col">
+		<div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-100 p-4 flex flex-col">
 			<div class="flex items-center justify-between mb-4">
 				<h2 class="text-lg font-bold text-gray-800">{{ trans("Leave overview") }}</h2>
 				<span class="text-xs text-gray-400">{{ trans("This week") }}</span>
@@ -476,7 +478,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 		</div>
 
 		<!-- Employee leaves -->
-		<div class="bg-white shadow-sm rounded-lg p-4 flex flex-col">
+		<div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-100 p-4 flex flex-col">
 			<h2 class="text-lg font-bold text-gray-800 mb-3">{{ trans("Employee leaves") }}</h2>
 			<ul v-if="employeeLeaves.length" class="divide-y divide-gray-100 max-h-64 overflow-y-auto pr-1">
 				<li v-for="leave in employeeLeaves" :key="leave.id" class="flex items-center gap-3 py-2.5">
@@ -495,7 +497,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 		</div>
 
 		<!-- Leave types -->
-		<div class="bg-white shadow-sm rounded-lg p-4 flex flex-col">
+		<div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-100 p-4 flex flex-col">
 			<h2 class="text-lg font-bold text-gray-800 mb-3">{{ trans("Leave types") }}</h2>
 			<div class="relative h-40 w-40 mx-auto shrink-0">
 				<Doughnut v-if="leaveTypes.total > 0" :data="leaveTypesData" :options="leaveTypesOptions" />
@@ -527,7 +529,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 		</div>
 
 		<!-- Birthdays this month (beside Leave types) -->
-		<div class="bg-white shadow-sm rounded-lg p-4 flex flex-col">
+		<div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-100 p-4 flex flex-col">
 			<div class="flex items-center gap-2 mb-3">
 				<FontAwesomeIcon :icon="faBirthdayCake" class="text-pink-500" fixed-width />
 				<h2 class="text-lg font-bold text-gray-800">{{ trans("Birthdays this month") }}</h2>
