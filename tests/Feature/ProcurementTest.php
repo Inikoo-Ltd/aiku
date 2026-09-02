@@ -3362,9 +3362,9 @@ test('UI partner shipping list index', function () {
 });
 
 test('UI to produce list grouped by artisan, family and for', function () {
-    $production = Production::first();
+    $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
 
-    foreach (['by_artisan' => 'maker', 'by_family' => 'family', 'by_for' => 'buyer_code'] as $routeSuffix => $groupBy) {
+    foreach (['by_artisan' => 'maker', 'by_category' => 'family', 'by_for' => 'buyer_code'] as $routeSuffix => $groupBy) {
         $this->get(route('grp.org.productions.show.partners.'.$routeSuffix, [$this->organisation->slug, $production->slug]))
             ->assertInertia(function (AssertableInertia $page) use ($groupBy) {
                 $page

@@ -64,7 +64,7 @@ Route::prefix('{production}')
                     ->group(function () {
                         Route::get('', IndexPartnerShippingList::class)->name('index');
                         Route::get('by-artisan', [IndexPartnerShippingList::class, 'byArtisan'])->name('by_artisan');
-                        Route::get('by-family', [IndexPartnerShippingList::class, 'byFamily'])->name('by_family');
+                        Route::get('by-category', [IndexPartnerShippingList::class, 'byFamily'])->name('by_category');
                         Route::get('for', [IndexPartnerShippingList::class, 'byFor'])->name('by_for');
                         Route::post('cherry-pick', CherryPickPartnerShoppingListItems::class)->name('cherry_pick');
                         Route::post('orders/{order}/send-to-warehouse', SendPartnerOrderToWarehouse::class)->name('send_to_warehouse');
