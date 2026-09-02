@@ -580,7 +580,10 @@ task('deploy:cleanup', function () {
     foreach (array_slice(get('releases_list'), $keep) as $release) {
         $path = '{{deploy_path}}/releases/'.$release;
         $busy = trim(run("bash -c 'ls -l /proc/*/cwd 2>/dev/null | grep -c \"$(readlink -f $path)\"' || true"));
-        if ($busy !== '0' && $busy !== '') {
+        // ponytail: Inertia SSR (node/bun) has cwd / but lazy-loads chunks from the release
+        // named on its command line; [r] keeps pgrep from matching this very shell.
+        $ssrBusy = trim(run("bash -c 'pgrep -fc \"[r]eleases/$release/bootstrap/ssr/\"' || true"));
+        if (($busy !== '0' && $busy !== '') || ($ssrBusy !== '0' && $ssrBusy !== '')) {
             writeln("<comment>Keeping release $release: $busy process(es) still running from it.</comment>");
             continue;
         }
