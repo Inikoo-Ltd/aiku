@@ -48,6 +48,11 @@ class BlogPosts
             'notice' => 'Preložené pre pohodlie. V prípade rozdielov platí anglická verzia.',
             'stale'  => 'Anglický originál sa od tohto prekladu zmenil. Platí anglická verzia.',
         ],
+        'ro' => [
+            'name'   => 'Română',
+            'notice' => 'Tradus pentru comoditate. În caz de diferențe, versiunea în engleză prevalează.',
+            'stale'  => 'Originalul în engleză s-a schimbat de la această traducere. Versiunea în engleză prevalează.',
+        ],
     ];
 
     /**

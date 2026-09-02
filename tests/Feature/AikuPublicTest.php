@@ -281,7 +281,7 @@ test('docs index and article render with layout nav', function () {
 });
 
 test('production docs render and paint the production island', function () {
-    foreach (['fulfilling-partner-orders' => 'To produce', 'who-makes-what' => 'Usually made by'] as $slug => $text) {
+    foreach (['fulfilling-partner-orders' => 'To produce', 'who-makes-what' => 'Usually made by', 'preparing-mixes' => 'Made in-house as', 'preparing-mixes-ro' => 'Made in-house as'] as $slug => $text) {
         get($this->host.'/docs/'.$slug)->assertOk()->assertSee($text, false);
     }
     get($this->host.'/docs?category=production')->assertOk()->assertSee('/docs/who-makes-what', false);
