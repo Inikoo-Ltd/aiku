@@ -72,7 +72,7 @@ const chartData = computed(() => ({
 			borderColor: series.clicks.color,
 			borderWidth: 2,
 			pointRadius: 0,
-			tension: 0.3,
+			cubicInterpolationMode: "monotone",
 			yAxisID: "y2",
 		},
 		visible.value.impressions && {
@@ -81,7 +81,7 @@ const chartData = computed(() => ({
 			borderColor: series.impressions.color,
 			borderWidth: 2,
 			pointRadius: 0,
-			tension: 0.3,
+			cubicInterpolationMode: "monotone",
 			yAxisID: "y1",
 		},
 		visible.value.sales && {
@@ -92,7 +92,7 @@ const chartData = computed(() => ({
 			borderWidth: 2,
 			pointRadius: 0,
 			fill: true,
-			tension: 0.3,
+			cubicInterpolationMode: "monotone",
 			yAxisID: "y3",
 		},
 	].filter(Boolean),
