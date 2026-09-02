@@ -16,10 +16,17 @@ class ShowWhatsappTermsAndPolicies
 {
     use AsController;
 
+    public const string EFFECTIVE_DATE = '2026-09-01';
+
+    public static function effectiveDate(): Carbon
+    {
+        return Carbon::parse(self::EFFECTIVE_DATE);
+    }
+
     public function handle(): View
     {
         return view('aiku-public.whatsapp-terms-policies', [
-            'effectiveDate' => Carbon::parse('2026-09-01'),
+            'effectiveDate' => self::effectiveDate(),
             'contactEmail' => 'hello@aiku.io',
         ]);
     }
