@@ -21,5 +21,6 @@ enum AuditEventEnum: string
     case CUSTOMER_NOTE = 'customer_note';
     case MIGRATED = 'migrated';
     case OTHER = 'other';
+    case PUBLISHED = 'published';
 
 }

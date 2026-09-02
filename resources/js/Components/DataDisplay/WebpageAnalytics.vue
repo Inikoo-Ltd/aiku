@@ -1,242 +1,222 @@
 <script setup lang="ts">
-import { reactive, computed, watch, ref } from "vue"
+import { computed, ref } from "vue"
 import Chart from "primevue/chart"
-import DateRangePicker from "@/Components/Utils/ModalDatePicker.vue"
 import { router } from "@inertiajs/vue3"
 import { debounce } from "lodash-es"
+import { trans } from "laravel-vue-i18n"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import Button from "@/Components/Elements/Buttons/Button.vue"
+import { useLocaleStore } from "@/Stores/locale"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faRocketLaunch, faTag } from "@fal"
 
-// Props for incoming data
 const props = defineProps<{
-	data: Array<{
-		clicks: number
-		ctr: number
-		impressions: number
-		keys: string[]
-		position: number
-	}>
+	data: {
+		start_date: string
+		end_date: string
+		currency: string
+		search: Array<{ clicks: number; impressions: number; keys: string[] }>
+		sales: Array<{ date: string; sales: number; orders: number }>
+		events: Array<{ date: string; datetime: string; type: "publish" | "price"; label: string; user: string | null }>
+	}
 }>()
-const optionsTime = { formatTime: "PPP" }
 
-const cardStates = reactive({
-	totalClicks: true,
-	totalImpressions: true,
-})
+const locale = useLocaleStore()
 
-const totalClicks = computed(() => props.data.reduce((sum, item) => sum + item.clicks, 0))
-const totalImpressions = computed(() => props.data.reduce((sum, item) => sum + item.impressions, 0))
-
-const chartData = reactive({
-	labels: props.data.map((item) => item.keys[0]),
-	datasets: [],
-})
-
-// Method to update chart data
-const updateChartData = () => {
-	const datasets = []
-	if (cardStates.totalClicks) {
-		datasets.push({
-			label: "Clicks",
-			data: props.data.map((item) => item.clicks),
-			borderColor: "#4285F4",
-			borderWidth: 2,
-			fill: false,
-			tension: 0.4,
-			yAxisID: "y2",
-		})
-	}
-	if (cardStates.totalImpressions) {
-		datasets.push({
-			label: "Impressions",
-			data: props.data.map((item) => item.impressions),
-			borderColor: "#5E35B1",
-			borderWidth: 2,
-			fill: false,
-			tension: 0.4,
-			yAxisID: "y1",
-		})
-	}
-	chartData.labels = props.data.map((item) => item.keys[0])
-	chartData.datasets = datasets
+const series = {
+	clicks: { label: trans("Clicks"), color: "#4285F4", axis: "y2" },
+	impressions: { label: trans("Impressions"), color: "#5E35B1", axis: "y1" },
+	sales: { label: trans("Sales"), color: "#0F9D58", axis: "y3" },
+}
+const eventStyle = {
+	publish: { label: trans("Page published"), color: "#F4B400", icon: faRocketLaunch },
+	price: { label: trans("Price change"), color: "#DB4437", icon: faTag },
 }
 
-watch(
-	() => [cardStates.totalClicks, cardStates.totalImpressions],
-	() => {
-		updateChartData()
-	},
-	{ immediate: true }
-)
 
-watch(
-	() => props.data,
-	() => {
-		updateChartData()
-	},
-	{ deep: true, immediate: true }
-)
+const labels = computed(() => {
+	const days: string[] = []
+	for (let day = new Date(props.data.start_date); day <= new Date(props.data.end_date); day.setDate(day.getDate() + 1)) {
+		days.push(day.toISOString().slice(0, 10))
+	}
+	return days
+})
 
-const getChartOptions = (dateRangeLength ) => ({
+const byDate = <T extends { [key: string]: any }>(rows: T[], dateKey: string) =>
+	Object.fromEntries(rows.map((row) => [row[dateKey], row]))
+
+const searchRows = computed(() => Object.fromEntries((props.data.search ?? []).map((row) => [row.keys[0], row])))
+const salesRows = computed(() => byDate(props.data.sales ?? [], "date"))
+
+const totals = computed(() => ({
+	clicks: (props.data.search ?? []).reduce((sum, row) => sum + row.clicks, 0),
+	impressions: (props.data.search ?? []).reduce((sum, row) => sum + row.impressions, 0),
+	sales: (props.data.sales ?? []).reduce((sum, row) => sum + row.sales, 0),
+}))
+
+const visible = ref({ clicks: totals.value.clicks > 0, impressions: totals.value.impressions > 0, sales: true })
+
+const eventsByDate = computed(() => {
+	const grouped: Record<string, typeof props.data.events> = {}
+	for (const event of props.data.events ?? []) {
+		;(grouped[event.date] ??= []).push(event)
+	}
+	return grouped
+})
+
+const chartData = computed(() => ({
+	labels: labels.value,
+	datasets: [
+		visible.value.clicks && {
+			label: series.clicks.label,
+			data: labels.value.map((day) => searchRows.value[day]?.clicks ?? 0),
+			borderColor: series.clicks.color,
+			borderWidth: 2,
+			pointRadius: 0,
+			tension: 0.3,
+			yAxisID: "y2",
+		},
+		visible.value.impressions && {
+			label: series.impressions.label,
+			data: labels.value.map((day) => searchRows.value[day]?.impressions ?? 0),
+			borderColor: series.impressions.color,
+			borderWidth: 2,
+			pointRadius: 0,
+			tension: 0.3,
+			yAxisID: "y1",
+		},
+		visible.value.sales && {
+			label: series.sales.label,
+			data: labels.value.map((day) => salesRows.value[day]?.sales ?? 0),
+			borderColor: series.sales.color,
+			backgroundColor: "#0F9D5822",
+			borderWidth: 2,
+			pointRadius: 0,
+			fill: true,
+			tension: 0.3,
+			yAxisID: "y3",
+		},
+	].filter(Boolean),
+}))
+
+const eventMarkers = {
+	id: "eventMarkers",
+	afterDatasetsDraw(chart: any) {
+		const { ctx, chartArea, scales } = chart
+		for (const [date, events] of Object.entries(eventsByDate.value)) {
+			const index = labels.value.indexOf(date)
+			if (index < 0) continue
+			const x = scales.x.getPixelForValue(index)
+			const types = [...new Set(events.map((event) => event.type))]
+			types.forEach((type, position) => {
+				ctx.save()
+				ctx.strokeStyle = eventStyle[type].color
+				ctx.lineWidth = 1.5
+				ctx.setLineDash(type === "price" ? [4, 3] : [])
+				ctx.beginPath()
+				ctx.moveTo(x, chartArea.top)
+				ctx.lineTo(x, chartArea.bottom)
+				ctx.stroke()
+				ctx.fillStyle = eventStyle[type].color
+				ctx.beginPath()
+				ctx.arc(x, chartArea.top + 6 + position * 12, 4, 0, Math.PI * 2)
+				ctx.fill()
+				ctx.restore()
+			})
+		}
+	},
+}
+
+const chartOptions = computed(() => ({
 	responsive: true,
 	maintainAspectRatio: false,
+	interaction: { mode: "index", intersect: false },
 	plugins: {
 		legend: { display: false },
 		tooltip: {
-			enabled: true,
-			mode: "index",
-			intersect: false,
-			callbacks: {
-				title: (tooltipItems) => {
-					const date = tooltipItems[0].label
-					const options = {
-						weekday: "long",
-						year: "numeric",
-						month: "short",
-						day: "numeric",
-					}
-					return new Date(date).toLocaleDateString("en-US", options)
-				},
-				label: (tooltipItem) => {
-					const label = tooltipItem.dataset.label || ""
-					const value = tooltipItem.raw.toLocaleString()
-					return `${label}: ${value}`
-				},
-			},
 			backgroundColor: "#fff",
-			titleColor: "#333",
-			bodyColor: "#555",
-			borderColor: "#ddd",
+			titleColor: "#111827",
+			bodyColor: "#374151",
+			borderColor: "#d1d5db",
 			borderWidth: 1,
 			padding: 10,
-			cornerRadius: 4,
-			displayColors: true,
+			callbacks: {
+				title: (items: any[]) => useFormatTime(items[0].label, { formatTime: "PPP" }),
+				label: (item: any) =>
+					item.dataset.yAxisID === "y3"
+						? `${item.dataset.label}: ${locale.currencyFormat(props.data.currency, item.raw)}`
+						: `${item.dataset.label}: ${item.raw.toLocaleString()}`,
+				afterBody: (items: any[]) => (eventsByDate.value[items[0].label] ?? []).map((event) => `• ${eventStyle[event.type].label}: ${event.label}`),
+			},
 		},
 	},
 	scales: {
-		x: {
-			grid: { display: false },
-			ticks: {
-				color: "#6b7280",
-				font: { size: 12 },
-				autoSkip: true, 
-				maxTicksLimit: dateRangeLength > 30 ? Math.floor(dateRangeLength / 7) : 10,
-			},
-		},
-		y1: {
-			type: "linear",
-			position: "left",
-			grid: { color: "#EDE7F6" },
-			ticks: { color: "#5E35B1", font: { size: 12 }, stepSize: 50 },
-			title: {
-				display: true,
-				text: "Impressions",
-				color: "#5E35B1",
-				font: { size: 14 },
-			},
-		},
-		y2: {
-			type: "linear",
-			position: "right",
-			grid: { drawOnChartArea: false },
-			ticks: { color: "#4285F4", font: { size: 12 }, stepSize: 1 },
-			title: {
-				display: true,
-				text: "Clicks",
-				color: "#4285F4",
-				font: { size: 14 },
-			},
-		},
+		x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, color: "#6b7280" } },
+		y1: { type: "linear", position: "left", display: visible.value.impressions, grid: { color: "#EDE7F6" }, ticks: { color: series.impressions.color }, beginAtZero: true },
+		y2: { type: "linear", position: "right", display: visible.value.clicks, grid: { drawOnChartArea: false }, ticks: { color: series.clicks.color, precision: 0 }, beginAtZero: true },
+		y3: { type: "linear", position: "right", display: visible.value.sales, grid: { drawOnChartArea: false }, ticks: { color: series.sales.color }, beginAtZero: true },
 	},
-})
+}))
 
-const showDateRangePicker = ref(false)
-const selectedDateRange = ref<{ startDate: Date; endDate: Date } | null>(null)
+const range = ref({ startDate: props.data.start_date, endDate: props.data.end_date })
 
-const debouncedReloadData = debounce((endDate: string, startDate: string) => {
-	router.reload({
-		data: { endDate, startDate },
-		only: ["analytics"],
-		onSuccess: () => {
-			updateChartData()
-		},
-	})
-}, 500)
+const reload = debounce(() => {
+	router.reload({ data: { startDate: range.value.startDate, endDate: range.value.endDate }, only: ["analytics"] })
+}, 400)
 
-const handleDateRangeSelected = (range) => {
-	selectedDateRange.value = range
-
-	debouncedReloadData(
-		range.endDate.toLocaleDateString("fr-CA"),
-		range.startDate.toLocaleDateString("fr-CA")
-	)
-}
+const formatTotal = (key: keyof typeof series) =>
+	key === "sales" ? locale.currencyFormat(props.data.currency, totals.value.sales) : totals.value[key].toLocaleString()
 </script>
 
 <template>
-	<div class="p-8 space-y-8">
-
-
-		<div v-if="selectedDateRange" class="mt-4 text-center text-gray-700">
-			<p class="text-sm font-medium">
-				Selected Date Range:
-				<span class="font-semibold text-blue-600">
-					{{ useFormatTime(selectedDateRange.startDate, optionsTime) }} -
-					{{ useFormatTime(selectedDateRange.endDate, optionsTime) }}
+	<div class="p-6 space-y-6">
+		<div class="flex flex-wrap items-center gap-3 text-sm">
+			<label class="flex items-center gap-2">
+				<span class="text-gray-500">{{ trans("From") }}</span>
+				<input type="date" v-model="range.startDate" :max="range.endDate" class="rounded border-gray-300 text-sm" @change="reload" />
+			</label>
+			<label class="flex items-center gap-2">
+				<span class="text-gray-500">{{ trans("To") }}</span>
+				<input type="date" v-model="range.endDate" :min="range.startDate" class="rounded border-gray-300 text-sm" @change="reload" />
+			</label>
+			<div class="ml-auto flex items-center gap-4 text-xs text-gray-500">
+				<span v-for="(style, type) in eventStyle" :key="type" class="flex items-center gap-1">
+					<span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: style.color }" />
+					{{ style.label }}
 				</span>
-			</p>
+			</div>
 		</div>
 
-		<div class="p-8 rounded-lg shadow bg-white space-y-6">
-			<!-- Cards Section -->
-			<div class="grid grid-cols-4 gap-6">
-				<!-- Card: Total Clicks -->
-				<div
-					:class="[
-						cardStates.totalClicks
-							? 'bg-[#4285F4] text-white'
-							: 'bg-white text-[#4285F4] border border-[#4285F4]',
-					]"
-					class="relative p-5 rounded-lg shadow cursor-pointer flex items-center transition-colors duration-200"
-					@click="cardStates.totalClicks = !cardStates.totalClicks">
-					<input
-						type="checkbox"
-						class="absolute top-2 right-2 h-4 w-4 rounded border-gray-300 focus:ring-[#4285F4]"
-						v-model="cardStates.totalClicks" />
-					<div>
-						<div class="text-xs">Total Clicks</div>
-						<div class="text-lg font-semibold">{{ totalClicks }}</div>
-					</div>
-				</div>
-
-				<!-- Card: Total Impressions -->
-				<div
-					:class="[
-						cardStates.totalImpressions
-							? 'bg-[#5E35B1] text-white'
-							: 'bg-white text-[#5E35B1] border border-[#5E35B1]',
-					]"
-					class="relative p-5 rounded-lg shadow cursor-pointer flex items-center transition-colors duration-200"
-					@click="cardStates.totalImpressions = !cardStates.totalImpressions">
-					<input
-						type="checkbox"
-						class="absolute top-2 right-2 h-4 w-4 rounded border-gray-300 focus:ring-[#5E35B1]"
-						v-model="cardStates.totalImpressions" />
-					<div>
-						<div class="text-xs">Total Impressions</div>
-						<div class="text-lg font-semibold">{{ totalImpressions }}</div>
-					</div>
-				</div>
+		<div class="rounded-lg bg-white p-6 shadow space-y-6">
+			<div class="grid grid-cols-3 gap-4">
+				<button
+					v-for="(meta, key) in series"
+					:key="key"
+					type="button"
+					class="rounded-lg border p-4 text-left transition-colors"
+					:class="visible[key] ? 'text-white' : 'bg-white'"
+					:style="visible[key] ? { backgroundColor: meta.color, borderColor: meta.color } : { color: meta.color, borderColor: meta.color }"
+					@click="visible[key] = !visible[key]">
+					<div class="text-xs">{{ meta.label }}</div>
+					<div class="text-lg font-semibold">{{ formatTotal(key) }}</div>
+				</button>
 			</div>
 
-			<!-- Chart -->
-			<div>
-				<div class="relative h-96 w-full">
-					<Chart type="line" :data="chartData" :options="getChartOptions()" />
-				</div>
+			<div class="relative h-96 w-full">
+				<Chart type="line" class="h-full" :data="chartData" :options="chartOptions" :plugins="[eventMarkers]" />
 			</div>
+		</div>
+
+		<div class="rounded-lg bg-white shadow">
+			<div class="border-b px-6 py-3 text-sm font-semibold">{{ trans("Changes in this period") }}</div>
+			<div v-if="!data.events?.length" class="px-6 py-6 text-sm text-gray-500">{{ trans("No changes to this page in the selected period") }}</div>
+			<ul v-else class="divide-y">
+				<li v-for="event in data.events" :key="event.datetime" class="flex items-center gap-3 px-6 py-2 text-sm">
+					<FontAwesomeIcon :icon="eventStyle[event.type].icon" :style="{ color: eventStyle[event.type].color }" fixed-width />
+					<span class="w-44 shrink-0 text-gray-500">{{ useFormatTime(event.datetime, { formatTime: "PPp" }) }}</span>
+					<span class="flex-1">{{ event.label }}</span>
+					<span class="text-gray-500">{{ event.user ?? trans("System") }}</span>
+				</li>
+			</ul>
 		</div>
 	</div>
 </template>
-
-<style scoped></style>

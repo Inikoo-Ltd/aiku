@@ -5,7 +5,7 @@ import { useLayoutStore } from "@/Stores/retinaLayout";
 import { faPlus, faMinus } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowRight, faPlusCircle, faPenSquare, faTrashAlt, faUndo, faExchange } from '@fal';
+import { faArrowRight, faPlusCircle, faPenSquare, faTrashAlt, faUndo, faExchange, faRocketLaunch } from '@fal';
 import { trans } from 'laravel-vue-i18n';
 import { useFormatTime } from '@/Composables/useFormatTime';
 import Modal from '@/Components/Utils/Modal.vue';
@@ -17,6 +17,7 @@ const eventIcons: Record<string, any> = {
     deleted: faTrashAlt,
     restored: faUndo,
     migration: faExchange,
+    published: faRocketLaunch,
 };
 
 const describeAgent = (userAgent?: string): string => {
