@@ -32,6 +32,21 @@ class StoreWixOrder extends RetinaAction
     use WithPayAndSubmitOrder;
 
     /**
+     * Where an order is going, in the order the sources are worth trusting.
+     *
+     * `recipientInfo` is who ultimately receives the order, which is what we deliver to.
+     * `shippingInfo.logistics.shippingDestination` is the address the shipping method points
+     * at, so it is the pickup point rather than the buyer whenever a pickup method was chosen,
+     * and Wix leaves it out entirely on orders carrying no shipping method. Billing is the last
+     * resort, being the payer rather than the recipient.
+     */
+    private const array DESTINATION_PATHS = [
+        'recipientInfo',
+        'shippingInfo.logistics.shippingDestination',
+        'billingInfo',
+    ];
+
+    /**
      * @throws \Throwable
      */
     public function handle(WixUser $wixUser, array $wixOrder): void
@@ -74,7 +89,7 @@ class StoreWixOrder extends RetinaAction
      */
     public function digestWixCustomerClient(WixUser $wixUser, array $wixOrder): CustomerClient
     {
-        $contact   = Arr::get($wixOrder, 'shippingInfo.logistics.shippingDestination.contactDetails', []);
+        $contact   = $this->digestWixContactDetails($wixOrder);
         $email     = Arr::get($wixOrder, 'buyerInfo.email');
         $name      = trim(Arr::get($contact, 'firstName', '').' '.Arr::get($contact, 'lastName', ''));
         $reference = trim($name.' '.$email);
@@ -105,7 +120,7 @@ class StoreWixOrder extends RetinaAction
 
     public function digestWixAddress(array $wixOrder): Address
     {
-        $wixAddress = Arr::get($wixOrder, 'shippingInfo.logistics.shippingDestination.address', []);
+        $wixAddress = $this->digestWixDestination($wixOrder, 'address');
 
         $country = Country::where('code', Arr::get($wixAddress, 'country'))->first();
 
@@ -114,8 +129,8 @@ class StoreWixOrder extends RetinaAction
         }
 
         return new Address([
-            'address_line_1'      => Arr::get($wixAddress, 'addressLine') ?: Arr::get($wixAddress, 'streetAddress.name'),
-            'address_line_2'      => Arr::get($wixAddress, 'addressLine2'),
+            'address_line_1'      => Arr::get($wixAddress, 'addressLine') ?: $this->digestWixStreetAddress($wixAddress),
+            'address_line_2'      => Arr::get($wixAddress, 'addressLine2') ?: Arr::get($wixAddress, 'streetAddress.apt'),
             'sorting_code'        => null,
             'postal_code'         => Arr::get($wixAddress, 'postalCode'),
             'dependent_locality'  => null,
@@ -124,6 +139,37 @@ class StoreWixOrder extends RetinaAction
             'country_code'        => $country->code,
             'country_id'          => $country->id
         ]);
+    }
+
+    public function digestWixContactDetails(array $wixOrder): array
+    {
+        return $this->digestWixDestination($wixOrder, 'contactDetails');
+    }
+
+    private function digestWixDestination(array $wixOrder, string $key): array
+    {
+        foreach (self::DESTINATION_PATHS as $path) {
+            $value = Arr::get($wixOrder, $path.'.'.$key);
+
+            if (is_array($value) && filled($value)) {
+                return $value;
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Wix splits a street into its parts when the buyer picked the address from its autocomplete
+     * rather than typing it, and a delivery without the house number is a delivery that fails.
+     */
+    private function digestWixStreetAddress(array $wixAddress): ?string
+    {
+        $street = trim(
+            Arr::get($wixAddress, 'streetAddress.number', '').' '.Arr::get($wixAddress, 'streetAddress.name', '')
+        );
+
+        return $street ?: null;
     }
 
     public function digestWixProducts(WixUser $wixUser, array $wixOrder): array
