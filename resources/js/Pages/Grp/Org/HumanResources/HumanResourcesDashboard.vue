@@ -61,7 +61,17 @@ interface StatCard {
 	stat: number
 	color: string
 	icon: [string, string]
+	key?: string
 	route?: { name: string; parameters: Record<string, unknown> }
+}
+
+interface PersonRow {
+	id: number
+	name: string
+	job_title: string | null
+	avatar: string
+	detail: string | null
+	route: { name: string; parameters: Record<string, unknown> }
 }
 
 interface QuickAction {
@@ -107,6 +117,9 @@ const props = defineProps<{
 	attendanceStats: StatCard[]
 	quickActions: QuickAction[]
 	attendance: AttendanceRow[]
+	show: string | null
+	showRoute: { name: string; parameters: Record<string, unknown> }
+	people: PersonRow[]
 	attendanceDate: AttendanceDate
 	birthdays: BirthdayRow[]
 	leaveOverview: LeaveOverviewDay[]
@@ -141,10 +154,16 @@ const goToDate = (date: Date) => {
 
 	router.get(
 		route(props.attendanceDate.route.name, props.attendanceDate.route.parameters),
-		{ date: dateString },
+		{ date: dateString, ...(props.show ? { show: props.show } : {}) },
 		{ preserveScroll: true, preserveState: true }
 	)
 }
+
+const showPeople = computed(() => ["annual", "sick", "absent"].includes(props.show ?? ""))
+const visibleAttendance = computed(() =>
+	props.show === "late" ? props.attendance.filter((row) => row.is_late) : props.attendance
+)
+const activeCard = computed(() => props.attendanceStats.find((card) => card.key === props.show))
 
 const shiftDay = (days: number) => {
 	const next = parseDateString(props.attendanceDate.date)
@@ -255,16 +274,19 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 			</dl>
 
 			<div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
-				<div
+				<Link
 					v-for="card in attendanceStats"
 					:key="card.name"
-					class="overflow-hidden rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-gray-100">
+					:href="route(card.route.name, card.route.parameters)"
+					preserve-scroll
+					class="overflow-hidden rounded-xl bg-white px-4 py-3 shadow-sm ring-1 transition hover:bg-gray-50"
+					:class="card.key === show ? 'ring-2 ring-indigo-400' : 'ring-gray-100'">
 					<dd class="text-2xl font-bold tracking-tight text-gray-800">{{ card.stat }}</dd>
 					<dt class="mt-0.5 flex items-center gap-1.5 truncate text-sm font-medium text-gray-500">
 						<FontAwesomeIcon :icon="card.icon" :class="iconColors[card.color]?.icon ?? 'text-gray-400'" fixed-width />
 						{{ card.name }}
 					</dt>
-				</div>
+				</Link>
 			</div>
 		</div>
 
@@ -289,7 +311,11 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 			<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
 				<div>
 					<h2 class="text-lg font-bold text-gray-800">
-						{{ attendanceDate.is_today ? trans("Today's attendance") : trans("Attendance") }}
+						<template v-if="activeCard">{{ activeCard.name }}</template>
+						<template v-else>{{ attendanceDate.is_today ? trans("Today's attendance") : trans("Attendance") }}</template>
+						<Link v-if="show" :href="route(showRoute.name, showRoute.parameters)" preserve-scroll class="ml-2 text-xs font-medium text-indigo-600 hover:underline">
+							{{ trans("Show all") }}
+						</Link>
 					</h2>
 					<p class="text-xs text-gray-500">
 						{{ attendanceDate.label }} · {{ trans("earliest arrivals first") }}
@@ -332,7 +358,39 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 				</div>
 			</div>
 
-			<div class="overflow-x-auto">
+			<div v-if="showPeople" class="overflow-x-auto">
+				<table class="w-full text-sm">
+					<thead>
+						<tr class="text-left text-xs font-medium uppercase tracking-wider text-gray-500 border-b border-gray-200">
+							<th class="py-2 pr-3">{{ trans("Name") }}</th>
+							<th class="py-2 px-3">{{ trans("Details") }}</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-gray-100">
+						<tr v-for="row in people" :key="row.id" class="hover:bg-gray-50">
+							<td class="py-2 pr-3">
+								<div class="flex items-center gap-3">
+									<img :src="row.avatar" :alt="row.name" class="h-9 w-9 rounded-full object-cover bg-gray-100" />
+									<div class="min-w-0">
+										<Link
+											:href="route(row.route.name, row.route.parameters)"
+											class="block font-medium text-gray-900 hover:text-indigo-600 hover:underline truncate">
+											{{ row.name }}
+										</Link>
+										<div class="text-xs text-gray-500 truncate">{{ row.job_title || "—" }}</div>
+									</div>
+								</div>
+							</td>
+							<td class="py-2 px-3 text-gray-500">{{ row.detail || "—" }}</td>
+						</tr>
+						<tr v-if="people.length === 0">
+							<td colspan="2" class="py-10 text-center text-gray-400">{{ trans("No one.") }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div v-else class="overflow-x-auto">
 				<table class="w-full text-sm">
 					<thead>
 						<tr class="text-left text-xs font-medium uppercase tracking-wider text-gray-500 border-b border-gray-200">
@@ -348,7 +406,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-gray-100">
-						<tr v-for="row in attendance" :key="row.id" class="hover:bg-gray-50">
+						<tr v-for="row in visibleAttendance" :key="row.id" class="hover:bg-gray-50">
 							<td class="py-2 pr-3">
 								<div class="flex items-center gap-3">
 									<img :src="row.avatar" :alt="row.employee_name" class="h-9 w-9 rounded-full object-cover bg-gray-100" />
@@ -386,7 +444,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 							<td class="py-2 px-3 text-center text-gray-700">{{ row.clock_in_count }}</td>
 							<td class="py-2 pl-3 text-center text-gray-700">{{ row.clock_out_count }}</td>
 						</tr>
-						<tr v-if="attendance.length === 0">
+						<tr v-if="visibleAttendance.length === 0">
 							<td colspan="9" class="py-10 text-center text-gray-400">
 								{{ trans("No one has clocked in yet today.") }}
 							</td>
