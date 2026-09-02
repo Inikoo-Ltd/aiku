@@ -97,6 +97,12 @@ const workingHours = ref<{ start: string; end: string } | null>(null)
 const isProcessing = ref(false)
 let successAutoCloseTimer: ReturnType<typeof setTimeout> | null = null
 
+const reloadPage = () => {
+	if (typeof window !== "undefined") {
+		window.location.reload()
+	}
+}
+
 const cancelSuccessAutoClose = () => {
 	if (successAutoCloseTimer) {
 		clearTimeout(successAutoCloseTimer)
@@ -293,7 +299,7 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
 		}
 
 		showSuccessModal.value = true
-		successAutoCloseTimer = setTimeout(() => window.location.reload(), 6000)
+		successAutoCloseTimer = setTimeout(reloadPage, 6000)
 	} catch (e: any) {
 		notify({
 			title: trans("Failed Scan QR"),
@@ -357,7 +363,7 @@ const submitNotes = async () => {
 			type: "success",
 		})
 
-		window.location.reload()
+		reloadPage()
 	} catch (e: any) {
 		notify({
 			title: trans("Failed submit notes"),
@@ -515,7 +521,7 @@ const trackFunction = () => ({
 								() => {
 									cancelSuccessAutoClose()
 									showSuccessModal = false
-									window.location.reload()
+									reloadPage()
 								}
 							"
 							full />

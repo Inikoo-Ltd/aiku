@@ -42,6 +42,7 @@ class PlatformResponseFormatter
         'user_errors',
         'issues',
         'messages',
+        'warnings',
         'data',
         'body',
     ];
@@ -63,6 +64,46 @@ class PlatformResponseFormatter
         'woocommerce_rest_cannot_view'            => 'The account connected to your store is not allowed to read products. Reconnect the channel using an account with read permissions.',
         'woocommerce_rest_authentication_error'   => 'Your store rejected the credentials. Reconnect the channel to generate new ones.',
         'woocommerce_rest_invalid_product_id'     => 'This product no longer exists in your store, upload it again or match it with an existing product.',
+    ];
+
+    /**
+     * TikTok answers with prose written for API developers and never sends an error code, so the
+     * hint is matched on the wording instead. Each one names where the fix lives, because the
+     * split that matters to a customer is whether they change the product in AW or fix a setting
+     * in TikTok Shop Seller Center. Longest, most specific patterns first.
+     */
+    private const MESSAGE_HINTS = [
+        'probation period'                   => 'TikTok limits how many products a new shop may list. This is a TikTok limit, not a problem with your product. Remove listings you no longer need, or ask TikTok to raise your probation tier, then upload again.',
+        'store status is not active'         => 'TikTok accepted the product but will not review it until your shop is fully set up. Finish the outstanding tasks in TikTok Shop Seller Center, then upload again.',
+        'shop has been deactivated'          => 'TikTok has deactivated or closed this shop, so it will not accept products. Contact TikTok Shop support to reactivate it.',
+        'requires a return warehouse'        => 'Your TikTok shop has no return warehouse. Add one in TikTok Shop Seller Center under shipping settings, then upload again.',
+        'does not belong to this shop'       => 'The warehouse saved for this channel belongs to a different TikTok shop. Reconnect the channel in AW so the right warehouse is picked up.',
+        'warehouse does not exist'           => 'Your TikTok shop has no usable warehouse linked. Set a warehouse in TikTok Shop Seller Center, reconnect the channel in AW, then upload again.',
+        'warehouseid of inventory'           => 'Your TikTok shop has no usable warehouse linked. Set a warehouse in TikTok Shop Seller Center, reconnect the channel in AW, then upload again.',
+        'weight of the product cannot be'    => 'TikTok needs a shipping weight. Set the weight of this product in AW, then upload again.',
+        'weight cannot be zero'              => 'TikTok needs a shipping weight. Set the weight of this product in AW, then upload again.',
+        'package weight is invalid'          => 'TikTok rejected the shipping weight of this product. Check the weight in AW is a sensible figure, then upload again.',
+        'package weight: please input'       => 'TikTok rejected the shipping weight of this product. Check the weight in AW is a sensible figure, then upload again.',
+        'category is restricted'             => 'TikTok restricts this product category. Apply for it in the Qualification Center of TikTok Shop Seller Center, then upload again.',
+        'no matching categories'             => 'TikTok could not work out a category from the product name. Give this product a fuller, more descriptive name in AW, then upload again.',
+        'product attribute is missing'       => 'TikTok wants an extra attribute for this category, named at the end of the message. Add it to the product in TikTok Shop Seller Center, then upload again.',
+        'certification is missing'           => 'TikTok requires a certificate for this product category. Upload it in TikTok Shop Seller Center, then upload the product again.',
+        'description is a required field'    => 'This product has no description. Add one in AW, then upload again.',
+        'product description is required'    => 'This product has no description. Add one in AW, then upload again.',
+        'seller sku text length'             => 'The SKU of this product is longer than the 50 characters TikTok allows. Shorten it in AW, then upload again.',
+        'incorrect decimal placement'        => 'TikTok rejected the number of decimals on the price. Check the price of this product in AW, then upload again.',
+        'field is required as you'           => 'TikTok wants a follow-up answer to one of the category attributes, both named in the message. Fill it in for this product in TikTok Shop Seller Center, then upload again.',
+        'seller is inactived'                => 'TikTok has this shop marked as inactive, so it will not accept products. Check the shop status in TikTok Shop Seller Center.',
+        'create a seller account'            => 'eBay will not list anything until your seller account is finished. Sign in to eBay and complete the remaining registration details, usually billing and identity, then upload again.',
+        'nothing to publish'                 => 'Publishing only works once the product exists on the channel. Upload the product first and fix whatever error the upload reports.',
+        'mainimages is a required field'     => 'This product has no image. Add at least one image in AW, then upload again.',
+        'must be at least 300:300'           => 'One of the product images is too small for TikTok. Replace it in AW with an image of at least 300 by 300 pixels, then upload again.',
+        'manufacturer is required'           => 'TikTok requires a manufacturer for this category. Add one in TikTok Shop Seller Center under compliance, then upload again.',
+        'responsible person is required'     => 'TikTok requires a responsible person for this category. Add one in TikTok Shop Seller Center under compliance, then upload again.',
+        'incorrect price'                    => 'The price of this product falls outside the range TikTok allows for your shop. Adjust the price in AW, then upload again.',
+        'request timeout'                    => 'The channel did not answer in time. Nothing is wrong on your side, try again in a few minutes.',
+        'timeout was reached'                => 'The channel did not answer in time. Nothing is wrong on your side, try again in a few minutes.',
+        'internal error'                     => 'The channel hit a problem on its own side. Nothing is wrong on your side, try again in a few minutes.',
     ];
 
     /**
@@ -353,6 +394,16 @@ class PlatformResponseFormatter
         foreach (self::HINTS as $hintCode => $hint) {
             if ($detail && str_contains($detail, $hintCode)) {
                 return __($hint);
+            }
+        }
+
+        $haystack = Str::lower(trim(($message ?? '').' '.($detail ?? '')));
+
+        if ($haystack !== '') {
+            foreach (self::MESSAGE_HINTS as $needle => $hint) {
+                if (str_contains($haystack, $needle)) {
+                    return __($hint);
+                }
             }
         }
 

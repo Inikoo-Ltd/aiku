@@ -35,4 +35,24 @@ trait WithWeightFromTradeUnits
 
         return $weight;
     }
+
+    /**
+     * A product built from several trade units, a bundle above all, weighs what its parts weigh
+     * together, so its marketing weight is summed the way the gross weight already is. Taking a
+     * single trade unit only makes sense when there is only one.
+     */
+    public function getMarketingWeightFromTradeUnits(Stock|Product|MasterAsset $model): ?int
+    {
+        $changed = false;
+        $weight  = 0;
+
+        foreach ($model->tradeUnits as $tradeUnit) {
+            if (is_numeric($tradeUnit->marketing_weight) && is_numeric($tradeUnit->pivot->quantity)) {
+                $changed = true;
+                $weight  += $tradeUnit->marketing_weight * $tradeUnit->pivot->quantity;
+            }
+        }
+
+        return $changed ? (int)ceil($weight) : null;
+    }
 }

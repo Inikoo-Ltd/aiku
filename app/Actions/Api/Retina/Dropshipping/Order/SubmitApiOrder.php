@@ -11,13 +11,17 @@ namespace App\Actions\Api\Retina\Dropshipping\Order;
 
 use App\Actions\Api\Retina\Dropshipping\Resource\OrderApiResource;
 use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
+use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\RetinaApiAction;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 class SubmitApiOrder extends RetinaApiAction
 {
@@ -48,7 +52,25 @@ class SubmitApiOrder extends RetinaApiAction
             ], 403);
         }
 
-        return $this->payAndSubmitOrder($order);
+        $isForbidden = $this->isForbidden($order);
+
+        if (!$isForbidden) {
+            try {
+                PayOrderAsync::run($order);
+            } catch (Exception $e) {
+                Sentry::captureException($e);
+            }
+        }
+
+        $order->refresh();
+
+        if($order->pay_status !== OrderPayStatusEnum::PAID) {
+            return response()->json([
+                'message' => "Unable to submit this order due to failed payment."
+            ], 403);
+        }
+
+        return $order;
     }
 
     public function jsonResponse(JsonResponse|Order $result): OrderApiResource|\Illuminate\Http\Resources\Json\JsonResource|JsonResponse

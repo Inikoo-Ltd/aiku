@@ -16,7 +16,7 @@ const props = defineProps<{
             t: string  // Type --- "percentage"
             p: string  // Percentage --- "10.0%"
             l: string  // Label
-            st: string | null // Sub Trigger --- CalculateOrderDiscounts --- "a" => Gold Reward Amnesty, "i" => Gold Reward Member,  "q" => Quantity
+            st: string | null // Sub Trigger --- CalculateOrderDiscounts --- "a" => Gold Reward Amnesty, "i" => Gold Reward Member,  "q" => Quantity, "sd" => Step Discount
             sto: string | null // Sub Trigger Offer Id
         }
     },
@@ -47,6 +47,12 @@ const props = defineProps<{
         </span>
     </div>
 
+
+    <!-- Label: Step Discount -->
+    <div v-else-if="offers_data?.o?.st === 'sd'" class="bg-[#C48497] px-1 py-0.5 text-xs border flex items-center border-[#C48497] rounded-sm w-fit text-white">
+        {{ offers_data?.o?.l }}
+        <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(offers_data?.o?.p) }}</span> {{ ctrans("OFF") }}
+    </div>
 
     <!-- Label: Discretionary Discount (because sto is null) -->
     <div v-else-if="offers_data?.o?.sto === null && offers_data?.o?.st === null" class="bg-[#E87928] px-1 py-0.5 text-xs border flex items-center border-[#E87928] rounded-sm w-fit text-white" >
