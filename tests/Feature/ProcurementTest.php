@@ -81,6 +81,7 @@ use App\Actions\Procurement\ShoppingListItem\ResolveDismissShoppingListItem;
 use App\Actions\Procurement\ShoppingListItem\StoreShoppingListItem;
 use App\Actions\Procurement\ShoppingListItem\UpdateShoppingListItem;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Models\Goods\StockHasSupplierProduct;
 use App\Models\Inventory\OrgStockHasOrgSupplierProduct;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -3064,6 +3065,23 @@ describe('partner shopping list', function () {
 
         expect($withoutCustomer)->not->toContain($this->sellerProduct->id);
     });
+
+    test('update and delete partner shopping list item via http', function () {
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 10,
+        ]);
+
+        actingAs($this->adminGuest->getUser());
+        $this->patch(route('grp.org.procurement.org_partners.show.shopping_list.update', [$this->organisation->slug, $this->orgPartner->id, $item->id]), ['priority' => 'high'])
+            ->assertRedirect();
+        expect($item->refresh()->priority)->toBe(ShoppingListItemPriorityEnum::HIGH);
+
+        $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy', [$this->organisation->slug, $this->orgPartner->id, $item->id]))
+            ->assertRedirect();
+
+        expect(PartnerShoppingListItem::find($item->id))->toBeNull();
+    });
+
 });
 
 describe('partner browse', function () {
