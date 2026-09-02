@@ -20,6 +20,7 @@ const props = defineProps<{
     title: string
     data: object
     groupBy: string | null
+    mixes: { artefact_id: number, code: string, name: string, unit: string, needed: number, on_hand: number, in_progress: number, shortfall: number, artisan: string | null, needed_for: string[] }[] | null
     artisanWorkload: { id: number, name: string, open_job_orders: number, hidden: boolean }[] | null
     groups: { label: string, items: { id: number, quantity: number, state: string, stock_code: string, stock_name: string, family: string | null, maker: string | null, buyer_code: string | null, customer_name: string | null, order_reference: string | null, job_order_reference: string | null, job_order_slug: string | null, priority: string, needed_by: string | null }[] }[] | null
     pickedOrders: {
@@ -77,6 +78,24 @@ function toggleArtisan(artisan: { id: number, hidden: boolean }) {
     )
 }
 
+const mixQuantities = reactive<Record<number, number>>({})
+
+function toggleMix(mix: { artefact_id: number, shortfall: number }) {
+    if (mix.artefact_id in mixQuantities) {
+        delete mixQuantities[mix.artefact_id]
+    } else {
+        mixQuantities[mix.artefact_id] = Math.ceil(mix.shortfall) || 1
+    }
+}
+
+function createMixJobOrders() {
+    router.post(
+        route("grp.org.productions.show.partners.mixes.job_orders.store", [route().params["organisation"], route().params["production"]]),
+        { lines: Object.entries(mixQuantities).map(([artefact_id, quantity]) => ({ artefact_id: Number(artefact_id), quantity })) },
+        { preserveScroll: true, onSuccess: () => { for (const k in mixQuantities) delete mixQuantities[k] } }
+    )
+}
+
 function jobOrderHref(item: { job_order_slug: string }) {
     return route("grp.org.productions.show.operations.job-orders.show", [route().params["organisation"], route().params["production"], item.job_order_slug])
 }
@@ -122,6 +141,47 @@ function submitCherryPick() {
                 {{ trans("Send to warehouse") }}
             </button>
         </div>
+    </div>
+
+    <div v-if="mixes" class="mx-4 mt-5">
+        <div v-if="Object.keys(mixQuantities).length" class="sticky top-0 z-10 mb-4 flex items-center justify-between rounded-lg bg-indigo-600 px-4 py-2 text-white">
+            <span>{{ Object.keys(mixQuantities).length }} {{ trans("mixes selected") }}</span>
+            <button type="button" class="rounded bg-white px-3 py-1 text-indigo-600" @click="createMixJobOrders">{{ trans("Create job orders") }}</button>
+        </div>
+        <div v-if="!mixes.length" class="rounded-lg border border-dashed border-gray-300 px-4 py-10 text-center text-gray-400">
+            {{ trans("No mixes needed. Mixes appear here when an open job order uses a raw material that is made in-house.") }}
+        </div>
+        <table v-else class="w-full text-sm">
+            <thead class="text-left text-gray-500">
+                <tr>
+                    <th class="w-36 px-4 py-2"></th>
+                    <th class="px-2 py-2">{{ trans("Mix") }}</th>
+                    <th class="px-2 py-2">{{ trans("Prepared by") }}</th>
+                    <th class="px-2 py-2">{{ trans("Needed for") }}</th>
+                    <th class="px-2 py-2 text-right">{{ trans("Needed") }}</th>
+                    <th class="px-2 py-2 text-right">{{ trans("On hand") }}</th>
+                    <th class="px-2 py-2 text-right">{{ trans("Being made") }}</th>
+                    <th class="px-4 py-2 text-right">{{ trans("Short") }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="mix in mixes" :key="mix.artefact_id" class="border-t border-gray-100 dark:border-gray-800">
+                    <td class="px-4 py-1.5">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" :checked="mix.artefact_id in mixQuantities" @change="toggleMix(mix)" />
+                            <input v-if="mix.artefact_id in mixQuantities" v-model.number="mixQuantities[mix.artefact_id]" type="number" min="1" class="w-24 rounded border-gray-300" />
+                        </div>
+                    </td>
+                    <td class="px-2 py-1.5"><span class="font-medium">{{ mix.code }}</span> <span class="text-gray-500">{{ mix.name }}</span></td>
+                    <td class="px-2 py-1.5 text-gray-500">{{ mix.artisan ?? '-' }}</td>
+                    <td class="px-2 py-1.5 text-gray-500">{{ mix.needed_for.join(', ') }}</td>
+                    <td class="px-2 py-1.5 text-right tabular-nums">{{ useLocaleStore().number(mix.needed) }} {{ mix.unit }}</td>
+                    <td class="px-2 py-1.5 text-right tabular-nums">{{ useLocaleStore().number(mix.on_hand) }}</td>
+                    <td class="px-2 py-1.5 text-right tabular-nums">{{ useLocaleStore().number(mix.in_progress) }}</td>
+                    <td class="px-4 py-1.5 text-right tabular-nums" :class="mix.shortfall > 0 ? 'font-semibold text-red-600' : 'text-gray-400'">{{ useLocaleStore().number(mix.shortfall) }}</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     <div v-if="artisanWorkload" class="mx-4 mt-5 rounded-lg border border-gray-200 px-4 py-3 dark:border-gray-700">
@@ -191,7 +251,7 @@ function submitCherryPick() {
         </div>
     </div>
 
-    <Table v-else :resource="data" class="mt-5">
+    <Table v-else-if="!mixes" :resource="data" class="mt-5">
         <template #cell(buyer_code)="{ item }">
             <span v-if="item.buyer_code">{{ item.buyer_code }}</span>
             <span v-else>{{ item.customer_name }} <span class="text-gray-500">{{ item.order_reference }}</span></span>

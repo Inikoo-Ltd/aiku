@@ -18,6 +18,8 @@ use App\Actions\Production\ArtefactFamily\UpdateArtefactFamily;
 use App\Actions\Production\Artisan\AttachArtisan;
 use App\Actions\Production\Artisan\DetachArtisan;
 use App\Actions\Production\Artisan\ToggleArtisanInRoster;
+use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
+use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Models\HumanResources\Employee;
 use App\Enums\Helpers\Tag\TagScopeEnum;
@@ -1831,4 +1833,36 @@ test('an employee can be hidden from and restored to the artisan roster', functi
 
     $production = ToggleArtisanInRoster::make()->action($production, $employee, false);
     expect($production->data['hidden_artisan_ids'])->toBe([]);
+});
+
+test('mixes to prepare are derived from open job orders and become job orders', function () {
+    $mixArtefact = StoreArtefact::make()->action($this->production, ['code' => 'MIX-BASE', 'name' => 'Bath bomb base mix']);
+    $mix         = UpdateRawMaterial::make()->action($this->rawMaterial, ['artefact_id' => $mixArtefact->id, 'quantity_on_location' => 2]);
+    $mix->update(['org_stock_id' => null]);
+
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $step = ArtefactManufactureTask::where('artefact_id', $this->artefact->id)->where('manufacture_task_id', $this->manufactureTask->id)->first();
+    $step->rawMaterials()->delete();
+    AttachRawMaterialToRecipeStep::make()->action($step, ['raw_material_id' => $mix->id, 'quantity_per_unit' => 0.5]);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+
+    $mixes = collect(GetMixesToPrepare::run($this->production))->keyBy('code');
+    expect($mixes->get('MIX-BASE'))->not->toBeNull()
+        ->and($mixes->get('MIX-BASE')['needed'])->toBe(5.0)
+        ->and($mixes->get('MIX-BASE')['on_hand'])->toBe(2.0)
+        ->and($mixes->get('MIX-BASE')['shortfall'])->toBe(3.0)
+        ->and($mixes->get('MIX-BASE')['needed_for'])->toBe([$this->artefact->code]);
+
+    $created = StoreJobOrdersForMixes::make()->action($this->production, [['artefact_id' => $mixArtefact->id, 'quantity' => 3]]);
+    expect($created)->toHaveCount(1)
+        ->and($created[0]->jobOrderItems()->first()->artefact_id)->toBe($mixArtefact->id)
+        ->and($created[0]->jobOrderItems()->first()->quantity)->toBe(3);
+
+    $mixes = collect(GetMixesToPrepare::run($this->production))->keyBy('code');
+    expect($mixes->get('MIX-BASE')['in_progress'])->toBe(3.0)
+        ->and($mixes->get('MIX-BASE')['shortfall'])->toBe(0.0);
 });

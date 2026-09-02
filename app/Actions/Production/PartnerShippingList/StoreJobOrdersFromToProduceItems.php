@@ -9,8 +9,7 @@
 namespace App\Actions\Production\PartnerShippingList;
 
 use App\Actions\OrgAction;
-use App\Actions\Production\JobOrder\StoreJobOrder;
-use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
+use App\Actions\Production\JobOrder\StoreJobOrdersGroupedByArtisan;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -44,8 +43,8 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
             })
             ->get();
 
-        $skipped   = [];
-        $byArtisan = [];
+        $skipped = [];
+        $lines   = [];
 
         foreach ($items as $item) {
             $artefact = $this->resolveArtefact($production, $item);
@@ -54,28 +53,14 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
                 continue;
             }
 
-            $artisanId = $artefact->artisans()->first()?->id ?? $artefact->artefactFamily?->artisans()->first()?->id ?? 0;
-
-            $byArtisan[$artisanId][] = ['item' => $item, 'artefact' => $artefact];
+            $lines[] = [
+                'artefact' => $artefact,
+                'quantity' => $item->quantity,
+                'after'    => fn (JobOrder $jobOrder) => $item->update(['job_order_id' => $jobOrder->id]),
+            ];
         }
 
-        $jobOrders = [];
-        foreach ($byArtisan as $artisanId => $lines) {
-            $jobOrder = StoreJobOrder::make()->action($production, [
-                'date'        => now(),
-                'employee_id' => $artisanId ?: null,
-            ]);
-
-            foreach ($lines as $line) {
-                StoreJobOrderItem::make()->action($jobOrder, [
-                    'artefact_id' => $line['artefact']->id,
-                    'quantity'    => max(1, (int) ceil((float) $line['item']->quantity)),
-                ]);
-                $line['item']->update(['job_order_id' => $jobOrder->id]);
-            }
-
-            $jobOrders[] = $jobOrder;
-        }
+        $jobOrders = StoreJobOrdersGroupedByArtisan::run($production, $lines);
 
         return ['job_orders' => $jobOrders, 'skipped' => $skipped];
     }
