@@ -66,6 +66,11 @@ class ShowEmployee extends OrgAction
                     ],
                     'model' => __('Employee'),
                     'title' => $employee->contact_name,
+                    'image' => $employee->image_id ? [
+                        'src' => Arr::get($employee->imageSources(48, 48), 'original'),
+                        'alt' => $employee->contact_name,
+                        'tooltip' => __('Photo'),
+                    ] : null,
                     'subNavigation' => $this->getEmployeeSubNavigation($employee, $request),
                     'meta' => [
                         [

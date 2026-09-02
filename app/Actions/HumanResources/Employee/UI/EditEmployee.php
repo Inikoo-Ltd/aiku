@@ -94,6 +94,11 @@ class EditEmployee extends OrgAction
             'label' => __('Properties'),
             'icon' => 'fal fa-sliders-h',
             'fields' => [
+                'image' => [
+                    'type' => 'image_crop_square',
+                    'label' => __('Photo'),
+                    'value' => $employee->imageSources(320, 320)
+                ],
                 'worker_number' => [
                     'type' => 'input',
                     'label' => __('Worker number'),

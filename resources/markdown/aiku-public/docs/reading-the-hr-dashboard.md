@@ -50,7 +50,7 @@ Two things to know about the arithmetic. An employee on leave who clocks in anyw
 
 Below the cards, the day's attendance, **earliest arrivals first**. Each row is one employee's day:
 
-- **Name** and job title. The name opens the timesheet. The picture next to it is the avatar the person has set on their own aiku profile; without one, it is their initials on a plain circle. aiku never invents a face for anyone, and nobody but the person themselves chooses their picture.
+- **Name** and job title. The name opens the timesheet. The picture next to it is the photo on the employee's record, or failing that the avatar the person set on their own aiku profile; without either, it is their initials on a plain circle. aiku never invents a face for anyone.
 - **Start at** — first clock-in, shown in red when it was late.
 - **End at** — last clock-out, or *Still working* if their last action was a clock-in.
 - **Status** — *Late*, *Working* (still on site) or *On time*.
@@ -87,7 +87,7 @@ The panel on the right is the four things HR does most:
 <li><b>The dashboard:</b> your organisation → <b>HR</b>.</li>
 <li><b>Who is absent:</b> click the <b>Absent</b> card; click a name to open the employee.</li>
 <li><b>Why someone was late:</b> click the <b>Late</b> card and read the <b>Notes</b> column, or open the timesheet from their name.</li>
-<li><b>A photo instead of initials:</b> only the person can do this, on their own profile (top right → <b>Profile</b> → <b>Edit</b> → avatar). Staff without an aiku login always show as initials.</li>
+<li><b>A photo instead of initials:</b> open the employee → <b>Edit</b> → <b>Photo</b> (HR edit rights). People with an aiku login can also set their own avatar under <b>Profile</b>.</li>
 <li><b>Another day:</b> the arrows or the date picker above the table; <b>Today</b> to return.</li>
 <li><b>The start time lateness is measured against:</b> <b>HR → Shift Schedules</b>. The fifteen-minute grace period is fixed; ask aiku support if your organisation needs a different one.</li>
 <li><b>Get pending leave onto the dashboard:</b> <b>HR → Leave requests</b> → approve.</li>
