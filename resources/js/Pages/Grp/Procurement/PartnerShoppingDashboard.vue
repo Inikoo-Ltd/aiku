@@ -111,7 +111,7 @@ const shouldNotBeOrdered = (bucket: CoverBucket) => ["ok", "dead"].includes(buck
 
 const segmentWidth = (bucket: CoverBucket, part: number) => (bucket.count ? `${Math.max((part / bucket.count) * 100, part ? 1.5 : 0)}%` : "0%")
 
-const needsAction = (bucket: CoverBucket) => !["ok", "dead", "never"].includes(bucket.bucket) && bucket.untouched > 0
+const needsAction = (bucket: CoverBucket) => !["ok", "dead", "never"].includes(bucket.bucket) && bucket.untouched > 0 && bucket.untouched < bucket.count
 
 const bucketRoute = (bucket: string, rank?: string) => `${route(props.browseRoute.name, props.browseRoute.parameters)}?cover=${bucket}${rank ? `&rank=${rank}` : ""}`
 
@@ -234,9 +234,9 @@ const rankClasses: Record<string, string> = {
                         </button>
                     </span>
                     <span v-else-if="needsAction(bucket)" class="text-xs font-medium tabular-nums">
-                        {{ trans(":count need action", { count: bucket.untouched.toLocaleString() }) }}
+                        {{ trans(":count (:percent%) need action", { count: bucket.untouched.toLocaleString(), percent: Math.floor((bucket.untouched / bucket.count) * 100) }) }}
                     </span>
-                    <span v-else-if="bucket.count && bucket.bucket !== 'ok' && bucket.bucket !== 'dead' && bucket.bucket !== 'never'" class="text-xs tabular-nums opacity-70">
+                    <span v-else-if="bucket.count && bucket.untouched === 0 && !['ok', 'dead', 'never'].includes(bucket.bucket)" class="text-xs tabular-nums opacity-70">
                         {{ trans("all handled") }}
                     </span>
                 </div>
@@ -244,11 +244,6 @@ const rankClasses: Record<string, string> = {
                 <div v-if="(bucket.on_the_way || bucket.on_list) && !['ok', 'dead', 'never'].includes(bucket.bucket)" class="mt-1.5 flex h-1 w-full gap-px overflow-hidden rounded-full bg-gray-100">
                     <div v-if="bucket.on_the_way" class="h-1 bg-current" :style="{ width: segmentWidth(bucket, bucket.on_the_way) }" :title="trans('on the way')" />
                     <div v-if="bucket.on_list" class="h-1 bg-current opacity-40" :style="{ width: segmentWidth(bucket, bucket.on_list) }" :title="trans('on the shopping list')" />
-                </div>
-                <div v-if="(bucket.on_the_way || bucket.on_list) && !['ok', 'dead', 'never'].includes(bucket.bucket)" class="mt-0.5 text-[10px] tabular-nums opacity-70">
-                    <span v-if="bucket.on_the_way">{{ bucket.on_the_way }} {{ trans("on the way") }}</span>
-                    <span v-if="bucket.on_the_way && bucket.on_list"> · </span>
-                    <span v-if="bucket.on_list">{{ bucket.on_list }} {{ trans("on list") }}</span>
                 </div>
                 <div v-if="bucket.bucket !== 'never'" class="mt-auto flex gap-2 pt-1.5 text-xs tabular-nums">
                     <Link
@@ -261,14 +256,20 @@ const rankClasses: Record<string, string> = {
                     >
                         <span class="font-bold">{{ rank.rank }}</span> {{ rank.count }} <span class="text-[10px] opacity-60">{{ rank.on_list }}</span>
                     </Link>
+                    <span v-if="bucket.on_the_way || bucket.on_list" class="ml-auto text-[10px] tabular-nums opacity-70">
+                        <span v-if="bucket.on_the_way">{{ bucket.on_the_way }} {{ trans("on the way") }}</span>
+                        <span v-if="bucket.on_the_way && bucket.on_list"> · </span>
+                        <span v-if="bucket.on_list">{{ bucket.on_list }} {{ trans("on list") }}</span>
+                    </span>
                     <button
                         v-if="!['ok', 'dead', 'never'].includes(bucket.bucket) && bucket.ranks.some((rank) => rank.count > rank.on_list)"
                         type="button"
-                        class="ml-auto rounded border border-current px-1 text-[10px] opacity-60 hover:opacity-100"
+                        class="rounded border border-current px-1 text-[10px] opacity-60 hover:opacity-100"
+                        :class="{ 'ml-auto': !(bucket.on_the_way || bucket.on_list) }"
                         :title="trans('Auto-fill the shopping list from this bucket')"
                         @click.prevent.stop="openAutoFill(bucket)"
                     >
-                        + {{ trans("fill") }}
+                        + {{ bucket.on_list ? trans("fill more") : trans("fill") }}
                     </button>
                 </div>
             </Link>

@@ -1,7 +1,7 @@
 ---
 title: Reading the partner shopping dashboard
 summary: The screen that tells you what to buy from a partner and how much room you have to buy it - three restraint cards, eight stock-at-risk buckets and the order pipeline.
-date: 2026-08-31
+date: 2026-09-01
 tags: procurement, intercompany, shopping-list, stock
 category: procurement
 help_routes: grp.org.procurement.org_partners.show.shopping
@@ -19,7 +19,7 @@ Open it at **Procurement → Partners → {partner} → Shopping**. It replaces 
 
 These are restraints, not decorations. They exist because a shopping list that anybody can dump anything into stops being a signal — a partner who receives a thousand lines cannot tell which two are emergencies.
 
-- **Order budget used.** The value of your open list against what this partner *actually delivers to you* in one order cycle. When there is enough delivery history it is measured from those deliveries; before that, it is one order cycle of what you genuinely sell of their products. Nobody types this number in — not you, not your manager. When the bar is full the card says **at capacity**.
+- **Order budget used.** The value of your open list against what this partner *actually delivers to you* in one order cycle, in your own organisation's currency — every money figure on these screens is converted for you, so you never have to think in the partner's. When there is enough delivery history it is measured from those deliveries; before that, it is one order cycle of what you genuinely sell of their products. Nobody types this number in — not you, not your manager. When the bar is full the card says **at capacity**.
 - **Warehouse space.** How many locations are free out of the total, with a bar splitting it into what is *in use*, what is *inbound* on open purchase orders and deliveries, and what *this shopping list* would claim. Underneath, this partner's fair share: how many of the free slots their brand-new products may take. Locations are counted as slots — we have no volume data, so we do not pretend to measure cubic metres.
 - **The partner card.** Their measured **order → booked in** lead time, how many deliveries it was measured from (or that it is still an estimate), how many purchase orders they are late on and by how much, and the size of their catalogue.
 
@@ -34,13 +34,15 @@ The block of tiles covers the partner's whole catalogue, split by how long your 
 - **Dead stock** — nothing selling, money sitting on a shelf; the tile shows what it is worth.
 - **We never stocked** — the partner sells it, you have never carried it.
 
+One kind of item never appears here at all: SKOs you have marked **On Demand** in your own inventory. Their stock figure is not tracked, so "out of stock" would be meaningless — the dashboard, the bucket tables and Auto-fill all leave them out.
+
 Each tile answers one question: **how many still need me?** The "*N* need action" count ignores anything already on the list or already on the way, so it drops to nothing as you work. Under it, the same count broken down by **rank** — A products first, D and Z faded at the end. Two out-of-stock A products matter more than five hundred D shrugs, so that is the order you work in.
 
 Three things you can do from a tile:
 
 - **Click the number** to open the bucket as a table: every item, ranked, with their stock, your stock, when you run out, and a quantity box that writes straight to the shopping list.
 - **Click the tile or a rank** to browse those products in the partner's catalogue.
-- **+ fill** to open Auto-fill already scoped to that bucket and already generated — you adjust and confirm. More work than a magic button, and much more control.
+- **+ fill** to open Auto-fill already scoped to that bucket and already generated — you adjust and confirm. More work than a magic button, and much more control. Once some of the bucket is already on your list the button reads **+ fill more**, and the counts beside it — *N on the way · N on list* — tell you how much of the tile you have already dealt with.
 
 On **Covered** and **Dead stock**, a red warning appears instead when something from that bucket is sitting on your shopping list: that is stock you do not need. **remove** clears those lines in one click.
 

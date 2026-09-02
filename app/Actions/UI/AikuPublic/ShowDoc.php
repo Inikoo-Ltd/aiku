@@ -21,10 +21,18 @@ class ShowDoc
         $doc = BlogPosts::find($slug, 'docs');
         abort_unless((bool) $doc, 404);
 
+        $translations = BlogPosts::translations($doc, 'docs');
+        $english = $translations->firstWhere('lang', 'en');
+
         return view('aiku-public.docs.show', [
             'doc' => $doc,
             'series' => $this->seriesDocs($doc),
             'more' => $this->relatedDocs($doc),
+            'translations' => $translations->count() > 1 ? $translations : collect(),
+            'english' => $english,
+            'isStale' => $doc['lang'] !== 'en'
+                && $english
+                && (!$doc['source_date'] || $english['date']->gt($doc['source_date'])),
         ]);
     }
 
@@ -37,8 +45,11 @@ class ShowDoc
             return collect();
         }
 
-        return BlogPosts::all('docs')
+        return BlogPosts::everything('docs')
             ->where('series', $doc['series'])
+            ->groupBy('base_slug')
+            ->map(fn (Collection $versions) => $versions->firstWhere('lang', $doc['lang']) ?? $versions->firstWhere('lang', 'en'))
+            ->filter()
             ->sortBy('series_order')
             ->values();
     }

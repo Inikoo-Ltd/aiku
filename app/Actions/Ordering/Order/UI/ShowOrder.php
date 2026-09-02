@@ -463,6 +463,11 @@ class ShowOrder extends OrgAction
                     'external_shipping_label' => $this->shop->engine == ShopEngineEnum::FAIRE ? __('Ship with Faire') : __('External shipping')
                 ] : null,
                 'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
+                'billing_address_update_route' => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.order.billing_address_update',
+                    'parameters' => ['order' => $order->id]
+                ],
                 'contact_address'             => $order->customer ? AddressResource::make($order->customer->address)->getArray() : null,
                 'box_stats'                   => $this->getOrderBoxStatsWithMargins($order),
                 'currency'                    => CurrencyResource::make($order->currency)->toArray(request()),
