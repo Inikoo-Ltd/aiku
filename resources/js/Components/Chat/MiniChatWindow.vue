@@ -15,6 +15,7 @@ import {
     faEnvelope,
     faFileLines,
     faTimesCircle,
+    faRotateRight,
 } from "@fortawesome/free-solid-svg-icons"
 import { faJira } from "@fortawesome/free-brands-svg-icons"
 import { faUser } from "@fal"
@@ -130,6 +131,32 @@ const assignSelf = async () => {
         })
     } finally {
         isAssigningSelf.value = false
+    }
+}
+
+const isReopening = ref(false)
+const reopenChat = async () => {
+    if (!props.chat.organisationSlug || !props.chat.ulid || isReopening.value) return
+    isReopening.value = true
+    try {
+        const routeName = isWhatsapp.value
+            ? "grp.org.chat.agents.whatsapp.sessions.reopen"
+            : "grp.org.chat.agents.sessions.reopen"
+        await axios.patch(
+            route(routeName, [props.chat.organisationSlug, props.chat.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        props.chat.status = "active"
+        await fetchMessages()
+    } catch (e: any) {
+        notify({
+            title: trans("Error"),
+            text: e?.response?.data?.message ?? trans("Failed to reopen chat"),
+            type: "error",
+        })
+    } finally {
+        isReopening.value = false
     }
 }
 
@@ -574,8 +601,16 @@ onUnmounted(() => {
                 {{ remoteTypingUser }} {{ trans('is typing...') }}
             </div>
 
-            <div v-if="isClosed" class="px-2 py-1.5 border-t border-gray-200 text-[10px] text-gray-500 shrink-0">
-                {{ trans('This chat has been closed') }}
+            <div v-if="isClosed" class="px-2 py-1.5 border-t border-gray-200 shrink-0 space-y-1.5">
+                <span class="block text-center text-[10px] text-gray-500">{{ trans('This chat has been closed') }}</span>
+                <button type="button"
+                    class="w-full flex items-center justify-center gap-1.5 h-7 rounded-md text-[11px] font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                    :style="{ backgroundColor: 'var(--theme-color-4)' }"
+                    :disabled="isReopening" @click="reopenChat">
+                    <LoadingIcon v-if="isReopening" class="w-3 h-3" />
+                    <FontAwesomeIcon v-else :icon="faRotateRight" class="text-[9px]" />
+                    {{ trans('Reopen chat') }}
+                </button>
             </div>
 
             <div v-else-if="isWaiting" class="px-2 py-1.5 border-t border-gray-200 shrink-0 space-y-1.5">
