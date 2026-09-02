@@ -20,6 +20,7 @@ use App\Actions\Ordering\Order\ProcessOrderTrafficSource;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\OrgAction;
+use App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithGiftOptOut;
@@ -114,7 +115,7 @@ class SubmitOrder extends OrgAction
         }
 
         $this->update($order, $modelData);
-        
+
         if ($order->customer->warehouse_temporary_notes) {
             UpdateCustomer::make()->action($order->customer, [
                 'warehouse_temporary_notes' => null
@@ -135,6 +136,8 @@ class SubmitOrder extends OrgAction
         } else {
             CustomerHydrateBasket::run($order->customer_id);
         }
+
+        StoreToProduceItemsFromOrder::run($order);
 
         $this->orderHydrators($order);
         $this->orderHandlingHydrators($order, $oldState);

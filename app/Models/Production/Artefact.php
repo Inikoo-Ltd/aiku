@@ -12,6 +12,7 @@ use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
+use App\Models\HumanResources\Employee;
 use App\Models\Inventory\OrgStock;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InProduction;
@@ -121,6 +122,11 @@ class Artefact extends Model implements Auditable
     public function tradeUnit(): BelongsTo
     {
         return $this->belongsTo(TradeUnit::class);
+    }
+
+    public function maker(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'maker_employee_id');
     }
 
     public function orgStock(): BelongsTo

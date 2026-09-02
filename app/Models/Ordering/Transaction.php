@@ -155,6 +155,11 @@ class Transaction extends Model
         return $this->morphTo();
     }
 
+    public function partnerShoppingListItems(): HasMany
+    {
+        return $this->hasMany(\App\Models\Procurement\PartnerShoppingListItem::class);
+    }
+
     public function deliveryNoteItems(): HasMany
     {
         return $this->hasMany(DeliveryNoteItem::class);

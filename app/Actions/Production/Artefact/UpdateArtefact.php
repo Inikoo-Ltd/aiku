@@ -92,6 +92,7 @@ class UpdateArtefact extends OrgAction
                 Rule::exists('org_stocks', 'id')->where('organisation_id', $this->organisation->id),
             ],
             'recommended_batch_size' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'maker_employee_id'      => ['sometimes', 'nullable', Rule::exists('employees', 'id')->where('organisation_id', $this->organisation->id)],
             'artefact_family_id'     => ['sometimes', 'nullable', Rule::exists('artefact_families', 'id')->where('organisation_id', $this->organisation->id)],
             'tags'                   => ['sometimes', 'array'],
             'tags.*'                 => ['integer', 'exists:tags,id'],

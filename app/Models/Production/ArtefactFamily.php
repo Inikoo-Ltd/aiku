@@ -10,7 +10,9 @@ namespace App\Models\Production;
 
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InProduction;
+use App\Models\HumanResources\Employee;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -71,6 +73,11 @@ class ArtefactFamily extends Model implements Auditable
             ->generateSlugsFrom('code')
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug');
+    }
+
+    public function maker(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'maker_employee_id');
     }
 
     public function artefacts(): HasMany

@@ -65,6 +65,9 @@ use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
 use App\Actions\Production\Production\StoreProduction;
+use App\Actions\Production\Artefact\StoreArtefact;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
 use App\Models\Production\Production;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
 use App\Actions\Production\PartnerShippingList\SendPartnerOrderToWarehouse;
@@ -2791,6 +2794,29 @@ describe('partner shopping list', function () {
         $this->buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
     });
 
+    test('submitting an order adds out-of-stock artefact-linked products to the to-produce list', function () {
+        $seller         = $this->orgPartner->partner;
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $production     = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
+        StoreArtefact::make()->action($production, ['code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
+        $sellerOrgStock->update(['quantity_in_locations' => 2]);
+
+        $customer = createCustomer($this->sellerShop);
+        $order    = createOrder($customer, $this->sellerProduct);
+        $order->transactions()->update(['quantity_ordered' => 5]);
+        SubmitOrder::make()->action($order);
+
+        $item = PartnerShoppingListItem::where('transaction_id', $order->transactions()->first()->id)->first();
+        expect($item)->not->toBeNull()
+            ->and($item->partner_organisation_id)->toBeNull()
+            ->and($item->organisation_id)->toBe($seller->id)
+            ->and((float) $item->quantity)->toBe(round(3.0 * (float) $sellerOrgStock->pivot->quantity, 3));
+
+        DispatchOrder::make()->action($order->refresh(), null);
+        expect($item->refresh()->state)->toBe(ShoppingListItemStateEnum::ORDERED);
+    });
+
     test('store partner shopping list item denormalises', function () {
         $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 40,
@@ -3333,6 +3359,20 @@ test('UI partner shipping list index', function () {
             ->has('title')
             ->has('data');
     });
+});
+
+test('UI to produce list grouped by artisan, family and for', function () {
+    $production = Production::first();
+
+    foreach (['by_artisan' => 'maker', 'by_family' => 'family', 'by_for' => 'buyer_code'] as $routeSuffix => $groupBy) {
+        $this->get(route('grp.org.productions.show.partners.'.$routeSuffix, [$this->organisation->slug, $production->slug]))
+            ->assertInertia(function (AssertableInertia $page) use ($groupBy) {
+                $page
+                    ->component('Org/Production/PartnerShippingList')
+                    ->where('groupBy', $groupBy)
+                    ->has('groups');
+            });
+    }
 });
 
 test('partner shopping list org stocks json feed', function () {

@@ -24,6 +24,8 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
@@ -70,6 +72,11 @@ class DispatchOrder extends OrgAction
                     'quantity_dispatched' => $transaction->quantity_ordered,
                 ]);
             }
+
+            PartnerShoppingListItem::whereIn('transaction_id', $order->transactions()->select('id'))
+                ->whereNull('partner_organisation_id')
+                ->where('state', ShoppingListItemStateEnum::OPEN)
+                ->update(['state' => ShoppingListItemStateEnum::ORDERED]);
 
             $this->update($order, $data);
 
