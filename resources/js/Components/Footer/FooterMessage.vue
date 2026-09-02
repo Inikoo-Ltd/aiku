@@ -179,6 +179,7 @@ const openConversation = (item: ChatSessionItem) => {
         organisationSlug: item.organisation?.slug ?? null,
         shopName: item.shop?.name ?? null,
         shopSlug: item.shop?.slug ?? null,
+        shopId: item.shop?.id ?? null,
         channel: item.channel ?? 'website',
     })
 }
