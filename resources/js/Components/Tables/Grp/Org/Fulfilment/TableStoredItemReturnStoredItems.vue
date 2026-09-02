@@ -13,7 +13,7 @@ import Tag from '@/Components/Tag.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCheck, faUndoAlt, faArrowDown, faTimes, faDebug } from '@fal'
+import { faCheck, faUndoAlt, faArrowDown, faTimes, faDebug, faGhost } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { Collapse } from 'vue-collapsed'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
@@ -22,7 +22,7 @@ import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import LabelPalletStoredItemLocation from '@/Components/Fulfilment/PalletReturns/LabelPalletStoredItemLocation.vue'
 import SelectPalletStoredItemLocation from '@/Components/Fulfilment/PalletReturns/SelectPalletStoredItemLocation.vue'
-library.add(faCheck, faUndoAlt, faArrowDown, faDebug)
+library.add(faCheck, faUndoAlt, faArrowDown, faDebug, faGhost)
 
 const props = defineProps<{
     data?: { data: any[] };
@@ -557,6 +557,20 @@ function getRequestedPalletStoredItems(item: any) {
                                 >
                                     [{{ pallet_stored_item.location?.code }}]
                                 </span>
+                                <Tag
+                                    v-if="pallet_stored_item.is_virtual"
+                                    :theme="11"
+                                    size="xs"
+                                    noHoverColor
+                                    :closeButton="false"
+                                >
+                                    <template #label>
+                                        <div class="whitespace-nowrap">
+                                            <FontAwesomeIcon icon="fal fa-ghost" fixed-width aria-hidden="true" />
+                                            {{ trans("Virtual pallet") }}
+                                        </div>
+                                    </template>
+                                </Tag>
                                 <div  v-if="pallet_stored_item.selected_quantity && palletReturn.state === 'in_process'" v-tooltip="trans('Will be picked')" class="pl-1 pb-1 inline" >
                                     <FontAwesomeIcon icon='fas fa-circle' class='text-[7px] text-blue-500 animate-pulse' fixed-width aria-hidden='true' />
                                 </div>

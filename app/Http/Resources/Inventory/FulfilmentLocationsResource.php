@@ -12,6 +12,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * @property mixed $slug
+ * @property mixed $id
  * @property mixed $code
  * @property mixed $number_pallets
  */
@@ -20,6 +21,7 @@ class FulfilmentLocationsResource extends JsonResource
     public function toArray($request): array
     {
         return [
+            'id'               => $this->id,
             'slug'             => $this->slug,
             'code'             => $this->code,
             'number_pallets'   => $this->number_pallets,
