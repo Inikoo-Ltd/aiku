@@ -21,6 +21,7 @@ use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\HydrateCustomers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\StoreCustomer;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\CRM\Customer\SyncCustomersToGoogleAds;
 use App\Actions\CRM\Customer\UpdateCustomer;
@@ -98,6 +99,7 @@ use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
 
 beforeAll(function () {
     loadDB();
@@ -811,6 +813,32 @@ test('UI edit customer', function () {
     });
 });
 
+test('external shop customer: edit form is tax number only and update ignores every other field', function () {
+    $customer     = Customer::first();
+    $originalType = $this->shop->type;
+    $originalName = $customer->contact_name;
+    $this->shop->update(['type' => ShopTypeEnum::EXTERNAL]);
+
+    get(route('grp.org.shops.show.crm.customers.edit', [$this->organisation->slug, $this->shop->slug, $customer->slug]))
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->component('EditModel')
+                ->has('formData.blueprint', 1)
+                ->has('formData.blueprint.0.fields', 1)
+                ->has('formData.blueprint.0.fields.tax_number')
+        );
+
+    patch(route('grp.models.customer.update', [$customer->id]), [
+        'contact_name' => 'Faire does not know this name',
+        'tax_number'   => ['value' => 'GB123456789', 'country' => ['isoCode' => ['short' => 'GB']]],
+    ])->assertStatus(302);
+
+    $customer->refresh();
+    expect($customer->contact_name)->toBe($originalName)
+        ->and($customer->taxNumber?->number)->toBe('GB123456789');
+
+    $this->shop->update(['type' => $originalType]);
+});
 
 test('UI Index customer web users', function () {
     $customer = Customer::first();

@@ -19,6 +19,7 @@ use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -243,14 +244,17 @@ class EditCustomer extends OrgAction
             ]
         ];
 
-        $blueprint   = [];
-        $blueprint[] = $contact;
-        $blueprint[] = $identification;
-        if (!$isExternal) {
-            $blueprint[] = $accounting;
-            $blueprint[] = $tags;
+        if ($isExternal) {
+            $blueprint = [
+                [
+                    'title'  => __('Tax number'),
+                    'label'  => __('Tax number'),
+                    'fields' => Arr::only($contact['fields'], ['tax_number']),
+                ]
+            ];
+        } else {
+            $blueprint = [$contact, $identification, $accounting, $tags, $vip];
         }
-        $blueprint[] = $vip;
 
         return Inertia::render(
             'EditModel',

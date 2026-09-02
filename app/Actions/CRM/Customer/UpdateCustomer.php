@@ -407,7 +407,11 @@ class UpdateCustomer extends OrgAction
         $this->customer = $customer;
         $this->initialisationFromShop($customer->shop, $request);
 
-        return $this->handle($customer, $this->validatedData);
+        $modelData = $customer->shop->type === ShopTypeEnum::EXTERNAL
+            ? Arr::only($this->validatedData, ['tax_number'])
+            : $this->validatedData;
+
+        return $this->handle($customer, $modelData);
     }
 
     public function action(Customer $customer, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Customer

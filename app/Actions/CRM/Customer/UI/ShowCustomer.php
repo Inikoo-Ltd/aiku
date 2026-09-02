@@ -148,16 +148,16 @@ class ShowCustomer extends OrgAction
                         $webUsersMeta
                     ]),
                     'actions'       => array_values(array_filter([
-                        $customer->shop->type !== ShopTypeEnum::EXTERNAL ? [
+                        [
                             'key'     => 'edit_customer',
                             'type'    => 'button',
                             'style'   => 'edit',
-                            'tooltip' => __('Edit Customer'),
+                            'tooltip' => $customer->shop->type === ShopTypeEnum::EXTERNAL ? __('Edit tax number') : __('Edit Customer'),
                             'route'   => [
                                 'name'       => 'grp.org.shops.show.crm.customers.edit',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
-                        ] : false,
+                        ],
                         $customer->shop->type !== ShopTypeEnum::EXTERNAL && $this->isSupervisor && DeleteCustomer::canBeDeleted($customer) ? [
                             'key'     => 'delete_customer',
                             'type'    => 'button',
