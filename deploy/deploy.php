@@ -25,6 +25,14 @@ set('ssh_arguments', [
 
 set('update_code_strategy', 'clone');
 
+if ($gitHttpAuth = getenv('GIT_HTTP_AUTH')) {
+    set('env', [
+        'GIT_CONFIG_COUNT' => '1',
+        'GIT_CONFIG_KEY_0' => 'http.https://github.com/.extraheader',
+        'GIT_CONFIG_VALUE_0' => "AUTHORIZATION: basic $gitHttpAuth",
+    ]);
+}
+
 set('bin/php', function () {
     return '/usr/bin/php8.4';
 });
