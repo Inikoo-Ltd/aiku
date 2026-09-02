@@ -123,6 +123,18 @@ const eventMarkers = {
 	id: "eventMarkers",
 	afterDatasetsDraw(chart: any) {
 		const { ctx, chartArea, scales } = chart
+		chart.data.datasets.forEach((dataset: any, datasetIndex: number) => {
+			if (dataset.type !== "bar") return
+			ctx.save()
+			ctx.fillStyle = series.clicks.color
+			ctx.font = "600 11px sans-serif"
+			ctx.textAlign = "center"
+			chart.getDatasetMeta(datasetIndex).data.forEach((bar: any, index: number) => {
+				const value = dataset.data[index]
+				if (value > 0) ctx.fillText(value.toLocaleString(), bar.x, bar.y - 4)
+			})
+			ctx.restore()
+		})
 		for (const [date, events] of Object.entries(eventsByDate.value)) {
 			const index = labels.value.indexOf(date)
 			if (index < 0) continue
