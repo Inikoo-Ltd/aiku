@@ -43,6 +43,7 @@ class TicketResource extends JsonResource
             'updated_at'     => $this->updated_at,
             'resolved_at'    => $this->resolved_at,
             'closed_at'      => $this->closed_at,
+            'images'         => $this->ticketImageSources(),
         ];
     }
 }

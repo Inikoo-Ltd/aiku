@@ -24,10 +24,11 @@ class StoreTicketComment extends OrgAction
         $comment = $ticket->comments()->create([
             'author_type' => $author instanceof User ? 'User' : 'WebUser',
             'author_id'   => $author->id,
-            'body'        => Arr::get($modelData, 'body'),
+            'body'        => (string) Arr::get($modelData, 'body', ''),
             'is_internal' => $author instanceof User && Arr::get($modelData, 'is_internal', false),
         ]);
 
+        $comment->attachTicketImages(Arr::get($modelData, 'images', []));
         $ticket->touch();
 
         return $comment;
@@ -36,8 +37,10 @@ class StoreTicketComment extends OrgAction
     public function rules(): array
     {
         return [
-            'body'        => ['required', 'string', 'max:10000'],
+            'body'        => ['required_without:images', 'nullable', 'string', 'max:10000'],
             'is_internal' => ['sometimes', 'boolean'],
+            'images'      => ['sometimes', 'array', 'max:5'],
+            'images.*'    => ['image', 'max:10240'],
         ];
     }
 

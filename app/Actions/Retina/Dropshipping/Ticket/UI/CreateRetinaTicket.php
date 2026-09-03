@@ -21,7 +21,7 @@ class CreateRetinaTicket extends RetinaAction
         $this->initialisation($request);
 
         return Inertia::render(
-            'CreateModel',
+            'Dropshipping/RetinaCreateTicket',
             [
                 'breadcrumbs' => array_merge(
                     IndexRetinaTickets::make()->getBreadcrumbs(),
@@ -40,24 +40,8 @@ class CreateRetinaTicket extends RetinaAction
                         ],
                     ],
                 ],
-                'formData'    => [
-                    'blueprint' => [
-                        [
-                            'title'  => __('Tell us what you need'),
-                            'fields' => [
-                                'subject'     => ['type' => 'input', 'label' => __('Subject'), 'required' => true, 'value' => ''],
-                                'description' => ['type' => 'textarea', 'label' => __('Details'), 'value' => ''],
-                                'priority'    => [
-                                    'type'    => 'select',
-                                    'label'   => __('Priority'),
-                                    'options' => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
-                                    'value'   => ChatPriorityEnum::NORMAL->value,
-                                ],
-                            ],
-                        ],
-                    ],
-                    'route'     => ['name' => 'retina.models.ticket.store'],
-                ],
+                'storeRoute'  => ['name' => 'retina.models.ticket.store'],
+                'priorities'  => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
             ]
         );
     }

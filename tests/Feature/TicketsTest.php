@@ -18,6 +18,7 @@ use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Chat\ChatAgent;
 use App\Models\Helpers\Ticket;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Inertia\Testing\AssertableInertia;
 
@@ -98,7 +99,7 @@ test('staff can leave internal notes but customers never can', function (Ticket 
 test('grp ticket pages render', function (Ticket $ticket) {
     get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/Tickets')->has('data.data', Ticket::count()));
     get(route('grp.tickets.board'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsBoard')->has('columns', count(TicketStatusEnum::cases())));
-    get(route('grp.tickets.create'))->assertInertia(fn (AssertableInertia $page) => $page->component('CreateModel'));
+    get(route('grp.tickets.create'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/CreateTicket'));
     get(route('grp.tickets.show', $ticket->reference))->assertInertia(
         fn (AssertableInertia $page) => $page->component('Tickets/Ticket')->where('ticket.reference', $ticket->reference)->has('comments', 2)
     );
@@ -159,4 +160,21 @@ test('retina support pages render for the customer', function () {
     $this->actingAs($this->webUser, 'retina')
         ->get('http://'.$this->website->domain.'/app/dropshipping/support/'.$ticket->reference)
         ->assertInertia(fn (AssertableInertia $page) => $page->component('Dropshipping/RetinaTicket')->where('ticket.reference', $ticket->reference));
+});
+
+test('screenshots can be attached to tickets and comments', function () {
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject' => 'Broken layout, see screenshot',
+        'images'  => [UploadedFile::fake()->image('shot.png', 400, 300)],
+    ]);
+    $comment = StoreTicketComment::make()->action($ticket, $this->user, [
+        'images' => [UploadedFile::fake()->image('one.png'), UploadedFile::fake()->image('two.jpg')],
+    ]);
+
+    expect($ticket->getMedia('ticket_images'))->toHaveCount(1)
+        ->and($comment->body)->toBe('')
+        ->and($comment->getMedia('ticket_images'))->toHaveCount(2)
+        ->and($ticket->ticketImageSources()[0])->toHaveKey('original');
+
+    post(route('grp.models.ticket.comment.store', $ticket->id), [])->assertSessionHasErrors('body');
 });

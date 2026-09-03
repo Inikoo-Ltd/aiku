@@ -26,7 +26,7 @@ class CreateTicket extends OrgAction
         $this->initialisationFromGroup(group(), $request);
 
         return Inertia::render(
-            'CreateModel',
+            'Tickets/CreateTicket',
             [
                 'breadcrumbs' => array_merge(
                     IndexTickets::make()->getBreadcrumbs(),
@@ -45,24 +45,8 @@ class CreateTicket extends OrgAction
                         ],
                     ],
                 ],
-                'formData'    => [
-                    'blueprint' => [
-                        [
-                            'title'  => __('Ticket'),
-                            'fields' => [
-                                'subject'     => ['type' => 'input', 'label' => __('Subject'), 'required' => true, 'value' => ''],
-                                'description' => ['type' => 'textarea', 'label' => __('Description'), 'value' => ''],
-                                'priority'    => [
-                                    'type'    => 'select',
-                                    'label'   => __('Priority'),
-                                    'options' => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
-                                    'value'   => ChatPriorityEnum::NORMAL->value,
-                                ],
-                            ],
-                        ],
-                    ],
-                    'route'     => ['name' => 'grp.models.ticket.store'],
-                ],
+                'storeRoute'  => ['name' => 'grp.models.ticket.store'],
+                'priorities'  => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
             ]
         );
     }

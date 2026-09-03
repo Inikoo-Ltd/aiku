@@ -32,7 +32,12 @@ class StoreTicket extends OrgAction
         data_set($modelData, 'number', $number);
         data_set($modelData, 'reference', $type->prefix().'-'.$number);
 
-        return Ticket::create($modelData);
+        $images = Arr::pull($modelData, 'images', []);
+
+        $ticket = Ticket::create($modelData);
+        $ticket->attachTicketImages($images);
+
+        return $ticket;
     }
 
     public function rules(): array
@@ -51,6 +56,8 @@ class StoreTicket extends OrgAction
             'model_type'      => ['sometimes', 'nullable', 'string'],
             'model_id'        => ['sometimes', 'nullable', 'integer'],
             'data'            => ['sometimes', 'array'],
+            'images'          => ['sometimes', 'array', 'max:5'],
+            'images.*'        => ['image', 'max:10240'],
         ];
     }
 

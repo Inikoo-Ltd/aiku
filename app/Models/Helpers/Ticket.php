@@ -14,6 +14,7 @@ use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasTicketImages;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * @property int $id
@@ -53,11 +56,13 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read Model|\Eloquent|null $reporter
  * @mixin \Eloquent
  */
-class Ticket extends Model implements Auditable
+class Ticket extends Model implements Auditable, HasMedia
 {
     use SoftDeletes;
     use HasHistory;
     use InShop;
+    use InteractsWithMedia;
+    use HasTicketImages;
 
     protected $guarded = [];
 

@@ -10,7 +10,10 @@ namespace App\Models\Helpers;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Traits\HasTicketImages;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * @property int $id
@@ -25,8 +28,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read Ticket $ticket
  * @mixin \Eloquent
  */
-class TicketComment extends Model
+class TicketComment extends Model implements HasMedia
 {
+    use InteractsWithMedia;
+    use HasTicketImages;
+
     protected $guarded = [];
 
     protected function casts(): array

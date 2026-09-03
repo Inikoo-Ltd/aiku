@@ -25,6 +25,7 @@ class TicketCommentResource extends JsonResource
             'is_staff'    => $this->author_type === 'User',
             'author'      => $this->author?->contact_name ?: $this->author?->username,
             'created_at'  => $this->created_at,
+            'images'      => $this->ticketImageSources(),
         ];
     }
 }

@@ -39,6 +39,8 @@ class StoreRetinaTicket extends RetinaAction
             'subject'     => ['required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
             'priority'    => ['sometimes', Rule::enum(ChatPriorityEnum::class)],
+            'images'      => ['sometimes', 'array', 'max:5'],
+            'images.*'    => ['image', 'max:10240'],
         ];
     }
 

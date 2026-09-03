@@ -13,6 +13,7 @@ use App\Actions\RetinaAction;
 use App\Models\Helpers\Ticket;
 use App\Models\Helpers\TicketComment;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaTicketComment extends RetinaAction
@@ -21,13 +22,15 @@ class StoreRetinaTicketComment extends RetinaAction
 
     public function handle(Ticket $ticket, array $modelData): TicketComment
     {
-        return StoreTicketComment::make()->action($ticket, $this->webUser, ['body' => $modelData['body']]);
+        return StoreTicketComment::make()->action($ticket, $this->webUser, Arr::only($modelData, ['body', 'images']));
     }
 
     public function rules(): array
     {
         return [
-            'body' => ['required', 'string', 'max:10000'],
+            'body'     => ['required_without:images', 'nullable', 'string', 'max:10000'],
+            'images'   => ['sometimes', 'array', 'max:5'],
+            'images.*' => ['image', 'max:10240'],
         ];
     }
 
