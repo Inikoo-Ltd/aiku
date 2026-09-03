@@ -74,6 +74,12 @@ class RouteServiceProvider extends ServiceProvider
 
         Route::middleware('aiku-public')
             ->domain(config('app.domain'))
+            ->prefix('wix')
+            ->name('wix.')
+            ->group(base_path('routes/grp/wix.php'));
+
+        Route::middleware('aiku-public')
+            ->domain(config('app.domain'))
             ->name('aiku-public.')
             ->group(base_path('routes/aiku-public/web/root.php'));
 

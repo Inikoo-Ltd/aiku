@@ -52,6 +52,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             PlatformTypeEnum::WOOCOMMERCE,
             PlatformTypeEnum::MAGENTO,
             PlatformTypeEnum::EBAY,
+            PlatformTypeEnum::WIX,
 
         ])) {
             $reconnectRoute = [

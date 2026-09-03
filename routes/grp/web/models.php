@@ -142,6 +142,8 @@ use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
 use App\Actions\Dispatching\Trolley\UpdateTrolley;
 use App\Actions\Dropshipping\Allegro\Product\MatchPortfolioToCurrentAllegroProduct;
 use App\Actions\Dropshipping\Allegro\Product\StoreNewProductToCurrentAllegro;
+use App\Actions\Dropshipping\Wix\Product\MatchPortfolioToCurrentWixProduct;
+use App\Actions\Dropshipping\Wix\Product\StoreNewProductToCurrentWix;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CheckCustomerSalesChannel;
@@ -979,6 +981,8 @@ Route::post('portfolio/{portfolio:id}/store-new-tiktok-product', StoreNewProduct
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-allegro-product', MatchPortfolioToCurrentAllegroProduct::class)->name('portfolio.match_to_existing_allegro_product');
 Route::post('portfolio/{portfolio:id}/store-new-allegro-product', StoreNewProductToCurrentAllegro::class)->name('portfolio.store_new_allegro_product');
+Route::post('portfolio/{portfolio:id}/match-to-existing-wix-product', MatchPortfolioToCurrentWixProduct::class)->name('portfolio.match_to_existing_wix_product');
+Route::post('portfolio/{portfolio:id}/store-new-wix-product', StoreNewProductToCurrentWix::class)->name('portfolio.store_new_wix_product');
 
 Route::patch('{storedItem:id}/stored-items/pallets', SyncStoredItemPallet::class)->name('stored-items.pallets.update');
 Route::patch('{storedItem:id}/stored-items', MoveStoredItem::class)->name('stored-items.move');

@@ -55,9 +55,11 @@ class PortfoliosResource extends JsonResource
             'platform_status'               => $this->platform_type === 'manual' ? $this->status : $this->platform_status,
             'platform_possible_matches'     => $this->platform_possible_matches,
             'platform_product_id'           => $this->platform_product_id,
+            'shopify_product_data'  => Arr::get($this->data, 'shopify_product', []),
             'platform_product_data' => match ($this->platform_type) {
                 PlatformTypeEnum::WOOCOMMERCE->value => Arr::get($this->data, 'woo_product', []),
                 PlatformTypeEnum::EBAY->value => Arr::get($this->data, 'ebay_product', []),
+                PlatformTypeEnum::WIX->value => Arr::get($this->data, 'wix_product', []),
                 default => [],
             },
 

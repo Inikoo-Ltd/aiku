@@ -212,6 +212,9 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                         PlatformTypeEnum::ALLEGRO => [
                             'name' => 'grp.json.dropshipping.customer_sales_channel.allegro_products'
                         ],
+                        PlatformTypeEnum::WIX => [
+                            'name' => 'grp.json.dropshipping.customer_sales_channel.wix_products'
+                        ],
                         default => false
                     },
                     'single_create_new' => match ($this->customerSalesChannel->platform->type) {
@@ -230,6 +233,9 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                         PlatformTypeEnum::ALLEGRO => [
                             'name' => 'grp.models.portfolio.store_new_allegro_product'
                         ],
+                        PlatformTypeEnum::WIX => [
+                            'name' => 'grp.models.portfolio.store_new_wix_product'
+                        ],
                         default => false
                     },
                     'single_match' => match ($this->customerSalesChannel->platform->type) {
@@ -247,6 +253,9 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                         ],
                         PlatformTypeEnum::ALLEGRO => [
                             'name' => 'grp.models.portfolio.match_to_existing_allegro_product'
+                        ],
+                        PlatformTypeEnum::WIX => [
+                            'name' => 'grp.models.portfolio.match_to_existing_wix_product'
                         ],
                         default => false
                     },
