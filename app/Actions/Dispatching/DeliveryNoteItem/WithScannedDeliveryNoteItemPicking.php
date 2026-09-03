@@ -113,13 +113,15 @@ trait WithScannedDeliveryNoteItemPicking
 
         $modelData = [
             'location_org_stock_id' => $location->id,
-            'quantity'              => $quantityToPick,
             'picker_user_id'        => $user->id,
         ];
 
         if ($picking) {
             data_set($modelData, 'picking_id', $picking->id);
+            $quantityToPick += $picking->quantity;
         }
+
+        data_set($modelData, 'quantity', $quantityToPick);
 
         UpsertPicking::make()->action($deliveryNoteItem, $user, $modelData);
 
