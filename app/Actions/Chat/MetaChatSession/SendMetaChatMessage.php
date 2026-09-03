@@ -312,6 +312,19 @@ class SendMetaChatMessage
             return ['ok' => true, 'parameters' => $manualParameters];
         }
 
+        if (count($manualParameters) >= count($tags)) {
+            $blanks = array_filter($manualParameters, fn ($v) => blank($v));
+            if (!empty($blanks)) {
+                return [
+                    'ok'      => false,
+                    'message' => __('All template parameters must have a value.'),
+                    'code'    => 422,
+                ];
+            }
+
+            return ['ok' => true, 'parameters' => $manualParameters];
+        }
+
         $resolved = ResolveWhatsappTemplateTags::run($metaChatSession, $tags, $agent);
 
         if ($resolved['missing']) {
@@ -324,7 +337,7 @@ class SendMetaChatMessage
             ];
         }
 
-        return ['ok' => true, 'parameters' => $resolved['values']];
+        return ['ok' => true, 'parameters' => array_filter($resolved['values'], fn ($v) => $v !== null)];
     }
 
     protected function uploadMedia(string $phoneNumberId, string $accessToken, UploadedFile $file): array

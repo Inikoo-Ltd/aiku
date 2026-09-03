@@ -38,11 +38,10 @@ class ResolveWhatsappTemplateTags
 
             if (blank($value)) {
                 $missing[] = $tag;
-
-                continue;
+                $values[]  = null;
+            } else {
+                $values[] = (string) $value;
             }
-
-            $values[] = (string) $value;
         }
 
         return ['values' => $values, 'missing' => $missing];

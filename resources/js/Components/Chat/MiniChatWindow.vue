@@ -22,6 +22,8 @@ import {
     faPhone,
     faCopy,
     faCircleExclamation,
+    faPlus,
+    faMagnifyingGlass,
 } from "@fortawesome/free-solid-svg-icons"
 import { faJira } from "@fortawesome/free-brands-svg-icons"
 import { faUser } from "@fal"
@@ -100,6 +102,14 @@ const templateOnly = computed(() => isWhatsapp.value && canSendNonTemplate.value
 const isTemplateDialogOpen = ref(false)
 const templates = ref<any[]>([])
 const isLoadingTemplates = ref(false)
+const templateSearch = ref("")
+const filteredTemplates = computed(() => {
+    const q = templateSearch.value.trim().toLowerCase()
+    if (!q) return templates.value
+    return templates.value.filter((t: any) =>
+        t.name.toLowerCase().includes(q) || (t.category ?? "").toLowerCase().includes(q)
+    )
+})
 const selectedTemplate = ref<any>(null)
 const hoveredTemplate = ref<any>(null)
 const templateParameters = ref<string[]>([])
@@ -107,6 +117,29 @@ const popupStyle = ref<Record<string, string>>({})
 const hasTemplate = computed(() => !!selectedTemplate.value)
 const templateAutoFills = computed(() => !!selectedTemplate.value?.auto_fill)
 const templateMissingTags = computed(() => selectedTemplate.value?.missing_tags ?? [])
+
+const escapeHtml = (str: string) =>
+    str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+
+const parameterLabel = (index: number): string => {
+    const tags = selectedTemplate.value?.merge_tags ?? []
+    if (tags[index]) {
+        return String(tags[index]).replace(/_/g, " ")
+    }
+    return `{{${index + 1}}}`
+}
+
+const tagBadge = (label: string) =>
+    `<span class="inline-flex items-center px-1 py-0.5 mx-0.5 rounded bg-blue-50 text-blue-600 text-[9px] font-medium align-baseline whitespace-nowrap">${escapeHtml(label)}</span>`
+
+const formatBodyWithTags = (body: string, tags: string[] = [], values: string[] = []) => {
+    return escapeHtml(body).replace(/\{\{(\d+)\}\}/g, (_match, num) => {
+        const index = parseInt(num) - 1
+        if (values[index]?.trim()) return escapeHtml(values[index])
+        const label = tags[index] ? String(tags[index]).replace(/_/g, " ") : `{{${num}}}`
+        return tagBadge(label)
+    })
+}
 
 const templatePreview = computed(() => {
     if (!selectedTemplate.value) return ""
@@ -120,11 +153,23 @@ const templatePreview = computed(() => {
     return body
 })
 
+const templatePreviewHtml = computed(() => {
+    if (!selectedTemplate.value) return ""
+    if (selectedTemplate.value.auto_fill) {
+        return formatBodyWithTags(
+            selectedTemplate.value.preview ?? selectedTemplate.value.body,
+            selectedTemplate.value.merge_tags ?? []
+        )
+    }
+    return formatBodyWithTags(
+        selectedTemplate.value.body,
+        selectedTemplate.value.merge_tags ?? [],
+        templateParameters.value
+    )
+})
+
 const canSendTemplate = computed(() => {
     if (!selectedTemplate.value) return false
-    if (selectedTemplate.value.auto_fill) {
-        return templateMissingTags.value.length === 0
-    }
     return templateParameters.value.every((p) => p.trim() !== "")
 })
 
@@ -513,6 +558,7 @@ const pickEmoji = (emoji: string) => {
 
 const openTemplateDialog = async () => {
     if (!props.chat.shopId) return
+    templateSearch.value = ""
     isTemplateDialogOpen.value = true
     isLoadingTemplates.value = true
     try {
@@ -540,7 +586,11 @@ const showTemplatePopup = (template: any, event: MouseEvent) => {
 
 const selectTemplate = (template: any) => {
     selectedTemplate.value = template
-    templateParameters.value = template.auto_fill ? [] : Array(template.parameter_count).fill("")
+    if (template.auto_fill && template.resolved_values) {
+        templateParameters.value = template.resolved_values.map((v: any) => v ?? "")
+    } else {
+        templateParameters.value = Array(template.parameter_count).fill("")
+    }
     hoveredTemplate.value = null
     isTemplateDialogOpen.value = false
     newMessage.value = ""
@@ -1093,19 +1143,15 @@ onUnmounted(() => {
                                 <FontAwesomeIcon :icon="faXmark" class="text-[8px]" />
                             </button>
                         </div>
-                        <div class="px-1 pt-1 text-[10px] text-gray-500 whitespace-pre-line max-h-16 overflow-y-auto leading-snug">
-                            {{ templatePreview }}
-                        </div>
-                        <div v-if="templateAutoFills && templateMissingTags.length"
-                            class="mt-1 px-2 py-1 rounded bg-amber-50 border border-amber-200 text-amber-700 text-[9px]">
-                            {{ trans("Cannot send yet — no value for:") }} {{ templateMissingTags.join(", ") }}
-                        </div>
-                        <div v-if="hasTemplate && !templateAutoFills && templateParameters.length"
-                            class="mt-1 space-y-1">
-                            <input v-for="(_, index) in templateParameters" :key="index"
-                                v-model="templateParameters[index]" type="text"
-                                :placeholder="trans('Value for :placeholder', { placeholder: `{{${index + 1}}}` })"
-                                class="w-full text-[10px] border rounded px-2 py-1 focus:outline-none focus:border-green-500" />
+                        <div class="px-1 pt-1 text-[10px] text-gray-500 whitespace-pre-line max-h-16 overflow-y-auto leading-snug"
+                            v-html="templatePreviewHtml"></div>
+                        <div v-if="hasTemplate && templateParameters.length" class="mt-1 space-y-1">
+                            <template v-for="(_, index) in templateParameters" :key="index">
+                                <input v-if="!selectedTemplate?.resolved_values || selectedTemplate.resolved_values[index] == null"
+                                    v-model="templateParameters[index]" type="text"
+                                    :placeholder="trans('Value for :placeholder', { placeholder: parameterLabel(index) })"
+                                    class="w-full text-[10px] border rounded px-2 py-1 focus:outline-none focus:border-green-500" />
+                            </template>
                         </div>
                     </div>
 
@@ -1200,12 +1246,26 @@ onUnmounted(() => {
             <div v-if="isLoadingTemplates" class="flex items-center justify-center py-8 text-gray-400">
                 <FontAwesomeIcon :icon="faSpinner" class="animate-spin" />
             </div>
-            <div v-else-if="!templates.length" class="py-8 text-center text-sm text-gray-400">
-                {{ trans('No approved templates found for this shop') }}
-            </div>
-            <div v-else class="space-y-3">
-                <div class="max-h-48 overflow-y-auto border rounded-lg divide-y" @scroll="hoveredTemplate = null">
-                    <button v-for="template in templates" :key="template.id"
+            <template v-else>
+                <div class="relative mb-2">
+                    <FontAwesomeIcon :icon="faMagnifyingGlass" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-gray-400" />
+                    <input v-model="templateSearch" type="text" :placeholder="trans('Search')"
+                        class="w-full text-sm border rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:border-gray-400" />
+                </div>
+
+                <a v-if="chat.organisationSlug && chat.shopSlug"
+                    :href="route('grp.org.shops.show.chat.whatsapp_templates.create', [chat.organisationSlug, chat.shopSlug])"
+                    target="_blank" rel="noopener noreferrer"
+                    class="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mb-2">
+                    <FontAwesomeIcon :icon="faPlus" class="text-[10px]" />
+                    {{ trans('Create new template') }}
+                </a>
+
+                <div v-if="!filteredTemplates.length" class="py-6 text-center text-sm text-gray-400">
+                    {{ templates.length ? trans('No templates match your search') : trans('No approved templates found for this shop') }}
+                </div>
+                <div v-else class="max-h-48 overflow-y-auto border rounded-lg divide-y" @scroll="hoveredTemplate = null">
+                    <button v-for="template in filteredTemplates" :key="template.id"
                         class="w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors"
                         :class="{ 'bg-green-50': selectedTemplate?.id === template.id }"
                         @mouseenter="showTemplatePopup(template, $event)" @mouseleave="hoveredTemplate = null"
@@ -1216,14 +1276,13 @@ onUnmounted(() => {
                         </div>
                     </button>
                 </div>
-            </div>
+            </template>
             <Teleport to="body">
                 <div v-if="hoveredTemplate" :style="popupStyle"
                     class="fixed z-[2000] w-72 rounded-lg border bg-white p-3 shadow-xl pointer-events-none">
                     <div class="text-sm font-medium mb-1">{{ hoveredTemplate.name }}</div>
-                    <div class="text-xs text-gray-600 whitespace-pre-line max-h-60 overflow-y-auto">
-                        {{ hoveredTemplate.body }}
-                    </div>
+                    <div class="text-xs text-gray-600 whitespace-pre-line max-h-60 overflow-y-auto leading-relaxed"
+                        v-html="formatBodyWithTags(hoveredTemplate.body, hoveredTemplate.merge_tags ?? [])"></div>
                     <div class="mt-2 pt-2 border-t text-[10px] text-gray-400">
                         {{ hoveredTemplate.language }}<span v-if="hoveredTemplate.category"> &middot; {{ hoveredTemplate.category }}</span>
                         &middot; {{ trans(':count parameters', { count: hoveredTemplate.parameter_count }) }}

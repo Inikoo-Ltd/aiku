@@ -14,6 +14,8 @@ import {
     faTimesCircle,
     faRotateRight,
     faFaceSmile,
+    faPlus,
+    faMagnifyingGlass,
 } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
@@ -55,6 +57,7 @@ interface WhatsappTemplate {
     merge_tags?: string[]
     auto_fill?: boolean
     missing_tags?: string[]
+    resolved_values?: (string | null)[]
     preview?: string | null
 }
 
@@ -488,7 +491,40 @@ const selectedTemplate = ref<WhatsappTemplate | null>(null)
 const hoveredTemplate = ref<WhatsappTemplate | null>(null)
 const templateParameters = ref<string[]>([])
 
+const templateSearch = ref("")
+const filteredTemplates = computed(() => {
+    const q = templateSearch.value.trim().toLowerCase()
+    if (!q) return templates.value
+    return templates.value.filter((t: WhatsappTemplate) =>
+        t.name.toLowerCase().includes(q) || (t.category ?? "").toLowerCase().includes(q)
+    )
+})
+
+const escapeHtml = (str: string) =>
+    str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+
+const parameterLabel = (index: number): string => {
+    const tags = selectedTemplate.value?.merge_tags ?? []
+    if (tags[index]) {
+        return String(tags[index]).replace(/_/g, " ")
+    }
+    return `{{${index + 1}}}`
+}
+
+const tagBadge = (label: string) =>
+    `<span class="inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded bg-blue-50 text-blue-600 text-[10px] font-medium align-baseline whitespace-nowrap">${escapeHtml(label)}</span>`
+
+const formatBodyWithTags = (body: string, tags: string[] = [], values: string[] = []) => {
+    return escapeHtml(body).replace(/\{\{(\d+)\}\}/g, (_match, num) => {
+        const index = parseInt(num) - 1
+        if (values[index]?.trim()) return escapeHtml(values[index])
+        const label = tags[index] ? String(tags[index]).replace(/_/g, " ") : `{{${num}}}`
+        return tagBadge(label)
+    })
+}
+
 const openTemplateDialog = async () => {
+    templateSearch.value = ""
     isTemplateDialogOpen.value = true
 
     if (!chatSession.value?.shop?.id) return
@@ -527,8 +563,11 @@ const hasTemplate = computed(() => !!selectedTemplate.value)
 
 const selectTemplate = (template: WhatsappTemplate) => {
     selectedTemplate.value = template
-    // A template built with merge tags fills itself from the conversation.
-    templateParameters.value = template.auto_fill ? [] : Array(template.parameter_count).fill("")
+    if (template.auto_fill && template.resolved_values) {
+        templateParameters.value = template.resolved_values.map((v) => v ?? "")
+    } else {
+        templateParameters.value = Array(template.parameter_count).fill("")
+    }
     hoveredTemplate.value = null
     isTemplateDialogOpen.value = false
     newMessage.value = ""
@@ -557,13 +596,23 @@ const templatePreview = computed(() => {
     return body
 })
 
+const templatePreviewHtml = computed(() => {
+    if (!selectedTemplate.value) return ""
+    if (selectedTemplate.value.auto_fill) {
+        return formatBodyWithTags(
+            selectedTemplate.value.preview ?? selectedTemplate.value.body,
+            selectedTemplate.value.merge_tags ?? []
+        )
+    }
+    return formatBodyWithTags(
+        selectedTemplate.value.body,
+        selectedTemplate.value.merge_tags ?? [],
+        templateParameters.value
+    )
+})
+
 const canSendTemplate = computed(() => {
     if (!selectedTemplate.value) return false
-
-    if (selectedTemplate.value.auto_fill) {
-        return templateMissingTags.value.length === 0
-    }
-
     return templateParameters.value.every((parameter) => parameter.trim() !== "")
 })
 
@@ -937,26 +986,21 @@ onUnmounted(() => {
                 </div>
 
                 <div v-if="hasTemplate"
-                    class="px-4 pt-2 pb-1 text-sm leading-5 text-gray-500 whitespace-pre-line max-h-[120px] overflow-y-auto">
-                    {{ templatePreview }}
-                </div>
+                    class="px-4 pt-2 pb-1 text-sm leading-relaxed text-gray-500 whitespace-pre-line max-h-[120px] overflow-y-auto"
+                    v-html="templatePreviewHtml"></div>
 
-                <div v-if="hasTemplate && templateAutoFills && templateMissingTags.length"
-                    class="mx-3 mb-1 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-[11px]">
-                    {{ trans("Cannot send yet — no value for:") }} {{ templateMissingTags.join(", ") }}
-                </div>
-
-                <div v-else-if="hasTemplate && templateAutoFills"
+                <div v-if="hasTemplate && templateAutoFills && !templateMissingTags.length"
                     class="mx-3 mb-1 text-[11px] text-gray-400">
                     {{ trans("Values filled automatically from this contact.") }}
                 </div>
 
-                <div v-if="hasTemplate && !templateAutoFills && templateParameters.length"
-                    class="px-3 pb-1 space-y-1.5">
-                    <input v-for="(parameter, index) in templateParameters" :key="index"
-                        v-model="templateParameters[index]" type="text"
-                        :placeholder="trans('Value for :placeholder', { placeholder: `{{${index + 1}}}` })"
-                        class="w-full text-xs border rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-green-500" />
+                <div v-if="hasTemplate && templateParameters.length" class="px-3 pb-1 space-y-1.5">
+                    <template v-for="(parameter, index) in templateParameters" :key="index">
+                        <input v-if="!selectedTemplate?.resolved_values || selectedTemplate.resolved_values[index] == null"
+                            v-model="templateParameters[index]" type="text"
+                            :placeholder="trans('Value for :placeholder', { placeholder: parameterLabel(index) })"
+                            class="w-full text-xs border rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-green-500" />
+                    </template>
                 </div>
 
                 <textarea v-if="!hasTemplate" ref="messageInput" v-model="newMessage" @input="autoResize"
@@ -1006,13 +1050,26 @@ onUnmounted(() => {
                 <FontAwesomeIcon :icon="faSpinner" class="animate-spin" />
             </div>
 
-            <div v-else-if="!templates.length" class="py-8 text-center text-sm text-gray-400">
-                {{ trans('No approved templates found for this shop') }}
-            </div>
+            <template v-else>
+                <div class="relative mb-2">
+                    <FontAwesomeIcon :icon="faMagnifyingGlass" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400" />
+                    <input v-model="templateSearch" type="text" :placeholder="trans('Search')"
+                        class="w-full text-sm border rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:border-gray-400" />
+                </div>
 
-            <div v-else class="space-y-3">
-                <div class="max-h-48 overflow-y-auto border rounded-lg divide-y" @scroll="hoveredTemplate = null">
-                    <button v-for="template in templates" :key="template.id"
+                <a v-if="session?.shop?.slug"
+                    :href="route('grp.org.shops.show.chat.whatsapp_templates.create', [organisationSlug, session.shop.slug])"
+                    target="_blank" rel="noopener noreferrer"
+                    class="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mb-2">
+                    <FontAwesomeIcon :icon="faPlus" class="text-xs" />
+                    {{ trans('Create new template') }}
+                </a>
+
+                <div v-if="!filteredTemplates.length" class="py-6 text-center text-sm text-gray-400">
+                    {{ templates.length ? trans('No templates match your search') : trans('No approved templates found for this shop') }}
+                </div>
+                <div v-else class="max-h-48 overflow-y-auto border rounded-lg divide-y" @scroll="hoveredTemplate = null">
+                    <button v-for="template in filteredTemplates" :key="template.id"
                         class="w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors"
                         :class="{ 'bg-green-50': selectedTemplate?.id === template.id }"
                         @mouseenter="showTemplatePopup(template, $event)" @mouseleave="hoveredTemplate = null"
@@ -1023,16 +1080,14 @@ onUnmounted(() => {
                         </div>
                     </button>
                 </div>
-
-            </div>
+            </template>
 
             <Teleport to="body">
                 <div v-if="hoveredTemplate" :style="popupStyle"
                     class="fixed z-[2000] w-72 rounded-lg border bg-white p-3 shadow-xl pointer-events-none">
                     <div class="text-sm font-medium mb-1">{{ hoveredTemplate.name }}</div>
-                    <div class="text-xs text-gray-600 whitespace-pre-line max-h-60 overflow-y-auto">
-                        {{ hoveredTemplate.body }}
-                    </div>
+                    <div class="text-xs text-gray-600 whitespace-pre-line max-h-60 overflow-y-auto leading-relaxed"
+                        v-html="formatBodyWithTags(hoveredTemplate.body, hoveredTemplate.merge_tags ?? [])"></div>
                     <div class="mt-2 pt-2 border-t text-[10px] text-gray-400">
                         {{ hoveredTemplate.language }}<span v-if="hoveredTemplate.category"> · {{ hoveredTemplate.category }}</span>
                         · {{ trans(':count parameters', { count: hoveredTemplate.parameter_count }) }}

@@ -66,6 +66,7 @@ class GetMetaMessageTemplates
                     'merge_tags'      => $tags,
                     'auto_fill'       => (bool) $tags,
                     'missing_tags'    => $resolved['missing'] ?? [],
+                    'resolved_values' => $resolved['values'] ?? null,
                     'preview'         => $resolved ? $this->fill($body, $resolved['values']) : null,
                 ];
             })
@@ -78,7 +79,9 @@ class GetMetaMessageTemplates
     protected function fill(string $body, array $values): string
     {
         foreach ($values as $index => $value) {
-            $body = str_replace('{{'.($index + 1).'}}', $value, $body);
+            if ($value !== null) {
+                $body = str_replace('{{'.($index + 1).'}}', $value, $body);
+            }
         }
 
         return $body;
