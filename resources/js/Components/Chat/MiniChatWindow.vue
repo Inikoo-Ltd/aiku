@@ -18,10 +18,15 @@ import {
     faEllipsisVertical,
     faSpinner,
     faEnvelope,
+    faLocationDot,
+    faPhone,
+    faCopy,
+    faCircleExclamation,
 } from "@fortawesome/free-solid-svg-icons"
 import { faJira } from "@fortawesome/free-brands-svg-icons"
 import { faUser } from "@fal"
 import { faCheck, faCheckDouble, faExclamationCircle } from "@far"
+import { useCopyText } from "@/Composables/useCopyText"
 import { notify } from "@kyvg/vue3-notification"
 import { useLayoutStore } from "@/Stores/layout"
 import Image from "@common/Components/Image.vue"
@@ -270,6 +275,63 @@ const openAttachment = (message: LocalChatMessage) => {
         window.open(url, "_blank")
     }
 }
+
+const MAP = { tile: 256, zoom: 16, width: 200, height: 90 }
+
+const getLocation = (message: LocalChatMessage) => {
+    if (message.metadata?.wa_type !== "location") return null
+    const payload = message.metadata?.wa_payload
+    const lat = Number(payload?.latitude)
+    const lng = Number(payload?.longitude)
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+    return {
+        latitude: lat,
+        longitude: lng,
+        name: payload?.name || trans("Shared location"),
+        address: payload?.address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+    }
+}
+
+const getMapTiles = (loc: { latitude: number; longitude: number }) => {
+    const count = 2 ** MAP.zoom
+    const latRad = (loc.latitude * Math.PI) / 180
+    const worldX = ((loc.longitude + 180) / 360) * count * MAP.tile
+    const worldY = ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * count * MAP.tile
+    const originX = worldX - MAP.width / 2
+    const originY = worldY - MAP.height / 2
+    const tiles: { key: string; src: string; left: number; top: number }[] = []
+    for (let x = Math.floor(originX / MAP.tile); x <= Math.floor((originX + MAP.width - 1) / MAP.tile); x++) {
+        for (let y = Math.floor(originY / MAP.tile); y <= Math.floor((originY + MAP.height - 1) / MAP.tile); y++) {
+            if (y < 0 || y >= count) continue
+            tiles.push({
+                key: `${x}-${y}`,
+                src: `https://tile.openstreetmap.org/${MAP.zoom}/${((x % count) + count) % count}/${y}.png`,
+                left: x * MAP.tile - originX,
+                top: y * MAP.tile - originY,
+            })
+        }
+    }
+    return tiles
+}
+
+const getSharedContacts = (message: LocalChatMessage) => {
+    if (message.metadata?.wa_type !== "contacts") return []
+    const payload = message.metadata?.wa_payload
+    if (!Array.isArray(payload)) return []
+    return payload.map((c: any, i: number) => {
+        const name = c?.name?.formatted_name
+            || [c?.name?.first_name, c?.name?.last_name].filter(Boolean).join(" ")
+            || trans("Shared contact")
+        return {
+            key: `${i}-${name}`,
+            name,
+            initial: name.trim().charAt(0).toUpperCase(),
+            phones: (c?.phones ?? []).map((p: any) => ({ number: p?.phone, label: p?.type })).filter((p: any) => !!p.number),
+        }
+    })
+}
+
+const isUnsupported = (message: LocalChatMessage) => message.metadata?.wa_type === "unsupported"
 
 const getMessages = async () => {
     isLoading.value = true
@@ -887,20 +949,73 @@ onUnmounted(() => {
                                 :class="['guest', 'user'].includes(message.sender_type)
                                     ? 'bg-white text-gray-800 rounded-bl-sm'
                                     : 'bg-indigo-500 text-white rounded-br-sm'">
-                                <p v-if="messageText(message)" class="whitespace-pre-wrap break-words">
-                                    {{ messageText(message) }}
-                                </p>
+                                <div v-if="isUnsupported(message)"
+                                    class="inline-flex items-center gap-1 text-[10px] italic opacity-60">
+                                    <FontAwesomeIcon :icon="faCircleExclamation" class="text-[9px]" />
+                                    <span>{{ messageText(message) || trans('Unsupported message') }}</span>
+                                </div>
 
-                                <img v-if="message.message_type === 'image' && message.media_url"
-                                    :src="message.media_url.webp ?? message.media_url.original" :alt="trans('Attachment')"
-                                    class="mt-1 rounded max-w-full max-h-28 object-contain cursor-pointer bg-gray-50"
-                                    @click="openAttachment(message)" />
+                                <div v-else-if="getSharedContacts(message).length" class="mb-0.5 flex flex-col gap-1 w-full">
+                                    <div v-for="contact in getSharedContacts(message)" :key="contact.key"
+                                        class="rounded border border-black/10 bg-white px-2 py-1.5">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-200 text-[9px] font-semibold text-gray-600">
+                                                {{ contact.initial }}
+                                            </span>
+                                            <span class="min-w-0 truncate text-[10px] font-semibold text-gray-800">{{ contact.name }}</span>
+                                        </div>
+                                        <div v-for="phone in contact.phones" :key="phone.number"
+                                            class="mt-1 flex items-center gap-1.5 border-t border-gray-100 pt-1">
+                                            <FontAwesomeIcon :icon="faPhone" class="text-[8px] text-gray-400" />
+                                            <div class="min-w-0 flex-1">
+                                                <div class="truncate text-[10px] text-gray-700">{{ phone.number }}</div>
+                                                <div v-if="phone.label" class="text-[9px] text-gray-400">{{ phone.label }}</div>
+                                            </div>
+                                            <button type="button" v-tooltip="trans('Copy')" @click="useCopyText(phone.number)"
+                                                class="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+                                                <FontAwesomeIcon :icon="faCopy" class="text-[8px]" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
 
-                                <button v-else-if="message.message_type === 'file' && message.media_url" type="button"
-                                    class="mt-1 flex items-center gap-1 max-w-full text-[10px] underline truncate"
-                                    @click="openAttachment(message)">
-                                    📄 {{ message.file_name || message.media_url.name || trans('Attachment') }}
-                                </button>
+                                <a v-else-if="getLocation(message)"
+                                    :href="`https://www.google.com/maps/search/?api=1&query=${getLocation(message)!.latitude},${getLocation(message)!.longitude}`"
+                                    target="_blank" rel="noopener noreferrer"
+                                    class="mb-0.5 block w-full overflow-hidden rounded border border-black/10 bg-white hover:border-black/25 transition">
+                                    <div class="relative overflow-hidden bg-gray-100" :style="{ width: MAP.width + 'px', height: MAP.height + 'px' }">
+                                        <img v-for="tile in getMapTiles(getLocation(message)!)" :key="tile.key" :src="tile.src" alt="" loading="lazy"
+                                            class="absolute max-w-none"
+                                            :style="{ left: `${tile.left}px`, top: `${tile.top}px`, width: '256px', height: '256px' }" />
+                                        <FontAwesomeIcon :icon="faLocationDot"
+                                            class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full text-base text-red-500 drop-shadow" />
+                                        <span class="absolute bottom-0 right-0 bg-white/75 px-0.5 text-[7px] text-gray-500">© OpenStreetMap</span>
+                                    </div>
+                                    <div class="flex items-start gap-1 px-1.5 py-1">
+                                        <FontAwesomeIcon :icon="faLocationDot" class="mt-0.5 text-[9px] text-red-500" />
+                                        <div class="min-w-0">
+                                            <div class="truncate text-[10px] font-semibold text-gray-800">{{ getLocation(message)!.name }}</div>
+                                            <div class="text-[9px] leading-snug text-gray-500">{{ getLocation(message)!.address }}</div>
+                                        </div>
+                                    </div>
+                                </a>
+
+                                <template v-else>
+                                    <p v-if="messageText(message)" class="whitespace-pre-wrap break-words">
+                                        {{ messageText(message) }}
+                                    </p>
+
+                                    <img v-if="message.message_type === 'image' && message.media_url"
+                                        :src="message.media_url.webp ?? message.media_url.original" :alt="trans('Attachment')"
+                                        class="mt-1 rounded max-w-full max-h-28 object-contain cursor-pointer bg-gray-50"
+                                        @click="openAttachment(message)" />
+
+                                    <button v-else-if="message.message_type === 'file' && message.media_url" type="button"
+                                        class="mt-1 flex items-center gap-1 max-w-full text-[10px] underline truncate"
+                                        @click="openAttachment(message)">
+                                        📄 {{ message.file_name || message.media_url.name || trans('Attachment') }}
+                                    </button>
+                                </template>
 
                                 <div class="flex items-center justify-end gap-1 mt-0.5 text-[9px]"
                                     :class="['guest', 'user'].includes(message.sender_type) ? 'text-gray-400' : 'text-white/70'">
