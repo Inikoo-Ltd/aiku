@@ -24,6 +24,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class GetMigrationOrgStockMovementAuditFromAurora
 {
@@ -145,6 +146,7 @@ class GetMigrationOrgStockMovementAuditFromAurora
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $orgStockSlug     = $command->option('org_stock_slug');
         $organisationSlug = $command->option('organisation');
         $organisation     = null;

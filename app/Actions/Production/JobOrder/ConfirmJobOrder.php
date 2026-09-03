@@ -16,10 +16,13 @@ use App\Models\Production\JobOrder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use Lorisleiva\Actions\ActionRequest;
 
 class ConfirmJobOrder extends OrgAction
 {
+    private JobOrder $jobOrder;
+
     public function handle(JobOrder $jobOrder, array $modelData = []): JobOrder
     {
         if ($jobOrder->state != JobOrderStateEnum::IN_PROCESS) {
@@ -83,11 +86,14 @@ class ConfirmJobOrder extends OrgAction
             return true;
         }
 
+        $isOwnJobOrder = $this->jobOrder->employee_id
+            && $this->jobOrder->employee_id == GetUserCurrentEmployee::run($request->user(), $this->organisation->id)?->id;
+
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             'productions-view.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
-        ]);
+        ]) || ($isOwnJobOrder && $request->user()->authTo("productions_operations.{$this->production->id}.prepare"));
     }
 
     public function action(JobOrder $jobOrder, array $modelData = []): JobOrder
@@ -100,6 +106,7 @@ class ConfirmJobOrder extends OrgAction
 
     public function asController(JobOrder $jobOrder, ActionRequest $request): JobOrder
     {
+        $this->jobOrder = $jobOrder;
         $this->initialisationFromProduction($jobOrder->production, $request);
 
         return $this->handle($jobOrder, $this->validatedData);

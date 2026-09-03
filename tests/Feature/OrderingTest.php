@@ -74,6 +74,11 @@ use App\Actions\Ordering\PurgedOrder\UpdatePurgedOrder;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use Illuminate\Support\Str;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Actions\Accounting\Payment\StorePayment;
+use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
+use App\Actions\CRM\Customer\PayOrderWithCustomerBalance;
 use App\Actions\Ordering\Transaction\StoreTransactionFromAdjustment;
 use App\Actions\Ordering\Transaction\StoreTransactionFromCharge;
 use App\Actions\Ordering\Transaction\StoreTransactionFromShipping;
@@ -3287,3 +3292,78 @@ test('repair order charge flags sets premium flag from orphan charge line', func
     $this->artisan('repair:order_charge_flags --commit')->assertSuccessful();
     expect($order->refresh()->is_premium_dispatch)->toBeTrue();
 })->depends('create order');
+
+test('submitting an order stamps the customer permanent shipping label note unless the order has its own', function () {
+    $this->customer->update(['shipping_notes' => 'Open Mon-Fri 9-5']);
+
+    $newOrder = function () {
+        $modelData = Order::factory()->definition();
+        data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+        data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+        return StoreOrder::make()->action($this->customer, $modelData);
+    };
+
+    $order = $newOrder();
+    expect($order->shipping_notes)->toBe('Open Mon-Fri 9-5');
+    $order = SubmitOrder::make()->action($order);
+    expect($order->shipping_notes)->toBe('Open Mon-Fri 9-5');
+
+    $this->customer->update(['shipping_notes' => null]);
+    $order = $newOrder();
+    expect($order->shipping_notes)->toBeNull();
+    $this->customer->update(['shipping_notes' => 'Open Mon-Fri 9-5']);
+    $order = SubmitOrder::make()->action($order->refresh());
+    expect($order->shipping_notes)->toBe('Open Mon-Fri 9-5');
+
+    $order = $newOrder();
+    UpdateOrder::make()->action($order, ['shipping_notes' => 'Leave at reception']);
+    $order = SubmitOrder::make()->action($order->refresh());
+    expect($order->shipping_notes)->toBe('Leave at reception');
+
+    $this->customer->update(['shipping_notes' => null]);
+});
+
+test('paying with balance sends the order to the warehouse only when the balance covers it', function () {
+    $newSubmittedOrder = function () {
+        $modelData = Order::factory()->definition();
+        data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+        data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+        $order = StoreOrder::make()->action($this->customer, $modelData);
+        StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+
+        return SubmitOrder::make()->action($order->refresh());
+    };
+
+    $balanceAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $topUp          = function (float $amount) use ($balanceAccount) {
+        $payment = StorePayment::make()->action($this->customer, $balanceAccount, [
+            'amount'    => $amount,
+            'reference' => 'ref-bal-'.Str::ulid(),
+            'status'    => PaymentStatusEnum::SUCCESS->value,
+            'state'     => PaymentStateEnum::COMPLETED->value,
+        ]);
+        StoreCreditTransaction::make()->action($this->customer, [
+            'payment_id' => $payment->id,
+            'amount'     => $amount,
+            'date'       => now(),
+            'type'       => CreditTransactionTypeEnum::TOP_UP,
+        ]);
+    };
+
+    $order = $newSubmittedOrder();
+    expect((float) $order->total_amount)->toBeGreaterThan(1);
+
+    $topUp(1);
+    $result = PayOrderWithCustomerBalance::make()->initialisationFromShop($this->shop, [])->handle($order->fresh());
+    $order->refresh();
+    expect($result['success'])->toBeTrue($result['reason'])
+        ->and($order->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and($order->pay_status)->toBe(OrderPayStatusEnum::UNPAID);
+
+    $topUp((float) $order->total_amount);
+    PayOrderWithCustomerBalance::make()->initialisationFromShop($this->shop, [])->handle($order->refresh());
+    $order->refresh();
+    expect($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+});

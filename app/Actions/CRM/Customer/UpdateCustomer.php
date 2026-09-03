@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateIsStaff;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\Dropshipping\Platform\RedoPlatformTimeSeries;
@@ -269,7 +270,11 @@ class UpdateCustomer extends OrgAction
             MatchCustomerProspects::run($customer);
         }
 
-        if (Arr::hasAny($changes, ['internal_notes', 'warehouse_internal_notes', 'warehouse_temporary_notes'])) {
+        if (Arr::hasAny($changes, ['email', 'as_employee_id', 'as_organisation_id'])) {
+            CustomerHydrateIsStaff::run($customer);
+        }
+
+        if (Arr::hasAny($changes, ['internal_notes', 'warehouse_internal_notes', 'warehouse_temporary_notes', 'shipping_notes'])) {
             $customer->auditEvent    = AuditEventEnum::CUSTOMER_NOTE->value;
             $customer->isCustomEvent = true;
 
@@ -345,6 +350,7 @@ class UpdateCustomer extends OrgAction
             'internal_notes'                                        => ['sometimes', 'nullable', 'string'],
             'warehouse_internal_notes'                              => ['sometimes', 'nullable', 'string'],
             'warehouse_public_notes'                                => ['sometimes', 'nullable', 'string'],
+            'shipping_notes'                                        => ['sometimes', 'nullable', 'string', 'max:4000'],
             'warehouse_temporary_notes'                             => ['sometimes', 'nullable', 'string'],
             'tax_number'                                            => ['sometimes', 'nullable', 'array'],
             'tags'                                                  => ['sometimes', 'array'],
@@ -365,6 +371,11 @@ class UpdateCustomer extends OrgAction
             'gr_extended_until'                                     => ['sometimes', 'nullable', 'date'],
             'fiscal_name'                                           => ['sometimes', 'nullable', 'string', 'max:255'],
             'is_vip'                                                => ['sometimes', 'boolean'],
+            'as_employee_id'                                        => [
+                'sometimes',
+                'nullable',
+                Rule::exists('employees', 'id')->where('organisation_id', $this->organisation->id),
+            ],
         ];
 
         if ($this?->asAction) {
@@ -374,7 +385,6 @@ class UpdateCustomer extends OrgAction
 
         if (!$this->strict) {
             $rules['as_organisation_id'] = ['sometimes', 'nullable', 'integer'];
-            $rules['as_employee_id']     = ['sometimes', 'nullable', 'integer'];
             $rules['registered_at']      = ['sometimes', 'nullable', 'date'];
             $rules['reference']          = ['sometimes', 'string', 'max:255'];
 
@@ -408,7 +418,11 @@ class UpdateCustomer extends OrgAction
         $this->customer = $customer;
         $this->initialisationFromShop($customer->shop, $request);
 
-        return $this->handle($customer, $this->validatedData);
+        $modelData = $customer->shop->type === ShopTypeEnum::EXTERNAL
+            ? Arr::only($this->validatedData, ['tax_number'])
+            : $this->validatedData;
+
+        return $this->handle($customer, $modelData);
     }
 
     public function action(Customer $customer, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Customer

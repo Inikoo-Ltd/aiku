@@ -18,6 +18,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
@@ -91,7 +92,7 @@ class PayOrderWithCustomerBalance extends OrgAction
             ];
             StoreCreditTransaction::make()->action($customer, $creditTransactionData);
 
-            if ($order->state == OrderStateEnum::SUBMITTED) {
+            if ($order->refresh()->state == OrderStateEnum::SUBMITTED && $order->pay_status == OrderPayStatusEnum::PAID) {
                 SendOrderToWarehouse::run(
                     $order,
                     [

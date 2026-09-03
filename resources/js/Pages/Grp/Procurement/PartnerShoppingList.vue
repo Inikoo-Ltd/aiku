@@ -18,6 +18,8 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { trans } from "laravel-vue-i18n"
 import { PageHeadingTypes } from "@/types/PageHeading"
+import ConfirmDialog from "primevue/confirmdialog"
+import { useConfirm } from "primevue/useconfirm"
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -29,6 +31,23 @@ const props = defineProps<{
 
 const isModalOpen = ref(false)
 const isAutoFillOpen = ref(false)
+const confirm = useConfirm()
+
+function confirmDeleteAll() {
+    confirm.require({
+        group: "partner-shopping-list",
+        header: trans("Delete all open items"),
+        message: trans("Remove every open item from this shopping list? Items already taken by the partner are kept."),
+        rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+        acceptProps: { label: trans("Delete all"), severity: "danger" },
+        accept: () => {
+            router.delete(
+                route("grp.org.procurement.org_partners.show.shopping_list.destroy_open", [route().params["organisation"], props.orgPartner.id]),
+                { preserveScroll: true }
+            )
+        },
+    })
+}
 
 watch(isModalOpen, (isOpen, wasOpen) => {
     if (wasOpen && !isOpen) {
@@ -69,11 +88,13 @@ function deleteItem(item: { id: number }) {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #otherBefore>
+            <Button type="negative" icon="fal fa-trash-alt" :label="trans('Delete all')" @click="confirmDeleteAll" />
             <Button type="secondary" icon="fal fa-magic" :label="trans('Auto-fill')" @click="isAutoFillOpen = true" />
             <Button type="create" :label="trans('Add stocks')" @click="isModalOpen = true" />
         </template>
     </PageHeading>
 
+    <ConfirmDialog group="partner-shopping-list" />
     <ModalPartnerStockList v-model="isModalOpen" :fetchRoute="orgStockFetchRoute" />
     <ModalAutoFillShoppingList v-model="isAutoFillOpen" :orgPartnerId="orgPartner.id" :currency="orgPartner.currency" />
 

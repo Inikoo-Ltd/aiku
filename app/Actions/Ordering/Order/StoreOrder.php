@@ -99,7 +99,7 @@ class StoreOrder extends OrgAction
             $modelData['phone']            = $parent->phone;
             $modelData['contact_name']     = $parent->contact_name;
             $modelData['company_name']     = $parent->company_name;
-
+            data_set($modelData, 'shipping_notes', $parent->shipping_notes, overwrite: false);
 
             $shop = $parent->shop;
         } elseif ($parent instanceof CustomerClient) {
@@ -125,12 +125,14 @@ class StoreOrder extends OrgAction
 
         data_set($modelData, 'master_shop_id', $shop->master_shop_id);
 
-        $isRe = false;
+        $orderCustomer = null;
         if ($parent instanceof Customer) {
-            $isRe = $parent->is_re;
+            $orderCustomer = $parent;
         } elseif ($parent instanceof CustomerClient) {
-            $isRe = $parent->customer->is_re;
+            $orderCustomer = $parent->customer;
         }
+
+        $isRe = $orderCustomer?->is_re ?? false;
 
 
         if (!Arr::exists($modelData, 'tax_category_id')) {
@@ -156,6 +158,9 @@ class StoreOrder extends OrgAction
         }
 
         data_set($modelData, 'is_re', $isRe);
+        data_set($modelData, 'is_vip', $orderCustomer?->is_vip ?? false, false);
+        data_set($modelData, 'as_organisation_id', $orderCustomer?->as_organisation_id, false);
+        data_set($modelData, 'as_employee_id', $orderCustomer?->as_employee_id, false);
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
 

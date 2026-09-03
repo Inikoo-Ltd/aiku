@@ -17,6 +17,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairPortfolioDeletedShopifyUsers
 {
@@ -45,6 +46,7 @@ class RepairPortfolioDeletedShopifyUsers
 
     public function asCommand(): void
     {
+        Nightwatch::dontSample();
         $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 
         $channels = CustomerSalesChannel::where('platform_id', $platform->id)

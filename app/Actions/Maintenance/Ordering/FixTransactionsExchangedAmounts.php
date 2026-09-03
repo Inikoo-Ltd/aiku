@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Ordering\Transaction;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class FixTransactionsExchangedAmounts
 {
@@ -30,6 +31,7 @@ class FixTransactionsExchangedAmounts
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $ids = $command->argument('ids');
 
         $query = $ids

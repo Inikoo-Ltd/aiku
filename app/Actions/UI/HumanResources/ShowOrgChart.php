@@ -107,11 +107,8 @@ class ShowOrgChart extends OrgAction
                 'id'        => "employee-$employee->id",
                 'name'      => $employee->contact_name ?: ($employee->alias ?: $employee->slug),
                 'title'     => __('Employee'),
-                'avatarUrl' => Arr::get(
-                    $employee->imageSources(120, 120),
-                    'original',
-                    'https://api.dicebear.com/7.x/avataaars/svg?seed='.rawurlencode((string)$employee->slug)
-                ),
+                'avatarUrl' => Arr::get($employee->imageSources(120, 120), 'original')
+                    ?? Arr::get($employee->getUser()?->imageSources(120, 120), 'original'),
                 'reports'   => [],
             ];
         }

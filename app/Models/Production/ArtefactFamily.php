@@ -10,7 +10,9 @@ namespace App\Models\Production;
 
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InProduction;
+use App\Models\HumanResources\Employee;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -71,6 +73,14 @@ class ArtefactFamily extends Model implements Auditable
             ->generateSlugsFrom('code')
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug');
+    }
+
+    public function artisans(): MorphToMany
+    {
+        return $this->morphToMany(Employee::class, 'artisanable', 'artisan_assignments')
+            ->withPivot('position')
+            ->withTimestamps()
+            ->orderByPivot('position');
     }
 
     public function artefacts(): HasMany

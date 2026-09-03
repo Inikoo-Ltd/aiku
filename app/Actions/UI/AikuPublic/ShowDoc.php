@@ -59,10 +59,13 @@ class ShowDoc
      */
     private function relatedDocs(array $doc): Collection
     {
+        $everything = BlogPosts::everything('docs');
+
         return BlogPosts::all('docs')
-            ->where('slug', '!=', $doc['slug'])
+            ->where('base_slug', '!=', $doc['base_slug'])
             ->sortByDesc(fn (array $other) => count(array_intersect($other['tags'], $doc['tags'])) * 1e12 + $other['date']->timestamp)
             ->take(3)
+            ->map(fn (array $english) => $everything->firstWhere('slug', $english['slug'].'-'.$doc['lang']) ?? $english)
             ->values();
     }
 }

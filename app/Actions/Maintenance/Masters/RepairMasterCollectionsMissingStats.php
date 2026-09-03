@@ -12,6 +12,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Masters\MasterCollection;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMasterCollectionsMissingStats
 {
@@ -34,6 +35,7 @@ class RepairMasterCollectionsMissingStats
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->argument('masterCollection')) {
             $masterCollection = MasterCollection::find($command->argument('masterCollection'));
             $this->handle($masterCollection, $command);

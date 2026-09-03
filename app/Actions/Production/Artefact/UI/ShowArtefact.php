@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\Artefact\UI;
 
+use App\Actions\Production\Artisan\GetArtisanAssignmentProps;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Actions\OrgAction;
@@ -118,6 +119,7 @@ class ShowArtefact extends OrgAction
                     //     ]
                     // ]
                 ],
+                'artisans'                             => GetArtisanAssignmentProps::run($artefact, $this->canEdit),
                 'tabs'                                 => [
                     'current'    => $this->tab,
                     'navigation' => ArtefactTabsEnum::navigation()

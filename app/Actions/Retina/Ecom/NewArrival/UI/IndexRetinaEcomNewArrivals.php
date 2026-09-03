@@ -6,6 +6,8 @@ use App\Actions\Retina\Traits\HasBasketTransactions;
 use App\Actions\Retina\Traits\WithRetinaProductsList;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Http\Resources\CRM\RetinaCustomerFavouritesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
@@ -28,17 +30,33 @@ class IndexRetinaEcomNewArrivals extends RetinaAction
 
         $query = $this->getRetinaProductsListQuery($customer);
         $query->where('products.shop_id', $customer->shop_id);
+        $query->where('products.is_in_website', true);
+        $query->whereExists(function ($subQuery) {
+            $subQuery->from('product_categories')
+                ->whereColumn('product_categories.id', 'products.family_id')
+                ->where('product_categories.is_in_website', true);
+        });
         $query->where(function ($query) {
             $query->where(function ($subQuery) {
                 $subQuery->where('products.is_minion_variant', false)
                     ->where('products.is_for_sale', true);
             })->orWhere('products.is_variant_leader', true);
         });
+        $query->whereNotIn('products.state', [
+            ProductStateEnum::DISCONTINUED,
+            ProductStateEnum::IN_PROCESS
+        ]);
+        $query->whereNotIn('products.status', [
+            ProductStatusEnum::COMING_SOON,
+            ProductStatusEnum::IN_PROCESS,
+            ProductStatusEnum::NOT_FOR_SALE,
+            ProductStatusEnum::DISCONTINUED,
+        ]);
 
         return $query->defaultSort('-products.created_at')
             ->allowedSorts(['code', 'name', 'created_at'])
             ->allowedFilters([$this->getRetinaProductsGlobalSearch()])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
     }
 

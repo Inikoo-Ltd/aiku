@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Inventory\OrgStockMovement;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 /**
  * The first repair run predated the corruption-window insight and overwrote movements dated
@@ -28,6 +29,7 @@ class RestorePreCorruptionOrgStockMovements
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $rows = DB::select('
             select m.id, m.org_stock_id, o.slug as organisation_slug, s.date,
                 m.org_amount as current_amount, s.org_amount as snapshot_amount

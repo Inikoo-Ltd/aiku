@@ -16,7 +16,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Describe the Aiku database schema (or the NightOwl telemetry schema with database: nightowl, or the archive schema with database: archive): list tables matching a name, or get columns, types, foreign keys and the observed values of enum-like columns (type, state, status) for specific tables. Use this before writing SQL instead of querying information_schema by hand.')]
+#[Description('Describe the Aiku database schema (or the NightOwl telemetry schema with database: nightowl, or the archive schema with database: archive): list tables (all, or matching a name), or get columns, types, foreign keys and the observed values of enum-like columns (type, state, status) for specific tables. Use this before writing SQL instead of querying information_schema by hand.')]
 #[IsReadOnly]
 class DescribeTablesTool extends Tool
 {
@@ -45,16 +45,12 @@ class DescribeTablesTool extends Tool
         if (empty($tables)) {
             $search = (string) $request->string('search');
 
-            if ($search === '') {
-                return Response::error('Provide either tables (array of table names) or search (text to match table names).');
-            }
-
             $matches = DB::connection($connection)
                 ->table('information_schema.tables')
                 ->where('table_schema', 'public')
                 ->where('table_name', 'like', '%'.$search.'%')
                 ->orderBy('table_name')
-                ->limit(60)
+                ->when($search !== '', fn ($query) => $query->limit(60))
                 ->pluck('table_name');
 
             return Response::json([

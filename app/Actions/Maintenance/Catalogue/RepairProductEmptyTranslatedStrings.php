@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairProductEmptyTranslatedStrings
 {
@@ -23,6 +24,7 @@ class RepairProductEmptyTranslatedStrings
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $fields = [
             'unit',
             'name',

@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Order\UI;
 
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\Platform;
@@ -196,11 +197,12 @@ class GetDropshippingOrderActions
                 array_unshift(
                     $actions,
                     [
-                        'type'  => 'button',
-                        'style' => 'cancel',
-                        'key'   => 'cancel',
-                        'label' => __('Cancel'),
-                        'route' => [
+                        'type'                 => 'button',
+                        'style'                => 'cancel',
+                        'key'                  => 'cancel',
+                        'label'                => __('Cancel'),
+                        'cancellation_reasons' => OrderCancellationReasonEnum::valuesWithLabels(),
+                        'route'                => [
                             'method'     => 'patch',
                             'name'       => 'grp.models.order.state.cancelled',
                             'parameters' => [

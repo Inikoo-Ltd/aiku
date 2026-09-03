@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Dropshipping;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\EbayUser;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairEbayDeletedUsers
 {
@@ -33,6 +34,7 @@ class RepairEbayDeletedUsers
 
     public function asCommand(): void
     {
+        Nightwatch::dontSample();
         $ebayUsers = EbayUser::all();
 
         foreach ($ebayUsers as $ebayUser) {

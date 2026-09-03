@@ -12,6 +12,7 @@ use App\Models\CRM\Prospect;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class ReturnDeletedProspect
 {
@@ -30,6 +31,7 @@ class ReturnDeletedProspect
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $deletedAt = $command->argument('deleted_at');
 
         $command->info('Starting return deleted prospects at specified date.');

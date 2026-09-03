@@ -26,10 +26,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use Lorisleiva\Actions\ActionRequest;
 
 class ReceiveJobOrderIntoStock extends OrgAction
 {
+    private JobOrder $jobOrder;
+
     private ?ActionRequest $request = null;
 
     public function handle(JobOrder $jobOrder, array $modelData): JobOrder
@@ -195,11 +198,14 @@ class ReceiveJobOrderIntoStock extends OrgAction
             return true;
         }
 
+        $isOwnJobOrder = $this->jobOrder->employee_id
+            && $this->jobOrder->employee_id == GetUserCurrentEmployee::run($request->user(), $this->organisation->id)?->id;
+
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             'productions-view.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
-        ]);
+        ]) || ($isOwnJobOrder && $request->user()->authTo("productions_operations.{$this->production->id}.prepare"));
     }
 
     public function action(JobOrder $jobOrder, array $modelData): JobOrder
@@ -212,6 +218,7 @@ class ReceiveJobOrderIntoStock extends OrgAction
 
     public function asController(JobOrder $jobOrder, ActionRequest $request): JobOrder
     {
+        $this->jobOrder = $jobOrder;
         $this->request = $request;
         $this->initialisationFromProduction($jobOrder->production, $request);
 

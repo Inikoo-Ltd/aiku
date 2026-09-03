@@ -17,6 +17,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairWooOrdersTaxCategory
 {
@@ -83,6 +84,7 @@ class RepairWooOrdersTaxCategory
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         Order::where('platform_id', 3)->where('shop_id', 13)->where('tax_category_id', 1)->orderBy('date', 'desc')
             ->chunk(1000, function (Collection $models) use ($command) {
                 foreach ($models as $model) {

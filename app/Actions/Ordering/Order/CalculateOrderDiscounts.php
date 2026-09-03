@@ -799,9 +799,12 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             return;
         }
 
+        $isStepDiscount = false;
+
         if ($steps = Arr::get($allowanceOpsData, 'steps')) {
-            $totalQuantity = (int)$productTransactions->sum('quantity_ordered');
-            $percentageOff = 0.0;
+            $isStepDiscount = true;
+            $totalQuantity  = (int)$productTransactions->sum('quantity_ordered');
+            $percentageOff  = 0.0;
             foreach (collect($steps)->sortBy('min_quantity') as $step) {
                 if ($totalQuantity >= (int)Arr::get($step, 'min_quantity', PHP_INT_MAX)) {
                     $percentageOff = (float)Arr::get($step, 'percentage_off', 0);
@@ -832,7 +835,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     $transaction,
                     $percentageOff,
                     $offerData['offer_label'],
-                    $allowanceData
+                    $allowanceData,
+                    $isStepDiscount ? 'sd' : null
                 );
             }
         }
@@ -954,6 +958,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 ->where('collection_id', Arr::get($allowanceOpsData, 'collection_id'))
                 ->where('model_type', 'Product')
                 ->pluck('model_id')
+                ->flip()
                 ->all();
             if ($collectionProductIds === []) {
                 return collect();
@@ -965,7 +970,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 'family' => Arr::get($allowanceOpsData, 'category_id') == $transaction->family_id,
                 'department' => Arr::get($allowanceOpsData, 'category_id') == $transaction->department_id,
                 'sub_department' => Arr::get($allowanceOpsData, 'category_id') == $transaction->sub_department_id,
-                'collection' => in_array($transaction->model_id, $collectionProductIds),
+                'collection' => isset($collectionProductIds[$transaction->model_id]),
                 'product' => Arr::get($allowanceOpsData, 'product_id') == $transaction->model_id,
                 default => true,
             }

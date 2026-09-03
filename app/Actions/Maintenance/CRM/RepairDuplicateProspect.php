@@ -14,6 +14,7 @@ use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairDuplicateProspect
 {
@@ -41,6 +42,7 @@ class RepairDuplicateProspect
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $shopSlug = $command->argument('shop_slug');
         $shop = null;
 

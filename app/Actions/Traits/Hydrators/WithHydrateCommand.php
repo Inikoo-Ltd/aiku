@@ -13,6 +13,7 @@ use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Exception;
+use Laravel\Nightwatch\Facades\Nightwatch;
 use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -46,6 +47,7 @@ trait WithHydrateCommand
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $command->info($command->getName());
         $tableName = (new $this->model())->getTable();
         $query = $this->prepareQuery($tableName, $command);

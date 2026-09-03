@@ -14,10 +14,9 @@
                 @endforeach
             </nav>
         @endif
-        <ul class="posts">
+        <ul class="posts no-date">
             @foreach ($docs as $doc)
                 <li>
-                    <time datetime="{{ $doc['date']->toDateString() }}" title="Last reviewed">{{ $doc['date']->format('j M Y') }}</time>
                     <div>
                         <h3><a href="{{ route('aiku-public.docs.show', $doc['slug']) }}">{{ $doc['title'] }}</a></h3>
                         <p>{{ $doc['summary'] }} <span style="color:var(--muted);white-space:nowrap">· {{ $doc['reading_minutes'] }} min read</span></p>

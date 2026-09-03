@@ -10,6 +10,7 @@ use Exception;
 use Illuminate\Support\Facades\DB;
 use App\Models\Web\Redirect;
 use Illuminate\Support\Str;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairRedirectMissingWorldWideWeb
 {
@@ -90,6 +91,7 @@ class RepairRedirectMissingWorldWideWeb
      */
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $isDryRun = !$command->option('apply');
         $this->handle($command, $isDryRun);
     }

@@ -8,6 +8,7 @@ use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairCreateLandingPage
 {
@@ -35,6 +36,7 @@ class RepairCreateLandingPage
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $websites = Website::where('status', true)
             ->when(
                 $command->option('website_id'),

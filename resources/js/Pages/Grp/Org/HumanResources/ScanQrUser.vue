@@ -97,6 +97,28 @@ const workingHours = ref<{ start: string; end: string } | null>(null)
 const isProcessing = ref(false)
 let successAutoCloseTimer: ReturnType<typeof setTimeout> | null = null
 
+const reloadPage = () => {
+	if (typeof window !== "undefined") {
+		window.location.reload()
+	}
+}
+
+const handleExpiredLogin = (e: any): boolean => {
+	if (e.response?.status !== 401) {
+		return false
+	}
+
+	errorMsg.value = trans("Your login has expired. Reloading so you can sign in again…")
+	notify({
+		title: trans("Login expired"),
+		text: errorMsg.value,
+		type: "error",
+	})
+	setTimeout(reloadPage, 2500)
+
+	return true
+}
+
 const cancelSuccessAutoClose = () => {
 	if (successAutoCloseTimer) {
 		clearTimeout(successAutoCloseTimer)
@@ -293,8 +315,13 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
 		}
 
 		showSuccessModal.value = true
-		successAutoCloseTimer = setTimeout(() => window.location.reload(), 6000)
+		successAutoCloseTimer = setTimeout(reloadPage, 6000)
 	} catch (e: any) {
+		if (handleExpiredLogin(e)) {
+			stopCamera()
+			return
+		}
+
 		notify({
 			title: trans("Failed Scan QR"),
 			text: e.response?.data?.message,
@@ -357,8 +384,12 @@ const submitNotes = async () => {
 			type: "success",
 		})
 
-		window.location.reload()
+		reloadPage()
 	} catch (e: any) {
+		if (handleExpiredLogin(e)) {
+			return
+		}
+
 		notify({
 			title: trans("Failed submit notes"),
 			text: e.response?.data?.message,
@@ -515,7 +546,7 @@ const trackFunction = () => ({
 								() => {
 									cancelSuccessAutoClose()
 									showSuccessModal = false
-									window.location.reload()
+									reloadPage()
 								}
 							"
 							full />

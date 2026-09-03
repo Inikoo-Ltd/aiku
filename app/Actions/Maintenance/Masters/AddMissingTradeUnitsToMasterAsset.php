@@ -13,6 +13,7 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class AddMissingTradeUnitsToMasterAsset
 {
@@ -61,6 +62,7 @@ class AddMissingTradeUnitsToMasterAsset
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         MasterAsset::where('type', 'product')->where('slug', 'jbb-01')->orderBy('id')
             ->chunk(1000, function ($models) use ($command) {
                 foreach ($models as $model) {

@@ -407,6 +407,8 @@ use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransact
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
 use App\Actions\Production\Artefact\AttachManufactureTaskToArtefact;
+use App\Actions\Production\Artisan\AttachArtisan;
+use App\Actions\Production\Artisan\DetachArtisan;
 use App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep;
 use App\Actions\Production\Artefact\DeleteArtefactComplianceItem;
 use App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact;
@@ -1266,6 +1268,10 @@ Route::post('/job-order/{jobOrder:id}/item', StoreJobOrderItem::class)->name('jo
 Route::patch('/job-order/{jobOrder:id}/confirm', ConfirmJobOrder::class)->name('job-order.confirm')->withoutScopedBindings();
 Route::patch('/job-order/{jobOrder:id}/receive', ReceiveJobOrderIntoStock::class)->name('job-order.receive')->withoutScopedBindings();
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/void', VoidManufactureTaskSession::class)->name('manufacture-task-session.void')->withoutScopedBindings();
+Route::post('/artefact/{artefact:id}/artisans', [AttachArtisan::class, 'inArtefact'])->name('artefact.artisans.attach')->withoutScopedBindings();
+Route::delete('/artefact/{artefact:id}/artisans/{employee:id}', [DetachArtisan::class, 'inArtefact'])->name('artefact.artisans.detach')->withoutScopedBindings();
+Route::post('/artefact-family/{artefactFamily:id}/artisans', [AttachArtisan::class, 'inArtefactFamily'])->name('artefact_family.artisans.attach')->withoutScopedBindings();
+Route::delete('/artefact-family/{artefactFamily:id}/artisans/{employee:id}', [DetachArtisan::class, 'inArtefactFamily'])->name('artefact_family.artisans.detach')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/manufacture-task/attach', AttachManufactureTaskToArtefact::class)->name('artefact.manufacture-task.attach')->withoutScopedBindings();
 Route::delete('/artefact/{artefact:id}/manufacture-task/{manufactureTask:id}', DetachManufactureTaskFromArtefact::class)->name('artefact.manufacture-task.detach')->withoutScopedBindings();
 Route::post('/recipe-step/{recipeStep:id}/raw-material/attach', AttachRawMaterialToRecipeStep::class)->name('recipe-step.raw-material.attach')->withoutScopedBindings();

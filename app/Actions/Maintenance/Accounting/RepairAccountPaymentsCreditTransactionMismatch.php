@@ -12,6 +12,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairAccountPaymentsCreditTransactionMismatch
 {
@@ -49,6 +50,7 @@ class RepairAccountPaymentsCreditTransactionMismatch
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
 
         CreditTransaction::whereNull('source_id')->whereNotNull('payment_id')
             ->orderBy('date')

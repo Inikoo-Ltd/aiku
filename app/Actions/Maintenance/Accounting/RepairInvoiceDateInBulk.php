@@ -12,6 +12,7 @@ use App\Actions\Accounting\Invoice\UpdateInvoice;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairInvoiceDateInBulk
 {
@@ -34,6 +35,7 @@ class RepairInvoiceDateInBulk
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
 
 
 

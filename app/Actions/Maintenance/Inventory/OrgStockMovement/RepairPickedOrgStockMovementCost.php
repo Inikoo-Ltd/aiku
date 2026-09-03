@@ -12,6 +12,7 @@ use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 /**
  * Until 20 Aug 2026 picking movements recorded org_amount as
@@ -81,6 +82,7 @@ class RepairPickedOrgStockMovementCost
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $dryRun = (bool) $command->option('dry-run');
 
         $result = $this->handle(

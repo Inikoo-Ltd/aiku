@@ -280,11 +280,36 @@ test('docs index and article render with layout nav', function () {
     get($this->host.'/docs/does-not-exist')->assertNotFound();
 });
 
+test('production docs render and paint the production island', function () {
+    foreach (['fulfilling-partner-orders' => 'To produce', 'who-makes-what' => 'Usually made by', 'preparing-mixes' => 'Made in-house as', 'preparing-mixes-ro' => 'Made in-house as', 'factory-positions' => 'Floor supervisor', 'factory-positions-ro' => 'Production', 'factory-positions-pl' => 'Production', 'factory-positions-lv' => 'Production', 'factory-positions-cs' => 'Production'] as $slug => $text) {
+        get($this->host.'/docs/'.$slug)->assertOk()->assertSee($text, false);
+    }
+    get($this->host.'/docs?category=production')->assertOk()->assertSee('/docs/who-makes-what', false);
+});
+
+test('related docs on a translated article link to the same language when it exists', function () {
+    $response = get($this->host.'/docs/factory-positions-ro')->assertOk();
+    $response->assertSee('/docs/who-makes-what-ro', false)
+        ->assertDontSee('href="/docs/who-makes-what"', false);
+});
+
+test('the partner and factory series is complete in every worker language', function () {
+    $series = BlogPosts::all('docs')->where('series', 'Ordering from partners');
+    expect($series)->not->toBeEmpty();
+    foreach ($series as $english) {
+        foreach (['es', 'sk', 'ro', 'pl', 'lv', 'cs'] as $lang) {
+            $translation = BlogPosts::everything('docs')->firstWhere('slug', $english['slug'].'-'.$lang);
+            expect($translation)->not->toBeNull($english['slug'].' has no '.$lang.' translation')
+                ->and($translation['source_date']?->toDateString())->toBe($english['date']->toDateString(), $english['slug'].'-'.$lang.' is stale');
+        }
+    }
+});
+
 test('docs index shows the clickable module map', function () {
     get($this->host.'/docs')->assertOk()
         ->assertSee('Map of aiku modules', false)
         ->assertSee(route('aiku-public.docs.index', ['category' => 'procurement']), false)
-        ->assertSee('soon', false);
+        ->assertSee(route('aiku-public.docs.index', ['category' => 'production']), false);
 
     get($this->host.'/docs?category=procurement')->assertOk()
         ->assertSee('docsmap-mini', false)
@@ -302,6 +327,7 @@ test('helpFor matches grp routes to docs by longest prefix', function () {
         ->and(BlogPosts::helpFor('grp.org.procurement.org_partners.show.shopping_list.index')['title'])->toBe('Buying from a partner')
         ->and(BlogPosts::helpFor('grp.org.procurement.org_partners.index')['title'])->toBe('Ordering from a partner organisation')
         ->and(BlogPosts::helpFor('grp.org.shops.show.chat.dashboard')['url'])->toContain('/docs/customer-chat')
+        ->and(BlogPosts::helpFor('grp.chat.staff.show', 'sk')['url'])->toEndWith('/docs/staff-chat-sk')
         ->and(BlogPosts::helpFor('grp.dashboard.show'))->toBeNull()
         ->and(BlogPosts::helpFor(null))->toBeNull();
 });

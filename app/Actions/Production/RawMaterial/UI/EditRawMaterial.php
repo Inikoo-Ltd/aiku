@@ -126,6 +126,25 @@ class EditRawMaterial extends OrgAction
                                     'required'  => false,
                                     'value'     => $rawMaterial->trade_unit_id,
                                 ],
+                                'artefact_id' => [
+                                    'type'       => 'select_infinite',
+                                    'label'      => __('Made in-house as'),
+                                    'information' => __('Set this when the raw material is a mix or intermediate the factory prepares itself. It then shows on the Mixes tab of To produce.'),
+                                    'options'    => array_filter([
+                                        $rawMaterial->artefact ? ['id' => $rawMaterial->artefact->id, 'code' => $rawMaterial->artefact->code] : null,
+                                    ]),
+                                    'fetchRoute' => [
+                                        'name'       => 'grp.org.productions.show.crafts.artefacts.index',
+                                        'parameters' => [
+                                            'organisation' => $rawMaterial->organisation->slug,
+                                            'production'   => $rawMaterial->production->slug,
+                                        ]
+                                    ],
+                                    'valueProp' => 'id',
+                                    'labelProp' => 'code',
+                                    'required'  => false,
+                                    'value'     => $rawMaterial->artefact_id,
+                                ],
                                 'org_stock_id' => [
                                     'type'       => 'select_infinite',
                                     'label'      => __('Stock (SKU)'),

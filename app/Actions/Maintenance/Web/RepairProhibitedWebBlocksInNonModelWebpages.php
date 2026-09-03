@@ -12,6 +12,7 @@ use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairProhibitedWebBlocksInNonModelWebpages
 {
@@ -59,6 +60,7 @@ class RepairProhibitedWebBlocksInNonModelWebpages
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $singleWebpageId = $command->option('webpage_id');
 
         if ($singleWebpageId) {

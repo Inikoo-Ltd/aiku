@@ -14,6 +14,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairWrongProductOrgStock
 {
@@ -70,6 +71,7 @@ class RepairWrongProductOrgStock
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $query = Product::whereHas('masterProduct', function ($query) {
             $query->where('master_shop_id', 2);
         })

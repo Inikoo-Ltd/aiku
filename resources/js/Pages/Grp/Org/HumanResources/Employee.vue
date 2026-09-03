@@ -45,6 +45,10 @@ import Popover from '@/Components/Popover.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import UploadAttachment from '@/Components/Upload/UploadAttachment.vue';
 import ShowcaseEmployee from '@/Components/Showcases/Grp/ShowcaseEmployee.vue';
+import TableEmployeeRequests from '@/Components/Tables/Grp/Org/HumanResources/TableEmployeeRequests.vue';
+import TableEmployeeSearches from '@/Components/Tables/Grp/Org/HumanResources/TableEmployeeSearches.vue';
+import TableEmployeeChats from '@/Components/Tables/Grp/Org/HumanResources/TableEmployeeChats.vue';
+import TableEmployeeAiQueries from '@/Components/Tables/Grp/Org/HumanResources/TableEmployeeAiQueries.vue';
 import { trans } from 'laravel-vue-i18n'
 import Dialog from "primevue/dialog"
 import PureInput from "@/Components/Pure/PureInput.vue"
@@ -89,6 +93,10 @@ const props = defineProps<{
     attachments?: {}
     attachmentRoutes?:object
     showcase? : object
+    requests?: object
+    searches?: object
+    chats?: object
+    ai_queries?: object
     employee_id : number
 }>()
 
@@ -104,7 +112,11 @@ const component = computed(() => {
         data: DataModel,
         timesheets: TableTimesheets,
         job_positions: TableJobPositions,
-        attachments: TableAttachments
+        attachments: TableAttachments,
+        requests: TableEmployeeRequests,
+        searches: TableEmployeeSearches,
+        chats: TableEmployeeChats,
+        ai_queries: TableEmployeeAiQueries,
     };
     return components[currentTab.value];
 

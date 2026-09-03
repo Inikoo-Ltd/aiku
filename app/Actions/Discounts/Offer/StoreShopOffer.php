@@ -17,6 +17,7 @@ use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
@@ -39,6 +40,7 @@ class StoreShopOffer extends OrgAction
         $percentageOff = Arr::pull($modelData, 'percentage_off');
         $itemQuantity  = (int)Arr::pull($modelData, 'trigger_data_item_quantity');
         $itemAmount    = (float)Arr::pull($modelData, 'trigger_data_item_amount');
+        $collection    = ($collectionId = Arr::pull($modelData, 'collection_id')) ? Collection::find($collectionId) : null;
 
         $offerCampaign = OfferCampaign::where('shop_id', $shop->id)->where('type', OfferCampaignTypeEnum::SHOP_OFFERS)->first();
         if (!$offerCampaign) {
@@ -56,7 +58,7 @@ class StoreShopOffer extends OrgAction
         }
 
 
-        $code = Str::lower($offerCampaign->code.'-'.$shop->code);
+        $code = Str::lower($offerCampaign->code.'-'.$shop->code.($collection ? '-'.$collection->code : ''));
         data_set($modelData, 'code', $code, false);
 
         $english = Language::where('code', 'en')->first();
@@ -96,22 +98,22 @@ class StoreShopOffer extends OrgAction
             $type
         );
 
-        $targetType = OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER;
-
-        data_set(
-            $modelData,
-            'allowances',
-            [
-                [
-                    'class'       => OfferAllowanceClass::DISCOUNT->value,
-                    'target_type' => $targetType,
-                    'type'        => OfferAllowanceType::PERCENTAGE_OFF->value,
-                    'data'        => [
-                        'percentage_off' => $percentageOff,
-                    ]
-                ]
+        $allowance = [
+            'class'       => OfferAllowanceClass::DISCOUNT->value,
+            'target_type' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER,
+            'type'        => OfferAllowanceType::PERCENTAGE_OFF->value,
+            'data'        => [
+                'percentage_off' => $percentageOff,
             ]
-        );
+        ];
+
+        if ($collection) {
+            $allowance['target_type']           = OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION;
+            $allowance['target_id']             = $collection->id;
+            $allowance['data']['collection_id'] = $collection->id;
+        }
+
+        data_set($modelData, 'allowances', [$allowance]);
 
 
         $offer = StoreOffer::run($offerCampaign, $modelData);
@@ -138,6 +140,7 @@ class StoreShopOffer extends OrgAction
             ],
             'end_at'                     => ['nullable', 'required_if:duration,interval', 'date'],
             'percentage_off'             => ['required', 'numeric', 'gt:0', 'lt:100'],
+            'collection_id'              => ['sometimes', 'nullable', 'integer', Rule::exists('collections', 'id')->where('shop_id', $this->shop->id)],
         ];
     }
 

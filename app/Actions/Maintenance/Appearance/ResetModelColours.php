@@ -15,6 +15,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class ResetModelColours
 {
@@ -48,6 +49,7 @@ class ResetModelColours
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         try {
             $this->handle();
         } catch (Throwable $e) {

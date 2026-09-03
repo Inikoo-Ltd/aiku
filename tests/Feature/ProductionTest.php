@@ -15,6 +15,20 @@ use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\UpdateArtefact;
 use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
 use App\Actions\Production\ArtefactFamily\UpdateArtefactFamily;
+use App\Actions\Production\Artisan\AttachArtisan;
+use App\Actions\Production\Artisan\DetachArtisan;
+use App\Actions\Production\Artisan\ToggleArtisanInRoster;
+use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
+use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
+use App\Actions\HumanResources\Employee\UpdateEmployee;
+use App\Actions\HumanResources\Employee\GetEmployeeJobPositionsData;
+use App\Models\HumanResources\JobPosition;
+use App\Models\SysAdmin\Role;
+use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
+use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
+use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
+use App\Actions\HumanResources\Employee\StoreEmployee;
+use App\Models\HumanResources\Employee;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Helpers\Tag;
 use App\Actions\Production\JobOrder\ConfirmJobOrder;
@@ -49,6 +63,7 @@ use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
+use App\Models\Production\JobOrderItem;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
 use App\Models\Production\RawMaterial;
@@ -835,6 +850,53 @@ test('UI show manufacture floor', function () {
                 ->has('earned'))
             ->where('open_session', null);
     });
+});
+
+test('floor shows job orders addressed to the worker first and the dashboard lists artisans with nothing queued', function () {
+    $employees = collect(range(1, 2))->map(function () {
+        $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+        $modelData['worker_number']   = 'W'.rand(1000, 9999);
+        $modelData['alias']           = 'Alias '.rand(1000, 9999);
+        $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+        $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+        $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+
+        return StoreEmployee::make()->action($this->organisation, $modelData);
+    });
+    [$worker, $idle] = $employees;
+
+    $this->guest->getUser()->employees()->attach($worker->id, [
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+    ]);
+    AttachArtisan::make()->action($this->artefact, ['employee_id' => $idle->id]);
+
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+
+    $addressed = StoreJobOrder::make()->action($this->production, ['employee_id' => $worker->id]);
+    StoreJobOrderItem::make()->action($addressed, ['artefact_id' => $this->artefact->id, 'quantity' => 3]);
+    ConfirmJobOrder::make()->action($addressed);
+
+    $pool = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($pool, ['artefact_id' => $this->artefact->id, 'quantity' => 2]);
+    ConfirmJobOrder::make()->action($pool);
+
+    $props = get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->viewData('page')['props'];
+    $tasks = collect($props['tasks']);
+
+    expect($props['artisan'])->toBe($worker->contact_name)
+        ->and($tasks->where('is_mine', true)->pluck('job_order_reference')->all())->toBe([$addressed->reference])
+        ->and($tasks->where('is_mine', false)->pluck('job_order_reference'))->toContain($pool->reference);
+
+    $artisans = collect(get(route('grp.org.productions.show.operations.dashboard', [$this->organisation->slug, $this->production->slug]))
+        ->viewData('page')['props']['command_control']['artisans']);
+
+    expect($artisans->firstWhere('id', $worker->id)['queued'])->toBe(1)
+        ->and($artisans->firstWhere('id', $idle->id)['queued'])->toBe(0)
+        ->and($artisans->first()['queued'])->toBe(0);
 });
 
 test('UI index job orders', function () {
@@ -1733,4 +1795,168 @@ test('create job order from gate shortfall', function () {
         ->and($result['job_order']->jobOrderItems()->first()->artefact_id)->toBe($this->artefact->id)
         ->and((int) $result['job_order']->jobOrderItems()->first()->quantity)->toBe(8)
         ->and($result['skipped'])->toHaveCount(1);
+});
+
+test('artisans can be attached and detached from a family and an artefact, first one is primary', function () {
+    $family   = StoreArtefactFamily::make()->action($this->production, ['code' => 'ARTS', 'name' => 'Artisan family']);
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'ARTS-1', 'name' => 'Artisan artefact', 'artefact_family_id' => $family->id]);
+
+    $employees = collect(range(1, 2))->map(function () {
+        $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+        $modelData['worker_number']   = 'W'.rand(1000, 9999);
+        $modelData['alias']           = 'Alias '.rand(1000, 9999);
+        $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+        $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+        $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+
+        return StoreEmployee::make()->action($this->organisation, $modelData);
+    });
+
+    AttachArtisan::make()->action($family, ['employee_id' => $employees[0]->id]);
+    AttachArtisan::make()->action($family, ['employee_id' => $employees[1]->id]);
+    AttachArtisan::make()->action($family, ['employee_id' => $employees[1]->id]);
+    expect($family->artisans()->pluck('employees.id')->all())->toBe([$employees[0]->id, $employees[1]->id]);
+
+    DetachArtisan::make()->action($family, $employees[0]);
+    expect($family->artisans()->pluck('employees.id')->all())->toBe([$employees[1]->id]);
+
+    AttachArtisan::make()->action($artefact, ['employee_id' => $employees[0]->id]);
+    expect($artefact->artisans()->pluck('employees.id')->all())->toBe([$employees[0]->id]);
+});
+
+test('an employee can be hidden from and restored to the artisan roster', function () {
+    $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+    $modelData['worker_number']   = 'W'.rand(1000, 9999);
+    $modelData['alias']           = 'Alias '.rand(1000, 9999);
+    $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+    $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+    $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+    $employee = StoreEmployee::make()->action($this->organisation, $modelData);
+
+    $production = ToggleArtisanInRoster::make()->action($this->production, $employee, true);
+    expect($production->data['hidden_artisan_ids'])->toBe([$employee->id]);
+
+    $production = ToggleArtisanInRoster::make()->action($production, $employee, true);
+    expect($production->data['hidden_artisan_ids'])->toBe([$employee->id]);
+
+    $production = ToggleArtisanInRoster::make()->action($production, $employee, false);
+    expect($production->data['hidden_artisan_ids'])->toBe([]);
+});
+
+test('mixes to prepare are derived from open job orders and become job orders', function () {
+    $mixArtefact = StoreArtefact::make()->action($this->production, ['code' => 'MIX-BASE', 'name' => 'Bath bomb base mix']);
+    $mix         = UpdateRawMaterial::make()->action($this->rawMaterial, ['artefact_id' => $mixArtefact->id, 'quantity_on_location' => 2]);
+    $mix->update(['org_stock_id' => null]);
+
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $step = ArtefactManufactureTask::where('artefact_id', $this->artefact->id)->where('manufacture_task_id', $this->manufactureTask->id)->first();
+    $step->rawMaterials()->delete();
+    AttachRawMaterialToRecipeStep::make()->action($step, ['raw_material_id' => $mix->id, 'quantity_per_unit' => 0.5]);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+
+    $openQuantity = JobOrderItem::where('artefact_id', $this->artefact->id)
+        ->whereHas('jobOrder', fn ($query) => $query->whereIn('state', [JobOrderStateEnum::IN_PROCESS, JobOrderStateEnum::SUBMITTED, JobOrderStateEnum::CONFIRMED]))
+        ->sum('quantity');
+    $expectedNeeded = round($openQuantity * 0.5, 3);
+
+    $mixes = collect(GetMixesToPrepare::run($this->production))->keyBy('code');
+    expect($mixes->get('MIX-BASE'))->not->toBeNull()
+        ->and($mixes->get('MIX-BASE')['needed'])->toBe($expectedNeeded)
+        ->and($mixes->get('MIX-BASE')['on_hand'])->toBe(2.0)
+        ->and($mixes->get('MIX-BASE')['shortfall'])->toBe(round($expectedNeeded - 2, 3))
+        ->and($mixes->get('MIX-BASE')['needed_for'])->toBe([$this->artefact->code]);
+
+    $shortfall = $mixes->get('MIX-BASE')['shortfall'];
+    $created   = StoreJobOrdersForMixes::make()->action($this->production, [['artefact_id' => $mixArtefact->id, 'quantity' => $shortfall]]);
+    expect($created)->toHaveCount(1)
+        ->and($created[0]->jobOrderItems()->first()->artefact_id)->toBe($mixArtefact->id)
+        ->and($created[0]->jobOrderItems()->first()->quantity)->toBe((int) ceil($shortfall));
+
+    $mixes = collect(GetMixesToPrepare::run($this->production))->keyBy('code');
+    expect($mixes->get('MIX-BASE')['in_progress'])->toBe((float) ceil($shortfall))
+        ->and($mixes->get('MIX-BASE')['shortfall'])->toBe(0.0);
+
+    $missing = GetJobOrderItemMissingMixes::run($jobOrder->jobOrderItems()->first());
+    expect($missing)->toHaveCount(1)
+        ->and($missing[0]['code'])->toBe('MIX-BASE')
+        ->and($missing[0]['needed'])->toBe(5.0)
+        ->and($missing[0]['on_hand'])->toBe(2.0);
+
+    $mix->update(['quantity_on_location' => 50]);
+    expect(GetJobOrderItemMissingMixes::run($jobOrder->jobOrderItems()->first()))->toBe([]);
+});
+
+test('a task that is not piece rate snapshots a zero rate when its session closes', function () {
+    $this->manufactureTask->update(['is_piece_rate' => false]);
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $item = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 4]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task = $item->tasks()->first();
+    $user = createAdminGuest($this->group)->getUser();
+
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    $session = CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 4]);
+
+    expect((float) $session->task_work_cost)->toBe(0.0)
+        ->and((float) $session->operative_reward_amount)->toBe(0.0)
+        ->and((float) $session->quantity_made)->toBe(4.0);
+
+    $this->manufactureTask->update(['is_piece_rate' => true]);
+});
+
+test('production job positions carry the factory roles all the way to the user', function () {
+    SeedJobPositions::make()->handle($this->organisation);
+
+    $supervisorPosition = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'prod-m')->first();
+    $operativePosition  = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'prod-c')->first();
+    $preparerPosition = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'prod-p')->first();
+    expect($supervisorPosition->roles()->pluck('name')->all())->toContain('production-orchestrator-'.$this->production->id)
+        ->and($operativePosition->roles()->pluck('name')->all())->toContain('production-operator-'.$this->production->id)
+        ->and($preparerPosition->roles()->pluck('name')->all())->toContain('production-preparer-'.$this->production->id)
+        ->and(Role::where('name', 'production-preparer-'.$this->production->id)->first()->permissions()->pluck('name')->all())
+        ->toEqualCanonicalizing(['productions_operations.'.$this->production->id.'.view', 'productions_operations.'.$this->production->id.'.prepare']);
+
+    $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+    $modelData['worker_number']   = 'W'.rand(1000, 9999);
+    $modelData['alias']           = 'Alias '.rand(1000, 9999);
+    $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+    $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+    $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+    $modelData['username']        = 'lucy'.rand(1000, 9999);
+    $modelData['password']        = 'secret-password';
+    $employee = StoreEmployee::make()->action($this->organisation, $modelData);
+    $user     = $employee->users()->first();
+    expect($user)->not->toBeNull();
+
+    SyncEmployeeJobPositions::make()->handle($employee, [
+        $supervisorPosition->id => ['Production' => [$this->production->id]],
+    ]);
+
+    expect($user->refresh()->hasRole('production-orchestrator-'.$this->production->id))->toBeTrue()
+        ->and($user->authorisedProductions()->where('productions.id', $this->production->id)->exists())->toBeTrue();
+
+    UpdateEmployee::make()->action($employee, [
+        'job_positions' => [
+            ['slug' => $operativePosition->slug, 'scopes' => ['productions' => ['slug' => [$this->production->slug]]]],
+        ],
+    ]);
+
+    expect($user->refresh()->hasRole('production-operator-'.$this->production->id))->toBeTrue()
+        ->and($user->hasRole('production-orchestrator-'.$this->production->id))->toBeFalse()
+        ->and(GetEmployeeJobPositionsData::run($employee->refresh()))->toBe(['prod-c' => ['productions' => [$this->production->slug]]]);
+
+    UpdateEmployee::make()->action($employee, [
+        'job_positions' => [
+            ['slug' => $operativePosition->slug, 'scopes' => []],
+        ],
+    ]);
+
+    expect($user->refresh()->hasRole('production-operator-'.$this->production->id))->toBeFalse();
 });

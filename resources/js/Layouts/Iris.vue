@@ -66,7 +66,6 @@ const bundleToggleStyle = computed(() => {
 
 const announcementNow = useAnnouncementClock()
 
-console.log('weweq', usePage().props?.announcements)
 const announcementAtPosition = (position: string) =>
     computed(() => {
         const list = (usePage().props?.announcements ?? []) as any[]

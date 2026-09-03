@@ -12,6 +12,7 @@ use App\Actions\Catalogue\CloneCollections;
 use App\Models\Catalogue\Collection;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class CopyShopCollectionToMaster
 {
@@ -42,6 +43,7 @@ class CopyShopCollectionToMaster
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $collection = Collection::where('slug', $command->argument('collection'))->firstOrFail();
 
         $this->handle($collection);

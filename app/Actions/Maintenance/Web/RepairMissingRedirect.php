@@ -13,6 +13,7 @@ use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMissingRedirect
 {
@@ -63,6 +64,7 @@ class RepairMissingRedirect
 
     public function asCommand(Command $command)
     {
+        Nightwatch::dontSample();
         $parent = Website::where('state', WebsiteStateEnum::LIVE)
             ->when(
                 $command->option('website_id'),

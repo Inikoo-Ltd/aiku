@@ -14,6 +14,7 @@ use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class CountProductsWithMismatchTradeUnits
 {
@@ -58,6 +59,7 @@ class CountProductsWithMismatchTradeUnits
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $masterShop = MasterShop::where('slug', $command->argument('masterShop'))
             ->where('status', true)
             ->firstOrFail();

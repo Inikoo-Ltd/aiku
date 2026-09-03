@@ -490,6 +490,24 @@ describe('the sql query tool', function () {
         $response->assertHasErrors(['Only a single statement is allowed.']);
     });
 
+    test('semicolons inside string literals are allowed', function () {
+        $this->user->update(['can_use_mcp_sql' => true]);
+
+        $response = AikuServer::actingAs($this->user)->tool(SqlQueryTool::class, [
+            'sql' => "select concat_ws('; ', 'a', 'it''s') as x",
+        ]);
+
+        $response->assertOk()->assertSee('a; it');
+    });
+
+    test('describe tables without arguments lists every table', function () {
+        $this->user->update(['can_use_mcp_sql' => true]);
+
+        $response = AikuServer::actingAs($this->user)->tool(DescribeTablesTool::class, []);
+
+        $response->assertOk()->assertSee('"shops"')->assertSee('"orders"');
+    });
+
     test('database parameter selects the nightowl connection', function () {
         $this->user->update(['can_use_mcp_sql' => true]);
 

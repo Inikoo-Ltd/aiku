@@ -15,6 +15,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class FixOffersStatus
 {
@@ -28,6 +29,7 @@ class FixOffersStatus
      */
     public function asCommand(\Illuminate\Console\Command $command): void
     {
+        Nightwatch::dontSample();
 
         $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
 

@@ -22,6 +22,7 @@ use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMasterFamilyGrVolFromShops
 {
@@ -211,6 +212,7 @@ class RepairMasterFamilyGrVolFromShops
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $dryRun = (bool)$command->option('dry-run');
         $slug   = $command->argument('master_shop');
 

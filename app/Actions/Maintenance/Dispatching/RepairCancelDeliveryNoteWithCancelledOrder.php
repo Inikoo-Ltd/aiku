@@ -18,6 +18,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairCancelDeliveryNoteWithCancelledOrder
 {
@@ -41,6 +42,7 @@ class RepairCancelDeliveryNoteWithCancelledOrder
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $shop   = Shop::where('slug', $command->argument('shop'))->firstOrFail();
         $dryRun = (bool)$command->option('dry-run');
 

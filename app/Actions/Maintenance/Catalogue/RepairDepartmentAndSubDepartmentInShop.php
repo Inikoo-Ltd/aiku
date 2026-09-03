@@ -14,6 +14,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairDepartmentAndSubDepartmentInShop
 {
@@ -30,6 +31,7 @@ class RepairDepartmentAndSubDepartmentInShop
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $shops = Shop::where('state', ShopStateEnum::OPEN)->get();
         foreach ($shops as $shop) {
             if ($shop->masterShop) {

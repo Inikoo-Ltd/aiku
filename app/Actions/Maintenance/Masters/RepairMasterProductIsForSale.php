@@ -16,6 +16,7 @@ use App\Models\Masters\MasterAsset;
 use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMasterProductIsForSale extends OrgAction
 {
@@ -97,6 +98,7 @@ class RepairMasterProductIsForSale extends OrgAction
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $updateProducts = $command->option('update_products');
 
 

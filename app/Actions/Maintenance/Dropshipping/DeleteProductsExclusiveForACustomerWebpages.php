@@ -15,6 +15,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class DeleteProductsExclusiveForACustomerWebpages
 {
@@ -32,6 +33,7 @@ class DeleteProductsExclusiveForACustomerWebpages
      */
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $dsShops = Shop::where('type', ShopTypeEnum::DROPSHIPPING)->pluck('id');
 
 

@@ -9,8 +9,13 @@
 namespace App\Actions\Production\PartnerShippingList\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
 use App\Actions\Production\Production\UI\ShowProduction;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Models\HumanResources\Employee;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Ordering\Order;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -18,6 +23,8 @@ use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,6 +33,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPartnerShippingList extends OrgAction
 {
+    private ?string $groupBy = null;
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->authTo([
@@ -33,6 +42,7 @@ class IndexPartnerShippingList extends OrgAction
             'productions-view.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.view",
             "productions_operations.{$this->production->id}.orchestrate",
+            "productions_operations.{$this->production->id}.prepare",
             "productions_procurement.{$this->production->id}.view",
         ]);
     }
@@ -58,8 +68,33 @@ class IndexPartnerShippingList extends OrgAction
                     ->whereNull('artefacts.deleted_at');
             })
             ->leftJoin('artefact_families', 'artefacts.artefact_family_id', 'artefact_families.id')
-            ->leftJoin('organisations', 'organisations.id', 'partner_shopping_list_items.organisation_id')
-            ->where('partner_shopping_list_items.partner_organisation_id', $seller->id);
+            ->leftJoin('employees', 'employees.id', DB::raw("coalesce(
+                (select employee_id from artisan_assignments where artisanable_type = 'Artefact' and artisanable_id = artefacts.id order by position limit 1),
+                (select employee_id from artisan_assignments where artisanable_type = 'ArtefactFamily' and artisanable_id = artefact_families.id order by position limit 1)
+            )"))
+            ->leftJoin('organisations', function ($join) {
+                $join->on('organisations.id', 'partner_shopping_list_items.organisation_id')
+                    ->whereNotNull('partner_shopping_list_items.partner_organisation_id');
+            })
+            ->leftJoin('transactions', 'transactions.id', 'partner_shopping_list_items.transaction_id')
+            ->leftJoin('orders', 'orders.id', 'transactions.order_id')
+            ->leftJoin('customers', 'customers.id', 'orders.customer_id')
+            ->leftJoin('job_orders', 'job_orders.id', 'partner_shopping_list_items.job_order_id')
+            ->where(function ($query) use ($seller) {
+                $query->where('partner_shopping_list_items.partner_organisation_id', $seller->id)
+                    ->orWhere(function ($query) use ($seller) {
+                        $query->whereNull('partner_shopping_list_items.partner_organisation_id')
+                            ->where('partner_shopping_list_items.organisation_id', $seller->id);
+                    });
+            });
+
+        foreach ($this->getElementGroups() as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine']
+            );
+        }
 
 
         return $queryBuilder
@@ -74,33 +109,65 @@ class IndexPartnerShippingList extends OrgAction
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
                 'artefact_families.name as family',
+                'employees.contact_name as maker',
                 'organisations.code as buyer_code',
+                'customers.name as customer_name',
+                'orders.reference as order_reference',
+                'job_orders.reference as job_order_reference',
+                'job_orders.slug as job_order_slug',
             ])
             ->defaultSort('-created_at')
             ->allowedFilters([$globalSearch])
-            ->allowedSorts(['stock_code', 'family', 'buyer_code', 'priority', 'needed_by', 'state', 'created_at'])
-            ->withPaginator(null, tableName: request()->route()->getName())
+            ->allowedSorts(['stock_code', 'family', 'maker', 'buyer_code', 'priority', 'needed_by', 'state', 'created_at'])
+            ->withPaginator(null, $this->groupBy === 'mixes' ? 1 : ($this->groupBy ? 10000 : null), tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    /** @return array<string, array{label: string, elements: array<string, array{0: string, 1: int}>, engine: Closure}> */
+    public function getElementGroups(): array
+    {
+        return [
+            'source' => [
+                'label'    => __('Source'),
+                'elements' => [
+                    'partners' => [__('Partners'), 0],
+                    'local'    => [__('Own customers'), 0],
+                ],
+                'engine' => function ($query, $elements) {
+                    if (in_array('partners', $elements) && !in_array('local', $elements)) {
+                        $query->whereNotNull('partner_shopping_list_items.partner_organisation_id');
+                    } elseif (in_array('local', $elements) && !in_array('partners', $elements)) {
+                        $query->whereNull('partner_shopping_list_items.partner_organisation_id');
+                    }
+                },
+            ],
+        ];
     }
 
     public function tableStructure(): Closure
     {
         return function (InertiaTable $table) {
+            foreach ($this->getElementGroups() as $key => $elementGroup) {
+                $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements']);
+            }
+
             $table
                 ->withGlobalSearch()
                 ->withLabelRecord([__('Shipping list item'), __('Shipping list items')])
                 ->withEmptyState([
-                    'title' => __('No partner requests to fulfil'),
+                    'title' => __('Nothing to produce'),
                 ])
                 ->column(key: 'pick', label: '', canBeHidden: false)
                 ->column(key: 'buyer_code', label: __('For'), canBeHidden: false, sortable: true)
                 ->column(key: 'stock_code', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'stock_name', label: __('Name'), canBeHidden: false)
                 ->column(key: 'family', label: __('Family'), canBeHidden: false, sortable: true)
+                ->column(key: 'maker', label: __('Artisan'), canBeHidden: false, sortable: true)
                 ->column(key: 'quantity', label: __('Quantity (SKO)'), canBeHidden: false, align: 'right')
                 ->column(key: 'priority', label: __('Priority'), canBeHidden: false, sortable: true)
                 ->column(key: 'needed_by', label: __('Needed by'), canBeHidden: false, sortable: true)
                 ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true)
+                ->column(key: 'job_order_reference', label: __('Job order'), canBeHidden: false)
                 ->column(key: 'created_at', label: __('Added'), canBeHidden: false, sortable: true)
                 ->defaultSort('-created_at');
         };
@@ -113,20 +180,125 @@ class IndexPartnerShippingList extends OrgAction
         return $this->handle($organisation);
     }
 
+    public function byFamily(Organisation $organisation, Production $production, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->groupBy = 'family';
+        $this->initialisationFromProduction($production, $request);
+
+        return $this->handle($organisation);
+    }
+
+    public function byArtisan(Organisation $organisation, Production $production, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->groupBy = 'maker';
+        $this->initialisationFromProduction($production, $request);
+
+        return $this->handle($organisation);
+    }
+
+    public function mixes(Organisation $organisation, Production $production, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->groupBy = 'mixes';
+        $this->initialisationFromProduction($production, $request);
+
+        return $this->handle($organisation);
+    }
+
+    public function byFor(Organisation $organisation, Production $production, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->groupBy = 'buyer_code';
+        $this->initialisationFromProduction($production, $request);
+
+        return $this->handle($organisation);
+    }
+
+    /** @return array<int, array{label: string, items: array<int, array<string, mixed>>}> */
+    public function getGroups(LengthAwarePaginator $items): array
+    {
+        return collect($items->items())
+            ->groupBy(fn ($item) => $item->{$this->groupBy} ?? ($this->groupBy === 'buyer_code' ? $item->customer_name : null) ?? '')
+            ->sortKeys()
+            ->map(fn ($groupItems, $label) => [
+                'label' => $label === '' ? __('Unassigned') : $label,
+                'items' => $groupItems->values()->all(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /** @return array<int, array{id: int, name: string, open_job_orders: int, hidden: bool}> */
+    public function getArtisanWorkload(): array
+    {
+        $hiddenIds = Arr::get($this->production->data, 'hidden_artisan_ids', []);
+
+        return Employee::query()
+            ->where('employees.organisation_id', $this->organisation->id)
+            ->where('employees.state', EmployeeStateEnum::WORKING)
+            ->leftJoin('job_orders', function ($join) {
+                $join->on('job_orders.employee_id', 'employees.id')
+                    ->where('job_orders.production_id', $this->production->id)
+                    ->whereIn('job_orders.state', [JobOrderStateEnum::IN_PROCESS->value, JobOrderStateEnum::SUBMITTED->value, JobOrderStateEnum::CONFIRMED->value]);
+            })
+            ->groupBy('employees.id', 'employees.contact_name')
+            ->orderByRaw('count(job_orders.id), employees.contact_name')
+            ->get(['employees.id', 'employees.contact_name', DB::raw('count(job_orders.id) as open_job_orders')])
+            ->map(fn (Employee $employee) => [
+                'id'              => $employee->id,
+                'name'            => $employee->contact_name,
+                'open_job_orders' => (int) $employee->open_job_orders,
+                'hidden'          => in_array($employee->id, $hiddenIds),
+            ])
+            ->all();
+    }
+
+    public function getSubNavigation(array $routeParameters): array
+    {
+        $tab = fn (string $label, string $route, string $icon, ?int $number = null) => array_filter([
+            'label'    => $label,
+            'root'     => $route,
+            'route'    => ['name' => $route, 'parameters' => $routeParameters],
+            'leftIcon' => ['icon' => ['fal', $icon], 'tooltip' => $label],
+            'number'   => $number,
+        ]);
+
+        $openItems = PartnerShoppingListItem::query()
+            ->where('state', ShoppingListItemStateEnum::OPEN)
+            ->where(function ($query) {
+                $query->where('partner_organisation_id', $this->organisation->id)
+                    ->orWhere(function ($query) {
+                        $query->whereNull('partner_organisation_id')->where('organisation_id', $this->organisation->id);
+                    });
+            })
+            ->count();
+
+        return [
+            $tab(__('All'), 'grp.org.productions.show.partners.index', 'fa-bars', $openItems) + ['isAnchor' => true],
+            $tab(__('By artisan'), 'grp.org.productions.show.partners.by_artisan', 'fa-user-hard-hat'),
+            $tab(__('By category'), 'grp.org.productions.show.partners.by_category', 'fa-layer-group'),
+            $tab(__('By buyer'), 'grp.org.productions.show.partners.by_for', 'fa-building'),
+            $tab(__('Mixes'), 'grp.org.productions.show.partners.mixes', 'fa-flask'),
+        ];
+    }
+
     public function htmlResponse(LengthAwarePaginator $items, ActionRequest $request): Response
     {
         return Inertia::render(
             'Org/Production/PartnerShippingList',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('Partner shipping list'),
+                'title'       => __('To produce'),
                 'pageHead'    => [
                     'icon'  => [
                         'icon'  => ['fal', 'fa-truck-loading'],
-                        'title' => __('Partner shipping list'),
+                        'title' => __('To produce'),
                     ],
-                    'title' => __('Partner shipping list'),
+                    'title'         => __('To produce'),
+                    'subNavigation' => $this->getSubNavigation($request->route()->originalParameters()),
                 ],
+                'groupBy'      => $this->groupBy,
+                'artisanWorkload' => $this->groupBy === 'maker' ? $this->getArtisanWorkload() : null,
+                'groups'       => $this->groupBy && $this->groupBy !== 'mixes' ? $this->getGroups($items) : null,
+                'mixes'        => $this->groupBy === 'mixes' ? GetMixesToPrepare::run($this->production) : null,
                 'data'         => $items,
                 'pickedOrders' => $this->getPickedOrders($this->organisation),
             ]
@@ -173,7 +345,7 @@ class IndexPartnerShippingList extends OrgAction
                             'name'       => 'grp.org.productions.show.partners.index',
                             'parameters' => $routeParameters,
                         ],
-                        'label' => __('Partner shipping list'),
+                        'label' => __('To produce'),
                         'icon'  => 'fal fa-truck-loading',
                     ],
                 ],

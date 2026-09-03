@@ -21,6 +21,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairCustomerClientFetch
 {
@@ -141,6 +142,7 @@ class RepairCustomerClientFetch
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $organisation = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
 
 

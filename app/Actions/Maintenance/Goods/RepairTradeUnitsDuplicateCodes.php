@@ -19,6 +19,7 @@ use App\Models\Goods\TradeUnitStats;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairTradeUnitsDuplicateCodes
 {
@@ -107,6 +108,7 @@ class RepairTradeUnitsDuplicateCodes
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $includeTrashed = (bool)$command->option('include-trashed');
 
         $command->info('Scanning for duplicate Trade Unit codes...');
