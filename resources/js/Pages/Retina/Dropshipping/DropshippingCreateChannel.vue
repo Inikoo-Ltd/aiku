@@ -666,7 +666,7 @@ provide("goNext", goNext)
 					<img
 						src="/assets/channel_logo/wix.svg"
 						alt=""
-						class="h-12 filter" />
+						class="h-4 filter" />
 
 					<div class="flex flex-col">
 						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">

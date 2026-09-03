@@ -40,13 +40,13 @@ const logoutData = {
 }
 
 const isLoadingLogout = ref(false)
+let restoreIrisSession: (() => void) | null = null
 const onLogoutAuth = () => {
 
     router.post(route('retina.logout'), {},
     {
-        onStart: () => isLoadingLogout.value = true,
-        onSuccess: () => clearIrisSession(layout),
-        onError: () => isLoadingLogout.value = false,
+        onStart: () => (isLoadingLogout.value = true, restoreIrisSession = clearIrisSession(layout)),
+        onError: () => (isLoadingLogout.value = false, restoreIrisSession?.()),
     })
 
 }
