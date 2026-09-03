@@ -369,6 +369,10 @@ const selectChannel = (shopId: number, channelKey: string) => {
     messages.value = []
     newChatVisible.value = false
     clearAgentFilter()
+
+    const baseUrl = route("grp.org.chat.inbox", [props.organisation.slug])
+    window.history.replaceState(window.history.state, "", baseUrl)
+
     reloadContacts()
 }
 
@@ -753,10 +757,8 @@ const onAssignSelfSuccess = async () => {
 }
 
 const updateUrl = (ulid: string) => {
-    // The conversation route binds website ChatSession ulids only, so a WhatsApp session
-    // is addressed by query string on the inbox it lives in.
     const url = selectedChannel.value === "whatsapp"
-        ? `${window.location.pathname}?channel=whatsapp&session=${ulid}`
+        ? route("grp.org.chat.inbox", [props.organisation.slug]) + `?channel=whatsapp&session=${ulid}`
         : route("grp.org.chat.inbox.conversation", [props.organisation.slug, ulid])
 
     window.history.replaceState(window.history.state, "", url)
