@@ -91,6 +91,43 @@ class GetGroupNavigation
             ];
         }
 
+        $groupNavigation['tickets'] = [
+            'label'   => __('Tickets'),
+            'icon'    => ['fal', 'fa-life-ring'],
+            'root'    => 'grp.tickets.',
+            'route'   => [
+                'name' => 'grp.tickets.index',
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('List'),
+                        'icon'  => ['fal', 'fa-list'],
+                        'root'  => 'grp.tickets.index',
+                        'route' => [
+                            'name' => 'grp.tickets.index',
+                        ],
+                    ],
+                    [
+                        'label' => __('Board'),
+                        'icon'  => ['fal', 'fa-columns'],
+                        'root'  => 'grp.tickets.board',
+                        'route' => [
+                            'name' => 'grp.tickets.board',
+                        ],
+                    ],
+                    [
+                        'label' => __('Reports'),
+                        'icon'  => ['fal', 'fa-chart-line'],
+                        'root'  => 'grp.tickets.dashboard',
+                        'route' => [
+                            'name' => 'grp.tickets.dashboard',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
         $groupNavigation['chat'] = [
             'label'   => __('Chat'),
             'tooltip' => __('Chat'),
