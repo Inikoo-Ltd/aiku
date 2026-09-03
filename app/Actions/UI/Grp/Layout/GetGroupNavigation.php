@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Grp\Layout;
 
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetGroupNavigation
@@ -189,6 +190,10 @@ class GetGroupNavigation
 
         if ($user->hasPermissionTo('sysadmin.view')) {
             $groupNavigation['sysadmin'] = $this->getSysAdminNavs();
+        }
+
+        if (!$user->hasGroupAccess()) {
+            return Arr::only($groupNavigation, ['tickets']);
         }
 
         return $groupNavigation;
