@@ -25,8 +25,7 @@
                 <aside class="tldr">
                     <strong>In short</strong>
                     aiku connects your own WhatsApp Business Account to your aiku organisation so you can talk to your
-                    customers from inside aiku. We process those conversations on your behalf, we never sell them, we
-                    never use them for advertising, and you can disconnect and have them deleted at any time.
+                    customers from inside aiku. We process those conversations on your behalf, we never sell them, and you can disconnect.
                 </aside>
 
                 <aside class="wayfinder">
@@ -66,7 +65,6 @@
                     <li>link your WhatsApp Business Account and its phone numbers to your aiku organisation;</li>
                     <li>send and receive messages, including template messages, media and interactive messages;</li>
                     <li>show those conversations in aiku next to the customer, order or delivery they belong to;</li>
-                    <li>send transactional notifications you configure, such as order confirmations and dispatch updates;</li>
                     <li>record delivery, read and failure statuses so you can see what happened to a message.</li>
                 </ul>
                 <p>
