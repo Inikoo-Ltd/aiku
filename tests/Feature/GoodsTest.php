@@ -1056,3 +1056,41 @@ test('UI Show Trade Unit lists the tariff code per organisation', function () {
                 ->etc());
     });
 });
+
+test('repair fills and overwrites trade unit tariff codes from the latest Aurora history audit', function () {
+    [, $product] = createProduct($this->shop);
+    $tradeUnit   = $product->tradeUnits->first();
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['tariff_code' => null]);
+    $tradeUnit->update(['source_id' => $this->organisation->id.':1', 'status' => \App\Enums\Goods\TradeUnit\TradeUnitStatusEnum::ACTIVE]);
+
+    $auditRow = fn (string $code, string $at) => [
+        'tags'           => '["goods"]',
+        'auditable_type' => 'TradeUnit',
+        'auditable_id'   => $tradeUnit->id,
+        'event'          => 'updated',
+        'old_values'     => '{}',
+        'new_values'     => json_encode(['tariff_code' => $code]),
+        'created_at'     => $at,
+        'updated_at'     => $at,
+    ];
+    \Illuminate\Support\Facades\DB::table('audits')->insert([$auditRow('1111110000', '2026-01-01'), $auditRow('2520100000', '2026-08-01')]);
+
+    $repair = \App\Actions\Goods\TradeUnit\RepairTradeUnitTariffCodesFromAurora::make();
+
+    $dryRun = $repair->handle();
+    expect($dryRun)->toHaveCount(1)
+        ->and($dryRun[0]['aurora'])->toBe('2520100000')
+        ->and($dryRun[0]['action'])->toBe('fill')
+        ->and($tradeUnit->fresh()->tariff_code)->toBeNull();
+
+    $repair->handle(fix: true);
+    expect($tradeUnit->fresh()->tariff_code)->toBe('2520100000');
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['tariff_code' => '2842908080']);
+    expect($repair->handle())->toBeEmpty()
+        ->and($repair->handle(overwrite: true)[0]['action'])->toBe('overwrite');
+
+    $repair->handle(fix: true, overwrite: true);
+    expect($tradeUnit->fresh()->tariff_code)->toBe('2520100000')
+        ->and($product->fresh()->tariff_code)->toBe('2520100000');
+});
