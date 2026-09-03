@@ -20,6 +20,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -38,7 +39,7 @@ class IndexWhatsappCampaignRecipients extends OrgAction
 
     private array $customerFilters = [];
 
-    private int $estimatedRecipients = 0;
+    private array $validSelection = [];
 
     public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
@@ -60,9 +61,7 @@ class IndexWhatsappCampaignRecipients extends OrgAction
 
         $recipients = GetWhatsappRecipientsQuery::run($shop, $this->channels, $this->customerFilters);
 
-        /* count() on the grouped query would return the size of the first group rather than
-           the number of groups, so the estimate counts the wrapped subquery instead. */
-        $this->estimatedRecipients = DB::query()->fromSub($recipients, 'estimate')->count();
+        $this->validSelection = $this->readValidSelection($recipients);
 
         return QueryBuilder::for(Customer::query()->withoutGlobalScopes()->fromSub($recipients, 'recipients'))
             ->defaultSort('-last_visitor_message_at')
@@ -73,8 +72,7 @@ class IndexWhatsappCampaignRecipients extends OrgAction
     }
 
     /**
-     * Defaults to the contacted channel so an existing campaign opens on the audience it
-     * had before the other two channels existed.
+     * Defaults to the subscriber channel, the audience that opted in to being messaged.
      */
     private function readChannels(): array
     {
@@ -85,7 +83,7 @@ class IndexWhatsappCampaignRecipients extends OrgAction
         }
 
         if (!is_array($requested) || empty(array_filter($requested, fn ($value) => filter_var($value, FILTER_VALIDATE_BOOLEAN)))) {
-            return ['contacted' => true, 'subscriber' => false, 'customers' => false];
+            return GetWhatsappRecipientsQuery::DEFAULT_CHANNELS;
         }
 
         $channels = [];
@@ -110,6 +108,41 @@ class IndexWhatsappCampaignRecipients extends OrgAction
         }
 
         return array_diff_key($filters, ['all_customers' => true]);
+    }
+
+    /**
+     * The keys the page may keep ticked: the current selection narrowed to the rows the
+     * audience still holds. The table is paginated, so the browser cannot judge a selection
+     * sitting on a page it never loaded, and a channel it unticks would otherwise leave
+     * those rows saved into recipients_list and messaged.
+     *
+     * The selection is read from the request while the user is toggling channels and falls
+     * back to what the campaign has stored on first load.
+     *
+     * @return array<int, string>
+     */
+    private function readValidSelection(Builder $recipients): array
+    {
+        $selection = request()->input('selection');
+
+        if (!is_array($selection)) {
+            $selection = Arr::pluck($this->campaign->recipients_list ?? [], 'phone_number');
+        }
+
+        $phoneKeys = array_values(array_unique(array_filter(array_map(
+            fn ($phone) => GetWhatsappRecipientsQuery::normalisePhoneKey(is_string($phone) ? $phone : null),
+            $selection
+        ))));
+
+        if (!$phoneKeys) {
+            return [];
+        }
+
+        return DB::query()
+            ->fromSub($recipients, 'selection')
+            ->whereIn('selection.recipient_key', $phoneKeys)
+            ->pluck('selection.recipient_key')
+            ->all();
     }
 
     public function tableStructure($prefix = null): Closure
@@ -167,11 +200,10 @@ class IndexWhatsappCampaignRecipients extends OrgAction
                         'title' => __('Recipients'),
                     ],
                 ],
-                'selectedRecipients' => Arr::pluck($campaign->recipients_list ?? [], 'phone_number'),
+                'validSelection'     => $this->validSelection,
                 'channels'           => $this->channels,
                 'filtersStructure'   => GetCustomerFilterStructure::run($this->shop),
                 'filters'            => $this->customerFilters,
-                'estimatedRecipients' => $this->estimatedRecipients,
                 'shop_id'            => $this->shop->id,
                 'shop_slug'          => $this->shop->slug,
                 'updateRoute'        => [

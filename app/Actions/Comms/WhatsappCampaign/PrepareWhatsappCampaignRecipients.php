@@ -74,10 +74,10 @@ class PrepareWhatsappCampaignRecipients
     }
 
     /**
-     * Mirrors IndexWhatsappCampaignRecipients::readChannels(), which falls back to the
-     * contacted channel. A campaign selected under that default stores no channels, so
-     * reading the recipe literally here would resolve nobody and send every recipient as
-     * a bare phone number.
+     * Mirrors IndexWhatsappCampaignRecipients::readChannels(), which falls back to the same
+     * shared default. A campaign selected under that default stores no channels, so reading
+     * the recipe literally here would resolve nobody and send every recipient as a bare
+     * phone number.
      *
      * @return array<string, bool>
      */
@@ -86,7 +86,7 @@ class PrepareWhatsappCampaignRecipients
         $requested = Arr::get($campaign->recipients_recipe ?? [], 'channels');
 
         if (!is_array($requested) || empty(array_filter($requested, fn ($value) => filter_var($value, FILTER_VALIDATE_BOOLEAN)))) {
-            return ['contacted' => true, 'subscriber' => false, 'customers' => false];
+            return GetWhatsappRecipientsQuery::DEFAULT_CHANNELS;
         }
 
         $channels = [];

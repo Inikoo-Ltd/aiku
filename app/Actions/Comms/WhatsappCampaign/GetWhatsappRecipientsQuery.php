@@ -29,6 +29,12 @@ class GetWhatsappRecipientsQuery
 
     public const CHANNELS = ['contacted', 'subscriber', 'customers'];
 
+    /**
+     * The audience a campaign carrying no saved channels is read as. Both the picker and the
+     * send path fall back to this, so it lives here rather than being written out at each.
+     */
+    public const DEFAULT_CHANNELS = ['subscriber' => true, 'contacted' => false, 'customers' => false];
+
     private const PHONE_KEY = "regexp_replace(%s, '[^0-9]', '', 'g')";
 
     /**

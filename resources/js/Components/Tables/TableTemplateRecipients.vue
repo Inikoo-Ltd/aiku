@@ -82,7 +82,7 @@ const props = withDefaults(defineProps<{
     filtersStructure: Record<string, any>
     recipientsRecipe: any,
     shopId: number,
-    estimatedRecipients: number,
+    estimatedRecipients?: number,
     shopSlug: string
     showSave?: boolean
     exportRoutes?: { xlsx: routeType, csv: routeType }
@@ -94,12 +94,15 @@ const props = withDefaults(defineProps<{
     upcomingOutOfStockCount?: number
     upcomingFilter?: string | null
     estimateLabel?: string
+    showEstimate?: boolean
     exportFields?: { key: string, label: string }[]
     channels?: Record<string, boolean>
     channelOptions?: { value: string, label: string }[]
+    selection?: string[]
     reloadOnly?: string[]
 }>(), {
     showSave: true,
+    showEstimate: true,
     estimateLabel: 'Estimated Recipients',
 });
 
@@ -131,8 +134,10 @@ if (props.channelOptions?.length) {
     extraQuery.channels = { ...selectedChannels.value }
 }
 
+// The selection rides along so the server can narrow it to the rows the new audience keeps
 const onChannelChange = () => {
     extraQuery.channels = { ...selectedChannels.value }
+    extraQuery.selection = [...(props.selection ?? [])]
     fetchCustomers()
 }
 
@@ -479,7 +484,7 @@ watch(
                     @click="clearAllFilters" />
             </div>
             <!-- center side -->
-            <div v-if="isAllCustomers" class="flex items-center">
+            <div v-if="isAllCustomers && showEstimate" class="flex items-center">
                 <span class="text-blue-600 font-medium">
                     {{ trans("Audience: All Customers") }}
                 </span>
@@ -744,7 +749,7 @@ watch(
             </div>
         </div>
 
-        <div class="mt-8">
+        <div v-if="showEstimate" class="mt-8">
             <div class="bg-white shadow-sm ring-1 ring-gray-200 rounded-2xl p-8 flex items-center justify-between">
 
                 <div>

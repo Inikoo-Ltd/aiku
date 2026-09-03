@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { Head, router } from "@inertiajs/vue3"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
@@ -14,11 +14,10 @@ const props = defineProps<{
     title: string
     pageHead: any
     customers: object
-    selectedRecipients: string[]
+    validSelection: string[]
     channels: Record<string, boolean>
     filters: Record<string, any>
     filtersStructure: Record<string, any>
-    estimatedRecipients: number
     shop_id: number
     shop_slug: string
     updateRoute: routeType
@@ -26,16 +25,30 @@ const props = defineProps<{
 }>()
 
 const channelOptions = [
-    { value: "contacted", label: "Contacted" },
     { value: "subscriber", label: "Subscriber" },
+    { value: "contacted", label: "Contacted" },
     { value: "customers", label: "Customers" },
 ]
 
-const preselected = Object.fromEntries(props.selectedRecipients.map((key) => [key, true]))
-
-// Table emits the whole map including unticked rows as false, so it is filtered on read
-const selection = ref<Record<string, boolean>>({ ...preselected })
+/* Seeded from validSelection rather than the raw saved list: a campaign stored under the old
+   default opens on a different audience, and the contacts that fell out of it must not stay
+   ticked. Table emits the whole map including unticked rows as false, so it is filtered on read. */
+const selection = ref<Record<string, boolean>>(
+    Object.fromEntries(props.validSelection.map((key) => [key, true]))
+)
 const selectedKeys = computed(() => Object.keys(selection.value).filter((key) => selection.value[key]))
+
+/* Table seeds its own checkbox map once at setup and never watches the prop, so the pruned
+   selection only reaches the checkboxes by remounting it on the new channel set. */
+const tableKey = computed(() => Object.keys(props.channels).filter((key) => props.channels[key]).join('-'))
+
+watch(
+    () => props.validSelection,
+    (valid) => {
+        const kept = new Set(valid)
+        selection.value = Object.fromEntries(selectedKeys.value.filter((key) => kept.has(key)).map((key) => [key, true]))
+    }
+)
 
 const isSaving = ref(false)
 const saveError = ref<string | null>(null)
@@ -86,18 +99,19 @@ const onSelect = async () => {
             :recipients-recipe="filters && Object.keys(filters).length ? filters : null"
             :channels="channels"
             :channel-options="channelOptions"
-            :reload-only="['customers', 'filters', 'channels', 'estimatedRecipients', 'queryBuilderProps']"
+            :selection="selectedKeys"
+            :reload-only="['customers', 'filters', 'channels', 'validSelection', 'queryBuilderProps']"
             :shop-id="shop_id"
             :shop-slug="shop_slug"
-            :estimated-recipients="estimatedRecipients"
             :show-save="false"
-            estimate-label="Estimated Recipients" />
+            :show-estimate="false" />
 
         <Table
+            :key="tableKey"
             :resource="customers"
             :isCheckBox="true"
             checkboxKey="recipient_key"
-            :selectedRow="preselected"
+            :selectedRow="selection"
             @onSelectRow="(rows) => (selection = rows)">
             <template #cell(sources)="{ item }">
                 <div class="flex flex-wrap gap-1">
