@@ -9,16 +9,18 @@ namespace App\Actions\Comms\WhatsappCampaign;
 
 use App\Models\Comms\WhatsappCampaign;
 use Illuminate\Console\Command;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Turns the stored recipient selection into chunks of sendable rows.
  *
- * recipients_list holds phone numbers and nothing else, so the name, customer and chat
- * session behind each number are looked up again here. The selection stays the source of
- * truth: a number whose audience row has since disappeared is still sent to, with only
- * the phone number known about it.
+ * recipients_list holds phone numbers and nothing else, so the name and customer behind each
+ * number are looked up again here, straight from the customers and chat sessions that carry
+ * them. The selection stays the source of truth: the audience recipe is not re-applied, and a
+ * number nothing is known about is still sent to with only its phone number.
  */
 class PrepareWhatsappCampaignRecipients
 {
@@ -54,55 +56,67 @@ class PrepareWhatsappCampaignRecipients
     }
 
     /**
+     * Looks up what is known about each selected number, and nothing else. The recipe is
+     * deliberately not consulted: recipients_list is already the audience the user confirmed,
+     * so re-applying the channels and filters here would drop contacts they picked whenever
+     * the recipe was tightened, or a customer stopped matching it, after the selection.
+     *
      * @param  array<int, string>  $phoneKeys
      * @return array<string, array<string, mixed>> keyed by recipient_key
      */
     private function resolveRecipients(WhatsappCampaign $campaign, array $phoneKeys): array
     {
-        // TODO: need to check does need to check  recipients_recipe or just use recipients_list? because recipients_list is already filtered by recipients_recipe
-        $query = GetWhatsappRecipientsQuery::run(
-            $campaign->shop,
-            $this->readChannels($campaign),
-            Arr::get($campaign->recipients_recipe ?? [], 'customer_filters', [])
+        $sessions = $this->keyedByPhone(
+            DB::table('meta_chat_sessions')
+                ->where('shop_id', $campaign->shop_id)
+                ->whereNull('deleted_at')
+                ->orderBy('id')
+                ->select(['customer_id', 'guest_identifier as name']),
+            'phone_number',
+            $phoneKeys
         );
 
-        return $query->get()
-            ->filter(fn ($row) => in_array($row->recipient_key, $phoneKeys, true))
+        /* Layered over the sessions rather than merged with them: a real customer carries a
+           better name than a chat session's WhatsApp profile label, and is what makes the
+           recipient record a Customer rather than a bare session. */
+        $customers = $this->keyedByPhone(
+            DB::table('customers')
+                ->where('shop_id', $campaign->shop_id)
+                ->whereNull('deleted_at')
+                ->orderBy('id')
+                ->select([DB::raw('id as customer_id'), DB::raw('contact_name as name')]),
+            'phone',
+            $phoneKeys
+        );
+
+        return array_replace($sessions, $customers);
+    }
+
+    /**
+     * Matched on the digits only form of the number, the SQL twin of
+     * GetWhatsappRecipientsQuery::normalisePhoneKey(), because that is the shape
+     * recipients_list stores and the two have to agree for a row to be found at all.
+     *
+     * @param  array<int, string>  $phoneKeys
+     * @return array<string, array<string, mixed>>
+     */
+    private function keyedByPhone(Builder $query, string $phoneColumn, array $phoneKeys): array
+    {
+        $key = sprintf("regexp_replace(%s, '[^0-9]', '', 'g')", $phoneColumn);
+
+        return $query
+            ->addSelect(DB::raw($key.' as recipient_key'))
+            ->whereIn(DB::raw($key), $phoneKeys)
+            ->get()
             ->keyBy('recipient_key')
             ->map(fn ($row) => (array) $row)
             ->all();
     }
 
     /**
-     * Mirrors IndexWhatsappCampaignRecipients::readChannels(), which falls back to the same
-     * shared default. A campaign selected under that default stores no channels, so reading
-     * the recipe literally here would resolve nobody and send every recipient as a bare
-     * phone number.
-     *
-     * @return array<string, bool>
-     */
-    private function readChannels(WhatsappCampaign $campaign): array
-    {
-        $requested = Arr::get($campaign->recipients_recipe ?? [], 'channels');
-
-        if (!is_array($requested) || empty(array_filter($requested, fn ($value) => filter_var($value, FILTER_VALIDATE_BOOLEAN)))) {
-            return GetWhatsappRecipientsQuery::DEFAULT_CHANNELS;
-        }
-
-        $channels = [];
-
-        foreach (GetWhatsappRecipientsQuery::CHANNELS as $channel) {
-            $channels[$channel] = filter_var(Arr::get($requested, $channel, false), FILTER_VALIDATE_BOOLEAN);
-        }
-
-        return $channels;
-    }
-
-    /**
-     * recipient_type follows the identity the audience gave back: a known customer is
-     * recorded as one, anyone else as the chat session they will be messaged through.
-     * The session id is filled in later by ProcessSendWhatsappCampaign, which is what
-     * creates the session, so an unresolved number carries a 0 until then.
+     * A number nothing is known about is still sent to, carrying only its phone: the
+     * selection is the source of truth, and ProcessSendWhatsappCampaign falls back to the
+     * chat session it creates for the name and customer it needs to record the recipient.
      *
      * @param  array<int, string>  $phoneKeys
      * @param  array<string, array<string, mixed>>  $resolved
@@ -116,10 +130,9 @@ class PrepareWhatsappCampaignRecipients
             $row = $resolved[$phoneKey] ?? [];
 
             $rows[] = [
-                'phone'                => $phoneKey,
-                'name'                 => Arr::get($row, 'name'),
-                'customer_id'          => Arr::get($row, 'customer_id'),
-                'meta_chat_session_id' => Arr::get($row, 'meta_chat_session_id'),
+                'phone'       => $phoneKey,
+                'name'        => Arr::get($row, 'name'),
+                'customer_id' => Arr::get($row, 'customer_id'),
             ];
         }
 

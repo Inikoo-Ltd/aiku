@@ -20,8 +20,10 @@ use Lorisleiva\Actions\Concerns\AsObject;
  * and selected by. Grouping also collapses the several chat sessions a single person may
  * have into one recipient.
  *
- * Only the customers channel accepts the mailshot filter recipe: those filters are all
- * customers table joins and cannot describe a guest who only ever opened a chat.
+ * An active mailshot filter recipe gates every channel, not just the customers one. The
+ * filters are all customers table joins, so a row can only pass by resolving to a customer:
+ * a guest who only ever opened a chat is dropped for as long as a filter is set. With no
+ * filter the channels keep their own membership rules and guests stay in.
  */
 class GetWhatsappRecipientsQuery
 {
@@ -61,19 +63,23 @@ class GetWhatsappRecipientsQuery
      */
     public function handle(Shop $shop, array $channels, array $customerFilters): Builder
     {
+        $filteredCustomerIds = empty($customerFilters)
+            ? null
+            : GetWhatsappCustomersQueryByRecipe::run($shop->id, $customerFilters)->select('customers.id');
+
         $branches = [];
 
         if (data_get($channels, 'contacted')) {
-            $branches[] = $this->contactedBranch($shop);
+            $branches[] = $this->contactedBranch($shop, $filteredCustomerIds);
         }
 
         if (data_get($channels, 'subscriber')) {
-            $branches[] = $this->whatsappSubscribersBranch($shop);
-            $branches[] = $this->newsletterSubscribersBranch($shop);
+            $branches[] = $this->whatsappSubscribersBranch($shop, $filteredCustomerIds);
+            $branches[] = $this->newsletterSubscribersBranch($shop, $filteredCustomerIds);
         }
 
         if (data_get($channels, 'customers')) {
-            $branches[] = $this->customersBranch($shop, $customerFilters);
+            $branches[] = $this->customersBranch($shop, $filteredCustomerIds);
         }
 
         if (empty($branches)) {
@@ -133,6 +139,21 @@ class GetWhatsappRecipientsQuery
     }
 
     /**
+     * The one place the filter recipe is enforced, applied per branch against whichever
+     * column that branch resolves a customer through. A null customer id never satisfies
+     * IN, so the same clause both narrows to matching customers and drops the guests the
+     * filters have no way to describe.
+     */
+    private function whereCustomerPassesFilter(Builder $query, string $customerIdColumn, ?Builder $filteredCustomerIds): Builder
+    {
+        if (!$filteredCustomerIds) {
+            return $query;
+        }
+
+        return $query->whereIn($customerIdColumn, clone $filteredCustomerIds);
+    }
+
+    /**
      * Applied per branch rather than as an outer having, so a blank phone never reaches
      * the union. Grouping by the digits only key would otherwise collapse every blank
      * row in every branch into one empty keyed recipient.
@@ -173,12 +194,14 @@ class GetWhatsappRecipientsQuery
             ->select($this->branchColumns('customers.phone', 'customers.contact_name'));
     }
 
-    private function contactedBranch(Shop $shop): Builder
+    private function contactedBranch(Shop $shop, ?Builder $filteredCustomerIds): Builder
     {
         $query = DB::table('meta_chat_sessions')
             ->leftJoin('customers', 'meta_chat_sessions.customer_id', '=', 'customers.id')
             ->where('meta_chat_sessions.shop_id', $shop->id)
             ->whereNull('meta_chat_sessions.deleted_at');
+
+        $this->whereCustomerPassesFilter($query, 'meta_chat_sessions.customer_id', $filteredCustomerIds);
 
         return $this->wherePhoneSendable($query, 'meta_chat_sessions.phone_number')
             ->select($this->branchColumns(
@@ -198,7 +221,7 @@ class GetWhatsappRecipientsQuery
      * whatsapp_subscribers carries no phone of its own, it is resolved through the
      * polymorphic parent using the morph aliases registered in AppServiceProvider.
      */
-    private function whatsappSubscribersBranch(Shop $shop): Builder
+    private function whatsappSubscribersBranch(Shop $shop, ?Builder $filteredCustomerIds): Builder
     {
         $query = DB::table('whatsapp_subscribers')
             ->leftJoin('customers', function ($join) {
@@ -211,6 +234,8 @@ class GetWhatsappRecipientsQuery
             })
             ->where('whatsapp_subscribers.shop_id', $shop->id)
             ->whereNull('whatsapp_subscribers.deleted_at');
+
+        $this->whereCustomerPassesFilter($query, 'customers.id', $filteredCustomerIds);
 
         return $this->wherePhoneSendable($query, 'coalesce(customers.phone, meta_chat_sessions.phone_number)')
             ->select($this->branchColumns(
@@ -225,13 +250,15 @@ class GetWhatsappRecipientsQuery
             ));
     }
 
-    private function newsletterSubscribersBranch(Shop $shop): Builder
+    private function newsletterSubscribersBranch(Shop $shop, ?Builder $filteredCustomerIds): Builder
     {
         $query = DB::table('customers')
             ->join('customer_comms', 'customer_comms.customer_id', '=', 'customers.id')
             ->where('customers.shop_id', $shop->id)
             ->where('customer_comms.is_subscribed_to_whatsapp_newsletter', true)
             ->whereNull('customers.deleted_at');
+
+        $this->whereCustomerPassesFilter($query, 'customers.id', $filteredCustomerIds);
 
         return $this->wherePhoneSendable($query, 'customers.phone')
             ->select($this->branchColumns('customers.phone', 'customers.contact_name', [
@@ -241,10 +268,7 @@ class GetWhatsappRecipientsQuery
             ]));
     }
 
-    /**
-     * @throws \Exception
-     */
-    private function customersBranch(Shop $shop, array $customerFilters): Builder
+    private function customersBranch(Shop $shop, ?Builder $filteredCustomerIds): Builder
     {
         $query = $this->wherePhoneSendable(
             DB::table('customers')
@@ -253,11 +277,7 @@ class GetWhatsappRecipientsQuery
             'customers.phone'
         );
 
-        if (!empty($customerFilters)) {
-            $recipeQuery = GetWhatsappCustomersQueryByRecipe::run($shop->id, $customerFilters);
-
-            $query->whereIn('customers.id', (clone $recipeQuery)->select('customers.id'));
-        }
+        $this->whereCustomerPassesFilter($query, 'customers.id', $filteredCustomerIds);
 
         return $query->select($this->branchColumns('customers.phone', 'customers.contact_name', [
             'customer_id' => DB::raw('customers.id as customer_id'),
