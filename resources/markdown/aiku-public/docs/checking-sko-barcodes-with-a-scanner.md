@@ -19,7 +19,7 @@ A SKO is the unit the warehouse counts: one box of six, one bag of a hundred, on
 
 ## Opening the dig site
 
-In your warehouse, open **Inventory** and press **Scan SKO barcodes** at the top right. The page is built for a phone or a tablet: one column, one scan box, and buttons wide enough for a thumb. Any barcode scanner that types like a keyboard works, and you do not need to tap the box first, the page listens for the scanner wherever you are on it. If you have no scanner, type the number and press Enter.
+In your warehouse, open **Inventory** and press **Manage barcodes** at the top right. The page is built for a phone or a tablet: one column, one scan box, and buttons wide enough for a thumb. Any barcode scanner that types like a keyboard works, and you do not need to tap the box first, the page listens for the scanner wherever you are on it. If you have no scanner, type the number and press Enter.
 
 ## Reading an inscription
 
@@ -47,7 +47,7 @@ Work an aisle end to end rather than hopping about, so the counter tells you som
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
-<li><b>Open the scanner:</b> your warehouse → <b>Inventory</b> → <b>Scan SKO barcodes</b> button at the top right.</li>
+<li><b>Open the scanner:</b> your warehouse → <b>Inventory</b> → <b>Manage barcodes</b> button at the top right.</li>
 <li><b>Confirm a match:</b> scan → <b>All OK</b>.</li>
 <li><b>Move a barcode to the right SKO:</b> scan → <b>Wrong SKO, move barcode</b> → search → tap the SKO → <b>Assign</b>.</li>
 <li><b>Register an unknown label:</b> scan → <b>Assign to a SKO</b> → search → tap → <b>Assign</b>; or <b>Find a SKO</b> first and scan afterwards.</li>

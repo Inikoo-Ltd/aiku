@@ -8,7 +8,7 @@ category: warehouse
 ---
 
 <aside class="tldr">
-Cada caja exterior del almacén lleva un <em>código de barras de SKO</em> (SKO barcode), y aiku guarda un registro de a qué SKO pertenece cada código. Con los años las etiquetas se reimprimen, las cajas se reutilizan y los registros se desvían, así que el código de la estantería y el código en aiku dejan de coincidir. La página <em>Scan SKO barcodes</em> (comprobar códigos de barras de SKO) es una excavación: recorres los pasillos con un escáner en la mano, aiku lee cada etiqueta y te muestra qué cree que contiene, y tú lo confirmas o lo corriges en el momento. El personal de almacén puede comprobar; el personal con acceso de edición de stock también puede corregir.
+Cada caja exterior del almacén lleva un <em>código de barras de SKO</em> (SKO barcode), y aiku guarda un registro de a qué SKO pertenece cada código. Con los años las etiquetas se reimprimen, las cajas se reutilizan y los registros se desvían, así que el código de la estantería y el código en aiku dejan de coincidir. La página <em>Manage barcodes</em> (gestionar códigos de barras) es una excavación: recorres los pasillos con un escáner en la mano, aiku lee cada etiqueta y te muestra qué cree que contiene, y tú lo confirmas o lo corriges en el momento. El personal de almacén puede comprobar; el personal con acceso de edición de stock también puede corregir.
 </aside>
 
 ## Qué es un código de barras de SKO
@@ -19,7 +19,7 @@ Un SKO es la unidad que cuenta el almacén: una caja de seis, una bolsa de cien,
 
 ## Abrir el yacimiento
 
-En tu almacén, abre **Inventory** y pulsa **Scan SKO barcodes** (comprobar códigos de barras de SKO) arriba a la derecha. La página está pensada para un teléfono o una tableta: una columna, una caja de escaneo, y botones lo bastante anchos para el pulgar. Cualquier escáner de códigos de barras que escriba como un teclado funciona, y no hace falta tocar antes la caja, la página escucha al escáner estés donde estés en ella. Si no tienes escáner, escribe el número y pulsa Enter.
+En tu almacén, abre **Inventory** y pulsa **Manage barcodes** (gestionar códigos de barras) arriba a la derecha. La página está pensada para un teléfono o una tableta: una columna, una caja de escaneo, y botones lo bastante anchos para el pulgar. Cualquier escáner de códigos de barras que escriba como un teclado funciona, y no hace falta tocar antes la caja, la página escucha al escáner estés donde estés en ella. Si no tienes escáner, escribe el número y pulsa Enter.
 
 ## Leer una inscripción
 
@@ -47,7 +47,7 @@ Trabaja un pasillo de principio a fin en lugar de saltar de un sitio a otro, par
 
 <aside class="wayfinder"><strong>Dónde pulsar en aiku</strong>
 <ul>
-<li><b>Abrir el escáner:</b> tu almacén → <b>Inventory</b> → botón <b>Scan SKO barcodes</b> arriba a la derecha.</li>
+<li><b>Abrir el escáner:</b> tu almacén → <b>Inventory</b> → botón <b>Manage barcodes</b> arriba a la derecha.</li>
 <li><b>Confirmar una coincidencia:</b> escanea → <b>All OK</b>.</li>
 <li><b>Mover un código de barras al SKO correcto:</b> escanea → <b>Wrong SKO, move barcode</b> → busca → toca el SKO → <b>Assign</b>.</li>
 <li><b>Registrar una etiqueta desconocida:</b> escanea → <b>Assign to a SKO</b> → busca → toca → <b>Assign</b>; o primero <b>Find a SKO</b> y escanea después.</li>

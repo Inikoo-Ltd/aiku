@@ -19,7 +19,7 @@ SKO je jednotka, ktorú sklad počíta: jedna škatuľa po šesť kusov, jedno v
 
 ## Otvorenie náleziska
 
-Vo vašom sklade otvorte **Inventory** a stlačte **Scan SKO barcodes** vpravo hore. Stránka je stavaná pre telefón alebo tablet: jeden stĺpec, jedno políčko na skenovanie a tlačidlá dostatočne široké na palec. Funguje akýkoľvek čiarový skener, ktorý píše ako klávesnica, a nemusíte najprv klepnúť do políčka - stránka počúva skener nech ste kdekoľvek na nej. Ak nemáte skener, zadajte číslo a stlačte Enter.
+Vo vašom sklade otvorte **Inventory** a stlačte **Manage barcodes** vpravo hore. Stránka je stavaná pre telefón alebo tablet: jeden stĺpec, jedno políčko na skenovanie a tlačidlá dostatočne široké na palec. Funguje akýkoľvek čiarový skener, ktorý píše ako klávesnica, a nemusíte najprv klepnúť do políčka - stránka počúva skener nech ste kdekoľvek na nej. Ak nemáte skener, zadajte číslo a stlačte Enter.
 
 ## Čítanie nápisu
 
@@ -47,7 +47,7 @@ Prechádzajte uličku od začiatku do konca namiesto preskakovania sem-tam, aby 
 
 <aside class="wayfinder"><strong>Kam kliknúť v aiku</strong>
 <ul>
-<li><b>Otvoriť skener:</b> váš sklad → <b>Inventory</b> → tlačidlo <b>Scan SKO barcodes</b> vpravo hore.</li>
+<li><b>Otvoriť skener:</b> váš sklad → <b>Inventory</b> → tlačidlo <b>Manage barcodes</b> vpravo hore.</li>
 <li><b>Potvrdiť zhodu:</b> naskenovať → <b>All OK</b>.</li>
 <li><b>Presunúť čiarový kód na správne SKO:</b> naskenovať → <b>Wrong SKO, move barcode</b> → vyhľadať → klepnúť na SKO → <b>Assign</b>.</li>
 <li><b>Zaregistrovať neznámy štítok:</b> naskenovať → <b>Assign to a SKO</b> → vyhľadať → klepnúť → <b>Assign</b>; alebo najprv <b>Find a SKO</b> a naskenovať potom.</li>
