@@ -24,6 +24,8 @@ const props = defineProps<{
         open: number
         median_hours: number | null
         oldest_open: { reference: string; age_days: number } | null
+        csat: number | null
+        csat_by_month: { month: string; average: number | null; total: number }[]
         daily: { date: string; created: number; done: number }[]
         by_status: { status: string; label: string; color: string; total: number }[]
         assignees: { name: string; open: number; done: number; median_hours: number | null }[]
@@ -58,6 +60,18 @@ const donutChart = computed(() => ({
 
 const donutOptions = { responsive: true, maintainAspectRatio: false, cutout: "70%", plugins: { legend: { display: false } } }
 
+const csatChart = computed(() => ({
+    labels: props.stats.csat_by_month.map((row) => row.month.slice(2)),
+    datasets: [{ label: trans("Average rating"), data: props.stats.csat_by_month.map((row) => row.average), backgroundColor: "#3b82f6", borderRadius: 4 }],
+}))
+
+const csatOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { x: { grid: { display: false } }, y: { beginAtZero: true, max: 5, ticks: { stepSize: 1 } } },
+}
+
 const totalTickets = computed(() => props.stats.by_status.reduce((sum, row) => sum + row.total, 0))
 
 const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `${(value / 24).toFixed(1)} ${trans("days")}` : `${value} ${trans("h")}`)
@@ -88,6 +102,10 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
             <div>
                 <p class="text-4xl font-bold">{{ hours(stats.median_hours) }}</p>
                 <p class="text-sm text-gray-600">{{ trans("Median time to resolve") }}</p>
+            </div>
+            <div>
+                <p class="text-4xl font-bold">{{ stats.csat ?? "-" }}<span v-if="stats.csat" class="text-lg text-gray-400">/5</span></p>
+                <p class="text-sm text-gray-600">{{ trans("Customer satisfaction") }}</p>
             </div>
             <div v-if="stats.oldest_open">
                 <p class="text-4xl font-bold">
@@ -123,6 +141,14 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
                         </li>
                     </ul>
                 </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-300">
+            <h3 class="text-lg font-semibold">{{ trans("Customer satisfaction") }}</h3>
+            <p class="text-xs text-gray-500 mb-2">{{ trans("Average rating per month, last 12 months") }}</p>
+            <div class="h-56">
+                <Chart type="bar" :data="csatChart" :options="csatOptions" class="h-full" />
             </div>
         </div>
 

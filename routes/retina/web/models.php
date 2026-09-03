@@ -193,6 +193,7 @@ use App\Actions\Retina\Woo\CreateRetinaNewBulkPortfoliosToWoo;
 use App\Actions\Retina\Woo\MatchRetinaBulkNewProductToCurrentWooCommerce;
 use App\Actions\Retina\Woo\MatchRetinaPortfolioToCurrentWooProduct;
 use App\Actions\Retina\Woo\StoreRetinaNewProductToCurrentWoo;
+use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\Retina\Dropshipping\Ticket\StoreRetinaTicket;
 use App\Actions\Retina\Dropshipping\Ticket\StoreRetinaTicketComment;
 use Illuminate\Support\Facades\Route;
@@ -297,6 +298,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->whereNumber('custome
 Route::name('ticket.')->prefix('ticket')->group(function () {
     Route::post('/', StoreRetinaTicket::class)->name('store');
     Route::post('{ticket:id}/comment', StoreRetinaTicketComment::class)->name('comment.store')->whereNumber('ticket');
+    Route::post('{ticket:id}/rate', RateTicket::class)->name('rate')->whereNumber('ticket');
 });
 
 Route::name('order.')->prefix('order/{order:id}')->whereNumber('order')->group(function () {

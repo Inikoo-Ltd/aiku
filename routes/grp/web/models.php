@@ -523,6 +523,7 @@ use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
 use App\Stubs\UIDummies\ImportDummy;
+use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicket;
@@ -541,6 +542,7 @@ Route::prefix('ticket')->name('ticket.')->group(function () {
     Route::post('/', StoreTicket::class)->name('store');
     Route::patch('{ticket:id}', UpdateTicket::class)->name('update')->whereNumber('ticket');
     Route::post('{ticket:id}/comment', StoreTicketComment::class)->name('comment.store')->whereNumber('ticket');
+    Route::post('{ticket:id}/rate', RateTicket::class)->name('rate')->whereNumber('ticket');
 });
 
 Route::prefix('employee/{employee:id}')->name('employee.')->group(function () {

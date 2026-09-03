@@ -8,6 +8,7 @@
 
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
+use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsDashboard;
@@ -204,4 +205,46 @@ test('tickets dashboard counts created, done, status and assignees', function ()
     get(route('grp.tickets.dashboard', ['days' => 30]))->assertInertia(
         fn (AssertableInertia $page) => $page->component('Tickets/TicketsDashboard')->where('stats.days', 30)->has('stats.daily', 30)
     );
+});
+
+test('reporter rates a resolved ticket once and CSAT shows on the dashboard', function () {
+    $ticket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Rate me']);
+
+    expect(RateTicket::canRate($ticket, $this->webUser))->toBeFalse();
+
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
+    $ticket->refresh();
+
+    expect(RateTicket::canRate($ticket, $this->webUser))->toBeTrue()
+        ->and(RateTicket::canRate($ticket, $this->user))->toBeFalse();
+
+    $this->actingAs($this->webUser, 'retina')
+        ->post('http://'.$this->website->domain.'/app/models/ticket/'.$ticket->id.'/rate', ['rating' => 4, 'comment' => 'Quick fix'])
+        ->assertRedirect();
+
+    $ticket->refresh();
+    expect($ticket->rating)->toBe(4)
+        ->and($ticket->rating_comment)->toBe('Quick fix')
+        ->and($ticket->rated_at)->not->toBeNull()
+        ->and(RateTicket::canRate($ticket, $this->webUser))->toBeFalse();
+
+    $this->actingAs($this->webUser, 'retina')
+        ->post('http://'.$this->website->domain.'/app/models/ticket/'.$ticket->id.'/rate', ['rating' => 1])
+        ->assertForbidden();
+
+    $stats = ShowTicketsDashboard::make()->handle($this->group, 7);
+    expect($stats['csat'])->toBeGreaterThan(0)
+        ->and(count($stats['csat_by_month']))->toBe(12)
+        ->and(collect($stats['csat_by_month'])->last()['total'])->toBeGreaterThanOrEqual(1);
+});
+
+test('staff reporter rates their own resolved help ticket from grp', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Rate from grp', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::CLOSED->value]);
+
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_rate', true));
+    post(route('grp.models.ticket.rate', $ticket->id), ['rating' => 5])->assertRedirect();
+
+    expect($ticket->fresh()->rating)->toBe(5);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_rate', false)->where('ticket.rating', 5));
 });

@@ -44,6 +44,9 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string|null $model_type
  * @property int|null $model_id
  * @property array<array-key, mixed> $data
+ * @property int|null $rating
+ * @property string|null $rating_comment
+ * @property \Illuminate\Support\Carbon|null $rated_at
  * @property \Illuminate\Support\Carbon|null $resolved_at
  * @property \Illuminate\Support\Carbon|null $closed_at
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -86,6 +89,7 @@ class Ticket extends Model implements Auditable, HasMedia
             'status'      => TicketStatusEnum::class,
             'priority'    => ChatPriorityEnum::class,
             'data'        => 'array',
+            'rated_at'    => 'datetime',
             'resolved_at' => 'datetime',
             'closed_at'   => 'datetime',
         ];

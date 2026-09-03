@@ -67,6 +67,17 @@ class ShowTicketsDashboard extends OrgAction
                 'median_hours' => $row->median_hours === null ? null : round((float) $row->median_hours, 1),
             ]);
 
+        $csat = (clone $base)->where('rated_at', '>=', $from)->avg('rating');
+
+        $monthlyCsat = (clone $base)->where('rated_at', '>=', now()->subMonths(11)->startOfMonth())
+            ->selectRaw("to_char(rated_at, 'YYYY-MM') as month, round(avg(rating)::numeric, 1) as average, count(*) as total")
+            ->groupBy('month')->get()->keyBy('month');
+        $csatByMonth = collect(range(11, 0))->map(function (int $back) use ($monthlyCsat) {
+            $month = now()->subMonths($back)->format('Y-m');
+
+            return ['month' => $month, 'average' => isset($monthlyCsat[$month]) ? (float) $monthlyCsat[$month]->average : null, 'total' => (int) ($monthlyCsat[$month]->total ?? 0)];
+        });
+
         $oldestOpen = (clone $base)->whereNotIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::CLOSED])->orderBy('created_at')->first();
 
         return [
@@ -76,6 +87,8 @@ class ShowTicketsDashboard extends OrgAction
             'open'          => (int) $byStatus->except(['resolved', 'closed'])->sum(),
             'median_hours'  => $medianHours === null ? null : round((float) $medianHours, 1),
             'oldest_open'   => $oldestOpen ? ['reference' => $oldestOpen->reference, 'age_days' => (int) Carbon::parse($oldestOpen->created_at)->diffInDays()] : null,
+            'csat'          => $csat === null ? null : round((float) $csat, 1),
+            'csat_by_month' => $csatByMonth->values()->all(),
             'daily'         => $daily->values()->all(),
             'by_status'     => collect(TicketStatusEnum::cases())->map(fn (TicketStatusEnum $status) => [
                 'status' => $status->value,

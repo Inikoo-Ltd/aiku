@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Ticket\UI;
 
+use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Helpers\TicketCommentResource;
 use App\Http\Resources\Helpers\TicketResource;
@@ -51,8 +52,10 @@ class ShowRetinaTicket extends RetinaAction
                 'comments'    => TicketCommentResource::collection(
                     $ticket->comments()->where('is_internal', false)->with('author')->orderBy('id')->get()
                 )->toArray(request()),
+                'can_rate'    => RateTicket::canRate($ticket, $this->webUser),
                 'routes'      => [
                     'comment' => ['name' => 'retina.models.ticket.comment.store', 'parameters' => ['ticket' => $ticket->id]],
+                    'rate'    => ['name' => 'retina.models.ticket.rate', 'parameters' => ['ticket' => $ticket->id]],
                 ],
             ]
         );

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Ticket\UI;
 
+use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
@@ -58,9 +59,11 @@ class ShowTicket extends OrgAction
                     'assignees'  => User::where('group_id', $ticket->group_id)->where('status', true)->orderBy('username')->get(['id', 'username', 'contact_name'])
                         ->map(fn (User $user) => ['label' => $user->contact_name ?: $user->username, 'value' => $user->id])->values(),
                 ],
+                'can_rate'    => RateTicket::canRate($ticket, request()->user()),
                 'routes'      => [
                     'update'  => ['name' => 'grp.models.ticket.update', 'parameters' => ['ticket' => $ticket->id]],
                     'comment' => ['name' => 'grp.models.ticket.comment.store', 'parameters' => ['ticket' => $ticket->id]],
+                    'rate'    => ['name' => 'grp.models.ticket.rate', 'parameters' => ['ticket' => $ticket->id]],
                 ],
             ]
         );

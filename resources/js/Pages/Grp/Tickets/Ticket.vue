@@ -10,6 +10,7 @@ import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TicketThread from "@/Components/Tickets/TicketThread.vue"
+import TicketRating from "@/Components/Tickets/TicketRating.vue"
 import { Select } from "primevue"
 
 const props = defineProps<{
@@ -17,6 +18,7 @@ const props = defineProps<{
     title: string
     ticket: any
     comments: any[]
+    can_rate: boolean
     options: {
         statuses: { label: string; value: string }[]
         priorities: { label: string; value: string }[]
@@ -25,6 +27,7 @@ const props = defineProps<{
     routes: {
         update: { name: string; parameters: Record<string, unknown> }
         comment: { name: string; parameters: Record<string, unknown> }
+        rate: { name: string; parameters: Record<string, unknown> }
     }
 }>()
 
@@ -39,6 +42,7 @@ const update = (field: string, value: unknown) => {
     <div class="p-4 grid gap-4 lg:grid-cols-3">
         <div class="lg:col-span-2 space-y-4">
             <h2 class="text-lg font-semibold">{{ ticket.subject }}</h2>
+            <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
             <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" allow-internal />
         </div>
         <aside class="bg-white rounded-lg border border-gray-300 p-4 space-y-4 text-sm self-start">

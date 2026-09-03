@@ -9,6 +9,7 @@ import { Head } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TicketThread from "@/Components/Tickets/TicketThread.vue"
+import TicketRating from "@/Components/Tickets/TicketRating.vue"
 import Icon from "@/Components/Icon.vue"
 
 defineProps<{
@@ -16,7 +17,8 @@ defineProps<{
     title: string
     ticket: any
     comments: any[]
-    routes: { comment: { name: string; parameters: Record<string, unknown> } }
+    can_rate: boolean
+    routes: { comment: { name: string; parameters: Record<string, unknown> }; rate: { name: string; parameters: Record<string, unknown> } }
 }>()
 </script>
 
@@ -28,6 +30,7 @@ defineProps<{
             <h2 class="text-lg font-semibold">{{ ticket.subject }}</h2>
             <span class="text-sm text-gray-600"><Icon :data="ticket.status_icon" /> {{ ticket.status_label }}</span>
         </div>
+        <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
         <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" />
     </div>
 </template>
