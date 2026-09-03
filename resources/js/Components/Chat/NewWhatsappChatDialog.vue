@@ -102,7 +102,7 @@ const startChat = async () => {
             payload.name = contactName.value.trim() || normalisedPhone.value
         }
 
-        const res = await axios.post(`${baseUrl}/app/api/chats/meta/sessions`, payload)
+        const res = await axios.post(`${baseUrl}/app/api/chats/meta/sessions`, payload, { withCredentials: true })
         emits("created", res.data.data ?? res.data)
         visible.value = false
     } catch (e: any) {

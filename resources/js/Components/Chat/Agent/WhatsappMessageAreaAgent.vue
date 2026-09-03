@@ -65,7 +65,7 @@ const props = defineProps<{
     organisationSlug: string
 }>()
 
-const emit = defineEmits(["back", "messages-read", "assign-self-success", "close-session"])
+const emit = defineEmits(["back", "messages-read", "assign-self-success", "close-session", "view-profile"])
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
@@ -756,14 +756,15 @@ onUnmounted(() => {
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" />
             </button>
 
-            <div
-                class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-green-100 text-green-600">
+            <button type="button"
+                class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-green-100 text-green-600 hover:ring-2 hover:ring-green-200 transition"
+                @click="emit('view-profile')">
                 <Image v-if="session?.image" :src="session?.image" class="w-full h-full rounded-full object-cover" />
                 <FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
-            </div>
+            </button>
 
-            <div class="flex-1 min-w-0">
-                <div class="text-sm font-semibold truncate">
+            <div class="flex-1 min-w-0 cursor-pointer" @click="emit('view-profile')">
+                <div class="text-sm font-semibold truncate hover:text-green-700 transition-colors">
                     {{ session?.guest_identifier || session?.contact_name }}
                 </div>
                 <div class="flex items-center gap-1.5 mt-0.5">

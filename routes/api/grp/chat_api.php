@@ -35,6 +35,10 @@ use App\Actions\Chat\MetaChatSession\GetMetaChatMessages;
 use App\Actions\Chat\MetaChatSession\MarkMetaChatMessagesAsRead;
 use App\Actions\Chat\MetaChatSession\GetMetaMessageTemplates;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
+use App\Actions\Chat\MetaChatSession\GetMetaChatActivity;
+use App\Actions\Chat\MetaChatSession\GetMetaChatCustomerProfile;
+use App\Actions\Chat\MetaChatSession\GetMetaChatCustomerTimeline;
+use App\Actions\Chat\MetaChatSession\SyncMetaChatSessionByPhone;
 use App\Actions\Chat\MetaChatSession\UI\GetMetaChatSessions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use Illuminate\Support\Facades\Route;
@@ -77,6 +81,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sessions/{chatSession:ulid}/customer-timeline', GetChatCustomerTimeline::class)->name('sessions.customer_timeline')->withTrashed();
     Route::post('/sessions/{chatSession:ulid}/share-to-slack', [ShareChatSessionToSlack::class, 'asController'])->name('sessions.share_to_slack');
     Route::put('/sessions/{chatSession:ulid}/sync-by-email', SyncChatSessionByEmail::class)->name('sessions.sync_by_email');
+    Route::put('/meta/sessions/{metaChatSession:ulid}/sync-by-phone', SyncMetaChatSessionByPhone::class)->name('meta.sessions.sync_by_phone');
+    Route::get('/meta/sessions/{metaChatSession:ulid}/customer-profile', GetMetaChatCustomerProfile::class)->name('meta.sessions.customer_profile')->withTrashed();
+    Route::get('/meta/sessions/{metaChatSession:ulid}/customer-timeline', GetMetaChatCustomerTimeline::class)->name('meta.sessions.customer_timeline')->withTrashed();
+    Route::get('/meta/sessions/{metaChatSession:ulid}/activity', GetMetaChatActivity::class)->name('meta.sessions.activity')->withTrashed();
 
     Route::get('/agents', GetChatAgents::class)->name('agents.index');
     Route::get('/agents/specializations', GetChatAgentSpecializations::class)->name('agent.specializations');

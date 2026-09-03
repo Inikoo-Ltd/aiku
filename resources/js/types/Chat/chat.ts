@@ -147,6 +147,7 @@ export interface Contact {
 		phone?: string
 		[key: string]: any
 	} | null
+	phone_number?: string | null
 	agent?: {
 		id: string
 		name: string

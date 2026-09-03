@@ -15,6 +15,7 @@ const props = defineProps<{
 	sessionUlid: string
 	session?: Partial<SessionAPI> | null
 	viewerType: ViewerType
+	channel?: string
 }>()
 
 const emit = defineEmits<{
@@ -126,7 +127,8 @@ const getMessages = async (loadMore = false) => {
 	try {
 		loadMore ? (isLoadingMore.value = true) : (isLoading.value = true)
 
-		let url = `${baseUrl}/app/api/chats/sessions/${props.sessionUlid}/messages`
+		const prefix = props.channel === 'whatsapp' ? 'meta/sessions' : 'sessions'
+		let url = `${baseUrl}/app/api/chats/${prefix}/${props.sessionUlid}/messages`
 
 		if (loadMore && nextCursor.value) {
 			url += `?cursor=${nextCursor.value}&limit=50`

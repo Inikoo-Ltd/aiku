@@ -29,6 +29,7 @@ const jiraPriorityVisual = (name: string | undefined) =>
 const props = defineProps<{
 	sessionUlid: string
 	baseUrl?: string
+	channel?: string
 }>()
 
 const loading = ref(false)
@@ -38,7 +39,8 @@ const chatSession = ref<any | null>(null)
 
 const buildUrl = computed(() => {
 	const base = (props.baseUrl || "").replace(/\/+$/, "")
-	return `${base}/app/api/chats/sessions/${props.sessionUlid}/activity`
+	const prefix = props.channel === 'whatsapp' ? 'meta/sessions' : 'sessions'
+	return `${base}/app/api/chats/${prefix}/${props.sessionUlid}/activity`
 })
 
 const getInitials = (name: string | undefined): string => {

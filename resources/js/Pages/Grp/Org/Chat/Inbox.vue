@@ -83,17 +83,19 @@ const messages = ref<ChatMessage[]>([])
 const panelSession = computed(() => {
     const s = selectedSession.value
     if (!s) return null
+    const channel = (s as any).channel ?? (selectedChannel.value === "whatsapp" ? "whatsapp" : "website")
     return {
         ulid: String(s.ulid),
-        // Registered customer: use the customer/web-user name (same as the chat list).
-        // Guest: prefer the name they submitted (metadata / guest profile) over the placeholder id.
+        channel,
         contact_name: s.web_user?.id
             ? (s.contact_name || s.guest_identifier || "Customer")
             : ((s as any).metadata?.name || s.guest_profile?.name || s.guest_identifier || "Guest"),
         is_guest: !(s.web_user?.id ?? s.customer?.id),
         web_user_id: s.web_user?.id ?? null,
+        customer_id: s.customer?.id ?? null,
         guest_email: (s as any).metadata?.email ?? s.guest_profile?.email ?? null,
         guest_phone: (s as any).metadata?.phone ?? s.guest_profile?.phone ?? null,
+        phone_number: (s as any).phone_number ?? null,
         shop_name: s.shop?.name ?? null,
         status: s.status,
         priority: s.priority ?? null,
@@ -151,6 +153,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     priority: s.priority,
     guest_profile: s.guest_profile,
     metadata: (s as any).metadata ?? null,
+    phone_number: (s as any).phone_number ?? null,
     agent: s.assigned_agent,
     shop: s.shop,
     organisation: s.organisation,
@@ -487,6 +490,21 @@ const onSessionSynced = (webUser: { id: number; name: string; email: string | nu
     }
 }
 
+const onCustomerSynced = (customer: { id: number; name: string; email: string | null; phone: string | null }) => {
+    if (!selectedSession.value || !customer) return
+    const ulid = selectedSession.value.ulid
+    selectedSession.value = {
+        ...selectedSession.value,
+        customer: { id: customer.id, name: customer.name, email: customer.email, phone: customer.phone } as any,
+        contact_name: customer.name || (selectedSession.value as any).contact_name,
+    } as SessionAPI
+    const found = contacts.value.find((x) => x.ulid === ulid)
+    if (found) {
+        found.webUser = { id: customer.id, name: customer.name } as any
+        found.name = customer.name || found.name
+    }
+}
+
 const trashChat = async (c: Contact) => {
     openMenuUlid.value = null
     if (await patchSession(c, sessionRoute("trash", c), "delete")) {
@@ -682,6 +700,7 @@ const openChat = (c: Contact) => {
         web_user: c.webUser,
         guest_profile: c.guest_profile,
         metadata: c.metadata,
+        phone_number: c.phone_number,
         assigned_agent: c.agent,
         shop: c.shop,
         organisation: c.organisation,
@@ -1345,7 +1364,8 @@ onUnmounted(() => {
                     :organisation-slug="organisation.slug"
                     @back="selectedSession = null" @messages-read="onMessagesRead"
                     @assign-self-success="onAssignSelfSuccess"
-                    @close-session="closeSession" />
+                    @close-session="closeSession"
+                    @view-profile="showProfilePanel" />
                 <MessageAreaAgent v-else :messages="messages" :session="selectedSession"
                     @back="selectedSession = null" @send-message="handleSendMessage"
                     @close-session="closeSession" @view-history="showHistoryPanel"
@@ -1362,7 +1382,7 @@ onUnmounted(() => {
         <!-- RIGHT: conversation profile panel (Conversation-style) -->
         <ChatConversationSidePanel v-if="panelSession && sidePanelVisible"
             :session="panelSession" @close="closeSidePanel" @priority-updated="onPriorityUpdated"
-            @synced="onSessionSynced" />
+            @synced="onSessionSynced" @customer-synced="onCustomerSynced" />
 
         <!-- Row action menu (teleported so it is never clipped by the list's overflow) -->
         <Teleport to="body">
