@@ -10,6 +10,7 @@ use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
+use App\Actions\Helpers\Ticket\UI\ShowTicketsDashboard;
 use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Retina\Dropshipping\Ticket\StoreRetinaTicket;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
@@ -177,4 +178,30 @@ test('screenshots can be attached to tickets and comments', function () {
         ->and($ticket->ticketImageSources()[0])->toHaveKey('original');
 
     post(route('grp.models.ticket.comment.store', $ticket->id), [])->assertSessionHasErrors('body');
+});
+
+test('tickets dashboard counts created, done, status and assignees', function () {
+    $before = ShowTicketsDashboard::make()->handle($this->group, 7);
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Report me', 'assignee_id' => $this->user->id]);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
+    StoreTicket::make()->action($this->group, ['subject' => 'Still open', 'assignee_id' => $this->user->id]);
+
+    $stats = ShowTicketsDashboard::make()->handle($this->group, 7);
+    $today = collect($stats['daily'])->firstWhere('date', now()->toDateString());
+    $me    = collect($stats['assignees'])->firstWhere('name', $this->user->contact_name ?: $this->user->username);
+
+    expect($stats['created'])->toBe($before['created'] + 2)
+        ->and($stats['done'])->toBe($before['done'] + 1)
+        ->and($stats['open'])->toBe($before['open'] + 1)
+        ->and(count($stats['daily']))->toBe(7)
+        ->and($today['created'])->toBeGreaterThanOrEqual(2)
+        ->and(collect($stats['by_status'])->firstWhere('status', 'resolved')['total'])->toBeGreaterThanOrEqual(1)
+        ->and($me['done'])->toBeGreaterThanOrEqual(1)
+        ->and($me['open'])->toBeGreaterThanOrEqual(1)
+        ->and($me['median_hours'])->not->toBeNull();
+
+    get(route('grp.tickets.dashboard', ['days' => 30]))->assertInertia(
+        fn (AssertableInertia $page) => $page->component('Tickets/TicketsDashboard')->where('stats.days', 30)->has('stats.daily', 30)
+    );
 });

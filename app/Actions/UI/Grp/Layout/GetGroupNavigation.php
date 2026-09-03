@@ -116,6 +116,14 @@ class GetGroupNavigation
                             'name' => 'grp.tickets.board',
                         ],
                     ],
+                    [
+                        'label' => __('Reports'),
+                        'icon'  => ['fal', 'fa-chart-line'],
+                        'root'  => 'grp.tickets.dashboard',
+                        'route' => [
+                            'name' => 'grp.tickets.dashboard',
+                        ],
+                    ],
                 ],
             ],
         ];
