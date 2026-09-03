@@ -26,8 +26,8 @@ export const getRefRedirect = async (options: { registered?: boolean } = {}) => 
             return response.data?.redirect_url
         }
 
-        return route('iris.iris_webpage')
+        return '/'
     } catch (error: any) {
-        return route('iris.iris_webpage')
+        return '/'
     }
 }

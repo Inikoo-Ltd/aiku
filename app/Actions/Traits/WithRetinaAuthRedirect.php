@@ -71,10 +71,24 @@ trait WithRetinaAuthRedirect
     {
         Session::forget(static::$retinaIntendedUrlSessionKey);
 
-        return $this->getRetinaWebpageUrlByType($website, WebpageTypeEnum::LANDING_PAGE)
+        return $this->getRetinaWelcomeUrl($website)
             ?? $this->getRetinaWebpageUrl($website, $ref)
             ?? $this->getRetinaWebpageUrlByType($website, WebpageTypeEnum::STOREFRONT)
             ?? '';
+    }
+
+    /**
+     * The website points at its welcome page, older websites only have it as the landing page webpage.
+     */
+    protected function getRetinaWelcomeUrl(Website $website): ?string
+    {
+        $welcome = $website->landingPage;
+
+        if ($welcome && $welcome->state == WebpageStateEnum::LIVE) {
+            return ShowIrisWebpage::make()->getEnvironmentUrl($welcome->canonical_url);
+        }
+
+        return $this->getRetinaWebpageUrlByType($website, WebpageTypeEnum::LANDING_PAGE);
     }
 
     /**
