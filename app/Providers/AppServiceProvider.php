@@ -274,6 +274,8 @@ class AppServiceProvider extends ServiceProvider
                 'SerialReference'                  => 'App\Models\Helpers\SerialReference',
                 'Snapshot'                         => 'App\Models\Helpers\Snapshot',
                 'Tag'                              => 'App\Models\Helpers\Tag',
+                'Ticket'                           => 'App\Models\Helpers\Ticket',
+                'TicketComment'                    => 'App\Models\Helpers\TicketComment',
                 'TaxNumber'                        => 'App\Models\Helpers\TaxNumber',
                 'Upload'                           => 'App\Models\Helpers\Upload',
                 'UploadRecord'                     => 'App\Models\Helpers\UploadRecord',
