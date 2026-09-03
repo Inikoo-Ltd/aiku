@@ -43,13 +43,6 @@ class GetWhatsappCustomersQueryByRecipe
     {
         $query = DB::table('customers');
 
-        $query->whereExists(function (Builder $query) {
-            $query->select(DB::raw(1))
-                ->from('customer_comms')
-                ->whereColumn('customer_comms.customer_id', 'customers.id')
-                ->where('customer_comms.is_subscribed_to_whatsapp_newsletter', true);
-        });
-
         if ($shopId) {
             $query->where('customers.shop_id', $shopId);
         } else {
