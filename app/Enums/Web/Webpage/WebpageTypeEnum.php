@@ -20,6 +20,7 @@ enum WebpageTypeEnum: string
     case LANDING_PAGE = "landing_page";
     case CONTENT = "content";
     case BLOG = "blog";
+    case SYSTEM_PAGE = "system_page";
 
     public static function labels(): array
     {
@@ -27,7 +28,8 @@ enum WebpageTypeEnum: string
             "storefront" => __("storefront"),
             "catalogue" => __("catalogue"),
             "content" => __("content"),
-            "blog" => __("blog")
+            "blog" => __("blog"),
+            "system_page" => __('sytem page'),
         ];
     }
 
@@ -80,6 +82,16 @@ enum WebpageTypeEnum: string
                     "type" => "font-awesome-5",
                 ],
             ],
+            "system_page"   => [
+                "tooltip" => __("System Page"),
+                "icon" => "fal fa-cogs",
+                "class" => "text-grey-500",
+                "color" => "slate",
+                "app" => [
+                    "name" => "cogs",
+                    "type" => "font-awesome-5",
+                ],
+            ]
         ];
     }
 }

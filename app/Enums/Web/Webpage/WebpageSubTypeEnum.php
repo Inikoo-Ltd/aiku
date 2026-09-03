@@ -42,6 +42,11 @@ enum WebpageSubTypeEnum: string
     case ARTICLE = 'article';
     case MAILSHOT = 'mailshot';
 
+    /** System Sub Type */
+    case LOGIN_PAGE = "login_page";
+    case REGISTER_PAGE = "register_page";
+    case FORGOT_PASSWORD_PAGE = "forgot_password_page";
+
     /** Legacy catch all still stored on existing webpages, resolved by resolveBlogCategory. */
     case BLOG = 'blog';
     case NEWSLETTERS    = 'newsletters';

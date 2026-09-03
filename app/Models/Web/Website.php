@@ -309,6 +309,11 @@ class Website extends Model implements Auditable, HasMedia
     {
         return $this->hasOne(Webpage::class, 'id', 'landing_page_id');
     }
+    
+    public function loginPage(): HasOne
+    {
+        return $this->hasOne(Webpage::class, 'id', 'login_page_id');
+    }
 
     public function logo(): BelongsTo
     {

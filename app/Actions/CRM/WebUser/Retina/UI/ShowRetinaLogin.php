@@ -9,7 +9,9 @@
 namespace App\Actions\CRM\WebUser\Retina\UI;
 
 use App\Actions\Traits\WithRetinaAuthRedirect;
+use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -21,8 +23,24 @@ class ShowRetinaLogin
     use WithRetinaAuthRedirect;
 
 
-    public function handle(): Response
+    public function handle(ActionRequest $request): Response|RedirectResponse
     {
+        $website = request()->website;
+
+        if ($website->loginPage) {
+            $url = ShowIrisWebpage::run('login', [], $request);
+
+            parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $params);
+
+            if ($request->has('ref')) {
+                $params['ref'] = $request->query('ref');
+            }
+
+            $url = strtok($url, '?') . '?' . http_build_query($params);
+
+            return redirect()->to($url);
+        }
+
         return Inertia::render('Auth/RetinaLogin', [
             "login_message" => request()->website->shop->type === ShopTypeEnum::DROPSHIPPING ?
                 '<p>' . trans('Hey, as you notice we just got a brand new system for our website.') . '</p>
@@ -35,10 +53,10 @@ class ShowRetinaLogin
         ]);
     }
 
-    public function asController(ActionRequest $request): Response
+    public function asController(ActionRequest $request): Response|RedirectResponse
     {
         $this->rememberRetinaIntendedUrl($request, $request->input('website'));
 
-        return $this->handle();
+        return $this->handle($request);
     }
 }

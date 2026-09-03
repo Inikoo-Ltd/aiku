@@ -225,7 +225,12 @@ class StoreWebpage extends OrgAction
                     } else {
                         $this->createWebBlock($webpage, 'blog', $webpage);
                     }
+                }
 
+                if ($webpage->type == WebpageTypeEnum::SYSTEM_PAGE) {
+                    if ($webpage->sub_type == WebpageSubTypeEnum::LOGIN_PAGE) {
+                        $this->createWebBlock($webpage, 'login');
+                    }
                 }
             }
 
