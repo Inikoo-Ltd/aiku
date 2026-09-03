@@ -18,6 +18,7 @@ use App\Models\Chat\ChatSession;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -140,16 +141,23 @@ class ShowOrgChatInbox extends OrgAction
             $shopsQuery->whereIn('id', $assignments->pluck('shop_id')->filter());
         }
 
-        return $shopsQuery->get()->map(fn ($shop) => [
-            'id'       => $shop->id,
-            'name'     => $shop->name,
-            'slug'     => $shop->slug,
-            'type'     => $shop->type?->value,
-            'channels' => [
+        return $shopsQuery->get()->map(function ($shop) {
+            $channels = [
                 ['key' => 'website', 'name' => __('Website'), 'unread' => 0],
-                ['key' => 'whatsapp', 'name' => __('WhatsApp'), 'unread' => 0],
-            ],
-        ])->values()->all();
+            ];
+
+            if (Arr::get($shop->settings, 'whatsapp.enabled', false)) {
+                $channels[] = ['key' => 'whatsapp', 'name' => __('WhatsApp'), 'unread' => 0];
+            }
+
+            return [
+                'id'       => $shop->id,
+                'name'     => $shop->name,
+                'slug'     => $shop->slug,
+                'type'     => $shop->type?->value,
+                'channels' => $channels,
+            ];
+        })->values()->all();
     }
 
     public function getBreadcrumbs(array $routeParameters): array
