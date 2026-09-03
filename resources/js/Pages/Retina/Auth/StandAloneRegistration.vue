@@ -118,7 +118,7 @@ const submit = () => {
 					user_data: buildRegistrationUserData(form, props.countriesAddressData),
 				})
 
-				const redirectUrl = await getRefRedirect()
+				const redirectUrl = await getRefRedirect({ registered: true })
 				await gtmTagsFired
 
 				window.location.href = redirectUrl
