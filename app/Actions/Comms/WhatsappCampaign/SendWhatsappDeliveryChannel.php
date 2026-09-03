@@ -39,7 +39,7 @@ class SendWhatsappDeliveryChannel
     use AsAction;
     use WithWhatsappTemplatePayload;
 
-    public string $jobQueue = 'long-send-emails';
+    public string $jobQueue = 'urgent';
 
     public function handle(int $whatsappDeliveryChannelId, bool $runOnlyInReady = true): void
     {
