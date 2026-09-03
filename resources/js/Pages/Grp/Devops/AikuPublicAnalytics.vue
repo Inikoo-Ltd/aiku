@@ -24,6 +24,7 @@ library.add(faChartLine, faHashtag, faNewspaper, faTachometerAltFast)
 interface StatRow {
     views: number
     visitors: number
+    suspect?: number
     day?: string
     path?: string
     referrer?: string
@@ -71,7 +72,7 @@ const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const shortDate = (value?: string) => value ? new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "—"
 
-const maxDailyViews = computed(() => Math.max(...(props.overview?.daily ?? []).map(d => Number(d.views)), 1))
+const maxDailyViews = computed(() => Math.max(...(props.overview?.daily ?? []).map(d => Number(d.views) + Number(d.suspect ?? 0)), 1))
 
 const sections = computed(() => [
     { label: trans("Pages"), key: "path", rows: props.overview?.pages ?? [] },
@@ -121,10 +122,12 @@ const sections = computed(() => [
             <h2 class="text-sm font-medium">{{ trans("Daily visits (last 30 days)") }}</h2>
             <div class="mt-2 flex h-32 items-end gap-1">
                 <div v-for="d in overview.daily" :key="d.day" class="group relative max-w-10 flex-1">
-                    <div class="w-full rounded-t bg-indigo-500/80"
+                    <div class="w-full rounded-t bg-gray-300" :title="trans('Suspect: no referrer, single view')"
+                        :style="{ height: `${(Number(d.suspect ?? 0) / maxDailyViews) * 120}px` }" />
+                    <div class="w-full bg-indigo-500/80"
                         :style="{ height: `${(Number(d.views) / maxDailyViews) * 120}px` }" />
                     <div class="pointer-events-none absolute bottom-full left-1/2 z-10 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white group-hover:block">
-                        {{ d.day }}: {{ d.views }} {{ trans("views") }}, {{ d.visitors }} {{ trans("visitors") }}
+                        {{ d.day }}: {{ d.views }} {{ trans("views") }}, {{ d.visitors }} {{ trans("visitors") }}, {{ d.suspect ?? 0 }} {{ trans("suspect") }}
                     </div>
                 </div>
             </div>

@@ -203,6 +203,12 @@ test('visit stats aggregate for devops dashboard widget and analytics page', fun
         ->and(collect($stats['countries'])->pluck('country'))->toContain('SK')
         ->and(collect($stats['pages'])->first(fn ($row) => $row->path === '/blog/anatomy-of-a-deploy')->last_visited_at)->not->toBeNull();
 
+    get($this->host.'/visit.json?p=/docs/scraped-once', ['User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0', 'CF-IPCountry' => 'BD'])->assertNoContent();
+    $stats = \App\Actions\DevOps\UI\ShowAikuPublicAnalytics::make()->handle();
+    expect(collect($stats['pages'])->pluck('path'))->not->toContain('/docs/scraped-once')
+        ->and(collect($stats['countries'])->pluck('country'))->not->toContain('BD')
+        ->and((int) collect($stats['daily'])->sum('suspect'))->toBe(1);
+
     $widget = \App\Actions\DevOps\UI\ShowDevopsDashboard::make()->getPublicSiteVisits();
     expect($widget['views'])->toBeGreaterThanOrEqual(2)
         ->and($widget['visitors'])->toBeGreaterThanOrEqual(1)
