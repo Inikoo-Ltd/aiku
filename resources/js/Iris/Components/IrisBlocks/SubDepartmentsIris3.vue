@@ -259,7 +259,7 @@ onBeforeUnmount(() => {
             </span>
 
             <select v-model.number="selectedOption" :aria-label="ctrans('Filter By Category')"
-              class="h-11 min-w-[180px] rounded-md border border-slate-400 bg-white px-4">
+              class="h-11 w-[200px] max-w-full truncate rounded-md border border-slate-400 bg-white px-4">
               <option :value="null">
                 {{ ctrans('All') }}
               </option>
