@@ -114,6 +114,7 @@ class IndexPickingSessions extends OrgAction
                 'picking_sessions.quantity_packed',
                 'picking_sessions.picking_percentage',
                 'picking_sessions.packing_percentage',
+                'picking_sessions.is_done_waiting',
                 'users.id as user_id',
                 'users.username as user_username',
                 'users.contact_name as user_name',

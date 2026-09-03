@@ -26,13 +26,28 @@ class AutoFinishPackingPickingSession extends OrgAction
         $numberPacked = $pickingSession->deliveryNotes->whereIn('state', [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED, DeliveryNoteStateEnum::DISPATCHED])->count();
 
         $totalNumberDeliveryNotes = $pickingSession->deliveryNotes->where('state', '!=', DeliveryNoteStateEnum::CANCELLED)->count();
+        $modelData = [];
 
+        /*
+         * Packing is the answer to the question the icon asks, so once a note of this session has
+         * been packed the flag has done its job.
+         */
+        if ($pickingSession->is_done_waiting) {
+            $modelData['is_done_waiting'] = false;
+        }
+        
+        $packingIsFinished = $numberPacked == $totalNumberDeliveryNotes;
 
-        if ($numberPacked == $totalNumberDeliveryNotes) {
-            $this->update($pickingSession, [
-                'state'  => PickingSessionStateEnum::PACKING_FINISHED,
-                'end_at' => now()
-            ]);
+        if ($packingIsFinished) {
+            $modelData['state']  = PickingSessionStateEnum::PACKING_FINISHED;
+            $modelData['end_at'] = now();
+        }
+
+        if ($modelData) {
+            $this->update($pickingSession, $modelData);
+        }
+
+        if ($packingIsFinished) {
             WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);
         }
 
