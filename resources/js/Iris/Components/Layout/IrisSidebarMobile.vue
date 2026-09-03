@@ -8,7 +8,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed, inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
-import { faSignIn, faSignOut, faTimesCircle, faSpinnerThird } from '@fas'
+import { faSignIn, faSignOut, faTimesCircle } from '@fas'
 import { faChevronCircleDown } from '@fal'
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -18,8 +18,9 @@ import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { router } from '@inertiajs/vue3'
 import { ProductCategoryMenu } from "@/Composables/Iris/useMenu"
 import SidebarMobileNavigation from "./SidebarMobileNavigation.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faChevronRight, faExternalLink, faSearch, faTimes, faMapMarkerAlt, faSpinnerThird)
+library.add(faChevronRight, faExternalLink, faSearch, faTimes, faMapMarkerAlt)
 
 const props = defineProps<{
     containerStyle: {
@@ -425,13 +426,7 @@ const handleViewAllSubDepartment = (url: string) => {
                         </span>
 
                         <div class="text-sm">
-                            <FontAwesomeIcon
-                                v-if="loadingCategoryIndex === index"
-                                :icon="faSpinnerThird"
-                                spin
-                                fixed-width
-                                aria-hidden="true"
-                            />
+                            <LoadingIcon v-if="loadingCategoryIndex === index" />
                             <FontAwesomeIcon
                                 v-else-if="!!category.sub_departments?.length"
                                 :icon="faChevronRight"

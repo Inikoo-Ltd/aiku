@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { Deferred, Head, Link } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { trans } from 'laravel-vue-i18n'
@@ -23,7 +23,7 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     intervals: Intervals
     settings: Settings
-    overview: {
+    overview?: {
         scope: 'group' | 'organisation'
         children_label: string
         currency_code: string
@@ -92,7 +92,7 @@ const props = defineProps<{
 
 const locale = useLocaleStore()
 
-const money = (value: number) => locale.currencyFormat(props.overview.currency_code, value)
+const money = (value: number) => locale.currencyFormat(props.overview?.currency_code ?? '', value)
 /* A column with one fractional figure in it carries the decimals on every figure: 2 beside 34.83
    reads as a different kind of number, when it is the same count arrived at without a split order. */
 const count = (value: number, decimals = false) =>
@@ -106,7 +106,7 @@ const hasDecimals = (values: number[]) => values.some(value => !Number.isInteger
    period that starts after capture began is a complete picture, and flagging it would train people to
    ignore the notice. */
 const periodPredatesAttribution = computed(() => {
-    if (!props.overview.attribution_started_at) return false
+    if (!props.overview?.attribution_started_at) return false
     if (!props.overview.from) return true
 
     return new Date(props.overview.from) < new Date(props.overview.attribution_started_at)
@@ -115,7 +115,7 @@ const periodPredatesAttribution = computed(() => {
 /* Sent as ISO8601 with its offset, so this renders in the reader's own timezone rather than in
    whatever the server happens to run on - and says which timezone that is. */
 const attributionStarted = computed(() =>
-    props.overview.attribution_started_at
+    props.overview?.attribution_started_at
         ? useFormatTime(props.overview.attribution_started_at, { formatTime: 'aiku' })
         : ''
 )
@@ -124,14 +124,14 @@ const attributionStarted = computed(() =>
    only been recording since this morning, and it is the lie that made the numbers look like failure
    rather than like a short history. */
 const measuredSince = computed(() => {
-    const startedAt = props.overview.attribution_started_at
-    const from = props.overview.from
+    const startedAt = props.overview?.attribution_started_at
+    const from = props.overview?.from
 
     const effective = periodPredatesAttribution.value ? startedAt : from
 
     return effective
         ? trans('since') + ' ' + useFormatTime(effective, { formatTime: 'aiku' })
-        : props.overview.period_label.toLowerCase()
+        : props.overview?.period_label?.toLowerCase() ?? ''
 })
 
 /* Nineteen channel rows is a list nobody reads. Grouped, the table answers the question people
@@ -145,7 +145,7 @@ const showChannelDetail = ref(true)
 const groupedChannels = computed(() => {
     const groups: Record<string, any> = {}
 
-    for (const channel of props.overview.channels) {
+    for (const channel of props.overview?.channels ?? []) {
         const key = channel.group ?? 'other'
 
         groups[key] ??= {
@@ -184,9 +184,9 @@ const netRegistrations = (registrations: number, unsubscribed: number, decimals 
     count(registrations - unsubscribed, decimals).replace('-', '−')
 
 const netRegistrationsHelp = computed(() =>
-    count(props.overview.totals.registrations) + ' ' + trans('sign-ups') + ' − '
-    + count(props.overview.totals.unsubscribed) + ' ' + trans('unsubscribed') + ' = '
-    + netRegistrations(props.overview.totals.registrations, props.overview.totals.unsubscribed)
+    count(props.overview?.totals.registrations ?? 0) + ' ' + trans('sign-ups') + ' − '
+    + count(props.overview?.totals.unsubscribed ?? 0) + ' ' + trans('unsubscribed') + ' = '
+    + netRegistrations(props.overview?.totals.registrations ?? 0, props.overview?.totals.unsubscribed ?? 0)
     + '. ' + unsubscribedHelp)
 
 /* Summed from the groups above rather than read off the totals card, so the last row always adds up
@@ -202,11 +202,11 @@ const channelTotals = computed(() => groupedChannels.value.reduce((totals: any, 
 }), { visits: 0, spend: 0, pending: 0, revenue: 0, registrations: 0, unsubscribed: 0, orders: 0 }))
 
 const decimalColumns = computed(() => ({
-    registrations     : hasDecimals([...props.overview.channels.map(channel => channel.registrations), channelTotals.value.registrations]),
-    orders            : hasDecimals([...props.overview.channels.map(channel => channel.orders), channelTotals.value.orders]),
-    childRegistrations: hasDecimals(props.overview.children.flatMap(child => [child.registrations, child.registrations_total])),
-    childOrders       : hasDecimals(props.overview.children.flatMap(child => [child.orders, child.orders_total])),
-    referrerVisitors  : hasDecimals((props.overview.referrers ?? []).map(referrer => referrer.visitors)),
+    registrations     : hasDecimals([...(props.overview?.channels ?? []).map(channel => channel.registrations), channelTotals.value.registrations]),
+    orders            : hasDecimals([...(props.overview?.channels ?? []).map(channel => channel.orders), channelTotals.value.orders]),
+    childRegistrations: hasDecimals((props.overview?.children ?? []).flatMap(child => [child.registrations, child.registrations_total])),
+    childOrders       : hasDecimals((props.overview?.children ?? []).flatMap(child => [child.orders, child.orders_total])),
+    referrerVisitors  : hasDecimals((props.overview?.referrers ?? []).map(referrer => referrer.visitors)),
 }))
 
 /* Every column says how it was arrived at. These figures each carry a rule that is not guessable
@@ -238,6 +238,17 @@ const columnHelp: Record<string, string> = {
     <!-- Capped: wider than this and the columns drift so far apart the rows stop reading as rows.
          The space left over carries the referrers list instead. -->
     <div class="px-4 py-4 space-y-4 max-w-[1600px]">
+        <Deferred data="overview">
+            <template #fallback>
+                <div class="space-y-4">
+                    <div class="h-4 w-2/3 animate-pulse rounded bg-gray-100" />
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div v-for="card in 4" :key="card" class="h-24 animate-pulse rounded-xl bg-gray-100 ring-1 ring-gray-200" />
+                    </div>
+                    <div class="h-64 animate-pulse rounded-xl bg-gray-100 ring-1 ring-gray-200" />
+                    <div class="h-40 animate-pulse rounded-xl bg-gray-100 ring-1 ring-gray-200" />
+                </div>
+            </template>
         <div class="flex items-start justify-between gap-4">
             <p v-if="periodPredatesAttribution" class="text-xs text-amber-600 max-w-3xl order-last flex items-start gap-1.5">
                 <span class="shrink-0 mt-px inline-flex items-center justify-center w-4 h-4 rounded-full border border-amber-500 text-[10px] font-semibold leading-none">!</span>
@@ -615,5 +626,6 @@ const columnHelp: Record<string, string> = {
             </span>
             <span v-else>{{ trans('No marketing activity in this period yet.') }}</span>
         </div>
+        </Deferred>
     </div>
 </template>
