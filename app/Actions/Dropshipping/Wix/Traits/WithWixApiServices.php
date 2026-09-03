@@ -214,7 +214,7 @@ trait WithWixApiServices
 
     public function createOrderFulfillment(string $orderId, array $fulfillment): array
     {
-        return $this->makeApiRequest('POST', "/ecom/v1/fulfillments/orders/$orderId/fulfillments", [
+        return $this->makeApiRequest('POST', "/ecom/v1/fulfillments/orders/$orderId/create-fulfillment", [
             'fulfillment' => $fulfillment,
         ]);
     }

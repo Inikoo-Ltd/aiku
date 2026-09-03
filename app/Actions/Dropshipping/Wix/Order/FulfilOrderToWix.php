@@ -11,6 +11,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\Shipment;
 use App\Models\Dropshipping\WixUser;
 use App\Models\Ordering\Order;
+use Illuminate\Console\Command;
 use Sentry;
 
 class FulfilOrderToWix extends RetinaAction
@@ -43,19 +44,32 @@ class FulfilOrderToWix extends RetinaAction
 
             $fulfillment = [
                 'lineItems' => $lineItems,
-                'status'    => 'Fulfilled',
+                'completed' => true,
+                'status'    => 'Fulfilled'
             ];
 
             if ($shipment?->tracking) {
                 $fulfillment['trackingInfo'] = [
                     'trackingNumber' => $shipment->tracking,
-                    'shippingProvider' => $shipment->shipper?->trade_as ?: 'other',
+                    'shippingProvider' => $shipment->shipper?->trade_as ?: 'other'
                 ];
+
+                if($shipment->combined_label_url) {
+                    $fulfillment['trackingInfo']['trackingLink'] = $shipment->combined_label_url;
+                }
             }
 
             $wixUser->createOrderFulfillment($order->platform_order_id, $fulfillment);
         } catch (\Exception $e) {
             Sentry::captureException($e);
         }
+    }
+
+    public string $commandSignature = 'wix:fulfil_order {order}';
+
+    public function asCommand(Command $command)
+    {
+        $order = Order::where('slug', $command->argument('order'))->firstOrFail();
+        $this->handle($order);
     }
 }

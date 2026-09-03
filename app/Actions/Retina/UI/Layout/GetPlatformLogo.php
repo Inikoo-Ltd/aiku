@@ -21,7 +21,7 @@ trait GetPlatformLogo
             'amazon' => 'https://cdn-icons-png.flaticon.com/512/14079/14079391.png',
             'magento' => 'https://cdn-icons-png.flaticon.com/512/825/825535.png',
             'allegro' => 'https://assets.allegrostatic.com/opbox/allegro.pl/homepage/Main%20Page/6lJEwSSohvBIIWNlJUU9sx-w1200-h1200.png',
-            'wix' => 'https://cdn-icons-png.flaticon.com/512/5968/5968703.png',
+            'wix' => 'https://app.aiku.io/assets/channel_logo/wix.svg',
             default => null,
         };
     }
