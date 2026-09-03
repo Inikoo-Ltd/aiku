@@ -8,8 +8,8 @@
 
 namespace App\Actions\Procurement\PartnerShoppingListItem\UI;
 
-use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
@@ -94,7 +94,7 @@ class IndexPartnerShoppingListItems extends OrgAction
         }
 
         $orgStocks = OrgStock::with('tradeUnits.image')->whereIn('id', $orgStockIds)->get()->keyBy('id');
-        $exchange  = $this->buyerExchange($this->orgPartner);
+        $exchange  = $this->orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($this->orgPartner);
 
         $paginator->getCollection()->transform(function ($row) use ($orgStocks, $exchange) {
             $tradeUnit = $orgStocks->get($row->org_stock_id)?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
@@ -103,11 +103,6 @@ class IndexPartnerShoppingListItems extends OrgAction
 
             return $row;
         });
-    }
-
-    private function buyerExchange(OrgPartner $orgPartner): float
-    {
-        return GetCurrencyExchange::run($orgPartner->partner->currency, $orgPartner->organisation->currency) ?? 1;
     }
 
     public function tableStructure(OrgPartner $orgPartner): Closure
@@ -122,7 +117,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                 ->withFooterNote(
                     __('Open items value').': '
                     .$orgPartner->organisation->currency->code.' '
-                    .number_format((float) $orgPartner->stats->open_shopping_list_items_value * $this->buyerExchange($orgPartner), 2)
+                    .number_format((float) $orgPartner->stats->open_shopping_list_items_value * $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner), 2)
                 )
                 ->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'info', label: __('Info'), canBeHidden: false)

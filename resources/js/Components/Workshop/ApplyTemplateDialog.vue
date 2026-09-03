@@ -40,6 +40,7 @@ interface ResolvedBlock {
 
 const props = withDefaults(
 	defineProps<{
+		currentPageDetail?: {} | null
 		template: WebLayoutTemplate | null
 		current: MergeBlock[]
 		incoming: MergeBlock[]
@@ -47,6 +48,7 @@ const props = withDefaults(
 		isLoading?: boolean
 	}>(),
 	{
+		currentPageDetail: null,
 		template: null,
 		current: () => [],
 		incoming: () => [],
@@ -246,14 +248,47 @@ watch(visible, (isVisible) => {
 			</div>
 
 			<!-- Dynamic block warning -->
-			<div class="shrink-0 flex items-start gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5">
-				<FontAwesomeIcon
-					:icon="faExclamationTriangle"
-					class="mt-px shrink-0 text-[11px] text-amber-500"
-					fixed-width />
-				<span class="text-[11px] leading-tight text-amber-800">
-					{{ trans('Settings on individual or dynamic blocks (Product, Product List, etc) are not passed down from the template to the page') }}
+			<div class="shrink-0 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 flex flex-col">
+				<span class="text-[11px] leading-tight text-amber-800 gap-1.5 flex items-start">
+					<FontAwesomeIcon
+						:icon="faExclamationTriangle"
+						class="mt-px shrink-0 text-[11px] text-amber-500"
+						fixed-width />
+					<span class="text-[13px] font-semibold">
+						{{ trans('Warning') }} <br>
+					</span>
 				</span>
+				<span class="text-[11px] leading-tight text-amber-800 pt-1">
+					<p>
+						{{ trans('Settings on individual or dynamic blocks (Product, Product List, etc) are not passed down from the template to the page') }} <br><br></br>
+					</p>
+				</span>
+				
+				<span class="text-[11px] leading-tight text-amber-800 gap-1.5 flex items-start">
+					<FontAwesomeIcon
+						:icon="faExclamationTriangle"
+						class="mt-px shrink-0 text-[11px] text-amber-500"
+						fixed-width />
+					<span class="text-[13px] font-semibold">
+						{{ ctrans('Chosen template might not be compatible') }}: 
+					</span>
+				</span>
+				<span class="text-[11px] leading-tight text-amber-800 pt-1 px-4" v-if="currentPageDetail.type != template.type || currentPageDetail.sub_type != template.sub_type">
+					<ul class="list-decimal gap-1">
+						<li v-if="currentPageDetail.type != template.type">
+							{{ ctrans("Current Webpage Type:") }} <span class="italic font-medium">{{ currentPageDetail.type }}</span> <br>
+							{{ ctrans("Chosen Template Type:") }} <span class="italic font-medium">{{ template.type }}</span>
+						</li>
+						<li class="pt-1" v-if="currentPageDetail.sub_type != template.sub_type">
+							{{ ctrans("Current Webpage Sub Type:") }} <span class="italic font-medium">{{ currentPageDetail.sub_type }}</span> <br>
+							{{ ctrans("Chosen Template Sub Type:") }} <span class="italic font-medium">{{ template.sub_type }}</span>
+						</li>
+					</ul>
+				</span>
+				<!-- <pre>
+					{{ currentPageDetail }}
+					{{ template }}
+				</pre> -->
 			</div>
 
 			<div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-2">

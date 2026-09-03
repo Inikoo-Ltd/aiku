@@ -6,13 +6,14 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Procurement\PartnerShoppingListItem;
+namespace App\Actions\Production\PartnerShippingList;
 
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\OrgAction;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\SalesChannel\StoreSalesChannel;
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -26,6 +27,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\SalesChannel;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
+use App\Models\Production\Production;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
@@ -165,12 +167,9 @@ class CherryPickPartnerShoppingListItems extends OrgAction
 
     private function resolveIntercompanyCustomer(OrgPartner $orgPartner, Shop $shop): ?Customer
     {
-        $customerId = data_get($orgPartner->data, "intercompany_customers.{$shop->id}");
-        if ($customerId) {
-            $customer = Customer::find($customerId);
-            if ($customer) {
-                return $customer;
-            }
+        $customer = GetPartnerIntercompanyCustomer::run($orgPartner, $shop->id);
+        if ($customer) {
+            return $customer;
         }
 
         $buyer        = $orgPartner->organisation;
@@ -241,7 +240,7 @@ class CherryPickPartnerShoppingListItems extends OrgAction
         );
     }
 
-    public function asController(Organisation $organisation, ActionRequest $request): array
+    public function asController(Organisation $organisation, Production $production, ActionRequest $request): array
     {
         $this->initialisation($organisation, $request);
 

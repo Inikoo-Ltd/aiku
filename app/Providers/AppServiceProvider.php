@@ -397,6 +397,7 @@ class AppServiceProvider extends ServiceProvider
                 'RawMaterial'                      => 'App\Models\Production\RawMaterial',
                 'ManufactureTask'                  => 'App\Models\Production\ManufactureTask',
                 'Artefact'                         => 'App\Models\Production\Artefact',
+                'ArtefactFamily'                   => 'App\Models\Production\ArtefactFamily',
 
                 //Reviews
                 'Review'                           => 'App\Models\Reviews\Review',

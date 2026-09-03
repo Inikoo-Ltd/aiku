@@ -14,6 +14,7 @@ use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
+use App\Models\Production\Artefact;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Model;
@@ -121,6 +122,11 @@ class Tag extends Model implements HasMedia
     public function tradeUnits(): MorphToMany
     {
         return $this->morphedByMany(TradeUnit::class, 'model', 'model_has_tags');
+    }
+
+    public function artefacts(): MorphToMany
+    {
+        return $this->morphedByMany(Artefact::class, 'model', 'model_has_tags');
     }
 
     public function customers(): MorphToMany

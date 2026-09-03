@@ -182,6 +182,16 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             this.openWindows = this.openWindows.filter((w) => w.ulid !== ulid)
         },
 
+        handleArchived(e: { conversation_ulid: string; user_id: number }) {
+            const myId = usePage().props?.auth?.user?.id
+            if (e.user_id !== myId) return
+            this.openWindows = this.openWindows.filter((w) => w.ulid !== e.conversation_ulid)
+            const index = this.conversations.findIndex((c) => c.ulid === e.conversation_ulid)
+            if (index !== -1) {
+                this.conversations.splice(index, 1)
+            }
+        },
+
         closeConversation(ulid: string) {
             localStorage.removeItem(`staff-chat-bubble-${ulid}`)
             this.openWindows = this.openWindows.filter((w) => w.ulid !== ulid)

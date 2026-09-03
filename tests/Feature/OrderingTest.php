@@ -59,6 +59,7 @@ use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
@@ -701,6 +702,16 @@ test('update order state to in warehouse', function (Order $order) {
 
     return $order;
 })->depends('update order state to submitted');
+
+test('staff can change the billing address of an order already in the warehouse', function (Order $order) {
+    $newAddress                   = Address::factory()->definition();
+    $newAddress['address_line_1'] = 'Billing street 42';
+
+    $order = UpdateOrderBillingAddress::make()->action($order, ['address' => $newAddress]);
+
+    expect($order->billingAddress->address_line_1)->toBe('Billing street 42')
+        ->and($order->billing_country_id)->toBe($order->billingAddress->country_id);
+})->depends('update order state to in warehouse');
 
 test('update order private warehouse note propagates to delivery note', function (Order $order) {
     $order = UpdateOrder::make()->action($order, ['private_warehouse_note' => 'fragile, double box']);
@@ -3253,3 +3264,26 @@ test('make queue ranks paid blocked stock with suggested quantity', function () 
 
     $this->organisation->update(['settings' => $settings]);
 });
+
+test('repair order charge flags sets premium flag from orphan charge line', function (Order $order) {
+    $charge = StoreCharge::make()->action($order->shop, [
+        'code'        => 'PREMIUM-REPAIR',
+        'name'        => 'Premium Dispatch',
+        'description' => 'premium dispatch',
+        'state'       => ChargeStateEnum::ACTIVE,
+        'trigger'     => ChargeTriggerEnum::ORDER,
+        'type'        => ChargeTypeEnum::PREMIUM,
+    ]);
+    StoreTransactionFromCharge::make()->action($order, $charge, [
+        'date'             => Carbon::now(),
+        'quantity_ordered' => 1,
+    ]);
+
+    expect($order->refresh()->is_premium_dispatch)->toBeFalse();
+
+    $this->artisan('repair:order_charge_flags')->assertSuccessful();
+    expect($order->refresh()->is_premium_dispatch)->toBeFalse();
+
+    $this->artisan('repair:order_charge_flags --commit')->assertSuccessful();
+    expect($order->refresh()->is_premium_dispatch)->toBeTrue();
+})->depends('create order');

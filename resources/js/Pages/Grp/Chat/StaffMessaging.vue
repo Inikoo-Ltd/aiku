@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from "vue"
+import { computed, onMounted, onUnmounted, ref, watch } from "vue"
 import { Head, usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
@@ -96,6 +96,20 @@ const closeConversation = () => {
 }
 
 const selectedConversation = computed(() => selectedUlid.value ? store.conversationByUlid(selectedUlid.value) : null)
+
+watch(() => store.fullViewUlid, (ulid) => {
+    if (!ulid || ulid === selectedUlid.value) {
+        return
+    }
+    if (isMobile.value) {
+        store.openConversation(ulid)
+        return
+    }
+    selectedUlid.value = ulid
+    store.loadMessages(ulid)
+    store.markRead(ulid)
+    window.history.replaceState({}, "", route("grp.chat.staff.show", ulid))
+})
 
 onMounted(async () => {
     window.addEventListener('resize', handleResize)

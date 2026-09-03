@@ -184,7 +184,7 @@ class StoreTiktokOrder extends RetinaAction
                 ->where('item_type', 'Product')
                 ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
                 ->where('platform_product_id', $item['product_id'])
-                ->orWhere('id', $externalProductId)
+                ->when(is_numeric($externalProductId), fn ($query) => $query->orWhere('id', $externalProductId))
                 ->first();
 
             if ($portfolioData && $portfolioData->item_id) {

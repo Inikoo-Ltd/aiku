@@ -4,9 +4,10 @@ import { router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faImage, faMusic, faPencil, faUnlink, faUpload, faVideo, faInfoCircle } from "@fal"
+import { faImage, faMusic, faPencil, faPhotoVideo, faUnlink, faUpload, faVideo, faInfoCircle } from "@fal"
 import AudioWaveform from "@/Components/Pure/AudioWaveform.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
 import Image from "@common/Components/Image.vue"
 import axios from "axios"
 import Dialog from "primevue/dialog"
@@ -27,6 +28,7 @@ const props = defineProps<{
         bucket_images?: boolean
         images_update_route: routeType
         upload_images_route: routeType
+        attach_images_route?: routeType
         upload_audio_route?: routeType
         delete_images_route: routeType
         update_image_alt_route?: routeType
@@ -57,6 +59,7 @@ const isDragOver = ref(false)
 const isModalEditAlt = ref(false)
 const selectedImageToEditAlt = ref<any>(null)
 const altInput = ref<string>("")
+const isModalGallery = ref(false)
 
 
 /* ---------------------------
@@ -248,6 +251,28 @@ function onUploadFile(event: Event) {
 
 function onDropFile(event: DragEvent) {
     if (event.dataTransfer?.files?.length) uploadFiles(event.dataTransfer.files)
+}
+
+async function onPickGalleryImages(selectedImages: any[]) {
+    const attachRoute = props.data.attach_images_route
+    if (!attachRoute || !selectedImages?.length) return
+
+    try {
+        loadingSubmit.value = "gallery"
+
+        await axios.post(route(attachRoute.name, attachRoute.parameters), {
+            images: selectedImages.map((image) => image.id),
+        })
+
+        notifySuccess(trans("Image(s) added successfully"))
+        isModalGallery.value = false
+        router.reload({ only: ["images"] })
+    } catch (e) {
+        console.error(e)
+        notifyError(trans("Failed to add image(s) from gallery"))
+    } finally {
+        loadingSubmit.value = null
+    }
 }
 
 async function uploadAudioFile(event: Event) {
@@ -460,6 +485,9 @@ function onDeleteFilesInList(categoryBox: any) {
                     {{ trans("Image List") }}
                 </h3>
                 <div class="flex items-center gap-2">
+                    <Button v-if="editable && data.attach_images_route" :loading="loadingSubmit === 'gallery'"
+                        type="tertiary" :label="trans('Gallery')" :icon="faPhotoVideo"
+                        v-tooltip="trans('Pick from uploaded or stock images')" @click="isModalGallery = true" />
                     <Button v-if="editable" :loading="loadingSubmit === 'upload'" type="create" :label="trans('Upload')"
                         :icon="faUpload" @click="$refs.fileInput.click()" />
                     <input ref="fileInput" type="file" accept="image/*" multiple class="hidden"
@@ -565,6 +593,12 @@ function onDeleteFilesInList(categoryBox: any) {
 
     </div>
 
+
+    <Dialog v-model:visible="isModalGallery" modal :header="trans('Select Images')" class="w-full max-w-5xl"
+        dismissableMask>
+        <GalleryManagement :tabs="['images_uploaded', 'stock_images']"
+            @submitSelectedImages="onPickGalleryImages" />
+    </Dialog>
 
     <Dialog v-model:visible="isModalEditVideo" modal header="Edit Video Link" :style="{ width: '40rem' }">
 

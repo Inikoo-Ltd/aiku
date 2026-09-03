@@ -27,14 +27,21 @@ class SplitShopifyFulfillmentRequest extends OrgAction
             foreach ($lineItems as $fulfillmentOrderItems) {
                 $lineItem = $fulfillmentOrderItems['node'];
                 $productId = Arr::get($lineItem, 'lineItem.product.id');
+                $productVariantId = Arr::get($lineItem, 'lineItem.variant.id');
 
-                if (! $productId) {
+                if (!$productId && !$productVariantId) {
                     continue;
                 }
 
                 /** @var Portfolio $portfolio */
                 $portfolio = $shopifyUser->customerSalesChannel->portfolios()
-                    ->where('platform_product_id', $productId)->exists();
+                    ->where('platform_product_variant_id', $productVariantId)->exists();
+
+                if (! $portfolio) {
+                    /** @var Portfolio $portfolio */
+                    $portfolio = $shopifyUser->customerSalesChannel->portfolios()
+                        ->where('platform_product_id', $productId)->exists();
+                }
 
                 if ($portfolio) {
                     $fulfillmentOrderItemsDefined[] = [
