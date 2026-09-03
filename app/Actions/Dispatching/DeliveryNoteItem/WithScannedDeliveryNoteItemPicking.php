@@ -8,9 +8,10 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
-use App\Actions\Dispatching\Picking\StorePicking;
+use App\Actions\Dispatching\Picking\UpsertPicking;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\Dispatching\Picking;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
 
@@ -74,7 +75,9 @@ trait WithScannedDeliveryNoteItemPicking
             ->select([
                 'location_org_stocks.id',
                 'location_org_stocks.quantity',
+                'location_org_stocks.org_stock_id',
                 'locations.code as location_code',
+                'locations.id as location_id'
             ])
             ->get();
 
@@ -103,11 +106,22 @@ trait WithScannedDeliveryNoteItemPicking
             return 0;
         }
 
-        StorePicking::make()->action($deliveryNoteItem, $user, [
+        $picking = Picking::where('delivery_note_item_id', $deliveryNoteItem->id)
+                        ->where('location_id', $location->location_id)
+                        ->where('org_stock_id', $location->org_stock_id)
+                        ->first();
+
+        $modelData = [
             'location_org_stock_id' => $location->id,
             'quantity'              => $quantityToPick,
             'picker_user_id'        => $user->id,
-        ]);
+        ];
+
+        if ($picking) {
+            data_set($modelData, 'picking_id', $picking->id);
+        }
+
+        UpsertPicking::make()->action($deliveryNoteItem, $user, $modelData);
 
         return $quantityToPick;
     }
