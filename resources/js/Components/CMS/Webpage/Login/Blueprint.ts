@@ -83,6 +83,21 @@ export default {
 					label: "Remember me text",
 					type: "text",
 				},
+				{
+					key: ["google", "visible"],
+					label: "Show login with Google",
+					type: "switch",
+				},
+				{
+					key: ["google", "note"],
+					label: "Login with Google note",
+					type: "text",
+				},
+				{
+					key: ["google", "text"],
+					label: "Login with Google text",
+					type: "text",
+				},
 			],
 		},
 		{

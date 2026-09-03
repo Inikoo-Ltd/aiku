@@ -58,7 +58,11 @@ class HandleIrisInertiaRequests extends Middleware
                 },
 
                 'use_chat' => $website->settings['enable_chat'] ?? false,
-                'iris'     => $this->getIrisData($website),
+                'iris'     => array_merge($this->getIrisData($website), [
+                    'google' => [
+                        'client_id' => config('services.google.client_id'),
+                    ],
+                ]),
                 'retina'        => [
                     'type'         => $request->input('shop_type'),
                     'organisation' => $website?->organisation?->slug,

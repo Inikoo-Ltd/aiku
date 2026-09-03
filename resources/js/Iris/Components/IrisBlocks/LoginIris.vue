@@ -1,17 +1,26 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, inject, ref } from "vue"
 import axios from "axios"
+import { trans } from "laravel-vue-i18n"
+import { notify } from "@kyvg/vue3-notification"
+import { googleTokenLogin } from "vue3-google-login"
 import { getStyles } from "@/Composables/styles"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import Modal from "@/Components/Utils/Modal.vue"
 
-defineProps<{
+const props = defineProps<{
 	fieldValue: any
 	theme?: any
 	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
+const layout = inject<any>("layout", {})
+
 const isLoading = ref(false)
+const isLoadingGoogle = ref(false)
 const listLoginError = ref<any>(null)
+const googleAccount = ref<any>(null)
+const isOpenGoogleRegistration = ref(false)
 const form = ref({
 	username: "",
 	password: "",
@@ -35,7 +44,13 @@ const urlWithParams = (path: string, params: Record<string, string | null>) => {
 	return query ? `${path}?${query}` : path
 }
 
+const googleClientId = computed(() => layout?.iris?.google?.client_id)
+const isGoogleLoginVisible = computed(() => !!googleClientId.value && props.fieldValue?.login?.google?.visible !== false)
+
 const registerUrl = computed(() => urlWithParams("/app/register", { tiktok_code: queryParam("tiktok_code") }))
+const registerWithGoogleUrl = computed(() =>
+	urlWithParams("/app/register-from-google", { google_access_token: googleAccount.value?.google_access_token })
+)
 const forgotPasswordUrl = computed(() => urlWithParams("/app/reset-password-send", { tiktok_code: queryParam("tiktok_code") }))
 
 const submit = async () => {
@@ -67,6 +82,54 @@ const submit = async () => {
 
 const clearError = () => {
 	listLoginError.value = null
+}
+
+const getRedirectUrl = async () => {
+	try {
+		const response = await axios.get(urlWithParams("/json/canonical-redirect", { ref: queryParam("ref") }))
+
+		return response.data?.redirect_url || "/"
+	} catch (error: any) {
+		return "/"
+	}
+}
+
+const loginWithGoogle = async () => {
+	if (isLoadingGoogle.value || !googleClientId.value) {
+		return
+	}
+
+	let googleResponse: any
+	try {
+		googleResponse = await googleTokenLogin({ clientId: googleClientId.value })
+	} catch (error: any) {
+		return
+	}
+
+	isLoadingGoogle.value = true
+
+	try {
+		const response = await axios.post("/app/login-google", {
+			google_access_token: googleResponse.access_token,
+			tiktok_code: queryParam("tiktok_code"),
+		})
+
+		if (response.data?.logged_in) {
+			window.location.href = await getRedirectUrl()
+			return
+		}
+
+		googleAccount.value = response.data?.google_user
+		isOpenGoogleRegistration.value = true
+	} catch (error: any) {
+		notify({
+			title: trans("Something went wrong"),
+			text: trans("Failed to login with Google. Please contact administrator."),
+			type: "error",
+		})
+	}
+
+	isLoadingGoogle.value = false
 }
 </script>
 
@@ -147,6 +210,27 @@ const clearError = () => {
 						<LoadingIcon v-if="isLoading" />
 					</button>
 
+					<div v-if="isGoogleLoginVisible" class="space-y-3">
+						<div class="text-center text-sm">
+							{{ fieldValue?.login?.google?.note || trans("or use your Google account to login") }}
+						</div>
+
+						<button
+							type="button"
+							class="relative flex w-full cursor-pointer items-center justify-center gap-x-2 rounded-sm border border-gray-700 bg-white px-4 py-2 text-gray-800 transition duration-150 ease-in-out hover:bg-gray-100 disabled:opacity-70"
+							:disabled="isLoadingGoogle"
+							@click="loginWithGoogle">
+							<svg class="absolute left-4 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+								<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+								<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+								<path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+								<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+							</svg>
+							{{ fieldValue?.login?.google?.text || trans("Login with Google") }}
+							<LoadingIcon v-if="isLoadingGoogle" />
+						</button>
+					</div>
+
 					<div class="editor-class text-sm" v-html="fieldValue?.login?.help" />
 				</form>
 			</div>
@@ -173,5 +257,35 @@ const clearError = () => {
 					v-html="fieldValue?.register?.benefits?.text" />
 			</div>
 		</div>
+
+		<Modal :isOpen="isOpenGoogleRegistration" width="max-w-lg w-full" @onClose="isOpenGoogleRegistration = false">
+			<div class="p-6">
+				<h2 class="mb-2 text-center text-lg">
+					{{ trans("Hello") }}, <span class="font-semibold">{{ googleAccount?.name }}</span>!
+				</h2>
+
+				<div class="mb-4 text-center text-gray-600">
+					<div class="mb-3 italic">{{ googleAccount?.email }}</div>
+					<p>{{ trans("This email was not found in our database") }}</p>
+					<p>{{ trans("Do you want to create an account?") }}</p>
+				</div>
+
+				<div class="flex justify-center gap-x-3">
+					<button
+						type="button"
+						class="cursor-pointer rounded-sm border border-gray-400 px-4 py-2 text-sm"
+						@click="isOpenGoogleRegistration = false">
+						{{ trans("No, thanks") }}
+					</button>
+
+					<a
+						:href="registerWithGoogleUrl"
+						class="cursor-pointer rounded-sm px-4 py-2 text-sm"
+						:style="getStyles(fieldValue?.register?.button?.container?.properties, screenType)">
+						{{ trans("Yes") }}
+					</a>
+				</div>
+			</div>
+		</Modal>
 	</div>
 </template>

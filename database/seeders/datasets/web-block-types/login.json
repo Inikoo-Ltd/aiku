@@ -59,6 +59,11 @@
 					"visible": false,
 					"text": "Remember me"
 				},
+				"google": {
+					"visible": true,
+					"text": "Login with Google",
+					"note": "or use your Google account to login"
+				},
 				"button": {
 					"text": "Log in",
 					"container": {
