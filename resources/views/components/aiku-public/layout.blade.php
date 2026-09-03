@@ -429,6 +429,7 @@
             <a href="{{ route('aiku-public.docs.index') }}">Documentation</a>
             <a href="{{ route('aiku-public.feed') }}">RSS</a>
             <a href="{{ route('aiku-public.sitemap') }}">Sitemap</a>
+            <a href="{{ route('aiku-public.whatsapp-term-policies') }}" @if(request()->routeIs('aiku-public.whatsapp-term-policies')) aria-current="page" @endif>WhatsApp policy</a>
             <a href="mailto:hello@aiku.io">hello@aiku.io</a>
         </div>
         <div class="footer-license">
