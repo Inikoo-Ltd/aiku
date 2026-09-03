@@ -22,8 +22,6 @@ import {
     faPhone,
     faCopy,
     faCircleExclamation,
-    faPlus,
-    faMagnifyingGlass,
 } from "@fortawesome/free-solid-svg-icons"
 import { faJira } from "@fortawesome/free-brands-svg-icons"
 import { faUser } from "@fal"
@@ -35,7 +33,7 @@ import Image from "@common/Components/Image.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import JiraTicketModal from "@/Components/Chat/Agent/JiraTicketModal.vue"
-import { Dialog } from "primevue"
+import WhatsappTemplatePicker from "@/Components/Chat/WhatsappTemplatePicker.vue"
 import type { MiniChat } from "@/Composables/useMiniChats"
 
 const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
@@ -102,18 +100,8 @@ const templateOnly = computed(() => isWhatsapp.value && canSendNonTemplate.value
 const isTemplateDialogOpen = ref(false)
 const templates = ref<any[]>([])
 const isLoadingTemplates = ref(false)
-const templateSearch = ref("")
-const filteredTemplates = computed(() => {
-    const q = templateSearch.value.trim().toLowerCase()
-    if (!q) return templates.value
-    return templates.value.filter((t: any) =>
-        t.name.toLowerCase().includes(q) || (t.category ?? "").toLowerCase().includes(q)
-    )
-})
 const selectedTemplate = ref<any>(null)
-const hoveredTemplate = ref<any>(null)
 const templateParameters = ref<string[]>([])
-const popupStyle = ref<Record<string, string>>({})
 const hasTemplate = computed(() => !!selectedTemplate.value)
 const templateAutoFills = computed(() => !!selectedTemplate.value?.auto_fill)
 const templateMissingTags = computed(() => selectedTemplate.value?.missing_tags ?? [])
@@ -558,7 +546,6 @@ const pickEmoji = (emoji: string) => {
 
 const openTemplateDialog = async () => {
     if (!props.chat.shopId) return
-    templateSearch.value = ""
     isTemplateDialogOpen.value = true
     isLoadingTemplates.value = true
     try {
@@ -573,17 +560,6 @@ const openTemplateDialog = async () => {
     }
 }
 
-const POPUP_WIDTH = 288
-const showTemplatePopup = (template: any, event: MouseEvent) => {
-    const row = (event.currentTarget as HTMLElement).getBoundingClientRect()
-    const fitsRight = row.right + 12 + POPUP_WIDTH <= window.innerWidth
-    popupStyle.value = {
-        top: `${Math.min(row.top, window.innerHeight - 240)}px`,
-        left: fitsRight ? `${row.right + 12}px` : `${Math.max(8, row.left - 12 - POPUP_WIDTH)}px`,
-    }
-    hoveredTemplate.value = template
-}
-
 const selectTemplate = (template: any) => {
     selectedTemplate.value = template
     if (template.auto_fill && template.resolved_values) {
@@ -591,7 +567,6 @@ const selectTemplate = (template: any) => {
     } else {
         templateParameters.value = Array(template.parameter_count).fill("")
     }
-    hoveredTemplate.value = null
     isTemplateDialogOpen.value = false
     newMessage.value = ""
     clearAttachment()
@@ -1241,54 +1216,14 @@ onUnmounted(() => {
         <JiraTicketModal v-if="chat.organisationSlug" :is-open="isJiraModalOpen" :session="(jiraSession as any)"
             :organisation="chat.organisationSlug" @close="isJiraModalOpen = false" />
 
-        <Dialog v-if="isWhatsapp" v-model:visible="isTemplateDialogOpen" modal :header="trans('WhatsApp templates')"
-            :style="{ width: '24rem' }">
-            <div v-if="isLoadingTemplates" class="flex items-center justify-center py-8 text-gray-400">
-                <FontAwesomeIcon :icon="faSpinner" class="animate-spin" />
-            </div>
-            <template v-else>
-                <div class="relative mb-2">
-                    <FontAwesomeIcon :icon="faMagnifyingGlass" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-gray-400" />
-                    <input v-model="templateSearch" type="text" :placeholder="trans('Search')"
-                        class="w-full text-sm border rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:border-gray-400" />
-                </div>
-
-                <a v-if="chat.organisationSlug && chat.shopSlug"
-                    :href="route('grp.org.shops.show.chat.whatsapp_templates.create', [chat.organisationSlug, chat.shopSlug])"
-                    target="_blank" rel="noopener noreferrer"
-                    class="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mb-2">
-                    <FontAwesomeIcon :icon="faPlus" class="text-[10px]" />
-                    {{ trans('Create new template') }}
-                </a>
-
-                <div v-if="!filteredTemplates.length" class="py-6 text-center text-sm text-gray-400">
-                    {{ templates.length ? trans('No templates match your search') : trans('No approved templates found for this shop') }}
-                </div>
-                <div v-else class="max-h-48 overflow-y-auto border rounded-lg divide-y" @scroll="hoveredTemplate = null">
-                    <button v-for="template in filteredTemplates" :key="template.id"
-                        class="w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors"
-                        :class="{ 'bg-green-50': selectedTemplate?.id === template.id }"
-                        @mouseenter="showTemplatePopup(template, $event)" @mouseleave="hoveredTemplate = null"
-                        @click="selectTemplate(template)">
-                        <div class="text-sm font-medium">{{ template.name }}</div>
-                        <div class="text-[11px] text-gray-400">
-                            {{ template.language }}<span v-if="template.category"> &middot; {{ template.category }}</span>
-                        </div>
-                    </button>
-                </div>
-            </template>
-            <Teleport to="body">
-                <div v-if="hoveredTemplate" :style="popupStyle"
-                    class="fixed z-[2000] w-72 rounded-lg border bg-white p-3 shadow-xl pointer-events-none">
-                    <div class="text-sm font-medium mb-1">{{ hoveredTemplate.name }}</div>
-                    <div class="text-xs text-gray-600 whitespace-pre-line max-h-60 overflow-y-auto leading-relaxed"
-                        v-html="formatBodyWithTags(hoveredTemplate.body, hoveredTemplate.merge_tags ?? [])"></div>
-                    <div class="mt-2 pt-2 border-t text-[10px] text-gray-400">
-                        {{ hoveredTemplate.language }}<span v-if="hoveredTemplate.category"> &middot; {{ hoveredTemplate.category }}</span>
-                        &middot; {{ trans(':count parameters', { count: hoveredTemplate.parameter_count }) }}
-                    </div>
-                </div>
-            </Teleport>
-        </Dialog>
+        <WhatsappTemplatePicker v-if="isWhatsapp"
+            :visible="isTemplateDialogOpen"
+            @update:visible="isTemplateDialogOpen = $event"
+            :templates="templates"
+            :is-loading="isLoadingTemplates"
+            :selected-template-id="selectedTemplate?.id"
+            :organisation-slug="chat.organisationSlug"
+            :shop-slug="chat.shopSlug"
+            @select="selectTemplate" />
     </div>
 </template>
