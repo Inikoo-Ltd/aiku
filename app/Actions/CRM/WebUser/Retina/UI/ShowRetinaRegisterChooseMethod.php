@@ -9,12 +9,15 @@
 namespace App\Actions\CRM\WebUser\Retina\UI;
 
 use App\Actions\IrisAction;
+use App\Actions\Traits\WithRetinaAuthRedirect;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaRegisterChooseMethod extends IrisAction
 {
+    use WithRetinaAuthRedirect;
+
     public function handle(): Response
     {
         return Inertia::render(
@@ -31,6 +34,7 @@ class ShowRetinaRegisterChooseMethod extends IrisAction
     public function asController(ActionRequest $request): Response
     {
         $this->initialisation($request);
+        $this->rememberRetinaIntendedUrl($request, $this->website);
 
         return $this->handle();
     }
