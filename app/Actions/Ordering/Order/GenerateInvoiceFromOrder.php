@@ -144,13 +144,14 @@ class GenerateInvoiceFromOrder extends OrgAction
 
             $amountToCredit = round($totalPaid - $invoice->total_amount, 2);
 
-            $hasManuallySettledPayment = $order->payments()
+            $hasPaymentSettledAtInvoicing = $order->payments()
+                ->where('payments.status', PaymentStatusEnum::SUCCESS)
                 ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
                 ->whereHas('paymentAccount', function ($query) {
-                    $query->whereIn('type', PaymentAccountTypeEnum::MANUALLY_SETTLED);
+                    $query->whereIn('type', PaymentAccountTypeEnum::SETTLED_AT_INVOICING);
                 })->exists();
 
-            if ($amountToCredit > 0 && !$hasManuallySettledPayment) {
+            if ($amountToCredit > 0 && !$hasPaymentSettledAtInvoicing) {
                 /** @var \App\Models\Accounting\PaymentAccountShop $paymentAccountShop */
                 $paymentAccountShop = $order->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
                 $paymentData        = [
