@@ -27,8 +27,8 @@ class JobPositionsResource extends JsonResource
             'slug'                               => $this->slug,
             'code'                               => $this->code,
             'name'                               => $this->name,
-            'number_employees_currently_working' => $this->number_employees_currently_working,
-            'share'                              => percentage($this->share, 1),
+            'number_employees_currently_working' => (int) $this->number_employees_currently_working,
+            'share'                              => $this->share === null ? null : percentage($this->share, 1),
             'organisation_name'                  =>  $this->organisation_name,
             'organisation_slug'                  => $this->organisation_slug,
 

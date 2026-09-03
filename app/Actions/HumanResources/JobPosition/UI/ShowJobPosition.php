@@ -16,7 +16,9 @@ use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\UI\HumanResources\JobPositionTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\HumanResources\EmployeesResource;
+use App\Http\Resources\HumanResources\JobPositionGuestsResource;
 use App\Http\Resources\HumanResources\JobPositionResource;
+use App\Http\Resources\HumanResources\JobPositionRolesResource;
 use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -43,15 +45,22 @@ class ShowJobPosition extends OrgAction
         return Inertia::render(
             'Org/HumanResources/JobPosition',
             [
-                'title'       => __('responsibility'),
+                'title'       => $jobPosition->name,
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'navigation'  => [
                     'previous' => $this->getPrevious($jobPosition, $request),
                     'next'     => $this->getNext($jobPosition, $request),
                 ],
                 'pageHead'    => [
-                    'title'     => $jobPosition->name,
-                    'icon'      => ['fal', 'fa-clipboard-list-check'],
+                    'model'      => __('Responsibility'),
+                    'title'      => $jobPosition->name,
+                    'afterTitle' => [
+                        'label' => '('.$jobPosition->code.')',
+                    ],
+                    'icon'       => [
+                        'icon'  => ['fal', 'fa-clipboard-list-check'],
+                        'title' => __('Responsibility'),
+                    ],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -76,14 +85,53 @@ class ShowJobPosition extends OrgAction
                     )
                 )),
 
+                JobPositionTabsEnum::GUESTS->value => $this->tab == JobPositionTabsEnum::GUESTS->value ?
+                fn () => JobPositionGuestsResource::collection(
+                    IndexJobPositionGuests::run($jobPosition, JobPositionTabsEnum::GUESTS->value)
+                )
+                : Inertia::optional(fn () => JobPositionGuestsResource::collection(
+                    IndexJobPositionGuests::run($jobPosition, JobPositionTabsEnum::GUESTS->value)
+                )),
+
+                JobPositionTabsEnum::ROLES->value => $this->tab == JobPositionTabsEnum::ROLES->value ?
+                fn () => JobPositionRolesResource::collection(
+                    IndexJobPositionRoles::run($jobPosition, JobPositionTabsEnum::ROLES->value)
+                )
+                : Inertia::optional(fn () => JobPositionRolesResource::collection(
+                    IndexJobPositionRoles::run($jobPosition, JobPositionTabsEnum::ROLES->value)
+                )),
+
                 JobPositionTabsEnum::HISTORY->value => $this->tab == JobPositionTabsEnum::HISTORY->value ?
-                fn () => HistoryResource::collection(IndexHistory::run($jobPosition))
-                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($jobPosition)))
+                fn () => HistoryResource::collection(
+                    IndexHistory::run($jobPosition, JobPositionTabsEnum::HISTORY->value)
+                )
+                : Inertia::optional(fn () => HistoryResource::collection(
+                    IndexHistory::run($jobPosition, JobPositionTabsEnum::HISTORY->value)
+                ))
             ]
-        )->table(
+        )
+        ->table(
             IndexEmployees::make()->tableStructure(
                 parent: $jobPosition,
                 prefix: JobPositionTabsEnum::EMPLOYEES->value
+            )
+        )
+        ->table(
+            IndexJobPositionGuests::make()->tableStructure(
+                jobPosition: $jobPosition,
+                prefix: JobPositionTabsEnum::GUESTS->value
+            )
+        )
+        ->table(
+            IndexJobPositionRoles::make()->tableStructure(
+                jobPosition: $jobPosition,
+                prefix: JobPositionTabsEnum::ROLES->value
+            )
+        )
+        ->table(
+            IndexHistory::make()->tableStructure(
+                prefix: JobPositionTabsEnum::HISTORY->value,
+                model: $jobPosition
             )
         );
     }
