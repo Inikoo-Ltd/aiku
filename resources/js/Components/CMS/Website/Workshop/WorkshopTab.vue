@@ -13,16 +13,17 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import ScreenView from '@/Components/ScreenView.vue'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { getComponent } from '@/Composables/getWorkshopComponents'
 import { setColorStyleRootByEl } from '@/Composables/useApp'
 import { WORKSHOP_TABS, type WorkshopContext, type WorkshopTabConfig } from '@/Components/CMS/Website/Workshop/workshopTabs'
 
 import { faInfoCircle, faDotCircle } from '@fas'
-import { faChevronDoubleLeft, faChevronDoubleRight, faSpinnerThird } from '@fal'
+import { faChevronDoubleLeft, faChevronDoubleRight } from '@fal'
 
 import '@/../css/Iris/editor.css'
 
-library.add(faInfoCircle, faDotCircle, faChevronDoubleLeft, faChevronDoubleRight, faSpinnerThird)
+library.add(faInfoCircle, faDotCircle, faChevronDoubleLeft, faChevronDoubleRight)
 
 const props = defineProps<{
   tab: string
@@ -410,7 +411,7 @@ onMounted(() => {
             <div class="flex items-center gap-3 min-w-0">
               <Transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" leave-active-class="transition-opacity duration-200" leave-to-class="opacity-0">
                 <span v-if="isSaving" class="flex items-center gap-1.5 text-xs text-gray-500">
-                  <FontAwesomeIcon :icon="faSpinnerThird" class="animate-spin" fixed-width aria-hidden="true" />
+                  <LoadingIcon />
                   <span class="hidden sm:inline">{{ trans('Saving') }}</span>
                 </span>
               </Transition>
@@ -475,7 +476,7 @@ onMounted(() => {
               v-else-if="isPicking"
               class="flex h-full min-h-[240px] items-center justify-center text-gray-400"
             >
-              <FontAwesomeIcon :icon="faSpinnerThird" class="text-2xl animate-spin" aria-hidden="true" />
+              <LoadingIcon class="text-2xl" />
             </div>
 
             <div

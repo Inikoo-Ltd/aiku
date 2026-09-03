@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { faCube, faLink } from "@fal"
-import { faStar, faCircle, faSpinnerThird } from "@fas"
+import { faStar, faCircle } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight, faImage } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(
   faCube,
@@ -13,8 +14,7 @@ library.add(
   faCircle,
   faChevronCircleLeft,
   faChevronCircleRight,
-  faImage,
-  faSpinnerThird
+  faImage
 )
 
 defineProps<{
@@ -65,7 +65,7 @@ defineProps<{
       v-if="isLoading"
       class="absolute inset-0 bg-black/40 flex items-center justify-center z-10 pointer-events-none"
     >
-      <FontAwesomeIcon :icon="faSpinnerThird" spin class="text-white text-3xl" fixed-width aria-hidden="true" />
+      <LoadingIcon class="text-white text-3xl" />
     </div>
 
   </div>
