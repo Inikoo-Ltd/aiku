@@ -44,7 +44,6 @@ class FulfilOrderToWix extends RetinaAction
 
             $fulfillment = [
                 'lineItems' => $lineItems,
-                'completed' => true,
                 'status'    => 'Fulfilled'
             ];
 
