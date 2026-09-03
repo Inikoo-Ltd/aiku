@@ -106,6 +106,7 @@ const CarouselImageBackgroundIris = async(() => import("@/Iris/Components/IrisBl
 const CtaVideo1Iris = async(() => import("@/Iris/Components/IrisBlocks/CtaVideo1Iris.vue"))
 const Video1Iris = async(() => import("@/Iris/Components/IrisBlocks/Video1Iris.vue"))
 const UserSubscribeIris = async(() => import("@/Iris/Components/IrisBlocks/UserSubscribeIris.vue"))
+const LoginIris = async(() => import("@/Iris/Components/IrisBlocks/LoginIris.vue"))
 const Cta4Iris = async(() => import("@/Iris/Components/IrisBlocks/Cta4Iris.vue"))
 const BlogIris = async(() => import("@/Iris/Components/IrisBlocks/BlogIris.vue"))
 const Step2Iris = async(() => import("@/Iris/Components/IrisBlocks/Step2Iris.vue"))
@@ -233,6 +234,7 @@ const components = (shop_type?: string, options: IrisComponentOptions = {}): Rec
 		"cta-video-1": CtaVideo1Iris,
 		video_1: Video1Iris,
 		"user-subscribe": UserSubscribeIris,
+		login: LoginIris,
 		cta4: Cta4Iris,
 		blog: BlogIris,
 		"step-2": Step2Iris,

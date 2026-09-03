@@ -1,0 +1,209 @@
+{
+	"slug": "login",
+	"code": "login",
+	"name": "Login",
+	"scope": "webpage",
+	"category": "block",
+	"website_type": ["b2b", "b2c", "dropshipping", "fulfilment"],
+	"icon": ["fal", "user"],
+	"is_in_test": false,
+	"data": {
+		"fieldValue": {
+			"container": {
+				"properties": {
+					"background": {
+						"type": "color",
+						"color": "rgba(255, 255, 255, 1)",
+						"image": {
+							"original": null
+						}
+					},
+					"text": {
+						"desktop": {
+							"color": "rgba(55, 65, 81, 1)",
+							"fontSize": null,
+							"fontFamily": "Inter, sans-serif"
+						}
+					},
+					"padding": {
+						"unit": "px",
+						"top": {
+							"value": 48
+						},
+						"right": {
+							"value": 24
+						},
+						"bottom": {
+							"value": 48
+						},
+						"left": {
+							"value": 24
+						}
+					}
+				}
+			},
+			"login": {
+				"title": "<h3 style=\"text-align: center\">Login form</h3>",
+				"username": {
+					"label": "E-mail",
+					"placeholder": ""
+				},
+				"password": {
+					"label": "Password",
+					"placeholder": ""
+				},
+				"forgot_password": {
+					"text": "Forgot password?"
+				},
+				"remember": {
+					"visible": false,
+					"text": "Remember me"
+				},
+				"button": {
+					"text": "Log in",
+					"container": {
+						"properties": {
+							"text": {
+								"desktop": {
+									"color": "rgba(255, 255, 255, 1)",
+									"fontFamily": "Inter, sans-serif"
+								}
+							},
+							"padding": {
+								"unit": "px",
+								"top": {
+									"value": 10
+								},
+								"right": {
+									"value": 15
+								},
+								"bottom": {
+									"value": 10
+								},
+								"left": {
+									"value": 15
+								}
+							},
+							"background": {
+								"desktop": {
+									"type": "color",
+									"color": "#4B5563",
+									"image": {
+										"original": null
+									}
+								}
+							}
+						}
+					}
+				},
+				"help": "<p style=\"text-align: center\">Need Help Logging in? Hit the chat button or call us:</p><p style=\"text-align: center\"><strong>+44 (0) 1143 830 344</strong></p>"
+			},
+			"register": {
+				"title": "<h3 style=\"text-align: center\">Don't have an account yet?</h3>",
+				"button": {
+					"text": "CREATE ACCOUNT",
+					"container": {
+						"properties": {
+							"text": {
+								"desktop": {
+									"color": "rgba(55, 65, 81, 1)",
+									"fontFamily": "Inter, sans-serif"
+								}
+							},
+							"padding": {
+								"unit": "px",
+								"top": {
+									"value": 10
+								},
+								"right": {
+									"value": 20
+								},
+								"bottom": {
+									"value": 10
+								},
+								"left": {
+									"value": 20
+								}
+							},
+							"background": {
+								"desktop": {
+									"type": "color",
+									"color": "rgba(255, 255, 255, 1)",
+									"image": {
+										"original": null
+									}
+								}
+							},
+							"border": {
+								"desktop": {
+									"unit": "px",
+									"color": "rgba(55, 65, 81, 1)",
+									"rounded": {
+										"unit": "px",
+										"topleft": {
+											"value": 2
+										},
+										"topright": {
+											"value": 2
+										},
+										"bottomleft": {
+											"value": 2
+										},
+										"bottomright": {
+											"value": 2
+										}
+									},
+									"top": {
+										"value": 1
+									},
+									"right": {
+										"value": 1
+									},
+									"bottom": {
+										"value": 1
+									},
+									"left": {
+										"value": 1
+									}
+								}
+							}
+						}
+					}
+				},
+				"note": "<p style=\"text-align: center\"><em>*For trade customers, crafts and resellers only.</em></p>",
+				"description": "<p>Register and get <strong>10% OFF</strong> on your first order and also:</p>",
+				"benefits": {
+					"text": "<ul><li><p>View Bulk and White Label Prices.</p></li><li><p>See The Available Stock.</p></li><li><p>See What Products are Now on Offer.</p></li><li><p>Crate Your Favourite Product List.</p></li><li><p>Receive Exclusive Offers.</p></li><li><p>Get The Back In Stock Notification.</p></li><li><p>Choose your White Label Products</p></li></ul>",
+					"container": {
+						"properties": {
+							"background": {
+								"desktop": {
+									"type": "color",
+									"color": "#F3F4F6",
+									"image": {
+										"original": null
+									}
+								}
+							},
+							"padding": {
+								"unit": "px",
+								"top": {
+									"value": 16
+								},
+								"right": {
+									"value": 16
+								},
+								"bottom": {
+									"value": 16
+								},
+								"left": {
+									"value": 16
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
