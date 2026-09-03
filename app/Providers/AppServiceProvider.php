@@ -228,6 +228,7 @@ class AppServiceProvider extends ServiceProvider
                 'CustomerSalesChannel'             => 'App\Models\Dropshipping\CustomerSalesChannel',
                 'MagentoUser'                      => 'App\Models\Dropshipping\MagentoUser',
                 'AllegroUser'                      => 'App\Models\Dropshipping\AllegroUser',
+                'WixUser'                          => 'App\Models\Dropshipping\WixUser',
 
                 // Fulfilment
                 'StoredItemAudit'                  => 'App\Models\Fulfilment\StoredItemAudit',

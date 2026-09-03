@@ -14,6 +14,7 @@ use App\Actions\Dropshipping\Ebay\DeleteEbayUser;
 use App\Actions\Dropshipping\Magento\DeleteMagentoUser;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
+use App\Actions\Dropshipping\Wix\User\DeleteWixUser;
 use App\Actions\Dropshipping\WooCommerce\DeleteWooCommerceUser;
 use App\Actions\OrgAction;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
@@ -50,6 +51,7 @@ class CloseCustomerSalesChannel extends OrgAction
                 PlatformTypeEnum::EBAY => DeleteEbayUser::run($customerSalesChannel->user),
                 PlatformTypeEnum::TIKTOK => DeleteTiktokUser::run($customerSalesChannel->user),
                 PlatformTypeEnum::ALLEGRO => DeleteAllegroUser::run($customerSalesChannel->user),
+                PlatformTypeEnum::WIX => DeleteWixUser::run($customerSalesChannel->user),
                 default => null
             };
         }

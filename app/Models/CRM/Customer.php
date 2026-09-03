@@ -27,6 +27,7 @@ use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\AllegroUser;
+use App\Models\Dropshipping\WixUser;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -153,6 +154,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, Product> $allExclusiveProducts
  * @property-read Collection<int, AllegroUser> $allegroUsers
+ * @property-read Collection<int, WixUser> $wixUsers
  * @property-read Collection<int, AmazonUser> $amazonUsers
  * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -549,6 +551,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function tiktokUsers(): HasMany
     {
         return $this->hasMany(TiktokUser::class);
+    }
+
+    public function wixUsers(): HasMany
+    {
+        return $this->hasMany(WixUser::class);
     }
 
     public function allegroUsers(): HasMany

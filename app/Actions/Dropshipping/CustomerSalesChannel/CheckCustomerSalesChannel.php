@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
+use App\Actions\Dropshipping\Wix\User\CheckWixChannel;
 use App\Actions\Dropshipping\WooCommerce\CheckWooChannel;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -31,6 +32,7 @@ class CheckCustomerSalesChannel extends OrgAction
             PlatformTypeEnum::EBAY => CheckEbayChannel::run($customerSalesChannel->user),
             PlatformTypeEnum::SHOPIFY => CheckShopifyChannel::run($customerSalesChannel),
             PlatformTypeEnum::WOOCOMMERCE => CheckWooChannel::run($customerSalesChannel->user),
+            PlatformTypeEnum::WIX => CheckWixChannel::run($customerSalesChannel->user),
             default => $customerSalesChannel
         };
     }
