@@ -259,6 +259,7 @@ class AppServiceProvider extends ServiceProvider
                 'StockFamily'                      => 'App\Models\Goods\StockFamily',
                 'TradeUnit'                        => 'App\Models\Goods\TradeUnit',
                 'TradeUnitFamily'                  => 'App\Models\Goods\TradeUnitFamily',
+                'TradeUnitTariffCodeOverride'      => 'App\Models\Goods\TradeUnitTariffCodeOverride',
 
 
                 // Helpers

@@ -257,6 +257,8 @@ use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\Goods\StockFamily\UpdateStockFamily;
 use App\Actions\Goods\TradeUnit\AttachTradeUnitsToTradeUnitFamily;
+use App\Actions\Goods\TradeUnit\DeleteTradeUnitTariffCodeOverride;
+use App\Actions\Goods\TradeUnit\SetTradeUnitTariffCodeOverride;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnitTranslations;
 use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UI\AssignBrandTagsToTradeUnitFamily;
@@ -1440,6 +1442,8 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
     Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inTradeUnit'])->name('tags.detach');
 
     Route::patch('translations', UpdateTradeUnitTranslations::class)->name('translations.update');
+    Route::patch('tariff-code-override/{organisation:id}', SetTradeUnitTariffCodeOverride::class)->name('tariff_code_override.update')->withoutScopedBindings();
+    Route::delete('tariff-code-override/{organisation:id}', DeleteTradeUnitTariffCodeOverride::class)->name('tariff_code_override.delete')->withoutScopedBindings();
 
     Route::post('brands/store', [StoreBrand::class, 'inTradeUnit'])->name('brands.store');
     Route::delete('brands/{brand:id}/delete', [DeleteBrand::class, 'inTradeUnit'])->name('brands.delete')->withoutScopedBindings();
