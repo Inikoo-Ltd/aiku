@@ -12,6 +12,7 @@ use App\Models\Dispatching\Shipment;
 use App\Models\Dropshipping\WixUser;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Sentry;
 
 class FulfilOrderToWix extends RetinaAction
@@ -53,8 +54,8 @@ class FulfilOrderToWix extends RetinaAction
                     'shippingProvider' => $shipment->shipper?->trade_as ?: 'other'
                 ];
 
-                if($shipment->combined_label_url) {
-                    $fulfillment['trackingInfo']['trackingLink'] = $shipment->combined_label_url;
+                if(Arr::first($shipment->tracking_urls)) {
+                    $fulfillment['trackingInfo']['trackingLink'] = Arr::first($shipment->tracking_urls);
                 }
             }
 
