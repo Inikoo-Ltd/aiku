@@ -54,6 +54,7 @@ use App\Actions\Dispatching\PickedBay\StorePickedBay;
 use App\Actions\Dispatching\PickedBay\UI\GetPickedBayShowcase;
 use App\Actions\Dispatching\PickedBay\UpdatePickedBay;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
+use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
@@ -569,6 +570,13 @@ test('set remaining quantity to not picked (2nd picking)', function (Picking $pi
         ->and(intval($picking->deliveryNoteItem->quantity_picked))->toBe(5)
         ->and(intval($picking->deliveryNoteItem->quantity_not_picked))->toBe(10)
         ->and($picking->deliveryNoteItem->is_handled)->toBeTrue();
+
+    $order       = $picking->deliveryNote->orders()->first()->refresh();
+    $transaction = $picking->deliveryNoteItem->transaction;
+    $notPicked   = ShowOrder::make()->getOrderBoxStats($order)['products']['not_picked'];
+    expect($order->state)->toBe(OrderStateEnum::HANDLING)
+        ->and($notPicked['amount'])->toBe(round(10 * $transaction->net_amount / $transaction->quantity_ordered * (1 + $order->tax_amount / $order->net_amount), 2))
+        ->and($notPicked['expected_return'])->toBe(round(max(0, $order->payment_amount - ($order->total_amount - $notPicked['amount'])), 2));
 
     $picking->refresh();
 

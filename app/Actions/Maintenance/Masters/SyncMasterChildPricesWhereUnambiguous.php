@@ -22,6 +22,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 /**
  * Glues shop prices back to their master, but only where there is nothing to interpret.
@@ -197,6 +198,7 @@ class SyncMasterChildPricesWhereUnambiguous
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         ini_set('memory_limit', '2G');
         DB::connection()->disableQueryLog();
 

@@ -1741,6 +1741,15 @@ test('UI hr staff chat analytics and conversation scoped to organisation', funct
     $response = get(route('grp.org.hr.dashboard', [$organisation->slug]));
     $response->assertInertia(fn (AssertableInertia $page) => $page->where('stats.5.name', 'Staff chat')->where('stats.5.stat', 3));
 
+    $response = get(route('grp.org.hr.dashboard', [$organisation->slug, 'show' => 'absent']));
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('show', 'absent')
+        ->where('attendanceStats.4.key', 'absent')
+        ->where('attendanceStats.4.route.parameters.show', 'absent')
+        ->has('people'));
+    $props = $response->inertiaProps();
+    expect(count($props['people']))->toBe($props['attendanceStats'][4]['stat']);
+
     $response = get(route('grp.org.hr.staff_chat.index', [$organisation->slug]));
     $response->assertInertia(function (AssertableInertia $page) use ($organisation) {
         $page

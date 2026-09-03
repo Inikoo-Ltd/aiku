@@ -15,6 +15,9 @@ use App\Actions\Billables\Service\UpdateService;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
+use Illuminate\Support\Facades\DB;
+use App\Actions\Iris\Catalogue\IndexIrisCatalogue;
+use App\Actions\Catalogue\Collection\AttachModelToCollection;
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Product\HydrateProducts;
@@ -651,12 +654,14 @@ test('update collection', function ($collection) {
     expect($collection->name)->not->toBe('Updated Collection Name');
 
     $collectionData = [
+        'code'        => 'updated-code',
         'name'        => 'Updated Collection Name',
         'description' => 'Updated Collection Description',
     ];
     $collection     = UpdateCollection::make()->action($collection, $collectionData);
 
-    expect($collection->name)->toBe('Updated Collection Name');
+    expect($collection->name)->toBe('Updated Collection Name')
+        ->and($collection->code)->toBe('updated-code');
 
     return $collection;
 })->depends('create collection');
@@ -1162,4 +1167,87 @@ test('noise audit purge deletes flag only audits and keeps real history', functi
     expect($deleted)->toBe(3)
         ->and(DB::table('audits')->whereIn('auditable_id', [989001, 989004, 989005])->exists())->toBeFalse()
         ->and(DB::table('audits')->whereIn('auditable_id', [989002, 989003, 989006])->count())->toBe(3);
+});
+
+test('retina new arrivals hide exclusive products from other customers and families off the website', function () {
+    list($organisation, $user, $shop) = createShop();
+
+    $newCustomer = fn () => \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $shop,
+        \App\Models\CRM\Customer::factory()->definition(),
+    );
+    $customerA = $newCustomer();
+    $customerB = $newCustomer();
+
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+    DB::table('products')->where('id', $product->id)->update([
+        'price'             => 10,
+        'is_for_sale'       => true,
+        'is_minion_variant' => false,
+        'is_in_website'     => true,
+        'state'             => ProductStateEnum::ACTIVE->value,
+        'status'            => \App\Enums\Catalogue\Product\ProductStatusEnum::FOR_SALE->value,
+    ]);
+    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
+
+    $codesFor = fn (\App\Models\CRM\Customer $customer) => collect(
+        \App\Actions\Retina\Ecom\NewArrival\UI\IndexRetinaEcomNewArrivals::make()->handle($customer)->items()
+    )->pluck('code');
+
+    expect($codesFor($customerA))->toContain($product->code)
+        ->and($codesFor($customerB))->toContain($product->code);
+
+    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => false]);
+    expect($codesFor($customerA))->not->toContain($product->code);
+    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
+
+    \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($product, [
+        'customer_ids' => [$customerA->id],
+    ]);
+    DB::table('products')->where('id', $product->id)->update(['is_for_sale' => true, 'is_in_website' => true, 'status' => \App\Enums\Catalogue\Product\ProductStatusEnum::FOR_SALE->value]);
+
+    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
+    expect($codesFor($customerA))->toContain($product->code)
+        ->and($codesFor($customerB))->not->toContain($product->code);
+});
+
+test('iris collection lists the product that owns a member product webpage', function () {
+    list($organisation, $user, $shop) = createShop();
+    $website = createWebsite($shop);
+
+    createProduct($shop);
+    $bulk   = $shop->products()->orderBy('id')->first();
+    $sample = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+
+    $webpage = StoreProductWebpage::make()->action($sample);
+    DB::table('products')->whereIn('id', [$bulk->id, $sample->id])->update([
+        'is_for_sale' => true,
+        'state'       => ProductStateEnum::ACTIVE->value,
+        'webpage_id'  => $webpage->id,
+    ]);
+
+    $collection = StoreCollection::make()->action($shop, [
+        'code'        => 'Oils',
+        'name'        => 'Oils',
+        'description' => 'Oils',
+    ]);
+    AttachModelToCollection::make()->action($collection, $bulk);
+
+    $request = \Lorisleiva\Actions\ActionRequest::createFrom(request());
+    $request->merge(['website' => $website]);
+    $listed = fn () => collect(IndexIrisCatalogue::make()->initialisation($request)->handle([
+        'scope'      => 'product',
+        'parent'     => 'collection',
+        'parent_key' => $collection->id,
+    ])->items())->pluck('code');
+
+    expect($listed()->all())->toBe([$sample->code]);
+
+    AttachModelToCollection::make()->action($collection, $sample);
+
+    expect($listed()->all())->toBe([$sample->code]);
 });

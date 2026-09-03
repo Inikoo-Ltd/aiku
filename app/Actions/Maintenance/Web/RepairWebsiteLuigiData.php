@@ -19,6 +19,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairWebsiteLuigiData
 {
@@ -85,6 +86,7 @@ class RepairWebsiteLuigiData
      */
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->argument('website')) {
             $website = Website::find($command->argument('website'));
             $this->handle($website, $command);

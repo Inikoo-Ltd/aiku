@@ -13,6 +13,7 @@ use App\Actions\Traits\WithFixedAddressActions;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairOrdersCountryData
 {
@@ -44,6 +45,7 @@ class RepairOrdersCountryData
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $count = Order::count();
 
         $bar = $command->getOutput()->createProgressBar($count);

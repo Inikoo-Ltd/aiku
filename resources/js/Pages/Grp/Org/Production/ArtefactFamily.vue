@@ -10,6 +10,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableArtefacts from "@/Components/Tables/Grp/Org/Production/TableArtefacts.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import ArtisanAssignments from "@/Components/Production/ArtisanAssignments.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
 import { computed, ref } from "vue"
@@ -23,6 +24,7 @@ const props = defineProps<{
     artefacts?: object
     history?: object
     move_to_family?: object
+    artisans: object
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -37,6 +39,7 @@ const component = computed(() => ({
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <ArtisanAssignments :data="artisans" />
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :moveToFamily="move_to_family" />
 </template>

@@ -12,6 +12,7 @@ use App\Actions\HumanResources\Employee\SetEmployeePin;
 use App\Models\HumanResources\Employee;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairEmployeePins
 {
@@ -31,6 +32,7 @@ class RepairEmployeePins
      */
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $repaired = 0;
         $seen     = [];
 

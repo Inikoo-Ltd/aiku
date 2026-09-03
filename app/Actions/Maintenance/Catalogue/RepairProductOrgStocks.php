@@ -16,6 +16,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairProductOrgStocks
 {
@@ -114,6 +115,7 @@ class RepairProductOrgStocks
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         if ($command->argument('type') == 'Product') {
             $subject = Product::where('slug', $command->argument('slug'))->firstOrFail();
         } else {

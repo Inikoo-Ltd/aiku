@@ -98,6 +98,7 @@ class StoreJobOrder extends OrgAction
 
         return [
             'customer_notes'  => ['sometimes','nullable','string'],
+            'employee_id'    => ['sometimes', 'nullable', Rule::exists('employees', 'id')->where('organisation_id', $this->organisation->id)],
             'reference'       => ['sometimes', 'nullable', 'string', 'max:64'],
             'state'           => ['sometimes', Rule::enum(JobOrderStateEnum::class)],
             'date'            => ['sometimes', 'nullable', 'date'],

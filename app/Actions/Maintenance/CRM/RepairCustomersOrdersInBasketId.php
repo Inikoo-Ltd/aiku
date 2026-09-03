@@ -16,6 +16,7 @@ use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairCustomersOrdersInBasketId
 {
@@ -47,6 +48,7 @@ class RepairCustomersOrdersInBasketId
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->argument('customer')) {
             $customer = Customer::find($command->argument('customer'));
             $this->handle($customer, $command);

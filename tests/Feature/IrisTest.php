@@ -376,3 +376,25 @@ test('it purges a url in cloudflare for both apex and www', function () {
         ];
     });
 });
+
+test('iris error pages carry the ziggy route list so the search bar can build urls', function () {
+    $originalRequest = app('request');
+    $request         = Request::create('http://'.$this->website->domain.'/no-such-page', 'GET');
+    app()->instance('request', $request);
+    app()->detectEnvironment(fn () => 'production');
+
+    try {
+        $response = app(\App\Exceptions\Handler::class)->render($request, new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException());
+    } finally {
+        app()->detectEnvironment(fn () => 'testing');
+        app()->instance('request', $originalRequest);
+    }
+
+    preg_match('/data-page="([^"]+)"/', $response->getContent(), $matches);
+    $page = json_decode(html_entity_decode($matches[1], ENT_QUOTES), true);
+
+    expect($response->getStatusCode())->toBe(404)
+        ->and($page['component'])->toBe('Errors/Error')
+        ->and($page['props']['ziggy']['routes'])->toHaveKey('iris.json.search.catalogue')
+        ->and($page['props']['ziggy']['location'])->toBe('http://'.$this->website->domain.'/no-such-page');
+});

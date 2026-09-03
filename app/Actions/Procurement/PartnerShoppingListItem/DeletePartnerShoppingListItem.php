@@ -12,6 +12,8 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\PartnerShoppingListItem;
+use App\Models\SysAdmin\Organisation;
+use App\Models\Procurement\OrgPartner;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -38,9 +40,9 @@ class DeletePartnerShoppingListItem extends OrgAction
         return $deleted;
     }
 
-    public function asController(PartnerShoppingListItem $partnerShoppingListItem, ActionRequest $request): bool
+    public function asController(Organisation $organisation, OrgPartner $orgPartner, PartnerShoppingListItem $partnerShoppingListItem, ActionRequest $request): bool
     {
-        $this->initialisation($partnerShoppingListItem->organisation, $request);
+        $this->initialisation($organisation, $request);
 
         return $this->handle($partnerShoppingListItem);
     }

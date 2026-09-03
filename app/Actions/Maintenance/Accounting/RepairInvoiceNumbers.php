@@ -16,6 +16,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Helpers\SerialReference;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairInvoiceNumbers
 {
@@ -48,6 +49,7 @@ class RepairInvoiceNumbers
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $shop = Shop::find($command->argument('shopID'));
 
 

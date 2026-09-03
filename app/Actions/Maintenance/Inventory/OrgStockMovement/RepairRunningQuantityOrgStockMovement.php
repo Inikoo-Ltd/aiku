@@ -18,6 +18,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
 {
@@ -57,6 +58,7 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $orgStockSlug = $command->option('org_stock_slug');
         $organisationSlug = $command->option('organisation');
         $organisation = null;

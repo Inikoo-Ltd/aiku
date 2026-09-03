@@ -16,6 +16,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairUnRelatedPortfolioWooCommerce
 {
@@ -63,6 +64,7 @@ class RepairUnRelatedPortfolioWooCommerce
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $customerSalesChannelSlug = $command->argument('customerSalesChannel');
 
         if (!blank($customerSalesChannelSlug)) {

@@ -20,6 +20,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Actions\Traits\WithOrganisationSource;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class GetTradeUnitsCountryOriginFromAurora
 {
@@ -156,6 +157,7 @@ class GetTradeUnitsCountryOriginFromAurora
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         if ($command->argument('trade_unit')) {
             $tradeUnit = TradeUnit::where('slug', $command->argument('trade_unit'))->firstOrFail();
             $this->handle($tradeUnit, $command, $command->option('dry-run'));

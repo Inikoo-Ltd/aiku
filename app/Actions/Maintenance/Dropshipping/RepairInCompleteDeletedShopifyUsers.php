@@ -15,6 +15,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairInCompleteDeletedShopifyUsers
 {
@@ -34,6 +35,7 @@ class RepairInCompleteDeletedShopifyUsers
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $shopifyUsers = ShopifyUser::whereHas('customerSalesChannel', function ($query) {
             $query->whereNotNull('closed_at');
         })->get();

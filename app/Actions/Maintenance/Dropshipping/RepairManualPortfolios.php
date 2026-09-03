@@ -14,6 +14,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairManualPortfolios
 {
@@ -37,6 +38,7 @@ class RepairManualPortfolios
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
         $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)->get();
 

@@ -14,6 +14,7 @@ use App\Models\GoodsIn\Sowing;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class MigratePickingReturnsToSowing
 {
@@ -79,6 +80,7 @@ class MigratePickingReturnsToSowing
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $dryRun = (bool)$command->option('dry-run');
         $limit  = $command->option('limit') ? (int)$command->option('limit') : null;
 

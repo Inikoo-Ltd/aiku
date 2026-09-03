@@ -65,6 +65,17 @@ use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
 use App\Actions\Production\Production\StoreProduction;
+use App\Actions\Production\Artefact\StoreArtefact;
+use App\Actions\Production\Artisan\AttachArtisan;
+use App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems;
+use App\Actions\HumanResources\Employee\StoreEmployee;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
+use App\Models\HumanResources\Employee;
+use App\Models\Production\Artefact;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
 use App\Models\Production\Production;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
 use App\Actions\Production\PartnerShippingList\SendPartnerOrderToWarehouse;
@@ -81,6 +92,7 @@ use App\Actions\Procurement\ShoppingListItem\ResolveDismissShoppingListItem;
 use App\Actions\Procurement\ShoppingListItem\StoreShoppingListItem;
 use App\Actions\Procurement\ShoppingListItem\UpdateShoppingListItem;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Models\Goods\StockHasSupplierProduct;
 use App\Models\Inventory\OrgStockHasOrgSupplierProduct;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -2790,6 +2802,62 @@ describe('partner shopping list', function () {
         $this->buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
     });
 
+    test('submitting an order adds out-of-stock artefact-linked products to the to-produce list', function () {
+        $seller         = $this->orgPartner->partner;
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $production     = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
+        StoreArtefact::make()->action($production, ['code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
+        $sellerOrgStock->update(['quantity_in_locations' => 2]);
+
+        $customer = createCustomer($this->sellerShop);
+        $order    = createOrder($customer, $this->sellerProduct);
+        $order->transactions()->update(['quantity_ordered' => 5]);
+        SubmitOrder::make()->action($order);
+
+        $item = PartnerShoppingListItem::where('transaction_id', $order->transactions()->first()->id)->first();
+        expect($item)->not->toBeNull()
+            ->and($item->partner_organisation_id)->toBeNull()
+            ->and($item->organisation_id)->toBe($seller->id)
+            ->and((float) $item->quantity)->toBe(round(3.0 * (float) $sellerOrgStock->pivot->quantity, 3));
+
+        DispatchOrder::make()->action($order->refresh(), null);
+        expect($item->refresh()->state)->toBe(ShoppingListItemStateEnum::ORDERED);
+    });
+
+    test('to produce lines become one job order per artisan', function () {
+        $seller         = $this->orgPartner->partner;
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $production     = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
+        $artefact = Artefact::where('production_id', $production->id)->where('org_stock_id', $sellerOrgStock->id)->first()
+            ?? StoreArtefact::make()->action($production, ['code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
+
+        $employeeData = Employee::factory()->make(['organisation_id' => $seller->id])->toArray();
+        $employeeData['worker_number']   = 'W'.rand(1000, 9999);
+        $employeeData['alias']           = 'Alias '.rand(1000, 9999);
+        $employeeData['type']            = EmployeeTypeEnum::EMPLOYEE;
+        $employeeData['employment_type'] = EmploymentTypeEnum::FULL_TIME;
+        $employeeData['state']           = EmployeeStateEnum::WORKING;
+        $artisan = StoreEmployee::make()->action($seller, $employeeData);
+        AttachArtisan::make()->action($artefact, ['employee_id' => $artisan->id]);
+
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 7.5]);
+
+        $result = StoreJobOrdersFromToProduceItems::make()->action($production, [$item->id]);
+
+        expect($result['job_orders'])->toHaveCount(1)
+            ->and($result['skipped'])->toBe([]);
+        $jobOrder = $result['job_orders'][0];
+        expect($jobOrder->employee_id)->toBe($artisan->id)
+            ->and($jobOrder->jobOrderItems()->count())->toBe(1)
+            ->and($jobOrder->jobOrderItems()->first()->quantity)->toBe(8)
+            ->and($item->refresh()->job_order_id)->toBe($jobOrder->id);
+
+        $again = StoreJobOrdersFromToProduceItems::make()->action($production, [$item->id]);
+        expect($again['job_orders'])->toBe([]);
+    });
+
     test('store partner shopping list item denormalises', function () {
         $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 40,
@@ -3064,6 +3132,36 @@ describe('partner shopping list', function () {
 
         expect($withoutCustomer)->not->toContain($this->sellerProduct->id);
     });
+
+    test('update and delete partner shopping list item via http', function () {
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 10,
+        ]);
+
+        actingAs($this->adminGuest->getUser());
+        $this->patch(route('grp.org.procurement.org_partners.show.shopping_list.update', [$this->organisation->slug, $this->orgPartner->id, $item->id]), ['priority' => 'high'])
+            ->assertRedirect();
+        expect($item->refresh()->priority)->toBe(ShoppingListItemPriorityEnum::HIGH);
+
+        $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy', [$this->organisation->slug, $this->orgPartner->id, $item->id]))
+            ->assertRedirect();
+
+        expect(PartnerShoppingListItem::find($item->id))->toBeNull();
+    });
+
+    test('delete all open partner shopping list items keeps items already taken', function () {
+        $open  = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        $taken = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 7]);
+        $taken->update(['state' => ShoppingListItemStateEnum::ORDERED]);
+
+        actingAs($this->adminGuest->getUser());
+        $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy_open', [$this->organisation->slug, $this->orgPartner->id]))
+            ->assertRedirect();
+
+        expect(PartnerShoppingListItem::find($open->id))->toBeNull()
+            ->and(PartnerShoppingListItem::find($taken->id))->not->toBeNull();
+    });
+
 });
 
 describe('partner browse', function () {
@@ -3302,6 +3400,21 @@ test('UI partner shipping list index', function () {
             ->has('title')
             ->has('data');
     });
+});
+
+test('UI to produce list grouped by artisan, family and for', function () {
+    $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
+
+    foreach (['by_artisan' => 'maker', 'by_category' => 'family', 'by_for' => 'buyer_code'] as $routeSuffix => $groupBy) {
+        $this->get(route('grp.org.productions.show.partners.'.$routeSuffix, [$this->organisation->slug, $production->slug]))
+            ->assertInertia(function (AssertableInertia $page) use ($groupBy) {
+                $page
+                    ->component('Org/Production/PartnerShippingList')
+                    ->where('groupBy', $groupBy)
+                    ->has('groups')
+                    ->where('artisanWorkload', fn ($workload) => $groupBy === 'maker' ? $workload !== null : $workload === null);
+            });
+    }
 });
 
 test('partner shopping list org stocks json feed', function () {

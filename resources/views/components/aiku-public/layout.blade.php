@@ -89,6 +89,7 @@
         .posts { list-style: none; margin: 28px 0 0; padding: 0; }
         .posts li { padding: 26px 0; border-top: 1px solid var(--rule); display: grid; grid-template-columns: 140px 1fr; gap: 24px; }
         .posts time { color: var(--muted); font-size: 14px; padding-top: 6px; }
+        .posts.no-date li { grid-template-columns: 1fr; gap: 6px; }
         .posts h3 { margin: 0 0 6px; font-size: 24px; }
         .posts h3 a { color: var(--ink); }
         .posts h3 a:hover { color: var(--accent); }

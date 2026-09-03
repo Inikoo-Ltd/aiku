@@ -23,6 +23,7 @@ use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMissingFixedWebBlocksInDepartmentsWebpages
 {
@@ -219,6 +220,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->option('webpage_id')) {
             $webpage = Webpage::where('id', $command->option('webpage_id'))->first();
             if ($webpage && $webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {

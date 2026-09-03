@@ -14,6 +14,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Helpers\Snapshot\SnapshotScopeEnum;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairBrokenUnpublishedSnapshot
 {
@@ -255,6 +256,7 @@ class RepairBrokenUnpublishedSnapshot
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         // dd($command->argument('website_id'));
         $websites = Website::when(
             $command->argument('website_id'),

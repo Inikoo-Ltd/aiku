@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class FixAuroraCategoryOffers
 {
@@ -35,6 +36,7 @@ class FixAuroraCategoryOffers
      */
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
 
         $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
 

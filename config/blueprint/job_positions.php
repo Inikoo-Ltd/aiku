@@ -408,11 +408,12 @@ return [
 
         'prod-d' => [
             'code'               => 'prod-d',
-            'name'               => 'Production dispatcher',
+            'name'               => 'Production foreman',
             'scope'              => JobPositionScopeEnum::PRODUCTIONS,
             'team'               => 'production',
             'department'         => 'production',
             'roles'              => [
+                RolesEnum::MANUFACTURING_LINE_MANAGER,
             ],
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,
@@ -425,6 +426,20 @@ return [
             'team'               => 'production',
             'department'         => 'production',
             'roles'              => [
+                RolesEnum::MANUFACTURING_ORCHESTRATOR,
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+            ]
+        ],
+        'prod-p' => [
+            'code'               => 'prod-p',
+            'name'               => 'Mix preparer',
+            'scope'              => JobPositionScopeEnum::PRODUCTIONS,
+            'team'               => 'production',
+            'department'         => 'production',
+            'roles'              => [
+                RolesEnum::MANUFACTURING_PREPARER,
             ],
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,
@@ -436,9 +451,8 @@ return [
             'scope'      => JobPositionScopeEnum::PRODUCTIONS,
             'team'       => 'production',
             'department' => 'production',
-
-            'roles'              => [
-
+            'roles'      => [
+                RolesEnum::MANUFACTURING_OPERATOR,
             ],
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,

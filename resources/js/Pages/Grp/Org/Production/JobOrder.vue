@@ -39,13 +39,18 @@ const props = defineProps<{
         state_label: string
         date: string | null
         public_notes: string | null
+        employee_id: number | null
+        artisan: string | null
     }
+    artisan_options: { id: number, name: string }[]
+    update_route: null | { name: string, parameters: object }
     items: {
         id: number
         artefact_code: string
         artefact_name: string
         quantity: number
         produced_quantity: number
+        waiting_for: { code: string, needed: number, on_hand: number }[]
         tasks: ItemTask[]
     }[]
     artefact_options: { id: number, code: string, name: string, has_recipe: boolean, recommended_batch_size: number | null }[]
@@ -54,6 +59,11 @@ const props = defineProps<{
     receive_route: null | { name: string, parameters: object }
     locations_fetch_route: null | { name: string, parameters: object }
 }>()
+
+function setArtisan(value: string) {
+    if (!props.update_route) return
+    router.patch(route(props.update_route.name, props.update_route.parameters), { employee_id: value === '' ? null : Number(value) }, { preserveScroll: true })
+}
 
 function confirmJobOrder() {
     if (!props.confirm_route) return
@@ -150,6 +160,14 @@ function receiveIntoStock() {
         <div class="flex items-center gap-4 text-sm text-gray-600 mb-6">
             <span class="rounded-full bg-gray-100 border border-gray-200 px-3 py-1 font-medium">{{ job_order.state_label }}</span>
             <span v-if="job_order.date">{{ useFormatTime(job_order.date) }}</span>
+            <label class="flex items-center gap-1.5">
+                <span class="text-gray-400">{{ trans('For') }}</span>
+                <select v-if="update_route" :value="job_order.employee_id ?? ''" class="rounded border-gray-300 py-0.5 text-sm" @change="setArtisan(($event.target as HTMLSelectElement).value)">
+                    <option value="">{{ trans('Anyone') }}</option>
+                    <option v-for="option in artisan_options" :key="option.id" :value="option.id">{{ option.name }}</option>
+                </select>
+                <span v-else class="font-medium">{{ job_order.artisan ?? trans('Anyone') }}</span>
+            </label>
             <span v-if="job_order.public_notes" class="truncate">{{ job_order.public_notes }}</span>
             <button
                 v-if="confirm_route"
@@ -178,6 +196,9 @@ function receiveIntoStock() {
                 <div class="tabular-nums text-gray-700">× {{ item.quantity }}</div>
             </div>
 
+            <div v-if="item.waiting_for.length" class="mt-2 text-sm text-amber-600">
+                {{ trans('Waiting for mix') }}: <span v-for="mix in item.waiting_for" :key="mix.code" class="mr-2">{{ mix.code }} ({{ mix.on_hand }} / {{ mix.needed }})</span>
+            </div>
             <div v-if="!item.tasks.length" class="mt-2 text-sm text-amber-600">
                 {{ trans('This artefact has no recipe, no tasks were generated') }}
             </div>

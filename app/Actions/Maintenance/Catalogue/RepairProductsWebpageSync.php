@@ -14,6 +14,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairProductsWebpageSync
 {
@@ -43,6 +44,7 @@ class RepairProductsWebpageSync
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
 
         $count = Product::where('shop_id', $shop->id)

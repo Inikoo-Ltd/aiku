@@ -114,6 +114,14 @@ class SeedJobPositions extends Seeder
                         }
                     }
                     break;
+                case 'Production':
+                    foreach ($organisation->productions()->get() as $production) {
+                        $roleName = RolesEnum::getRoleName($case->value, $production);
+                        if ($role = new Role()->where('name', $roleName)->first()) {
+                            $roles[] = $role->id;
+                        }
+                    }
+                    break;
                 case 'Fulfilment':
                     /** @var Shop $shop */
                     foreach ($organisation->shops()->where('type', ShopTypeEnum::FULFILMENT)->get() as $shop) {

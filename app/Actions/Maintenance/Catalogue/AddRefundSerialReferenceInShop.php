@@ -13,6 +13,7 @@ use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class AddRefundSerialReferenceInShop
 {
@@ -40,6 +41,7 @@ class AddRefundSerialReferenceInShop
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         try {
             $this->handle();
         } catch (Throwable $e) {

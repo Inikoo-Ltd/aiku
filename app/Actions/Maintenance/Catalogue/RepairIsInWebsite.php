@@ -13,6 +13,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairIsInWebsite
 {
@@ -62,6 +63,7 @@ class RepairIsInWebsite
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $this->handle($command);
     }
 }

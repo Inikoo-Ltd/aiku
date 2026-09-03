@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Inventory\LocationOrgStockHistory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairLocationOrgStockHistoriesOrganisationStockHistoryId
 {
@@ -31,6 +32,7 @@ class RepairLocationOrgStockHistoriesOrganisationStockHistoryId
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $command->info($command->getName());
 
         $count = DB::table('location_org_stock_histories')

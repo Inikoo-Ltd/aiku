@@ -12,6 +12,7 @@ use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 /**
  * Both price and rrp are stored per outer, so their ratio does not depend on units and a
@@ -78,6 +79,7 @@ class RepairMasterProductSpoiledRRP extends OrgAction
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $ratio = (float) $command->option('ratio');
         $fix   = (bool) $command->option('fix');
 

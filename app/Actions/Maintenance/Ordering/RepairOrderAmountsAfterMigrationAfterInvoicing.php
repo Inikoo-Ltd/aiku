@@ -23,6 +23,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairOrderAmountsAfterMigrationAfterInvoicing
 {
@@ -129,6 +130,7 @@ class RepairOrderAmountsAfterMigrationAfterInvoicing
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $order = Order::where('slug', $command->argument('order'))->firstOrFail();
 
 

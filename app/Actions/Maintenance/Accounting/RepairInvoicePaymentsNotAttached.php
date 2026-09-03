@@ -17,6 +17,7 @@ use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 /**
  * An invoice whose order carries the payments but which has no payment of its own reads
@@ -41,6 +42,7 @@ class RepairInvoicePaymentsNotAttached
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $apply    = $command->option('apply');
         $repaired = 0;
         $skipped  = [];

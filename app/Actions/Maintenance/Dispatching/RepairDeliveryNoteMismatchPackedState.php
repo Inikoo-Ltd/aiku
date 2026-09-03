@@ -9,6 +9,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairDeliveryNoteMismatchPackedState
 {
@@ -34,6 +35,7 @@ class RepairDeliveryNoteMismatchPackedState
      */
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->argument('delivery_note')) {
             $deliveryNote = DeliveryNote::where('state', DeliveryNoteStateEnum::PACKED)->where('slug', $command->argument('delivery_note'))
                 ->firstOrFail();

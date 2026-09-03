@@ -14,6 +14,7 @@ use App\Models\Dropshipping\Portfolio;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairSellingPriceInProductPortfolios
 {
@@ -38,6 +39,7 @@ class RepairSellingPriceInProductPortfolios
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->argument('portfolio')) {
             $portfolio = Portfolio::find($command->argument('portfolio'));
             $this->handle($portfolio);

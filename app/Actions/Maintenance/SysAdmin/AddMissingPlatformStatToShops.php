@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class AddMissingPlatformStatToShops
 {
@@ -29,6 +30,7 @@ class AddMissingPlatformStatToShops
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $count = Shop::count();
 
         $bar = $command->getOutput()->createProgressBar($count);

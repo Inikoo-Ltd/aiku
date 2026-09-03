@@ -93,6 +93,7 @@ class StoreRawMaterial extends OrgAction
                 Rule::exists('org_stocks', 'id')->where('organisation_id', $this->organisation->id),
             ],
             'quantity_on_location' => ['sometimes', 'nullable', 'numeric'],
+            'artefact_id'      => ['sometimes', 'nullable', Rule::exists('artefacts', 'id')->where('organisation_id', $this->organisation->id)],
             'stock_status'     => ['sometimes', Rule::enum(RawMaterialStockStatusEnum::class)],
             'created_at'       => ['sometimes', 'nullable', 'date'],
             'source_id'        => ['sometimes', 'nullable', 'string'],

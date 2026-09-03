@@ -23,6 +23,7 @@ const props = defineProps<{
         }
         close_route: { name: string, parameters: object }
         band_feedback: null | {
+            currency_symbol: string
             band0_hourly_rate: number
             bands: { code: string, name: string | null, hourly_rate: number, target_units_per_hour: number }[]
             session: { started_at: string, break_minutes: number, quantity_made: number }
@@ -171,7 +172,7 @@ function closeSession() {
 
             <div v-if="nextBand" class="mt-2 text-center text-sm text-gray-600">
                 {{ trans('Next') }}: {{ trans('band') }} {{ nextBand.code }} {{ trans('at') }} {{ nextBand.target_units_per_hour }} {{ trans('units/h') }}
-                — +£{{ (nextBand.hourly_rate - currentBandRate).toFixed(2) }}/{{ trans('hour') }}
+                — +{{ session.band_feedback.currency_symbol }}{{ (nextBand.hourly_rate - currentBandRate).toFixed(2) }}/{{ trans('hour') }}
             </div>
         </div>
     </div>

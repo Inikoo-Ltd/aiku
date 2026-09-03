@@ -12,6 +12,7 @@ use App\Actions\CRM\Customer\ForceDeleteCustomer;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class DeleteFakeCustomers
 {
@@ -30,6 +31,7 @@ class DeleteFakeCustomers
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
 
         $value1 = 'https';
 

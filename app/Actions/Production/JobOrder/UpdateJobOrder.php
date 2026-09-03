@@ -17,9 +17,9 @@ use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Validation\Rule;
-use Inertia\Inertia;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
-use Symfony\Component\HttpFoundation\Response;
 
 class UpdateJobOrder extends OrgAction
 {
@@ -56,6 +56,7 @@ class UpdateJobOrder extends OrgAction
             'customer_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
             'reference'      => ['sometimes', 'nullable', 'string', 'max:64'],
             'date'           => ['sometimes', 'nullable', 'date'],
+            'employee_id'    => ['sometimes', 'nullable', Rule::exists('employees', 'id')->where('organisation_id', $this->organisation->id)],
         ];
 
         if (!request()->user() instanceof WebUser) {
@@ -93,15 +94,9 @@ class UpdateJobOrder extends OrgAction
         return $this->handle($jobOrder, $this->validatedData);
     }
 
-    public function htmlResponse(JobOrder $jobOrder, ActionRequest $request): Response
+    public function htmlResponse(JobOrder $jobOrder, ActionRequest $request): RedirectResponse
     {
-        $routeName = $request->route()->getName();
-
-        return match ($routeName) {
-            'grp.models.production.job-order.update' => Inertia::location(route('grp.org.productions.show.job-order.show', [
-                'organisation'           => $jobOrder->organisation->slug,
-            ])),
-        };
+        return Redirect::back();
     }
 
     public string $commandSignature = 'job-orders:update {job-order}';

@@ -106,6 +106,7 @@ class PublishWebpage extends OrgAction
         }
 
         $webpage->update($updateData);
+        RecordWebpagePublishHistory::run($webpage, $snapshot);
         if ($webpage->model instanceof Product) {
             ProductHydrateHasLiveWebpage::run($webpage->model);
         }

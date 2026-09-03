@@ -2516,6 +2516,39 @@ describe('calculate order discounts', function () {
         SuspendOffer::run($shopOffer);
     });
 
+    test('shop offer scoped to a collection', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        $nepalCollection = StoreCollection::make()->action($this->shop, ['code' => 'NEPAL', 'name' => 'Made in Nepal']);
+        AttachModelToCollection::run($nepalCollection, $this->product);
+        $emptyCollection = StoreCollection::make()->action($this->shop, ['code' => 'EMPTY', 'name' => 'Empty collection']);
+
+        $shopOffer = StoreShopOffer::run($this->shop, [
+            'type'           => 'quantity',
+            'percentage_off' => 0.3,
+            'duration'       => 'permanent',
+            'start_at'       => now(),
+            'collection_id'  => $nepalCollection->id,
+        ]);
+        $allowance = $shopOffer->refresh()->offerAllowances()->first();
+        expect($shopOffer->code)->toBe('so-'.strtolower($this->shop->code).'-nepal')
+            ->and($allowance->target_type)->toBe(OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION)
+            ->and($allowance->target_id)->toBe($nepalCollection->id);
+
+        CalculateOrderDiscounts::run($order);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(210.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($shopOffer->id);
+
+        $allowance->update(['target_id' => $emptyCollection->id, 'data' => array_merge($allowance->data, ['collection_id' => $emptyCollection->id])]);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        SuspendOffer::run($shopOffer);
+    });
+
     test('department offers: quantity, unconditional and amount thresholds', function () {
         $order       = Order::latest('id')->first();
         $transaction = Transaction::where('order_id', $order->id)->first();

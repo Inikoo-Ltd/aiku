@@ -25,6 +25,14 @@ set('ssh_arguments', [
 
 set('update_code_strategy', 'clone');
 
+if ($gitHttpAuth = getenv('GIT_HTTP_AUTH')) {
+    set('env', [
+        'GIT_CONFIG_COUNT' => '1',
+        'GIT_CONFIG_KEY_0' => 'http.https://github.com/.extraheader',
+        'GIT_CONFIG_VALUE_0' => "AUTHORIZATION: basic $gitHttpAuth",
+    ]);
+}
+
 set('bin/php', function () {
     return '/usr/bin/php8.4';
 });
@@ -572,7 +580,10 @@ task('deploy:cleanup', function () {
     foreach (array_slice(get('releases_list'), $keep) as $release) {
         $path = '{{deploy_path}}/releases/'.$release;
         $busy = trim(run("bash -c 'ls -l /proc/*/cwd 2>/dev/null | grep -c \"$(readlink -f $path)\"' || true"));
-        if ($busy !== '0' && $busy !== '') {
+        // ponytail: Inertia SSR (node/bun) has cwd / but lazy-loads chunks from the release
+        // named on its command line; [r] keeps pgrep from matching this very shell.
+        $ssrBusy = trim(run("bash -c 'pgrep -fc \"[r]eleases/$release/bootstrap/ssr/\"' || true"));
+        if (($busy !== '0' && $busy !== '') || ($ssrBusy !== '0' && $ssrBusy !== '')) {
             writeln("<comment>Keeping release $release: $busy process(es) still running from it.</comment>");
             continue;
         }

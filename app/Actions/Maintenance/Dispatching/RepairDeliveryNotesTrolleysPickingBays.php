@@ -17,6 +17,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dispatching\DeliveryNote;
 use Lorisleiva\Actions\Concerns\AsCommand;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairDeliveryNotesTrolleysPickingBays
 {
@@ -27,6 +28,7 @@ class RepairDeliveryNotesTrolleysPickingBays
 
     public function asCommand(): void
     {
+        Nightwatch::dontSample();
         $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
 
         /** @var DeliveryNote $deliveryNote */

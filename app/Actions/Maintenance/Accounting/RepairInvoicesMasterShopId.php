@@ -14,6 +14,7 @@ use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairInvoicesMasterShopId
 {
@@ -23,6 +24,7 @@ class RepairInvoicesMasterShopId
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $pending = Invoice::whereNull('master_shop_id')->count();
         $command->info("invoices with null master_shop_id: {$pending}");
 

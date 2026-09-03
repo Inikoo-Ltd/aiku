@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Accounting\InvoiceTransaction;
 use App\Models\Ordering\Transaction;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsCommand;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairInvoiceTransactionMarketplaceId
 {
@@ -20,6 +21,7 @@ class RepairInvoiceTransactionMarketplaceId
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $count = Transaction::whereNotNull('marketplace_id')->count();
 
         $progressBar = $command->getOutput()->createProgressBar($count);

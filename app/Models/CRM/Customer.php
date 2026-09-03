@@ -297,6 +297,7 @@ class Customer extends Model implements HasMedia, Auditable
                 'internal_notes',
                 'warehouse_internal_notes',
                 'warehouse_public_notes',
+                'shipping_notes',
                 'created_at'
             ]);
     }

@@ -103,6 +103,22 @@ const reloadPage = () => {
 	}
 }
 
+const handleExpiredLogin = (e: any): boolean => {
+	if (e.response?.status !== 401) {
+		return false
+	}
+
+	errorMsg.value = trans("Your login has expired. Reloading so you can sign in again…")
+	notify({
+		title: trans("Login expired"),
+		text: errorMsg.value,
+		type: "error",
+	})
+	setTimeout(reloadPage, 2500)
+
+	return true
+}
+
 const cancelSuccessAutoClose = () => {
 	if (successAutoCloseTimer) {
 		clearTimeout(successAutoCloseTimer)
@@ -301,6 +317,11 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
 		showSuccessModal.value = true
 		successAutoCloseTimer = setTimeout(reloadPage, 6000)
 	} catch (e: any) {
+		if (handleExpiredLogin(e)) {
+			stopCamera()
+			return
+		}
+
 		notify({
 			title: trans("Failed Scan QR"),
 			text: e.response?.data?.message,
@@ -365,6 +386,10 @@ const submitNotes = async () => {
 
 		reloadPage()
 	} catch (e: any) {
+		if (handleExpiredLogin(e)) {
+			return
+		}
+
 		notify({
 			title: trans("Failed submit notes"),
 			text: e.response?.data?.message,

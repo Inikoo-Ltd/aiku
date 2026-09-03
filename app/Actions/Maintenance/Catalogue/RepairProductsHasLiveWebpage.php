@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairProductsHasLiveWebpage
 {
@@ -27,6 +28,7 @@ class RepairProductsHasLiveWebpage
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $command->info('Repairing Products has_live_webpage');
 
         $query = Product::query();

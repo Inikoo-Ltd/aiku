@@ -72,6 +72,11 @@ class PartnerShoppingListItem extends Model
         ];
     }
 
+    public function jobOrder(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Production\JobOrder::class);
+    }
+
     public function orgPartner(): BelongsTo
     {
         return $this->belongsTo(OrgPartner::class);
