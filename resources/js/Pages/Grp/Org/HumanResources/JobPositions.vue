@@ -6,10 +6,14 @@
 
 <script setup lang="ts">
 import {Head} from '@inertiajs/vue3';
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faClipboardListCheck, faUserHardHat } from '@fal';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import { capitalize } from "@/Composables/capitalize"
 import TableJobPositions from "@/Components/Tables/Grp/Org/HumanResources/TableJobPositions.vue";
 import { PageHeadingTypes } from "@/types/PageHeading";
+
+library.add(faClipboardListCheck, faUserHardHat)
 
 defineProps <{
     pageHead: PageHeadingTypes

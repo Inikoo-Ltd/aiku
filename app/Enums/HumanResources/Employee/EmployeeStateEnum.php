@@ -69,13 +69,13 @@ enum EmployeeStateEnum: string
             'leaving' => [
                 'tooltip' => __('leaving'),
                 'icon'    => 'fal fa-handshake-alt-slash',
-                'class'   => 'animate-pulse',
+                'class'   => 'text-red-500',
 
             ],
             'left'    => [
                 'tooltip' => __('ex-worker'),
                 'icon'    => 'fal fa-handshake-alt-slash',
-                'class'   => 'text-red-500',
+                'class'   => 'text-red-400',
 
             ],
 
