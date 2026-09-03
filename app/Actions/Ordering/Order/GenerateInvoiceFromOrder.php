@@ -180,9 +180,7 @@ class GenerateInvoiceFromOrder extends OrgAction
 
             foreach ($order->payments as $payment) {
                 if ($payment->status == PaymentStatusEnum::SUCCESS) {
-                    $invoice->payments()->attach($payment, [
-                        'amount' => $payment->amount,
-                    ]);
+                    $invoice->payments()->attach($payment);
                 }
             }
             UpdateInvoicePaymentState::run($invoice);
