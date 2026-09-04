@@ -10,6 +10,7 @@ namespace App\Actions\Production\PartnerShippingList\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
+use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -333,7 +334,7 @@ class IndexPartnerShippingList extends OrgAction
             $tab(__('By artisan'), 'grp.org.productions.show.to_produce.by_artisan', 'fa-user-hard-hat'),
             $tab(__('By category'), 'grp.org.productions.show.to_produce.by_category', 'fa-layer-group'),
             $tab(__('By buyer'), 'grp.org.productions.show.to_produce.by_for', 'fa-building'),
-            $tab(__('Mixes'), 'grp.org.productions.show.to_produce.mixes', 'fa-flask'),
+            $tab(__('Mixes'), 'grp.org.productions.show.to_produce.mixes', 'fa-blender-phone'),
         ];
     }
 
@@ -353,9 +354,10 @@ class IndexPartnerShippingList extends OrgAction
                     'subNavigation' => $this->getSubNavigation($request->route()->originalParameters()),
                 ],
                 'groupBy'      => $this->groupBy,
-                'artisanWorkload' => in_array($this->groupBy, ['maker', 'board']) ? $this->getArtisanWorkload() : null,
+                'artisanWorkload' => in_array($this->groupBy, ['maker', 'board', 'mixes']) ? $this->getArtisanWorkload() : null,
                 'groups'       => $this->groupBy && $this->groupBy !== 'mixes' ? $this->getGroups($items) : null,
                 'mixes'        => $this->groupBy === 'mixes' ? GetMixesToPrepare::run($this->production) : null,
+                'mixJobOrders' => $this->groupBy === 'mixes' ? GetMixJobOrders::run($this->production) : null,
                 'data'         => $items,
                 'pickedOrders' => $this->getPickedOrders($this->organisation),
             ]

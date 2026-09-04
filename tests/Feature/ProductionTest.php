@@ -25,6 +25,8 @@ use App\Actions\HumanResources\Employee\GetEmployeeJobPositionsData;
 use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\Role;
 use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
+use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
+use App\Actions\Production\Artefact\SetArtefactAsMix;
 use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
 use App\Actions\HumanResources\Employee\StoreEmployee;
@@ -1843,6 +1845,17 @@ test('an employee can be hidden from and restored to the artisan roster', functi
     expect($production->data['hidden_artisan_ids'])->toBe([]);
 });
 
+test('artefact can be marked as mix and back', function () {
+    $rawMaterial = SetArtefactAsMix::make()->action($this->artefact, true);
+    expect($rawMaterial)->not->toBeNull()
+        ->and($rawMaterial->artefact_id)->toBe($this->artefact->id)
+        ->and($rawMaterial->type)->toBe(RawMaterialTypeEnum::INTERMEDIATE)
+        ->and(SetArtefactAsMix::make()->action($this->artefact, true)->id)->toBe($rawMaterial->id);
+
+    expect(SetArtefactAsMix::make()->action($this->artefact, false))->toBeNull()
+        ->and($rawMaterial->fresh()->artefact_id)->toBeNull();
+});
+
 test('mixes to prepare are derived from open job orders and become job orders', function () {
     $mixArtefact = StoreArtefact::make()->action($this->production, ['code' => 'MIX-BASE', 'name' => 'Bath bomb base mix']);
     $mix         = UpdateRawMaterial::make()->action($this->rawMaterial, ['artefact_id' => $mixArtefact->id, 'quantity_on_location' => 2]);
@@ -1879,6 +1892,13 @@ test('mixes to prepare are derived from open job orders and become job orders', 
     $mixes = collect(GetMixesToPrepare::run($this->production))->keyBy('code');
     expect($mixes->get('MIX-BASE')['in_progress'])->toBe((float) ceil($shortfall))
         ->and($mixes->get('MIX-BASE')['shortfall'])->toBe(0.0);
+
+    $mixJobOrders = GetMixJobOrders::run($this->production);
+    expect($mixJobOrders)->toHaveCount(1)
+        ->and($mixJobOrders[0]['code'])->toBe('MIX-BASE')
+        ->and($mixJobOrders[0]['job_order_id'])->toBe($created[0]->id)
+        ->and($mixJobOrders[0]['job_order_state'])->toBe('in_process')
+        ->and($mixJobOrders[0]['quantity'])->toBe((float) ceil($shortfall));
 
     $missing = GetJobOrderItemMissingMixes::run($jobOrder->jobOrderItems()->first());
     expect($missing)->toHaveCount(1)

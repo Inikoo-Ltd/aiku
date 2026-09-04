@@ -3470,7 +3470,7 @@ test('UI to produce list grouped by artisan, family and for', function () {
                     ->component('Org/Production/PartnerShippingList')
                     ->where('groupBy', $groupBy)
                     ->has('groups')
-                    ->where('artisanWorkload', fn ($workload) => in_array($groupBy, ['maker', 'board']) ? $workload !== null : $workload === null);
+                    ->where('artisanWorkload', fn ($workload) => in_array($groupBy, ['maker', 'board', 'mixes']) ? $workload !== null : $workload === null);
             });
     }
 });

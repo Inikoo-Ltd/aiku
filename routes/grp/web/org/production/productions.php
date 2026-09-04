@@ -18,6 +18,7 @@ use App\Actions\Production\ArtefactFamily\UI\CreateArtefactFamily;
 use App\Actions\Production\ArtefactFamily\UI\EditArtefactFamily;
 use App\Actions\Production\ArtefactFamily\UI\IndexArtefactFamilies;
 use App\Actions\Production\ArtefactFamily\UI\ShowArtefactFamily;
+use App\Actions\Production\Artefact\SetArtefactAsMix;
 use App\Actions\Production\Artefact\UI\EditArtefact;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\Artefact\UI\ShowArtefact;
@@ -94,6 +95,7 @@ Route::prefix('{production}')
                         Route::get('artefacts/create', CreateArtefact::class)->name('artefacts.create');
                         Route::get('artefacts/{artefact}', ShowArtefact::class)->name('artefacts.show');
                         Route::get('artefacts/{artefact}/edit', EditArtefact::class)->name('artefacts.edit');
+                        Route::post('artefacts/{artefact}/mix', SetArtefactAsMix::class)->name('artefacts.mix');
 
                         Route::get('artefact-families', IndexArtefactFamilies::class)->name('artefact_families.index');
                         Route::get('artefact-families/create', CreateArtefactFamily::class)->name('artefact_families.create');

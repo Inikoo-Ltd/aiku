@@ -25,7 +25,7 @@ class StoreJobOrdersForMixes extends OrgAction
      * @param  array<int, array{artefact_id: int, quantity: float|int}>  $lines
      * @return array<int, JobOrder>
      */
-    public function handle(Production $production, array $lines): array
+    public function handle(Production $production, array $lines, ?int $employeeId = null): array
     {
         $artefacts = Artefact::where('production_id', $production->id)
             ->whereIn('id', collect($lines)->pluck('artefact_id'))
@@ -39,7 +39,7 @@ class StoreJobOrdersForMixes extends OrgAction
             }
         }
 
-        return StoreJobOrdersGroupedByArtisan::run($production, $resolved);
+        return StoreJobOrdersGroupedByArtisan::run($production, $resolved, $employeeId);
     }
 
     public function rules(): array
@@ -48,6 +48,7 @@ class StoreJobOrdersForMixes extends OrgAction
             'lines'               => ['required', 'array', 'min:1'],
             'lines.*.artefact_id' => ['required', Rule::exists('artefacts', 'id')->where('production_id', $this->production->id)],
             'lines.*.quantity'    => ['required', 'numeric', 'gt:0'],
+            'employee_id'         => ['sometimes', 'nullable', 'integer', 'exists:employees,id'],
         ];
     }
 
@@ -77,7 +78,7 @@ class StoreJobOrdersForMixes extends OrgAction
     {
         $this->initialisationFromProduction($production, $request);
 
-        return $this->handle($production, $this->validatedData['lines']);
+        return $this->handle($production, $this->validatedData['lines'], $this->validatedData['employee_id'] ?? null);
     }
 
     public function htmlResponse(array $jobOrders): RedirectResponse
