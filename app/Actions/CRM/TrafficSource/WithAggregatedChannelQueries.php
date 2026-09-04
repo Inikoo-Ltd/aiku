@@ -112,7 +112,7 @@ trait WithAggregatedChannelQueries
                 $join->on('p.model_id', '=', 'orders.customer_id')
                     ->where('p.model_type', '=', 'Customer');
 
-                $this->constrainToTouchWindow($join, 'orders.date', $group['window']);
+                $this->constrainToTouchWindow($join, self::ORDER_PLACED_AT, $group['window']);
             })
             ->join('traffic_sources as ts', 'ts.id', '=', 'p.traffic_source_id')
             ->whereIn('orders.shop_id', $group['shop_ids'])
@@ -124,8 +124,8 @@ trait WithAggregatedChannelQueries
                 ->whereColumn('invoices.order_id', 'orders.id')
                 ->where('invoices.in_process', false)))
             ->when($onlyType, fn ($query) => $query->where('ts.type', $onlyType))
-            ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
-            ->when($to, fn ($query) => $query->where('orders.date', '<=', $to));
+            ->when($from, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' >= ?', [$from]))
+            ->when($to, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' <= ?', [$to]));
     }
 
     /**

@@ -64,7 +64,7 @@ class TrafficSourceHydrateCustomers implements ShouldBeUnique
             ->where('p.model_type', 'Customer')
             ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
             ->whereNull('orders.deleted_at')
-            ->tap(fn ($query) => $this->constrainToTouchWindow($query, 'orders.date', $window))
+            ->tap(fn ($query) => $this->constrainToTouchWindow($query, self::ORDER_PLACED_AT, $window))
             ->sum('p.share');
 
         $revenue = DB::table('invoices')

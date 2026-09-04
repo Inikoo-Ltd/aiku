@@ -20,6 +20,13 @@ namespace App\Actions\CRM\TrafficSource;
 trait WithTouchCausality
 {
     /**
+     * When the customer actually placed the order. `orders.date` is when the basket was opened, and
+     * baskets sit for weeks before checkout, so judging by it made a newsletter click that led to a
+     * checkout look like it came after the order and credited nobody.
+     */
+    public const ORDER_PLACED_AT = 'COALESCE(orders.submitted_at, orders.date)';
+
+    /**
      * Rows with no recorded touch date are legacy and are left in rather than silently dropped, so
      * historic attribution does not vanish the day this ships.
      *

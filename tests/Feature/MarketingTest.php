@@ -837,6 +837,65 @@ describe('attribution window', function () {
         expect($channel['revenue'] ?? 0.0)->toBe(0.0);
     });
 
+    it('credits a basket opened before the touch but checked out after it', function () {
+        $customer = $this->customer;
+        $customer->trafficSources()->detach();
+        DB::table('invoices')->where('customer_id', $customer->id)->delete();
+
+        $customer->trafficSources()->attach($this->googleAds->id, [
+            'share'          => 1,
+            'first_touch_at' => now()->subHours(6),
+            'last_touch_at'  => now()->subHours(6),
+        ]);
+
+        $orderId = DB::table('orders')->insertGetId([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $customer->id,
+            'currency_id'     => $this->shop->currency_id,
+            'tax_category_id' => App\Models\Helpers\TaxCategory::firstOrFail()->id,
+            'slug'            => 'ord-'.uniqid(),
+            'state'           => 'dispatched',
+            'status'          => 'settled',
+            'payment_data'    => '{}',
+            'data'            => '{}',
+            'date'            => now()->subDays(30)->toDateTimeString(),
+            'submitted_at'    => now()->subHours(2)->toDateTimeString(),
+            'created_at'      => now()->subDays(30)->toDateTimeString(),
+            'updated_at'      => now()->toDateTimeString(),
+        ]);
+
+        DB::table('invoices')->insert([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $customer->id,
+            'order_id'        => $orderId,
+            'currency_id'     => $this->shop->currency_id,
+            'tax_category_id' => App\Models\Helpers\TaxCategory::firstOrFail()->id,
+            'reference'       => 'INV-'.uniqid(),
+            'slug'            => 'inv-'.uniqid(),
+            'type'            => 'invoice',
+            'net_amount'      => 500,
+            'org_net_amount'  => 500,
+            'grp_net_amount'  => 500,
+            'total_amount'    => 500,
+            'in_process'      => false,
+            'payment_data'    => '{}',
+            'data'            => '{}',
+            'date'            => now()->toDateTimeString(),
+            'created_at'      => now()->toDateTimeString(),
+            'updated_at'      => now()->toDateTimeString(),
+        ]);
+
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
+        $channel  = collect($overview['channels'])->firstWhere('type', $this->googleAds->type);
+
+        expect($channel['revenue'])->toBe(500.0)
+            ->and($channel['orders'])->toBe(1.0);
+    });
+
     it('lets the recording start date be set, so a fix to capture is not judged by what came before it', function () {
         config()->set('marketing.attribution_started_at', '2026-08-07 19:30:00');
 

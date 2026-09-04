@@ -316,8 +316,8 @@ class GetAggregatedMarketingOverview
                 ->whereIn('shop_id', $shopIds)
                 ->whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
                 ->whereNull('deleted_at')
-                ->when($from, fn ($query) => $query->where('date', '>=', $from))
-                ->when($to, fn ($query) => $query->where('date', '<=', $to))
+                ->when($from, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' >= ?', [$from]))
+                ->when($to, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' <= ?', [$to]))
                 ->groupBy('shop_id')
                 ->select('shop_id', DB::raw('COUNT(*) as total'))
                 ->pluck('total', 'shop_id'),

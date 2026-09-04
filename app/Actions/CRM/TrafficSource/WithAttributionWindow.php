@@ -27,7 +27,7 @@ trait WithAttributionWindow
     use WithTouchCausality;
 
     /** Kept identical in the `marketing_attributable_invoices` view. */
-    public const ATTRIBUTABLE_DATE = "COALESCE((SELECT o.date FROM orders o WHERE o.id = invoices.order_id), invoices.date)";
+    public const ATTRIBUTABLE_DATE = "COALESCE((SELECT COALESCE(o.submitted_at, o.date) FROM orders o WHERE o.id = invoices.order_id), invoices.date)";
 
     /**
      * Revenue is judged by when the customer *ordered*, not when the paperwork was raised. Invoicing
@@ -106,8 +106,8 @@ trait WithAttributionWindow
             ->whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
             ->whereNull('orders.deleted_at')
             ->tap($isOutOfScope)
-            ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
-            ->when($to, fn ($query) => $query->where('orders.date', '<=', $to))
+            ->when($from, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' >= ?', [$from]))
+            ->when($to, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' <= ?', [$to]))
             ->groupBy('sc.name')
             ->select('sc.name', DB::raw('COUNT(*) as total'))
             ->pluck('total', 'name');

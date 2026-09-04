@@ -315,14 +315,14 @@ class GetShopMarketingOverview
                 $join->on('p.model_id', '=', 'orders.customer_id')
                     ->where('p.model_type', '=', 'Customer');
 
-                $this->constrainToTouchWindow($join, 'orders.date', $window);
+                $this->constrainToTouchWindow($join, self::ORDER_PLACED_AT, $window);
             })
             ->where('orders.shop_id', $shop->id)
             ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
             ->whereNull('orders.deleted_at')
             ->tap(fn ($query) => $this->whereNotYetInvoiced($query))
-            ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
-            ->when($to, fn ($query) => $query->where('orders.date', '<=', $to))
+            ->when($from, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' >= ?', [$from]))
+            ->when($to, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' <= ?', [$to]))
             ->groupBy('p.traffic_source_id')
             ->select('p.traffic_source_id', DB::raw('SUM(orders.net_amount * p.share) as amount'))
             ->pluck('amount', 'traffic_source_id');
@@ -398,8 +398,8 @@ class GetShopMarketingOverview
                 ->where('shop_id', $shop->id)
                 ->whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
                 ->whereNull('deleted_at')
-                ->when($from, fn ($query) => $query->where('date', '>=', $from))
-                ->when($to, fn ($query) => $query->where('date', '<=', $to))
+                ->when($from, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' >= ?', [$from]))
+                ->when($to, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' <= ?', [$to]))
                 ->count(),
 
             'revenue'       => round((float) DB::table('invoices')
@@ -421,13 +421,13 @@ class GetShopMarketingOverview
                 $join->on('p.model_id', '=', 'orders.customer_id')
                     ->where('p.model_type', '=', 'Customer');
 
-                $this->constrainToTouchWindow($join, 'orders.date', $window);
+                $this->constrainToTouchWindow($join, self::ORDER_PLACED_AT, $window);
             })
             ->where('orders.shop_id', $shop->id)
             ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
             ->whereNull('orders.deleted_at')
-            ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
-            ->when($to, fn ($query) => $query->where('orders.date', '<=', $to))
+            ->when($from, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' >= ?', [$from]))
+            ->when($to, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' <= ?', [$to]))
             ->groupBy('p.traffic_source_id')
             ->select('p.traffic_source_id', DB::raw('SUM(p.share) as orders'))
             ->pluck('orders', 'traffic_source_id');
