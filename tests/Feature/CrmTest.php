@@ -1433,6 +1433,15 @@ describe('EU VAT re-validation (HELP-2374)', function () {
         Queue::assertNothingPushed();
     });
 
+    test('only INVALID_INPUT VIES faults mark a number invalid', function () {
+        $action = ValidateEuropeanTaxNumber::make();
+
+        expect($action->isMalformedNumberFault('INVALID_INPUT'))->toBeTrue()
+            ->and($action->isMalformedNumberFault('MS_MAX_CONCURRENT_REQ'))->toBeFalse()
+            ->and($action->isMalformedNumberFault('MS_UNAVAILABLE'))->toBeFalse()
+            ->and($action->isMalformedNumberFault('SERVICE_UNAVAILABLE'))->toBeFalse();
+    });
+
     test('implausible EU tax numbers are not re-checked', function () use ($storeTaxNumber) {
         $action = ValidateEuropeanTaxNumber::make();
 
