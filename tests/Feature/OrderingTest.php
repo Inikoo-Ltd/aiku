@@ -3440,3 +3440,33 @@ test('turning on recargo de equivalencia propagates to baskets migrated from aur
 
     expect($order->refresh()->is_re)->toBeTrue();
 });
+
+test('UI shop dashboard widgets endpoint returns every widget for an interval', function () {
+    $this->withoutExceptionHandling();
+    StoreInvoice::make()->action($this->customer, Invoice::factory()->definition());
+
+    $dashboard = get(route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug]));
+    $dashboard->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('dashboard.super_blocks.0.widgets_route.name', 'grp.org.shops.show.dashboard.widgets')
+            ->etc()
+    );
+
+    $response = getJson(route('grp.org.shops.show.dashboard.widgets', [$this->organisation->slug, $this->shop->slug, 'interval' => '1y']));
+    $response->assertOk()
+        ->assertJsonPath('interval', '1y')
+        ->assertJsonPath('currency_code', $this->shop->currency->code)
+        ->assertJsonStructure([
+            'from', 'to', 'channels', 'top_customers', 'top_products', 'top_families', 'out_of_stock', 'top_webpages',
+            'email' => ['totals', 'mailshots'],
+            'marketing' => ['totals', 'channels'],
+            'subscriptions' => ['registrations', 'unsubscribed', 'net'],
+            'routes' => ['customers', 'product', 'family', 'marketing'],
+        ]);
+
+    expect(collect($response->json('channels'))->sum('invoices'))->toBeGreaterThanOrEqual(1);
+
+    $allTime = getJson(route('grp.org.shops.show.dashboard.widgets', [$this->organisation->slug, $this->shop->slug, 'interval' => 'all']));
+    $allTime->assertOk()->assertJsonPath('from', null);
+    expect($allTime->json('subscriptions.registrations'))->toBeGreaterThanOrEqual(1);
+});

@@ -4,6 +4,7 @@ import DashboardTable from "./DashboardTable.vue"
 import DashboardWidget from "./DashboardWidget.vue"
 import ShopIntervalStats from "./ShopIntervalStats.vue"
 import ChannelHealthBadges from "./ChannelHealthBadges.vue"
+import ShopDashboardWidgets from "./ShopDashboardWidgets.vue"
 import { ref, provide } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
@@ -39,6 +40,8 @@ provide("dashboardTabActive", dashboardTabActive)
 
 const isLoadingOnTable = ref(false)
 provide("isLoadingOnTable", isLoadingOnTable)
+
+const widgetsInterval = ref(props.dashboard?.super_blocks?.[0]?.intervals?.value ?? 'all')
 
 const currentTab = ref(props.dashboard?.super_blocks?.[0]?.tabs_box?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -95,6 +98,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 			:settings="props.dashboard?.super_blocks?.[0].settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks?.[0]?.current_tab"
+			@intervalChanged="(value: string) => widgetsInterval = value"
 		/>
 
 		<DashboardTable
@@ -136,6 +140,12 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
             v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks"
             :interval="props.dashboard?.super_blocks?.[0]?.intervals?.value"
             :data="props.dashboard?.super_blocks?.[0]?.shop_blocks"
+        />
+
+        <ShopDashboardWidgets
+            v-if="props.dashboard?.super_blocks?.[0]?.widgets_route"
+            :fetch-route="props.dashboard.super_blocks[0].widgets_route"
+            :interval="widgetsInterval"
         />
 
         <Link
