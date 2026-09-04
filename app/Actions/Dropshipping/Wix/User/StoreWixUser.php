@@ -35,6 +35,7 @@ class StoreWixUser extends RetinaAction
             'platform_user_type' => class_basename($wixUser),
             'platform_user_id'   => $wixUser->id,
             'reference'          => $wixUser->name,
+            'name'               => $wixUser->name,
             'state'              => CustomerSalesChannelStateEnum::AUTHENTICATED
         ]);
 

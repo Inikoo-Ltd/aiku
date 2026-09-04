@@ -125,7 +125,19 @@ test('agent org admin can log in with aurora legacy password', function (Agent $
     expect($user->auth_type)->toBe(UserAuthTypeEnum::DEFAULT)
         ->and($user->legacy_password)->toBeNull()
         ->and(Hash::check('aurora-password', $user->password))->toBeTrue()
-        ->and(array_keys(GetOrganisationsLayout::run($user)[$organisation->slug]))->toContain('procurement', 'hr');
+        ->and(array_keys(GetOrganisationsLayout::run($user)[$organisation->slug]))->toContain('procurement', 'hr')
+        ->and($user->hasGroupAccess())->toBeFalse()
+        ->and(array_keys(GetGroupNavigation::run($user)))->toBe(['tickets']);
+
+    $this->get(route('grp.dashboard.show'))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('dashboard.super_blocks', []));
+    $this->get(route('grp.devops.dashboard'))->assertForbidden();
+    $this->get(route('grp.chat.dashboard'))->assertForbidden();
+    $this->get(route('grp.org.dashboard.show', $organisation->slug))->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('dashboard.super_blocks', [])
+            ->has('cleanHandover.quarters')
+            ->missing('cleanHandover.hygiene'));
 })->depends('create agent');
 
 test('update agent', function (Agent $agent) {

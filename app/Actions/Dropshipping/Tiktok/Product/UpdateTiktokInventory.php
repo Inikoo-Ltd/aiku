@@ -36,7 +36,7 @@ class UpdateTiktokInventory implements ShouldBeUnique
     {
         $availableQuantity = $product->available_quantity ?? 0;
 
-        if (!$product->is_for_sale) {
+        if (!$product->isSellableThroughSalesChannels()) {
             $availableQuantity = 0;
         }
 

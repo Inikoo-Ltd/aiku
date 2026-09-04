@@ -60,7 +60,7 @@ class ShowInventoryDashboard extends OrgAction
                             'type'  => 'button',
                             'style' => 'tertiary',
                             'icon'  => 'fal fa-barcode-read',
-                            'label' => __('Scan SKO barcodes'),
+                            'label' => __('Manage barcodes'),
                             'route' => [
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stocks.barcode_scanner',
                                 'parameters' => $routeParameters

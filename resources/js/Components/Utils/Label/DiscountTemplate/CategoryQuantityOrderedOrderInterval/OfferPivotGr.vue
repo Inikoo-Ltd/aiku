@@ -9,6 +9,7 @@ type Offer = {
 
 const props = defineProps<{
     template : string
+    isGoldenProduct?: boolean
     offer: {
         offers: Offer[]
     }
@@ -39,5 +40,6 @@ const resolvedComponent = computed(() => {
     <component
         :is="resolvedComponent"
         :offer="offer"
+        :isGoldenProduct="isGoldenProduct"
     />
 </template>

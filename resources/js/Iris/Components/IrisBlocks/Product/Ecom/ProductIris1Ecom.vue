@@ -40,7 +40,6 @@ import { getBestOffer } from "@/Composables/useOffers"
 import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLabel.vue"
 import { getBestOffer as getBestOfferfromComposable } from "@/Composables/useOffers"
 import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
-import GoldenProductBadge from "@/Components/CMS/Webpage/Products/GoldenProductBadge.vue"
 import { Rating } from "primevue"
 
 // Register icons
@@ -275,7 +274,6 @@ onMounted(async () => {
       
                 <div class="relative flex justify-between items-start mb-4 gap-x-3">
                     <div class="w-full">
-                        <GoldenProductBadge v-if="product.is_golden_product" class="mb-2" />
 
                         <h1 class="text-3xl font-bold">
                             <span v-if="product.units > 1">{{ product.units }}x</span>
@@ -366,7 +364,7 @@ onMounted(async () => {
                             </template>
 
 
-                            <DiscountByType  v-if="(product.stock  && !product.is_coming_soon && bestOffer?.type == 'Category Quantity Ordered Order Interval') && showDiscount" :offers_data="product?.offers_data" template="products_triggers_label" />
+                            <DiscountByType  v-if="(product.stock  && !product.is_coming_soon && bestOffer?.type == 'Category Quantity Ordered Order Interval') && showDiscount" :offers_data="product?.offers_data" template="products_triggers_label" :isGoldenProduct="product?.is_golden_product" />
 
                             <DiscountByType
                                 v-if="showDiscount && bestOffer.type == 'Category Ordered'"
@@ -543,7 +541,6 @@ onMounted(async () => {
             <p class="text-xl font-bold">
                 <span v-if="product.units > 1">{{ product.units }}x</span>
                 {{ product.name }}
-                <GoldenProductBadge v-if="product.is_golden_product" class="mb-2" />
             </p>
         </div>
 
@@ -619,6 +616,7 @@ onMounted(async () => {
                         v-if="showDiscount"
                         template="products_triggers_label"
                         :offers_data="product?.offers_data"
+                        :isGoldenProduct="product?.is_golden_product"
                     />
 
                     <DiscountByType

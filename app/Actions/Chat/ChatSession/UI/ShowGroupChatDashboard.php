@@ -26,6 +26,11 @@ class ShowGroupChatDashboard extends OrgAction
     use AsAction;
     use WithInertia;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->hasGroupAccess();
+    }
+
     public function handle(Group $group): Group
     {
         return $group;

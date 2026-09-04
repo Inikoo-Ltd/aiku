@@ -43,6 +43,7 @@ interface ProductResource {
     url: string | null
     units: number
     bestseller?: boolean
+    is_golden_product?: boolean
     is_favourite?: boolean
     exist_in_portfolios_channel: number[]
     is_exist_in_all_channel: boolean
@@ -214,6 +215,7 @@ const familyHasGoldenProductInBasket = computed(() => {
 const showMemberPrice = computed(() => {
     if (layout?.user?.gr_data?.amnesty) return true
     if (layout?.user?.gr_data?.customer_is_gr) return true
+    if (props.product?.is_golden_product) return true
     if (familyHasGoldenProductInBasket.value) return true  // If a golden product of the family is in the basket, show member price for all products of the family
 
     return bestOffer.value?.category_qty_trigger <= familyQuantityOrdered.value
@@ -422,7 +424,7 @@ const onHideStepsPopover = () => {
                 </button>
 
                 <div v-else-if="bestOffer?.type == 'Category Quantity Ordered Order Interval'">
-                    <MemberPriceLabel :offer="bestOffer" :active="showMemberPrice" />
+                    <MemberPriceLabel :offer="bestOffer" :active="showMemberPrice" :isGoldenProduct="product?.is_golden_product" />
                 </div>
                 <div v-else class="offer">
                     <DiscountByType v-if="bestOffer?.type == 'Category Ordered'"
@@ -495,7 +497,7 @@ const onHideStepsPopover = () => {
             <div v-if="showIntervalOffer && !showMemberPrice"
                 class="mt-1 flex flex-col items-start gap-0.5 text-[8px] sm:text-[9px] md:text-[10px] discount">
                 <DiscountByType v-if="showDiscount" :offers_data="product?.product_offers_data"
-                    template="products_triggers_label" />
+                    template="products_triggers_label" :isGoldenProduct="product?.is_golden_product" />
             </div>
 
             <Popover v-if="displayStep" ref="_popoverSteps" class="max-w-[90vw] sm:max-w-[300px]"

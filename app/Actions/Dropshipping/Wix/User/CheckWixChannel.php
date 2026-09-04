@@ -42,6 +42,8 @@ class CheckWixChannel
             }
         } catch (\Exception $e) {
             Sentry::captureException($e);
+
+            $reason = $e->getMessage();
         }
 
         $data = [

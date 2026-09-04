@@ -98,7 +98,8 @@ const ipAddresses = [
                 <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
                 <div class="inline items-center gap-x-2">
                     {{
-                        trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.")
+                        customer_sales_channel.not_ready_reason
+                            || trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.")
                     }}
                 </div>
             </div>

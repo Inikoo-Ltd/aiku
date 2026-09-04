@@ -18,7 +18,7 @@ trait WithGroupDashboardSalesAuthorisation
             return true;
         }
 
-        return $user->authorisedOrganisations->contains(
+        return $user->authorisedShopOrganisations->contains(
             fn (Organisation $organisation) => $user->authTo([
                 'accounting.'.$organisation->id.'.view',
                 'org-supervisor.'.$organisation->id,

@@ -469,7 +469,7 @@ class UpdateProduct extends OrgAction
                 'sometimes',
                 'nullable',
                 'integer',
-                Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
+                Rule::exists('customers', 'id')->where('shop_id', $this->shop->id)
             ],
 
             'name_i8n'              => ['sometimes', 'array'],

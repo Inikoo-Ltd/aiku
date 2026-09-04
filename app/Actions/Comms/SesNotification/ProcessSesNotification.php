@@ -41,6 +41,8 @@ class ProcessSesNotification
         }
 
         $dispatchedEmailState = null;
+        $fromStates           = null;
+        $notFromStates        = null;
         $additionalData       = [];
         $data                 = [];
 
@@ -49,13 +51,12 @@ class ProcessSesNotification
                 $date = Carbon::parse(Arr::get($sesNotification->data, 'mail.timestamp'));
                 $type = EmailTrackingEventTypeEnum::SENT;
 
-                if (in_array($dispatchedEmail->state, [
+                $dispatchedEmailState = DispatchedEmailStateEnum::SENT;
+                $fromStates           = [
                     DispatchedEmailStateEnum::READY,
                     DispatchedEmailStateEnum::ERROR,
                     DispatchedEmailStateEnum::REJECTED_BY_PROVIDER,
-                ])) {
-                    $dispatchedEmailState = DispatchedEmailStateEnum::SENT;
-                }
+                ];
 
                 break;
             case 'Bounce':
@@ -80,17 +81,13 @@ class ProcessSesNotification
                     $type = EmailTrackingEventTypeEnum::HARD_BOUNCE;
                 }
 
-                if (!in_array($dispatchedEmail->state, [
+                $dispatchedEmailState = $isHardBounce ? DispatchedEmailStateEnum::HARD_BOUNCE : DispatchedEmailStateEnum::SOFT_BOUNCE;
+                $notFromStates        = [
                     DispatchedEmailStateEnum::OPENED,
                     DispatchedEmailStateEnum::CLICKED,
                     DispatchedEmailStateEnum::SPAM,
                     DispatchedEmailStateEnum::UNSUBSCRIBED,
-                ])) {
-                    $dispatchedEmailState = DispatchedEmailStateEnum::SOFT_BOUNCE;
-                    if ($isHardBounce) {
-                        $dispatchedEmailState = DispatchedEmailStateEnum::HARD_BOUNCE;
-                    }
-                }
+                ];
 
 
                 break;
@@ -124,15 +121,14 @@ class ProcessSesNotification
                 $date = Carbon::parse(Arr::get($sesNotification->data, 'delivery.timestamp'));
                 $type = EmailTrackingEventTypeEnum::DELIVERED;
 
-                if (in_array($dispatchedEmail->state, [
+                $dispatchedEmailState = DispatchedEmailStateEnum::DELIVERED;
+                $fromStates           = [
                     DispatchedEmailStateEnum::READY,
                     DispatchedEmailStateEnum::SENT,
                     DispatchedEmailStateEnum::ERROR,
                     DispatchedEmailStateEnum::REJECTED_BY_PROVIDER,
                     DispatchedEmailStateEnum::DELAY,
-                ])) {
-                    $dispatchedEmailState = DispatchedEmailStateEnum::DELIVERED;
-                }
+                ];
 
                 break;
             case 'Reject':
@@ -147,13 +143,12 @@ class ProcessSesNotification
                 $date = Carbon::parse(Arr::get($sesNotification->data, 'open.timestamp'));
                 $type = EmailTrackingEventTypeEnum::OPENED;
 
-                if (!in_array($dispatchedEmail->state, [
+                $dispatchedEmailState = DispatchedEmailStateEnum::OPENED;
+                $notFromStates        = [
                     DispatchedEmailStateEnum::CLICKED,
                     DispatchedEmailStateEnum::UNSUBSCRIBED,
                     DispatchedEmailStateEnum::SPAM,
-                ])) {
-                    $dispatchedEmailState = DispatchedEmailStateEnum::OPENED;
-                }
+                ];
 
                 $data = Arr::only($sesNotification->data['open'], ['ipAddress', 'userAgent']);
 
@@ -182,9 +177,8 @@ class ProcessSesNotification
 
                 $type = EmailTrackingEventTypeEnum::CLICKED;
 
-                if ($dispatchedEmail->state != DispatchedEmailStateEnum::UNSUBSCRIBED) {
-                    $dispatchedEmailState = DispatchedEmailStateEnum::CLICKED;
-                }
+                $dispatchedEmailState = DispatchedEmailStateEnum::CLICKED;
+                $notFromStates        = [DispatchedEmailStateEnum::UNSUBSCRIBED];
 
                 $data = [
                     'v'         => 1,
@@ -216,14 +210,13 @@ class ProcessSesNotification
 
                 $type = EmailTrackingEventTypeEnum::DELAY;
 
-                if (in_array($dispatchedEmail->state, [
+                $dispatchedEmailState = DispatchedEmailStateEnum::DELAY;
+                $fromStates           = [
                     DispatchedEmailStateEnum::READY,
                     DispatchedEmailStateEnum::SENT,
                     DispatchedEmailStateEnum::ERROR,
                     DispatchedEmailStateEnum::REJECTED_BY_PROVIDER,
-                ])) {
-                    $dispatchedEmailState = DispatchedEmailStateEnum::DELAY;
-                }
+                ];
 
                 $data = [
                     't' => Arr::get($sesNotification->data, 'deliveryDelay.delayType'),
@@ -244,18 +237,11 @@ class ProcessSesNotification
         ]);
 
 
-        if ($dispatchedEmailState !== null || !empty($additionalData)) {
-            $dataToUpdate = [];
-            if ($dispatchedEmailState !== null) {
-                $dataToUpdate['state'] = $dispatchedEmailState;
-            }
-            if (!empty($additionalData)) {
-                $dataToUpdate['data'] = array_merge($dispatchedEmail->data ?? [], $additionalData);
-            }
-
-            if (!empty($dataToUpdate)) {
-                $this->update($dispatchedEmail, $dataToUpdate);
-            }
+        if ($dispatchedEmailState !== null) {
+            $this->updateStateIfStillAllowed($dispatchedEmail, $dispatchedEmailState, $fromStates, $notFromStates);
+        }
+        if (!empty($additionalData)) {
+            $this->update($dispatchedEmail, ['data' => array_merge($dispatchedEmail->data ?? [], $additionalData)]);
         }
 
         $sesNotification->delete();
@@ -264,6 +250,25 @@ class ProcessSesNotification
         OutboxHydrateDispatchedEmails::dispatch($dispatchedEmail->outbox_id)->delay(900);
 
         return null;
+    }
+
+    /**
+     * The model was read from a replica and sibling notifications for the same email run in parallel,
+     * so the transition guard must be re-checked atomically on the primary at write time.
+     *
+     * @param  array<DispatchedEmailStateEnum>|null  $fromStates
+     * @param  array<DispatchedEmailStateEnum>|null  $notFromStates
+     */
+    private function updateStateIfStillAllowed(DispatchedEmail $dispatchedEmail, DispatchedEmailStateEnum $state, ?array $fromStates, ?array $notFromStates): void
+    {
+        $query = DispatchedEmail::whereKey($dispatchedEmail->id);
+        if ($fromStates !== null) {
+            $query->whereIn('state', $fromStates);
+        }
+        if ($notFromStates !== null) {
+            $query->whereNotIn('state', $notFromStates);
+        }
+        $query->update(['state' => $state]);
     }
 
     public function getDispatchedEmail(string $sesMessageID): ?DispatchedEmail

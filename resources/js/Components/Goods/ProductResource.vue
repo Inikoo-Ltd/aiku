@@ -2,12 +2,26 @@
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref, computed } from "vue"
+import { router } from "@inertiajs/vue3"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode, faCheckCircle } from "@fas"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { Accordion, AccordionPanel, AccordionHeader, AccordionContent } from "primevue"
 import { faTag } from "@far"
 import { faFileCheck, faFilePdf, faFileWord, faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
+
+interface TariffCodeByOrganisation {
+    organisation_code: string
+    organisation_name: string
+    tariff_code: string | null
+    national_extension: string | null
+    reason: string | null
+    approved_by: string | null
+    approved_at: string | null
+    can_edit: boolean
+    update_route: routeType
+    delete_route: routeType
+}
 
 interface Stats {
     amount: number | null
@@ -102,6 +116,8 @@ const props = withDefaults(
             countries_of_origin?: { code: string; name: string }[]
             ingredients?: (string | { name: string })[]
             tariff_code?: string
+            tariff_code_heading?: string | null
+            tariff_code_by_organisation?: TariffCodeByOrganisation[]
             duty_rate?: string
             hts_us?: string
         }
@@ -109,6 +125,28 @@ const props = withDefaults(
     {
     }
 )
+
+const editingOrganisation = ref<string | null>(null)
+const overrideForm = ref({ national_extension: "", reason: "" })
+const overrideError = ref<string | null>(null)
+
+const startEditing = (row: TariffCodeByOrganisation) => {
+    overrideForm.value = { national_extension: row.national_extension || "", reason: row.reason || "" }
+    overrideError.value = null
+    editingOrganisation.value = row.organisation_code
+}
+
+const saveOverride = (row: TariffCodeByOrganisation) => {
+    router.patch(route(row.update_route.name, row.update_route.parameters), overrideForm.value, {
+        preserveScroll: true,
+        onSuccess: () => (editingOrganisation.value = null),
+        onError: (errors) => (overrideError.value = Object.values(errors)[0] as string),
+    })
+}
+
+const removeOverride = (row: TariffCodeByOrganisation) => {
+    router.delete(route(row.delete_route.name, row.delete_route.parameters), { preserveScroll: true })
+}
 
 library.add(
     faCircle,
@@ -292,6 +330,29 @@ const getIcon = (type?: string) => {
                             <dd class="font-medium">
                                 {{ properties?.tariff_code || '-' }}
                             </dd>
+                        </div>
+                        <div v-if="properties?.tariff_code_by_organisation?.length" class="space-y-1">
+                            <dt class="text-gray-500 text-xs">{{ trans("Tariff code by organisation") }} <span class="opacity-60">({{ trans("HS heading") }} {{ properties?.tariff_code_heading || '-' }} {{ trans("shared, national digits 7-10 per country") }})</span></dt>
+                            <div v-for="row in properties.tariff_code_by_organisation" :key="row.organisation_code" class="flex justify-between items-start gap-2 text-xs">
+                                <dt class="text-gray-500">{{ row.organisation_code }}</dt>
+                                <dd class="text-right">
+                                    <template v-if="editingOrganisation === row.organisation_code">
+                                        <input v-model="overrideForm.national_extension" maxlength="4" :placeholder="trans('Digits 7-10')" class="w-20 border rounded px-1 py-0.5 text-xs" />
+                                        <input v-model="overrideForm.reason" :placeholder="trans('Reason for divergence')" class="w-40 border rounded px-1 py-0.5 text-xs ml-1" />
+                                        <button class="ml-1 text-indigo-600" :disabled="!properties?.tariff_code_heading || overrideForm.national_extension.length < 2 || !overrideForm.reason" @click="saveOverride(row)">{{ trans("Sign off") }}</button>
+                                        <button class="ml-1 text-gray-500" @click="editingOrganisation = null">{{ trans("Cancel") }}</button>
+                                        <div v-if="overrideError" class="text-red-500">{{ overrideError }}</div>
+                                    </template>
+                                    <template v-else>
+                                        <span class="font-medium" :class="{ 'text-amber-700': row.national_extension }">{{ row.tariff_code || '-' }}</span>
+                                        <span v-if="row.national_extension" v-tooltip="row.reason" class="ml-1 text-gray-500">{{ trans("override") }}, {{ row.approved_by }}</span>
+                                        <template v-if="row.can_edit">
+                                            <button class="ml-1 text-gray-500 hover:text-indigo-600" @click="startEditing(row)"><FontAwesomeIcon :icon="faEdit" /></button>
+                                            <button v-if="row.national_extension" class="ml-1 text-gray-500 hover:text-red-600" @click="removeOverride(row)"><FontAwesomeIcon :icon="falTrash" /></button>
+                                        </template>
+                                    </template>
+                                </dd>
+                            </div>
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-gray-500">{{ trans("Duty rate") }}</dt>

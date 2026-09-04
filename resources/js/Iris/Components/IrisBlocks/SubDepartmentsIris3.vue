@@ -4,6 +4,7 @@ import LinkIris from '@/Iris/Components/LinkIris.vue'
 import axios from 'axios'
 import { ref, watch, computed, inject, onMounted, onBeforeUnmount } from 'vue'
 import LoadingText from "@/Components/Utils/LoadingText.vue";
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import { ctrans } from "@/Composables/useTrans";
 import { getStyles } from "@/Composables/styles"
@@ -47,6 +48,7 @@ const props = defineProps<{
 
 const loading = ref(false)
 const loadingMore = ref(false)
+const idxSlideLoading = ref<number | null>(null)
 const layout: any = inject("layout", {})
 const injectedWebpageData = inject<any>("webpage_data", null)
 
@@ -302,7 +304,8 @@ onBeforeUnmount(() => {
       '--cols-desktop': perRow.desktop,
     }">
       <LinkIris v-for="(family, familyIndex) in families" :key="family.id" :href="family.url" type="internal"
-        class="group block" :class="{ 'max-lg:hidden': isMobileCollapsed && familyIndex >= MOBILE_INITIAL_FAMILIES }">
+        class="group block relative" :class="{ 'max-lg:hidden': isMobileCollapsed && familyIndex >= MOBILE_INITIAL_FAMILIES }"
+        @start="() => idxSlideLoading = familyIndex" @finish="() => idxSlideLoading = null">
         <div class="aspect-square overflow-hidden bg-gray-100 relative xflex items-center justify-center">
           <div v-if="!family.image" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
             <FontAwesomeIcon icon="fal fa-image" class="text-5xl opacity-30" fixed-width aria-hidden="true" />
@@ -317,6 +320,11 @@ onBeforeUnmount(() => {
         <span class="mt-2 line-clamp-2 text-lg leading-snug text-slate-900 font-semibold">
           {{ family.name }}
         </span>
+
+        <div v-if="idxSlideLoading === familyIndex"
+          class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-2xl">
+          <LoadingIcon />
+        </div>
       </LinkIris>
     </div>
 

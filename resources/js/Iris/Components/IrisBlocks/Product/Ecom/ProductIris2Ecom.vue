@@ -367,7 +367,6 @@ onMounted(async () => {
             <div class="col-span-5 self-start">
                 <div class="relative flex justify-between items-start mb-4">
                     <div class="w-full">
-                        <GoldenProductBadge v-if="product.is_golden_product" class="mb-2" />
 
                         <div class="text-xl text-black font-bold w-[80%]">
                             <span v-if="product.units > 1">{{ product.units }}x</span> {{ product.name }}
@@ -484,7 +483,7 @@ onMounted(async () => {
                         <NonMemberPriceLabel v-else :product="product" />
                     </template>
 
-                    <DiscountByType v-if="showDiscount" template="products_triggers_label" :offers_data="offersData" />
+                    <DiscountByType v-if="showDiscount" template="products_triggers_label" :offers_data="offersData" :isGoldenProduct="product?.is_golden_product" />
 
                     <DiscountByType
                         v-if="isPurchasable && bestOffer?.type !== 'Category Quantity Ordered Order Interval'"
@@ -713,9 +712,6 @@ onMounted(async () => {
 
         <div class="px-4 py-4 space-y-5">
 
-            <!-- TITLE -->
-            <GoldenProductBadge v-if="product.is_golden_product" />
-
             <h1 class="!text-xl font-bold leading-tight">
                 <span v-if="product.units > 1">{{ product.units }}x</span>
                 {{ product.name }}
@@ -804,7 +800,7 @@ onMounted(async () => {
                     <NonMemberPriceLabel v-else :product="product" />
                 </template>
 
-                <DiscountByType v-if="showDiscount" template="products_triggers_label" :offers_data="offersData" />
+                <DiscountByType v-if="showDiscount" template="products_triggers_label" :offers_data="offersData" :isGoldenProduct="product?.is_golden_product" />
 
                 <DiscountByType v-if="isPurchasable && bestOffer?.type !== 'Category Quantity Ordered Order Interval'"
                     template="max_discount" :offers_data="offersData" />

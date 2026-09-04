@@ -140,7 +140,7 @@ const components = (shop_type?: string, options: IrisComponentOptions = {}): Rec
 		"top-bar-2": Topbar2Iris,
 
 		"top-bar-1-fulfilment": Topbar1FulfilmentIris,
-		"top-bar-2-fulfilment": Topbar2FulfilmentIris,
+		"top-bar-2-fulfilment": Topbar2Iris,
 
 		//header
 		"header-1": Header1Iris,

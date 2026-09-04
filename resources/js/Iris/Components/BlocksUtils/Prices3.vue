@@ -33,6 +33,7 @@ interface ProductResource {
     url: string | null
     units: number
     bestseller?: boolean
+    is_golden_product?: boolean
     is_favourite?: boolean
     exist_in_portfolios_channel: number[]
     is_exist_in_all_channel: boolean
@@ -337,7 +338,7 @@ const _popoverProfit = ref(null)
         <MemberPriceLabel v-if="showMemberPrice" :offer="bestOffer" />
 
         <DiscountByType v-if="showDiscount" :offers_data="product?.product_offers_data"
-            template="products_triggers_label" />
+            template="products_triggers_label" :isGoldenProduct="product?.is_golden_product" />
     </div>
 
     <!-- <div v-else class="h-[3rem]">

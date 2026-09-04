@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive">
+<defs>
+    <filter id="pen" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="bleed" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.014" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="18" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="1.6" result="b"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="4" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 -0.2" result="ga"/>
+      <feComposite in="b" in2="ga" operator="in" result="mottled"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="mottled"/></feMerge>
+    </filter>
+    <filter id="marker" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="21" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" seed="2" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.90  0 0 0 0 0.87  0 0 0 0 0.80  0 0 0 0.28 0" result="c"/>
+      <feComposite in="c" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <style>
+      .pen { fill: none; stroke: #23222e; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: url(#pen); }
+      .soft { stroke-width: 1.4; opacity: .6; }
+      .w { mix-blend-mode: multiply; filter: url(#bleed); stroke: none; opacity: .8; }
+      .m { fill: none; stroke-linecap: round; stroke-width: 26; opacity: .55; mix-blend-mode: multiply; filter: url(#marker); }
+      .h { fill: #23222e; filter: url(#pen); }
+      .hl { fill: #8a4b9e; filter: url(#pen); }
+      .bar { fill: #23222e; filter: url(#pen); }
+    </style>
+  </defs>
+  <rect width="1200" height="750" fill="#fbf7ee"/>
+  <rect width="1200" height="750" fill="#fbf7ee" filter="url(#paper)"/>
+
+  <!-- watercolor washes: sand floor, stone, torch light, card -->
+  <g class="w">
+    <path d="M40 600 C300 570 700 590 1160 600 C1170 660 1150 720 1100 726 C700 736 300 730 60 720 C30 680 30 630 40 600 Z" fill="#e2c28a" opacity=".45"/>
+    <path d="M470 150 C520 120 590 130 610 170 C630 320 626 470 612 600 C560 612 500 606 462 596 C450 460 452 300 470 150 Z" fill="#b9b2a4" opacity=".5"/>
+    <path d="M340 380 C400 330 470 340 520 380 C500 440 420 460 350 440 C330 420 330 400 340 380 Z" fill="#f3c04a" opacity=".38"/>
+    <path d="M700 120 C900 110 1080 120 1130 140 C1140 320 1136 440 1126 520 C980 532 820 528 704 516 C690 380 688 240 700 120 Z" fill="#fbf7ee" opacity=".9"/>
+    <path d="M716 430 C860 424 1040 430 1112 436 C1114 462 1110 484 1104 490 C960 494 830 492 720 486 C712 470 710 448 716 430 Z" fill="#9dcab0" opacity=".55"/>
+    <path d="M716 500 C860 494 1040 500 1112 506 C1114 526 1110 540 1104 544 C960 548 830 546 720 540 C712 528 710 512 716 500 Z" fill="#f3c04a" opacity=".4"/>
+    <path d="M140 300 C170 280 210 290 230 320 C240 380 236 440 226 500 C190 506 160 500 146 490 C132 430 130 360 140 300 Z" fill="#e88a73" opacity=".32"/>
+    <path d="M90 140 C120 128 160 132 170 150 C176 176 170 192 152 196 C118 198 92 186 84 170 C82 158 84 148 90 140 Z" fill="#8a6a45" opacity=".42"/>
+  </g>
+  <g class="m">
+    <path d="M60 640 L1140 636" stroke="#e2c28a"/>
+  </g>
+
+  <g class="pen">
+    <!-- excavation trench edges and a shovel -->
+    <path d="M40 600 C300 590 700 594 1160 600" class="soft"/>
+    <path d="M60 720 C300 712 700 716 1140 720" class="soft"/>
+    <path d="M320 690 l40 -120 M360 570 l-16 -8 l30 -12 l6 18 z"/>
+    <path d="M300 700 c20 -8 40 -6 60 2" class="soft"/>
+
+    <!-- shelving drawn like temple columns, faint -->
+    <path d="M40 110 l0 490 M40 110 l90 0 M40 250 l90 0 M40 390 l90 0 M40 530 l90 0" class="soft"/>
+    <path d="M56 170 l50 -3 l2 60 l-52 3 z M60 306 l46 -3 l2 60 l-48 3 z M58 446 l48 -3 l2 60 l-50 3 z" class="soft"/>
+
+    <!-- standing stone with a barcode carved in it -->
+    <path d="M470 150 C520 118 592 128 612 168 C632 320 628 470 614 600 L462 596 C448 460 452 300 470 150 Z"/>
+    <path d="M478 200 C520 190 580 194 604 204" class="soft"/>
+    <path d="M478 560 C520 552 580 556 604 566" class="soft"/>
+    <path d="M500 604 C520 620 540 640 560 660" class="soft"/>
+    <path d="M590 610 C600 630 610 650 630 670" class="soft"/>
+    <path d="M462 300 c-14 10 -20 30 -16 44 M604 380 c16 6 24 20 22 36" class="soft"/>
+
+    <!-- the explorer: hat, crouching, scanner held out like a torch -->
+    <path d="M150 300 C160 270 220 270 230 300 L236 318 C200 326 170 326 142 318 Z"/>
+    <path d="M118 320 C160 306 220 306 262 320" />
+    <path d="M160 318 c-4 34 40 34 36 0"/>
+    <path d="M178 352 C150 370 140 420 150 480 L226 480 C236 420 226 370 198 352 Z"/>
+    <path d="M226 400 C270 390 310 384 350 386 M350 386 l-8 -12 M350 386 l-4 14"/>
+    <path d="M338 372 l30 -8 l6 22 l-30 8 z M368 364 c20 2 28 10 26 20"/>
+    <path d="M150 480 c-14 30 -24 70 -20 110 M226 480 c14 30 24 70 20 110"/>
+    <path d="M118 590 l38 0 M228 590 l40 0"/>
+    <path d="M150 450 c-40 -20 -70 -10 -90 20 c-14 20 -10 40 4 44" class="soft"/>
+    <path d="M60 514 c-8 14 -4 30 12 34" class="soft"/>
+    <!-- satchel -->
+    <path d="M226 420 l34 6 l-2 40 l-34 -6 z M226 420 c-10 -20 -30 -40 -60 -50" class="soft"/>
+
+    <!-- scanner beam to the stone -->
+    <path d="M394 372 C420 360 440 350 470 330" class="soft" stroke-dasharray="6 10"/>
+    <path d="M394 376 C420 380 440 386 470 400" class="soft" stroke-dasharray="6 10"/>
+
+    <!-- floating SKO card -->
+    <path d="M700 120 C900 110 1080 120 1130 140 C1140 320 1136 440 1126 520 C980 532 820 528 704 516 C690 380 688 240 700 120 Z"/>
+    <path d="M720 150 l96 -2 l2 92 l-98 2 z"/>
+    <path d="M736 210 l24 -30 l20 20 l14 -12 l20 24" class="soft"/>
+    <path d="M716 270 C860 264 1040 270 1112 274" class="soft"/>
+    <path d="M716 344 C860 338 1040 344 1112 348" class="soft"/>
+    <path d="M716 430 C860 424 1040 430 1112 436 C1114 462 1110 484 1104 490 C960 494 830 492 720 486 C712 470 710 448 716 430 Z"/>
+    <path d="M716 500 C860 494 1040 500 1112 506 C1114 526 1110 540 1104 544 C960 548 830 546 720 540 C712 528 710 512 716 500 Z"/>
+    <path d="M636 250 C660 230 680 230 700 236" class="soft" stroke-dasharray="6 10"/>
+    <path d="M690 228 l12 8 l-10 10" class="soft"/>
+    <!-- checkmark on the ok button -->
+    <path d="M742 460 l8 8 l14 -18"/>
+    <!-- arrows on the move button -->
+    <path d="M742 522 l24 0 M760 516 l6 6 l-6 6 M766 530 l-24 0 M748 524 l-6 6 l6 6"/>
+  </g>
+
+  <!-- the barcode carved on the stone -->
+  <g class="bar">
+    <rect x="492" y="240" width="6" height="300"/>
+    <rect x="504" y="240" width="3" height="300"/>
+    <rect x="512" y="240" width="9" height="300"/>
+    <rect x="526" y="240" width="3" height="300"/>
+    <rect x="534" y="240" width="5" height="300"/>
+    <rect x="545" y="240" width="3" height="300"/>
+    <rect x="552" y="240" width="8" height="300"/>
+    <rect x="566" y="240" width="3" height="300"/>
+    <rect x="574" y="240" width="6" height="300"/>
+    <rect x="586" y="240" width="4" height="300"/>
+    <rect x="594" y="240" width="3" height="300"/>
+  </g>
+
+  <g class="h" font-size="24">
+    <text x="840" y="180">SKU-01</text>
+    <text x="840" y="212" font-size="21">lavender oil, box of 6</text>
+    <text x="840" y="244" font-size="19">SKO 4-0000-0000-01</text>
+    <text x="724" y="300">Stock</text><text x="1060" y="300">96</text>
+    <text x="736" y="330" font-size="21">aisle A · shelf 3</text><text x="1060" y="330" font-size="21">60</text>
+    <text x="736" y="374" font-size="21">aisle C · shelf 1</text><text x="1060" y="374" font-size="21">36</text>
+    <text x="774" y="468" font-size="23">All OK</text>
+    <text x="780" y="530" font-size="21">Wrong SKO, move barcode</text>
+    <text x="482" y="568" font-size="19">4-0000-0000-01</text>
+  </g>
+  <g class="hl" font-size="21">
+    <text x="60" y="70">every label is an artefact</text>
+    <text x="60" y="96">scan it, read it, decide</text>
+    <text x="330" y="660">the stone says one thing —</text>
+    <text x="330" y="686">does the shelf agree?</text>
+    <text x="840" y="590">a match: one tap, next box</text>
+    <text x="840" y="616">a mismatch: move the barcode</text>
+    <text x="840" y="642">to where it really belongs</text>
+  </g>
+  <g class="h" font-size="19" opacity=".7"><text x="900" y="736">— checking SKO barcodes</text></g>
+</svg>

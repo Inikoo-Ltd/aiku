@@ -257,6 +257,8 @@ use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\Goods\StockFamily\UpdateStockFamily;
 use App\Actions\Goods\TradeUnit\AttachTradeUnitsToTradeUnitFamily;
+use App\Actions\Goods\TradeUnit\DeleteTradeUnitTariffCodeOverride;
+use App\Actions\Goods\TradeUnit\SetTradeUnitTariffCodeOverride;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnitTranslations;
 use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UI\AssignBrandTagsToTradeUnitFamily;
@@ -521,6 +523,10 @@ use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
 use App\Stubs\UIDummies\ImportDummy;
+use App\Actions\Helpers\Ticket\RateTicket;
+use App\Actions\Helpers\Ticket\StoreTicket;
+use App\Actions\Helpers\Ticket\StoreTicketComment;
+use App\Actions\Helpers\Ticket\UpdateTicket;
 use Illuminate\Support\Facades\Route;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
@@ -531,6 +537,13 @@ Route::get('/profile/app-login-qrcode', GetProfileAppLoginQRCode::class)->name('
 
 Route::patch('notification/{notification}', MarkNotificationAsRead::class)->name('notifications.read');
 Route::patch('notifications', MarkAllNotificationAsRead::class)->name('notifications.all.read');
+
+Route::prefix('ticket')->name('ticket.')->group(function () {
+    Route::post('/', StoreTicket::class)->name('store');
+    Route::patch('{ticket:id}', UpdateTicket::class)->name('update')->whereNumber('ticket');
+    Route::post('{ticket:id}/comment', StoreTicketComment::class)->name('comment.store')->whereNumber('ticket');
+    Route::post('{ticket:id}/rate', RateTicket::class)->name('rate')->whereNumber('ticket');
+});
 
 Route::prefix('employee/{employee:id}')->name('employee.')->group(function () {
     Route::post('create-user', StoreUserFromEmployee::class)->name('create_user');
@@ -1440,6 +1453,8 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
     Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inTradeUnit'])->name('tags.detach');
 
     Route::patch('translations', UpdateTradeUnitTranslations::class)->name('translations.update');
+    Route::patch('tariff-code-override/{organisation:id}', SetTradeUnitTariffCodeOverride::class)->name('tariff_code_override.update')->withoutScopedBindings();
+    Route::delete('tariff-code-override/{organisation:id}', DeleteTradeUnitTariffCodeOverride::class)->name('tariff_code_override.delete')->withoutScopedBindings();
 
     Route::post('brands/store', [StoreBrand::class, 'inTradeUnit'])->name('brands.store');
     Route::delete('brands/{brand:id}/delete', [DeleteBrand::class, 'inTradeUnit'])->name('brands.delete')->withoutScopedBindings();

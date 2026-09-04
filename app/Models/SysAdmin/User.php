@@ -367,6 +367,11 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
         return $this->morphedByMany(Organisation::class, 'model', 'user_has_authorised_models')->where('organisations.type', OrganisationTypeEnum::DIGITAL_AGENCY)->withTimestamps();
     }
 
+    public function hasGroupAccess(): bool
+    {
+        return $this->authorisedShopOrganisations()->exists() || $this->authTo(['group-overview', 'sysadmin.view']);
+    }
+
     public function authorisedShops(): MorphToMany
     {
         return $this->morphedByMany(Shop::class, 'model', 'user_has_authorised_models')->withTimestamps();

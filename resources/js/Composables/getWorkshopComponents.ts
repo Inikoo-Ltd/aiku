@@ -29,7 +29,7 @@ const workshopLoaders: Record<string, AsyncComponentLoader> = {
     'top-bar-1': () => import('@/Components/CMS/Website/TopBars/Template/Topbar1/Topbar1Workshop.vue'),
     'top-bar-2': () => import('@/Components/CMS/Website/TopBars/Template/Topbar2/Topbar2Workshop.vue'),
     'top-bar-1-fulfilment': () => import('@/Components/CMS/Website/TopBars/Template/Topbar1Fulfilment/Topbar1FulfilmentWorkshop.vue'),
-    'top-bar-2-fulfilment': () => import('@/Components/CMS/Website/TopBars/Template/Topbar2Fulfilment/Topbar2FulfilmentWorkshop.vue'),
+    'top-bar-2-fulfilment': () => import('@/Components/CMS/Website/TopBars/Template/Topbar2/Topbar2Workshop.vue'),
 
     //header
     'header-1': () => import('@/Components/CMS/Website/Headers/Header1/Header1Workshop.vue'),
