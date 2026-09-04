@@ -15,6 +15,7 @@ const props = defineProps<{
     pageHead: any
     customers: object
     validSelection: string[]
+    templateTags: string[]
     channels: Record<string, boolean>
     filters: Record<string, any>
     filtersStructure: Record<string, any>
@@ -49,6 +50,11 @@ watch(
         selection.value = Object.fromEntries(selectedKeys.value.filter((key) => kept.has(key)).map((key) => [key, true]))
     }
 )
+
+/* Agent tags are filled from whoever is handling a conversation, and a campaign send has no
+   agent, so a template carrying one reaches nobody. Called out on its own because the empty
+   table it produces otherwise reads as a bug. */
+const unfillableTags = computed(() => props.templateTags.filter((tag) => tag.startsWith("Agent ")))
 
 const isSaving = ref(false)
 const saveError = ref<string | null>(null)
@@ -89,7 +95,14 @@ const onSelect = async () => {
                 {{ trans(":count contacts in your audience", { count: selectedKeys.length }) }}
             </h2>
             <p class="text-sm text-gray-500">{{ trans("Only the selected contacts will be included.") }}</p>
+            <p v-if="templateTags.length" class="mt-1 text-sm text-gray-500">
+                {{ trans("Your template needs :tags, so contacts without them are left out.", { tags: templateTags.join(", ") }) }}
+            </p>
         </div>
+
+        <Message v-if="unfillableTags.length" severity="warn" :closable="false" class="mb-4">
+            {{ trans("Your template uses :tags, which a campaign has no value for, so it cannot be sent to anyone. Remove it from the template to choose recipients.", { tags: unfillableTags.join(", ") }) }}
+        </Message>
 
         <Message v-if="saveError" severity="error" :closable="false" class="mb-4">{{ saveError }}</Message>
 

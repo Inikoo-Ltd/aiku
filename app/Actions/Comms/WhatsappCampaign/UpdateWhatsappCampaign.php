@@ -147,9 +147,12 @@ class UpdateWhatsappCampaign extends OrgAction
                     ->whereNull('deleted_at')
                     ->ignore($this->campaign->id),
             ],
+            /* Swapping the template is fine, clearing it is not: the recipients were picked
+               against its merge tags, and a campaign with an audience but no template is a
+               state neither the workshop nor the send path has anything to say about. */
             'meta_message_template_id' => [
                 'sometimes',
-                'nullable',
+                $this->campaign->meta_message_template_id ? 'required' : 'nullable',
                 'integer',
                 Rule::exists('meta_message_templates', 'id')->where('shop_id', $this->shop->id),
             ],
@@ -161,6 +164,13 @@ class UpdateWhatsappCampaign extends OrgAction
             'recipients_list'                    => ['sometimes', 'array'],
             'recipients_list.*'                  => ['array'],
             'recipients_list.*.phone_number'     => ['required', 'string', 'regex:/^[1-9][0-9]{3,14}$/'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'meta_message_template_id.required' => __('A campaign keeps a template once it has one. Choose a different template instead of clearing it.'),
         ];
     }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed, ref } from "vue"
 import { Head, Link } from "@inertiajs/vue3"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
@@ -14,6 +14,7 @@ import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import WhatsappTemplatePreview from "@/Components/Chat/WhatsappTemplatePreview.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import Modal from "@/Components/Utils/Modal.vue"
 import { routeType } from "@/types/route"
 
 type TemplateOption = {
@@ -24,6 +25,7 @@ type TemplateOption = {
     body: string | null
     footer: string | null
     buttons: { type?: string; text?: string }[]
+    mergeTags: string[]
 }
 
 const props = defineProps<{
@@ -45,12 +47,14 @@ const props = defineProps<{
 
 const name = ref(props.campaign.name)
 const templateId = ref<number | null>(props.campaign.meta_message_template_id)
+const recipientsCount = ref(props.campaign.recipients_count)
 const savedName = ref<string | null>(null)
 const saveError = ref<string | null>(null)
 
-const selectedTemplate = computed(
-    () => props.templates.find((template) => template.value === templateId.value) ?? null
-)
+const templateOf = (id: number | null): TemplateOption | null =>
+    props.templates.find((template: TemplateOption) => template.value === id) ?? null
+
+const selectedTemplate = computed(() => templateOf(templateId.value))
 
 const pageHeadData = computed(() =>
     savedName.value ? { ...props.pageHead, title: savedName.value } : props.pageHead
@@ -79,7 +83,66 @@ const onNameBlur = async () => {
     if (!saveError.value) savedName.value = trimmed
 }
 
-watch(templateId, (value) => persist({ meta_message_template_id: value }))
+/* A template's merge tags decide who it can reach: recipients were picked against the old
+   template's tags, and the send path drops any contact that cannot supply every tag of the
+   new one. Compared as a set, because order only decides which {{n}} a tag lands in. */
+const tagsDiffer = (a: string[] = [], b: string[] = []) => {
+    const left = [...new Set(a)].sort()
+    const right = [...new Set(b)].sort()
+
+    return left.length !== right.length || left.some((tag, index) => tag !== right[index])
+}
+
+const pendingTemplateId = ref<number | null>(null)
+const isConfirmingReset = ref(false)
+
+/* The multiselect keeps its own copy of the value, so a declined change has to be undone by
+   remounting it rather than by leaving templateId alone. */
+const selectKey = ref(0)
+
+const applyTemplate = async (value: number | null, resetRecipients = false) => {
+    templateId.value = value
+
+    await persist(
+        resetRecipients
+            ? { meta_message_template_id: value, recipients_list: [] }
+            : { meta_message_template_id: value }
+    )
+
+    if (resetRecipients && !saveError.value) recipientsCount.value = 0
+}
+
+const onTemplateChange = (value: number | null) => {
+    if (value === templateId.value) return
+
+    const needsConfirmation =
+        templateId.value !== null &&
+        recipientsCount.value > 0 &&
+        tagsDiffer(selectedTemplate.value?.mergeTags, templateOf(value)?.mergeTags)
+
+    if (!needsConfirmation) {
+        applyTemplate(value)
+
+        return
+    }
+
+    pendingTemplateId.value = value
+    isConfirmingReset.value = true
+}
+
+const cancelTemplateChange = () => {
+    isConfirmingReset.value = false
+    pendingTemplateId.value = null
+    selectKey.value++
+}
+
+const confirmTemplateChange = async () => {
+    isConfirmingReset.value = false
+
+    await applyTemplate(pendingTemplateId.value, true)
+
+    pendingTemplateId.value = null
+}
 </script>
 
 <template>
@@ -156,8 +219,11 @@ watch(templateId, (value) => persist({ meta_message_template_id: value }))
                             {{ trans("WhatsApp template") }}
                         </label>
                         <PureMultiselect
-                            v-model="templateId"
+                            :key="selectKey"
+                            :modelValue="templateId"
+                            @update:modelValue="onTemplateChange"
                             :disabled="!isEditable"
+                            :required="true"
                             :options="templates"
                             label="label"
                             valueProp="value"
@@ -198,22 +264,33 @@ watch(templateId, (value) => persist({ meta_message_template_id: value }))
                 <div class="rounded-lg border border-gray-200 p-4 flex items-start justify-between gap-4">
                     <div>
                         <div class="text-sm font-medium text-gray-700">
-                            {{ trans(":count contacts selected", { count: campaign.recipients_count }) }}
+                            {{ trans(":count contacts selected", { count: recipientsCount }) }}
                         </div>
                         <p class="text-xs text-gray-500 mt-1">
                             {{ trans("Choose which contacts receive this campaign.") }}
                         </p>
                     </div>
                     <Link
-                        v-if="isEditable"
+                        v-if="isEditable && templateId"
                         :href="route(recipientsRoute.name, recipientsRoute.parameters)">
                         <Button :label="trans('Edit')" style="tertiary" size="xs" />
                     </Link>
+                    <Button
+                        v-else-if="isEditable"
+                        :label="trans('Edit')"
+                        style="tertiary"
+                        size="xs"
+                        :disabled="true"
+                        v-tooltip="trans('Choose a template first')" />
                 </div>
+
+                <p v-if="isEditable && !templateId" class="mt-2 text-xs text-gray-500">
+                    {{ trans("A template's merge tags decide who can be reached, so recipients are chosen after it.") }}
+                </p>
 
                 <div class="mt-3 flex items-center gap-2 text-xs text-gray-500">
                     <FontAwesomeIcon :icon="faUsers" class="text-gray-400" />
-                    {{ trans("Number of recipients") }}: {{ campaign.recipients_count }}
+                    {{ trans("Number of recipients") }}: {{ recipientsCount }}
                 </div>
             </div>
         </section>
@@ -225,5 +302,21 @@ watch(templateId, (value) => persist({ meta_message_template_id: value }))
                 <span class="text-xs font-normal text-gray-400">({{ trans("coming soon") }})</span>
             </header>
         </section>
+
+        <Modal :isOpen="isConfirmingReset" width="w-full max-w-lg" @onClose="cancelTemplateChange">
+            <h3 class="text-base font-medium text-gray-800">
+                {{ trans("This template needs different information") }}
+            </h3>
+            <p class="mt-2 text-sm text-gray-500">
+                {{ trans("Your :count selected contacts were chosen for the current template's merge tags. This template needs different ones, so the selection will be cleared and you will need to choose recipients again.", { count: recipientsCount }) }}
+            </p>
+            <div class="mt-6 flex justify-end gap-2">
+                <Button :label="trans('Cancel')" style="tertiary" @click="cancelTemplateChange" />
+                <Button
+                    :label="trans('Change template and clear recipients')"
+                    style="primary"
+                    @click="confirmTemplateChange" />
+            </div>
+        </Modal>
     </div>
 </template>
