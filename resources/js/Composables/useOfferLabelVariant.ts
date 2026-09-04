@@ -1,8 +1,7 @@
-export type OfferLabelVariant = "default" | "step" | "shop"
+export type OfferLabelVariant = "default" | "step"
 
 const OFFER_TYPE_LABEL_VARIANTS: Record<string, OfferLabelVariant> = {
 	"Product Quantity Ordered": "step",
-	"Shop Ordered": "shop",
 }
 
 export function getOfferLabelVariant(offer?: { type?: string } | null): OfferLabelVariant {

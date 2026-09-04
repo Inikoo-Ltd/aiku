@@ -2,7 +2,6 @@
 import { computed, ref } from "vue"
 import Popover from "primevue/popover"
 import { ctrans } from "@/Composables/useTrans"
-import { getOfferLabelVariant } from "@/Composables/useOfferLabelVariant"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faArrowDown } from "@far"
 
@@ -36,8 +35,6 @@ const hideInfo = () => {
 
 const label = computed(() => props.offer?.label || ctrans("Special Offer"))
 
-const isShopOrdered = computed(() => getOfferLabelVariant(props.offer) === "shop")
-
 const maxDiscountLabel = computed(() => {
     const raw = props.offer?.max_percentage_discount
 
@@ -60,8 +57,7 @@ const maxDiscountLabel = computed(() => {
         @mouseleave="hideInfo"
     >
         <div
-            class="flex items-center gap-2 rounded px-1 md:py-[5px] py-[3px] xl:py-[3px] text-[8px] xl:text-[10px] 2xl:text-xs font-semibold leading-none text-white transition-all duration-150"
-            :class="isShopOrdered ? 'bg-[#0057A8]' : 'bg-red-700'"
+            class="flex items-center bg-red-700 gap-2 rounded px-1 md:py-[5px] py-[3px] xl:py-[3px] text-[8px] xl:text-[10px] 2xl:text-xs font-semibold leading-none text-white transition-all duration-150"
         >
 
         <FontAwesomeIcon :icon="faArrowDown"  class="text-[8px]"/>

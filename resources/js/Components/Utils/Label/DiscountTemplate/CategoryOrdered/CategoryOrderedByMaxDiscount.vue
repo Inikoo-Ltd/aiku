@@ -97,10 +97,6 @@ const maxDiscountLabel = computed(() => {
     @apply bg-[#C48497] border-[#C48497];
 }
 
-.offer-max-discount-shop {
-    @apply !bg-[#0057A8] !border-blue-900;
-}
-
 
 .offer-popover {
     @apply py-2 px-3;
