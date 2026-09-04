@@ -15,6 +15,7 @@ const props = defineProps<{
 	sessionUlid: string
 	session?: Partial<SessionAPI> | null
 	viewerType: ViewerType
+	channel?: string
 }>()
 
 const emit = defineEmits<{
@@ -40,6 +41,10 @@ const rating = ref<number | null>(null)
 const isClosed = ref(false)
 
 /* ================= COMPUTED ================= */
+
+const sessionApiBase = computed(() =>
+	`${baseUrl}/app/api/chats/${props.channel === 'whatsapp' ? 'meta/sessions' : 'sessions'}`
+)
 
 const statusLabel = computed(() =>
 	isClosed.value
@@ -126,7 +131,7 @@ const getMessages = async (loadMore = false) => {
 	try {
 		loadMore ? (isLoadingMore.value = true) : (isLoading.value = true)
 
-		let url = `${baseUrl}/app/api/chats/sessions/${props.sessionUlid}/messages`
+		let url = `${sessionApiBase.value}/${props.sessionUlid}/messages`
 
 		if (loadMore && nextCursor.value) {
 			url += `?cursor=${nextCursor.value}&limit=50`
@@ -166,8 +171,9 @@ const updateRating = async (value: number) => {
 
 	try {
 		await axios.put(
-			`${baseUrl}/app/api/chats/sessions/${props.sessionUlid}/update`,
-			{ rating: value }
+			`${sessionApiBase.value}/${props.sessionUlid}/update`,
+			{ rating: value },
+			{ withCredentials: true }
 		)
 	} catch {
 		// silent fail

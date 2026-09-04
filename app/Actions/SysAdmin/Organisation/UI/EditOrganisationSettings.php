@@ -225,6 +225,30 @@ class EditOrganisationSettings extends OrgAction
                             ),
                         ],
                         [
+                            'label'  => __('Meta-configuration'),
+                            'icon'   => 'fa-brands fa-meta',
+                            'fields' => [
+                                'meta_access_key' => [
+                                    'type'  => 'input',
+                                    'label' => __('Access Key'),
+                                    'value' => Arr::get($organisation->settings, 'meta.access_key', ''),
+                                ],
+                                'meta_app_id'     => [
+                                    'type'        => 'input',
+                                    'label'       => __('App ID'),
+                                    'information' => __('The Meta app this organisation uses. Needed to upload the sample files WhatsApp templates are reviewed with.'),
+                                    'value'       => Arr::get($organisation->settings, 'meta.app_id', ''),
+                                ],
+                                'meta_app_secret' => [
+                                    'type'                  => 'password',
+                                    'label'                 => __('App Secret'),
+                                    'information'           => __('Used to verify that incoming WhatsApp webhooks really come from Meta.'),
+                                    'value'                 => Arr::get($organisation->settings, 'meta.app_secret', ''),
+                                    'use_generate_password' => false,
+                                ],
+                            ],
+                        ],
+                        [
                             "label" => __("google drive"),
                             "icon" => "fab fa-google",
                             "button" => [

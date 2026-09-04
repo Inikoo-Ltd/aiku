@@ -130,28 +130,32 @@ class GetChatSessions
             if ($currentAgent) {
                 $shopIds = $currentAgent->shops()->pluck('shops.id');
 
+                $requestedStatuses = (array) ($filters['statuses'] ?? ($filters['status'] ? [$filters['status']] : []));
+                $isClosed          = in_array('closed', $requestedStatuses);
+                $assignmentStatus  = $isClosed
+                    ? ChatAssignmentStatusEnum::RESOLVED->value
+                    : ChatAssignmentStatusEnum::ACTIVE->value;
+
                 if (!empty($filters['view_team'])) {
                     $teamAgentIds = ChatAgent::whereHas('shops', function ($q) use ($shopIds) {
                         $q->whereIn('shops.id', $shopIds);
                     })->where('id', '!=', $currentAgent->id)->pluck('id');
-
-                    $requestedStatuses = (array) ($filters['statuses'] ?? ($filters['status'] ? [$filters['status']] : []));
-                    $isClosed          = in_array('closed', $requestedStatuses);
-                    $assignmentStatus  = $isClosed
-                        ? ChatAssignmentStatusEnum::RESOLVED->value
-                        : ChatAssignmentStatusEnum::ACTIVE->value;
 
                     $query->whereHas('assignments', function ($assignmentQ) use ($teamAgentIds, $assignmentStatus) {
                         $assignmentQ->whereIn('chat_agent_id', $teamAgentIds)
                             ->where('status', $assignmentStatus);
                     });
                 } else {
-                    $query->where(function ($q) use ($currentAgent, $shopIds) {
+                    // "Mine" means currently held by me. Matching any assignment row
+                    // regardless of status would keep threads that have since been
+                    // handed to another agent, listed under that agent's name.
+                    $query->where(function ($q) use ($currentAgent, $shopIds, $assignmentStatus) {
                         $q->where(function ($sub) use ($shopIds) {
                             $sub->whereIn('shop_id', $shopIds)
                                 ->where('status', ChatSessionStatusEnum::WAITING);
-                        })->orWhereHas('assignments', function ($assignmentQ) use ($currentAgent) {
-                            $assignmentQ->where('chat_agent_id', $currentAgent->id);
+                        })->orWhereHas('assignments', function ($assignmentQ) use ($currentAgent, $assignmentStatus) {
+                            $assignmentQ->where('chat_agent_id', $currentAgent->id)
+                                ->where('status', $assignmentStatus);
                         });
                     });
                 }
@@ -170,7 +174,7 @@ class GetChatSessions
         }
 
         if (isset($filters['web_user_id'])) {
-            $query->where('web_user_id', $filters['web_user_id']);
+            $query->whereIn('web_user_id', (array) $filters['web_user_id']);
         }
 
         if (!empty($filters['search'])) {

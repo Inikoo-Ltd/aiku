@@ -83,7 +83,7 @@ const props = withDefaults(defineProps<{
     filtersStructure: Record<string, any>
     recipientsRecipe: any,
     shopId: number,
-    estimatedRecipients: number,
+    estimatedRecipients?: number,
     shopSlug: string
     showSave?: boolean
     exportRoutes?: { xlsx: routeType, csv: routeType }
@@ -95,9 +95,14 @@ const props = withDefaults(defineProps<{
     upcomingOutOfStockCount?: number
     upcomingFilter?: string | null
     estimateLabel?: string
+    showEstimate?: boolean
     exportFields?: { key: string, label: string }[]
+    channels?: Record<string, boolean>
+    channelOptions?: { value: string, label: string }[]
+    reloadOnly?: string[]
 }>(), {
     showSave: true,
+    showEstimate: true,
     estimateLabel: 'Estimated Recipients',
 });
 
@@ -123,6 +128,21 @@ const {
     hydrateSavedFilters,
     extraQuery,
 } = useFilterRecipients(props)
+
+const selectedChannels = ref<Record<string, boolean>>({ ...(props.channels ?? {}) })
+
+if (props.channelOptions?.length) {
+    extraQuery.channels = { ...selectedChannels.value }
+}
+
+/* The selection no longer rides along: the server answers per row whether the campaign holds
+   that contact, so a channel change just re-asks. Deleted rather than left unset because a
+   value from an earlier visit would otherwise keep being sent on every later reload. */
+const onChannelChange = () => {
+    extraQuery.channels = { ...selectedChannels.value }
+    delete extraQuery.selection
+    fetchCustomers()
+}
 
 const selectedStates = ref<string[]>(props.stateFilter ? [...props.stateFilter] : [])
 
@@ -400,6 +420,15 @@ watch(
         <div class="flex flex-col gap-3 mb-6 xl:flex-row xl:items-center xl:justify-between">
             <!-- left side -->
             <div class="flex flex-wrap items-center gap-2 min-w-0">
+                <div v-if="channelOptions?.length" class="flex items-center gap-4 h-10 px-4 rounded-lg border border-gray-200 bg-white">
+                    <label v-for="option in channelOptions" :key="option.value"
+                        class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" v-model="selectedChannels[option.value]" @change="onChannelChange"
+                            class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <span class="text-sm text-gray-700 whitespace-nowrap">{{ trans(option.label) }}</span>
+                    </label>
+                </div>
+
                 <Menu :model="availableFilters" popup ref="filterMenu">
                 </Menu>
 
@@ -458,7 +487,7 @@ watch(
                     @click="clearAllFilters" />
             </div>
             <!-- center side -->
-            <div v-if="isAllCustomers" class="flex items-center">
+            <div v-if="isAllCustomers && showEstimate" class="flex items-center">
                 <span class="text-blue-600 font-medium">
                     {{ trans("Audience: All Customers") }}
                 </span>
@@ -727,7 +756,7 @@ watch(
             </div>
         </div>
 
-        <div class="mt-8">
+        <div v-if="showEstimate" class="mt-8">
             <div class="bg-white shadow-sm ring-1 ring-gray-200 rounded-2xl p-8 flex items-center justify-between">
 
                 <div>

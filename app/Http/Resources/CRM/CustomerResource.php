@@ -54,12 +54,27 @@ class CustomerResource extends JsonResource
         $shop = $customer->shop;
 
 
+         if ($shop?->type == ShopTypeEnum::B2B) {
+            $subscriptions['whatsapp_newsletter'] = [
+                'label'           => __('WhatsApp Newsletter'),
+                'field'           => 'is_subscribed_to_whatsapp_newsletter',
+                'is_subscribed'   => $comms->is_subscribed_to_whatsapp_newsletter,
+                'unsubscribed_at' => $comms->whatsapp_newsletter_unsubscribed_at
+            ];
+        }
         if ($shop?->type == ShopTypeEnum::DROPSHIPPING) {
             $subscriptions['price_change_notification'] = [
                 'label'           => __('Price Change Notification'),
                 'field'           => 'is_subscribed_to_price_change_notification',
                 'is_subscribed'   => $comms->is_subscribed_to_price_change_notification,
                 'unsubscribed_at' => $comms->price_change_notification_unsubscribed_at
+            ];
+
+            $subscriptions['whatsapp_newsletter'] = [
+                'label'           => __('WhatsApp Newsletter'),
+                'field'           => 'is_subscribed_to_whatsapp_newsletter',
+                'is_subscribed'   => $comms->is_subscribed_to_whatsapp_newsletter,
+                'unsubscribed_at' => $comms->whatsapp_newsletter_unsubscribed_at
             ];
         }
 

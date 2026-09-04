@@ -10,6 +10,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatSession;
+use App\Models\Chat\MetaChatSession;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Masters\MasterAsset;
@@ -181,6 +182,32 @@ Broadcast::channel('chat-session.{ulid}', function (WebUser|User $user, string $
     }
 
     return false;
+});
+
+Broadcast::channel('meta-chat-session.{ulid}', function (User $user, string $ulid) {
+    $agent = $user->chatAgent;
+
+    if (!$agent) {
+        return false;
+    }
+
+    $shopId = MetaChatSession::where('ulid', $ulid)->value('shop_id');
+
+    if (!$shopId) {
+        return false;
+    }
+
+    $organisationId = Shop::where('id', $shopId)->value('organisation_id');
+
+    return $agent->shopAssignments()
+        ->where(function ($query) use ($shopId, $organisationId) {
+            $query->where('shop_id', $shopId)
+                ->orWhere(function ($orgWide) use ($organisationId) {
+                    $orgWide->whereNull('shop_id')
+                        ->where('organisation_id', $organisationId);
+                });
+        })
+        ->exists();
 });
 
 Broadcast::channel('chat-list.{shopId}', function ($user, string $shopId) {

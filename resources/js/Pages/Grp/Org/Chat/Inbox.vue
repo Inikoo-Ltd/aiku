@@ -7,15 +7,18 @@ import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import MessageAreaAgent from "@/Components/Chat/Agent/MessageAreaAgent.vue"
+import WhatsappMessageAreaAgent from "@/Components/Chat/Agent/WhatsappMessageAreaAgent.vue"
 import ChatConversationSidePanel from "@/Components/Chat/ChatConversationSidePanel.vue"
 import SettingChat from "@/Components/Chat/SettingChat.vue"
+import NewWhatsappChatDialog from "@/Components/Chat/NewWhatsappChatDialog.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Image from "@common/Components/Image.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUser, faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faFilter, faStoreAlt } from "@fal"
-import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faAngleDown, faChevronRight, faStar as faStarSolid } from "@fortawesome/free-solid-svg-icons"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus } from "@fal"
+import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid } from "@fortawesome/free-solid-svg-icons"
+import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import {
     Contact,
     SessionAPI,
@@ -27,7 +30,13 @@ const props = defineProps<{
     pageHead: any
     breadcrumbs: any
     organisation: { id: number; slug: string; name: string }
-    inboxes: Array<{ id: number; name: string; slug: string; type: string | null }>
+    inboxes: Array<{
+        id: number
+        name: string
+        slug: string
+        type: string | null
+        channels: Array<{ key: string; name: string; unread: number }>
+    }>
     selectedSessionUlid?: string | null
     initialSession?: any | null
     preselectShopId?: number | null
@@ -74,17 +83,28 @@ const messages = ref<ChatMessage[]>([])
 const panelSession = computed(() => {
     const s = selectedSession.value
     if (!s) return null
+    const channel = (s as any).channel ?? (selectedChannel.value === "whatsapp" ? "whatsapp" : "website")
+    const isWhatsapp = channel === "whatsapp"
+
+    // A WhatsApp thread is keyed to a customer, but the list mapper stores that customer
+    // in the shared `web_user` slot, so read it from whichever side carries it.
+    const webUserId = isWhatsapp ? null : (s.web_user?.id ?? null)
+    const customerId = isWhatsapp
+        ? ((s as any).customer?.id ?? s.web_user?.id ?? null)
+        : ((s as any).customer?.id ?? null)
+
     return {
         ulid: String(s.ulid),
-        // Registered customer: use the customer/web-user name (same as the chat list).
-        // Guest: prefer the name they submitted (metadata / guest profile) over the placeholder id.
-        contact_name: s.web_user?.id
+        channel,
+        contact_name: (webUserId || customerId)
             ? (s.contact_name || s.guest_identifier || "Customer")
             : ((s as any).metadata?.name || s.guest_profile?.name || s.guest_identifier || "Guest"),
-        is_guest: !s.web_user?.id,
-        web_user_id: s.web_user?.id ?? null,
+        is_guest: !(webUserId || customerId),
+        web_user_id: webUserId,
+        customer_id: customerId,
         guest_email: (s as any).metadata?.email ?? s.guest_profile?.email ?? null,
         guest_phone: (s as any).metadata?.phone ?? s.guest_profile?.phone ?? null,
+        phone_number: (s as any).phone_number ?? null,
         shop_name: s.shop?.name ?? null,
         status: s.status,
         priority: s.priority ?? null,
@@ -103,6 +123,8 @@ const sidePanelVisible = ref(false)
 
 const chatSettingVisible = ref(false)
 const settingInitialTab = ref<"general" | "jira" | "slack">("general")
+
+const newChatVisible = ref(false)
 const openChatSettings = () => {
     settingInitialTab.value = "general"
     chatSettingVisible.value = true
@@ -124,6 +146,8 @@ const formatTime = (timestamp: number) => {
 const mapSession = (s: SessionAPI): Contact => ({
     id: s.id,
     ulid: s.ulid,
+    // Merged views tag every row; single-channel views inherit the selected channel.
+    channel: (s as any).channel ?? (selectedChannel.value === "whatsapp" ? "whatsapp" : "website"),
     name: s.contact_name || s.guest_identifier || "",
     avatar: s.image ?? "",
     lastMessage: s.last_message?.message ?? "",
@@ -134,10 +158,11 @@ const mapSession = (s: SessionAPI): Contact => ({
     status: s.status,
     is_spam: (s as any).is_spam ?? false,
     is_highlighted: (s as any).is_highlighted ?? false,
-    webUser: s.web_user,
+    webUser: s.web_user ?? (s as any).customer,
     priority: s.priority,
     guest_profile: s.guest_profile,
     metadata: (s as any).metadata ?? null,
+    phone_number: (s as any).phone_number ?? null,
     agent: s.assigned_agent,
     shop: s.shop,
     organisation: s.organisation,
@@ -145,6 +170,8 @@ const mapSession = (s: SessionAPI): Contact => ({
 })
 
 const selectedShopId = ref<number | null>(props.inboxes?.[0]?.id ?? null)
+const selectedChannel = ref<string | null>(props.inboxes?.[0]?.channels?.[0]?.key ?? null)
+const expandedInboxIds = ref<number[]>(props.inboxes?.[0] ? [props.inboxes[0].id] : [])
 
 const buildParams = (page: number) => ({
     ...(trashView.value
@@ -158,17 +185,34 @@ const buildParams = (page: number) => ({
     organisation_id: props.organisation.id,
     page,
     ...(selectedShopId.value && !highlightView.value ? { shop_id: selectedShopId.value } : {}),
+    // ponytail: the API ignores `channel` until chat sessions carry one; sent so the intent is visible.
+    ...(selectedChannel.value ? { channel: selectedChannel.value } : {}),
     ...(viewMode.value === "team" ? { view_team: 1 } : {}),
     ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
+})
+
+// Spam, trash and highlight are cross-channel clean-up views, so they read from the
+// merged endpoint instead of whichever channel happens to be selected.
+const isMergedView = computed(() => spamView.value || trashView.value || highlightView.value)
+
+const sessionsUrl = computed(() => {
+    if (isMergedView.value) {
+        return `${baseUrl}/app/api/chats/all/sessions`
+    }
+
+    return selectedChannel.value === "whatsapp"
+        ? `${baseUrl}/app/api/chats/meta/sessions`
+        : `${baseUrl}/app/api/chats/sessions`
 })
 
 const reloadContacts = async () => {
     currentPage.value = 1
     hasMore.value = false
     try {
-        const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params: buildParams(1) })
+        const res = await axios.get(sessionsUrl.value, { params: buildParams(1) })
         contacts.value = res.data.data.sessions.map(mapSession)
         hasMore.value = res.data.data.pagination?.has_more ?? false
+        await openPendingSession()
     } catch (e) {
         console.error("Failed to reload contacts:", e)
     }
@@ -178,7 +222,7 @@ const loadMore = async () => {
     if (isLoadingMore.value || !hasMore.value) return
     isLoadingMore.value = true
     try {
-        const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params: buildParams(currentPage.value + 1) })
+        const res = await axios.get(sessionsUrl.value, { params: buildParams(currentPage.value + 1) })
         contacts.value = [...contacts.value, ...res.data.data.sessions.map(mapSession)]
         currentPage.value += 1
         hasMore.value = res.data.data.pagination?.has_more ?? false
@@ -229,9 +273,7 @@ const markSpam = async (c: Contact, spam: boolean) => {
     openMenuUlid.value = null
     isSpamming.value = { ...isSpamming.value, [c.ulid]: true }
     try {
-        const routeName = spam
-            ? "grp.org.chat.agents.sessions.spam"
-            : "grp.org.chat.agents.sessions.not_spam"
+        const routeName = sessionRoute(spam ? "spam" : "not_spam", c)
         await axios.patch(route(routeName, [props.organisation.slug, c.ulid]), {}, { withCredentials: true })
         // It moved to (or out of) the Spam tab — drop it from the current list.
         contacts.value = contacts.value.filter((x) => x.ulid !== c.ulid)
@@ -301,15 +343,48 @@ const shopAvatarStyle = (inbox: { id: number }) => {
     return { backgroundColor: color + "1A", color }
 }
 
-const selectShop = (shopId: number) => {
-    if (selectedShopId.value === shopId && !spamView.value && !trashView.value && !highlightView.value) return
+const toggleInbox = (shopId: number) => {
+    if (inboxRailCollapsed.value) {
+        inboxRailCollapsed.value = false
+    }
+    const idx = expandedInboxIds.value.indexOf(shopId)
+    if (idx >= 0) {
+        expandedInboxIds.value.splice(idx, 1)
+    } else {
+        expandedInboxIds.value.push(shopId)
+    }
+}
+
+// Select + expand an inbox without reloading — callers on mount reload once afterwards.
+// When `channelKey` is provided (e.g. from URL params) it takes precedence over the
+// default first channel so that deep-links like `?channel=whatsapp` are honoured.
+const revealInbox = (shopId: number, channelKey?: string | null) => {
+    selectedShopId.value = shopId
+    const inbox = props.inboxes?.find((i) => i.id === shopId)
+    const resolved = channelKey && inbox?.channels?.some((ch) => ch.key === channelKey)
+        ? channelKey
+        : inbox?.channels?.[0]?.key ?? null
+    selectedChannel.value = resolved
+    if (!expandedInboxIds.value.includes(shopId)) {
+        expandedInboxIds.value.push(shopId)
+    }
+}
+
+const selectChannel = (shopId: number, channelKey: string) => {
+    if (selectedShopId.value === shopId && selectedChannel.value === channelKey && !spamView.value && !trashView.value && !highlightView.value) return
     spamView.value = false
     trashView.value = false
     highlightView.value = false
     selectedShopId.value = shopId
+    selectedChannel.value = channelKey
     selectedSession.value = null
     messages.value = []
+    newChatVisible.value = false
     clearAgentFilter()
+
+    const baseUrl = route("grp.org.chat.inbox", [props.organisation.slug])
+    window.history.replaceState(window.history.state, "", baseUrl)
+
     reloadContacts()
 }
 
@@ -319,8 +394,10 @@ const selectSpam = () => {
     trashView.value = false
     highlightView.value = false
     selectedShopId.value = null
+    selectedChannel.value = null
     selectedSession.value = null
     messages.value = []
+    newChatVisible.value = false
     clearAgentFilter()
     reloadContacts()
 }
@@ -331,8 +408,10 @@ const selectTrash = () => {
     spamView.value = false
     highlightView.value = false
     selectedShopId.value = null
+    selectedChannel.value = null
     selectedSession.value = null
     messages.value = []
+    newChatVisible.value = false
     clearAgentFilter()
     reloadContacts()
 }
@@ -343,13 +422,25 @@ const selectHighlight = () => {
     spamView.value = false
     trashView.value = false
     selectedShopId.value = null
+    selectedChannel.value = null
     selectedSession.value = null
     messages.value = []
+    newChatVisible.value = false
     if (viewMode.value === "team" && activeTab.value === "waiting") {
         activeTab.value = "active"
     }
     clearAgentFilter()
     reloadContacts()
+}
+
+// Website chats and WhatsApp threads live in different tables, so the row actions
+// resolve to the matching route family for whichever channel is being shown.
+const sessionRoute = (action: string, contact?: Contact) => {
+    const channel = contact?.channel ?? (selectedChannel.value === "whatsapp" ? "whatsapp" : "website")
+
+    return channel === "whatsapp"
+        ? `grp.org.chat.agents.whatsapp.sessions.${action}`
+        : `grp.org.chat.agents.sessions.${action}`
 }
 
 const patchSession = async (c: Contact, routeName: string, method: "patch" | "delete", body: Record<string, any> = {}) => {
@@ -377,7 +468,7 @@ const removeFromList = (ulid: string) => {
 
 const setPriority = async (c: Contact, priority: string) => {
     openMenuUlid.value = null
-    const ok = await patchSession(c, "grp.org.chat.agents.sessions.priority", "patch", { priority })
+    const ok = await patchSession(c, sessionRoute("priority", c), "patch", { priority })
     if (ok) {
         const found = contacts.value.find((x) => x.ulid === c.ulid)
         if (found) found.priority = priority
@@ -408,9 +499,24 @@ const onSessionSynced = (webUser: { id: number; name: string; email: string | nu
     }
 }
 
+const onCustomerSynced = (customer: { id: number; name: string; email: string | null; phone: string | null }) => {
+    if (!selectedSession.value || !customer) return
+    const ulid = selectedSession.value.ulid
+    selectedSession.value = {
+        ...selectedSession.value,
+        customer: { id: customer.id, name: customer.name, email: customer.email, phone: customer.phone } as any,
+        contact_name: customer.name || (selectedSession.value as any).contact_name,
+    } as SessionAPI
+    const found = contacts.value.find((x) => x.ulid === ulid)
+    if (found) {
+        found.webUser = { id: customer.id, name: customer.name } as any
+        found.name = customer.name || found.name
+    }
+}
+
 const trashChat = async (c: Contact) => {
     openMenuUlid.value = null
-    if (await patchSession(c, "grp.org.chat.agents.sessions.trash", "delete")) {
+    if (await patchSession(c, sessionRoute("trash", c), "delete")) {
         removeFromList(c.ulid)
         fetchInboxNotifications()
     }
@@ -419,7 +525,7 @@ const trashChat = async (c: Contact) => {
 const toggleHighlight = async (c: Contact) => {
     openMenuUlid.value = null
     const next = !c.is_highlighted
-    if (await patchSession(c, "grp.org.chat.agents.sessions.highlight", "patch")) {
+    if (await patchSession(c, sessionRoute("highlight", c), "patch")) {
         const found = contacts.value.find((x) => x.ulid === c.ulid)
         if (found) found.is_highlighted = next
         if (selectedSession.value?.ulid === c.ulid) selectedSession.value.is_highlighted = next
@@ -431,7 +537,7 @@ const toggleHighlight = async (c: Contact) => {
 
 const restoreChat = async (c: Contact) => {
     openMenuUlid.value = null
-    if (await patchSession(c, "grp.org.chat.agents.sessions.restore", "patch")) {
+    if (await patchSession(c, sessionRoute("restore", c), "patch")) {
         removeFromList(c.ulid)
         fetchInboxNotifications()
     }
@@ -440,7 +546,7 @@ const restoreChat = async (c: Contact) => {
 const forceDeleteChat = async (c: Contact) => {
     confirmDeleteUlid.value = null
     openMenuUlid.value = null
-    if (await patchSession(c, "grp.org.chat.agents.sessions.force_delete", "delete")) {
+    if (await patchSession(c, sessionRoute("force_delete", c), "delete")) {
         removeFromList(c.ulid)
     }
 }
@@ -451,6 +557,75 @@ const notifActive = ref<any[]>([])
 const notifReopen = ref<any[]>([])
 const teamUnreadByShop = ref<Record<number, number>>({})
 
+const notifWaWaiting = ref<any[]>([])
+const notifWaActive = ref<any[]>([])
+const notifWaReopen = ref<any[]>([])
+
+// The messages widget links here with the channel it came from, so a WhatsApp row does
+// not land the agent on the website tab of the right shop.
+const pendingSessionUlid = ref<string | null>(null)
+
+const applyChannelFromUrl = () => {
+    const params = new URLSearchParams(window.location.search)
+    const channel = params.get("channel")
+
+    if (channel === "whatsapp" || channel === "website") {
+        selectedChannel.value = channel
+    }
+
+    pendingSessionUlid.value = params.get("session")
+}
+
+// The linked conversation can only be opened once its list has arrived, so the ulid waits
+// here and is consumed by the first load that contains it.
+const openPendingSession = async () => {
+    if (!pendingSessionUlid.value) return
+
+    const contact = contacts.value.find((c) => String(c.ulid) === pendingSessionUlid.value)
+
+    if (contact) {
+        pendingSessionUlid.value = null
+        openChat(contact)
+        return
+    }
+
+    // Session not in the current tab — fetch all statuses from the API to find it
+    // and switch to the matching tab before opening.
+    const ulid = pendingSessionUlid.value
+    try {
+        const url = selectedChannel.value === "whatsapp"
+            ? `${baseUrl}/app/api/chats/meta/sessions`
+            : `${baseUrl}/app/api/chats/sessions`
+
+        const { data } = await axios.get(url, {
+            params: {
+                assigned_to_me: myAgentId,
+                organisation_id: props.organisation.id,
+                ...(selectedShopId.value ? { shop_id: selectedShopId.value } : {}),
+                page: 1,
+                limit: 50,
+            },
+        })
+
+        const sessions = data?.data?.sessions ?? []
+        const found = sessions.find((s: any) => String(s.ulid) === ulid)
+
+        if (found) {
+            const mapped = mapSession(found)
+
+            if (mapped.status && ["waiting", "active", "closed"].includes(mapped.status) && activeTab.value !== mapped.status) {
+                activeTab.value = mapped.status as "waiting" | "active" | "closed"
+                await reloadContacts()
+            }
+
+            pendingSessionUlid.value = null
+            openChat(mapped)
+        }
+    } catch (e) {
+        console.error("Failed to fetch pending session:", e)
+    }
+}
+
 const fetchInboxNotifications = async () => {
     if (!myAgentId) return
     try {
@@ -459,38 +634,74 @@ const fetchInboxNotifications = async () => {
         notifActive.value = data?.data?.active ?? []
         notifReopen.value = data?.data?.reopen ?? []
         teamUnreadByShop.value = data?.data?.team_unread ?? {}
+        notifWaWaiting.value = data?.data?.whatsapp?.waiting ?? []
+        notifWaActive.value = data?.data?.whatsapp?.active ?? []
+        notifWaReopen.value = data?.data?.whatsapp?.reopen ?? []
     } catch (e) {
         // silent — badges are non-critical
     }
 }
 
-// Team-unread badge for the currently selected inbox only, so it matches the shop in view.
+// Team-unread badge for the currently selected inbox + channel. team_unread is a website
+// ChatSession count, so it only applies to the website channel (WhatsApp has no count yet).
 const teamUnreadForShop = computed(() =>
-    selectedShopId.value ? (teamUnreadByShop.value[selectedShopId.value] ?? 0) : 0
+    selectedShopId.value && selectedChannel.value !== "whatsapp"
+        ? (teamUnreadByShop.value[selectedShopId.value] ?? 0)
+        : 0
 )
 
+// Each channel keeps its own feed, so the tab badges follow whichever inbox is open
+// rather than showing website counts above a WhatsApp list.
 const tabUnread = computed(() => {
     const sid = selectedShopId.value
     const inShop = (arr: any[]) => (sid ? arr.filter((s) => s?.shop?.id === sid) : arr)
+    const isWhatsapp = selectedChannel.value === "whatsapp"
+
     return {
-        waiting: inShop(notifWaiting.value).length,
-        active: inShop(notifActive.value).length,
-        closed: inShop(notifReopen.value).length,
+        waiting: inShop(isWhatsapp ? notifWaWaiting.value : notifWaiting.value).length,
+        active: inShop(isWhatsapp ? notifWaActive.value : notifActive.value).length,
+        closed: inShop(isWhatsapp ? notifWaReopen.value : notifReopen.value).length,
     }
 })
 
-const shopUnread = computed<Record<number, number>>(() => {
+const countByShop = (sessions: any[]) => {
     const map: Record<number, number> = {}
-    for (const s of [...notifWaiting.value, ...notifActive.value, ...notifReopen.value]) {
-        const sid = s?.shop?.id
+    for (const session of sessions) {
+        const sid = session?.shop?.id
         if (!sid) continue
         map[sid] = (map[sid] ?? 0) + 1
+    }
+    return map
+}
+
+const shopUnread = computed<Record<number, number>>(() =>
+    countByShop([...notifWaiting.value, ...notifActive.value, ...notifReopen.value])
+)
+
+const whatsappUnread = computed<Record<number, number>>(() =>
+    countByShop([...notifWaWaiting.value, ...notifWaActive.value, ...notifWaReopen.value])
+)
+
+const channelUnread = (inbox: { id: number }, channel: { key: string; unread: number }) =>
+    channel.key === "whatsapp"
+        ? (whatsappUnread.value[inbox.id] ?? 0)
+        : (shopUnread.value[inbox.id] ?? 0)
+
+const inboxUnread = computed<Record<number, number>>(() => {
+    const map: Record<number, number> = {}
+    for (const inbox of props.inboxes ?? []) {
+        let total = 0
+        for (const channel of inbox.channels ?? []) {
+            total += channelUnread(inbox, channel)
+        }
+        map[inbox.id] = total
     }
     return map
 })
 
 const openChat = (c: Contact) => {
     selectedSession.value = {
+        channel: c.channel,
         ulid: String(c.ulid),
         guest_identifier: c.name,
         status: c.status,
@@ -498,6 +709,7 @@ const openChat = (c: Contact) => {
         web_user: c.webUser,
         guest_profile: c.guest_profile,
         metadata: c.metadata,
+        phone_number: c.phone_number,
         assigned_agent: c.agent,
         shop: c.shop,
         organisation: c.organisation,
@@ -518,11 +730,36 @@ const onRestoreFromThread = () => {
     fetchInboxNotifications()
 }
 
+const onWhatsappChatCreated = (session: any) => {
+    selectedSession.value = {
+        channel: "whatsapp",
+        ulid: String(session.ulid),
+        contact_name: session.contact_name,
+        guest_identifier: session.guest_identifier ?? session.contact_name,
+        status: session.status,
+        priority: session.priority,
+        shop: session.shop,
+        organisation: props.organisation,
+        phone_number: session.phone_number,
+        customer: session.customer_id ? { id: session.customer_id } : null,
+        assigned_agent: session.assigned_agent ?? null,
+    } as SessionAPI
+    messages.value = []
+    updateUrl(String(session.ulid))
+    reloadContacts()
+}
+
 const handleClickContact = (c: Contact) => {
     errorPerContact.value[c.ulid] = ""
     // Waiting chats open into an "Assign to me" step (no composer) until assigned.
     openChat(c)
 }
+
+// In merged views the open conversation may belong to another channel than the one
+// selected in the sidebar, so the thread pane follows the conversation itself.
+const activeChannel = computed(
+    () => (selectedSession.value as any)?.channel ?? (selectedChannel.value === "whatsapp" ? "whatsapp" : "website")
+)
 
 const onMessagesRead = () => {
     // A chat was read → its unread badge should clear.
@@ -552,7 +789,10 @@ const onAssignSelfSuccess = async () => {
 }
 
 const updateUrl = (ulid: string) => {
-    const url = route("grp.org.chat.inbox.conversation", [props.organisation.slug, ulid])
+    const url = selectedChannel.value === "whatsapp"
+        ? route("grp.org.chat.inbox", [props.organisation.slug]) + `?channel=whatsapp&session=${ulid}`
+        : route("grp.org.chat.inbox.conversation", [props.organisation.slug, ulid])
+
     window.history.replaceState(window.history.state, "", url)
 }
 
@@ -632,6 +872,7 @@ const buildInitialSession = () => {
     const init = props.initialSession
     if (!init) return
     selectedSession.value = {
+        channel: "website",
         ulid: String(init.ulid),
         contact_name: init.contact_name,
         guest_identifier: init.guest_identifier ?? init.contact_name,
@@ -652,7 +893,7 @@ const openSelectedFromProp = () => {
     if (c) {
         openChat(c)
     } else {
-        selectedSession.value = { ulid: String(props.selectedSessionUlid) } as SessionAPI
+        selectedSession.value = { channel: "website", ulid: String(props.selectedSessionUlid) } as SessionAPI
         messages.value = []
     }
 }
@@ -682,19 +923,52 @@ const onChatListEvent = (e: any) => {
     }
 }
 
-onMounted(async () => {
+const onMetaChatListEvent = (e: any) => {
+    // Always refresh notification badges so the sidebar unread counts stay current
+    // regardless of which channel is selected.
     fetchInboxNotifications()
+
+    // Contact list only needs a full reload when viewing the WhatsApp channel.
+    if (selectedChannel.value !== "whatsapp") return
+
+    reloadContacts()
+
+    const s = e?.session
+    const open = selectedSession.value
+    if (!s || !open || String(s.ulid) !== String(open.ulid)) return
+
+    selectedSession.value = {
+        ...open,
+        status: s.status ?? open.status,
+        can_send_non_template_message: s.can_send_non_template_message,
+        ...(s.assigned_user_id
+            ? {
+                assigned_agent: {
+                    id: (open as any)?.assigned_agent?.id,
+                    user_id: s.assigned_user_id,
+                    name: s.assigned_agent_name ?? "Agent",
+                },
+            }
+            : {}),
+    } as SessionAPI
+}
+
+onMounted(async () => {
+    applyChannelFromUrl()
+    fetchInboxNotifications()
+
+    const urlChannel = selectedChannel.value
 
     // Preselect the shop when opened from the shop-level nav entry.
     if (props.preselectShopId && props.inboxes?.some((i) => i.id === props.preselectShopId)) {
-        selectedShopId.value = props.preselectShopId
+        revealInbox(props.preselectShopId, urlChannel)
     }
 
     const init = props.initialSession
 
     // Jump to the shop (inbox) the opened chat belongs to.
     if (init?.shop?.id) {
-        selectedShopId.value = init.shop.id
+        revealInbox(init.shop.id, urlChannel)
     }
 
     if (init && ["waiting", "active", "closed"].includes(init.status) && activeTab.value !== init.status) {
@@ -717,7 +991,9 @@ onMounted(async () => {
         shopIds.forEach((shopId) => {
             const channel = `chat-list.${shopId}`
             joinedChatListChannels.push(channel)
-            window.Echo.join(channel).listen(".chatlist", onChatListEvent)
+            window.Echo.join(channel)
+                .listen(".chatlist", onChatListEvent)
+                .listen(".meta-chatlist", onMetaChatListEvent)
         })
     }
 
@@ -735,7 +1011,9 @@ onUnmounted(() => {
     // Only detach this page's listener; do NOT Echo.leave() the shared
     // chat-list channel — the footer notification hub relies on it.
     joinedChatListChannels.forEach((channel) =>
-        window.Echo?.join(channel).stopListening(".chatlist", onChatListEvent)
+        window.Echo?.join(channel)
+            .stopListening(".chatlist", onChatListEvent)
+            .stopListening(".meta-chatlist", onMetaChatListEvent)
     )
     scrollObserver?.disconnect()
 })
@@ -758,6 +1036,9 @@ onUnmounted(() => {
         <SettingChat :initial-tab="settingInitialTab" :session-ulid="selectedSession?.ulid" @close="chatSettingVisible = false" />
     </Dialog>
 
+    <NewWhatsappChatDialog v-model:visible="newChatVisible" :shop-id="selectedShopId"
+        @created="onWhatsappChatCreated" />
+
     <div class="flex border-t border-gray-200 h-[calc(100vh-10rem)] bg-white">
         <!-- PANEL 1: Inboxes (shops the agent handles) -->
         <div class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200"
@@ -778,26 +1059,49 @@ onUnmounted(() => {
 
             <!-- Shop list -->
             <div class="flex-1 overflow-y-auto py-1">
-                <button v-for="inbox in inboxes" :key="inbox.id" type="button" @click="selectShop(inbox.id)"
-                    v-tooltip="inboxRailCollapsed ? inbox.name : undefined"
-                    class="w-full flex items-center transition-colors relative"
-                    :class="[
-                        inboxRailCollapsed ? 'justify-center py-2' : 'gap-2.5 px-3 py-2.5',
-                        selectedShopId === inbox.id ? 'font-medium text-gray-800' : 'text-gray-700 hover:bg-gray-100',
-                    ]"
-                    :style="selectedShopId === inbox.id ? selectedItemStyle : {}">
-                    <div class="relative shrink-0">
-                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold"
-                            :style="shopAvatarStyle(inbox)">
-                            {{ shopInitials(inbox.name) }}
+                <div v-for="inbox in inboxes" :key="inbox.id">
+                    <button type="button" @click="toggleInbox(inbox.id)"
+                        v-tooltip="inboxRailCollapsed ? inbox.name : undefined"
+                        class="w-full flex items-center transition-colors relative"
+                        :class="[
+                            inboxRailCollapsed ? 'justify-center py-2' : 'gap-2.5 px-3 py-2.5',
+                            selectedShopId === inbox.id ? 'font-medium text-gray-800' : 'text-gray-700 hover:bg-gray-100',
+                        ]">
+                        <div class="relative shrink-0">
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold"
+                                :style="shopAvatarStyle(inbox)">
+                                {{ shopInitials(inbox.name) }}
+                            </div>
+                            <span v-if="inboxUnread[inbox.id]"
+                                class="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500 ring-2 ring-gray-50">
+                                {{ inboxUnread[inbox.id] }}
+                            </span>
                         </div>
-                        <span v-if="shopUnread[inbox.id]"
-                            class="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500 ring-2 ring-gray-50">
-                            {{ shopUnread[inbox.id] }}
-                        </span>
+                        <span v-if="!inboxRailCollapsed" class="truncate text-sm flex-1 text-left">{{ inbox.name }}</span>
+                        <FontAwesomeIcon v-if="!inboxRailCollapsed"
+                            :icon="expandedInboxIds.includes(inbox.id) ? faAngleDown : faAngleRight"
+                            class="text-[10px] text-gray-400 shrink-0" />
+                    </button>
+
+                    <div v-if="!inboxRailCollapsed && expandedInboxIds.includes(inbox.id)" class="pb-1">
+                        <button v-for="channel in inbox.channels" :key="channel.key" type="button"
+                            @click="selectChannel(inbox.id, channel.key)"
+                            class="w-full flex items-center gap-2 py-1.5 pr-3 pl-[38px] text-sm transition-colors"
+                            :class="selectedShopId === inbox.id && selectedChannel === channel.key
+                                ? 'font-medium text-gray-800'
+                                : 'text-gray-600 hover:bg-gray-100'"
+                            :style="selectedShopId === inbox.id && selectedChannel === channel.key ? selectedItemStyle : {}">
+                            <FontAwesomeIcon :icon="channel.key === 'whatsapp' ? faWhatsapp : faGlobe"
+                                class="text-xs shrink-0"
+                                :class="channel.key === 'whatsapp' ? 'text-green-600' : 'text-gray-400'" />
+                            <span class="truncate flex-1 text-left">{{ channel.name }}</span>
+                            <span v-if="channelUnread(inbox, channel)"
+                                class="min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500">
+                                {{ channelUnread(inbox, channel) }}
+                            </span>
+                        </button>
                     </div>
-                    <span v-if="!inboxRailCollapsed" class="truncate text-sm">{{ inbox.name }}</span>
-                </button>
+                </div>
                 <div v-if="!inboxes.length && !inboxRailCollapsed" class="px-3 py-6 text-xs text-gray-400 text-center">
                     {{ trans("No inboxes assigned") }}
                 </div>
@@ -854,12 +1158,12 @@ onUnmounted(() => {
                         {{ trashView ? trans("Trash") : spamView ? trans("Spam") : highlightView ? trans("Highlighted") : (selectedInbox?.name ?? trans("Inbox")) }}
                     </div>
                     <div v-if="!spamView && !trashView" class="inline-flex items-center bg-gray-100 rounded-lg p-0.5 text-[11px]">
-                        <button type="button" class="px-2.5 py-1 rounded-md transition-all"
+                        <button type="button" class="px-2.5 py-1 rounded-md transition-all whitespace-nowrap shrink-0"
                             :class="viewMode === 'my' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                             @click="viewMode = 'my'">
                             {{ trans("My Chats") }}
                         </button>
-                        <button type="button" class="px-2.5 py-1 rounded-md transition-all inline-flex items-center gap-1"
+                        <button type="button" class="px-2.5 py-1 rounded-md transition-all whitespace-nowrap shrink-0 inline-flex items-center gap-1"
                             :class="viewMode === 'team' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                             @click="viewMode = 'team'">
                             {{ trans("Team Chats") }}
@@ -872,6 +1176,14 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <div class="flex items-center gap-0.5 shrink-0 self-start">
+                    <button v-if="selectedChannel === 'whatsapp'" type="button"
+                        v-tooltip="trans('New WhatsApp chat')"
+                        class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 text-green-600 text-[11px] font-medium"
+                        @click="newChatVisible = true">
+                        <FontAwesomeIcon :icon="faPlus" class="text-xs" />
+                        {{ trans("New chat") }}
+                    </button>
+
                     <!-- Filter by agent -->
                     <div class="relative">
                         <button type="button" v-tooltip="trans('Filter by agent')"
@@ -988,9 +1300,18 @@ onUnmounted(() => {
                                 <FontAwesomeIcon :icon="faEllipsisVertical" class="text-sm" />
                             </button>
 
-                            <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
-                                <Image v-if="c.avatar" :src="c.avatar" class="w-full h-full rounded-full object-cover" />
-                                <FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
+                            <div class="relative shrink-0">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 text-gray-500">
+                                    <Image v-if="c.avatar" :src="c.avatar" class="w-full h-full rounded-full object-cover" />
+                                    <FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
+                                </div>
+                                <span v-if="isMergedView"
+                                    v-tooltip="c.channel === 'whatsapp' ? 'WhatsApp' : trans('Website chat')"
+                                    class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white ring-1 ring-gray-200 flex items-center justify-center">
+                                    <FontAwesomeIcon :icon="c.channel === 'whatsapp' ? faWhatsapp : faGlobe"
+                                        class="text-[9px]"
+                                        :class="c.channel === 'whatsapp' ? 'text-green-600' : 'text-gray-400'" />
+                                </span>
                             </div>
 
                             <div class="flex-1 min-w-0 flex flex-col gap-0.5">
@@ -1051,7 +1372,14 @@ onUnmounted(() => {
             </div>
 
             <div v-else class="h-full">
-                <MessageAreaAgent :messages="messages" :session="selectedSession"
+                <WhatsappMessageAreaAgent v-if="activeChannel === 'whatsapp'"
+                    :messages="messages" :session="selectedSession"
+                    :organisation-slug="organisation.slug"
+                    @back="selectedSession = null" @messages-read="onMessagesRead"
+                    @assign-self-success="onAssignSelfSuccess"
+                    @close-session="closeSession"
+                    @view-profile="showProfilePanel" />
+                <MessageAreaAgent v-else :messages="messages" :session="selectedSession"
                     @back="selectedSession = null" @send-message="handleSendMessage"
                     @close-session="closeSession" @view-history="showHistoryPanel"
                     @view-user-profile="showProfilePanel" @view-message-details="showMessageDetailsPanel"
@@ -1067,7 +1395,7 @@ onUnmounted(() => {
         <!-- RIGHT: conversation profile panel (Conversation-style) -->
         <ChatConversationSidePanel v-if="panelSession && sidePanelVisible"
             :session="panelSession" @close="closeSidePanel" @priority-updated="onPriorityUpdated"
-            @synced="onSessionSynced" />
+            @synced="onSessionSynced" @customer-synced="onCustomerSynced" />
 
         <!-- Row action menu (teleported so it is never clipped by the list's overflow) -->
         <Teleport to="body">

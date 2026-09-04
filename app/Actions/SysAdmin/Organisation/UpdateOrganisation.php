@@ -68,6 +68,18 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, "settings.email.provider.customer_notification.region", Arr::pull($modelData, 'customer_notification_region'));
         }
 
+        if (Arr::has($modelData, 'meta_access_key')) {
+            data_set($modelData, "settings.meta.access_key", Arr::pull($modelData, 'meta_access_key'));
+        }
+
+        if (Arr::has($modelData, 'meta_app_id')) {
+            data_set($modelData, "settings.meta.app_id", Arr::pull($modelData, 'meta_app_id'));
+        }
+
+        if (Arr::has($modelData, 'meta_app_secret')) {
+            data_set($modelData, "settings.meta.app_secret", Arr::pull($modelData, 'meta_app_secret'));
+        }
+
 
         if (Arr::has($modelData, 'show_omega')) {
             data_set($modelData, "settings.invoice_export.show_omega", Arr::pull($modelData, 'show_omega'));
@@ -252,6 +264,9 @@ class UpdateOrganisation extends OrgAction
             'customer_notification_access_id'       => ['sometimes', 'string', 'nullable'],
             'customer_notification_access_key'      => ['sometimes', 'string', 'nullable'],
             'customer_notification_region'          => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
+            'meta_access_key'                       => ['sometimes', 'string', 'nullable'],
+            'meta_app_id'                           => ['sometimes', 'string', 'nullable'],
+            'meta_app_secret'                       => ['sometimes', 'string', 'nullable'],
             'address'                               => ['sometimes', 'required', new ValidAddress()],
             'language_id'                           => ['sometimes', 'exists:languages,id'],
             'timezone_id'                           => ['sometimes', 'exists:timezones,id'],

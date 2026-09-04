@@ -102,6 +102,7 @@ class EditShop extends OrgAction
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
 
         $viewContactOptionsPanel = (bool) Arr::get($shop->settings, 'chat.view_contact_options_panel', false);
+        $enableWhatsapp = (bool) Arr::get($shop->settings, 'whatsapp.enabled', false);
 
         $allowedBlueprintLabels = [
             __('Faire Settings'),
@@ -407,6 +408,18 @@ class EditShop extends OrgAction
                             'type'  => 'toggle',
                             'label' => __('Marketing opt-in set as checked'),
                             'value' => Arr::get($shop->settings, 'registration.marketing_opt_in_default', false),
+                        ],
+
+                        'whatsapp_newsletter_label'   => [
+                            'type'        => 'input',
+                            'label'       => __('WhatsApp newsletter opt-in label'),
+                            'placeholder' => __('Opt in to receive our newsletter and offers via WhatsApp.'),
+                            'value'       => Arr::get($shop->settings, 'registration.whatsapp_newsletter_label', ''),
+                        ],
+                        'whatsapp_newsletter_default' => [
+                            'type'  => 'toggle',
+                            'label' => __('WhatsApp newsletter opt-in set as checked'),
+                            'value' => Arr::get($shop->settings, 'registration.whatsapp_newsletter_default', false),
                         ],
                     ],
                 ],
@@ -718,6 +731,40 @@ class EditShop extends OrgAction
                                 'value'       => Arr::get($shop->settings, 'chat.data_contact_options_panel') ?? [],
                             ],
                         ] : [],
+                        'enable_whatsapp' => [
+                            'type'        => 'toggle',
+                            'label'       => __('Enable WhatsApp Channel'),
+                            'information' => __('If active, the WhatsApp channel will be available in the chat inbox for this shop'),
+                            'value'       => $enableWhatsapp,
+                        ],
+                        ...$enableWhatsapp ? [
+                            'whatsapp' => [
+                                'type'         => 'field_group',
+                                'label'        => __('WhatsApp Connection'),
+                                'noTitle'      => true,
+                                'noSaveButton' => true,
+                                'fields'       => [
+                                    'whatsapp_phone_number_id' => [
+                                        'type'     => 'input',
+                                        'label'    => __('Phone Number ID'),
+                                        'required' => true,
+                                        'value'    => Arr::get($shop->settings, 'whatsapp.phone_number_id', ''),
+                                    ],
+                                    'whatsapp_waba_id'         => [
+                                        'type'     => 'input',
+                                        'label'    => __('WABA ID'),
+                                        'required' => true,
+                                        'value'    => Arr::get($shop->settings, 'whatsapp.waba_id', ''),
+                                    ],
+                                    'whatsapp_phone_number'    => [
+                                        'type'     => 'phone',
+                                        'label'    => __('Phone Number'),
+                                        'required' => true,
+                                        'value'    => Arr::get($shop->settings, 'whatsapp.phone_number', ''),
+                                    ],
+                                ],
+                            ],
+                        ] : [],
                     ],
                 ],
                 [
@@ -914,7 +961,9 @@ class EditShop extends OrgAction
                             'value'       => $this->loadReviewValidationScopes($shop),
                         ],
                     ],
-                ]
+                ],
+
+                []
             ],
             'args'      => [
                 'updateRoute' => [

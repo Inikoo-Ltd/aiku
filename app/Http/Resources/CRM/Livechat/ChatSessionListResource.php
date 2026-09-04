@@ -4,6 +4,7 @@ namespace App\Http\Resources\CRM\Livechat;
 
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\Chat\ChatMessage;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
@@ -19,20 +20,20 @@ class ChatSessionListResource extends JsonResource
      */
     public function toArray($request): array
     {
-        $statuses = $request->input('statuses', []);
-        $statusParam = $request->input('status');
-        $isClosed = is_array($statuses) ? in_array('closed', $statuses) : ($statusParam === 'closed');
-        $assignmentStatus = $isClosed ? ChatAssignmentStatusEnum::RESOLVED->value : ChatAssignmentStatusEnum::ACTIVE->value;
-
         $lastMessage = null;
         if ($this->relationLoaded('messages') && $this->messages->isNotEmpty()) {
             $lastMessage = $this->messages->first();
         }
 
+        $sessionIsClosed = $this->status === ChatSessionStatusEnum::CLOSED;
+        $assignmentStatus = $sessionIsClosed
+            ? ChatAssignmentStatusEnum::RESOLVED->value
+            : ChatAssignmentStatusEnum::ACTIVE->value;
+
         $activeAssignment = null;
         if ($this->relationLoaded('assignments')) {
             $filtered = $this->assignments->where('status', $assignmentStatus);
-            $activeAssignment = $isClosed
+            $activeAssignment = $sessionIsClosed
                 ? $filtered->sortByDesc('updated_at')->first()
                 : $filtered->first();
         }

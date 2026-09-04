@@ -2,16 +2,20 @@
 import { inject, computed, ref, onMounted, onUnmounted, watch } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faCheckDouble, faLanguage, faRobot, faShieldCheck } from "@far"
-import { faShare, faFaceSmile } from "@fortawesome/free-solid-svg-icons"
+import { faCheck, faCheckDouble, faExclamationCircle, faLanguage, faRobot, faShieldCheck } from "@far"
+import { faShare, faFaceSmile, faReply, faLocationDot, faPhone, faCopy, faCircleExclamation, faBullhorn } from "@fortawesome/free-solid-svg-icons"
 import axios from "axios"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import Image from "primevue/image"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
+import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
+import AudioPlayer from "@/Components/Chat/AudioPlayer.vue"
+import { formatWhatsappMarkup } from "@/Composables/useWhatsappMarkup"
+import { useCopyText } from "@/Composables/useCopyText"
 
-type SenderType = "guest" | "user" | "agent" | "system"
+type SenderType = "guest" | "user" | "agent" | "system" | "system_campaign"
 type MessageStatus = "sending" | "sent" | "failed"
 type ViewerType = "user" | "agent"
 
@@ -28,10 +32,19 @@ interface Message {
     } | null
     message_type?: "text" | "image" | "file"
     file_name?: string | null
+    file_mime?: string | null
     download_route?: {
         url: string
     } | null
     is_read?: boolean
+    metadata?: Record<string, any> | null
+    replied_to?: {
+        id: number
+        message_text?: string | null
+        message_type?: string
+        sender_type?: string
+        file_name?: string | null
+    } | null
     id?: number
     sender_name?: string | null
     _status?: MessageStatus
@@ -78,13 +91,20 @@ const props = defineProps<{
     canEdit?: boolean
     readonly?: boolean
     sessionUlid?: string | null
+    reactionUrlBase?: string
     apiBase?: string
     viewerReactorId?: number | null
+    canReply?: boolean
+    formatMarkup?: boolean
+    translateUrlBase?: string
+    disableSlackForward?: boolean
+    disableImageVerification?: boolean
 }>()
 
 const emit = defineEmits<{
     (e: "edit-message", payload: { id: number; text: string }): void
     (e: "open-slack-settings"): void
+    (e: "reply", message: Message): void
 }>()
 
 const EDIT_WINDOW_MS = 30 * 60 * 1000
@@ -128,9 +148,13 @@ const currentOrganisation = computed(
 
 const { languages, fetchLanguages, getLanguageIdByCode } = useChatLanguages(baseUrl)
 
+// A campaign message went out from this side of the conversation, so to an agent it reads
+// as one of theirs; to the customer it is an ordinary incoming message.
+const isCampaign = computed(() => props.message.sender_type === "system_campaign")
+
 const isFromViewer = computed(() => {
     if (props.viewerType === "agent") {
-        return props.message.sender_type === "agent"
+        return ["agent", "system_campaign"].includes(props.message.sender_type)
     }
 
     return ["user", "guest"].includes(props.message.sender_type)
@@ -157,7 +181,6 @@ const canShowTranslation = computed(() => {
 const bubbleClass = computed(() => ({
     "bubble-primary": isFromViewer.value,
     "bubble-secondary": !isFromViewer.value,
-    "bubble-system": props.message.sender_type === "system",
 }))
 
 const time = computed(() =>
@@ -167,9 +190,39 @@ const time = computed(() =>
     })
 )
 
-const readIcon = computed(() =>
-    props.message.is_read ? faCheckDouble : faCheck
-)
+// WhatsApp reports a full delivery lifecycle (sent → delivered → read); website
+// chat only knows read/unread, so it keeps the original two-state tick.
+const waStatus = computed<string | null>(() => props.message.metadata?.wa_status ?? null)
+
+const isFailed = computed(() => waStatus.value === "failed" || props.message._status === "failed")
+
+const readIcon = computed(() => {
+    if (isFailed.value) {
+        return faExclamationCircle
+    }
+
+    if (waStatus.value) {
+        return ["delivered", "read"].includes(waStatus.value) ? faCheckDouble : faCheck
+    }
+
+    return props.message.is_read ? faCheckDouble : faCheck
+})
+
+const readIconClass = computed(() => {
+    if (isFailed.value) {
+        return "text-red-500"
+    }
+
+    return waStatus.value === "read" ? "text-sky-400" : ""
+})
+
+const readIconLabel = computed(() => {
+    if (isFailed.value) {
+        return props.message.metadata?.wa_error?.message ?? trans("Failed to send")
+    }
+
+    return waStatus.value ? trans(waStatus.value) : ""
+})
 
 const agentDisplayName = computed(() => {
     return props.agentName ?? "Agent"
@@ -183,6 +236,10 @@ const firstName = (name?: string | null): string =>
     (name ?? "").trim().split(/\s+/)[0] || ""
 
 const senderLabel = computed(() => {
+    if (isCampaign.value) {
+        return trans("Campaign")
+    }
+
     if (props.message.sender_type === "agent") {
         const fullName = props.message.sender_name ?? props.agentName ?? layout?.user?.contact_name ?? "Agent"
         return firstName(fullName) || "Agent"
@@ -190,13 +247,63 @@ const senderLabel = computed(() => {
     return props.contactName ?? "Customer"
 })
 
+// A status notice is a timeline marker, not something anyone replies to or reacts to,
+// so it renders as the same chip the event stream uses.
+const isSystemNotice = computed(() => props.message.sender_type === "system")
+
+// Quoting is opt-in: only channels that can carry a reply upstream ask for the button.
+const canReplyToMessage = computed(() => props.canReply === true && !!props.message.id)
+
+const quotedLabel = computed(() => {
+    const quoted = props.message.replied_to
+
+    if (!quoted) return ""
+
+    if (quoted.message_text) return quoted.message_text
+
+    return quoted.file_name || trans(quoted.message_type === "image" ? "Photo" : "Attachment")
+})
+
+const quotedAuthor = computed(() =>
+    props.message.replied_to?.sender_type === "agent"
+        ? props.agentName ?? trans("Agent")
+        : props.contactName ?? trans("Customer")
+)
+
 const isFile = computed(() => props.message.message_type === "file")
 
+const fileMime = computed(() => props.message.file_mime ?? props.message.media_url?.mime ?? "")
+
+// Ogg/Opus voice notes are sometimes sniffed as `application/ogg`, so the WhatsApp
+// message type is trusted alongside the stored mime.
+const isAudio = computed(() =>
+    isFile.value &&
+    (fileMime.value.startsWith("audio/") || props.message.metadata?.wa_type === "audio")
+)
+
+// WhatsApp voice notes arrive as ordinary audio with a `voice` flag; naming them
+// as such reads better than "whatsapp-<media id>.ogg".
+const audioLabel = computed(() =>
+    props.message.metadata?.wa_payload?.voice
+        ? trans("Voice message")
+        : props.message.file_name ?? trans("Audio")
+)
+
+const audioUrl = computed(() => {
+    const url = props.message.download_route?.url
+
+    if (!url) return null
+
+    return url + (url.includes("?") ? "&" : "?") + "inline=1"
+})
+
 const fileIcon = computed(() => {
-    const mime = props.message.media_url?.mime ?? ""
+    const mime = fileMime.value
 
     if (mime.includes("pdf")) return "📕"
     if (mime.includes("excel") || mime.includes("spreadsheet")) return "📊"
+    if (mime.startsWith("audio/")) return "🎧"
+    if (mime.startsWith("video/")) return "🎬"
     return "📄"
 })
 
@@ -240,8 +347,100 @@ const displayText = computed(() => {
     return activeMessage.value.original?.text || props.message.message_text
 })
 
+const formattedText = computed(() => formatWhatsappMarkup(displayText.value))
+
+const location = computed(() => {
+    if (props.message.metadata?.wa_type !== "location") return null
+
+    const payload = props.message.metadata?.wa_payload
+    const latitude = Number(payload?.latitude)
+    const longitude = Number(payload?.longitude)
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null
+
+    return {
+        latitude,
+        longitude,
+        name: payload?.name || trans("Shared location"),
+        address: payload?.address || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+    }
+})
+
+const sharedContacts = computed(() => {
+    if (props.message.metadata?.wa_type !== "contacts") return []
+
+    const payload = props.message.metadata?.wa_payload
+
+    if (!Array.isArray(payload)) return []
+
+    return payload.map((contact: any, index: number) => {
+        const name = contact?.name?.formatted_name
+            || [contact?.name?.first_name, contact?.name?.last_name].filter(Boolean).join(" ")
+            || trans("Shared contact")
+
+        return {
+            key: `${index}-${name}`,
+            name,
+            initial: name.trim().charAt(0).toUpperCase(),
+            phones: (contact?.phones ?? []).map((phone: any) => ({
+                number: phone?.phone,
+                label: phone?.type,
+            })).filter((phone: any) => !!phone.number),
+        }
+    })
+})
+
+// WhatsApp delivers no content for these, so the bubble states what arrived rather than
+// pretending the customer wrote that sentence.
+const isUnsupportedMessage = computed(() => props.message.metadata?.wa_type === "unsupported")
+
+const MAP = { tile: 256, zoom: 16, width: 240, height: 112 }
+
+/**
+ * Painting the map from raw tiles rather than OpenStreetMap's embed keeps its chrome —
+ * the report link, donation banner and zoom buttons — out of a bubble that has no room
+ * for them, and needs no API key the way a hosted static-map service would.
+ */
+const mapTiles = computed(() => {
+    if (!location.value) return []
+
+    const count = 2 ** MAP.zoom
+    const latitude = (location.value.latitude * Math.PI) / 180
+    const worldX = ((location.value.longitude + 180) / 360) * count * MAP.tile
+    const worldY =
+        ((1 - Math.log(Math.tan(latitude) + 1 / Math.cos(latitude)) / Math.PI) / 2) * count * MAP.tile
+
+    // Offset of the visible box within the world, so the pin lands dead centre.
+    const originX = worldX - MAP.width / 2
+    const originY = worldY - MAP.height / 2
+
+    const tiles = []
+
+    for (let x = Math.floor(originX / MAP.tile); x <= Math.floor((originX + MAP.width - 1) / MAP.tile); x++) {
+        for (let y = Math.floor(originY / MAP.tile); y <= Math.floor((originY + MAP.height - 1) / MAP.tile); y++) {
+            if (y < 0 || y >= count) continue
+
+            tiles.push({
+                key: `${x}-${y}`,
+                src: `https://tile.openstreetmap.org/${MAP.zoom}/${((x % count) + count) % count}/${y}.png`,
+                left: x * MAP.tile - originX,
+                top: y * MAP.tile - originY,
+            })
+        }
+    }
+
+    return tiles
+})
+
+const locationMapsUrl = computed(() =>
+    location.value
+        ? `https://www.google.com/maps/search/?api=1&query=${location.value.latitude},${location.value.longitude}`
+        : ""
+)
+
 const canTranslate = computed(() =>
     props.viewerType === "agent" &&
+    !isUnsupportedMessage.value &&
     (
         props.message.sender_type === "guest" ||
         props.message.sender_type === "user"
@@ -271,7 +470,7 @@ const translateMessage = async () => {
 
     try {
         const { data } = await axios.post(
-            `${baseUrl}/app/api/chats/messages/${props.message.id}/translate`,
+            `${baseUrl}${props.translateUrlBase ?? "/app/api/chats/messages"}/${props.message.id}/translate`,
             {
                 target_language_id: selectedLanguageId.value,
             }
@@ -298,15 +497,23 @@ const translateMessage = async () => {
 // feature verify image
 const isVerifyingImage = ref(false)
 
+// The verify route resolves a website ChatMessage, so a WhatsApp id would land on an
+// unrelated row. Opting out here rather than relying on the resource omitting the flag,
+// which would arm the button the moment that field is copied across.
 const canVerifyImage = computed(() =>
     props.viewerType === "agent" &&
+    !props.disableImageVerification &&
     props.message.message_type === "image" &&
     !!props.message.is_verifiable_image &&
     activeMessage.value.is_validated == null
 )
 
 // feature forward to Slack
-const canForwardToSlack = computed(() => props.viewerType === "agent" && !!props.message.id)
+// Opting out rather than in: an absent Boolean prop is false, so an opt-in flag would
+// silently strip forwarding from the website chat that already relies on it.
+const canForwardToSlack = computed(() =>
+    props.viewerType === "agent" && !!props.message.id && !props.disableSlackForward
+)
 const isForwardModalOpen = ref(false)
 
 // feature hover toolbar (quick reactions) — persisted per message reactor
@@ -387,7 +594,7 @@ const toggleReaction = async (emoji: string) => {
 
     try {
         const { data } = await axios.post(
-            `${props.apiBase ?? ""}/app/api/chats/messages/${props.message.id}/reactions`,
+            `${props.apiBase ?? ""}${props.reactionUrlBase ?? "/app/api/chats/messages"}/${props.message.id}/reactions`,
             {
                 emoji,
                 reactor: props.viewerType === "agent" ? "agent" : "customer",
@@ -480,7 +687,11 @@ watch(selectedLanguage, async (val) => {
 </script>
 
 <template>
-    <div class="flex flex-col w-full group/msg" :class="isFromViewer ? 'items-end' : 'items-start'">
+    <div v-if="isSystemNotice" class="w-full flex justify-center">
+        <ChatTimelineEvent :event="{ description: displayText, created_at: message.created_at }" />
+    </div>
+
+    <div v-else class="flex flex-col w-full group/msg" :class="isFromViewer ? 'items-end' : 'items-start'">
         <div class="mb-0.5 text-[11px] text-gray-500 px-1 max-w-[78%]"
             v-if="props.message.sender_type === 'agent' && props.viewerType === 'user'">
             {{ agentDisplayName }} (Agent)
@@ -502,6 +713,12 @@ watch(selectedLanguage, async (val) => {
                 </button>
 
                 <span class="w-px h-5 bg-gray-200 mx-0.5"></span>
+
+                <button v-if="canReplyToMessage" type="button" v-tooltip.top="trans('Reply')"
+                    class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-full hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
+                    @click="emit('reply', message)">
+                    <FontAwesomeIcon :icon="faReply" class="text-sm" />
+                </button>
 
                 <div class="relative" ref="emojiPickerRef">
                     <button type="button" v-tooltip.top="trans('Add reaction')"
@@ -536,39 +753,92 @@ watch(selectedLanguage, async (val) => {
             <div class="flex flex-col gap-0.5 text-sm leading-relaxed shadow-sm px-3.5 py-2.5 rounded-2xl"
                 :class="[bubbleClass, showHoverToolbar && viewerType === 'agent' ? 'min-w-[260px]' : '']">
 
-            <div v-if="showSenderLabel" class="text-[11px] font-semibold mb-0.5 opacity-70">
+            <div v-if="showSenderLabel" class="flex items-center gap-1 text-[11px] font-semibold mb-0.5 opacity-70">
+                <FontAwesomeIcon v-if="isCampaign" :icon="faBullhorn" class="text-[10px]" />
                 {{ senderLabel }}
             </div>
 
-            <p v-if="!isEditingMessage" class="whitespace-pre-wrap break-words">
-                {{ displayText }}
-            </p>
+            <div v-if="message.replied_to"
+                class="mb-1 rounded-md border-l-[3px] border-current bg-black/5 px-2 py-1 text-[11px] leading-snug opacity-90">
+                <div class="font-semibold opacity-70">{{ quotedAuthor }}</div>
+                <div class="opacity-70 line-clamp-2 break-words">{{ quotedLabel }}</div>
+            </div>
 
-            <div v-else class="flex flex-col gap-1.5 min-w-[220px]">
-                <textarea v-model="editText" rows="2"
-                    class="w-full text-sm rounded-md border border-gray-300 px-2 py-1.5 text-gray-800 bg-white focus:outline-none focus:ring-1 resize-y"
-                    @keydown.enter.exact.prevent="saveEditMessage" @keydown.esc="cancelEditMessage" />
-                <div class="flex items-center justify-end gap-2">
-                    <button type="button" class="text-[11px] underline opacity-80" @click="cancelEditMessage">
-                        {{ trans("Cancel") }}
-                    </button>
-                    <button type="button"
-                        class="text-[11px] font-semibold px-2 py-0.5 rounded bg-white text-gray-800 border border-gray-300 hover:bg-gray-50"
-                        @click="saveEditMessage">
-                        {{ trans("Save") }}
-                    </button>
+            <div v-if="sharedContacts.length" class="mb-1 flex w-[240px] max-w-full flex-col gap-1.5">
+                <div v-for="contact in sharedContacts" :key="contact.key"
+                    class="rounded-lg border border-black/10 bg-white px-2.5 py-2">
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-200 text-[11px] font-semibold text-gray-600">
+                            {{ contact.initial }}
+                        </span>
+                        <span class="min-w-0 truncate text-xs font-semibold text-gray-800">{{ contact.name }}</span>
+                    </div>
+
+                    <div v-for="phone in contact.phones" :key="phone.number"
+                        class="mt-1.5 flex items-center gap-2 border-t border-gray-100 pt-1.5">
+                        <FontAwesomeIcon :icon="faPhone" class="text-[10px] text-gray-400" />
+                        <div class="min-w-0 flex-1">
+                            <div class="truncate text-[11px] text-gray-700">{{ phone.number }}</div>
+                            <div v-if="phone.label" class="text-[10px] text-gray-400">{{ phone.label }}</div>
+                        </div>
+                        <button type="button" v-tooltip.top="trans('Copy number')" @click="useCopyText(phone.number)"
+                            class="shrink-0 rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600">
+                            <FontAwesomeIcon :icon="faCopy" class="text-[10px]" />
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div v-if="
-                message?.is_offline_message &&
-                !(props.message.sender_type === 'guest' && props.viewerType === 'user')
-            " class="text-[10px] text-amber-600 mb-1 font-medium">
-                {{ trans('Offline message') }}
+
+            <a v-if="location" :href="locationMapsUrl" target="_blank" rel="noopener noreferrer"
+                class="mb-1 block w-[240px] max-w-full overflow-hidden rounded-lg border border-black/10 bg-white transition hover:border-black/25">
+                <div class="relative h-28 overflow-hidden bg-gray-100">
+                    <img v-for="tile in mapTiles" :key="tile.key" :src="tile.src" alt="" loading="lazy"
+                        class="absolute max-w-none"
+                        :style="{ left: `${tile.left}px`, top: `${tile.top}px`, width: '256px', height: '256px' }" />
+
+                    <FontAwesomeIcon :icon="faLocationDot"
+                        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full text-xl text-red-500 drop-shadow" />
+
+                    <span class="absolute bottom-0 right-0 bg-white/75 px-1 text-[9px] leading-tight text-gray-500">
+                        © OpenStreetMap
+                    </span>
+                </div>
+
+                <div class="flex items-start gap-1.5 px-2.5 py-2">
+                    <FontAwesomeIcon :icon="faLocationDot" class="mt-0.5 text-[11px] text-red-500" />
+                    <div class="min-w-0">
+                        <div class="truncate text-xs font-semibold text-gray-800">{{ location.name }}</div>
+                        <div class="text-[11px] leading-snug text-gray-500">{{ location.address }}</div>
+                    </div>
+                </div>
+            </a>
+
+            <AudioPlayer v-if="isAudio && audioUrl" :src="audioUrl"
+                :is-voice="!!message.metadata?.wa_payload?.voice" :label="audioLabel"
+                :download-url="message.download_route?.url" />
+
+            <div v-if="isFile && !isAudio && message.media_url" @click="openFile"
+                class="mb-1 flex items-center gap-3 p-3 rounded-lg border bg-white max-w-xs transition" :class="isOpening
+                    ? 'opacity-60 cursor-not-allowed'
+                    : 'cursor-pointer hover:bg-gray-50'">
+                <div class="text-2xl">
+                    {{ fileIcon }}
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium truncate text-gray-400">
+                        {{ message.file_name || message.media_url.name }}
+                    </div>
+                    <div class="text-xs opacity-60 text-red-600">
+                        {{ trans("Click to download") }}
+                    </div>
+                </div>
             </div>
 
             <Image v-if="message.message_type === 'image' && message.media_url" :src="message.media_url.webp" preview
                 imageClass="rounded-lg max-w-full max-h-64 min-h-[96px] min-w-[96px] object-contain cursor-pointer bg-gray-50"
-                class="mt-1 block" />
+                class="mb-1 block" />
 
             <div v-if="viewerType === 'agent' && message.message_type === 'image' && activeMessage.is_validated === true"
                 class="mt-1" :title="verificationReasoning">
@@ -593,22 +863,39 @@ watch(selectedLanguage, async (val) => {
                 </button>
             </div>
 
-            <div v-if="isFile && message.media_url" @click="openFile"
-                class="mt-1 flex items-center gap-3 p-3 rounded-lg border bg-white max-w-xs transition" :class="isOpening
-                    ? 'opacity-60 cursor-not-allowed'
-                    : 'cursor-pointer hover:bg-gray-50'">
-                <div class="text-2xl">
-                    {{ fileIcon }}
-                </div>
+            <div v-if="isUnsupportedMessage"
+                class="inline-flex w-fit items-center gap-1.5 text-[11px] italic opacity-60">
+                <FontAwesomeIcon :icon="faCircleExclamation" class="text-[10px]" />
+                <span>{{ displayText || trans("Unsupported message") }}</span>
+            </div>
 
-                <div class="flex-1 min-w-0">
-                    <div class="text-sm font-medium truncate text-gray-400">
-                        {{ message.file_name || message.media_url.name }}
-                    </div>
-                    <div class="text-xs opacity-60 text-red-600">
-                        {{ trans("Click to download") }}
-                    </div>
+            <p v-else-if="!isEditingMessage && !location && !sharedContacts.length && formatMarkup" class="whitespace-pre-wrap break-words"
+                v-html="formattedText" />
+
+            <p v-else-if="!isEditingMessage && !location && !sharedContacts.length" class="whitespace-pre-wrap break-words">
+                {{ displayText }}
+            </p>
+
+            <div v-else-if="isEditingMessage" class="flex flex-col gap-1.5 min-w-[220px]">
+                <textarea v-model="editText" rows="2"
+                    class="w-full text-sm rounded-md border border-gray-300 px-2 py-1.5 text-gray-800 bg-white focus:outline-none focus:ring-1 resize-y"
+                    @keydown.enter.exact.prevent="saveEditMessage" @keydown.esc="cancelEditMessage" />
+                <div class="flex items-center justify-end gap-2">
+                    <button type="button" class="text-[11px] underline opacity-80" @click="cancelEditMessage">
+                        {{ trans("Cancel") }}
+                    </button>
+                    <button type="button"
+                        class="text-[11px] font-semibold px-2 py-0.5 rounded bg-white text-gray-800 border border-gray-300 hover:bg-gray-50"
+                        @click="saveEditMessage">
+                        {{ trans("Save") }}
+                    </button>
                 </div>
+            </div>
+            <div v-if="
+                message?.is_offline_message &&
+                !(props.message.sender_type === 'guest' && props.viewerType === 'user')
+            " class="text-[10px] text-amber-600 mb-1 font-medium">
+                {{ trans('Offline message') }}
             </div>
 
             <div v-if="canShowTranslation && (latestTranslation || isTranslating)"
@@ -676,8 +963,8 @@ watch(selectedLanguage, async (val) => {
                     <LoadingIcon />
                 </span>
 
-                <span v-if="isFromViewer && !isSending" class="leading-none">
-                    <FontAwesomeIcon :icon="readIcon" />
+                <span v-if="isFromViewer && !isSending" class="leading-none" :title="readIconLabel">
+                    <FontAwesomeIcon :icon="readIcon" :class="readIconClass" />
                 </span>
             </div>
         </div>
@@ -724,7 +1011,4 @@ watch(selectedLanguage, async (val) => {
     border-bottom-left-radius: 4px;
 }
 
-.bubble-system {
-    @apply bg-amber-100 text-amber-800 italic text-xs;
-}
 </style>

@@ -22,6 +22,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
 import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
+import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { notify } from "@kyvg/vue3-notification"
 import { Select } from "primevue"
@@ -211,6 +212,7 @@ const reopenChat = async () => {
 }
 
 const messagesLocal = ref<LocalChatMessage[]>([])
+const eventsLocal = ref<any[]>([])
 const newMessage = ref("")
 
 const handleEditMessage = async ({ id, text }: { id: number; text: string }) => {
@@ -522,16 +524,20 @@ const getMessages = async (loadMore = false) => {
     )
 
     const messages = data?.data?.messages ?? data?.messages ?? []
+    const events = data?.data?.events ?? []
 
     if (!loadMore) {
         messagesLocal.value = messages.map((m: ChatMessage) => ({
             ...m,
             _status: "sent",
         }))
+        eventsLocal.value = events
     } else {
         messagesLocal.value.unshift(
             ...messages.map((m: ChatMessage) => ({ ...m, _status: "sent" }))
         )
+        const known = new Set(eventsLocal.value.map((e: any) => e.id))
+        eventsLocal.value = [...events.filter((e: any) => !known.has(e.id)), ...eventsLocal.value]
     }
 
     const page = data?.data?.pagination ?? data?.pagination
@@ -544,21 +550,39 @@ const getMessages = async (loadMore = false) => {
     }
 }
 
-const groupedMessages = computed(() => {
-    const groups: Record<string, LocalChatMessage[]> = {}
+type TimelineEntry =
+    | { kind: "message"; at: number; key: string; message: LocalChatMessage }
+    | { kind: "event"; at: number; key: string; event: any }
 
-    messagesLocal.value
-        .slice()
-        .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at))
-        .forEach((msg) => {
-            const label = new Intl.DateTimeFormat("id-ID", {
-                day: "2-digit",
-                month: "long",
-                year: "numeric",
-            }).format(new Date(msg.created_at))
+// Messages and status events share one chronological stream so the agent can see what
+// happened to the conversation exactly where it happened.
+const groupedTimeline = computed(() => {
+    const entries: TimelineEntry[] = [
+        ...messagesLocal.value.map((message) => ({
+            kind: "message" as const,
+            at: +new Date(message.created_at),
+            key: `m-${message.id}`,
+            message,
+        })),
+        ...eventsLocal.value.map((event: any) => ({
+            kind: "event" as const,
+            at: +new Date(event.created_at),
+            key: `e-${event.id}`,
+            event,
+        })),
+    ].sort((a, b) => a.at - b.at)
 
-                ; (groups[label] ??= []).push(msg)
-        })
+    const groups: Record<string, TimelineEntry[]> = {}
+
+    entries.forEach((entry) => {
+        const label = new Intl.DateTimeFormat("id-ID", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+        }).format(new Date(entry.at))
+
+            ; (groups[label] ??= []).push(entry)
+    })
 
     return groups
 })
@@ -925,19 +949,22 @@ const handleClickOutside = (e: MouseEvent) => {
                 </button>
             </div>
 
-            <template v-for="(msgs, date) in groupedMessages" :key="date">
+            <template v-for="(entries, date) in groupedTimeline" :key="date">
                 <div class="text-center text-xs text-gray-400">{{ date }}</div>
-                <div v-for="msg in msgs" :key="msg.id" class="flex"
-                    :class="msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
-                    <BubbleChat :message="msg" viewerType="agent"
-                        :contactName="session?.contact_name || session?.guest_identifier"
-                        :agentName="session?.assigned_agent?.name"
-                        :canEdit="isMyChat && !isClosed && !isWaiting"
-                        :sessionUlid="session?.ulid"
-                        :viewerReactorId="layout?.user?.id"
-                        @edit-message="handleEditMessage"
-                        @open-slack-settings="onOpenSlackSettings" />
-                </div>
+                <template v-for="entry in entries" :key="entry.key">
+                    <ChatTimelineEvent v-if="entry.kind === 'event'" :event="entry.event" />
+                    <div v-else class="flex"
+                        :class="entry.message.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
+                        <BubbleChat :message="entry.message" viewerType="agent"
+                            :contactName="session?.contact_name || session?.guest_identifier"
+                            :agentName="session?.assigned_agent?.name"
+                            :canEdit="isMyChat && !isClosed && !isWaiting"
+                            :sessionUlid="session?.ulid"
+                            :viewerReactorId="layout?.user?.id"
+                            @edit-message="handleEditMessage"
+                            @open-slack-settings="onOpenSlackSettings" />
+                    </div>
+                </template>
             </template>
         </div>
         <div v-if="remoteTypingUser" class="text-xs text-gray-400 italic px-2 py-1">
