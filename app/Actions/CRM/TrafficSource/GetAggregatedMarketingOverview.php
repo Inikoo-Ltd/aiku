@@ -212,6 +212,7 @@ class GetAggregatedMarketingOverview
                 'orders'        => round(max(0, $baseline['orders'] - array_sum(array_column($channels, 'orders')) - $outOfScopeOrders), 2),
             ],
             'out_of_scope'  => $outOfScope,
+            'before_tracking' => $this->directBeforeTracking($shops->pluck('id')->all(), $from, $to, $revenueColumn, $window),
             'referrers'     => $this->referrers($shops, $from, $to, $revenueColumn, $window ?? 0),
             'children'      => $this->children($parent, $shops, $attributed, $baselineByShop),
         ];

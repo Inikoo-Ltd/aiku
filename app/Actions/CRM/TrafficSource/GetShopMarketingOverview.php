@@ -196,6 +196,7 @@ class GetShopMarketingOverview
                 'orders'        => round(max(0, $baseline['orders'] - array_sum(array_column($channels, 'orders')) - $outOfScopeOrders), 2),
             ],
             'out_of_scope'  => $outOfScope,
+            'before_tracking' => $this->directBeforeTracking([$shop->id], $from, $to, 'net_amount', $window),
             'campaigns'     => $this->campaigns($campaignRevenue, $campaignRegistrations, $costs),
             'referrers'     => $this->referrers($shop, $campaignRevenue, $campaignRegistrations),
             'spend_by_day'  => $this->spendByDay($shop, $from, $to),

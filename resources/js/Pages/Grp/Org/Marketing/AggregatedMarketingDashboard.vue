@@ -69,6 +69,11 @@ const props = defineProps<{
             visitors: number
             revenue: number
         }[]
+        before_tracking?: {
+            revenue: number
+            orders: number
+            reliable_from: string | null
+        }
         out_of_scope?: {
             name: string
             revenue: number
@@ -208,6 +213,15 @@ const outOfScopeTotals = computed(() => (props.overview?.out_of_scope ?? []).red
 }), { revenue: 0, orders: 0 }))
 
 const outOfScopeHelp = trans('Sales that never went through the website: phone, showroom and marketplace orders. No channel can claim them and no visit precedes them, so they are listed here rather than counted as direct. Sign-ups are not split by sales channel.')
+
+/* Direct is what we watched arrive on its own; the rest of the remainder belongs to customers from
+   before tracking, whose origin is unknown rather than direct. */
+const knownDirect = computed(() => ({
+    revenue: Math.max(0, (props.overview?.untraced?.revenue ?? 0) - (props.overview?.before_tracking?.revenue ?? 0)),
+    orders: Math.max(0, (props.overview?.untraced?.orders ?? 0) - (props.overview?.before_tracking?.orders ?? 0)),
+}))
+
+const beforeTrackingHelp = trans('These customers signed up before we started recording where people come from, and nothing has been recorded for them since, so we cannot tell whether an ad, a search or a mailshot once brought them. As the recorded history grows past the attribution window this figure shrinks on its own, so read it as the part of Direct that is still a measurement gap.')
 
 const untracedHelp = trans('People who typed the address, used a bookmark, or came from somewhere we could not name. Visits are counted directly, once per day; revenue, sign-ups and orders are whatever is left of the shop total once every channel has taken its share. It is not "no marketing": somebody who saw an ad and typed the address later lands here too.')
 
@@ -566,8 +580,8 @@ const columnHelp: Record<string, string> = {
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
                             <span class="inline-grid grid-cols-[2.75rem_5.5rem]">
-                                <span class="font-normal text-gray-400 text-left">{{ share(overview.untraced.revenue, overview.baseline.revenue) }}</span>
-                                <span>{{ money(overview.untraced.revenue) }}</span>
+                                <span class="font-normal text-gray-400 text-left">{{ share(knownDirect.revenue, overview.baseline?.revenue ?? 0) }}</span>
+                                <span>{{ money(knownDirect.revenue) }}</span>
                             </span>
                         </td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
@@ -578,8 +592,28 @@ const columnHelp: Record<string, string> = {
                         </td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
                             <span class="inline-grid grid-cols-[2.75rem_3.5rem]">
-                                <span class="font-normal text-gray-400 text-left">{{ share(overview.untraced.orders, overview.baseline.orders) }}</span>
-                                <span>{{ count(overview.untraced.orders, decimalColumns.orders) }}</span>
+                                <span class="font-normal text-gray-400 text-left">{{ share(knownDirect.orders, overview.baseline?.orders ?? 0) }}</span>
+                                <span>{{ count(knownDirect.orders, decimalColumns.orders) }}</span>
+                            </span>
+                        </td>
+                        <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
+                    </tr>
+                    <tr v-if="overview.before_tracking && (overview.before_tracking.revenue > 0 || overview.before_tracking.orders > 0)" class="text-gray-600 border-b border-dashed border-gray-300 leading-tight">
+                        <td class="py-1.5 pr-2 text-xs leading-tight italic">{{ trans('Origin unknown') }} <span class="not-italic text-gray-400">{{ trans('registered before tracking started') }}<template v-if="overview.before_tracking.reliable_from"> · {{ trans('reliable from') }} {{ useFormatTime(overview.before_tracking.reliable_from) }}</template></span> <span v-tooltip="beforeTrackingHelp" class="ml-1 text-gray-400 cursor-help">?</span></td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[2.75rem_5.5rem]">
+                                <span class="font-normal text-gray-400 text-left">{{ share(overview.before_tracking.revenue, overview.baseline?.revenue ?? 0) }}</span>
+                                <span>{{ money(overview.before_tracking.revenue) }}</span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[2.75rem_3.5rem]">
+                                <span class="font-normal text-gray-400 text-left">{{ share(overview.before_tracking.orders, overview.baseline?.orders ?? 0) }}</span>
+                                <span>{{ count(overview.before_tracking.orders, decimalColumns.orders) }}</span>
                             </span>
                         </td>
                         <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
@@ -631,7 +665,7 @@ const columnHelp: Record<string, string> = {
                 </tbody>
                 <tfoot>
                     <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
-                        <td class="py-1.5 pr-2">{{ trans('Everything') }} <span class="font-normal text-gray-400">{{ trans('channels, direct and out of scope') }}</span></td>
+                        <td class="py-1.5 pr-2">{{ trans('Everything') }} <span class="font-normal text-gray-400">{{ trans('channels, direct, unknown and out of scope') }}</span></td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>

@@ -122,4 +122,63 @@ trait WithAttributionWindow
             ->values()
             ->all();
     }
+    /**
+     * The slice of Direct that is only Direct because we were not measuring yet: customers who
+     * registered before attribution started and have had no recorded touch before their order. Their
+     * origin is unknowable, not absent, and as the history grows past the window this slice moves
+     * into the channels on its own. Shown so nobody reads it as proof that marketing does nothing.
+     *
+     * @param array<int, int> $shopIds
+     *
+     * @return array{revenue: float, orders: float}
+     */
+    protected function directBeforeTracking(array $shopIds, ?Carbon $from, ?Carbon $to, string $revenueColumn, int $window): array
+    {
+        $startedAt = GetAttributionStartedAt::run();
+
+        if (!$startedAt) {
+            return ['revenue' => 0.0, 'orders' => 0.0, 'reliable_from' => null];
+        }
+
+        $isWebsite = fn (string $table) => fn ($query) => $query->where(fn ($channel) => $channel
+            ->whereNull($table.'.sales_channel_id')
+            ->orWhere('sc.type', SalesChannelTypeEnum::WEBSITE->value));
+
+        $revenue = DB::table('invoices')
+            ->join('customers as c', 'c.id', '=', 'invoices.customer_id')
+            ->leftJoin('sales_channels as sc', 'sc.id', '=', 'invoices.sales_channel_id')
+            ->whereIn('invoices.shop_id', $shopIds)
+            ->where('invoices.in_process', false)
+            ->tap($isWebsite('invoices'))
+            ->where('c.created_at', '<', $startedAt)
+            ->whereNotExists(fn ($touch) => $touch->select(DB::raw(1))->from('model_has_traffic_sources as p')
+                ->whereColumn('p.model_id', 'invoices.customer_id')->where('p.model_type', 'Customer')
+                ->whereRaw('p.first_touch_at <= '.self::ATTRIBUTABLE_DATE))
+            ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
+            ->when($to, fn ($query) => $query->where('invoices.date', '<=', $to))
+            ->sum($revenueColumn);
+
+        $orders = DB::table('orders')
+            ->join('customers as c', 'c.id', '=', 'orders.customer_id')
+            ->leftJoin('sales_channels as sc', 'sc.id', '=', 'orders.sales_channel_id')
+            ->whereIn('orders.shop_id', $shopIds)
+            ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
+            ->whereNull('orders.deleted_at')
+            ->tap($isWebsite('orders'))
+            ->where('c.created_at', '<', $startedAt)
+            ->whereNotExists(fn ($touch) => $touch->select(DB::raw(1))->from('model_has_traffic_sources as p')
+                ->whereColumn('p.model_id', 'orders.customer_id')->where('p.model_type', 'Customer')
+                ->whereRaw('p.first_touch_at <= '.self::ORDER_PLACED_AT))
+            ->when($from, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' >= ?', [$from]))
+            ->when($to, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' <= ?', [$to]))
+            ->count();
+
+        /* The day the recorded history is as long as the attribution window: from then on, a customer
+           with no touch is genuinely direct rather than unmeasured. */
+        return [
+            'revenue'       => round((float) $revenue, 2),
+            'orders'        => (float) $orders,
+            'reliable_from' => $window > 0 ? $startedAt->copy()->addDays($window)->toDateString() : null,
+        ];
+    }
 }

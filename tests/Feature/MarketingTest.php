@@ -3696,6 +3696,30 @@ describe('the aggregated marketing overview', function () {
                 ->toBe($overview['baseline']['revenue']);
     });
 
+    it('reports the slice of direct that comes from customers who registered before tracking started', function () {
+        config()->set('marketing.attribution_started_at', now()->subDays(3)->toDateTimeString());
+        $this->customer->trafficSources()->detach();
+        $this->customer->update(['created_at' => now()->subDays(30)]);
+        DB::table('invoices')->where('customer_id', $this->customer->id)->delete();
+        windowInvoice(now()->subDay()->toDateTimeString(), 120, $this->customer, $this->shop);
+
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
+
+        expect($overview['before_tracking']['revenue'])->toBeGreaterThanOrEqual(120.0)
+            ->and($overview['before_tracking']['revenue'])->toBeLessThanOrEqual($overview['untraced']['revenue'])
+            ->and($overview['before_tracking']['reliable_from'])->toBe(now()->subDays(3)->addDays(90)->toDateString());
+
+        $this->customer->trafficSources()->attach($this->googleAds->id, [
+            'share' => 1, 'first_touch_at' => now()->subDays(2), 'last_touch_at' => now()->subDays(2),
+        ]);
+
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
+
+        expect($overview['before_tracking']['revenue'])->toBeLessThan(120.0);
+
+        config()->set('marketing.attribution_started_at', null);
+    });
+
     it('links each shop of the organisation to its own dashboard instead of repeating it', function () {
         $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
 
