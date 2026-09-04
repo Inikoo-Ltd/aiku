@@ -272,11 +272,11 @@ class IndexPartnerShippingList extends OrgAction
             ->count();
 
         return [
-            $tab(__('All'), 'grp.org.productions.show.partners.index', 'fa-bars', $openItems) + ['isAnchor' => true],
-            $tab(__('By artisan'), 'grp.org.productions.show.partners.by_artisan', 'fa-user-hard-hat'),
-            $tab(__('By category'), 'grp.org.productions.show.partners.by_category', 'fa-layer-group'),
-            $tab(__('By buyer'), 'grp.org.productions.show.partners.by_for', 'fa-building'),
-            $tab(__('Mixes'), 'grp.org.productions.show.partners.mixes', 'fa-flask'),
+            $tab(__('All'), 'grp.org.productions.show.to_produce.index', 'fa-bars', $openItems) + ['isAnchor' => true],
+            $tab(__('By artisan'), 'grp.org.productions.show.to_produce.by_artisan', 'fa-user-hard-hat'),
+            $tab(__('By category'), 'grp.org.productions.show.to_produce.by_category', 'fa-layer-group'),
+            $tab(__('By buyer'), 'grp.org.productions.show.to_produce.by_for', 'fa-building'),
+            $tab(__('Mixes'), 'grp.org.productions.show.to_produce.mixes', 'fa-flask'),
         ];
     }
 
@@ -342,7 +342,7 @@ class IndexPartnerShippingList extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.productions.show.partners.index',
+                            'name'       => 'grp.org.productions.show.to_produce.index',
                             'parameters' => $routeParameters,
                         ],
                         'label' => __('To produce'),
