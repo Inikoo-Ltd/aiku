@@ -82,40 +82,51 @@ trait WithAttributionWindow
      *
      * @param array<int, int> $shopIds
      *
-     * @return array<int, array{name: string, revenue: float, orders: float}>
+     * @return array<int, array{name: string, is_partner: bool, revenue: float, orders: float}>
      */
     protected function outOfScopeSalesChannels(array $shopIds, ?Carbon $from, ?Carbon $to, string $revenueColumn): array
     {
-        $isOutOfScope = fn ($query) => $query
-            ->whereNotNull('sales_channel_id')
-            ->where('sc.type', '!=', SalesChannelTypeEnum::WEBSITE->value);
+        /* Group companies buying from each other are booked as phone, other or recharge orders, but
+           they are one thing to management: internal trade. One line for all of it, whatever channel
+           the order was keyed under, so Phone stops hiding the sister companies. `as_organisation_id`
+           is the flag: a customer that is one of our own organisations, stamped onto every order and
+           invoice at creation. */
+        $partnerLabel = __('Partners');
+        $bucketSql    = fn (string $table) => "CASE WHEN {$table}.as_organisation_id IS NOT NULL THEN '{$partnerLabel}' ELSE sc.name END";
+
+        $isOutOfScope = fn (string $table) => fn ($query) => $query->where(fn ($scope) => $scope
+            ->where(fn ($channel) => $channel
+                ->whereNotNull($table.'.sales_channel_id')
+                ->where('sc.type', '!=', SalesChannelTypeEnum::WEBSITE->value))
+            ->orWhereNotNull($table.'.as_organisation_id'));
 
         $revenue = DB::table('invoices')
-            ->join('sales_channels as sc', 'sc.id', '=', 'invoices.sales_channel_id')
+            ->leftJoin('sales_channels as sc', 'sc.id', '=', 'invoices.sales_channel_id')
             ->whereIn('invoices.shop_id', $shopIds)
-            ->where('in_process', false)
-            ->tap($isOutOfScope)
+            ->where('invoices.in_process', false)
+            ->tap($isOutOfScope('invoices'))
             ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
             ->when($to, fn ($query) => $query->where('invoices.date', '<=', $to))
-            ->groupBy('sc.name')
-            ->select('sc.name', DB::raw("SUM({$revenueColumn}) as total"))
+            ->groupBy(DB::raw($bucketSql('invoices')))
+            ->select(DB::raw($bucketSql('invoices').' as name'), DB::raw("SUM({$revenueColumn}) as total"))
             ->pluck('total', 'name');
 
         $orders = DB::table('orders')
-            ->join('sales_channels as sc', 'sc.id', '=', 'orders.sales_channel_id')
+            ->leftJoin('sales_channels as sc', 'sc.id', '=', 'orders.sales_channel_id')
             ->whereIn('orders.shop_id', $shopIds)
-            ->whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
+            ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
             ->whereNull('orders.deleted_at')
-            ->tap($isOutOfScope)
+            ->tap($isOutOfScope('orders'))
             ->when($from, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' >= ?', [$from]))
             ->when($to, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' <= ?', [$to]))
-            ->groupBy('sc.name')
-            ->select('sc.name', DB::raw('COUNT(*) as total'))
+            ->groupBy(DB::raw($bucketSql('orders')))
+            ->select(DB::raw($bucketSql('orders').' as name'), DB::raw('COUNT(*) as total'))
             ->pluck('total', 'name');
 
         return collect(array_unique(array_merge($revenue->keys()->all(), $orders->keys()->all())))
-            ->map(fn (string $name) => [
-                'name'    => trim($name),
+            ->map(fn (?string $name) => [
+                'name'    => trim((string) $name),
+                'is_partner' => $name === $partnerLabel,
                 'revenue' => round((float) ($revenue[$name] ?? 0), 2),
                 'orders'  => (float) ($orders[$name] ?? 0),
             ])
@@ -151,6 +162,7 @@ trait WithAttributionWindow
             ->whereIn('invoices.shop_id', $shopIds)
             ->where('invoices.in_process', false)
             ->tap($isWebsite('invoices'))
+            ->whereNull('invoices.as_organisation_id')
             ->where('c.created_at', '<', $startedAt)
             ->whereNotExists(fn ($touch) => $touch->select(DB::raw(1))->from('model_has_traffic_sources as p')
                 ->whereColumn('p.model_id', 'invoices.customer_id')->where('p.model_type', 'Customer')
@@ -166,6 +178,7 @@ trait WithAttributionWindow
             ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
             ->whereNull('orders.deleted_at')
             ->tap($isWebsite('orders'))
+            ->whereNull('orders.as_organisation_id')
             ->where('c.created_at', '<', $startedAt)
             ->whereNotExists(fn ($touch) => $touch->select(DB::raw(1))->from('model_has_traffic_sources as p')
                 ->whereColumn('p.model_id', 'orders.customer_id')->where('p.model_type', 'Customer')

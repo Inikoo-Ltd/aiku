@@ -3720,6 +3720,47 @@ describe('the aggregated marketing overview', function () {
         config()->set('marketing.attribution_started_at', null);
     });
 
+    it('lists a sister company as a partner, whatever sales channel its orders were keyed under', function () {
+        $this->customer->trafficSources()->detach();
+        DB::table('invoices')->where('customer_id', $this->customer->id)->delete();
+
+        $phone = App\Models\Ordering\SalesChannel::where('type', 'phone')->first()
+            ?? App\Models\Ordering\SalesChannel::create(['name' => 'Phone', 'code' => 'phone', 'type' => 'phone']);
+        DB::table('invoices')->insert([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $this->customer->id,
+            'sales_channel_id' => $phone->id,
+            'currency_id'     => $this->shop->currency_id,
+            'tax_category_id' => App\Models\Helpers\TaxCategory::firstOrFail()->id,
+            'reference'       => 'INV-PARTNER-'.uniqid(),
+            'slug'            => 'inv-partner-'.uniqid(),
+            'type'            => 'invoice',
+            'net_amount'      => 70,
+            'org_net_amount'  => 70,
+            'grp_net_amount'  => 70,
+            'total_amount'    => 70,
+            'in_process'      => false,
+            'payment_data'    => '{}',
+            'data'            => '{}',
+            'date'            => now()->subDay()->toDateTimeString(),
+            'created_at'      => now()->subDay()->toDateTimeString(),
+            'updated_at'      => now()->subDay()->toDateTimeString(),
+        ]);
+
+        /* A partner is a customer that is one of our own organisations; the flag travels onto the
+           invoice at creation, which is what the query reads. */
+        DB::table('invoices')->where('customer_id', $this->customer->id)->update(['as_organisation_id' => $this->organisation->id]);
+
+        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
+        $rows     = collect($overview['out_of_scope']);
+
+        expect($rows->firstWhere('is_partner', true)['revenue'])->toBe(70.0)
+            ->and($rows->firstWhere('name', 'Phone')['revenue'] ?? 0.0)->toBe(0.0);
+
+    });
+
     it('links each shop of the organisation to its own dashboard instead of repeating it', function () {
         $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
 
