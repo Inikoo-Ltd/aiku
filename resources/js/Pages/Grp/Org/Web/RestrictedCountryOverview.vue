@@ -4,6 +4,7 @@
   -->
 
 <script setup lang="ts">
+import "@/Composables/initialiseLeaflet"
 import { LMap, LTileLayer, LCircleMarker, LTooltip } from "@vue-leaflet/vue-leaflet"
 import { onMounted, nextTick, ref, watch } from "vue"
 import { trans } from "laravel-vue-i18n"

@@ -46,6 +46,7 @@ import { routeType } from '@/types/route'
 import axios from 'axios'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import '@vuepic/vue-datepicker/dist/main.css'
+import "@/Composables/initialiseLeaflet"
 import { LMap, LTileLayer, LMarker, LTooltip, LCircle } from "@vue-leaflet/vue-leaflet"
 import { useFilterRecipients } from "@/Composables/useFilterRecipients";
 import { trans } from "laravel-vue-i18n"
