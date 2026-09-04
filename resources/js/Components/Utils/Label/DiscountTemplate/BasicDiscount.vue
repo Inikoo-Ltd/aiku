@@ -59,7 +59,7 @@ const isShopOffer = computed<boolean>(() => isShopOrderedSubTrigger(props.offers
     </div>
 
     <!-- Label: Shop Offer -->
-    <div v-else-if="isShopOffer" class="bg-[#0057A8] px-1 py-0.5 text-xs border flex items-center border-[#0057A8] rounded-sm w-fit text-white">
+    <div v-else-if="isShopOffer" class="bg-[#A80000] px-1 py-0.5 text-xs border flex items-center border-[#A80000] rounded-sm w-fit text-white">
         {{ offers_data?.o?.l }}
         <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(offers_data?.o?.p) }}</span> {{ ctrans("OFF") }}
     </div>

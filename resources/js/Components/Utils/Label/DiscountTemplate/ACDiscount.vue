@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { faBadgePercent } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed } from "vue"
 import { formatPercentage } from '@/Composables/Utils'
-import { isShopOrderedSubTrigger } from '@/Composables/useOfferLabelVariant'
 library.add(faBadgePercent)
 
 
@@ -22,13 +20,11 @@ const props = defineProps<{
     }
 }>()
 
-const isShopOffer = computed<boolean>(() => isShopOrderedSubTrigger(props.offers_data?.o?.st))
 </script>
 
 <template>
   <div
-    class="text-gray-100 w-fit flex items-center rounded-sm border px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1 md:text-sm"
-    :class="isShopOffer ? 'bg-[#0057A8] border-blue-900' : 'bg-red-700 border-red-900'">
+    class="bg-red-700 border-red-900 text-gray-100 w-fit flex items-center rounded-sm border px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1 md:text-sm">
     <span class="font-bold mr-1 leading-none">
       {{ formatPercentage(offers_data?.o?.p) }}
     </span>
