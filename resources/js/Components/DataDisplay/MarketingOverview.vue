@@ -248,15 +248,27 @@ const beforeTrackingHelp = (reliableFrom: string | null) =>
     + (reliableFrom ? trans('Reliable from') + ' ' + useFormatTime(reliableFrom) + '. ' : '')
     + trans('These customers signed up before we started recording where people come from, and nothing has been recorded for them since, so we cannot tell whether an ad, a search or a mailshot once brought them. As the recorded history grows past the attribution window this figure shrinks on its own, so read it as the part of Direct that is still a measurement gap.')
 
-const assistantName = (host: string) => ({
+/* The hosts behind a channel that is really a family of sites: the assistants behind AI, the
+   engines behind Organic search. Google and Bing keep their own channel and are not repeated here. */
+const hostsBehind = (channel: { type: string }) => {
+    const kind = { ai: 'ai', 'organic-search': 'search' }[channel.type]
+    return kind ? (props.overview?.referrers ?? []).filter(referrer => referrer.kind === kind) : []
+}
+
+const hostName = (host: string) => ({
     'chatgpt.com': 'ChatGPT',
     'gemini.google.com': 'Gemini',
     'copilot.microsoft.com': 'Copilot',
     'claude.ai': 'Claude',
     'perplexity.ai': 'Perplexity',
+    'duckduckgo.com': 'DuckDuckGo',
+    'search.yahoo.com': 'Yahoo',
+    'yandex.com': 'Yandex',
+    'ecosia.org': 'Ecosia',
+    'seznam.cz': 'Seznam',
+    'qwant.com': 'Qwant',
+    'search.brave.com': 'Brave',
 }[host] ?? host)
-
-const aiAssistants = computed(() => (props.overview?.referrers ?? []).filter(referrer => referrer.kind === 'ai'))
 
 const untracedHelp = trans('People who typed the address, used a bookmark, or came from somewhere we could not name. Visits are counted directly, once per day; revenue, sign-ups and orders are whatever is left of the shop total once every channel has taken its share. It is not "no marketing": somebody who saw an ad and typed the address later lands here too.')
 
@@ -597,11 +609,11 @@ const typeLabel: Record<string, string> = {
                                 {{ channel.roas !== null ? channel.roas.toFixed(2) + '×' : '—' }}
                             </td>
                         </tr>
-                        <!-- The assistants behind the AI channel, one line each: which of them actually sends buyers is
+                        <!-- The hosts behind a channel that is a family of sites (assistants behind AI, engines behind Organic search), one line each: which of them actually sends buyers is
                              the question, and the channel total cannot answer it. Visits per assistant come from the click log, so they reach back to when the channel began;
                              touched customers and revenue are share-weighted like everywhere else. -->
-                        <tr v-for="assistant in (channel.type === 'ai' ? aiAssistants : [])" :key="assistant.host" class="border-b border-gray-50 text-gray-500">
-                            <td class="py-1.5 pr-2 pl-10 text-xs">{{ assistantName(assistant.host) }}</td>
+                        <tr v-for="assistant in hostsBehind(channel)" :key="assistant.host" class="border-b border-gray-50 text-gray-500">
+                            <td class="py-1.5 pr-2 pl-10 text-xs">{{ hostName(assistant.host) }}</td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap text-xs">
                                 <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
                                     <span :class="assistant.visits > 0 ? '' : 'text-gray-300'">{{ assistant.visits > 0 ? locale.number(assistant.visits) : '—' }}</span>                                    <span :class="assistant.visitors > 0 ? 'text-[#006300]' : 'text-gray-500'">{{ count(assistant.visitors, true) }} {{ trans('touched') }}</span>                                    <span></span>
