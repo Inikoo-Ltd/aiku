@@ -530,7 +530,7 @@ const typeLabel: Record<string, string> = {
                     <tbody v-if="overview.untraced">
                         <tr class="text-gray-900 bg-gray-100/80 border-t-2 border-b border-gray-300 font-medium leading-tight">
                             <td class="py-1 pr-2 text-xs leading-tight">
-                                {{ trans('Direct / untraced') }}
+                                {{ trans('Direct') }}
                                 <span v-tooltip="untracedHelp" class="ml-1 text-gray-400 cursor-help">?</span>
                             </td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap">

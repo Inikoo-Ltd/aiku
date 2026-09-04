@@ -74,7 +74,7 @@ enum TrafficSourcesTypeEnum: string
             self::ORGANIC_SEARCH->value    => 'Organic Search (other)',
             self::REFERRAL->value          => 'Referral',
             self::AI->value                => 'AI Assistants',
-            self::DIRECT->value            => 'Direct / untraced',
+            self::DIRECT->value            => 'Direct',
         ];
     }
 
@@ -173,7 +173,7 @@ enum TrafficSourcesTypeEnum: string
             in_array($this, [self::NEWSLETTER, self::MARKETING_MAILSHOT, self::EMAIL_AUTOMATED], true)
                                                                    => ['key' => 'email', 'label' => __('Email'), 'position' => 3],
             $this === self::AI                                     => ['key' => 'ai', 'label' => __('AI'), 'position' => 4],
-            $this === self::DIRECT                                 => ['key' => 'direct', 'label' => __('Direct / untraced'), 'position' => 6],
+            $this === self::DIRECT                                 => ['key' => 'direct', 'label' => __('Direct'), 'position' => 6],
             default                                                => ['key' => 'other', 'label' => __('Other'), 'position' => 5],
         };
     }
