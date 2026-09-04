@@ -547,9 +547,9 @@ const typeLabel: Record<string, string> = {
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                                <span class="inline-grid grid-cols-[5.5rem_2.75rem]">
+                                <span class="inline-grid grid-cols-[2.75rem_5.5rem]">
+                                    <span class="font-normal text-gray-400 text-left">{{ pctOf(overview.untraced.revenue, overview.baseline?.revenue ?? 0) }}</span>
                                     <span>{{ money(overview.untraced.revenue) }}</span>
-                                    <span class="font-normal text-gray-400">{{ pctOf(overview.untraced.revenue, overview.baseline?.revenue ?? 0) }}</span>
                                 </span>
                             </td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap">
@@ -559,9 +559,9 @@ const typeLabel: Record<string, string> = {
                                 </span>
                             </td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                                <span class="inline-grid grid-cols-[3.5rem_2.75rem]">
+                                <span class="inline-grid grid-cols-[2.75rem_3.5rem]">
+                                    <span class="font-normal text-gray-400 text-left">{{ pctOf(overview.untraced.orders, overview.baseline?.orders ?? 0) }}</span>
                                     <span>{{ count(overview.untraced.orders, decimalColumns.orders) }}</span>
-                                    <span class="font-normal text-gray-400">{{ pctOf(overview.untraced.orders, overview.baseline?.orders ?? 0) }}</span>
                                 </span>
                             </td>
                             <td class="text-right pl-2 tabular-nums text-gray-300">—</td>

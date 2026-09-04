@@ -493,9 +493,9 @@ const columnHelp: Record<string, string> = {
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                            <span class="inline-grid grid-cols-[5.5rem_2.75rem]">
+                            <span class="inline-grid grid-cols-[2.75rem_5.5rem]">
+                                <span class="font-normal text-gray-400 text-left">{{ share(overview.untraced.revenue, overview.baseline.revenue) }}</span>
                                 <span>{{ money(overview.untraced.revenue) }}</span>
-                                <span class="font-normal text-gray-400">{{ share(overview.untraced.revenue, overview.baseline.revenue) }}</span>
                             </span>
                         </td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
@@ -505,9 +505,9 @@ const columnHelp: Record<string, string> = {
                             </span>
                         </td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                            <span class="inline-grid grid-cols-[3.5rem_2.75rem]">
+                            <span class="inline-grid grid-cols-[2.75rem_3.5rem]">
+                                <span class="font-normal text-gray-400 text-left">{{ share(overview.untraced.orders, overview.baseline.orders) }}</span>
                                 <span>{{ count(overview.untraced.orders, decimalColumns.orders) }}</span>
-                                <span class="font-normal text-gray-400">{{ share(overview.untraced.orders, overview.baseline.orders) }}</span>
                             </span>
                         </td>
                         <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
