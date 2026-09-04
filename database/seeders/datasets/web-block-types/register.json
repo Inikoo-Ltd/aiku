@@ -1,0 +1,178 @@
+{
+	"slug": "register",
+	"code": "register",
+	"name": "Register",
+	"scope": "webpage",
+	"category": "block",
+	"website_type": ["b2b", "b2c", "dropshipping", "fulfilment"],
+	"icon": ["fal", "user-plus"],
+	"is_in_test": false,
+	"data": {
+		"fieldValue": {
+			"container": {
+				"properties": {
+					"background": {
+						"type": "color",
+						"color": "rgba(255, 255, 255, 1)",
+						"image": {
+							"original": null
+						}
+					},
+					"text": {
+						"desktop": {
+							"color": "rgba(55, 65, 81, 1)",
+							"fontSize": null,
+							"fontFamily": "Inter, sans-serif"
+						}
+					},
+					"padding": {
+						"unit": "px",
+						"top": {
+							"value": 48
+						},
+						"right": {
+							"value": 24
+						},
+						"bottom": {
+							"value": 48
+						},
+						"left": {
+							"value": 24
+						}
+					}
+				}
+			},
+			"register": {
+				"title": "<h3 style=\"text-align: center\">Register</h3>",
+				"description": "<p style=\"text-align: center\">Fill the form to complete your registration</p>",
+				"card": {
+					"container": {
+						"properties": {
+							"background": {
+								"desktop": {
+									"type": "color",
+									"color": "rgba(255, 255, 255, 1)",
+									"image": {
+										"original": null
+									}
+								}
+							},
+							"padding": {
+								"unit": "px",
+								"top": {
+									"value": 32
+								},
+								"right": {
+									"value": 32
+								},
+								"bottom": {
+									"value": 32
+								},
+								"left": {
+									"value": 32
+								}
+							},
+							"border": {
+								"desktop": {
+									"unit": "px",
+									"color": "rgba(229, 231, 235, 1)",
+									"rounded": {
+										"unit": "px",
+										"topleft": {
+											"value": 8
+										},
+										"topright": {
+											"value": 8
+										},
+										"bottomleft": {
+											"value": 8
+										},
+										"bottomright": {
+											"value": 8
+										}
+									},
+									"top": {
+										"value": 1
+									},
+									"right": {
+										"value": 1
+									},
+									"bottom": {
+										"value": 1
+									},
+									"left": {
+										"value": 1
+									}
+								}
+							}
+						}
+					}
+				},
+				"terms": {
+					"text": "I agree with the terms and conditions",
+					"url": "/terms-and-conditions"
+				},
+				"button": {
+					"text": "Register",
+					"container": {
+						"properties": {
+							"text": {
+								"desktop": {
+									"color": "rgba(255, 255, 255, 1)",
+									"fontFamily": "Inter, sans-serif"
+								}
+							},
+							"padding": {
+								"unit": "px",
+								"top": {
+									"value": 12
+								},
+								"right": {
+									"value": 24
+								},
+								"bottom": {
+									"value": 12
+								},
+								"left": {
+									"value": 24
+								}
+							},
+							"background": {
+								"desktop": {
+									"type": "color",
+									"color": "#111827",
+									"image": {
+										"original": null
+									}
+								}
+							},
+							"border": {
+								"desktop": {
+									"unit": "px",
+									"rounded": {
+										"unit": "px",
+										"topleft": {
+											"value": 6
+										},
+										"topright": {
+											"value": 6
+										},
+										"bottomleft": {
+											"value": 6
+										},
+										"bottomright": {
+											"value": 6
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"login": {
+					"note": "<p style=\"text-align: center\">Already have an account? <a href=\"/app/login\">Log in</a></p>"
+				}
+			}
+		}
+	}
+}
