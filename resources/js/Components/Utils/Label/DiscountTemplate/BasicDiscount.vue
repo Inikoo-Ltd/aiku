@@ -2,7 +2,9 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faBadgePercent, faMedal, faMoneyCheckEditAlt } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { computed } from "vue"
 import { formatPercentage } from '@/Composables/Utils'
+import { isShopOrderedSubTrigger } from '@/Composables/useOfferLabelVariant'
 library.add(faBadgePercent, faMoneyCheckEditAlt)
 
 
@@ -16,12 +18,14 @@ const props = defineProps<{
             t: string  // Type --- "percentage"
             p: string  // Percentage --- "10.0%"
             l: string  // Label
-            st: string | null // Sub Trigger --- CalculateOrderDiscounts --- "a" => Gold Reward Amnesty, "i" => Gold Reward Member,  "q" => Quantity, "sd" => Step Discount
+            st: string | null // Sub Trigger --- CalculateOrderDiscounts --- "a" => Gold Reward Amnesty, "i" => Gold Reward Member,  "q" => Quantity, "sd" => Step Discount, "so" => Shop Ordered, "fob" => First Order Bonus
             sto: string | null // Sub Trigger Offer Id
         }
     },
     is_discretionary_offer?: boolean
 }>()
+
+const isShopOffer = computed<boolean>(() => isShopOrderedSubTrigger(props.offers_data?.o?.st))
 
 
 
@@ -54,8 +58,14 @@ const props = defineProps<{
         <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(offers_data?.o?.p) }}</span> {{ ctrans("OFF") }}
     </div>
 
+    <!-- Label: Shop Offer -->
+    <div v-else-if="isShopOffer" class="bg-[#0057A8] px-1 py-0.5 text-xs border flex items-center border-[#0057A8] rounded-sm w-fit text-white">
+        {{ offers_data?.o?.l }}
+        <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(offers_data?.o?.p) }}</span> {{ ctrans("OFF") }}
+    </div>
+
     <!-- Label: Discretionary Discount (because sto is null) -->
-    <div v-else-if="offers_data?.o?.sto === null && offers_data?.o?.st === null" class="bg-[#E87928] px-1 py-0.5 text-xs border flex items-center border-[#E87928] rounded-sm w-fit text-white" >
+    <div v-else-if="offers_data?.o?.sto === null && offers_data?.o?.st === null" class="bg-[#A80000] px-1 py-0.5 text-xs border flex items-center border-[#A80000] rounded-sm w-fit text-white" >
         <!-- <FontAwesomeIcon icon="fas fa-badge-percent" class="text-white text-[1.1667em] align-middle" fixed-width aria-hidden="true" /> -->
         {{ offers_data?.o?.l }}
         <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(props.offers_data?.o?.p)  }}</span> {{ ctrans("OFF") }}

@@ -441,6 +441,8 @@ const onHideStepsPopover = () => {
                         :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Department Ordered'"
                         :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
+                    <DiscountByType v-if="bestOffer?.type == 'Shop Ordered'"
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Subdepartment Ordered'"
                         :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <div v-else class="w-full"></div>
@@ -661,7 +663,7 @@ const onHideStepsPopover = () => {
 }
 
 .offer :deep(.offer-max-discount) {
-    @apply bg-[#A80000] border border-red-900 text-gray-100 flex items-center rounded-sm px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1 min-w-0 max-w-[6rem] 2xl:max-w-[12rem];
+    @apply bg-[#A80000] border border-[#A80000] text-gray-100 flex items-center rounded-sm px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1 min-w-0 max-w-[6rem] 2xl:max-w-[12rem];
 }
 
 .offer :deep(.offer-label) {
