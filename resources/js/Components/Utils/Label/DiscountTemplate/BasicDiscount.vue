@@ -69,30 +69,14 @@ const isShopOffer = computed<boolean>(() => isShopOrderedSubTrigger(props.offers
             aria-hidden="true" />
 
         <div
-            class="bg-[#E87928] px-1 py-0.5 border flex items-center border-[#E87928] rounded-sm w-fit text-white">
+            class="bg-[#E87928] px-1 py-0.5 text-xs border flex items-center border-[#E87928] rounded-sm w-fit text-white">
             <!-- Label: Gold Reward Amnesty -->
-            <template v-if="offers_data?.o?.st === 'a'">
-                <span class="ml-0.5 font-bold mr-1">
-                    {{ formatPercentage(props.offers_data?.o?.p) }}
-                </span>
-                {{ ctrans("Gold Reward Amnesty") }}
-            </template>
-
+            <span class="font-bold bg-black/25 -ml-1 -my-0.5 px-1.5 py-0.5 rounded-l-sm mr-1.5">{{ formatPercentage(props.offers_data?.o?.p) }} {{ ctrans("OFF") }}</span>
+            <template v-if="offers_data?.o?.st === 'a'">{{ ctrans("Gold Reward Amnesty") }}</template>
             <!-- Label: Gold Reward Member -->
-            <template v-else-if="offers_data?.o?.st === 'i'">
-                {{ ctrans("Gold Reward Member") }}
-                <span class="ml-0.5 font-bold mr-1">
-                    {{ formatPercentage(props.offers_data?.o?.p) }} OFF
-                </span>
-            </template>
-
+            <template v-else-if="offers_data?.o?.st === 'i'">{{ ctrans("Gold Reward Member") }}</template>
             <!-- Label: default -->
-            <template v-else>
-                <span class="ml-0.5 font-bold mr-1">
-                    {{ formatPercentage(props.offers_data?.o?.p) }}
-                </span>
-                {{ offers_data?.o?.l }}
-            </template>
+            <template v-else>{{ offers_data?.o?.l }}</template>
         </div>
     </div>
 </template>
