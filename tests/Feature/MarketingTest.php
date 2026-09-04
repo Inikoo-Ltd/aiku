@@ -3692,6 +3692,7 @@ describe('the aggregated marketing overview', function () {
         $row      = collect($overview['out_of_scope'])->firstWhere('name', 'Phone');
 
         expect($row['revenue'])->toBe(40.0)
+            ->and($row['kind'])->toBe('non_web')
             ->and($overview['untraced']['revenue'] + $overview['totals']['revenue'] + array_sum(array_column($overview['out_of_scope'], 'revenue')))
                 ->toBe($overview['baseline']['revenue']);
     });
@@ -3756,7 +3757,8 @@ describe('the aggregated marketing overview', function () {
         $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
         $rows     = collect($overview['out_of_scope']);
 
-        expect($rows->firstWhere('is_partner', true)['revenue'])->toBe(70.0)
+        expect($rows->firstWhere('kind', 'partners')['revenue'])->toBe(70.0)
+            ->and($rows->firstWhere('kind', 'partners')['name'])->toBe($this->customer->name)
             ->and($rows->firstWhere('name', 'Phone')['revenue'] ?? 0.0)->toBe(0.0);
 
     });

@@ -78,6 +78,7 @@ const props = defineProps<{
             reliable_from: string | null
         }
         out_of_scope?: {
+            kind: 'partners' | 'marketplaces' | 'non_web'
             name: string
             revenue: number
             orders: number
@@ -164,12 +165,12 @@ const showChannelDetail = ref(true)
 
 /* Each block opens and closes on its own; the header button is a shortcut for all of them at once.
    Out of scope starts closed: a dozen marketplaces is detail nobody needs until they ask. */
-const closedGroups = ref<Record<string, boolean>>({ out_of_scope: true })
+const closedGroups = ref<Record<string, boolean>>({ partners: true, marketplaces: true, non_web: true })
 const isOpen = (key: string) => showChannelDetail.value && !closedGroups.value[key]
 const toggleGroup = (key: string) => {
     if (!showChannelDetail.value) {
         showChannelDetail.value = true
-        closedGroups.value = Object.fromEntries(groupedChannels.value.map(group => [group.key, true]).concat([['out_of_scope', true]]))
+        closedGroups.value = Object.fromEntries(groupedChannels.value.map(group => [group.key, true]).concat([['partners', true], ['marketplaces', true], ['non_web', true]]))
     }
     closedGroups.value = { ...closedGroups.value, [key]: !closedGroups.value[key] }
 }
@@ -212,12 +213,25 @@ const share = (part: number, whole: number) =>
 const conversionRate = (orders: number, visits: number) =>
     visits > 0 ? (orders / visits * 100).toFixed(2) + '%' : '—'
 
-const outOfScopeTotals = computed(() => (props.overview?.out_of_scope ?? []).reduce((totals, channel) => ({
-    revenue: totals.revenue + channel.revenue,
-    orders: totals.orders + channel.orders,
-}), { revenue: 0, orders: 0 }))
+/* Three blocks, each closed by default: the sister companies, the marketplaces, and everything
+   that was keyed in by hand. Their lines are detail nobody needs until they ask. */
+const outOfScopeKinds = [
+    { key: 'partners', label: trans('Partners'), help: trans('Group companies buying from each other, one line per sister company, whatever sales channel the order was keyed under. Internal trade, not a customer won.') },
+    { key: 'marketplaces', label: trans('Marketplaces'), help: trans('Orders that arrived through a marketplace such as Faire or Zentrada. The marketplace found the buyer, so no channel of ours can claim them and no visit precedes them.') },
+    { key: 'non_web', label: trans('Non web'), help: trans('Orders keyed in by staff: phone, showroom, email, API and the like. No channel can claim them and no visit precedes them.') },
+]
 
-const outOfScopeHelp = trans('Sales that never went through the website: phone, showroom and marketplace orders. No channel can claim them and no visit precedes them, so they are listed here rather than counted as direct. Sign-ups are not split by sales channel.')
+const outOfScopeGroups = computed(() => outOfScopeKinds
+    .map(kind => {
+        const channels = (props.overview?.out_of_scope ?? []).filter(channel => channel.kind === kind.key)
+        return {
+            ...kind,
+            channels,
+            revenue: channels.reduce((sum, channel) => sum + channel.revenue, 0),
+            orders: channels.reduce((sum, channel) => sum + channel.orders, 0),
+        }
+    })
+    .filter(group => group.channels.length))
 
 /* Direct is what we watched arrive on its own; the rest of the remainder belongs to customers from
    before tracking, whose origin is unknown rather than direct. */
@@ -629,28 +643,28 @@ const columnHelp: Record<string, string> = {
                 </tbody>
                 <!-- Sales that never went through the website: phone, showroom, marketplaces. Listed so the
                      last row still adds up to the total management carries in their head. -->
-                <tbody v-if="overview.out_of_scope?.length">
+                <tbody v-for="group in outOfScopeGroups" :key="group.key">
                     <tr class="text-gray-600 border-b border-dashed border-gray-300 leading-tight">
-                        <td class="py-1.5 pr-2 text-xs leading-tight italic"><span class="cursor-pointer select-none" @click="toggleGroup('out_of_scope')"><FontAwesomeIcon :icon="chevron('out_of_scope')" class="text-gray-400 mr-1.5 text-[10px]" fixed-width />{{ trans('Out of scope') }}</span> <span v-tooltip="outOfScopeHelp" class="ml-1 text-gray-400 cursor-help">?</span></td>
+                        <td class="py-1.5 pr-2 text-xs leading-tight italic"><span class="cursor-pointer select-none" @click="toggleGroup(group.key)"><FontAwesomeIcon :icon="chevron(group.key)" class="text-gray-400 mr-1.5 text-[10px]" fixed-width />{{ group.label }}</span> <span v-tooltip="group.help" class="ml-1 text-gray-400 cursor-help">?</span></td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
                             <span class="inline-grid grid-cols-[2.75rem_5.5rem]">
-                                <span class="font-normal text-gray-400 text-left">{{ share(outOfScopeTotals.revenue, overview.baseline?.revenue ?? 0) }}</span>
-                                <span>{{ money(outOfScopeTotals.revenue) }}</span>
+                                <span class="font-normal text-gray-400 text-left">{{ share(group.revenue, overview.baseline?.revenue ?? 0) }}</span>
+                                <span>{{ money(group.revenue) }}</span>
                             </span>
                         </td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
                             <span class="inline-grid grid-cols-[2.75rem_3.5rem]">
-                                <span class="font-normal text-gray-400 text-left">{{ share(outOfScopeTotals.orders, overview.baseline?.orders ?? 0) }}</span>
-                                <span>{{ count(outOfScopeTotals.orders, decimalColumns.orders) }}</span>
+                                <span class="font-normal text-gray-400 text-left">{{ share(group.orders, overview.baseline?.orders ?? 0) }}</span>
+                                <span>{{ count(group.orders, decimalColumns.orders) }}</span>
                             </span>
                         </td>
                         <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
                     </tr>
-                    <tr v-for="channel in (isOpen('out_of_scope') ? overview.out_of_scope : [])" :key="channel.name" class="border-b border-gray-50 text-gray-600">
+                    <tr v-for="channel in (isOpen(group.key) ? group.channels : [])" :key="channel.name" class="border-b border-gray-50 text-gray-600">
                         <td class="py-1.5 pr-2 pl-5 text-gray-500 italic">{{ channel.name }}</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
@@ -673,7 +687,7 @@ const columnHelp: Record<string, string> = {
                 </tbody>
                 <tfoot>
                     <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
-                        <td class="py-1.5 pr-2">{{ trans('Everything') }} <span class="font-normal text-gray-400">{{ trans('channels, direct, before tracking and out of scope') }}</span></td>
+                        <td class="py-1.5 pr-2">{{ trans('Everything') }} <span class="font-normal text-gray-400">{{ trans('channels, direct, before tracking, partners, marketplaces and non web') }}</span></td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
