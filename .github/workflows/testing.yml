@@ -4,6 +4,10 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+concurrency:
+  group: backend_tests_${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   HOME: /home/aiku_test
 
