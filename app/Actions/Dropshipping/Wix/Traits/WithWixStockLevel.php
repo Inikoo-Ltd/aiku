@@ -23,7 +23,7 @@ trait WithWixStockLevel
             return 0;
         }
 
-        if (!$item->is_for_sale) {
+        if (!$item->isSellableThroughSalesChannels()) {
             return 0;
         }
 

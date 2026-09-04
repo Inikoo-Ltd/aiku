@@ -69,6 +69,9 @@ use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Production\Artisan\AttachArtisan;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems;
 use App\Actions\HumanResources\Employee\StoreEmployee;
+use Illuminate\Support\Str;
+use App\Models\HumanResources\JobPosition;
+use App\Actions\SysAdmin\User\StoreUser;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
 use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
@@ -399,6 +402,45 @@ test('create agent supplier purchase order', function (PurchaseOrder $purchaseOr
 
     return $agentSupplierPurchaseOrder;
 })->depends('create purchase order independent supplier');
+
+test('agent login can propose a ready date but not set management-only clean handover fields', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder) {
+    $organisation = $this->agent->organisation;
+    $orgAdmin     = JobPosition::where('organisation_id', $organisation->id)->where('code', 'org-admin')->firstOrFail();
+    $employee     = StoreEmployee::make()->action($organisation, [
+        'worker_number'   => 'agent-clerk',
+        'alias'           => 'agent-clerk',
+        'contact_name'    => 'Agent Clerk',
+        'state'           => EmployeeStateEnum::WORKING,
+        'type'            => EmployeeTypeEnum::EMPLOYEE,
+        'employment_type' => EmploymentTypeEnum::FULL_TIME,
+        'positions'       => [['slug' => $orgAdmin->slug, 'scopes' => []]],
+    ]);
+    $agentUser = StoreUser::make()->action($employee, [
+        'username'       => 'agent-clerk',
+        'password'       => Str::random(32),
+        'status'         => true,
+        'reset_password' => false,
+    ]);
+
+    expect($agentUser->hasGroupAccess())->toBeFalse();
+
+    actingAs($agentUser);
+    $this->get(route('grp.org.procurement.agent_supplier_purchase_orders.edit', [$organisation->slug, $agentSupplierPurchaseOrder->slug]))
+        ->assertInertia(fn ($page) => $page
+            ->missing('formData.blueprint.1.fields.proposed_ready_at.readonly')
+            ->where('formData.blueprint.1.fields.approved_ready_at.readonly', true));
+
+    $this->patch(route('grp.models.agent_supplier_purchase_order.update', $agentSupplierPurchaseOrder->id), [
+        'proposed_ready_at' => '2026-10-01',
+        'approved_ready_at' => '2026-10-02',
+    ])->assertRedirect();
+
+    $agentSupplierPurchaseOrder->refresh();
+    expect($agentSupplierPurchaseOrder->proposed_ready_at->toDateString())->toBe('2026-10-01')
+        ->and($agentSupplierPurchaseOrder->approved_ready_at)->toBeNull();
+
+    actingAs($this->adminGuest->getUser());
+})->depends('create agent supplier purchase order');
 
 test('update agent supplier purchase order', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder) {
     $updated = UpdateAgentSupplierPurchaseOrder::make()->action(

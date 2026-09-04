@@ -86,7 +86,7 @@ class UpdateInventoryInEbayPortfolio
                 ->whereNotNull('platform_product_id')
                 ->where('item_type', 'Product')
                 ->where('platform_status', true)
-                ->with('item:id,available_quantity,is_for_sale,is_bundle,available_quantity_updated_at')
+                ->with('item:id,available_quantity,is_for_sale,exclusive_for_customer_id,state,available_quantity_updated_at')
                 ->chunkById(500, function ($portfolioChunk) use ($customerSalesChannel, $force): void {
                     /** @var Portfolio $portfolio */
                     foreach ($portfolioChunk as $portfolio) {

@@ -10,11 +10,12 @@ import {
     faEllipsisVertical,
     faTimesCircle,
     faMessage,
-    faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight, faBan, faRotateLeft, faFaceSmile
+    faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight, faBan, faRotateLeft, faFaceSmile,
+    faLifeRing,
 } from "@fortawesome/free-solid-svg-icons"
 import { faJira, faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import JiraTicketModal from "@/Components/Chat/Agent/JiraTicketModal.vue"
+import TicketModal from "@/Components/Chat/Agent/TicketModal.vue"
 import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -881,7 +882,7 @@ const handleClickOutside = (e: MouseEvent) => {
                     </button>
 
                     <button class="menu-item" @click="openJiraModal">
-                        <FontAwesomeIcon :icon="faJira" class="text-blue-600" /> {{ trans("Create Jira Ticket") }}
+                        <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" /> {{ trans("Create Ticket") }}
                     </button>
 
                     <button class="menu-item" @click="openSlackModal">
@@ -1098,8 +1099,8 @@ const handleClickOutside = (e: MouseEvent) => {
                             </template>
                         </Button>
                         <button @click="openJiraModal"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="trans('Create Jira ticket')" :aria-label="trans('Create Jira ticket')">
-                            <FontAwesomeIcon :icon="faJira" class="text-sm" />
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="trans('Create ticket')" :aria-label="trans('Create ticket')">
+                            <FontAwesomeIcon :icon="faLifeRing" class="text-sm" />
                         </button>
                     </div>
                     <Button @click="sendMessage" :icon="faPaperPlane" :tooltip="trans('Send message')"></Button>
@@ -1107,12 +1108,11 @@ const handleClickOutside = (e: MouseEvent) => {
             </div>
         </footer>
 
-        <JiraTicketModal
+        <TicketModal
             :is-open="isJiraModalOpen"
             :session="session"
             :organisation="currentOrganisation"
             @close="isJiraModalOpen = false"
-            @open-settings="onOpenJiraSettings"
         />
 
         <SlackShareModal

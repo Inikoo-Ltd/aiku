@@ -68,7 +68,7 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
             ->whereNotNull('platform_product_id')
             ->where('item_type', 'Product')
             ->where('platform_status', true)
-            ->with('item:id,available_quantity,is_for_sale,available_quantity_updated_at')
+            ->with('item:id,available_quantity,is_for_sale,exclusive_for_customer_id,state,available_quantity_updated_at')
             ->chunkById(500, function ($portfolioChunk) use ($customerSalesChannel, $wooCommerceUser, $force): void {
                 $updates = [];
 
@@ -99,7 +99,7 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
     {
         $availableQuantity = $product->available_quantity ?? 0;
 
-        if (!$product->is_for_sale) {
+        if (!$product->isSellableThroughSalesChannels()) {
             $availableQuantity = 0;
         }
 

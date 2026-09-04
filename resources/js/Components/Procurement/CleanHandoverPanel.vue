@@ -25,7 +25,7 @@ export interface CleanHandoverData {
         chs: number | null
         commission_rate: number | null
     }[]
-    hygiene: {
+    hygiene?: {
         avg_ready_date_padding_days: number | null
         exclusion_rate: number | null
         handed_over_missing_checks: number

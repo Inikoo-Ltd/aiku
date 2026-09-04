@@ -1,18 +1,34 @@
 <script setup lang="ts">
-import { inject } from 'vue';
+import { computed, inject } from 'vue';
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import { getGoldenProductTriggerLabel } from '@/Composables/useOffers'
+import GoldenProductBadge from '@/Components/CMS/Webpage/Products/GoldenProductBadge.vue'
+import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 
-defineProps<{
+const props = defineProps<{
+    isGoldenProduct?: boolean
     offer: {
         products_triggers_label: string
+        allowances?: {
+            percentage_off?: number
+        }[]
     }
 }>()
 
 const layout = inject("layout", retinaLayoutStructure)
+
+const goldenProductLabel = computed(() => {
+    return props.isGoldenProduct ? getGoldenProductTriggerLabel(props.offer) : ""
+})
 </script>
 
 <template>
-    <div class="offer-trigger-label">
+    <div v-if="goldenProductLabel" class="md:mt-1 flex gap-x-2 items-center text-[#E97929]">
+        <GoldenProductBadge v-if="props.isGoldenProduct" class="!h-8 !w-8 md:!h-9 md:!w-9"/>
+        <span class="font-bold">{{ goldenProductLabel }}</span>
+        <InformationIcon :information="ctrans('Add a Golden Product to your basket to unlock the volume discount across the entire product family.')" />
+    </div>
+    <div v-else class="offer-trigger-label">
         <span v-html="offer?.products_triggers_label ?? '-'" />
     </div>
 </template>

@@ -142,7 +142,7 @@ EOL
             ],
             [
                 'role' => 'user',
-                'content' => json_encode($this->indexChunk($chunk)),
+                'content' => json_encode((object) $this->indexChunk($chunk)),
             ],
         ];
     }
@@ -151,6 +151,9 @@ EOL
      * Keying the payload by the source text lets the model collapse entries that differ
      * only by whitespace (" more" and "more" are separate aiku strings), which silently
      * changed the entry count. Numeric keys cannot collide or be "helpfully" tidied.
+     *
+     * The caller must json_encode this as an object: PHP turns "0","1",... into a list and
+     * json_encode emits a JSON array, which the model answers with keys of its own choosing.
      *
      * @return array<string, string>
      */

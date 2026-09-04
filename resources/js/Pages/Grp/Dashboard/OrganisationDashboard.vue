@@ -73,6 +73,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 		</KeepAlive>
 
 		<DashboardSettings
+			v-if="props.dashboard?.super_blocks?.[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 			:settings="props.dashboard?.super_blocks?.[0].settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks?.[0]?.current_tab"

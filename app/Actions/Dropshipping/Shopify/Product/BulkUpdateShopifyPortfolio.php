@@ -13,12 +13,12 @@ use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class BulkUpdateShopifyPortfolio implements ShouldBeUnique
@@ -65,10 +65,9 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             return;
         }
 
-        $productMap = DB::connection('aiku_no_sticky')
-            ->table('products')
+        $productMap = Product::on('aiku_no_sticky')
             ->whereIn('id', $portfolios->pluck('item_id')->unique())
-            ->select('id', 'available_quantity', 'is_for_sale')
+            ->select('id', 'available_quantity', 'is_for_sale', 'exclusive_for_customer_id', 'state')
             ->get()
             ->keyBy('id');
 
@@ -86,7 +85,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
 
     /**
      * @param  Collection<int, Portfolio>  $portfolios
-     * @param  Collection<int, \stdClass>  $productMap
+     * @param  Collection<int, Product>  $productMap
      */
     private function processChunk(ShopifyUser $shopifyUser, Collection $portfolios, Collection $productMap, ?int $maxQtyAd, ?int $stockThreshold = null, ?Command $command = null): void
     {
@@ -105,12 +104,12 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
         foreach ($portfolios as $portfolio) {
             $productData = $productMap->get($portfolio->item_id);
 
-            if (!$productData instanceof \stdClass) {
+            if (!$productData instanceof Product) {
                 continue;
             }
 
             $availableQuantity = $productData->available_quantity;
-            if (!$productData->is_for_sale) {
+            if (!$productData->isSellableThroughSalesChannels()) {
                 $availableQuantity = 0;
             }
 
