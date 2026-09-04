@@ -35,14 +35,19 @@ class UpdateProductCategoryOffersData
         }
 
         $model = $this->getTriggerModel($offer);
-        if (!$model) {
-            return;
+        if ($model) {
+            $this->updateModelOfferData($model, $offerData, $offer);
+
+            if ($model instanceof ProductCategory) {
+                foreach ($model->getProducts() as $product) {
+                    $this->updateModelOfferData($product, $offerData, $offer);
+                }
+            }
         }
 
-        $this->updateModelOfferData($model, $offerData, $offer);
-
-        if ($model instanceof ProductCategory) {
-            foreach ($model->getProducts() as $product) {
+        foreach (Collection::whereIn('id', $offer->targetCollectionIds())->get() as $collection) {
+            $this->updateModelOfferData($collection, $offerData, $offer);
+            foreach ($collection->products as $product) {
                 $this->updateModelOfferData($product, $offerData, $offer);
             }
         }
@@ -151,6 +156,16 @@ class UpdateProductCategoryOffersData
 
             $productsTriggerLabel = __('Order any product from :category sub-department to get :percentage off', [
                 'category'   => $categoryLink,
+                'percentage' => $percentage
+            ]);
+        } elseif ($collection = Collection::whereIn('id', $offer->targetCollectionIds())->first()) {
+            $collectionLink = e($collection->name);
+            if ($collection->webpage && $collection->webpage->state == WebpageStateEnum::LIVE) {
+                $collectionLink = '<a href="'.e($collection->webpage->canonical_url).'" class="underline">'.e($collection->name).'</a>';
+            }
+            $triggerLabels[]      = __('Order any product in this collection');
+            $productsTriggerLabel = __('Order any product from :collection to get :percentage off', [
+                'collection' => $collectionLink,
                 'percentage' => $percentage
             ]);
         }

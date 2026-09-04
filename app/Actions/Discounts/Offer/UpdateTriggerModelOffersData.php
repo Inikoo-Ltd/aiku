@@ -19,7 +19,7 @@ class UpdateTriggerModelOffersData
 
     public function handle(Offer $offer): void
     {
-        if ($offer->trigger_type == 'ProductCategory') {
+        if ($offer->hydratesCatalogueOffersData()) {
             UpdateProductCategoryOffersData::run($offer);
         }
     }
