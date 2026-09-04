@@ -324,9 +324,34 @@
 @php($hidePriceQtyColumns = $isRefund && $transactions->every(fn ($t) => $t->is_refund && !($t->net_amount == 0 && $t->tax_amount != 0) && refundQuantityLabel($t->quantity, soldPackUnits($t->historicAsset?->units, $t->model?->units)) === null))
 @php($isTaxOnlyRefund = $isRefund && $invoice->is_tax_only)
 @php($showDiscountColumn = !empty($show_discounts) && !$hidePriceQtyColumns && !$isTaxOnlyRefund)
-@php($totalsFillerColspan = $hidePriceQtyColumns ? 2 : ($isTaxOnlyRefund ? 3 : 4))
-@php($totalsLabelColspan = $showDiscountColumn ? 2 : 1)
+@php($exportByTariffCode = !empty($export_by_tariff_code) && $tariffExportRows->isNotEmpty())
+@php($totalsFillerColspan = $exportByTariffCode ? 3 : ($hidePriceQtyColumns ? 2 : ($isTaxOnlyRefund ? 3 : 4)))
+@php($totalsLabelColspan = $showDiscountColumn || $exportByTariffCode ? 2 : 1)
 <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
+    @if($exportByTariffCode)
+    <thead>
+    <tr>
+        <td style="width:14%;text-align:left">{{ __('Code') }}</td>
+        <td style="width:10%;text-align:left">{{ __('Origin') }}</td>
+        <td style="text-align:left">{{ __('Description') }}</td>
+        <td style="width:22%;text-align:left">{{ __('Codes') }}</td>
+        <td style="width:8%;text-align:right">{{ __('Qty') }}</td>
+        <td style="width:12%;text-align:right">{{ __('Amount') }}</td>
+    </tr>
+    </thead>
+    <tbody>
+        @foreach($tariffExportRows as $row)
+            <tr class="@if($loop->last) last @endif">
+                <td style="text-align:left">{{ $row['tariff_code'] }}</td>
+                <td style="text-align:left">{{ $row['origin'] }}</td>
+                <td style="text-align:left">{{ $row['description'] }}</td>
+                <td style="text-align:left">{{ $row['codes'] }}</td>
+                <td style="text-align:right">{{ trimDecimalZeros($row['quantity']) }}</td>
+                <td style="text-align:right">{{ $invoice->currency->symbol . number_format($row['net_amount'], 2) }}</td>
+            </tr>
+        @endforeach
+    </tbody>
+    @else
     <thead>
     <tr>
         <td style="width:14%;text-align:left">{{ __('Code') }}</td>
@@ -541,6 +566,7 @@
         @endforeach
 
     </tbody>
+    @endif
     <tbody class="totals">
         @if ($isRefund)
 

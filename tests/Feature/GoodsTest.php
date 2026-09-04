@@ -1094,3 +1094,17 @@ test('repair fills and overwrites trade unit tariff codes from the latest Aurora
     expect($tradeUnit->fresh()->tariff_code)->toBe('2520100000')
         ->and($product->fresh()->tariff_code)->toBe('2520100000');
 });
+
+test('tariff codes index lists rows and the export name is editable', function () {
+    $tariffCode = \App\Models\Helpers\TariffCode::firstOrCreate(['hs_code' => '330741'], ['section' => 'VI', 'description' => 'Agarbatti and other odoriferous preparations which operate by burning', 'level' => 6]);
+
+    get(route('grp.goods.tariff_codes.index'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Goods/TariffCodes')->has('data.data'));
+
+    \Pest\Laravel\patch(route('grp.models.tariff_code.update', $tariffCode->id), ['name' => 'Incense'])->assertStatus(302);
+
+    expect($tariffCode->fresh()->name)->toBe('Incense')
+        ->and(\App\Models\Helpers\TariffCode::exportNameFor('3307 41 0000'))->toBe('Incense')
+        ->and(\App\Models\Helpers\TariffCode::exportNameFor('9999999999'))->toBeNull();
+});

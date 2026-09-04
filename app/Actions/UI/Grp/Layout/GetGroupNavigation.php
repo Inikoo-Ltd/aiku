@@ -342,6 +342,15 @@ class GetGroupNavigation
                             'parameters' => []
                         ]
                     ],
+                    [
+                        'label' => __('Tariff codes'),
+                        'icon'  => ['fal', 'fa-globe'],
+                        'root'  => 'grp.goods.tariff_codes.',
+                        'route' => [
+                            'name'       => 'grp.goods.tariff_codes.index',
+                            'parameters' => []
+                        ]
+                    ],
                 ]
             ]
 

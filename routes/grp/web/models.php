@@ -259,6 +259,7 @@ use App\Actions\Goods\StockFamily\UpdateStockFamily;
 use App\Actions\Goods\TradeUnit\AttachTradeUnitsToTradeUnitFamily;
 use App\Actions\Goods\TradeUnit\DeleteTradeUnitTariffCodeOverride;
 use App\Actions\Goods\TradeUnit\SetTradeUnitTariffCodeOverride;
+use App\Actions\Helpers\TariffCode\UpdateTariffCode;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnitTranslations;
 use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UI\AssignBrandTagsToTradeUnitFamily;
@@ -1587,3 +1588,5 @@ require __DIR__.'/models/sys_admin/user.php';
 require __DIR__.'/models/fulfilment/fulfilment_customer.php';
 require __DIR__.'/models/fulfilment/stored_item_audit.php';
 require __DIR__.'/models/fulfilment/stored_item_audit_delta.php';
+
+Route::patch('tariff-code/{tariffCode:id}', UpdateTariffCode::class)->name('tariff_code.update');

@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $section
  * @property string $hs_code
  * @property string $description
+ * @property string|null $name
  * @property int|null $parent_id
  * @property int $level
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -33,5 +34,22 @@ class TariffCode extends Model
     public function parent(): BelongsTo
     {
         return $this->belongsTo(TariffCode::class, 'parent_id');
+    }
+
+    /**
+     * Short export label for a product tariff code: the most specific named row wins, so a curated
+     * 8 digit name beats a 6 digit one. Codes may carry spaces or national digits beyond 8.
+     */
+    public static function exportNameFor(?string $tariffCode): ?string
+    {
+        $digits = preg_replace('/\D/', '', (string)$tariffCode);
+        if (strlen($digits) < 6) {
+            return null;
+        }
+
+        return static::whereIn('hs_code', [substr($digits, 0, 8), substr($digits, 0, 6)])
+            ->whereNotNull('name')
+            ->orderByDesc('level')
+            ->value('name');
     }
 }

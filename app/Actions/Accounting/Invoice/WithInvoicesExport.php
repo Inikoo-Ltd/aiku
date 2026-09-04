@@ -14,6 +14,7 @@ use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Fulfilment\Pallet;
+use App\Models\Helpers\TariffCode;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Arr;
@@ -119,6 +120,39 @@ trait WithInvoicesExport
         return in_array($transaction->transaction_id, $outOfStockTransactionIds)
             && (float)$transaction->net_amount === 0.0
             && (float)$transaction->gross_amount === 0.0;
+    }
+
+    /**
+     * Collapses the lines into one row per tariff code + country of origin pair, the way export
+     * invoices are laid out for customs, so an order of 60 products becomes a handful of lines.
+     * The description is the curated tariff code name; a line without one falls back to the first
+     * product name marked with an asterisk, as Aurora did. Lines with nothing supplied are left out:
+     * customs only care about what is in the boxes.
+     *
+     * @return Collection<int, array{tariff_code: string, origin: string, description: string, codes: string, quantity: float, net_amount: float}>
+     */
+    public function groupTransactionsByTariffCodeAndOrigin(Collection $transactions, ?callable $nameResolver = null): Collection
+    {
+        $nameResolver ??= fn (string $tariffCode) => TariffCode::exportNameFor($tariffCode);
+
+        return $transactions
+            ->filter(fn ($transaction) => (float)$transaction->quantity > 0)
+            ->groupBy(fn ($transaction) => ($transaction->model?->tariff_code ?? '').'|'.($transaction->model?->country_of_origin ?? ''))
+            ->map(function (Collection $group) use ($nameResolver) {
+                $tariffCode   = $group->first()->model?->tariff_code ?? '';
+                $productNames = $group->map(fn ($transaction) => $transaction->historicAsset?->name)->filter()->unique();
+
+                return [
+                    'tariff_code' => $tariffCode,
+                    'origin'      => $group->first()->model?->country_of_origin ?? '',
+                    'description' => $nameResolver($tariffCode) ?? $productNames->first().' *',
+                    'codes'       => $group->map(fn ($transaction) => $transaction->historicAsset?->code)->filter()->unique()->implode(', '),
+                    'quantity'    => (float)$group->sum('quantity'),
+                    'net_amount'  => (float)$group->sum('net_amount'),
+                ];
+            })
+            ->sortBy(fn ($row) => $row['tariff_code'].'|'.$row['origin'])
+            ->values();
     }
 
     /**
@@ -283,6 +317,7 @@ trait WithInvoicesExport
             'typeLabel'               => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice') : __('Credit Note'),
             'transactions'            => $transactions,
             'outOfStockTransactions'  => $outOfStockTransactions,
+            'tariffExportRows'        => $pdfColumns['export_by_tariff_code'] ? $this->groupTransactionsByTariffCodeAndOrigin($transactions) : collect(),
             'totalNet'                => number_format($totalNet, 2, '.', ''),
             'refunds'                 => $refundData,
             ...$pdfColumns,
