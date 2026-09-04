@@ -17,6 +17,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
 use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
+use App\Actions\Maintenance\Dropshipping\RepairShopifyChannelReconnects;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -159,4 +160,28 @@ test('reconnecting a shopify store reopens its closed channel with the portfolio
         ->and($channel->user?->id)->toBe($secondLogin->id)
         ->and($channel->portfolios()->count())->toBe(1)
         ->and($portfolio->fresh()->status)->toBeTrue();
+});
+
+test('repair merges a closed shopify channel into the open one that replaced it', function () {
+    $customer = createCustomer($this->shop);
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::SHOPIFY)->first();
+
+    $old       = StoreCustomerSalesChannel::make()->action($customer, $platform, ['reference' => 'merge-shop']);
+    $portfolio = StorePortfolio::make()->action($old, $this->product, []);
+    $client    = StoreCustomerClient::make()->action($old, CustomerClient::factory()->definition());
+    CloseCustomerSalesChannel::make()->handle($old);
+
+    $keep = StoreCustomerSalesChannel::make()->action($customer, $platform, ['reference' => 'merge-shop']);
+
+    $plan = RepairShopifyChannelReconnects::run($keep, true);
+    expect($plan)->toBe(['portfolios' => 1, 'clients' => 1, 'orders' => 0, 'predecessors' => 1])
+        ->and($portfolio->fresh()->customer_sales_channel_id)->toBe($old->id);
+
+    RepairShopifyChannelReconnects::run($keep);
+
+    expect($portfolio->fresh()->customer_sales_channel_id)->toBe($keep->id)
+        ->and($portfolio->fresh()->status)->toBeTrue()
+        ->and($client->fresh()->customer_sales_channel_id)->toBe($keep->id)
+        ->and($keep->fresh()->number_portfolios)->toBe(1)
+        ->and($old->fresh()->number_portfolios)->toBe(0);
 });
