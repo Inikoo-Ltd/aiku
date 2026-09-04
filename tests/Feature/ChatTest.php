@@ -56,6 +56,7 @@ use App\Actions\Chat\ChatSession\UpdateChatSession;
 use App\Actions\Chat\GetCustomerChatHistory;
 use App\Actions\Chat\MetaChatSession\AssignMetaChatToAgent;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
+use App\Actions\Chat\MetaChatSession\UI\GetMetaChatSessions;
 use App\Actions\Chat\MetaChatSession\UpdateMetaChatSession;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\CRM\WebUser\StoreWebUser;
@@ -2730,4 +2731,56 @@ test('new meta chat session response carries the assigned agent', function () {
     expect($payload['assigned_agent'])->not->toBeNull()
         ->and($payload['assigned_agent']['id'])->toBe($agent->id)
         ->and($payload['assigned_agent']['user_id'])->toBe($this->user->id);
+});
+
+test('my chats excludes a whatsapp thread now held by another agent', function () {
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $mine  = StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+    $other = StoreChatAgent::make()->handle(['user_id' => createAdminGuest($this->organisation->group)->getUser()->id]);
+
+    foreach ([$mine, $other] as $agent) {
+        AssignChatAgentToScope::make()->handle([
+            'organisation_id' => $this->organisation->id,
+            'shop_id'         => [$this->shop->id],
+        ], $agent);
+    }
+
+    $metaChatSession = MetaChatSession::create([
+        'ulid'            => (string)Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+628444555666',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    // I handled it first, then it was handed over: my row goes stale, theirs is active.
+    $metaChatSession->assignments()->create([
+        'meta_channel_id' => $channel->id,
+        'chat_agent_id'   => $mine->id,
+        'status'          => ChatAssignmentStatusEnum::RESOLVED->value,
+        'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'     => now()->subDay(),
+    ]);
+    $metaChatSession->assignments()->create([
+        'meta_channel_id' => $channel->id,
+        'chat_agent_id'   => $other->id,
+        'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'     => now(),
+    ]);
+
+    $filters = [
+        'assigned_to_me' => $this->user->id,
+        'statuses'       => [ChatSessionStatusEnum::ACTIVE->value],
+        'shop_id'        => $this->shop->id,
+    ];
+
+    $mineUlids = collect(GetMetaChatSessions::make()->handle($filters)->items())->pluck('ulid');
+    $teamUlids = collect(GetMetaChatSessions::make()->handle($filters + ['view_team' => true])->items())->pluck('ulid');
+
+    expect($mineUlids)->not->toContain($metaChatSession->ulid)
+        ->and($teamUlids)->toContain($metaChatSession->ulid);
 });
