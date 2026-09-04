@@ -70,6 +70,7 @@ const props = defineProps<{
             host: string
             kind: 'site' | 'search' | 'ai'
             visitors: number
+            visits: number
             revenue: number
         }[]
         before_tracking?: {
@@ -542,15 +543,13 @@ const columnHelp: Record<string, string> = {
                         </td>
                     </tr>
                     <!-- The assistants behind the AI channel, one line each: which of them actually sends buyers is
-                         the question, and the channel total cannot answer it. Touched customers and revenue only;
-                         visits are counted per channel, not per assistant. -->
+                         the question, and the channel total cannot answer it. Visits per assistant come from the click log, so they reach back to when the channel began;
+                         touched customers and revenue are share-weighted like everywhere else. -->
                     <tr v-for="assistant in (channel.type === 'ai' ? aiAssistants : [])" :key="assistant.host" class="border-b border-gray-50 text-gray-500">
                         <td class="py-1.5 pr-2 pl-10 text-xs">{{ assistantName(assistant.host) }}</td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap text-xs">
                             <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
-                                <span></span>
-                                <span>{{ count(assistant.visitors, true) }} {{ trans('touched') }}</span>
-                                <span></span>
+                                <span :class="assistant.visits > 0 ? '' : 'text-gray-300'">{{ assistant.visits > 0 ? locale.number(assistant.visits) : '—' }}</span>                                <span :class="assistant.visitors > 0 ? 'text-[#006300]' : 'text-gray-500'">{{ count(assistant.visitors, true) }} {{ trans('touched') }}</span>                                <span></span>
                             </span>
                         </td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>

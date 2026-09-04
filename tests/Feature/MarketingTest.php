@@ -1177,6 +1177,35 @@ describe('referral traffic sources', function () {
             ->and($referrers['esources.co.uk']['revenue'])->toBe(250.0);
     });
 
+    it('counts a referring host\'s visits from the click log, one per browser per day, bots excluded', function () {
+        StoreCustomer::make()->action(
+            $this->shop,
+            array_merge(Customer::factory()->definition(), [
+                'traffic_sources' => now()->subDay()->timestamp.'qesources.co.uk',
+            ])
+        );
+
+        $click = fn (array $overrides = []) => DB::table('traffic_source_clicks')->insert($overrides + [
+            'shop_id'      => $this->shop->id,
+            'type'         => 'referral',
+            'campaign_ref' => 'esources.co.uk',
+            'ip'           => '203.0.113.7',
+            'user_agent'   => 'Mozilla/5.0',
+            'is_bot'       => false,
+            'created_at'   => now()->subDay()->toDateTimeString(),
+        ]);
+        $click();
+        $click(['created_at' => now()->subDay()->addHours(3)->toDateTimeString()]);
+        $click(['created_at' => now()->toDateTimeString()]);
+        $click(['ip' => '198.51.100.9']);
+        $click(['is_bot' => true, 'ip' => '192.0.2.1']);
+
+        $referrers = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['referrers'])
+            ->keyBy('host');
+
+        expect($referrers['esources.co.uk']['visits'])->toBe(3);
+    });
+
     it('refuses a referral campaign whose reference is not a hostname', function () {
         StoreCustomer::make()->action(
             $this->shop,

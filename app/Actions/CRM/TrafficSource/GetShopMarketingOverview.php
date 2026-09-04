@@ -199,7 +199,7 @@ class GetShopMarketingOverview
             'out_of_scope'  => $outOfScope,
             'before_tracking' => $this->directBeforeTracking([$shop->id], $from, $to, 'net_amount', $window),
             'campaigns'     => $this->campaigns($campaignRevenue, $campaignRegistrations, $costs),
-            'referrers'     => $this->referrers($shop, $campaignRevenue, $campaignRegistrations),
+            'referrers'     => $this->referrers($shop, $campaignRevenue, $campaignRegistrations, $from, $to),
             'spend_by_day'  => $this->spendByDay($shop, $from, $to),
         ];
     }
@@ -557,9 +557,9 @@ class GetShopMarketingOverview
      * @param Collection<int, object> $campaignRevenue
      * @param Collection<int, float>  $registrations
      *
-     * @return array<int, array{host: string, kind: string, visitors: float, registrations: float, revenue: float}>
+     * @return array<int, array{host: string, kind: string, visitors: float, visits: int, registrations: float, revenue: float}>
      */
-    private function referrers(Shop $shop, Collection $campaignRevenue, Collection $registrations, int $limit = 10): array
+    private function referrers(Shop $shop, Collection $campaignRevenue, Collection $registrations, ?Carbon $from, ?Carbon $to, int $limit = 10): array
     {
         /* Search engines and AI assistants belong here as much as directories do: knowing DuckDuckGo sends people is
            what tells you whether it is worth advertising on. They keep their own channel for the
@@ -570,12 +570,12 @@ class GetShopMarketingOverview
             ->pluck('type', 'id');
 
         if ($kindBySource->isEmpty()) {
-            $sitesShown = 0;
-
             return [];
         }
 
         $referralSources = $kindBySource->keys();
+        $visits          = $this->visitsByHost([$shop->id], $from, $to);
+        $sitesShown      = 0;
 
         $revenue = $campaignRevenue
             ->whereIn('traffic_source_id', $referralSources)
@@ -594,17 +594,18 @@ class GetShopMarketingOverview
 
         return DB::table('traffic_source_campaigns')
             ->whereIn('traffic_source_id', $referralSources)
-            ->select('id', 'name', 'traffic_source_id')
+            ->select('id', 'name', 'reference', 'traffic_source_id')
             ->get()
             ->map(fn ($campaign) => [
                 'host'          => $campaign->name,
                 'kind'          => TrafficSourcesTypeEnum::referrerKind($kindBySource[$campaign->traffic_source_id] ?? ''),
                 'visitors'      => round((float) ($touches[$campaign->id] ?? 0), 2),
+                'visits'        => (int) ($visits[$campaign->reference] ?? 0),
                 'registrations' => round((float) ($registrations[$campaign->id] ?? 0), 2),
                 'revenue'       => round((float) ($revenue[$campaign->id] ?? 0), 2),
             ])
             ->filter(fn (array $referrer) => $referrer['registrations'] > 0 || $referrer['revenue'] > 0
-                || $referrer['visitors'] > 0)
+                || $referrer['visitors'] > 0 || $referrer['visits'] > 0)
             ->sortByDesc(fn (array $referrer) => [$referrer['revenue'], $referrer['visitors']])
             /* The cap is for the long tail of websites. Search engines and AI assistants are few and
                each one is a line under its channel, so none of them may fall off the end. */

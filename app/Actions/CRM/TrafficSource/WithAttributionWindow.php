@@ -215,4 +215,27 @@ trait WithAttributionWindow
             ->where('ts.type', TrafficSourcesTypeEnum::DIRECT->value)
             ->min('v.date');
     }
+    /**
+     * People each referring host sent, per browser per day, from the click log: the log keeps every
+     * arrival with the host that sent it, so an assistant or a search engine can have its own visit
+     * count and its own history without a second counter. Bots are left out, as they are of the
+     * channel counter. Keyed by host.
+     *
+     * @param array<int, int> $shopIds
+     *
+     * @return \Illuminate\Support\Collection<string, int>
+     */
+    protected function visitsByHost(array $shopIds, ?Carbon $from, ?Carbon $to): \Illuminate\Support\Collection
+    {
+        return DB::table('traffic_source_clicks')
+            ->whereIn('shop_id', $shopIds)
+            ->whereIn('type', TrafficSourcesTypeEnum::hostReferencedValues())
+            ->whereNotNull('campaign_ref')
+            ->where('is_bot', false)
+            ->when($from, fn ($query) => $query->where('created_at', '>=', $from))
+            ->when($to, fn ($query) => $query->where('created_at', '<=', $to))
+            ->groupBy('campaign_ref')
+            ->select('campaign_ref', DB::raw('COUNT(DISTINCT (ip, user_agent, created_at::date)) as visits'))
+            ->pluck('visits', 'campaign_ref');
+    }
 }

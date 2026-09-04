@@ -374,7 +374,7 @@ class GetAggregatedMarketingOverview
      *
      * @param Collection<int, Shop> $shops
      *
-     * @return array<int, array{host: string, kind: string, visitors: float, revenue: float}>
+     * @return array<int, array{host: string, kind: string, visitors: float, visits: int, revenue: float}>
      */
     private function referrers(Collection $shops, ?Carbon $from, ?Carbon $to, string $revenueColumn, int $window, int $limit = 10): array
     {
@@ -398,6 +398,8 @@ class GetAggregatedMarketingOverview
         if ($campaigns->isEmpty()) {
             return [];
         }
+
+        $visits = $this->visitsByHost($shops->pluck('id')->all(), $from, $to);
 
         $visitors = DB::table('model_has_traffic_sources')
             ->where('model_type', 'Customer')
@@ -431,6 +433,7 @@ class GetAggregatedMarketingOverview
                 'reference' => $campaign->reference,
                 'kind'      => TrafficSourcesTypeEnum::referrerKind($kindBySource[$campaign->traffic_source_id] ?? ''),
                 'visitors'  => (float) ($visitors[$campaign->id] ?? 0),
+                'visits'    => (int) ($visits[$campaign->reference] ?? 0),
                 'revenue'   => (float) ($revenue[$campaign->id] ?? 0),
             ])
             ->groupBy(fn (array $referrer) => $referrer['reference'].'|'.$referrer['kind'])
@@ -438,9 +441,12 @@ class GetAggregatedMarketingOverview
                 'host'     => $rows->first()['host'],
                 'kind'     => $rows->first()['kind'],
                 'visitors' => round($rows->sum('visitors'), 2),
+                /* Not summed: every shop's campaign row carries the same host and the visits are
+                   already counted across the shops. */
+                'visits'   => (int) $rows->first()['visits'],
                 'revenue'  => round($rows->sum('revenue'), 2),
             ])
-            ->filter(fn (array $referrer) => $referrer['visitors'] > 0 || $referrer['revenue'] > 0)
+            ->filter(fn (array $referrer) => $referrer['visitors'] > 0 || $referrer['revenue'] > 0 || $referrer['visits'] > 0)
             ->sortByDesc(fn (array $referrer) => [$referrer['revenue'], $referrer['visitors']])
             /* The cap is for the long tail of websites. Search engines and AI assistants are few and
                each one is a line under its channel, so none of them may fall off the end. */
