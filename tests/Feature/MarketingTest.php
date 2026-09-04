@@ -1306,6 +1306,15 @@ describe('referral traffic sources', function () {
         $ai       = createTrafficSource($this->shop, TrafficSourcesTypeEnum::AI->value, 'AI Assistants');
         $recorded = now()->subDay()->timestamp;
 
+        /* The AI source already knows the host from arrivals since the channel existed: the old
+           Referral row must fold into this one rather than collide with it. */
+        $aiCampaign = TrafficSourceCampaign::create([
+            'traffic_source_id' => $ai->id,
+            'reference'         => 'chatgpt.com',
+            'name'              => 'chatgpt.com',
+            'type'              => TrafficSourcesTypeEnum::AI->value,
+        ]);
+
         $customer = StoreCustomer::make()->action(
             $this->shop,
             array_merge(Customer::factory()->definition(), [
@@ -1346,7 +1355,8 @@ describe('referral traffic sources', function () {
 
         expect($customer->refresh()->traffic_sources)
             ->toBe($recorded.$aiAbbr.'chatgpt.com|'.$recorded.'qesources.co.uk')
-            ->and(TrafficSourceCampaign::where('reference', 'chatgpt.com')->value('traffic_source_id'))->toBe($ai->id)
+            ->and(TrafficSourceCampaign::where('reference', 'chatgpt.com')->pluck('id')->all())->toBe([$aiCampaign->id])
+            ->and($customer->trafficSources()->wherePivot('traffic_source_campaign_id', $aiCampaign->id)->exists())->toBeTrue()
             ->and($customer->trafficSources()->pluck('type')->all())
             ->toContain(TrafficSourcesTypeEnum::AI->value)
             ->and(TrafficSourceCampaign::where('reference', 'esources.co.uk')->value('traffic_source_id'))

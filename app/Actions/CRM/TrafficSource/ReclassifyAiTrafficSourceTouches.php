@@ -71,6 +71,24 @@ class ReclassifyAiTrafficSourceTouches
                     continue;
                 }
 
+                /* The AI source usually has its own row for the host by now, created by arrivals
+                   since the channel existed, while visitors' old cookies keep minting the Referral one
+                   at registration. A second row cannot share the reference, so the old one is folded
+                   into the new: its touches and costs repointed, the row itself gone. */
+                $existing = TrafficSourceCampaign::where('traffic_source_id', $aiSourceId)
+                    ->where('reference', $campaign->reference)
+                    ->value('id');
+
+                if ($existing) {
+                    foreach (['model_has_traffic_sources', 'traffic_source_costs'] as $table) {
+                        DB::table($table)->where('traffic_source_campaign_id', $campaign->id)
+                            ->update(['traffic_source_campaign_id' => $existing]);
+                    }
+                    TrafficSourceCampaign::where('id', $campaign->id)->delete();
+
+                    continue;
+                }
+
                 TrafficSourceCampaign::where('id', $campaign->id)->update([
                     'traffic_source_id' => $aiSourceId,
                     'type'              => TrafficSourcesTypeEnum::AI->value,
