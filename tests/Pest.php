@@ -100,7 +100,8 @@ function loadDB(): void
 
 function createGroup(): Group
 {
-    $group = Group::first();
+    // ponytail: ordered, a test creating a second group must not change which one every other test gets
+    $group = Group::orderBy('id')->first();
     if (!$group) {
         $group = StoreGroup::make()->action(Group::factory()->definition());
     }
@@ -137,7 +138,7 @@ function createAdminGuest(Group $group): Guest
     app()->instance('group', $group);
     setPermissionsTeamId($group->id);
 
-    $guest = Guest::all()->first(fn (Guest $candidate) => $candidate->getUser()?->hasRole('group-admin'));
+    $guest = Guest::where('group_id', $group->id)->get()->first(fn (Guest $candidate) => $candidate->getUser()?->hasRole('group-admin'));
     if (!$guest) {
         try {
             $guest = StoreGuest::make()

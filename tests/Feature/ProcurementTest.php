@@ -2899,6 +2899,10 @@ describe('partner shopping list', function () {
 
         $again = StoreJobOrdersFromToProduceItems::make()->action($production, [$item->id]);
         expect($again['job_orders'])->toBe([]);
+
+        \App\Actions\Production\PartnerShippingList\UnassignToProduceItems::make()->action($production, [$item->id]);
+        expect($item->fresh()->job_order_id)->toBeNull()
+            ->and(JobOrder::withTrashed()->find($jobOrder->id)->jobOrderItems()->count())->toBe(0);
     });
 
     test('store partner shopping list item denormalises', function () {
@@ -3459,18 +3463,6 @@ test('to produce item moves backlog to preparing and back', function () {
         ->assertRedirect();
     expect($item->fresh()->preparing_at)->toBeNull()
         ->and($item->fresh()->quantity_to_produce)->toBeNull();
-});
-
-test('assigned to produce item can be sent back to preparing', function () {
-    $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
-    $item       = PartnerShoppingListItem::whereNotNull('job_order_id')->first();
-    expect($item)->not->toBeNull();
-    $jobOrderId = $item->job_order_id;
-
-    $this->post(route('grp.org.productions.show.to_produce.items.unassign', [$this->organisation->slug, $production->slug]), ['ids' => [$item->id]])
-        ->assertRedirect();
-    expect($item->fresh()->job_order_id)->toBeNull()
-        ->and(JobOrder::withTrashed()->find($jobOrderId)->jobOrderItems()->count())->toBe(0);
 });
 
 test('UI to produce list grouped by artisan, family and for', function () {
