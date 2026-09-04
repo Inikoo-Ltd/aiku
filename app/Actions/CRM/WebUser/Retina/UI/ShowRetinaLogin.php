@@ -11,6 +11,7 @@ namespace App\Actions\CRM\WebUser\Retina\UI;
 use App\Actions\Traits\WithRetinaAuthRedirect;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,7 +28,8 @@ class ShowRetinaLogin
     {
         $website = request()->website;
 
-        if ($website->loginPage) {
+        $loginPage = $website->loginPage;
+        if ($loginPage && $loginPage?->state == WebpageStateEnum::LIVE) {
             $url = ShowIrisWebpage::run('login', [], $request);
 
             parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $params);

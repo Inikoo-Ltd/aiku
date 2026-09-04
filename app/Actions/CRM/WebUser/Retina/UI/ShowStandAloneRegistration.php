@@ -16,6 +16,8 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\Country\UI\GetAddressDataForShop;
+use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\CRM\PollsResource;
 use App\Models\CRM\Poll;
 use Illuminate\Http\RedirectResponse;
@@ -34,6 +36,25 @@ class ShowStandAloneRegistration extends IrisAction
         $countriesAddressData = GetAddressDataForShop::run($shop, excludeForbiddenBilling: true, excludeForbiddenDelivery: false);
 
         $webUser = $request->user();
+
+        $website = request()->website;
+
+        $registerPage = $website->registerPage;
+
+        if ($registerPage && $registerPage?->state == WebpageStateEnum::LIVE) {
+            $url = ShowIrisWebpage::run('register', [], $request);
+
+            parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $params);
+
+            if ($request->has('ref')) {
+                $params['ref'] = $request->query('ref');
+            }
+
+            $url = strtok($url, '?') . '?' . http_build_query($params);
+
+            return redirect()->to($url);
+        }
+        
         return Inertia::render(
             'Auth/StandAloneRegistration',
             [
@@ -50,7 +71,7 @@ class ShowStandAloneRegistration extends IrisAction
         );
     }
 
-    public function asController(ActionRequest $request): Response
+    public function asController(ActionRequest $request): Response|RedirectResponse
     {
         $this->initialisation($request);
         $this->rememberRetinaIntendedUrl($request, $this->website);
