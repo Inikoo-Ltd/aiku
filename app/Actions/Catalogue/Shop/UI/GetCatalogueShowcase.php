@@ -442,7 +442,7 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-folder',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->getFamiliesRelation() // Todo: make stats
+            'value'           => $shop->getFamiliesRelation() // Todo: remove this and make stats
                 ->whereNull('image_id')
                 ->count(),
         ];
@@ -459,7 +459,7 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-cube',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->products() // Todo: make stats
+            'value'           => $shop->products() // Todo: remove this and make stats
                 ->whereNull('exclusive_for_customer_id')
                 ->whereNull('image_id')
                 ->count(),
@@ -477,7 +477,7 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-cube',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->products() // Todo: make stats
+            'value'           => $shop->products() // Todo: remove this and make stats
                 ->where('products.is_main', true)
                 ->whereNull('products.exclusive_for_customer_id')
                 ->join('master_assets', 'master_assets.id', 'products.master_product_id')
@@ -546,7 +546,7 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-align-left',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->products()
+            'value'           => $shop->products() // Todo: remove this and make stats
                 ->where('is_main', true)
                 ->whereIn('state', [ProductStateEnum::IN_PROCESS, ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])
                 ->where(function ($q) {
@@ -581,7 +581,7 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-globe',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->products() // Todo: make stats
+            'value'           => $shop->products() // Todo: remove this and make stats
                 ->where('is_main', true)
                 ->whereNull('exclusive_for_customer_id')
                 ->where('is_for_sale', true)
