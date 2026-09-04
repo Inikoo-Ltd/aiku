@@ -15,6 +15,7 @@ use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Laravel\Nightwatch\Facades\Nightwatch;
@@ -97,6 +98,14 @@ class RepairShopifyChannelReconnects
             $channels = CustomerSalesChannel::where('platform_id', $shopify->id)
                 ->where('status', CustomerSalesChannelStatusEnum::OPEN)
                 ->where('number_portfolios', 0)
+                ->whereHasMorph('user', ShopifyUser::class)
+                ->whereNotExists(function ($query) {
+                    $query->from('customer_sales_channels as newer')
+                        ->whereColumn('newer.customer_id', 'customer_sales_channels.customer_id')
+                        ->whereColumn('newer.reference', 'customer_sales_channels.reference')
+                        ->whereColumn('newer.id', '>', 'customer_sales_channels.id')
+                        ->where('newer.status', CustomerSalesChannelStatusEnum::OPEN->value);
+                })
                 ->whereExists(function ($query) {
                     $query->from('customer_sales_channels as old')
                         ->whereColumn('old.customer_id', 'customer_sales_channels.customer_id')
