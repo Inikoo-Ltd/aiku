@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\TrafficSource;
 
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use Illuminate\Database\Query\Builder;
@@ -180,5 +181,19 @@ trait WithAttributionWindow
             'orders'        => (float) $orders,
             'reliable_from' => $window > 0 ? $startedAt->copy()->addDays($window)->toDateString() : null,
         ];
+    }
+    /**
+     * The first day a direct arrival was counted for these shops. Direct visits began later than the
+     * other channels', so the figure needs its own start date beside it or it reads as tiny.
+     *
+     * @param array<int, int> $shopIds
+     */
+    protected function directVisitsSince(array $shopIds): ?string
+    {
+        return DB::table('traffic_source_visits as v')
+            ->join('traffic_sources as ts', 'ts.id', '=', 'v.traffic_source_id')
+            ->whereIn('v.shop_id', $shopIds)
+            ->where('ts.type', TrafficSourcesTypeEnum::DIRECT->value)
+            ->min('v.date');
     }
 }

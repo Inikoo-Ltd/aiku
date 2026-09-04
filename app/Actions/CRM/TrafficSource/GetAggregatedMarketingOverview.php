@@ -207,6 +207,7 @@ class GetAggregatedMarketingOverview
                totals or a ROAS - nobody paid for it. */
             'untraced'      => [
                 'visits'        => (int) ($visits[TrafficSourcesTypeEnum::DIRECT->value] ?? 0),
+                'visits_since'  => $this->directVisitsSince($shops->pluck('id')->all()),
                 'revenue'       => round(max(0, $baseline['revenue'] - $totalRevenue - $outOfScopeRevenue), 2),
                 'registrations' => round(max(0, $baseline['registrations'] - $totalRegistrations), 2),
                 'orders'        => round(max(0, $baseline['orders'] - array_sum(array_column($channels, 'orders')) - $outOfScopeOrders), 2),

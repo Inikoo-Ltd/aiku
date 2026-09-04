@@ -84,6 +84,7 @@ const props = defineProps<{
         }[]
         untraced: {
             visits: number
+            visits_since: string | null
             revenue: number
             registrations: number
             orders: number
@@ -577,7 +578,7 @@ const columnHelp: Record<string, string> = {
                         </td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
                             <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
-                                <span :class="overview.untraced.visits > 0 ? '' : 'text-gray-300'">{{ overview.untraced.visits > 0 ? locale.number(overview.untraced.visits) : '—' }}</span>
+                                <span :class="overview.untraced.visits > 0 ? '' : 'text-gray-300'">{{ overview.untraced.visits > 0 ? locale.number(overview.untraced.visits) : '—' }}<sup v-if="overview.untraced.visits > 0" class="ml-0.5 text-gray-400">†</sup></span>
                                 <!-- No "bought" pair here: the orders are the whole remainder of the period while the visits only count from the day the counter started, so the rate would be nonsense. -->
                                 <span></span>
                                 <span></span>
@@ -686,6 +687,9 @@ const columnHelp: Record<string, string> = {
 
             <p class="mt-3 text-xs text-gray-400">
                 {{ trans('Visits count everyone a channel sent, whether or not they bought - not unique people: each browser counts once per channel per day, so the same person on two days counts twice. Only counted since the visit counter was switched on, so a channel with history but no visits simply predates it.') }}
+                <template v-if="overview.untraced?.visits_since">
+                    <br>† {{ trans('Direct visits have only been counted since') }} {{ useFormatTime(overview.untraced.visits_since) }}{{ trans(', later than the other channels, so they cover a shorter stretch than the direct sales beside them.') }}
+                </template>
             </p>
         </div>
 
