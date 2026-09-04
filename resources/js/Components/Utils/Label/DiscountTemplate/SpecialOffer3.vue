@@ -79,13 +79,6 @@ const maxDiscountLabel = computed(() => {
                     </div>
 
                     <div
-                        v-if="maxDiscountLabel"
-                        class="special-offer__percentage"
-                    >
-                        {{ maxDiscountLabel }}% {{ ctrans("OFF") }}
-                    </div>
-
-                    <div
                         v-if="offer?.duration_label"
                         class="special-offer__status"
                     >
