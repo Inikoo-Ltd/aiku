@@ -623,7 +623,7 @@ const columnHelp: Record<string, string> = {
                         </td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
                             <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
-                                <span :class="overview.untraced.visits > 0 ? '' : 'text-gray-300'">{{ overview.untraced.visits > 0 ? locale.number(overview.untraced.visits) : '—' }}<sup v-if="overview.untraced.visits > 0" class="ml-0.5 text-gray-400">†</sup></span>
+                                <span :class="overview.untraced.visits > 0 ? '' : 'text-gray-300'"><sup v-if="overview.untraced.visits > 0" class="mr-0.5 text-gray-400">†</sup>{{ overview.untraced.visits > 0 ? locale.number(overview.untraced.visits) : '—' }}</span>
                                 <!-- No "bought" pair here: the orders are the whole remainder of the period while the visits only count from the day the counter started, so the rate would be nonsense. -->
                                 <span></span>
                                 <span></span>
