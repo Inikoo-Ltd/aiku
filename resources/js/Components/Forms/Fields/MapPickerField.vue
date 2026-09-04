@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from "vue"
-import MapPickerModal from "@/Components/HumanResources/MapPickerModal.vue"
+import { defineAsyncComponent, ref } from "vue"
+const MapPickerModal = defineAsyncComponent(() => import("@/Components/HumanResources/MapPickerModal.vue"))
 import { InputText } from "primevue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 
