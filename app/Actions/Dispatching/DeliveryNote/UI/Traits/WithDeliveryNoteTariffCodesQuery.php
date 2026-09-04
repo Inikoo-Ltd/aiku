@@ -14,6 +14,7 @@ trait WithDeliveryNoteTariffCodesQuery
         // (units and amount inflated). No such org stock exists, split the quantity if one ever does.
         $origin     = 'COALESCE(c.code, tu.country_of_origin)';
         $incomplete = "(tu.tariff_code IS NULL OR $origin IS NULL)";
+        $tariffCode = "COALESCE(left(replace(tu.tariff_code, ' ', ''), 6) || tco.national_extension, tu.tariff_code)";
 
         return DB::table('delivery_note_items as dni')
             ->leftJoin('model_has_trade_units as mhtu', function ($join) {
@@ -21,17 +22,21 @@ trait WithDeliveryNoteTariffCodesQuery
                     ->where('mhtu.model_type', 'OrgStock');
             })
             ->leftJoin('trade_units as tu', 'tu.id', '=', 'mhtu.trade_unit_id')
+            ->leftJoin('trade_unit_tariff_code_overrides as tco', function ($join) use ($deliveryNote) {
+                $join->on('tco.trade_unit_id', '=', 'tu.id')
+                    ->where('tco.organisation_id', $deliveryNote->organisation_id);
+            })
             ->leftJoin('org_stocks as os', 'os.id', '=', 'dni.org_stock_id')
             ->leftJoin('countries as c', 'c.id', '=', 'tu.origin_country_id')
             ->leftJoin('tariff_codes as tc', 'tc.hs_code', '=', DB::raw('left(tu.tariff_code, 6)'))
             ->leftJoin('transactions as t', 't.id', '=', 'dni.transaction_id')
             ->where('dni.delivery_note_id', $deliveryNote->id)
             ->groupBy(
-                DB::raw("CASE WHEN $incomplete THEN NULL ELSE tu.tariff_code END"),
+                DB::raw("CASE WHEN $incomplete THEN NULL ELSE $tariffCode END"),
                 DB::raw("CASE WHEN $incomplete THEN NULL ELSE $origin END")
             )
             ->select([
-                DB::raw("CASE WHEN $incomplete THEN NULL ELSE tu.tariff_code END as tariff_code"),
+                DB::raw("CASE WHEN $incomplete THEN NULL ELSE $tariffCode END as tariff_code"),
                 DB::raw("bool_or($incomplete) as is_incomplete"),
                 DB::raw("MAX(tc.description) FILTER (WHERE NOT $incomplete) as description"),
                 DB::raw("CASE WHEN $incomplete THEN NULL ELSE $origin END as origin"),

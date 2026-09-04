@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannel
 use App\Actions\Dropshipping\Ebay\Product\CheckEbayPortfolio;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolio;
 use App\Actions\Dropshipping\Tiktok\Product\CheckTiktokPortfolio;
+use App\Actions\Dropshipping\Wix\Product\CheckWixPortfolio;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePortfolios;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePortfolios;
@@ -112,6 +113,7 @@ class StorePortfolio extends OrgAction
             PlatformTypeEnum::SHOPIFY => $portfolio = CheckShopifyPortfolio::run($portfolio),
             PlatformTypeEnum::EBAY => $portfolio = CheckEbayPortfolio::run($portfolio),
             PlatformTypeEnum::TIKTOK => $portfolio = CheckTiktokPortfolio::run($portfolio),
+            PlatformTypeEnum::WIX => $portfolio = CheckWixPortfolio::run($portfolio),
             default => null
         };
 

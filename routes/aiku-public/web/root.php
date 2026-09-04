@@ -16,6 +16,7 @@ use App\Actions\UI\AikuPublic\ShowDocs;
 use App\Actions\UI\AikuPublic\ShowFeed;
 use App\Actions\UI\AikuPublic\ShowHome;
 use App\Actions\UI\AikuPublic\ShowSitemap;
+use App\Actions\UI\AikuPublic\ShowWhatsappTermsAndPolicies;
 use Illuminate\Support\Facades\Route;
 
 Route::get('robots.txt', function () {
@@ -54,6 +55,7 @@ Route::get('visit.json', LogPublicVisit::class)->middleware('throttle:30,1')->na
 Route::get('blog/{slug}', ShowBlogPost::class)->name('blog.show');
 Route::get('docs', ShowDocs::class)->name('docs.index');
 Route::get('docs/{slug}', ShowDoc::class)->name('docs.show');
+Route::get('whatsapp-term-policies', ShowWhatsappTermsAndPolicies::class)->name('whatsapp-term-policies');
 Route::get('sitemap.xml', ShowSitemap::class)->name('sitemap');
 Route::get('feed.xml', ShowFeed::class)->name('feed');
 Route::get(config('services.indexnow.key', 'indexnow-key-not-set').'.txt', function () {

@@ -87,6 +87,7 @@ const isLoggedIn = computed(() => layout?.iris?.is_logged_in || false)
 const displayUsername = computed(() => layout?.user?.username?.split('@')[0] || '')
 const loadingRedirect = ref(false)
 const isLoadingLogout = ref(false)
+let restoreIrisSession: (() => void) | null = null
 
 const onClickLogout = () => {
 	router.post(
@@ -96,11 +97,10 @@ const onClickLogout = () => {
 			preserveScroll: true,
 			onStart: () => {
 				isLoadingLogout.value = true
-			},
-			onSuccess: () => {
-				clearIrisSession(layout)
+				restoreIrisSession = clearIrisSession(layout)
 			},
 			onError: () => {
+				restoreIrisSession?.()
 				notify({
 					title: ctrans("Something went wrong"),
 					text: ctrans("Failed to logout"),

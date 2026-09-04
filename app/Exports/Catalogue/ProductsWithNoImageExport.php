@@ -38,6 +38,8 @@ class ProductsWithNoImageExport implements FromQuery, ShouldAutoSize, WithHeadin
         return [
             'id'               => '#',
             'code'             => 'Code',
+            'state'            => 'State',
+            'not_for_sale'     => 'Not for sale',
             'webpage_url'      => 'Webpage url',
             'live_product_url' => 'Live product url',
         ];
@@ -104,7 +106,7 @@ class ProductsWithNoImageExport implements FromQuery, ShouldAutoSize, WithHeadin
     {
         return $this->filteredQuery()->getEloquentBuilder()
             ->with('webpage:id,model_type,model_id,canonical_url')
-            ->select(['products.id', 'products.code', 'products.slug'])
+            ->select(['products.id', 'products.code', 'products.slug', 'products.state', 'products.is_for_sale'])
             ->orderBy('products.code')
             ->orderBy('products.id');
     }
@@ -119,6 +121,8 @@ class ProductsWithNoImageExport implements FromQuery, ShouldAutoSize, WithHeadin
         $row = [
             'id'               => $product->id,
             'code'             => $product->code,
+            'state'            => $product->state->label(),
+            'not_for_sale'     => $product->is_for_sale ? __('No') : __('Yes'),
             'webpage_url'      => $this->backOfficeUrlPrefix().'/'.$product->slug.'?tab=images',
             'live_product_url' => $product->webpage?->canonical_url,
         ];

@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Comms\Email\SendInvoicePaidEmailToCustomer;
 use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
@@ -93,6 +94,7 @@ use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderEnum;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
@@ -1505,7 +1507,7 @@ test('invoice from overpaid order credits excess to customer balance', function 
         ->and($excessCreditsAfter)->toBe($excessCreditsBefore + 1);
 });
 
-test('invoice from overpaid order with manually settled payment does not credit excess', function () {
+test('invoice from overpaid order paid by bank transfer credits excess to customer balance', function () {
     $billingAddress  = new Address(Address::factory()->definition());
     $deliveryAddress = new Address(Address::factory()->definition());
 
@@ -1521,6 +1523,46 @@ test('invoice from overpaid order with manually settled payment does not credit 
         [
             'code' => 'ACC'.mt_rand(1000, 9999),
             'name' => 'Bank Account Excess',
+        ]
+    );
+
+    expect($paymentAccount->type->isManuallySettled())->toBeTrue();
+
+    PayOrder::make()->action($order, $paymentAccount, [
+        'amount' => 100.00,
+        'status' => PaymentStatusEnum::SUCCESS,
+        'state'  => PaymentStateEnum::COMPLETED,
+    ]);
+
+    $excessCreditsBefore = CreditTransaction::where('customer_id', $this->customer->id)
+        ->where('type', CreditTransactionTypeEnum::FROM_EXCESS)->count();
+
+    $invoice = GenerateInvoiceFromOrder::make()->action($order->refresh());
+
+    $excessCreditsAfter = CreditTransaction::where('customer_id', $this->customer->id)
+        ->where('type', CreditTransactionTypeEnum::FROM_EXCESS)->count();
+
+    expect($invoice)->toBeInstanceOf(Invoice::class)
+        ->and($excessCreditsAfter)->toBe($excessCreditsBefore + 1)
+        ->and($order->refresh()->payments()->count())->toBe(2);
+});
+
+test('invoice from overpaid order with payment settled at invoicing does not credit excess', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $orderData = Order::factory()->definition();
+    data_set($orderData, 'billing_address', $billingAddress);
+    data_set($orderData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $orderData);
+
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', PaymentServiceProviderEnum::PASTPAY->value)->first(),
+        [
+            'code' => 'ACC'.mt_rand(1000, 9999),
+            'name' => 'Pastpay Account Excess',
         ]
     );
 
@@ -3366,4 +3408,19 @@ test('paying with balance sends the order to the warehouse only when the balance
     $order->refresh();
     expect($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
         ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+});
+
+test('turning on recargo de equivalencia propagates to baskets migrated from aurora in aiku shops', function () {
+    $this->shop->update(['is_aiku' => true]);
+    $this->customer->refresh();
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->update(['source_id' => '3:999999']);
+    expect($order->is_re)->toBeFalse();
+
+    UpdateCustomer::make()->action($this->customer, ['is_re' => true]);
+
+    expect($order->refresh()->is_re)->toBeTrue();
 });

@@ -7,6 +7,7 @@ import { faImage } from '@fal'
 import { faSpinnerThird } from '@fas'
 import { getStyles } from '@/Composables/styles'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 
 const props = defineProps<{
@@ -266,7 +267,7 @@ onBeforeUnmount(stopAutoMove)
                       v-if="slotProps?.isLoading"
                       class="absolute inset-0 bg-black/40 flex items-center justify-center z-10 pointer-events-none"
                     >
-                      <FontAwesomeIcon :icon="faSpinnerThird" spin class="text-white text-3xl" fixed-width aria-hidden="true" />
+                      <LoadingIcon class="text-white text-3xl" />
                     </div>
                   </template>
                 </component>

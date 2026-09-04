@@ -12,6 +12,7 @@ import {
 	faEquals,
 	faAngleDown,
 	faAnglesDown,
+    faLifeRing,
 } from "@fortawesome/free-solid-svg-icons"
 import { faJira } from "@fortawesome/free-brands-svg-icons"
 
@@ -163,6 +164,9 @@ watch(
 							<template v-if="activity?.event_type === 'jira_ticket'">
 								{{ trans("Created a Jira ticket") }}
 							</template>
+							<template v-else-if="activity?.event_type === 'ticket'">
+								{{ trans("Created a ticket") }}
+							</template>
 							<template v-else>
 								{{ activity.details?.description || activity.event_label }}
 							</template>
@@ -246,10 +250,10 @@ watch(
 						</div>
 
 						<div
-							v-if="activity?.event_type === 'jira_ticket' && activity?.details?.ticket_key"
+							v-if="['jira_ticket', 'ticket'].includes(activity?.event_type) && activity?.details?.ticket_key"
 							class="mt-2 rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2">
 							<div class="flex items-center gap-2">
-								<FontAwesomeIcon :icon="faJira" class="text-blue-600 text-xs" />
+								<FontAwesomeIcon :icon="activity?.event_type === 'ticket' ? faLifeRing : faJira" class="text-blue-600 text-xs" />
 								<component
 									:is="activity?.details?.ticket_url ? 'a' : 'span'"
 									:href="activity?.details?.ticket_url || undefined"

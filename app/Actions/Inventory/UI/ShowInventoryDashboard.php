@@ -55,6 +55,18 @@ class ShowInventoryDashboard extends OrgAction
                         'icon'  => ['fal', 'fa-chart-network'],
                         'title' => __('Inventory')
                     ],
+                    'actions'   => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'tertiary',
+                            'icon'  => 'fal fa-barcode-read',
+                            'label' => __('Manage barcodes'),
+                            'route' => [
+                                'name'       => 'grp.org.warehouses.show.inventory.org_stocks.barcode_scanner',
+                                'parameters' => $routeParameters
+                            ],
+                        ],
+                    ],
                 ],
                 'flatTreeMaps' => [
                     [

@@ -42,8 +42,8 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
         }
 
         $dataToUpdate = $tradeUnits->count() == 1
-            ? $this->dataFromASingleTradeUnit($tradeUnits->first())
-            : $this->dataFromMultipleTradeUnits($tradeUnits);
+            ? $this->dataFromASingleTradeUnit($tradeUnits->first(), $product->organisation_id)
+            : $this->dataFromMultipleTradeUnits($tradeUnits, $product->organisation_id);
 
         if ($onlyFields !== null) {
             $dataToUpdate = array_intersect_key($dataToUpdate, array_flip($onlyFields));
@@ -56,20 +56,20 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
         }
     }
 
-    public function dataFromASingleTradeUnit(TradeUnit $tradeUnit): array
+    public function dataFromASingleTradeUnit(TradeUnit $tradeUnit, ?int $organisationId = null): array
     {
         $dataToUpdate = [];
 
         foreach ($this->hydratedFieldNames() as $field) {
             if ($tradeUnit->$field !== null || $this->isOwnedByTradeUnits($field)) {
-                $dataToUpdate[$field] = $tradeUnit->$field;
+                $dataToUpdate[$field] = $this->fieldValue($tradeUnit, $field, $organisationId);
             }
         }
 
         return $dataToUpdate;
     }
 
-    public function dataFromMultipleTradeUnits($tradeUnits): array
+    public function dataFromMultipleTradeUnits($tradeUnits, ?int $organisationId = null): array
     {
         $dataToUpdate = [];
 
@@ -82,7 +82,7 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
                     if (is_bool($tradeUnit->$field)) {
                         $hasTrue = $hasTrue || $tradeUnit->$field;
                     } else {
-                        $values[] = $tradeUnit->$field;
+                        $values[] = $this->fieldValue($tradeUnit, $field, $organisationId);
                     }
                 }
             }
@@ -111,6 +111,11 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
     private function isOwnedByTradeUnits(string $field): bool
     {
         return in_array($field, ['country_of_origin', 'origin_country_id']);
+    }
+
+    private function fieldValue(TradeUnit $tradeUnit, string $field, ?int $organisationId): mixed
+    {
+        return $field == 'tariff_code' ? $tradeUnit->getTariffCodeForOrganisation($organisationId) : $tradeUnit->$field;
     }
 
     private function hydratedFieldNames(): array

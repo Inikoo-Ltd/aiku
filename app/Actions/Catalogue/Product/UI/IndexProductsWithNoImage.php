@@ -61,6 +61,30 @@ class IndexProductsWithNoImage extends OrgAction
                 }
 
             ],
+
+            'live_product_url' => [
+                'label'    => __('Live product url'),
+                'elements' => array_merge_recursive(
+                    [
+                        'with_live_product_url'    => __('With live url'),
+                        'without_live_product_url' => __('Without live url'),
+                    ],
+                    $this->getLiveProductUrlElementCounts($shop)
+                ),
+
+                'engine' => function ($query, $elements) {
+                    $query->where(function ($query) use ($elements) {
+                        if (in_array('with_live_product_url', $elements)) {
+                            $query->orWhereHas('webpage', fn ($query) => $query->whereNotNull('canonical_url'));
+                        }
+
+                        if (in_array('without_live_product_url', $elements)) {
+                            $query->orWhereDoesntHave('webpage', fn ($query) => $query->whereNotNull('canonical_url'));
+                        }
+                    });
+                }
+
+            ],
         ];
     }
 
@@ -84,6 +108,28 @@ class IndexProductsWithNoImage extends OrgAction
             'discontinued'  => (int) $counts->discontinued,
             'not_for_sale'  => (int) $counts->not_for_sale,
         ];
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    protected function getLiveProductUrlElementCounts(Shop $shop): array
+    {
+        $counts = $this->baseQuery($shop)
+            ->selectRaw('count(*) filter (where '.$this->hasLiveProductUrlExpression().') as with_live_product_url')
+            ->selectRaw('count(*) filter (where not '.$this->hasLiveProductUrlExpression().') as without_live_product_url')
+            ->first();
+
+        return [
+            'with_live_product_url'    => (int) $counts->with_live_product_url,
+            'without_live_product_url' => (int) $counts->without_live_product_url,
+        ];
+    }
+
+    protected function hasLiveProductUrlExpression(): string
+    {
+        return "exists (select 1 from webpages where webpages.model_type = 'Product' "
+            .'and webpages.model_id = products.id and webpages.canonical_url is not null)';
     }
 
     protected function baseQuery(Shop $shop): Builder

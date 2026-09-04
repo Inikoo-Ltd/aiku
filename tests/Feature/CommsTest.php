@@ -3772,3 +3772,27 @@ describe('mailshot template gallery previews', function () {
         expect($preview)->toBe(['html' => '<html><body>Preview me</body></html>']);
     });
 });
+
+test('late delivery notification does not overwrite a bounce recorded meanwhile', function () {
+    $outbox          = $this->shop->outboxes()->first();
+    $dispatchedEmail = $outbox->dispatchedEmails()->create([
+        'data'    => [],
+        'state'   => \App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::SENT,
+        'sent_at' => now(),
+    ]);
+
+    $staleCopy = \App\Models\Comms\DispatchedEmail::find($dispatchedEmail->id);
+    $dispatchedEmail->update(['state' => \App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::SOFT_BOUNCE]);
+
+    $sesNotification = \App\Models\Comms\SesNotification::create([
+        'message_id' => 'race-delivery-after-bounce',
+        'data'       => ['eventType' => 'Delivery', 'delivery' => ['timestamp' => now()->toIso8601String()]],
+    ]);
+
+    $action = \App\Actions\Comms\SesNotification\ProcessSesNotification::partialMock();
+    $action->shouldReceive('getDispatchedEmail')->andReturn($staleCopy);
+    $action->handle($sesNotification);
+
+    expect($dispatchedEmail->refresh()->state)->toBe(\App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::SOFT_BOUNCE)
+        ->and($dispatchedEmail->emailTrackingEvents()->where('type', 'delivered')->count())->toBe(1);
+});

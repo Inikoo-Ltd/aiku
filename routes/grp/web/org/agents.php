@@ -34,6 +34,7 @@ use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Actions\Chat\ChatSession\UpdateChatMessage;
 use App\Actions\Chat\ChatSession\UpdateChatSessionSlackSettings;
 use App\Actions\Chat\ChatSession\VerifyChatImageMessage;
+use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
 use App\Actions\Chat\MetaChatSession\AssignMetaChatToAgent;
 use App\Actions\Chat\MetaChatSession\CloseMetaChatSession;
 use App\Actions\Chat\MetaChatSession\DeleteMetaChatSessionPermanently;
@@ -99,6 +100,7 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::delete('/sessions/{chatSession:ulid}/trash', TrashChatSession::class)->name('sessions.trash');
     Route::patch('/sessions/{chatSession:ulid}/restore', RestoreChatSession::class)->name('sessions.restore')->withTrashed();
     Route::delete('/sessions/{chatSession:ulid}/force', DeleteChatSessionPermanently::class)->name('sessions.force_delete')->withTrashed();
+    Route::post('/sessions/{chatSession:ulid}/ticket', StoreTicketFromChatSession::class)->name('sessions.ticket');
     Route::name('sessions.jira.')->prefix('sessions/{chatSession:ulid}/jira')->group(function () {
         Route::get('/projects', GetChatSessionJiraProjects::class)->name('projects');
         Route::get('/projects/{project}/issue-types', GetChatSessionJiraIssueTypes::class)->name('issue_types');

@@ -136,14 +136,15 @@ const onListScroll = (event: Event) => {
 }
 
 const RAIL_PANEL_MAX_HEIGHT = 520
+const RAIL_PANEL_BOTTOM_GAP = 30
 
 const positionRailPopover = () => {
     if (!props.inRail || !railTrigger.value) return
     const rect = railTrigger.value.getBoundingClientRect()
     const panelHeight = Math.min(RAIL_PANEL_MAX_HEIGHT, window.innerHeight * 0.8)
-    let bottom = Math.max(8, window.innerHeight - rect.bottom)
-    if (window.innerHeight - bottom - panelHeight < 8) {
-        bottom = window.innerHeight - 8 - panelHeight
+    let bottom = RAIL_PANEL_BOTTOM_GAP
+    if (window.innerHeight - bottom - panelHeight < RAIL_PANEL_BOTTOM_GAP) {
+        bottom = Math.max(0, window.innerHeight - RAIL_PANEL_BOTTOM_GAP - panelHeight)
     }
     railPopoverStyle.value = {
         right: `${window.innerWidth - rect.left + 8}px`,

@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Dropshipping;
 
 use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
+use App\Actions\Dropshipping\Wix\User\AuthenticateWixAccount;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use App\Actions\RetinaAction;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
@@ -71,9 +72,14 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                     'woocommerce' => DB::table('customer_sales_channels')->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN->value)->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::WOOCOMMERCE->value)->count(),
                     'ebay'        => DB::table('customer_sales_channels')->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN->value)->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::EBAY->value)->count(),
                     'allegro'     => DB::table('customer_sales_channels')->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN->value)->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::ALLEGRO->value)->count(),
+                    'wix'         => DB::table('customer_sales_channels')->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN->value)->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::WIX->value)->count(),
                 ],
                 'tiktokAuth'         => [
                     'url'                    => AuthenticateTiktokAccount::make()->redirectToTikTok($customer)
+                ],
+                'wixAuth'            => [
+                    'isActive' => (bool) config('services.wix.app_id'),
+                    'url'      => AuthenticateWixAccount::make()->redirectToWix($customer)
                 ],
                 'allegroAuth'         => [
                     'isActive'               => $this->website->domain !== 'aw-dropship.com',

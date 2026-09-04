@@ -44,7 +44,7 @@ class DetectWebsiteFromDomain
             }
             if ($domain == 'fulfilment.test') {
                 $domain = config('app.local.retina_fulfilment_domain');
-            } elseif ($domain == 'ds.test') {
+            } elseif ($domain == 'ds.test' || $domain == config('app.local.ngrok_ds_domain')) {
                 $domain = config('app.local.retina_dropshipping_domain');
             } else {
                 $domain = config('app.local.retina_b2b_domain');

@@ -36,6 +36,8 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Helpers\ImgProxy\Image;
 use App\Models\Analytics\AikuScopedSection;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -947,4 +949,26 @@ test('platform portfolio logs are only reachable through the retina portfolios l
 
     expect($logs->total())->toBe(1)
         ->and($logs->first()->item_code)->toBe($portfolio->item_code);
+});
+
+test('exclusive products and bundles advertise real stock on sales channels', function () {
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+        $this->customer,
+        $platform,
+        ['reference' => 'test_exclusive_stock']
+    );
+
+    UpdateProduct::make()->action($this->product, ['exclusive_for_customer_id' => $this->customer->id]);
+    $this->product->update(['available_quantity' => 64]);
+    $product = $this->product->refresh();
+
+    expect($product->is_for_sale)->toBeFalse()
+        ->and(UpdateWooCustomerSalesChannelPortfolio::quantityToSend($product, $customerSalesChannel))->toBe(64)
+        ->and(UpdateTiktokInventory::quantityToSend($product, $customerSalesChannel))->toBe(64)
+        ->and(UpdateEbayPortfolio::quantityToSend($product, $customerSalesChannel))->toBe(64);
+
+    UpdateProduct::make()->action($product, ['state' => ProductStateEnum::DISCONTINUED]);
+    $this->product->update(['available_quantity' => 64]);
+    expect(UpdateWooCustomerSalesChannelPortfolio::quantityToSend($this->product->refresh(), $customerSalesChannel))->toBe(0);
 });
