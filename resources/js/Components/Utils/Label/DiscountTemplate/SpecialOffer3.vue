@@ -84,10 +84,10 @@ const maxDiscountLabel = computed(() => {
         </div>
 
         <Popover ref="infoPopover" :pt="{ root: { onMouseenter: cancelHide, onMouseleave: hideInfo } }">
-            <div class="max-w-[280px] space-y-3 text-sm">
+            <div class="max-w-[280px] space-y-3 text-sm overflow-hidden">
                 <div class="special-offer__content">
-                    <div class="special-offer__label font-semibold">
-                        {{ label }}
+                    <div class="special-offer__label bg-red-700 text-white rounded-sm px-1 py-0.5 text-xs font-semibold leading-5">
+                        <span v-if="maxDiscountLabel" class="inline-block font-bold bg-black/25 -ml-1 -my-0.5 px-1.5 py-0.5 rounded-l-sm mr-1.5">{{ maxDiscountLabel }}% {{ ctrans("OFF") }}</span>{{ label }}
                     </div>
 
                     <div
