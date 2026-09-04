@@ -740,9 +740,13 @@ const onWhatsappChatCreated = (session: any) => {
         priority: session.priority,
         shop: session.shop,
         organisation: props.organisation,
+        phone_number: session.phone_number,
+        customer: session.customer_id ? { id: session.customer_id } : null,
+        assigned_agent: session.assigned_agent ?? null,
     } as SessionAPI
     messages.value = []
     updateUrl(String(session.ulid))
+    reloadContacts()
 }
 
 const handleClickContact = (c: Contact) => {

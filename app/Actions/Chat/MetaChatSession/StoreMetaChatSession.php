@@ -3,6 +3,7 @@
 namespace App\Actions\Chat\MetaChatSession;
 
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\CRM\Customer;
 use App\Models\Chat\MetaChannel;
@@ -127,6 +128,11 @@ class StoreMetaChatSession
 
     public function jsonResponse(MetaChatSession $metaChatSession): array
     {
+        $activeAssignment = $metaChatSession->assignments()
+            ->with('chatAgent.user')
+            ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+            ->first();
+
         return [
             'ulid'             => $metaChatSession->ulid,
             'status'           => $metaChatSession->status->value,
@@ -134,9 +140,18 @@ class StoreMetaChatSession
             'contact_name'     => $metaChatSession->guest_identifier,
             'guest_identifier' => $metaChatSession->guest_identifier,
             'phone_number'     => $metaChatSession->phone_number,
+            'customer_id'      => $metaChatSession->customer_id,
             'shop'             => $metaChatSession->shop ? [
                 'id'   => $metaChatSession->shop->id,
                 'name' => $metaChatSession->shop->name,
+            ] : null,
+
+            // The agent who started the chat is assigned straight away, so the thread
+            // must open ready to type instead of behind an "Assign to me" step.
+            'assigned_agent' => $activeAssignment ? [
+                'id'      => $activeAssignment->chatAgent?->id,
+                'user_id' => $activeAssignment->chatAgent?->user_id,
+                'name'    => $activeAssignment->chatAgent?->user?->contact_name,
             ] : null,
         ];
     }

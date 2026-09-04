@@ -54,6 +54,8 @@ use App\Actions\Chat\ChatSession\TranslateSingleMessage;
 use App\Actions\Chat\ChatSession\UpdateChatAgent;
 use App\Actions\Chat\ChatSession\UpdateChatSession;
 use App\Actions\Chat\GetCustomerChatHistory;
+use App\Actions\Chat\MetaChatSession\AssignMetaChatToAgent;
+use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
 use App\Actions\Chat\MetaChatSession\UpdateMetaChatSession;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\CRM\WebUser\StoreWebUser;
@@ -2702,4 +2704,30 @@ test('can update rating on a meta chat session', function () {
 
     expect($event)->toBeInstanceOf(MetaChatEvent::class)
         ->and($event->payload['values']['rating'])->toBe(4);
+});
+
+test('new meta chat session response carries the assigned agent', function () {
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $metaChatSession = MetaChatSession::create([
+        'ulid'            => (string)Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+628555666777',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $agent = StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+
+    AssignMetaChatToAgent::make()->handle($metaChatSession, $agent, 'Assigned to agent who started the chat');
+
+    $payload = StoreMetaChatSession::make()->jsonResponse($metaChatSession->fresh());
+
+    // Without this the agent panel treats the brand new chat as unassigned and
+    // blocks the composer behind "Assign to me".
+    expect($payload['assigned_agent'])->not->toBeNull()
+        ->and($payload['assigned_agent']['id'])->toBe($agent->id)
+        ->and($payload['assigned_agent']['user_id'])->toBe($this->user->id);
 });
