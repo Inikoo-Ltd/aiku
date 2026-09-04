@@ -87,7 +87,7 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 	const components: Record<string, any> = {
 		// topbar
 		"top-bar-1-fulfilment": Topbar1Fulfilment.blueprint,
-		"top-bar-2-fulfilment": Topbar2Fulfilment.blueprint,
+		"top-bar-2-fulfilment": Topbar2Blueprint.blueprint,
 		"top-bar-1": Topbar1Blueprint.blueprint,
 		"top-bar-2": Topbar2Blueprint.blueprint,
 
