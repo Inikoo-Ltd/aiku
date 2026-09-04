@@ -26,12 +26,23 @@ const props = withDefaults(
 
 const infoPopover = ref()
 
+let hideTimer: ReturnType<typeof setTimeout> | null = null
+
+const cancelHide = () => {
+    if (hideTimer) {
+        clearTimeout(hideTimer)
+        hideTimer = null
+    }
+}
+
 const showInfo = (event: Event) => {
+    cancelHide()
     infoPopover.value?.show(event)
 }
 
 const hideInfo = () => {
-    infoPopover.value?.hide()
+    cancelHide()
+    hideTimer = setTimeout(() => infoPopover.value?.hide(), 200)
 }
 
 const label = computed(() => props.offer?.label || ctrans("Special Offer"))
@@ -56,6 +67,7 @@ const maxDiscountLabel = computed(() => {
         aria-haspopup="true"
         @mouseenter="showInfo"
         @mouseleave="hideInfo"
+        @click="infoPopover?.toggle($event)"
     >
         <div
             class="flex items-center bg-red-700 gap-2 rounded px-1 md:py-[5px] py-[3px] xl:py-[3px] text-[8px] xl:text-[10px] 2xl:text-xs font-semibold leading-none text-white transition-all duration-150"
@@ -71,7 +83,7 @@ const maxDiscountLabel = computed(() => {
             </span>
         </div>
 
-        <Popover ref="infoPopover">
+        <Popover ref="infoPopover" :pt="{ root: { onMouseenter: cancelHide, onMouseleave: hideInfo } }">
             <div class="max-w-[280px] space-y-3 text-sm">
                 <div class="special-offer__content">
                     <div class="special-offer__label font-semibold">
