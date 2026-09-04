@@ -11,6 +11,9 @@ import { useLocaleStore } from '@/Stores/locale'
 import { routeType } from '@/types/route'
 import { route } from 'ziggy-js'
 import { trans } from 'laravel-vue-i18n'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faChevronDown, faChevronRight } from '@fal'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
 const props = defineProps<{
@@ -162,7 +165,8 @@ const toggleGroup = (key: string) => {
     }
     closedGroups.value = { ...closedGroups.value, [key]: !closedGroups.value[key] }
 }
-const chevron = (key: string) => isOpen(key) ? '▾' : '▸'
+library.add(faChevronDown, faChevronRight)
+const chevron = (key: string) => isOpen(key) ? 'fal fa-chevron-down' : 'fal fa-chevron-right'
 
 const groupedChannels = computed(() => {
     const groups: Record<string, any> = {}
@@ -469,7 +473,7 @@ const typeLabel: Record<string, string> = {
                     </thead>
                     <tbody v-for="group in groupedChannels" :key="group.key">
                         <tr class="text-gray-900 bg-gray-100/80 border-t-2 border-b border-gray-300 font-medium leading-tight">
-                            <td class="py-1 pr-2 text-xs leading-tight cursor-pointer select-none" @click="toggleGroup(group.key)"><span class="text-gray-400 mr-1">{{ chevron(group.key) }}</span>{{ group.label }}</td>
+                            <td class="py-1 pr-2 text-xs leading-tight cursor-pointer select-none" @click="toggleGroup(group.key)"><FontAwesomeIcon :icon="chevron(group.key)" class="text-gray-400 mr-1.5 text-[10px]" fixed-width />{{ group.label }}</td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap">
                                 <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
                                     <span>{{ group.visits > 0 ? locale.number(group.visits) : '' }}</span>
@@ -681,7 +685,7 @@ const typeLabel: Record<string, string> = {
                          last row still adds up to the total management carries in their head. -->
                     <tbody v-if="overview.out_of_scope?.length">
                         <tr class="text-gray-600 border-b border-dashed border-gray-300 leading-tight">
-                            <td class="py-1.5 pr-2 text-xs leading-tight italic"><span class="cursor-pointer select-none" @click="toggleGroup('out_of_scope')"><span class="text-gray-400 mr-1">{{ chevron('out_of_scope') }}</span>{{ trans('Out of scope') }}</span> <span v-tooltip="outOfScopeHelp" class="ml-1 text-gray-400 cursor-help">?</span></td>
+                            <td class="py-1.5 pr-2 text-xs leading-tight italic"><span class="cursor-pointer select-none" @click="toggleGroup('out_of_scope')"><FontAwesomeIcon :icon="chevron('out_of_scope')" class="text-gray-400 mr-1.5 text-[10px]" fixed-width />{{ trans('Out of scope') }}</span> <span v-tooltip="outOfScopeHelp" class="ml-1 text-gray-400 cursor-help">?</span></td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
