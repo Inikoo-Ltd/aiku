@@ -35,12 +35,12 @@ class StoreOrderAddress extends OrgAction
 
         $address = $this->storeModelAddress($addressData);
 
-        $order->updateQuietly(
-            [
-                $type.'_address_id' => $address->id,
-                $type.'_country_id' => $address->country_id,
-            ]
-        );
+        $order->updateQuietly([$type.'_address_id' => $address->id]);
+        if ($type == 'delivery') {
+            SetOrderDeliveryCountry::run($order, $address);
+        } else {
+            $order->updateQuietly(['billing_country_id' => $address->country_id]);
+        }
 
         return $order;
     }

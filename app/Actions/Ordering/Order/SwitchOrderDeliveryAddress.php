@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -21,8 +22,9 @@ class SwitchOrderDeliveryAddress extends OrgAction
     public function handle(Order $order, array $modelData): Order
     {
         if (isset($modelData['delivery_address_id'])) {
-            $order->delivery_address_id                               = $modelData['delivery_address_id'];
+            $order->delivery_address_id = $modelData['delivery_address_id'];
             $order->save();
+            SetOrderDeliveryCountry::run($order, Address::find($modelData['delivery_address_id']));
         }
 
         return $order;

@@ -13,7 +13,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import Icon from "@/Components/Icon.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import DatePicker from '@vuepic/vue-datepicker'
-import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faCalendar, faCalendarAlt, faInfoCircle } from "@fal"
+import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faCalendar, faCalendarAlt, faInfoCircle, faGlobe } from "@fal"
 import { faShieldAlt, faStar, faHighlighter, faPennant, faCertificate } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
@@ -250,6 +250,7 @@ const setNewMarkerDate = (newVal: Date) => {
 
         <template #cell(state)="{ item: order }">
             <Icon :data="order.state_icon" />
+            <FontAwesomeIcon v-if="order.is_export" v-tooltip="trans('Export')" :icon="faGlobe" class="ml-1 text-indigo-500" fixed-width />
         </template>
 
 

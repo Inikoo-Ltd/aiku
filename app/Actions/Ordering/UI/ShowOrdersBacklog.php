@@ -69,6 +69,11 @@ class ShowOrdersBacklog extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $tabsBox
                 ],
+                'scope_filter' => $this->tab == OrdersBacklogTabsEnum::RETURNED->value ? null : [
+                    'prefix'  => $this->tab,
+                    'current' => request()->input($this->tab.'_elements.scope'),
+                    'counts'  => IndexOrders::make()->scopeCounts($parent, $this->tab),
+                ],
 
                 OrdersBacklogTabsEnum::IN_BASKET->value => $this->tab == OrdersBacklogTabsEnum::IN_BASKET->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_BASKET->value, bucket: OrdersBacklogTabsEnum::IN_BASKET->value))

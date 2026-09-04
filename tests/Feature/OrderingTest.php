@@ -3470,3 +3470,41 @@ test('UI shop dashboard widgets endpoint returns every widget for an interval', 
     $allTime->assertOk()->assertJsonPath('from', null);
     expect($allTime->json('subscriptions.registrations'))->toBeGreaterThanOrEqual(1);
 });
+
+test('export flag follows the customs territory of the organisation', function () {
+    $addressIn = fn (string $code, ?string $postalCode = null) => new Address(array_merge(
+        Address::factory()->definition(),
+        ['country_code' => $code, 'country_id' => Country::where('code', $code)->value('id'), 'postal_code' => $postalCode ?? fake()->postcode]
+    ));
+    $canaries = $addressIn('ES', '35001');
+    $madrid   = $addressIn('ES', '28001');
+    $jersey   = $addressIn('JE');
+    $london   = $addressIn('GB');
+    $usa      = $addressIn('US');
+
+    expect(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('GB', $london))->toBeFalse()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('GB', $jersey))->toBeTrue()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('GB', $madrid))->toBeTrue()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('SK', $madrid))->toBeFalse()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('SK', $canaries))->toBeTrue()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('SK', $london))->toBeTrue()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('SK', $usa))->toBeTrue();
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', $usa);
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    expect($order->is_export)->toBeTrue();
+
+    $home = $addressIn($this->organisation->country->code);
+    \App\Actions\Ordering\Order\UpdateOrderFixedAddress::make()->action($order, ['address' => $home, 'type' => 'delivery']);
+    expect($order->refresh()->is_export)->toBe(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery($this->organisation->country->code, $home));
+
+    $this->shop->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+    $counts = \App\Actions\Ordering\Order\UI\IndexOrders::make()->scopeCounts($this->shop, 'in_basket');
+    $creating = Order::where('shop_id', $this->shop->id)->where('state', OrderStateEnum::CREATING);
+    expect($counts)->toBe([
+        'domestic' => (clone $creating)->where('is_export', false)->count(),
+        'export'   => (clone $creating)->where('is_export', true)->count(),
+    ])->and($counts['domestic'] + $counts['export'])->toBeGreaterThan(0);
+});
