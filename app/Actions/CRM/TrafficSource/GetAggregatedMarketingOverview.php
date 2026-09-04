@@ -423,6 +423,8 @@ class GetAggregatedMarketingOverview
 
         /* Every shop carries its own campaign row for the same host, so the rows are folded by host:
            this list is about which site sends the group visitors, not which shop they landed on. */
+        $sitesShown = 0;
+
         return $campaigns
             ->map(fn ($campaign) => [
                 'host'      => $campaign->name,
@@ -440,7 +442,11 @@ class GetAggregatedMarketingOverview
             ])
             ->filter(fn (array $referrer) => $referrer['visitors'] > 0 || $referrer['revenue'] > 0)
             ->sortByDesc(fn (array $referrer) => [$referrer['revenue'], $referrer['visitors']])
-            ->take($limit)
+            /* The cap is for the long tail of websites. Search engines and AI assistants are few and
+               each one is a line under its channel, so none of them may fall off the end. */
+            ->filter(function (array $referrer) use (&$sitesShown, $limit) {
+                return $referrer['kind'] !== 'site' || $sitesShown++ < $limit;
+            })
             ->values()
             ->all();
     }

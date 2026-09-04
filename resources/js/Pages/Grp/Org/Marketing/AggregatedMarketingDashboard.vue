@@ -68,7 +68,7 @@ const props = defineProps<{
         to: string | null
         referrers: {
             host: string
-            kind: 'site' | 'search'
+            kind: 'site' | 'search' | 'ai'
             visitors: number
             revenue: number
         }[]
@@ -244,6 +244,16 @@ const beforeTrackingHelp = (reliableFrom: string | null) =>
     trans('Customers who registered before tracking started.') + ' '
     + (reliableFrom ? trans('Reliable from') + ' ' + useFormatTime(reliableFrom) + '. ' : '')
     + trans('These customers signed up before we started recording where people come from, and nothing has been recorded for them since, so we cannot tell whether an ad, a search or a mailshot once brought them. As the recorded history grows past the attribution window this figure shrinks on its own, so read it as the part of Direct that is still a measurement gap.')
+
+const assistantName = (host: string) => ({
+    'chatgpt.com': 'ChatGPT',
+    'gemini.google.com': 'Gemini',
+    'copilot.microsoft.com': 'Copilot',
+    'claude.ai': 'Claude',
+    'perplexity.ai': 'Perplexity',
+}[host] ?? host)
+
+const aiAssistants = computed(() => (props.overview?.referrers ?? []).filter(referrer => referrer.kind === 'ai'))
 
 const untracedHelp = trans('People who typed the address, used a bookmark, or came from somewhere we could not name. Visits are counted directly, once per day; revenue, sign-ups and orders are whatever is left of the shop total once every channel has taken its share. It is not "no marketing": somebody who saw an ad and typed the address later lands here too.')
 
@@ -475,7 +485,8 @@ const columnHelp: Record<string, string> = {
                             {{ group.spend > 0 && group.revenue > 0 ? (group.revenue / group.spend).toFixed(2) + '×' : '' }}
                         </td>
                     </tr>
-                    <tr v-for="channel in (isOpen(group.key) ? group.channels : [])" :key="channel.type"
+                    <template v-for="channel in (isOpen(group.key) ? group.channels : [])" :key="channel.type">
+                    <tr
                         class="border-b border-gray-50 text-gray-600">
                         <td class="py-2 pr-2 pl-5">
                             <Link :href="route(channel.route.name, channel.route.parameters)"
@@ -530,6 +541,26 @@ const columnHelp: Record<string, string> = {
                             {{ channel.roas !== null ? channel.roas.toFixed(2) + '×' : '—' }}
                         </td>
                     </tr>
+                    <!-- The assistants behind the AI channel, one line each: which of them actually sends buyers is
+                         the question, and the channel total cannot answer it. Touched customers and revenue only;
+                         visits are counted per channel, not per assistant. -->
+                    <tr v-for="assistant in (channel.type === 'ai' ? aiAssistants : [])" :key="assistant.host" class="border-b border-gray-50 text-gray-500">
+                        <td class="py-1.5 pr-2 pl-10 text-xs">{{ assistantName(assistant.host) }}</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap text-xs">
+                            <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
+                                <span></span>
+                                <span>{{ count(assistant.visitors, true) }} {{ trans('touched') }}</span>
+                                <span></span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">{{ money(assistant.revenue) }}</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
+                    </tr>
+                    </template>
                 </tbody>
                 <tbody>
                     <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
@@ -621,7 +652,7 @@ const columnHelp: Record<string, string> = {
                         <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
                     </tr>
                     <tr v-if="overview.before_tracking && (overview.before_tracking.revenue > 0 || overview.before_tracking.orders > 0)" class="text-gray-600 border-b border-dashed border-gray-300 leading-tight">
-                        <td class="py-1.5 pr-2 text-xs leading-tight italic">{{ trans('Before tracking') }} <span v-tooltip="beforeTrackingHelp(overview.before_tracking.reliable_from)" class="ml-1 text-gray-400 cursor-help">?</span></td>
+                        <td class="py-1.5 pr-2 text-xs leading-tight italic">{{ trans('Before tracking began') }} <span v-tooltip="beforeTrackingHelp(overview.before_tracking.reliable_from)" class="ml-1 text-gray-400 cursor-help">?</span></td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>

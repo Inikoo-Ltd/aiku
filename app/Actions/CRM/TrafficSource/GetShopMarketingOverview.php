@@ -570,6 +570,8 @@ class GetShopMarketingOverview
             ->pluck('type', 'id');
 
         if ($kindBySource->isEmpty()) {
+            $sitesShown = 0;
+
             return [];
         }
 
@@ -604,7 +606,11 @@ class GetShopMarketingOverview
             ->filter(fn (array $referrer) => $referrer['registrations'] > 0 || $referrer['revenue'] > 0
                 || $referrer['visitors'] > 0)
             ->sortByDesc(fn (array $referrer) => [$referrer['revenue'], $referrer['visitors']])
-            ->take($limit)
+            /* The cap is for the long tail of websites. Search engines and AI assistants are few and
+               each one is a line under its channel, so none of them may fall off the end. */
+            ->filter(function (array $referrer) use (&$sitesShown, $limit) {
+                return $referrer['kind'] !== 'site' || $sitesShown++ < $limit;
+            })
             ->values()
             ->all();
     }
