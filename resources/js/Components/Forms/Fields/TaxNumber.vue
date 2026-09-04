@@ -4,7 +4,7 @@ import { set, get, debounce } from 'lodash-es'
 import { checkVAT, countries } from "jsvat-next"
 import { ref, computed, watch ,inject} from "vue"
 import { faExclamationCircle, faCheckCircle } from '@fas'
-import { faCopy } from '@fal'
+import { faCopy, faCheck } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
@@ -12,6 +12,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { Tooltip } from 'floating-vue'
 import Modal from "@/Components/Utils/Modal.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { router } from "@inertiajs/vue3"
+import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
+import { notify } from "@kyvg/vue3-notification"
+
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 defineOptions({ inheritAttrs: false })
 
@@ -207,8 +212,6 @@ const validateVAT = (vatInput: any) => {
     const validation = checkVAT(vatNumberWithCountryCode, countries);
     vatValidationResult.value = validation.isValid ? trans("Valid tax number") : trans("Invalid tax number");
 
-
-
     // Handle invalid VAT
     if (!validation.isValid) {
         const messageWarning = '🤔 ' + trans('Tax number looks invalid. Are you sure you want to save it?')
@@ -264,6 +267,39 @@ watch(
     },
     { deep: true }
 )
+
+const isLoadingMarkValid = ref(false);
+const markAsValid = () => {
+    console.log("KONTOL", props.fieldData.mark_as_valid_button.cus_id);
+    router.patch(route('grp.models.customer.update', {
+            customer: props.fieldData.mark_as_valid_button.cus_id
+        }), {
+            mark_tax_number_valid: true
+        }, 
+        {
+            onStart: () => (
+                isLoadingMarkValid.value = true
+            ),
+            onFinish: () => {
+                isLoadingMarkValid.value = false
+                reload?.()
+                notify({
+                    title: ctrans("Success"),
+                    text: ctrans("Marked Tax Number as Valid"),
+                    type: "success",
+                })
+            },
+            onError: (errors: any) => {
+                notify({
+                    title: ctrans("Error Occured"),
+                    text: errors?.message || ctrans("Unknown error occurred"),
+                    type: "error",
+                })
+            },
+        }
+    )
+}
+
 </script>
 
 <template>
@@ -323,6 +359,29 @@ watch(
                         </p>
                     </div>
                 </div>
+            </div>
+            <div v-if="validationStatus.status == 'invalid' && fieldData.mark_as_valid_button?.show" class="flex items-start pt-2">
+                <ModalConfirmation
+                    :title="ctrans('Are you sure you want to proceed?')"
+                    :description="ctrans(`Please make sure you've checked the VAT Details with upmost detail first before proceeding`)"
+                    hideCancel
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+                        <Button :style="'secondary'" :icon="faCheck" :loading="isLoadingMarkValid" :label="'Mark as Valid'" @click="() => changeModel()" />
+                    </template>
+                    <template #btn-yes="{ closeModal }">
+                        <Button
+                            :label="trans('Confirm')"
+                            @click="
+                                () => {
+                                    markAsValid()
+                                    closeModal()
+                                }
+                            "
+                            type="negative"
+                            :icon="faWarning" />
+                    </template>
+                </ModalConfirmation>
             </div>
         </div>
     </div>

@@ -74,7 +74,6 @@ class ValidateEuropeanTaxNumber
                     'status'             => TaxNumberStatusEnum::INVALID,
                     'checked_at'         => now(),
                     'invalid_checked_at' => now()
-
                 ];
                 $taxNumber->update($validationData);
                 $taxNumber->refresh();

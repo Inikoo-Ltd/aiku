@@ -20,6 +20,7 @@ use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Helpers\TaxNumber\DeleteTaxNumber;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
+use App\Actions\Helpers\TaxNumber\Traits\WithValidateTaxNumberCustomAudit;
 use App\Actions\Helpers\TaxNumber\UpdateTaxNumber;
 use App\Actions\Ordering\Order\CalculateOrderDiscounts;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
@@ -41,10 +42,13 @@ use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Helpers\Audit\AuditEventEnum;
+use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
+use App\Enums\Helpers\TaxNumber\TaxNumberValidationTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
+use App\Models\SysAdmin\User;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
@@ -64,8 +68,10 @@ class UpdateCustomer extends OrgAction
     use WithProcessContactNameComponents;
     use WithCRMEditAuthorisation;
     use WithPrepareTaxNumberValidation;
+    use WithValidateTaxNumberCustomAudit;
 
     private Customer $customer;
+    private ?User $user = null;
 
     public function handle(Customer $customer, array $modelData): Customer
     {
@@ -141,37 +147,58 @@ class UpdateCustomer extends OrgAction
             }
         }
 
-        if (Arr::has($modelData, 'tax_number')) {
-            if ($this->strict) {
-                $taxNumberData = [];
-                data_set($taxNumberData, 'number', Arr::get($modelData, 'tax_number.number'));
-                data_set($taxNumberData, 'country_id', $customer->address->country_id);
-                Arr::forget($modelData, 'tax_number');
-            } else {
-                $taxNumberData = Arr::pull($modelData, 'tax_number');
+        if (Arr::hasAny($modelData, ['tax_number', 'mark_tax_number_valid'])) {
+            if (Arr::has($modelData, 'tax_number')) {
+                if ($this->strict) {
+                    $taxNumberData = [];
+                    data_set($taxNumberData, 'number', Arr::get($modelData, 'tax_number.number'));
+                    data_set($taxNumberData, 'country_id', $customer->address->country_id);
+                    Arr::forget($modelData, 'tax_number');
+                } else {
+                    $taxNumberData = Arr::pull($modelData, 'tax_number');
+                }
+
+                if (Arr::get($taxNumberData, 'number')) {
+                    if (!$customer->taxNumber) {
+                        if (!Arr::get($taxNumberData, 'data.name')) {
+                            Arr::forget($taxNumberData, 'data.name');
+                        }
+
+                        if (!Arr::get($taxNumberData, 'data.address')) {
+                            Arr::forget($taxNumberData, 'data.address');
+                        }
+
+                        StoreTaxNumber::run(
+                            owner: $customer,
+                            modelData: $taxNumberData,
+                            strict: $this->strict
+                        );
+                    } else {
+                        UpdateTaxNumber::run($customer->taxNumber, $taxNumberData, $this->strict);
+                    }
+                } elseif ($customer->taxNumber) {
+                    DeleteTaxNumber::run($customer->taxNumber);
+                }
             }
 
+            $markAsValid = Arr::pull($modelData, 'mark_tax_number_valid', false);
 
-            if (Arr::get($taxNumberData, 'number')) {
-                if (!$customer->taxNumber) {
-                    if (!Arr::get($taxNumberData, 'data.name')) {
-                        Arr::forget($taxNumberData, 'data.name');
-                    }
+            if ($markAsValid && $customer->taxNumber) {
+                $taxNumber = $customer->taxNumber;
+                $oldTaxNumber = $taxNumber->replicate();
 
-                    if (!Arr::get($taxNumberData, 'data.address')) {
-                        Arr::forget($taxNumberData, 'data.address');
-                    }
+                $updatedData = [
+                    'status'                    => TaxNumberStatusEnum::VALID,
+                    'valid'                     => true,
+                ];
 
-                    StoreTaxNumber::run(
-                        owner: $customer,
-                        modelData: $taxNumberData,
-                        strict: $this->strict
-                    );
-                } else {
-                    UpdateTaxNumber::run($customer->taxNumber, $taxNumberData, $this->strict);
+                if ($this->user) {
+                    data_set($updatedData, 'manual_validation_user_id', $this->user?->id);
                 }
-            } elseif ($customer->taxNumber) {
-                DeleteTaxNumber::run($customer->taxNumber);
+
+                $taxNumber->update($updatedData);
+
+                $this->deployTaxValidationCustomAudit($oldTaxNumber, $taxNumber, TaxNumberValidationTypeEnum::MANUAL);
             }
 
             // Recalculate customer orders VAT Charges | INI-875
@@ -375,6 +402,7 @@ class UpdateCustomer extends OrgAction
                 'nullable',
                 Rule::exists('employees', 'id')->where('organisation_id', $this->organisation->id),
             ],
+            'mark_tax_number_valid'                                 => ['sometimes', 'boolean', Rule::prohibitedIf(fn () => empty($this->customer?->taxNumber))],
         ];
 
         if ($this?->asAction) {
@@ -414,6 +442,7 @@ class UpdateCustomer extends OrgAction
 
     public function asController(Customer $customer, ActionRequest $request): Customer
     {
+        $this->user = $request->user();
         $this->customer = $customer;
         $this->initialisationFromShop($customer->shop, $request);
 
