@@ -7,6 +7,7 @@
 
 namespace App\Actions\UI\Dropshipping\Marketing;
 
+use App\Actions\Comms\WhatsappCampaign\FilterRecipientsByTemplateTags;
 use App\Actions\Comms\WhatsappCampaign\GetWhatsappRecipientsQuery;
 use App\Actions\CRM\Customer\GetCustomerFilterStructure;
 use App\Actions\OrgAction;
@@ -21,9 +22,11 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -41,10 +44,13 @@ class IndexWhatsappCampaignRecipients extends OrgAction
 
     private array $validSelection = [];
 
+    private array $templateTags = [];
+
     public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
         $this->channels        = $this->readChannels();
         $this->customerFilters = $this->readCustomerFilters();
+        $this->templateTags    = $this->readTemplateTags();
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $term = strtolower($value);
@@ -59,7 +65,10 @@ class IndexWhatsappCampaignRecipients extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $recipients = GetWhatsappRecipientsQuery::run($shop, $this->channels, $this->customerFilters);
+        $recipients = FilterRecipientsByTemplateTags::run(
+            GetWhatsappRecipientsQuery::run($shop, $this->channels, $this->customerFilters),
+            $this->templateTags
+        );
 
         $this->validSelection = $this->readValidSelection($recipients);
 
@@ -108,6 +117,21 @@ class IndexWhatsappCampaignRecipients extends OrgAction
         }
 
         return array_diff_key($filters, ['all_customers' => true]);
+    }
+
+    /**
+     * The merge tags the campaign's template was written with, read from the same path
+     * SendWhatsappDeliveryChannel fills them from. A recipient who cannot supply one of
+     * them is not sent to, so the picker leaves them out rather than letting the campaign
+     * count contacts it will only fail on.
+     *
+     * @return array<int, string>
+     */
+    private function readTemplateTags(): array
+    {
+        $tags = Arr::get($this->campaign->metaMessageTemplate?->data ?? [], 'merge_tags.body', []);
+
+        return is_array($tags) ? $tags : [];
     }
 
     /**
@@ -176,9 +200,27 @@ class IndexWhatsappCampaignRecipients extends OrgAction
         return $this->handle($shop);
     }
 
-    public function htmlResponse(LengthAwarePaginator $recipients, ActionRequest $request): Response
+    /**
+     * The audience is only meaningful once a template is chosen: its merge tags decide who
+     * can be reached at all, and a selection made without them would be picked against no
+     * requirement and then dropped at send. The workshop hides the link, this closes the
+     * direct URL behind it.
+     */
+    public function htmlResponse(LengthAwarePaginator $recipients, ActionRequest $request): Response|RedirectResponse
     {
         $campaign        = $this->campaign;
+
+        if (!$campaign->meta_message_template_id) {
+            return Redirect::route(
+                'grp.org.shops.show.marketing.whatsapp_campaigns.workshop',
+                [$this->organisation->slug, $this->shop->slug, $campaign->slug]
+            )->with('notification', [
+                'status' => 'error',
+                'title'  => __('Choose a template first'),
+                'description' => __('A template decides what information each contact has to supply, so recipients are chosen after it.'),
+            ]);
+        }
+
         $routeParameters = [
             'organisation'     => $this->organisation->slug,
             'shop'             => $this->shop->slug,
@@ -201,6 +243,7 @@ class IndexWhatsappCampaignRecipients extends OrgAction
                     ],
                 ],
                 'validSelection'     => $this->validSelection,
+                'templateTags'       => $this->templateTags,
                 'channels'           => $this->channels,
                 'filtersStructure'   => GetCustomerFilterStructure::run($this->shop),
                 'filters'            => $this->customerFilters,
