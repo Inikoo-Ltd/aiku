@@ -10,7 +10,6 @@ use App\Actions\Dropshipping\Wix\Traits\WithWixShippingWeight;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WixUser;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -119,7 +118,6 @@ class WixCatalogV3 implements WixCatalog
 
     public function searchProducts(string $query = '', int $offset = 0, int $limit = 50): array
     {
-        // V3 pages by cursor, so an offset is served by reading forward and discarding.
         $search = ['cursorPaging' => ['limit' => min($limit + $offset, self::PAGE_SIZE)]];
 
         if ($query !== '') {
@@ -181,11 +179,6 @@ class WixCatalogV3 implements WixCatalog
             }
         }
 
-        Log::warning('Wix V3 catalogue too large to read in full for bulk matching', [
-            'wix_user_id' => $this->wixUser->id,
-            'skus_read'   => count($listedSkus),
-        ]);
-
         return $listedSkus;
     }
 
@@ -228,7 +221,6 @@ class WixCatalogV3 implements WixCatalog
                 'revision' => Arr::get($current, 'revision'),
                 'media'    => [
                     'itemsInfo' => [
-                        // The first item becomes the product's main media.
                         'items' => collect($imageUrls)->map(fn ($url) => ['url' => $url])->all(),
                     ],
                 ],
@@ -319,14 +311,20 @@ class WixCatalogV3 implements WixCatalog
 
     private function normalise(array $product): array
     {
+        $sku = Arr::get($product, 'variantsInfo.variants.0.sku')
+            ?? Arr::get($product, 'minVariantPriceInfo.sku');
+
+        $image = Arr::get($product, 'media.main.image.url');
+
         return [
-            'id'    => Arr::get($product, 'id'),
-            'name'  => Arr::get($product, 'name'),
-            'sku'   => Arr::get($product, 'variantsInfo.variants.0.sku')
-                ?? Arr::get($product, 'minVariantPriceInfo.sku'),
-            'price' => Arr::get($product, 'variantsInfo.variants.0.price.actualPrice')
+            'id'     => Arr::get($product, 'id'),
+            'name'   => Arr::get($product, 'name'),
+            'sku'    => $sku,
+            'code'   => $sku,
+            'price'  => Arr::get($product, 'variantsInfo.variants.0.price.actualPrice')
                 ?? Arr::get($product, 'actualPriceRange.minValue.amount'),
-            'image' => Arr::get($product, 'media.main.image'),
+            'image'  => $image,
+            'images' => $image ? [['src' => $image]] : [],
         ];
     }
 }

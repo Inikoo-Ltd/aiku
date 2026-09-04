@@ -46,13 +46,13 @@ class SyncRetinaCustomerSalesChannelPortfolioManually extends RetinaAction
                 UpdateInventoryInShopifyCustomerSalesChannel::run($customerSalesChannel);
                 break;
             case PlatformTypeEnum::WOOCOMMERCE:
-                UpdateInventoryInWooPortfolio::run($customerSalesChannel);
+                UpdateInventoryInWooPortfolio::run($customerSalesChannel, true);
                 break;
             case PlatformTypeEnum::EBAY:
-                UpdateInventoryInEbayPortfolio::run($customerSalesChannel);
+                UpdateInventoryInEbayPortfolio::run($customerSalesChannel, true);
                 break;
             case PlatformTypeEnum::TIKTOK:
-                UpdateInventoryTiktokProducts::run($customerSalesChannel);
+                UpdateInventoryTiktokProducts::run($customerSalesChannel, true);
                 break;
             case PlatformTypeEnum::WIX:
                 UpdateInventoryInWixPortfolio::run($customerSalesChannel);
