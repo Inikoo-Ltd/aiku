@@ -153,6 +153,19 @@ const measuredSince = computed(() => {
    exists; the toggle is for reading it, not for hiding it. */
 const showChannelDetail = ref(true)
 
+/* Each block opens and closes on its own; the header button is a shortcut for all of them at once.
+   Out of scope starts closed: a dozen marketplaces is detail nobody needs until they ask. */
+const closedGroups = ref<Record<string, boolean>>({ out_of_scope: true })
+const isOpen = (key: string) => showChannelDetail.value && !closedGroups.value[key]
+const toggleGroup = (key: string) => {
+    if (!showChannelDetail.value) {
+        showChannelDetail.value = true
+        closedGroups.value = Object.fromEntries(groupedChannels.value.map(group => [group.key, true]).concat([['out_of_scope', true]]))
+    }
+    closedGroups.value = { ...closedGroups.value, [key]: !closedGroups.value[key] }
+}
+const chevron = (key: string) => isOpen(key) ? '▾' : '▸'
+
 const groupedChannels = computed(() => {
     const groups: Record<string, any> = {}
 
@@ -379,7 +392,7 @@ const columnHelp: Record<string, string> = {
                 </thead>
                 <tbody v-for="group in groupedChannels" :key="group.key">
                     <tr class="text-gray-900 bg-gray-100/80 border-t-2 border-b border-gray-300 font-medium leading-tight">
-                        <td class="py-1 pr-2 text-xs leading-tight">{{ group.label }}</td>
+                        <td class="py-1 pr-2 text-xs leading-tight cursor-pointer select-none" @click="toggleGroup(group.key)"><span class="text-gray-400 mr-1">{{ chevron(group.key) }}</span>{{ group.label }}</td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
                             <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
                                 <span>{{ group.visits > 0 ? locale.number(group.visits) : '' }}</span>
@@ -426,7 +439,7 @@ const columnHelp: Record<string, string> = {
                             {{ group.spend > 0 && group.revenue > 0 ? (group.revenue / group.spend).toFixed(2) + '×' : '' }}
                         </td>
                     </tr>
-                    <tr v-for="channel in (showChannelDetail ? group.channels : [])" :key="channel.type"
+                    <tr v-for="channel in (isOpen(group.key) ? group.channels : [])" :key="channel.type"
                         class="border-b border-gray-50 text-gray-600">
                         <td class="py-2 pr-2 pl-5">
                             <Link :href="route(channel.route.name, channel.route.parameters)"
@@ -482,94 +495,7 @@ const columnHelp: Record<string, string> = {
                         </td>
                     </tr>
                 </tbody>
-                <!-- What no channel can claim: typed, bookmarked, or arrived from somewhere we could not
-                     name. Kept out of the channel totals - nobody paid for it, so it has no spend and
-                     no ROAS - but shown next to them, because it is usually the biggest number here. -->
-                <tbody v-if="overview.untraced">
-                    <tr class="text-gray-900 bg-gray-100/80 border-t-2 border-b border-gray-300 font-medium leading-tight">
-                        <td class="py-1 pr-2 text-xs leading-tight">
-                            {{ trans('Direct') }}
-                            <span v-tooltip="untracedHelp" class="ml-1 text-gray-400 cursor-help">?</span>
-                        </td>
-                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                            <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
-                                <span :class="overview.untraced.visits > 0 ? '' : 'text-gray-300'">{{ overview.untraced.visits > 0 ? locale.number(overview.untraced.visits) : '—' }}</span>
-                                <span class="text-xs font-normal" :class="overview.untraced.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
-                                    <template v-if="overview.untraced.visits > 0">{{ count(overview.untraced.orders, decimalColumns.orders) }} {{ trans('bought') }}</template>
-                                </span>
-                                <span class="text-xs font-normal" :class="overview.untraced.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
-                                    <template v-if="overview.untraced.visits > 0">{{ conversionRate(overview.untraced.orders, overview.untraced.visits) }}</template>
-                                </span>
-                            </span>
-                        </td>
-                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
-                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
-                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                            <span class="inline-grid grid-cols-[2.75rem_5.5rem]">
-                                <span class="font-normal text-gray-400 text-left">{{ share(overview.untraced.revenue, overview.baseline.revenue) }}</span>
-                                <span>{{ money(overview.untraced.revenue) }}</span>
-                            </span>
-                        </td>
-                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                            <span class="inline-grid grid-cols-[3.5rem_2.75rem]">
-                                <span>{{ count(overview.untraced.registrations, decimalColumns.registrations) }}</span>
-                                <span></span>
-                            </span>
-                        </td>
-                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                            <span class="inline-grid grid-cols-[2.75rem_3.5rem]">
-                                <span class="font-normal text-gray-400 text-left">{{ share(overview.untraced.orders, overview.baseline.orders) }}</span>
-                                <span>{{ count(overview.untraced.orders, decimalColumns.orders) }}</span>
-                            </span>
-                        </td>
-                        <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
-                    </tr>
-                </tbody>
-                <!-- Sales that never went through the website: phone, showroom, marketplaces. Listed so the
-                     last row still adds up to the total management carries in their head. -->
-                <tbody v-if="overview.out_of_scope?.length">
-                    <tr class="text-gray-900 bg-gray-100/80 border-b border-gray-300 font-medium leading-tight">
-                        <td class="py-1 pr-2 text-xs leading-tight">{{ trans('Out of scope') }} <span v-tooltip="outOfScopeHelp" class="ml-1 text-gray-400 cursor-help">?</span></td>
-                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
-                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
-                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
-                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                            <span class="inline-grid grid-cols-[2.75rem_5.5rem]">
-                                <span class="font-normal text-gray-400 text-left">{{ share(outOfScopeTotals.revenue, overview.baseline?.revenue ?? 0) }}</span>
-                                <span>{{ money(outOfScopeTotals.revenue) }}</span>
-                            </span>
-                        </td>
-                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
-                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                            <span class="inline-grid grid-cols-[2.75rem_3.5rem]">
-                                <span class="font-normal text-gray-400 text-left">{{ share(outOfScopeTotals.orders, overview.baseline?.orders ?? 0) }}</span>
-                                <span>{{ count(outOfScopeTotals.orders, decimalColumns.orders) }}</span>
-                            </span>
-                        </td>
-                        <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
-                    </tr>
-                    <tr v-for="channel in (showChannelDetail ? overview.out_of_scope : [])" :key="channel.name" class="border-b border-gray-50 text-gray-600">
-                        <td class="py-2 pr-2 pl-5 text-gray-500">{{ channel.name }}</td>
-                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
-                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
-                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
-                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                            <span class="inline-grid grid-cols-[2.75rem_5.5rem]">
-                                <span class="font-normal text-gray-400 text-left">{{ share(channel.revenue, overview.baseline?.revenue ?? 0) }}</span>
-                                <span>{{ money(channel.revenue) }}</span>
-                            </span>
-                        </td>
-                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
-                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                            <span class="inline-grid grid-cols-[2.75rem_3.5rem]">
-                                <span class="font-normal text-gray-400 text-left">{{ share(channel.orders, overview.baseline?.orders ?? 0) }}</span>
-                                <span>{{ count(channel.orders, decimalColumns.orders) }}</span>
-                            </span>
-                        </td>
-                        <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
-                    </tr>
-                </tbody>
-                <tfoot>
+                <tbody>
                     <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
                         <td class="py-1.5 pr-2">{{ trans('All channels') }}</td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
@@ -618,7 +544,96 @@ const columnHelp: Record<string, string> = {
                             {{ channelTotals.spend > 0 && channelTotals.revenue > 0 ? (channelTotals.revenue / channelTotals.spend).toFixed(2) + '×' : '' }}
                         </td>
                     </tr>
-                    <tr class="text-gray-700 border-t border-gray-200">
+                </tbody>
+                <!-- What no channel can claim: typed, bookmarked, or arrived from somewhere we could not
+                     name. Kept out of the channel totals - nobody paid for it, so it has no spend and
+                     no ROAS - but shown next to them, because it is usually the biggest number here. -->
+                <tbody v-if="overview.untraced">
+                    <tr class="text-gray-600 border-b border-dashed border-gray-300 leading-tight">
+                        <td class="py-1.5 pr-2 text-xs leading-tight italic">
+                            {{ trans('Direct') }}
+                            <span v-tooltip="untracedHelp" class="ml-1 text-gray-400 cursor-help">?</span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
+                                <span :class="overview.untraced.visits > 0 ? '' : 'text-gray-300'">{{ overview.untraced.visits > 0 ? locale.number(overview.untraced.visits) : '—' }}</span>
+                                <span class="text-xs font-normal" :class="overview.untraced.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
+                                    <template v-if="overview.untraced.visits > 0">{{ count(overview.untraced.orders, decimalColumns.orders) }} {{ trans('bought') }}</template>
+                                </span>
+                                <span class="text-xs font-normal" :class="overview.untraced.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
+                                    <template v-if="overview.untraced.visits > 0">{{ conversionRate(overview.untraced.orders, overview.untraced.visits) }}</template>
+                                </span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[2.75rem_5.5rem]">
+                                <span class="font-normal text-gray-400 text-left">{{ share(overview.untraced.revenue, overview.baseline.revenue) }}</span>
+                                <span>{{ money(overview.untraced.revenue) }}</span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[3.5rem_2.75rem]">
+                                <span>{{ count(overview.untraced.registrations, decimalColumns.registrations) }}</span>
+                                <span></span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[2.75rem_3.5rem]">
+                                <span class="font-normal text-gray-400 text-left">{{ share(overview.untraced.orders, overview.baseline.orders) }}</span>
+                                <span>{{ count(overview.untraced.orders, decimalColumns.orders) }}</span>
+                            </span>
+                        </td>
+                        <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
+                    </tr>
+                </tbody>
+                <!-- Sales that never went through the website: phone, showroom, marketplaces. Listed so the
+                     last row still adds up to the total management carries in their head. -->
+                <tbody v-if="overview.out_of_scope?.length">
+                    <tr class="text-gray-600 border-b border-dashed border-gray-300 leading-tight">
+                        <td class="py-1.5 pr-2 text-xs leading-tight italic"><span class="cursor-pointer select-none" @click="toggleGroup('out_of_scope')"><span class="text-gray-400 mr-1">{{ chevron('out_of_scope') }}</span>{{ trans('Out of scope') }}</span> <span v-tooltip="outOfScopeHelp" class="ml-1 text-gray-400 cursor-help">?</span></td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[2.75rem_5.5rem]">
+                                <span class="font-normal text-gray-400 text-left">{{ share(outOfScopeTotals.revenue, overview.baseline?.revenue ?? 0) }}</span>
+                                <span>{{ money(outOfScopeTotals.revenue) }}</span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[2.75rem_3.5rem]">
+                                <span class="font-normal text-gray-400 text-left">{{ share(outOfScopeTotals.orders, overview.baseline?.orders ?? 0) }}</span>
+                                <span>{{ count(outOfScopeTotals.orders, decimalColumns.orders) }}</span>
+                            </span>
+                        </td>
+                        <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
+                    </tr>
+                    <tr v-for="channel in (isOpen('out_of_scope') ? overview.out_of_scope : [])" :key="channel.name" class="border-b border-gray-50 text-gray-600">
+                        <td class="py-1.5 pr-2 pl-5 text-gray-500 italic">{{ channel.name }}</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[2.75rem_5.5rem]">
+                                <span class="font-normal text-gray-400 text-left">{{ share(channel.revenue, overview.baseline?.revenue ?? 0) }}</span>
+                                <span>{{ money(channel.revenue) }}</span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[2.75rem_3.5rem]">
+                                <span class="font-normal text-gray-400 text-left">{{ share(channel.orders, overview.baseline?.orders ?? 0) }}</span>
+                                <span>{{ count(channel.orders, decimalColumns.orders) }}</span>
+                            </span>
+                        </td>
+                        <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
                         <td class="py-1.5 pr-2">{{ trans('Everything') }} <span class="font-normal text-gray-400">{{ trans('channels, direct and out of scope') }}</span></td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
