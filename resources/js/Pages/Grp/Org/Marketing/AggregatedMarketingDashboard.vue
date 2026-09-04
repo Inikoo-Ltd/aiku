@@ -522,9 +522,9 @@ const columnHelp: Record<string, string> = {
                             </span>
                         </td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                            <span class="inline-grid" :class="showChannelDetail ? '' : 'grid-cols-[5.5rem_2.75rem]'">
+                            <span class="inline-grid grid-cols-[2.75rem_5.5rem]">
+                                <span class="font-normal text-gray-400 text-left">{{ share(channelTotals.revenue, overview.baseline?.revenue ?? 0) }}</span>
                                 <span>{{ money(channelTotals.revenue) }}</span>
-                                <span v-if="!showChannelDetail"></span>
                             </span>
                         </td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap"
@@ -535,9 +535,9 @@ const columnHelp: Record<string, string> = {
                             </span>
                         </td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                            <span class="inline-grid" :class="showChannelDetail ? '' : 'grid-cols-[3.5rem_2.75rem]'">
+                            <span class="inline-grid grid-cols-[2.75rem_3.5rem]">
+                                <span class="font-normal text-gray-400 text-left">{{ share(channelTotals.orders, overview.baseline?.orders ?? 0) }}</span>
                                 <span>{{ count(channelTotals.orders, decimalColumns.orders) }}</span>
-                                <span v-if="!showChannelDetail"></span>
                             </span>
                         </td>
                         <td class="text-right pl-2 tabular-nums">
@@ -557,12 +557,9 @@ const columnHelp: Record<string, string> = {
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
                             <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
                                 <span :class="overview.untraced.visits > 0 ? '' : 'text-gray-300'">{{ overview.untraced.visits > 0 ? locale.number(overview.untraced.visits) : '—' }}</span>
-                                <span class="text-xs font-normal" :class="overview.untraced.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
-                                    <template v-if="overview.untraced.visits > 0">{{ count(overview.untraced.orders, decimalColumns.orders) }} {{ trans('bought') }}</template>
-                                </span>
-                                <span class="text-xs font-normal" :class="overview.untraced.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
-                                    <template v-if="overview.untraced.visits > 0">{{ conversionRate(overview.untraced.orders, overview.untraced.visits) }}</template>
-                                </span>
+                                <!-- No "bought" pair here: the orders are the whole remainder of the period while the visits only count from the day the counter started, so the rate would be nonsense. -->
+                                <span></span>
+                                <span></span>
                             </span>
                         </td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
