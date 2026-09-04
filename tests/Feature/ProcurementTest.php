@@ -3444,6 +3444,22 @@ test('UI partner shipping list index', function () {
     });
 });
 
+test('to produce item moves backlog to preparing and back', function () {
+    $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
+    $orgStock   = OrgStock::where('organisation_id', $this->orgPartner->organisation_id)->first() ?? createOrgStocks($this->orgPartner->organisation, [Stock::first()])[0];
+    $item       = PartnerShoppingListItem::whereNull('job_order_id')->first() ?? StorePartnerShoppingListItem::make()->action($this->orgPartner, $orgStock, ['quantity' => 3]);
+
+    $this->post(route('grp.org.productions.show.to_produce.items.preparing', [$this->organisation->slug, $production->slug, $item->id]), ['preparing' => true, 'quantity' => 10])
+        ->assertRedirect();
+    expect($item->fresh()->preparing_at)->not->toBeNull()
+        ->and((float) $item->fresh()->quantity_to_produce)->toBe(10.0);
+
+    $this->post(route('grp.org.productions.show.to_produce.items.preparing', [$this->organisation->slug, $production->slug, $item->id]), ['preparing' => false])
+        ->assertRedirect();
+    expect($item->fresh()->preparing_at)->toBeNull()
+        ->and($item->fresh()->quantity_to_produce)->toBeNull();
+});
+
 test('UI to produce list grouped by artisan, family and for', function () {
     $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
 

@@ -73,28 +73,67 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, stock_code: string, stock_name: string, state: string, quantity: number, maker: string | null, maker_id: number | null }
+type BoardItem = { id: number, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null }
+const LANE_BACKLOG = 0
+const LANE_PREPARING = 1
+const LANE_ASSIGNED = 2
+
+function dropTarget(laneIndex: number): boolean {
+    if (!dragging.value) return false
+    if (laneIndex === LANE_BACKLOG) return !!dragging.value.preparing_at
+    if (laneIndex === LANE_PREPARING) return !dragging.value.preparing_at
+    if (laneIndex === LANE_ASSIGNED) return !!dragging.value.preparing_at
+    return false
+}
+
+function setPreparing(item: BoardItem, preparing: boolean, quantity: number | null = null) {
+    router.post(
+        route("grp.org.productions.show.to_produce.items.preparing", [route().params["organisation"], route().params["production"], item.id]),
+        { preparing, quantity },
+        { preserveScroll: true }
+    )
+}
+
+function onDrop(laneIndex: number, event: DragEvent) {
+    if (!dragging.value || !dropTarget(laneIndex)) return
+    if (laneIndex === LANE_ASSIGNED) {
+        openPicker("assign", event)
+    } else if (laneIndex === LANE_PREPARING) {
+        openPicker("prepare", event)
+    } else {
+        setPreparing(dragging.value, false)
+        dragging.value = null
+    }
+}
 const dragging = ref<BoardItem | null>(null)
 const pendingAssign = ref<BoardItem | null>(null)
+const pickerMode = ref<"prepare" | "assign">("prepare")
 const assignQuantity = ref(1)
 const pickerPosition = ref({ x: 0, y: 0 })
 
-function dropOnAssigned(event: DragEvent) {
-    if (dragging.value) {
-        pendingAssign.value = dragging.value
-        assignQuantity.value = Math.ceil(Number(dragging.value.quantity))
-        const laneLeft = (event.currentTarget as HTMLElement).getBoundingClientRect().left
-        pickerPosition.value = {
-            x: Math.max(8, laneLeft - 144),
-            y: Math.max(8, Math.min(event.clientY - 40, window.innerHeight - 380)),
-        }
-        dragging.value = null
+function openPicker(mode: "prepare" | "assign", event: DragEvent) {
+    if (!dragging.value) return
+    pickerMode.value = mode
+    pendingAssign.value = dragging.value
+    assignQuantity.value = Math.ceil(Number(dragging.value.quantity_to_produce ?? dragging.value.quantity))
+    const laneLeft = (event.currentTarget as HTMLElement).getBoundingClientRect().left
+    pickerPosition.value = {
+        x: Math.max(8, laneLeft - 144),
+        y: Math.max(8, Math.min(event.clientY - 40, window.innerHeight - 380)),
+    }
+    dragging.value = null
+}
+
+function confirmPrepare() {
+    if (pendingAssign.value) {
+        setPreparing(pendingAssign.value, true, assignQuantity.value)
+        pendingAssign.value = null
     }
 }
 
 function assign(employeeId: number) {
     if (pendingAssign.value) {
-        createJobOrders([pendingAssign.value.id], employeeId, assignQuantity.value)
+        createJobOrders([pendingAssign.value.id], employeeId, Math.ceil(Number(pendingAssign.value.quantity_to_produce ?? pendingAssign.value.quantity)))
         pendingAssign.value = null
     }
 }
@@ -250,13 +289,16 @@ function submitCherryPick() {
         <div v-if="pendingAssign" class="fixed inset-0 z-40" @click="pendingAssign = null" />
         <div v-if="pendingAssign" class="fixed z-50 w-72 rounded-lg border border-indigo-300 bg-white p-3 text-xs shadow-xl dark:bg-gray-900" :style="{ left: pickerPosition.x + 'px', top: pickerPosition.y + 'px' }">
             <div class="mb-1.5 font-medium">{{ pendingAssign.stock_code }} <span class="font-normal text-gray-500">{{ pendingAssign.stock_name }}</span></div>
-            <label class="mb-2 flex items-center gap-2">
-                <span class="text-gray-500">{{ trans("Quantity") }}</span>
-                <input v-model.number="assignQuantity" type="number" min="1" step="1" class="w-20 rounded border-gray-300 py-0.5 text-xs tabular-nums" />
-                <span v-if="assignQuantity > Math.ceil(Number(pendingAssign.quantity))" class="text-gray-400">+{{ assignQuantity - Math.ceil(Number(pendingAssign.quantity)) }} {{ trans("for stock") }}</span>
-            </label>
-            <div class="mb-1 text-gray-500">{{ trans("Who makes it?") }}</div>
-            <div class="flex max-h-64 flex-col gap-0.5 overflow-y-auto">
+            <template v-if="pickerMode === 'prepare'">
+                <div class="mb-1 text-gray-500">{{ trans("How many to make? (labels)") }}</div>
+                <form class="flex items-center gap-2" @submit.prevent="confirmPrepare">
+                    <input v-model.number="assignQuantity" type="number" min="1" step="1" autofocus class="w-20 rounded border-gray-300 py-0.5 text-xs tabular-nums" />
+                    <span v-if="assignQuantity > Math.ceil(Number(pendingAssign.quantity))" class="text-gray-400">+{{ assignQuantity - Math.ceil(Number(pendingAssign.quantity)) }} {{ trans("for stock") }}</span>
+                    <button type="submit" class="ml-auto rounded bg-indigo-600 px-3 py-1 font-medium text-white hover:bg-indigo-500">{{ trans("Prepare") }}</button>
+                </form>
+            </template>
+            <div v-else class="mb-1 text-gray-500">{{ trans("Who makes :count?", { count: Math.ceil(Number(pendingAssign.quantity_to_produce ?? pendingAssign.quantity)) }) }}</div>
+            <div v-if="pickerMode === 'assign'" class="flex max-h-64 flex-col gap-0.5 overflow-y-auto">
                 <button
                     v-for="artisan in artisanChoices"
                     :key="artisan.id"
@@ -278,9 +320,9 @@ function submitCherryPick() {
             v-for="(lane, laneIndex) in groups"
             :key="lane.label"
             class="flex min-w-0 flex-1 flex-col rounded-lg border bg-gray-50 transition dark:bg-gray-800"
-            :class="laneIndex === 1 && dragging ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200 dark:border-gray-700'"
-            @dragover="laneIndex === 1 && dragging ? $event.preventDefault() : null"
-            @drop.prevent="laneIndex === 1 ? dropOnAssigned($event) : null">
+            :class="dropTarget(laneIndex) ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200 dark:border-gray-700'"
+            @dragover="dropTarget(laneIndex) ? $event.preventDefault() : null"
+            @drop.prevent="onDrop(laneIndex, $event)">
             <div class="flex items-center gap-2 px-3 py-2 font-medium">
                 <span>{{ lane.label }}</span>
                 <span class="ml-auto rounded-full bg-white px-2 text-xs text-gray-500 dark:bg-gray-900">{{ lane.items.length }}</span>
@@ -290,15 +332,15 @@ function submitCherryPick() {
                     v-for="item in lane.items"
                     :key="item.id"
                     class="rounded border border-gray-200 bg-white px-2 py-1.5 text-xs dark:border-gray-700 dark:bg-gray-900"
-                    :class="laneIndex === 0 && item.state === 'open' ? 'cursor-grab active:cursor-grabbing' : ''"
-                    :draggable="laneIndex === 0 && item.state === 'open'"
+                    :class="laneIndex <= LANE_PREPARING && item.state === 'open' ? 'cursor-grab active:cursor-grabbing' : ''"
+                    :draggable="laneIndex <= LANE_PREPARING && item.state === 'open'"
                     @dragstart="dragging = item"
                     @dragend="dragging = null">
                     <div class="flex items-center gap-1.5">
                         <span class="font-medium">{{ item.stock_code }}</span>
                         <span class="ml-auto tabular-nums" :class="item.priority === 'urgent' ? 'text-red-600 font-semibold' : ''">
                             ×{{ useLocaleStore().number(Number(item.quantity)) }}
-                            <span v-if="item.job_order_quantity && Number(item.job_order_quantity) !== Number(item.quantity)" class="text-indigo-600" :title="trans('Making :count', { count: item.job_order_quantity })">→ {{ useLocaleStore().number(Number(item.job_order_quantity)) }}</span>
+                            <span v-if="(item.job_order_quantity ?? item.quantity_to_produce) && Number(item.job_order_quantity ?? item.quantity_to_produce) !== Number(item.quantity)" class="text-indigo-600" :title="trans('Making :count', { count: item.job_order_quantity ?? item.quantity_to_produce })">→ {{ useLocaleStore().number(Number(item.job_order_quantity ?? item.quantity_to_produce)) }}</span>
                         </span>
                     </div>
                     <div class="truncate text-gray-600" :title="item.stock_name">{{ item.stock_name }}</div>

@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
+use App\Actions\Production\PartnerShippingList\SetToProduceItemPreparing;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
 use App\Actions\Production\Artisan\ToggleArtisanInRoster;
@@ -74,6 +75,7 @@ Route::prefix('{production}')
                         Route::post('mixes/job-orders', StoreJobOrdersForMixes::class)->name('mixes.job_orders.store');
                         Route::post('cherry-pick', CherryPickPartnerShoppingListItems::class)->name('cherry_pick');
                         Route::post('job-orders', StoreJobOrdersFromToProduceItems::class)->name('job_orders.store');
+                        Route::post('items/{item:id}/preparing', SetToProduceItemPreparing::class)->name('items.preparing')->withoutScopedBindings();
                         Route::post('artisans/{employee:id}/hide', [ToggleArtisanInRoster::class, 'hide'])->name('artisans.hide')->withoutScopedBindings();
                         Route::post('artisans/{employee:id}/show', [ToggleArtisanInRoster::class, 'show'])->name('artisans.show')->withoutScopedBindings();
                         Route::post('orders/{order}/send-to-warehouse', SendPartnerOrderToWarehouse::class)->name('send_to_warehouse');

@@ -102,6 +102,8 @@ class IndexPartnerShippingList extends OrgAction
             ->select([
                 'partner_shopping_list_items.id',
                 'partner_shopping_list_items.job_order_id',
+                'partner_shopping_list_items.preparing_at',
+                'partner_shopping_list_items.quantity_to_produce',
                 'partner_shopping_list_items.quantity',
                 'partner_shopping_list_items.priority',
                 'partner_shopping_list_items.state',
@@ -265,8 +267,14 @@ class IndexPartnerShippingList extends OrgAction
             'booking_in'   => 'done',
             'booked_in'    => 'done',
         ];
-        $lanes  = ['backlog' => __('Backlog'), 'assigned' => __('Assigned'), 'producing' => __('Producing'), 'done' => __('Done')];
-        $byLane = collect($items->items())->groupBy(fn ($item) => $stageByJobOrderState[$item->job_order_state ?? ''] ?? 'backlog');
+        $lanes  = ['backlog' => __('Backlog'), 'preparing' => __('Preparing'), 'assigned' => __('Assigned'), 'producing' => __('Producing'), 'done' => __('Done')];
+        $byLane = collect($items->items())->groupBy(function ($item) use ($stageByJobOrderState) {
+            if (!$item->job_order_id) {
+                return $item->preparing_at ? 'preparing' : 'backlog';
+            }
+
+            return $stageByJobOrderState[$item->job_order_state] ?? 'assigned';
+        });
 
         return collect($lanes)
             ->map(fn ($label, $key) => ['label' => $label, 'items' => $byLane->get($key, collect())->values()->all()])
