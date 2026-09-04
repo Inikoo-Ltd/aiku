@@ -201,12 +201,17 @@ class WixCatalogV1 implements WixCatalog
 
     private function normalise(array $product): array
     {
+        $sku   = Arr::get($product, 'sku');
+        $image = Arr::get($product, 'media.mainMedia.image.url');
+
         return [
-            'id'    => Arr::get($product, 'id'),
-            'name'  => Arr::get($product, 'name'),
-            'sku'   => Arr::get($product, 'sku'),
-            'price' => Arr::get($product, 'priceData.price'),
-            'image' => Arr::get($product, 'media.mainMedia.image.url'),
+            'id'     => Arr::get($product, 'id'),
+            'name'   => Arr::get($product, 'name'),
+            'sku'    => $sku,
+            'code'   => $sku,
+            'price'  => Arr::get($product, 'priceData.price'),
+            'image'  => $image,
+            'images' => $image ? [['src' => $image]] : [],
         ];
     }
 }

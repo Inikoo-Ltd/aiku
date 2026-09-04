@@ -16,7 +16,7 @@ class SearchWixProducts
     /**
      * Products the seller already has on their Wix site, for picking one to match a portfolio to.
      *
-     * @return array<int, array{id: string, name: string|null, sku: string|null, image: string|null, price: float|null}>
+     * @return array<int, array{id: string, name: string|null, sku: string|null, code: string|null, image: string|null, images: array<int, array{src: string}>, price: float|null}>
      */
     public function handle(?WixUser $wixUser, string $query = '', int $offset = 0, int $limit = 50): array
     {

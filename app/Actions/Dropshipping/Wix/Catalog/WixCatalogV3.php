@@ -10,7 +10,6 @@ use App\Actions\Dropshipping\Wix\Traits\WithWixShippingWeight;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WixUser;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -312,14 +311,20 @@ class WixCatalogV3 implements WixCatalog
 
     private function normalise(array $product): array
     {
+        $sku = Arr::get($product, 'variantsInfo.variants.0.sku')
+            ?? Arr::get($product, 'minVariantPriceInfo.sku');
+
+        $image = Arr::get($product, 'media.main.image.url');
+
         return [
-            'id'    => Arr::get($product, 'id'),
-            'name'  => Arr::get($product, 'name'),
-            'sku'   => Arr::get($product, 'variantsInfo.variants.0.sku')
-                ?? Arr::get($product, 'minVariantPriceInfo.sku'),
-            'price' => Arr::get($product, 'variantsInfo.variants.0.price.actualPrice')
+            'id'     => Arr::get($product, 'id'),
+            'name'   => Arr::get($product, 'name'),
+            'sku'    => $sku,
+            'code'   => $sku,
+            'price'  => Arr::get($product, 'variantsInfo.variants.0.price.actualPrice')
                 ?? Arr::get($product, 'actualPriceRange.minValue.amount'),
-            'image' => Arr::get($product, 'media.main.image.url'),
+            'image'  => $image,
+            'images' => $image ? [['src' => $image]] : [],
         ];
     }
 }
