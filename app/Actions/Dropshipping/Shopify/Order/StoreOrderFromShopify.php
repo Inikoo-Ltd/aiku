@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Order;
 
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
+use App\Actions\Dropshipping\Shopify\WithShopifyPortfolioMatching;
 use App\Actions\Dropshipping\WithSanitizedPhone;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
@@ -20,7 +21,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerClient;
-use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
@@ -37,6 +37,7 @@ class StoreOrderFromShopify extends OrgAction
     use WithGeneratedShopifyAddress;
     use WithPayAndSubmitOrder;
     use WithSanitizedPhone;
+    use WithShopifyPortfolioMatching;
 
     /**
      * @throws \Throwable
@@ -50,17 +51,40 @@ class StoreOrderFromShopify extends OrgAction
         $attributes = $this->getShopifyAttributesFromWebhook(Arr::get($modelData, 'customer'), $deliveryAddress);
         $deliveryAddress = Arr::get($attributes, 'address');
 
-        $shopifyUserHasProductExists = $shopifyUser->customerSalesChannel->portfolios()
-            ->whereIn('platform_product_id', $shopifyProducts->pluck('product_id'))->exists();
-
         $existOrder = Order::where('platform_order_id', Arr::get($modelData, 'id'))->first();
 
         if ($existOrder) {
             return;
         }
 
-        if ($shopifyUserHasProductExists) {
-            $order = DB::transaction(function () use ($shopifyUser, $customerClient, $modelData, $deliveryAddress, $shopifyProducts) {
+        $matchedShopifyProducts = [];
+        $unmatchedShopifyProducts = [];
+
+        foreach ($shopifyProducts as $shopifyProduct) {
+            $portfolio = $this->matchShopifyLineItemToPortfolio(
+                $shopifyUser->customerSalesChannel,
+                Arr::get($shopifyProduct, 'product_id'),
+                Arr::get($shopifyProduct, 'product_variant_id'),
+                Arr::get($shopifyProduct, 'sku')
+            );
+
+            if ($portfolio) {
+                $matchedShopifyProducts[] = [$portfolio, $shopifyProduct];
+            } else {
+                $unmatchedShopifyProducts[] = $shopifyProduct;
+            }
+        }
+
+        if ($unmatchedShopifyProducts) {
+            \Sentry\captureMessage(
+                'Shopify order '.Arr::get($modelData, 'id').' of customer sales channel '
+                .$shopifyUser->customer_sales_channel_id.' has line items outside the portfolio: '
+                .json_encode($unmatchedShopifyProducts)
+            );
+        }
+
+        if ($matchedShopifyProducts) {
+            $order = DB::transaction(function () use ($shopifyUser, $customerClient, $modelData, $deliveryAddress, $matchedShopifyProducts) {
                 $order = StoreOrder::make()->action($customerClient, [
                     'platform_id'               => $shopifyUser->platform_id,
                     'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,
@@ -77,41 +101,29 @@ class StoreOrderFromShopify extends OrgAction
 
                 ]);
 
-                foreach ($shopifyProducts as $shopifyProduct) {
-                    /** @var Portfolio $portfolio */
-                    $portfolio = $shopifyUser->customerSalesChannel->portfolios()
-                        ->where('platform_product_variant_id', Arr::get($shopifyProduct, 'product_variant_id'))->first();
-
-                    if (! $portfolio) {
-                        /** @var Portfolio $portfolio */
-                        $portfolio = $shopifyUser->customerSalesChannel->portfolios()
-                            ->where('platform_product_id', $shopifyProduct['product_id'])->first();
+                foreach ($matchedShopifyProducts as [$portfolio, $shopifyProduct]) {
+                    /** @var Product $product */
+                    $product = $portfolio->item;
+                    if (!$product) {
+                        \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a product');
+                        continue;
                     }
 
-                    if ($portfolio) {
-                        /** @var Product $product */
-                        $product = $portfolio->item;
-                        if (!$product) {
-                            \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a product');
-                            continue;
-                        }
-
-                        /** @var HistoricAsset $product */
-                        $historicAsset = $product->asset?->historicAsset;
-                        if (!$historicAsset) {
-                            \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a historic asset');
-                            continue;
-                        }
-
-                        StoreTransaction::make()->action(
-                            order: $order,
-                            historicAsset: $historicAsset,
-                            modelData: [
-                                'quantity_ordered'        => $shopifyProduct['quantity'],
-                                'platform_transaction_id' => $shopifyProduct['id'],
-                            ]
-                        );
+                    /** @var HistoricAsset $product */
+                    $historicAsset = $product->asset?->historicAsset;
+                    if (!$historicAsset) {
+                        \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a historic asset');
+                        continue;
                     }
+
+                    StoreTransaction::make()->action(
+                        order: $order,
+                        historicAsset: $historicAsset,
+                        modelData: [
+                            'quantity_ordered'        => $shopifyProduct['quantity'],
+                            'platform_transaction_id' => $shopifyProduct['id'],
+                        ]
+                    );
                 }
 
                 return $order->refresh();

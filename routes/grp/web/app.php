@@ -208,6 +208,10 @@ Route::middleware(
         ->name("chat.")
         ->group(__DIR__."/chat.php");
 
+    Route::prefix("tickets")
+        ->name("tickets.")
+        ->group(__DIR__."/tickets.php");
+
     Route::prefix("devops")
         ->name("devops.")
         ->group(__DIR__."/devops.php");

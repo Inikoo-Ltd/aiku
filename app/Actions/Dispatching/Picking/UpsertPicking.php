@@ -104,5 +104,15 @@ class UpsertPicking extends OrgAction
         $this->handle($deliveryNoteItem, $locationOrgStock, $this->validatedData);
     }
 
+    public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): void
+    {
+        $this->user             = $user;
+        $this->deliveryNoteItem = $deliveryNoteItem;
+        $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
+        $locationOrgStock = LocationOrgStock::find($this->validatedData['location_org_stock_id']);
+
+        $this->handle($deliveryNoteItem, $locationOrgStock, $this->validatedData);
+    }
+
 
 }

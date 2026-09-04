@@ -4,6 +4,7 @@ import { defineAsyncComponent, inject, ref, computed } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import LoadingOverlay2 from '@/Components/Utils/LoadingOverlay2.vue'
 import { faEnvelope, faHeart } from '@far'
 import {  faHeart as fasHeart } from '@fas'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
@@ -187,7 +188,7 @@ defineExpose({
 </script>
 
 <template>
-    <div id="product-card-ecom-3" class="text-gray-800 isolate h-full flex flex-col flex-grow" comp="product-render-ecom">
+    <div id="product-card-ecom-3" class="relative text-gray-800 isolate h-full flex flex-col flex-grow" comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
         <div class="text-gray-800 isolate">
@@ -375,10 +376,7 @@ defineExpose({
             </section>
         </div>
 
-        <div v-if="idxSlideLoading"
-            class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
-            <LoadingIcon />
-        </div>
+        <LoadingOverlay2 v-if="idxSlideLoading" class="z-30 rounded" />
     </div>
 </template>
 

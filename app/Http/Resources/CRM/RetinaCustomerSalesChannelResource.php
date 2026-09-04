@@ -131,6 +131,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'do_not_update_prices'   => (bool) Arr::get($this->settings, 'do_not_update_prices'),
             'vat_rate'               => $taxCategory?->rate,
             'store_url' => $siteUrl,
+            'not_ready_reason' => Arr::get($this->settings, $customerSalesChannels->platform->type->value.'.not_ready_reason'),
             'platform_completion' => $platformCompletion,
             'reconnect_route' => $reconnectRoute,
             'test_route'      => $testRoute,

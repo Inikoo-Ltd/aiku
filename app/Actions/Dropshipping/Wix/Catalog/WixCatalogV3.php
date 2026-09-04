@@ -243,7 +243,7 @@ class WixCatalogV3 implements WixCatalog
 
     private function productName(Portfolio $portfolio): string
     {
-        return $portfolio->customer_product_name ?: $portfolio->item_name;
+        return Str::substr($portfolio->customer_product_name ?: $portfolio->item_name, 0, 60);
     }
 
     /**
