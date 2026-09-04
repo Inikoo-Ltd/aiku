@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\Shopify\FulfilmentService\AdoptShopifyFulfilmentService;
 use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
 use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Actions\Maintenance\Dropshipping\RepairShopifyChannelReconnects;
@@ -184,4 +185,23 @@ test('repair merges a closed shopify channel into the open one that replaced it'
         ->and($client->fresh()->customer_sales_channel_id)->toBe($keep->id)
         ->and($keep->fresh()->number_portfolios)->toBe(1)
         ->and($old->fresh()->number_portfolios)->toBe(0);
+});
+
+test('adopting a location keeps the oldest aiku fulfilment service and drops the one the channel currently uses', function () {
+    $services = [
+        ['id' => 'gid://shopify/FulfillmentService/manual', 'serviceName' => 'Manual', 'location' => ['id' => 'L0', 'createdAt' => '2024-08-15T15:28:45Z']],
+        ['id' => 'gid://shopify/FulfillmentService/new', 'serviceName' => 'aiku-dse (sho-x-1)', 'location' => ['id' => 'L2', 'createdAt' => '2026-08-30T21:49:51Z']],
+        ['id' => 'gid://shopify/FulfillmentService/old', 'serviceName' => 'aiku-dse (sho-x)', 'location' => ['id' => 'L1', 'createdAt' => '2025-09-23T12:36:26Z']],
+    ];
+
+    $picked = AdoptShopifyFulfilmentService::pickServices($services, 'gid://shopify/FulfillmentService/new');
+    expect($picked['adopt']['id'])->toBe('gid://shopify/FulfillmentService/old')
+        ->and($picked['drop']['id'])->toBe('gid://shopify/FulfillmentService/new');
+
+    $picked = AdoptShopifyFulfilmentService::pickServices($services, null);
+    expect($picked['adopt']['id'])->toBe('gid://shopify/FulfillmentService/old')
+        ->and($picked['drop'])->toBeNull();
+
+    $picked = AdoptShopifyFulfilmentService::pickServices([$services[0], $services[1]], 'gid://shopify/FulfillmentService/new');
+    expect($picked['adopt'])->toBeNull();
 });
