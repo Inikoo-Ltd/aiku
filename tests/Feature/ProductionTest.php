@@ -42,6 +42,7 @@ use App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep;
 use App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact;
 use App\Actions\Production\Artefact\DetachRawMaterialFromRecipeStep;
 use App\Models\Production\ArtefactManufactureTask;
+use App\Models\Production\RecipeStepRawMaterial;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
 use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\StartManufactureTaskSession;
@@ -1979,4 +1980,72 @@ test('production job positions carry the factory roles all the way to the user',
     ]);
 
     expect($user->refresh()->hasRole('production-operator-'.$this->production->id))->toBeFalse();
+});
+
+test('costings import resolves materials, creates artefacts and writes per-unit recipes once', function () {
+    $dir = sys_get_temp_dir().'/costings-'.uniqid();
+    mkdir($dir);
+    $existingArtefact = StoreArtefact::make()->action($this->production, ['code' => 'CST-EXIST', 'name' => 'Existing product']);
+    file_put_contents($dir.'/import.json', json_encode([
+        'materials' => [
+            ['master_row' => 1, 'code' => $this->rawMaterial->code, 'name' => 'Whatever', 'cost' => 9, 'unit' => 'kilogram', 'cas' => null, 'inci' => null, 'section' => 'x', 'family' => null, 'times_used' => 1],
+            ['master_row' => 2, 'code' => null, 'name' => 'Lavender Essential Oil', 'cost' => 16, 'unit' => 'kilogram', 'cas' => '8000-28-0', 'inci' => null, 'section' => 'ESSENTIAL OILS', 'family' => 'EOKG', 'times_used' => 1],
+            ['master_row' => 3, 'code' => null, 'name' => 'Unused thing', 'cost' => 1, 'unit' => 'unit', 'cas' => null, 'inci' => null, 'section' => 'x', 'family' => null, 'times_used' => 0],
+            ['master_row' => 4, 'code' => null, 'name' => 'Bicarb', 'cost' => 0.72, 'unit' => 'kilogram', 'cas' => null, 'inci' => null, 'section' => 'x', 'family' => null, 'times_used' => 1, 'aiku_code' => $this->rawMaterial->code, 'pack_size' => 25],
+        ],
+        'artefacts' => [
+            ['code' => 'CST-EXIST', 'name' => 'Existing product', 'create' => false, 'summary_row' => 10, 'sheet_codes' => ['CST-EXIST'], 'cost_per_unit' => 2.5, 'lines' => [['master_row' => 1, 'label' => 'Base', 'quantity_per_unit' => 0.25], ['master_row' => 2, 'label' => 'Lavender', 'quantity_per_unit' => 0.012]]],
+            ['code' => 'CST-PACK', 'name' => 'Pack-size product', 'create' => true, 'summary_row' => 12, 'sheet_codes' => ['CST-PACK'], 'cost_per_unit' => 1, 'lines' => [['master_row' => 4, 'label' => 'Bicarb', 'quantity_per_unit' => 5]]],
+            ['code' => 'CST-NEW', 'name' => 'Brand new product', 'create' => true, 'summary_row' => 11, 'sheet_codes' => ['CST-NEW'], 'cost_per_unit' => 1, 'lines' => [['master_row' => 2, 'label' => 'Lavender', 'quantity_per_unit' => 0.5]]],
+        ],
+    ]));
+
+    $slug = $this->production->slug;
+    $rawMaterialsBefore = RawMaterial::count();
+    $this->artisan('manufacture:import-costings', ['production' => $slug, 'dir' => $dir, '--phase' => 'materials'])->assertExitCode(0);
+    expect(RawMaterial::count())->toBe($rawMaterialsBefore)
+        ->and(file_exists($dir.'/review/materials_review.csv'))->toBeTrue();
+
+    $this->artisan('manufacture:import-costings', ['production' => $slug, 'dir' => $dir, '--phase' => 'materials', '--write' => true])->assertExitCode(0);
+    $lavender = RawMaterial::where('source_id', 'costings:master:2')->first();
+    expect(RawMaterial::count())->toBe($rawMaterialsBefore + 1)
+        ->and($lavender)->not->toBeNull()
+        ->and((float)$lavender->unit_cost)->toBe(16.0)
+        ->and($lavender->data['cas'])->toBe('8000-28-0')
+        ->and(RawMaterial::where('source_id', 'costings:master:1')->exists())->toBeFalse();
+
+    $this->artisan('manufacture:import-costings', ['production' => $slug, 'dir' => $dir, '--phase' => 'artefacts', '--write' => true])->assertExitCode(0);
+    $newArtefact = Artefact::where('code', 'CST-NEW')->first();
+    expect($newArtefact)->not->toBeNull()
+        ->and($newArtefact->source_id)->toBe('costings:summary:11');
+
+    $this->artisan('manufacture:import-costings', ['production' => $slug, 'dir' => $dir, '--phase' => 'recipes', '--write' => true])->assertExitCode(0);
+    $lines = fn (Artefact $artefact) => RecipeStepRawMaterial::whereIn('artefact_manufacture_task_id', ArtefactManufactureTask::where('artefact_id', $artefact->id)->pluck('id'))->get();
+    expect($lines($existingArtefact)->count())->toBe(2)
+        ->and((float)$lines($existingArtefact)->firstWhere('raw_material_id', $this->rawMaterial->id)->quantity_per_unit)->toBe(0.25)
+        ->and((float)$lines($existingArtefact)->firstWhere('raw_material_id', $lavender->id)->quantity_per_unit)->toBe(0.012)
+        ->and($lines($newArtefact)->count())->toBe(1)
+        ->and((float)$lines(Artefact::where('code', 'CST-PACK')->first())->first()->quantity_per_unit)->toBe(0.2);
+
+    $this->artisan('manufacture:import-costings', ['production' => $slug, 'dir' => $dir, '--phase' => 'recipes', '--write' => true])->assertExitCode(0);
+    expect($lines($existingArtefact)->count())->toBe(2)
+        ->and(RawMaterial::count())->toBe($rawMaterialsBefore + 1)
+        ->and(str_contains(file_get_contents($dir.'/review/recipes_review.csv'), 'existing recipe kept'))->toBeTrue();
+});
+
+test('aurora recipe quantities are divided by batch size exactly once', function () {
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'CST-AURORA', 'name' => 'Aurora product', 'source_id' => '4:99999', 'recommended_batch_size' => 10]);
+    $artefact->manufactureTasks()->syncWithoutDetaching([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+    $step = ArtefactManufactureTask::where('artefact_id', $artefact->id)->first();
+    AttachRawMaterialToRecipeStep::make()->action($step, ['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 10]);
+
+    $this->artisan('manufacture:normalise-aurora-recipes', ['production' => $this->production->slug])->assertExitCode(0);
+    expect((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(10.0);
+
+    $this->artisan('manufacture:normalise-aurora-recipes', ['production' => $this->production->slug, '--write' => true])->assertExitCode(0);
+    expect((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(1.0);
+
+    $this->artisan('manufacture:normalise-aurora-recipes', ['production' => $this->production->slug, '--write' => true])->assertExitCode(0);
+    expect((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(1.0)
+        ->and($artefact->refresh()->data['recipe_quantities_normalised_at'])->not->toBeNull();
 });

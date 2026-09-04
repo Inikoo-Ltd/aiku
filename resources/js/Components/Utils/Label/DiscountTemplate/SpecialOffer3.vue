@@ -86,7 +86,7 @@ const maxDiscountLabel = computed(() => {
                     </div>
 
                     <div
-                        v-if="use_duration && offer?.duration_label"
+                        v-if="offer?.duration_label"
                         class="special-offer__status"
                     >
                         {{ offer.duration_label }}
