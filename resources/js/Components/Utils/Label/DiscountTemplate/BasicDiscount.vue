@@ -39,7 +39,7 @@ const isShopOffer = computed<boolean>(() => isShopOrderedSubTrigger(props.offers
     </div>
 
     <!-- Label: First Order Bonus -->
-    <div v-else-if="offers_data?.o?.st === 'fob'" class="bg-[#A80000] text-white px-1 py-0.5 text-xs flex items-center rounded-sm w-fit">
+    <div v-else-if="offers_data?.o?.st === 'fob'" class="bg-[#2a919e] text-white px-1 py-0.5 text-xs flex items-center rounded-sm w-fit">
         <span class="font-bold bg-black/25 -ml-1 -my-0.5 px-1.5 py-0.5 rounded-l-sm mr-1.5">{{ formatPercentage(offers_data?.o?.p) }} {{ ctrans("OFF") }}</span>
         {{ offers_data?.o?.l }}
     </div>
