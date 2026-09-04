@@ -104,7 +104,7 @@ const MIX_LANE_NEEDED = 0
 const MIX_LANE_ASSIGNED = 1
 
 function mixDropTarget(laneIndex: number): boolean {
-    return !!dragging.value && dragging.value.kind === "mix" && laneIndex === MIX_LANE_ASSIGNED
+    return dragging.value.length > 0 && dragging.value[0].kind === "mix" && laneIndex === MIX_LANE_ASSIGNED
 }
 
 function onMixDrop(laneIndex: number, event: DragEvent) {
@@ -115,71 +115,109 @@ const LANE_PREPARING = 1
 const LANE_ASSIGNED = 2
 
 function dropTarget(laneIndex: number): boolean {
-    if (!dragging.value) return false
-    if (laneIndex === LANE_BACKLOG) return !!dragging.value.preparing_at
-    if (laneIndex === LANE_PREPARING) return !dragging.value.preparing_at
-    if (laneIndex === LANE_ASSIGNED) return !!dragging.value.preparing_at
+    const first = dragging.value[0]
+    if (!first || first.kind === "mix") return false
+    if (laneIndex === LANE_BACKLOG) return !!first.preparing_at
+    if (laneIndex === LANE_PREPARING) return !first.preparing_at
+    if (laneIndex === LANE_ASSIGNED) return !!first.preparing_at
     return false
 }
 
-function setPreparing(item: BoardItem, preparing: boolean, quantity: number | null = null) {
+function setPreparing(lines: { id: number, quantity?: number | null }[], preparing: boolean) {
     router.post(
-        route("grp.org.productions.show.to_produce.items.preparing", [route().params["organisation"], route().params["production"], item.id]),
-        { preparing, quantity },
-        { preserveScroll: true }
+        route("grp.org.productions.show.to_produce.items.preparing", [route().params["organisation"], route().params["production"]]),
+        { preparing, lines },
+        { preserveScroll: true, onSuccess: () => { selectedCards.value = [] } }
     )
 }
 
 function onDrop(laneIndex: number, event: DragEvent) {
-    if (!dragging.value || !dropTarget(laneIndex)) return
+    if (!dropTarget(laneIndex)) return
     if (laneIndex === LANE_ASSIGNED) {
         openPicker("assign", event)
     } else if (laneIndex === LANE_PREPARING) {
         openPicker("prepare", event)
     } else {
-        setPreparing(dragging.value, false)
-        dragging.value = null
+        setPreparing(dragging.value.map(item => ({ id: item.id })), false)
+        dragging.value = []
     }
 }
-const dragging = ref<BoardItem | null>(null)
-const pendingAssign = ref<BoardItem | null>(null)
+
+const selectedCards = ref<number[]>([])
+const selectedLane = ref<number | null>(null)
+
+function toggleCard(item: BoardItem, laneIndex: number) {
+    if (selectedLane.value !== laneIndex) {
+        selectedCards.value = []
+        selectedLane.value = laneIndex
+    }
+    const index = selectedCards.value.indexOf(item.id)
+    index === -1 ? selectedCards.value.push(item.id) : selectedCards.value.splice(index, 1)
+}
+
+function startDrag(item: BoardItem, laneItems: BoardItem[]) {
+    dragging.value = selectedCards.value.includes(item.id)
+        ? laneItems.filter(candidate => selectedCards.value.includes(candidate.id))
+        : [item]
+}
+
+const dragging = ref<BoardItem[]>([])
+const pendingItems = ref<BoardItem[]>([])
+const pendingQuantities = reactive<Record<number, number>>({})
 const pickerMode = ref<"prepare" | "assign" | "assign-mix">("prepare")
-const assignQuantity = ref(1)
 const pickerPosition = ref({ x: 0, y: 0 })
 
+const pendingFirst = computed(() => pendingItems.value[0] ?? null)
+
 function openPicker(mode: "prepare" | "assign" | "assign-mix", event: DragEvent) {
-    if (!dragging.value) return
+    if (!dragging.value.length) return
     pickerMode.value = mode
-    pendingAssign.value = dragging.value
-    assignQuantity.value = Math.ceil(Number(dragging.value.quantity_to_produce ?? dragging.value.quantity))
+    artisanSearch.value = ""
+    pendingItems.value = dragging.value
+    for (const key in pendingQuantities) delete pendingQuantities[key]
+    dragging.value.forEach(item => pendingQuantities[item.id] = Math.ceil(Number(item.quantity_to_produce ?? item.quantity)))
     const laneLeft = (event.currentTarget as HTMLElement).getBoundingClientRect().left
     pickerPosition.value = {
-        x: Math.max(8, laneLeft - 144),
-        y: Math.max(8, Math.min(event.clientY - 40, window.innerHeight - 380)),
+        x: Math.max(8, laneLeft - 160),
+        y: Math.max(8, Math.min(event.clientY - 40, window.innerHeight - 420)),
     }
-    dragging.value = null
+    dragging.value = []
+}
+
+function updatePreparingQuantity(item: BoardItem, event: Event) {
+    const quantity = Number((event.target as HTMLInputElement).value)
+    if (quantity >= 1 && quantity !== Math.ceil(Number(item.quantity_to_produce ?? item.quantity))) {
+        setPreparing([{ id: item.id, quantity }], true)
+    }
 }
 
 function confirmPrepare() {
-    if (pendingAssign.value) {
-        setPreparing(pendingAssign.value, true, assignQuantity.value)
-        pendingAssign.value = null
+    if (pendingItems.value.length) {
+        setPreparing(pendingItems.value.map(item => ({ id: item.id, quantity: pendingQuantities[item.id] })), true)
+        pendingItems.value = []
     }
 }
 
 function assign(employeeId: number) {
-    if (!pendingAssign.value) return
-    if (pendingAssign.value.kind === "mix") {
+    const first = pendingFirst.value
+    if (!first) return
+    if (first.kind === "mix") {
         router.post(
             route("grp.org.productions.show.to_produce.mixes.job_orders.store", [route().params["organisation"], route().params["production"]]),
-            { lines: [{ artefact_id: pendingAssign.value.artefact_id, quantity: assignQuantity.value }], employee_id: employeeId },
+            { lines: [{ artefact_id: first.artefact_id, quantity: pendingQuantities[first.id] }], employee_id: employeeId },
             { preserveScroll: true }
         )
     } else {
-        createJobOrders([pendingAssign.value.id], employeeId, Math.ceil(Number(pendingAssign.value.quantity_to_produce ?? pendingAssign.value.quantity)))
+        createJobOrders(pendingItems.value.map(item => item.id), employeeId)
+        selectedCards.value = []
     }
-    pendingAssign.value = null
+    pendingItems.value = []
 }
+
+const pendingDefaultMaker = computed(() => {
+    const makers = new Set(pendingItems.value.map(item => item.maker_id ?? item.maker ?? null))
+    return makers.size === 1 ? pendingFirst.value : null
+})
 
 type BoardFilterKey = "family" | "requester" | "priority" | "artisan"
 const boardFilters = reactive<Record<BoardFilterKey, string[]>>({ family: [], requester: [], priority: [], artisan: [] })
@@ -226,9 +264,15 @@ function initials(name: string): string {
     return name.split(/[\s-]+/).filter(Boolean).slice(0, 2).map(part => part[0].toUpperCase()).join("")
 }
 
+const artisanSearch = ref("")
+
 const artisanChoices = computed(() => {
-    const list = (props.artisanWorkload ?? []).filter(artisan => !artisan.hidden)
-    const isDefault = (a: { id: number, name: string }) => pendingAssign.value?.maker_id ? a.id === pendingAssign.value.maker_id : (!!pendingAssign.value?.maker && a.name === pendingAssign.value.maker)
+    const needle = artisanSearch.value.trim().toLowerCase()
+    const list = (props.artisanWorkload ?? [])
+        .filter(artisan => !artisan.hidden && (!needle || artisan.name.toLowerCase().includes(needle)))
+        .sort((a, b) => a.name.localeCompare(b.name))
+    const ref = pendingDefaultMaker.value
+    const isDefault = (a: { id: number, name: string }) => ref?.maker_id ? a.id === ref.maker_id : (!!ref?.maker && a.name === ref.maker)
     return [...list.filter(isDefault), ...list.filter(a => !isDefault(a))]
 })
 
@@ -330,8 +374,8 @@ function submitCherryPick() {
                         class="rounded border border-gray-200 bg-white px-2 py-1.5 text-xs dark:border-gray-700 dark:bg-gray-900"
                         :class="laneIndex === MIX_LANE_NEEDED ? 'cursor-grab active:cursor-grabbing' : ''"
                         :draggable="laneIndex === MIX_LANE_NEEDED"
-                        @dragstart="dragging = item"
-                        @dragend="dragging = null">
+                        @dragstart="dragging = [item]"
+                        @dragend="dragging = []">
                         <div class="flex items-center gap-1.5">
                             <span class="font-medium">{{ item.stock_code }}</span>
                             <span class="ml-auto tabular-nums" :class="laneIndex === MIX_LANE_NEEDED ? 'font-semibold text-red-600' : ''">×{{ useLocaleStore().number(Number(item.quantity)) }}<span v-if="item.unit" class="font-normal text-gray-400"> {{ item.unit }}</span></span>
@@ -379,39 +423,56 @@ function submitCherryPick() {
     </div>
 
     <Teleport to="body">
-        <div v-if="pendingAssign" class="fixed inset-0 z-40" @click="pendingAssign = null" />
-        <div v-if="pendingAssign" class="fixed z-50 w-72 rounded-lg border border-indigo-300 bg-white p-3 text-xs shadow-xl dark:bg-gray-900" :style="{ left: pickerPosition.x + 'px', top: pickerPosition.y + 'px' }">
-            <div class="mb-1.5 font-medium">{{ pendingAssign.stock_code }} <span class="font-normal text-gray-500">{{ pendingAssign.stock_name }}</span></div>
+        <div v-if="pendingFirst" class="fixed inset-0 z-40" @click="pendingItems = []" />
+        <div v-if="pendingFirst" class="fixed z-50 w-80 rounded-lg border border-indigo-300 bg-white p-3 text-xs shadow-xl dark:bg-gray-900" :style="{ left: pickerPosition.x + 'px', top: pickerPosition.y + 'px' }">
+            <div v-if="pendingItems.length === 1" class="mb-1.5 font-medium">{{ pendingFirst.stock_code }} <span class="font-normal text-gray-500">{{ pendingFirst.stock_name }}</span></div>
+            <div v-else class="mb-1.5 font-medium">{{ trans(":count cards", { count: pendingItems.length }) }}</div>
+
             <template v-if="pickerMode === 'assign-mix'">
                 <label class="mb-2 flex items-center gap-2">
                     <span class="text-gray-500">{{ trans("Quantity") }}</span>
-                    <input v-model.number="assignQuantity" type="number" min="1" step="1" class="w-20 rounded border-gray-300 py-0.5 text-xs tabular-nums" />
-                    <span class="text-gray-400">{{ (pendingAssign as any).unit }} · {{ trans("short") }} {{ useLocaleStore().number(Number(pendingAssign.quantity)) }}</span>
+                    <input v-model.number="pendingQuantities[pendingFirst.id]" type="number" min="1" step="1" class="w-20 rounded border-gray-300 py-0.5 text-xs tabular-nums" />
+                    <span class="text-gray-400">{{ (pendingFirst as any).unit }} · {{ trans("short") }} {{ useLocaleStore().number(Number(pendingFirst.quantity)) }}</span>
                 </label>
             </template>
+
             <template v-if="pickerMode === 'prepare'">
                 <div class="mb-1 text-gray-500">{{ trans("How many to make? (labels)") }}</div>
-                <form class="flex items-center gap-2" @submit.prevent="confirmPrepare">
-                    <input v-model.number="assignQuantity" type="number" min="1" step="1" autofocus class="w-20 rounded border-gray-300 py-0.5 text-xs tabular-nums" />
-                    <span v-if="assignQuantity > Math.ceil(Number(pendingAssign.quantity))" class="text-gray-400">+{{ assignQuantity - Math.ceil(Number(pendingAssign.quantity)) }} {{ trans("for stock") }}</span>
-                    <button type="submit" class="ml-auto rounded bg-indigo-600 px-3 py-1 font-medium text-white hover:bg-indigo-500">{{ trans("Prepare") }}</button>
+                <form @submit.prevent="confirmPrepare">
+                    <div class="flex max-h-64 flex-col gap-1 overflow-y-auto">
+                        <label v-for="(item, index) in pendingItems" :key="item.id" class="flex items-center gap-2">
+                            <span v-if="pendingItems.length > 1" class="w-24 truncate font-medium" :title="item.stock_name">{{ item.stock_code }}</span>
+                            <input v-model.number="pendingQuantities[item.id]" type="number" min="1" step="1" :autofocus="index === 0" class="w-20 rounded border-gray-300 py-0.5 text-xs tabular-nums" />
+                            <span v-if="pendingQuantities[item.id] > Math.ceil(Number(item.quantity))" class="text-gray-400">+{{ pendingQuantities[item.id] - Math.ceil(Number(item.quantity)) }} {{ trans("for stock") }}</span>
+                        </label>
+                    </div>
+                    <button type="submit" class="mt-2 w-full rounded bg-indigo-600 px-3 py-1 font-medium text-white hover:bg-indigo-500">{{ pendingItems.length > 1 ? trans("Prepare :count", { count: pendingItems.length }) : trans("Prepare") }}</button>
                 </form>
             </template>
-            <div v-else class="mb-1 text-gray-500">{{ pickerMode === 'assign-mix' ? trans("Who mixes it?") : trans("Who makes :count?", { count: Math.ceil(Number(pendingAssign.quantity_to_produce ?? pendingAssign.quantity)) }) }}</div>
-            <div v-if="pickerMode !== 'prepare'" class="flex max-h-64 flex-col gap-0.5 overflow-y-auto">
-                <button
-                    v-for="artisan in artisanChoices"
-                    :key="artisan.id"
-                    type="button"
-                    class="flex items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-indigo-50"
-                    :class="artisan.id === pendingAssign.maker_id || artisan.name === pendingAssign.maker ? 'bg-indigo-50 font-medium text-indigo-700' : ''"
-                    @click="assign(artisan.id)">
-                    <FontAwesomeIcon icon="fal fa-user-hard-hat" fixed-width class="text-gray-400" />
-                    <span class="truncate">{{ artisan.name }}</span>
-                    <span v-if="artisan.id === pendingAssign.maker_id || artisan.name === pendingAssign.maker" class="ml-auto text-[10px] uppercase tracking-wide">{{ trans("default") }}</span>
-                    <span v-else class="ml-auto text-gray-400">{{ artisan.open_job_orders }}</span>
-                </button>
-            </div>
+
+            <template v-else>
+                <div v-if="pendingItems.length > 1" class="mb-1.5 flex flex-wrap gap-1">
+                    <span v-for="item in pendingItems" :key="item.id" class="rounded bg-gray-100 px-1.5 py-px text-gray-600" :title="item.stock_name">{{ item.stock_code }} <span class="text-gray-400">×{{ Math.ceil(Number(item.quantity_to_produce ?? item.quantity)) }}</span></span>
+                </div>
+                <div class="mb-1 text-gray-500">
+                    {{ pickerMode === 'assign-mix' ? trans("Who mixes it?") : pendingItems.length > 1 ? trans("Who makes them?") : trans("Who makes :count?", { count: Math.ceil(Number(pendingFirst.quantity_to_produce ?? pendingFirst.quantity)) }) }}
+                </div>
+                <input v-if="(artisanWorkload ?? []).length > 8" v-model="artisanSearch" type="search" :placeholder="trans('Type a name…')" autofocus class="mb-1 w-full rounded border-gray-300 py-0.5 text-xs" />
+                <div class="flex max-h-64 flex-col gap-0.5 overflow-y-auto">
+                    <button
+                        v-for="artisan in artisanChoices"
+                        :key="artisan.id"
+                        type="button"
+                        class="flex items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-indigo-50"
+                        :class="pendingDefaultMaker && (artisan.id === pendingDefaultMaker.maker_id || artisan.name === pendingDefaultMaker.maker) ? 'bg-indigo-50 font-medium text-indigo-700' : ''"
+                        @click="assign(artisan.id)">
+                        <FontAwesomeIcon icon="fal fa-user-hard-hat" fixed-width class="text-gray-400" />
+                        <span class="truncate">{{ artisan.name }}</span>
+                        <span v-if="pendingDefaultMaker && (artisan.id === pendingDefaultMaker.maker_id || artisan.name === pendingDefaultMaker.maker)" class="ml-auto text-[10px] uppercase tracking-wide">{{ trans("default") }}</span>
+                        <span v-else class="ml-auto text-gray-400">{{ artisan.open_job_orders }}</span>
+                    </button>
+                </div>
+            </template>
         </div>
     </Teleport>
 
@@ -468,22 +529,40 @@ function submitCherryPick() {
             @drop.prevent="onDrop(laneIndex, $event)">
             <div class="flex items-center gap-2 px-3 py-2 font-medium">
                 <span>{{ lane.label }}</span>
+                <button v-if="selectedLane === laneIndex && selectedCards.length" type="button" class="rounded-full bg-indigo-600 px-2 text-xs font-normal text-white" :title="trans('Click to clear selection, drag any selected card to move them all')" @click="selectedCards = []">{{ selectedCards.length }} {{ trans("selected") }} ×</button>
                 <span class="ml-auto rounded-full bg-white px-2 text-xs text-gray-500 dark:bg-gray-900">{{ lane.items.length }}</span>
             </div>
             <div class="flex max-h-[70vh] flex-col gap-1.5 overflow-y-auto px-2 pb-2">
                 <div
                     v-for="item in lane.items"
                     :key="item.id"
-                    class="rounded border border-gray-200 bg-white px-2 py-1.5 text-xs dark:border-gray-700 dark:bg-gray-900"
-                    :class="laneIndex <= LANE_PREPARING && item.state === 'open' ? 'cursor-grab active:cursor-grabbing' : ''"
+                    class="rounded border bg-white px-2 py-1.5 text-xs transition dark:bg-gray-900"
+                    :class="[
+                        laneIndex <= LANE_PREPARING && item.state === 'open' ? 'cursor-grab select-none active:cursor-grabbing' : '',
+                        selectedCards.includes(item.id) ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500 dark:bg-indigo-950' : 'border-gray-200 dark:border-gray-700',
+                    ]"
                     :draggable="laneIndex <= LANE_PREPARING && item.state === 'open'"
-                    @dragstart="dragging = item"
-                    @dragend="dragging = null">
+                    @click="laneIndex <= LANE_PREPARING && item.state === 'open' ? toggleCard(item, laneIndex) : null"
+                    @dragstart="startDrag(item, lane.items)"
+                    @dragend="dragging = []">
                     <div class="flex items-center gap-1.5">
                         <span class="font-medium">{{ item.stock_code }}</span>
-                        <span class="ml-auto tabular-nums" :class="item.priority === 'urgent' ? 'text-red-600 font-semibold' : ''">
+                        <span class="ml-auto flex items-center gap-1 tabular-nums" :class="item.priority === 'urgent' ? 'text-red-600 font-semibold' : ''">
                             ×{{ useLocaleStore().number(Number(item.quantity)) }}
-                            <span v-if="(item.job_order_quantity ?? item.quantity_to_produce) && Number(item.job_order_quantity ?? item.quantity_to_produce) !== Number(item.quantity)" class="text-indigo-600" :title="trans('Making :count', { count: item.job_order_quantity ?? item.quantity_to_produce })">→ {{ useLocaleStore().number(Number(item.job_order_quantity ?? item.quantity_to_produce)) }}</span>
+                            <template v-if="laneIndex === LANE_PREPARING && item.state === 'open'">
+                                <span class="text-indigo-600">→</span>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    :value="Math.ceil(Number(item.quantity_to_produce ?? item.quantity))"
+                                    :title="trans('Quantity to make, edit to change')"
+                                    class="w-14 rounded border-gray-200 px-1 py-0 text-right text-xs font-semibold tabular-nums text-indigo-700 hover:border-indigo-300 focus:border-indigo-500"
+                                    @click.stop
+                                    @mousedown.stop
+                                    @change="updatePreparingQuantity(item, $event)" />
+                            </template>
+                            <span v-else-if="(item.job_order_quantity ?? item.quantity_to_produce) && Number(item.job_order_quantity ?? item.quantity_to_produce) !== Number(item.quantity)" class="text-indigo-600" :title="trans('Making :count', { count: item.job_order_quantity ?? item.quantity_to_produce })">→ {{ useLocaleStore().number(Number(item.job_order_quantity ?? item.quantity_to_produce)) }}</span>
                         </span>
                     </div>
                     <div class="truncate text-gray-600" :title="item.stock_name">{{ item.stock_name }}</div>

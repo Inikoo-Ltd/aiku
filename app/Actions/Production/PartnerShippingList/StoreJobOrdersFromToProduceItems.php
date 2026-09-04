@@ -55,7 +55,7 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
 
             $lines[] = [
                 'artefact' => $artefact,
-                'quantity' => $quantity && count($ids) === 1 ? $quantity : $item->quantity,
+                'quantity' => $quantity && count($ids) === 1 ? $quantity : ($item->quantity_to_produce ?? $item->quantity),
                 'after'    => fn (JobOrder $jobOrder) => $item->update(['job_order_id' => $jobOrder->id]),
             ];
         }

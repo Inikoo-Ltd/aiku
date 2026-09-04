@@ -33,11 +33,28 @@ class SetToProduceItemPreparing extends OrgAction
         return $item;
     }
 
+    /**
+     * @param  array<int, array{id: int, quantity?: float|int|null}>  $lines
+     * @return array<int, PartnerShoppingListItem>
+     */
+    public function handleMany(array $lines, bool $preparing): array
+    {
+        $items = PartnerShoppingListItem::whereIn('id', collect($lines)->pluck('id'))->get()->keyBy('id');
+
+        return collect($lines)
+            ->filter(fn ($line) => $items->has($line['id']))
+            ->map(fn ($line) => $this->handle($items->get($line['id']), $preparing, $line['quantity'] ?? null))
+            ->values()
+            ->all();
+    }
+
     public function rules(): array
     {
         return [
-            'preparing' => ['required', 'boolean'],
-            'quantity'  => ['sometimes', 'nullable', 'numeric', 'min:1'],
+            'preparing'        => ['required', 'boolean'],
+            'lines'            => ['required', 'array', 'min:1'],
+            'lines.*.id'       => ['required', 'integer'],
+            'lines.*.quantity' => ['sometimes', 'nullable', 'numeric', 'min:1'],
         ];
     }
 
@@ -50,11 +67,12 @@ class SetToProduceItemPreparing extends OrgAction
         ]);
     }
 
-    public function asController(Organisation $organisation, Production $production, PartnerShoppingListItem $item, ActionRequest $request): PartnerShoppingListItem
+    /** @return array<int, PartnerShoppingListItem> */
+    public function asController(Organisation $organisation, Production $production, ActionRequest $request): array
     {
         $this->initialisationFromProduction($production, $request);
 
-        return $this->handle($item, $this->validatedData['preparing'], $this->validatedData['quantity'] ?? null);
+        return $this->handleMany($this->validatedData['lines'], $this->validatedData['preparing']);
     }
 
     public function htmlResponse(): RedirectResponse
