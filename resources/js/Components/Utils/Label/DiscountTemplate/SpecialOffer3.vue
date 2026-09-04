@@ -11,6 +11,7 @@ interface Offer {
     percentage_off?: string | number
     max_percentage_discount?: string | number
     duration_label?: string
+    products_triggers_label?: string
 }
 
 const props = withDefaults(
@@ -73,9 +74,13 @@ const maxDiscountLabel = computed(() => {
         <Popover ref="infoPopover">
             <div class="max-w-[280px] space-y-3 text-sm">
                 <div class="special-offer__content">
+                    <div class="special-offer__label font-semibold">
+                        {{ label }}
+                    </div>
+
                     <div
                         v-if="maxDiscountLabel"
-                        class="special-offer__percentage font-semibold"
+                        class="special-offer__percentage"
                     >
                         {{ maxDiscountLabel }}% {{ ctrans("OFF") }}
                     </div>
@@ -86,6 +91,12 @@ const maxDiscountLabel = computed(() => {
                     >
                         {{ offer.duration_label }}
                     </div>
+
+                    <div
+                        v-if="offer?.products_triggers_label"
+                        class="text-xs text-gray-600"
+                        v-html="offer.products_triggers_label"
+                    />
                 </div>
             </div>
         </Popover>
