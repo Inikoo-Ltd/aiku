@@ -94,12 +94,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
         $portfoliosToUpdateData = [];
         $indexToPortfolioId     = [];
 
-        $shopifyIdsToFetch = $portfolios->map(fn ($p) => $p->platform_product_variant_id ?: $p->platform_product_id)
-            ->filter()
-            ->unique()
-            ->toArray();
-
-        $shopifyDataMap = $this->getShopifyDataBatch($shopifyUser, $shopifyIdsToFetch);
+        $shopifyDataMap = $this->getShopifyDataBatch($shopifyUser, self::shopifyIdsToFetch($portfolios));
 
         foreach ($portfolios as $portfolio) {
             $productData = $productMap->get($portfolio->item_id);
@@ -234,6 +229,19 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 }
             }
         }
+    }
+
+    /**
+     * @param  Collection<int, Portfolio>  $portfolios
+     * @return list<string>
+     */
+    public static function shopifyIdsToFetch(Collection $portfolios): array
+    {
+        return $portfolios->map(fn (Portfolio $portfolio) => $portfolio->platform_product_variant_id ?: $portfolio->platform_product_id)
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
     }
 
     private function getShopifyDataBatch(ShopifyUser $shopifyUser, array $shopifyIds): array

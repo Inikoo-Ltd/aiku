@@ -16,6 +16,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\AdoptShopifyFulfilmentService;
+use App\Actions\Dropshipping\Shopify\Product\BulkUpdateShopifyPortfolio;
 use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
 use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Actions\Maintenance\Dropshipping\RepairShopifyChannelReconnects;
@@ -204,4 +205,18 @@ test('adopting a location keeps the oldest aiku fulfilment service and drops the
 
     $picked = AdoptShopifyFulfilmentService::pickServices([$services[0], $services[1]], 'gid://shopify/FulfillmentService/new');
     expect($picked['adopt'])->toBeNull();
+});
+
+test('the stock push sends shopify ids as a list even when the portfolios are keyed by id', function () {
+    $portfolios = collect([
+        new Portfolio(['id' => 12, 'platform_product_id' => 'gid://shopify/Product/1']),
+        new Portfolio(['id' => 34, 'platform_product_id' => 'gid://shopify/Product/2', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/2']),
+        new Portfolio(['id' => 56, 'platform_product_id' => 'gid://shopify/Product/1']),
+        new Portfolio(['id' => 78, 'platform_product_id' => null]),
+    ])->keyBy('id');
+
+    $ids = BulkUpdateShopifyPortfolio::shopifyIdsToFetch($portfolios);
+
+    expect(array_is_list($ids))->toBeTrue()
+        ->and($ids)->toBe(['gid://shopify/Product/1', 'gid://shopify/ProductVariant/2']);
 });
