@@ -80,6 +80,13 @@ class CaptureTrafficSource
 
             $this->recordCaptureOutcome($outcome, $candidates);
 
+            /* Typed, bookmarked or from somewhere we could not name is still somebody arriving, and
+               the marketing table needs that number beside the channels it can name. Internal is a
+               visitor already here, not an arrival. */
+            if ($outcome !== 'internal' && ($marker = $this->countVisitOnce(TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::DIRECT->value]))) {
+                $cookies['aiku_vcd'] = ['value' => $marker, 'duration' => 60 * 24 * 2];
+            }
+
             return $cookies;
         }
 

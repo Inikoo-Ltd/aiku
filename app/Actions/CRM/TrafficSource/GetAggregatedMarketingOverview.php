@@ -37,7 +37,7 @@ class GetAggregatedMarketingOverview
      * campaign table would be a list of other people's campaigns; the children table links down to
      * each organisation instead, and the drill-down continues on that dashboard.
      *
-     * @return array{from: string|null, to: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, unsubscribed: int, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, registrations_route: array{name: string, parameters: array<string, string>}, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, baseline: array{registrations: float, orders: float, revenue: float}, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, registrations_total: int, orders: float, orders_total: int, pending: float, revenue_total: float, top_channel: string|null, route: array{name: string, parameters: array<int, string>}}>}
+     * @return array{from: string|null, to: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, unsubscribed: int, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, registrations_route: array{name: string, parameters: array<string, string>}, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, baseline: array{registrations: float, orders: float, revenue: float}, untraced: array{visits: int, revenue: float, registrations: float, orders: float}, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, registrations_total: int, orders: float, orders_total: int, pending: float, revenue_total: float, top_channel: string|null, route: array{name: string, parameters: array<int, string>}}>}
      */
     public function handle(Organisation|Group $parent, ?Carbon $from = null, ?Carbon $to = null): array
     {
@@ -110,6 +110,7 @@ class GetAggregatedMarketingOverview
                and no touches yet is exactly the one worth seeing. */
             array_keys(array_filter($emailCostBy)),
         )))
+            ->reject(fn (string $type) => $type === TrafficSourcesTypeEnum::DIRECT->value)
             ->map(fn (string $type) => [
                 'name'          => TrafficSourcesTypeEnum::labels()[$type] ?? $type,
                 'type'          => $type,
@@ -162,6 +163,7 @@ class GetAggregatedMarketingOverview
         $totalPending       = round(array_sum(array_column($channels, 'pending')), 2);
 
         $baselineByShop     = $this->baselineByShop($shops, $from, $to, $revenueColumn);
+        $baseline           = $this->baseline($baselineByShop);
 
         return [
             'from'          => $from?->toDateString(),
@@ -194,8 +196,18 @@ class GetAggregatedMarketingOverview
                every mailshot in the period earned us nobody. The remainder is the trade that arrives
                whether we advertise or not. */
             'attribution_started_at' => GetAttributionStartedAt::run()?->toIso8601String(),
-            'baseline'      => $this->baseline($baselineByShop),
+            'baseline'      => $baseline,
             'channels'      => $channels,
+            /* The trade no channel can claim: typed, bookmarked, or arrived from somewhere we could
+               not name. Its visits are counted directly; its money is what is left of the baseline
+               once every channel has taken its share. Not a channel, so it never enters the channel
+               totals or a ROAS - nobody paid for it. */
+            'untraced'      => [
+                'visits'        => (int) ($visits[TrafficSourcesTypeEnum::DIRECT->value] ?? 0),
+                'revenue'       => round(max(0, $baseline['revenue'] - $totalRevenue), 2),
+                'registrations' => round(max(0, $baseline['registrations'] - $totalRegistrations), 2),
+                'orders'        => round(max(0, $baseline['orders'] - array_sum(array_column($channels, 'orders'))), 2),
+            ],
             'referrers'     => $this->referrers($shops, $from, $to, $revenueColumn, $window ?? 0),
             'children'      => $this->children($parent, $shops, $attributed, $baselineByShop),
         ];

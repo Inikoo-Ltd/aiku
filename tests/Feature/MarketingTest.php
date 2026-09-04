@@ -3557,6 +3557,27 @@ describe('the aggregated marketing overview', function () {
             ->and($channel['registrations'])->toBe(1.0);
     });
 
+    it('reports direct visits and the unattributed remainder as an untraced row, not a channel', function () {
+        $direct = App\Models\CRM\TrafficSource::where('shop_id', $this->shop->id)->where('type', 'direct')->first();
+
+        DB::table('traffic_source_visits')->insert([
+            'shop_id'           => $this->shop->id,
+            'traffic_source_id' => $direct->id,
+            'date'              => now()->subDay()->toDateString(),
+            'visits'            => 77,
+            'created_at'        => now(),
+            'updated_at'        => now(),
+        ]);
+
+        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
+
+        expect(collect($overview['channels'])->firstWhere('type', 'direct'))->toBeNull()
+            ->and($overview['untraced']['visits'])->toBe(77)
+            ->and($overview['untraced']['revenue'])->toBe(round($overview['baseline']['revenue'] - $overview['totals']['revenue'], 2))
+            ->and($overview['untraced']['orders'])->toBe(round($overview['baseline']['orders'] - $overview['totals']['orders'], 2))
+            ->and($overview['untraced']['registrations'])->toBe(round($overview['baseline']['registrations'] - $overview['totals']['registrations'], 2));
+    });
+
     it('links each shop of the organisation to its own dashboard instead of repeating it', function () {
         $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
 
@@ -4079,6 +4100,30 @@ describe('traffic source clicks', function () {
             ->and($fraud['recent_bots'])->toHaveCount(1)
             ->and($fraud['recent_bots'][0]['ip'])->toBe('198.51.100.8')
             ->and(collect($fraud['channels'])->firstWhere('channel', 'Google Ads')['bot_pct'])->toBe(14.3);
+    });
+
+    it('counts an arrival with no referrer as a direct visit, once a day, and never an internal page view', function () {
+        $visitKey = 'traffic_visits:'.now()->toDateString().':'.$this->shop->id.':direct';
+        Illuminate\Support\Facades\Cache::forget($visitKey);
+
+        $arrive = function (array $server = [], array $cookies = []) {
+            $request = Illuminate\Http\Request::create('https://ecom.test/', 'GET', [], $cookies, [], $server);
+            $request->attributes->set('website', (object) ['id' => 1, 'shop_id' => $this->shop->id, 'type' => null]);
+            app()->instance('request', $request);
+
+            return CaptureTrafficSource::make()->getCookies();
+        };
+
+        $cookies = $arrive();
+
+        expect(Illuminate\Support\Facades\Cache::get($visitKey))->toBe(1)
+            ->and($cookies['aiku_vcd']['value'])->toBe(now()->toDateString().'|w');
+
+        $arrive([], ['aiku_vcd' => $cookies['aiku_vcd']['value']]);
+        expect(Illuminate\Support\Facades\Cache::get($visitKey))->toBe(1);
+
+        $arrive(['HTTP_X_ORIGINAL_REFERER' => 'https://ecom.test/products']);
+        expect(Illuminate\Support\Facades\Cache::get($visitKey))->toBe(1);
     });
 
     it('queues a click record when capture matches a source', function () {
