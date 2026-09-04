@@ -177,6 +177,12 @@ const filteredGroups = computed(() =>
     }))
 )
 
+const artisanMenuOpen = ref(false)
+
+function initials(name: string): string {
+    return name.split(/[\s-]+/).filter(Boolean).slice(0, 2).map(part => part[0].toUpperCase()).join("")
+}
+
 const artisanChoices = computed(() => {
     const list = (props.artisanWorkload ?? []).filter(artisan => !artisan.hidden)
     const defaultId = pendingAssign.value?.maker_id
@@ -354,8 +360,8 @@ function submitCherryPick() {
         </div>
     </Teleport>
 
-    <div v-if="groupBy === 'board' && groups" class="mx-4 mt-4 flex items-stretch gap-3 text-sm">
-        <div class="flex flex-1 flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 dark:border-gray-700 dark:bg-gray-900">
+    <div v-if="groupBy === 'board' && groups" class="mx-4 mt-4 text-sm">
+        <div class="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 dark:border-gray-700 dark:bg-gray-900">
             <div v-for="(label, key) in { family: trans('Category'), requester: trans('Requester'), priority: trans('Urgency') }" :key="key" class="flex flex-wrap items-center gap-1.5">
                 <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ label }}</span>
                 <button
@@ -371,22 +377,29 @@ function submitCherryPick() {
                     <span class="rounded-full px-1.5 text-xs tabular-nums" :class="boardFilters[key].includes(option.value) ? 'bg-white/20' : 'bg-white text-gray-500'">{{ option.count }}</span>
                 </button>
             </div>
-            <button v-if="boardFilters.family.length || boardFilters.requester.length || boardFilters.priority.length" type="button" class="ml-auto text-xs text-gray-400 hover:text-gray-600" @click="boardFilters.family = []; boardFilters.requester = []; boardFilters.priority = []">× {{ trans("Clear") }}</button>
-        </div>
-        <div v-if="boardFilterOptions.artisan.length" class="flex flex-wrap items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-2.5 dark:border-emerald-900 dark:bg-emerald-950/40">
-            <span class="mr-1 text-xs font-medium uppercase tracking-wide text-emerald-700/70">{{ trans("Artisan") }}</span>
+        <div v-if="boardFilterOptions.artisan.length" class="relative flex items-center gap-1.5">
+            <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Artisan") }}</span>
             <button
-                v-for="option in boardFilterOptions.artisan"
-                :key="option.value"
                 type="button"
                 class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
-                :class="boardFilters.artisan.includes(option.value) ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm' : 'border-emerald-200 bg-white text-emerald-800 hover:border-emerald-400'"
-                @click="toggleBoardFilter('artisan', option.value)">
-                <FontAwesomeIcon icon="fal fa-user-hard-hat" fixed-width :class="boardFilters.artisan.includes(option.value) ? 'text-white/70' : 'text-emerald-500'" />
-                {{ option.value }}
-                <span class="rounded-full px-1.5 text-xs tabular-nums" :class="boardFilters.artisan.includes(option.value) ? 'bg-white/20' : 'bg-emerald-100 text-emerald-700'">{{ option.count }}</span>
+                :class="boardFilters.artisan.length ? 'border-indigo-500 bg-indigo-600 text-white shadow-sm' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
+                @click="artisanMenuOpen = !artisanMenuOpen">
+                <FontAwesomeIcon icon="fal fa-user-hard-hat" fixed-width :class="boardFilters.artisan.length ? 'text-white/70' : 'text-gray-400'" />
+                <span class="max-w-48 truncate">{{ boardFilters.artisan.length ? boardFilters.artisan.join(", ") : trans("Everybody") }}</span>
+                <span class="rounded-full px-1.5 text-xs tabular-nums" :class="boardFilters.artisan.length ? 'bg-white/20' : 'bg-white text-gray-500'">{{ boardFilters.artisan.length || boardFilterOptions.artisan.length }}</span>
             </button>
-            <button v-if="boardFilters.artisan.length" type="button" class="ml-1 text-xs text-emerald-700/60 hover:text-emerald-800" @click="boardFilters.artisan = []">×</button>
+            <div v-if="artisanMenuOpen" class="fixed inset-0 z-30" @click="artisanMenuOpen = false" />
+            <div v-if="artisanMenuOpen" class="absolute left-0 top-8 z-40 w-64 rounded-lg border border-gray-200 bg-white p-1.5 shadow-xl dark:border-gray-700 dark:bg-gray-900">
+                <label v-for="option in boardFilterOptions.artisan" :key="option.value" class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <input type="checkbox" :checked="boardFilters.artisan.includes(option.value)" @change="toggleBoardFilter('artisan', option.value)" />
+                    <span class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-600">{{ initials(option.value) }}</span>
+                    <span class="truncate">{{ option.value }}</span>
+                    <span class="ml-auto text-xs text-gray-400">{{ option.count }}</span>
+                </label>
+                <button v-if="boardFilters.artisan.length" type="button" class="mt-1 w-full rounded px-2 py-1 text-left text-xs text-gray-400 hover:bg-gray-50" @click="boardFilters.artisan = []">{{ trans("Everybody") }}</button>
+            </div>
+        </div>
+            <button v-if="boardFilters.family.length || boardFilters.requester.length || boardFilters.priority.length" type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="boardFilters.family = []; boardFilters.requester = []; boardFilters.priority = []">× {{ trans("Clear") }}</button>
         </div>
     </div>
 
