@@ -26,10 +26,13 @@ const props = defineProps<{
         company_name_label: string,
         company_name_placeholder: string,
         tax_number_is_required: boolean
-    }
+    },
+    shopType?: string
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
+
+const isFulfilment = computed(() => (props.shopType ?? layout?.retina?.type) === 'fulfilment')
 
 const addressFieldData = {
     type: "address",
@@ -256,7 +259,7 @@ const selectedCountryCode = ref('')
         </p>
     </div>
 
-    <template v-if="layout.retina.type === 'fulfilment'">
+    <template v-if="isFulfilment">
         <div class="sm:col-span-6 flex flex-col">
             <CustomerDataForm :form="form" />
         </div>

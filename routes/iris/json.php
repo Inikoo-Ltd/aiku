@@ -46,6 +46,7 @@ use App\Actions\Iris\CRM\StoreIrisProductLastSeen;
 use App\Actions\Iris\Json\GetBanner;
 use App\Actions\Iris\Json\GetIrisFirstHitData;
 use App\Actions\Iris\Json\GetIrisFooterData;
+use App\Actions\Iris\Json\GetIrisRegistrationData;
 use App\Actions\Iris\Json\GetIrisSidebarData;
 use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
 use App\Actions\Iris\Reviews\FetchIrisReviewsInWebpage;
@@ -92,6 +93,8 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::get('/sidebar', GetIrisSidebarData::class)->name('sidebar');
     Route::get('/footer', GetIrisFooterData::class)->name('footer');
+
+    Route::get('registration-data', GetIrisRegistrationData::class)->name('registration_data');
 
     Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
     Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');

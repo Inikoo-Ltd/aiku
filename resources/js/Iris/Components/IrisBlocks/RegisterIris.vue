@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, provide, ref } from "vue"
+import { nextTick, onMounted, provide, ref } from "vue"
 import axios from "axios"
 import { useForm } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
@@ -35,6 +35,7 @@ const countriesAddressData = ref<any>({})
 const polls = ref<any[]>([])
 const requiresPhoneNumber = ref(false)
 const registrationSettings = ref<any>({})
+const shopType = ref<string | undefined>(undefined)
 
 const form = useForm({
 	contact_name: "",
@@ -76,17 +77,25 @@ onMounted(async () => {
 		polls.value = response.data?.polls || []
 		requiresPhoneNumber.value = !!response.data?.requiresPhoneNumber
 		registrationSettings.value = response.data?.registration_settings || {}
+		shopType.value = response.data?.shop_type
 
 		form.poll_replies = polls.value.map((poll: any) => ({
 			...poll,
 			answer: poll.type === "option" ? null : "",
 		}))
 		form.is_opt_in = !!registrationSettings.value?.marketing_opt_in_default
+
+		const client = response.data?.client
+		form.contact_name = client?.contact_name || ""
+		form.email = client?.email || ""
 	} catch (error: any) {
 		countriesAddressData.value = {}
 	}
 
 	isLoadingData.value = false
+
+	await nextTick()
+	document.getElementById("contact_name")?.focus()
 })
 
 const isUserInputPassed = (dataToCheck: {}) => {
@@ -280,7 +289,8 @@ const submit = async () => {
 							:polls="polls"
 							:form="form"
 							:requiresPhoneNumber="requiresPhoneNumber"
-							:registration_settings="registrationSettings" />
+							:registration_settings="registrationSettings"
+							:shopType="shopType" />
 
 						<div class="flex gap-2 sm:col-span-6">
 							<Checkbox v-model="form.is_opt_in" inputId="opt_in_newsletter" name="opt_in_newsletter" binary class="mt-0.5" />
