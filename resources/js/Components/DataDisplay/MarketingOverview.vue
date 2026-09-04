@@ -661,7 +661,7 @@ const typeLabel: Record<string, string> = {
                             <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
                         </tr>
                         <tr v-if="overview.before_tracking && (overview.before_tracking.revenue > 0 || overview.before_tracking.orders > 0)" class="text-gray-600 border-b border-dashed border-gray-300 leading-tight">
-                            <td class="py-1.5 pr-2 text-xs leading-tight italic">{{ trans('Origin unknown') }} <span v-tooltip="beforeTrackingHelp(overview.before_tracking.reliable_from)" class="ml-1 text-gray-400 cursor-help">?</span></td>
+                            <td class="py-1.5 pr-2 text-xs leading-tight italic">{{ trans('Before tracking') }} <span v-tooltip="beforeTrackingHelp(overview.before_tracking.reliable_from)" class="ml-1 text-gray-400 cursor-help">?</span></td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
@@ -727,7 +727,7 @@ const typeLabel: Record<string, string> = {
                     </tbody>
                     <tfoot>
                         <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
-                            <td class="py-1.5 pr-2">{{ trans('Everything') }} <span class="font-normal text-gray-400">{{ trans('channels, direct, unknown and out of scope') }}</span></td>
+                            <td class="py-1.5 pr-2">{{ trans('Everything') }} <span class="font-normal text-gray-400">{{ trans('channels, direct, before tracking and out of scope') }}</span></td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
