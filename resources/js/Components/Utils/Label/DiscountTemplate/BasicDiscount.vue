@@ -32,43 +32,36 @@ const isShopOffer = computed<boolean>(() => isShopOrderedSubTrigger(props.offers
 </script>
 
 <template>
-    <div v-if="is_discretionary_offer" class="bg-[#b084e2] px-1 py-0.5 text-xs border flex items-center border-[#b084e2] rounded-sm w-fit text-white">
+    <div v-if="is_discretionary_offer" class="bg-[#A80000] px-1 py-0.5 text-xs border flex items-center border-[#A80000] rounded-sm w-fit text-white">
+        <span class="font-bold bg-black/25 -ml-1 -my-0.5 px-1.5 py-0.5 rounded-l-sm mr-1.5">{{ formatPercentage(offers_data?.o?.p) }} {{ ctrans("OFF") }}</span>
         {{ offers_data?.o?.l }}
-        <span class="ml-0.5 font-bold mr-1">
-            {{ formatPercentage(offers_data?.o?.p) }}
-        </span>
-        {{ ctrans("OFF") }}
         <FontAwesomeIcon :icon="faMoneyCheckEditAlt" class="text-white text-[0.8333rem] align-middle ml-1 mb-1" fixed-width aria-hidden="true" />
     </div>
 
     <!-- Label: First Order Bonus -->
-    <div v-else-if="offers_data?.o?.st === 'fob'" class="bg-[#2a919e] text-white px-1 py-[3px] text-xs flex items-center rounded-sm w-fit">
+    <div v-else-if="offers_data?.o?.st === 'fob'" class="bg-[#A80000] text-white px-1 py-0.5 text-xs flex items-center rounded-sm w-fit">
+        <span class="font-bold bg-black/25 -ml-1 -my-0.5 px-1.5 py-0.5 rounded-l-sm mr-1.5">{{ formatPercentage(offers_data?.o?.p) }} {{ ctrans("OFF") }}</span>
         {{ offers_data?.o?.l }}
-        <span class="mr-0.5 font-bold ml-1">
-            {{ ctrans(":percentage_discount OFF", {
-                percentage_discount: formatPercentage(offers_data?.o?.p)
-            }) }}
-        </span>
     </div>
 
 
     <!-- Label: Step Discount -->
-    <div v-else-if="offers_data?.o?.st === 'sd'" class="bg-[#C48497] px-1 py-0.5 text-xs border flex items-center border-[#C48497] rounded-sm w-fit text-white">
+    <div v-else-if="offers_data?.o?.st === 'sd'" class="bg-[#A80000] px-1 py-0.5 text-xs border flex items-center border-[#A80000] rounded-sm w-fit text-white">
+        <span class="font-bold bg-black/25 -ml-1 -my-0.5 px-1.5 py-0.5 rounded-l-sm mr-1.5">{{ formatPercentage(offers_data?.o?.p) }} {{ ctrans("OFF") }}</span>
         {{ offers_data?.o?.l }}
-        <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(offers_data?.o?.p) }}</span> {{ ctrans("OFF") }}
     </div>
 
     <!-- Label: Shop Offer -->
     <div v-else-if="isShopOffer" class="bg-[#A80000] px-1 py-0.5 text-xs border flex items-center border-[#A80000] rounded-sm w-fit text-white">
+        <span class="font-bold bg-black/25 -ml-1 -my-0.5 px-1.5 py-0.5 rounded-l-sm mr-1.5">{{ formatPercentage(offers_data?.o?.p) }} {{ ctrans("OFF") }}</span>
         {{ offers_data?.o?.l }}
-        <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(offers_data?.o?.p) }}</span> {{ ctrans("OFF") }}
     </div>
 
     <!-- Label: Discretionary Discount (because sto is null) -->
     <div v-else-if="offers_data?.o?.sto === null && offers_data?.o?.st === null" class="bg-[#A80000] px-1 py-0.5 text-xs border flex items-center border-[#A80000] rounded-sm w-fit text-white" >
         <!-- <FontAwesomeIcon icon="fas fa-badge-percent" class="text-white text-[1.1667em] align-middle" fixed-width aria-hidden="true" /> -->
+        <span class="font-bold bg-black/25 -ml-1 -my-0.5 px-1.5 py-0.5 rounded-l-sm mr-1.5">{{ formatPercentage(props.offers_data?.o?.p) }} {{ ctrans("OFF") }}</span>
         {{ offers_data?.o?.l }}
-        <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(props.offers_data?.o?.p)  }}</span> {{ ctrans("OFF") }}
     </div>
 
     <div v-else class="flex items-center">
