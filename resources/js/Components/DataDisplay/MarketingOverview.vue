@@ -250,9 +250,27 @@ const beforeTrackingHelp = (reliableFrom: string | null) =>
 
 /* The hosts behind a channel that is really a family of sites: the assistants behind AI, the
    engines behind Organic search. Google and Bing keep their own channel and are not repeated here. */
+const HOSTS_SHOWN = 5
+
 const hostsBehind = (channel: { type: string }) => {
     const kind = { ai: 'ai', 'organic-search': 'search' }[channel.type]
-    return kind ? (props.overview?.referrers ?? []).filter(referrer => referrer.kind === kind) : []
+    if (!kind) return []
+
+    /* Five lines and a remainder, never a screenful: the long tail of engines nobody has heard of
+       is one line that says how much it adds up to. Referrers arrive sorted by revenue then visits. */
+    const hosts = (props.overview?.referrers ?? []).filter(referrer => referrer.kind === kind)
+    if (hosts.length <= HOSTS_SHOWN + 1) return hosts
+
+    const rest = hosts.slice(HOSTS_SHOWN)
+    return [...hosts.slice(0, HOSTS_SHOWN), {
+        host: '__rest__',
+        kind,
+        visits: rest.reduce((sum, host) => sum + host.visits, 0),
+        visitors: rest.reduce((sum, host) => sum + host.visitors, 0),
+        revenue: rest.reduce((sum, host) => sum + host.revenue, 0),
+        registrations: 0,
+        restCount: rest.length,
+    }]
 }
 
 const hostName = (host: string) => ({
@@ -613,7 +631,7 @@ const typeLabel: Record<string, string> = {
                              the question, and the channel total cannot answer it. Visits per assistant come from the click log, so they reach back to when the channel began;
                              touched customers and revenue are share-weighted like everywhere else. -->
                         <tr v-for="assistant in hostsBehind(channel)" :key="assistant.host" class="border-b border-gray-50 text-gray-500">
-                            <td class="py-1.5 pr-2 pl-10 text-xs">{{ hostName(assistant.host) }}</td>
+                            <td class="py-1.5 pr-2 pl-10 text-xs"><template v-if="assistant.host === '__rest__'">{{ assistant.restCount }} {{ trans('others') }}</template><template v-else>{{ hostName(assistant.host) }}</template></td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap text-xs">
                                 <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
                                     <span :class="assistant.visits > 0 ? '' : 'text-gray-300'">{{ assistant.visits > 0 ? locale.number(assistant.visits) : '—' }}</span>                                    <span :class="assistant.visitors > 0 ? 'text-[#006300]' : 'text-gray-500'">{{ count(assistant.visitors, true) }} {{ trans('touched') }}</span>                                    <span></span>
