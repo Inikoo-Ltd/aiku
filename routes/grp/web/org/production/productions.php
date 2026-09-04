@@ -63,7 +63,7 @@ Route::prefix('{production}')
                         Route::get('job-orders/{jobOrder}', ShowJobOrder::class)->name('job-orders.show');
                     });
 
-                Route::name('.partners.')->prefix('partners')
+                Route::name('.to_produce.')->prefix('to-produce')
                     ->group(function () {
                         Route::get('', IndexPartnerShippingList::class)->name('index');
                         Route::get('by-artisan', [IndexPartnerShippingList::class, 'byArtisan'])->name('by_artisan');

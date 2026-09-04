@@ -9,6 +9,7 @@
 namespace App\Models\Discounts;
 
 use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Ordering\Transaction;
@@ -173,6 +174,16 @@ class Offer extends Model implements Auditable
     public function offerAllowances(): HasMany
     {
         return $this->hasMany(OfferAllowance::class);
+    }
+
+    public function targetCollectionIds(): array
+    {
+        return $this->offerAllowances()->where('target_type', OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION)->pluck('target_id')->all();
+    }
+
+    public function hydratesCatalogueOffersData(): bool
+    {
+        return $this->trigger_type == 'ProductCategory' || $this->targetCollectionIds() !== [];
     }
 
     public function transactions(): BelongsToMany

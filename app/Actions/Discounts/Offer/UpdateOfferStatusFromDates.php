@@ -93,7 +93,7 @@ class UpdateOfferStatusFromDates extends OrgAction
         if ($currentStatus != $offer->status || $currentState != $offer->state) {
             OfferCampaignHydrateOffersState::run($offer->offerCampaign);
             ShopHydrateOffersData::run($offer->shop_id);
-            if ($offer->trigger_type == 'ProductCategory') {
+            if ($offer->hydratesCatalogueOffersData()) {
                 UpdateProductCategoryOffersData::run($offer);
             }
         }

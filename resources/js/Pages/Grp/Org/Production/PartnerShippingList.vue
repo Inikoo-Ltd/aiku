@@ -54,7 +54,7 @@ function toggle(item: { id: number, quantity: number }) {
 
 function sendToWarehouse(orderId: number) {
     router.post(
-        route("grp.org.productions.show.partners.send_to_warehouse", [route().params["organisation"], route().params["production"], orderId]),
+        route("grp.org.productions.show.to_produce.send_to_warehouse", [route().params["organisation"], route().params["production"], orderId]),
         {},
         { preserveScroll: true }
     )
@@ -62,7 +62,7 @@ function sendToWarehouse(orderId: number) {
 
 function createJobOrders() {
     router.post(
-        route("grp.org.productions.show.partners.job_orders.store", [route().params["organisation"], route().params["production"]]),
+        route("grp.org.productions.show.to_produce.job_orders.store", [route().params["organisation"], route().params["production"]]),
         { ids: Object.keys(selected).map(Number) },
         { preserveScroll: true, onSuccess: () => { for (const k in selected) delete selected[k] } }
     )
@@ -72,7 +72,7 @@ const showHiddenArtisans = ref(false)
 
 function toggleArtisan(artisan: { id: number, hidden: boolean }) {
     router.post(
-        route(artisan.hidden ? "grp.org.productions.show.partners.artisans.show" : "grp.org.productions.show.partners.artisans.hide", [route().params["organisation"], route().params["production"], artisan.id]),
+        route(artisan.hidden ? "grp.org.productions.show.to_produce.artisans.show" : "grp.org.productions.show.to_produce.artisans.hide", [route().params["organisation"], route().params["production"], artisan.id]),
         {},
         { preserveScroll: true }
     )
@@ -90,7 +90,7 @@ function toggleMix(mix: { artefact_id: number, shortfall: number }) {
 
 function createMixJobOrders() {
     router.post(
-        route("grp.org.productions.show.partners.mixes.job_orders.store", [route().params["organisation"], route().params["production"]]),
+        route("grp.org.productions.show.to_produce.mixes.job_orders.store", [route().params["organisation"], route().params["production"]]),
         { lines: Object.entries(mixQuantities).map(([artefact_id, quantity]) => ({ artefact_id: Number(artefact_id), quantity })) },
         { preserveScroll: true, onSuccess: () => { for (const k in mixQuantities) delete mixQuantities[k] } }
     )
@@ -103,7 +103,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
 function submitCherryPick() {
     const lines = Object.entries(selected).map(([id, quantity]) => ({ id: Number(id), quantity }))
     router.post(
-        route("grp.org.productions.show.partners.cherry_pick", [route().params["organisation"], route().params["production"]]),
+        route("grp.org.productions.show.to_produce.cherry_pick", [route().params["organisation"], route().params["production"]]),
         { lines },
         { preserveScroll: true, onSuccess: () => { for (const k in selected) delete selected[k] } }
     )

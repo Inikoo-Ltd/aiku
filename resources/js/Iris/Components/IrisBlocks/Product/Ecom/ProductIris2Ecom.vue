@@ -424,7 +424,7 @@ onMounted(async () => {
 
                 <!-- Section: Discounts -->
                 <div v-if="Object.keys(customerData?.offers_data || {})?.length" class="w-full my-2">
-                    <Discount :offers_data="customerData?.offers_data" class="justify-center" template="agnes_and_cat" />
+                   <!--  <Discount :offers_data="customerData?.offers_data" class="justify-center" template="agnes_and_cat" /> -->
                 </div>
 
 

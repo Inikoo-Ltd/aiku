@@ -18,7 +18,6 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithStoreOffer;
 use App\Http\Resources\Catalogue\OfferResource;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\SysAdmin\Organisation;
@@ -158,7 +157,7 @@ class UpdateOffer extends OrgAction
         }
 
         if ($offer->wasChanged(['label'])) {
-            if ($this->offer->trigger instanceof ProductCategory) {
+            if ($offer->hydratesCatalogueOffersData()) {
                 UpdateProductCategoryOffersData::run($offer);
             }
             $this->cleanWebpagesCache($offer);

@@ -710,6 +710,22 @@ test('update order state to in warehouse', function (Order $order) {
     return $order;
 })->depends('update order state to submitted');
 
+test('delivery note recipient follows the order recipient, not the customer', function (Order $order) {
+    $order = UpdateOrder::make()->action($order, [
+        'contact_name' => 'Jana Novak',
+        'company_name' => 'Novak Retail s.r.o.',
+    ]);
+
+    expect($order->company_name)->toBe('Novak Retail s.r.o.')
+        ->and(SendOrderToWarehouse::make()->getCompanyName($order))->toBe('Novak Retail s.r.o.')
+        ->and(SendOrderToWarehouse::make()->getContactName($order))->toBe('Jana Novak');
+
+    $order = UpdateOrder::make()->action($order, ['company_name' => null]);
+    expect(SendOrderToWarehouse::make()->getCompanyName($order))->toBe($order->customer->company_name);
+
+    return $order;
+})->depends('update order state to in warehouse');
+
 test('staff can change the billing address of an order already in the warehouse', function (Order $order) {
     $newAddress                   = Address::factory()->definition();
     $newAddress['address_line_1'] = 'Billing street 42';

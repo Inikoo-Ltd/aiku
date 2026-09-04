@@ -219,6 +219,8 @@ class UpdateOrder extends OrgAction
             'finalised_at'            => ['sometimes', 'nullable', 'date'],
             'delivery_address_id'     => ['sometimes', Rule::exists('addresses', 'id')],
             'collection_address_id'   => ['sometimes', 'nullable', Rule::exists('addresses', 'id')],
+            'contact_name'            => ['sometimes', 'nullable', 'string', 'max:256'],
+            'company_name'            => ['sometimes', 'nullable', 'string', 'max:256'],
             'shipping_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
             'customer_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
             'public_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],

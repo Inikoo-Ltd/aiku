@@ -136,7 +136,7 @@ class ValidateEuropeanTaxNumber
 
                 $this->deployTaxValidationCustomAudit($oldTaxNumberData, $taxNumber, TaxNumberValidationTypeEnum::ONLINE, "Checked through VIES");
             } catch (SoapFault $e) {
-                if (!preg_match('/INVALID_INPUT/i', $e->getMessage())) {
+                if ($this->isMalformedNumberFault($e->getMessage())) {
                     $validationData = [
                         'valid'              => false,
                         'status'             => TaxNumberStatusEnum::INVALID,
@@ -217,6 +217,16 @@ class ValidateEuropeanTaxNumber
         foreach (self::RECHECK_DELAYS_IN_HOURS as $hours) {
             self::dispatch($taxNumber, null, false)->onQueue('low-priority')->delay(now()->addHours($hours));
         }
+    }
+
+    /**
+     * Only INVALID_INPUT says anything about the number itself. Every other VIES fault
+     * (MS_MAX_CONCURRENT_REQ, MS_UNAVAILABLE, SERVICE_UNAVAILABLE, TIMEOUT) is the service
+     * failing us and must never stamp a good number as invalid.
+     */
+    public function isMalformedNumberFault(string $message): bool
+    {
+        return (bool)preg_match('/INVALID_INPUT/i', $message);
     }
 
     public function isPlausibleEuropeanTaxNumber(TaxNumber $taxNumber): bool

@@ -6,11 +6,13 @@ import { faInfoCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import { ctrans } from "@/Composables/useTrans"
+import { getOfferLabelVariant } from "@/Composables/useOfferLabelVariant"
 
 library.add(faInfoCircle)
 
 const props = withDefaults(defineProps<{
     offer?: {
+        type?: string
         label?: string
         percentage_off?: string | number
         duration_label?: string
@@ -24,6 +26,8 @@ const _popoverInfoCircle = ref()
 
 const label = computed<string>(() => props.offer?.label || ctrans("Special Offer"))
 
+const isShopOrdered = computed<boolean>(() => getOfferLabelVariant(props.offer) === "shop")
+
 const maxDiscountLabel = computed(() => {
     const raw = props.offer?.max_percentage_discount
     if (!raw) return null
@@ -33,11 +37,14 @@ const maxDiscountLabel = computed(() => {
 
     return (val * 100).toFixed(2).replace(/\.00$/, "")
 })
-console.log('haloo',props)
 </script>
 
 <template>
-    <section class="special-offer" aria-label="Special Offer Label">
+    <section
+        class="special-offer"
+        :class="{ 'special-offer--shop': isShopOrdered }"
+        aria-label="Special Offer Label"
+    >
         <div class="special-offer__title">
             {{ label }}
         </div>
@@ -73,7 +80,11 @@ console.log('haloo',props)
 <style scoped>
 .special-offer {
     @apply relative inline-flex items-stretch w-fit overflow-hidden rounded-lg shadow-md text-white mb-2;
-    background-color: #E87928;
+    background-color: #A80000;
+}
+
+.special-offer--shop {
+    background-color: #0057A8;
 }
 
 .special-offer__title {

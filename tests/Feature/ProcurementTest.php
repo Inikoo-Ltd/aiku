@@ -3434,7 +3434,7 @@ test('UI partner shopping list index', function () {
 test('UI partner shipping list index', function () {
     $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
 
-    $response = $this->get(route('grp.org.productions.show.partners.index', [$this->organisation->slug, $production->slug]));
+    $response = $this->get(route('grp.org.productions.show.to_produce.index', [$this->organisation->slug, $production->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -3448,7 +3448,7 @@ test('UI to produce list grouped by artisan, family and for', function () {
     $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
 
     foreach (['by_artisan' => 'maker', 'by_category' => 'family', 'by_for' => 'buyer_code'] as $routeSuffix => $groupBy) {
-        $this->get(route('grp.org.productions.show.partners.'.$routeSuffix, [$this->organisation->slug, $production->slug]))
+        $this->get(route('grp.org.productions.show.to_produce.'.$routeSuffix, [$this->organisation->slug, $production->slug]))
             ->assertInertia(function (AssertableInertia $page) use ($groupBy) {
                 $page
                     ->component('Org/Production/PartnerShippingList')

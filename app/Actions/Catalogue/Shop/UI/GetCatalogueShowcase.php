@@ -40,7 +40,7 @@ class GetCatalogueShowcase
             );
 
             $stats['additionalStatBox'] = [
-                $this->buildStrayFamiliesStat($orgSlug, $shopSlug),
+                $this->buildStrayFamiliesStat($shop, $orgSlug, $shopSlug),
                 $this->buildFamiliesWithMissingImageStat($shop, $orgSlug, $shopSlug),
                 $this->buildOrphanProductsStat($shop, $orgSlug, $shopSlug),
                 $this->buildRRPViolationStat($shop, $orgSlug, $shopSlug),
@@ -416,7 +416,7 @@ class GetCatalogueShowcase
         ];
     }
 
-    private function buildStrayFamiliesStat(string $orgSlug, string $shopSlug): array
+    private function buildStrayFamiliesStat(Shop $shop, string $orgSlug, string $shopSlug): array
     {
         return [
             'label'           => __('Stray Families'),
@@ -427,7 +427,7 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-folder',
             'backgroundColor' => '#ff000011',
-            'value'           => app()->make(Shop::class)->stats->number_families_no_department ?? 0,
+            'value'           => $shop->stats->number_families_no_department,
         ];
     }
 
@@ -442,7 +442,9 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-folder',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->stats->number_families_no_images ?? 0,
+            'value'           => $shop->getFamiliesRelation() // Todo: remove this and make stats
+                ->whereNull('image_id')
+                ->count(),
         ];
     }
 
@@ -457,7 +459,10 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-cube',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->stats->number_products_no_images ?? 0,
+            'value'           => $shop->products() // Todo: remove this and make stats
+                ->whereNull('exclusive_for_customer_id')
+                ->whereNull('image_id')
+                ->count(),
         ];
     }
 
@@ -472,7 +477,13 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-cube',
             'backgroundColor' => '#ff000011',
-            'value'           => 0,
+            'value'           => $shop->products() // Todo: remove this and make stats
+                ->where('products.is_main', true)
+                ->whereNull('products.exclusive_for_customer_id')
+                ->join('master_assets', 'master_assets.id', 'products.master_product_id')
+                ->join('product_categories as family', 'family.id', 'products.family_id')
+                ->whereColumn('family.master_product_category_id', '!=', 'master_assets.master_family_id')
+                ->count(),
         ];
     }
 
@@ -511,7 +522,7 @@ class GetCatalogueShowcase
                     'name'       => 'grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.index',
                     'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
                 ],
-                'count' => $shop->stats->number_current_sub_departments,
+                'count' => $shop->stats->pending_back_in_stock_products_count,
             ],
         ];
     }
@@ -535,7 +546,7 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-align-left',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->products()
+            'value'           => $shop->products() // Todo: remove this and make stats
                 ->where('is_main', true)
                 ->whereIn('state', [ProductStateEnum::IN_PROCESS, ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])
                 ->where(function ($q) {
@@ -570,7 +581,7 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-globe',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->products() // Todo: make stats
+            'value'           => $shop->products() // Todo: remove this and make stats
                 ->where('is_main', true)
                 ->whereNull('exclusive_for_customer_id')
                 ->where('is_for_sale', true)

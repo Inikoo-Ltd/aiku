@@ -6,6 +6,7 @@ import { faClock } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faClock)
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { getOfferLabelVariant } from "@/Composables/useOfferLabelVariant"
 interface Offer {
     type?: string
     max_percentage_discount?: number | string | null
@@ -20,7 +21,7 @@ const props = withDefaults(defineProps<{
 
 const _popoverInfoCircle = ref()
 
-const isStepDiscount = computed(() => props.offer?.type === "Product Quantity Ordered")
+const variantClass = computed(() => `offer-max-discount-${getOfferLabelVariant(props.offer)}`)
 
 const maxDiscountLabel = computed(() => {
     const raw = props.offer?.max_percentage_discount
@@ -37,7 +38,7 @@ const maxDiscountLabel = computed(() => {
 <template>
     <div class="offer-wrapper gap-2">
         <div class="offer-max-discount"
-            :class="isStepDiscount ? 'offer-max-discount-step' : 'offer-max-discount-default'">
+            :class="variantClass">
             <div class="offer-label">
                 <span v-if="maxDiscountLabel" class="discount">
                     - {{ maxDiscountLabel }}% <strong>OFF</strong>
@@ -94,6 +95,10 @@ const maxDiscountLabel = computed(() => {
 
 .offer-max-discount-step {
     @apply bg-[#C48497] border-[#C48497];
+}
+
+.offer-max-discount-shop {
+    @apply !bg-[#0057A8] !border-blue-900;
 }
 
 
