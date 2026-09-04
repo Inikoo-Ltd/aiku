@@ -126,12 +126,23 @@ class IndexPartnerShippingList extends OrgAction
     /** @return array<string, array{label: string, elements: array<string, array{0: string, 1: int}>, engine: Closure}> */
     public function getElementGroups(): array
     {
+        $counts = PartnerShoppingListItem::query()
+            ->selectRaw("case when partner_organisation_id is null then 'local' else 'partners' end as source, count(*) as total")
+            ->where(function ($query) {
+                $query->where('partner_organisation_id', $this->organisation->id)
+                    ->orWhere(function ($query) {
+                        $query->whereNull('partner_organisation_id')->where('organisation_id', $this->organisation->id);
+                    });
+            })
+            ->groupBy('source')
+            ->pluck('total', 'source');
+
         return [
             'source' => [
                 'label'    => __('Source'),
                 'elements' => [
-                    'partners' => [__('Partners'), 0],
-                    'local'    => [__('Own customers'), 0],
+                    'partners' => [__('Partners'), $counts['partners'] ?? 0],
+                    'local'    => [__('Own customers'), $counts['local'] ?? 0],
                 ],
                 'engine' => function ($query, $elements) {
                     if (in_array('partners', $elements) && !in_array('local', $elements)) {
@@ -159,13 +170,10 @@ class IndexPartnerShippingList extends OrgAction
                 ])
                 ->column(key: 'pick', label: '', canBeHidden: false)
                 ->column(key: 'buyer_code', label: __('For'), canBeHidden: false, sortable: true)
-                ->column(key: 'stock_code', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'stock_name', label: __('Name'), canBeHidden: false)
-                ->column(key: 'family', label: __('Family'), canBeHidden: false, sortable: true)
+                ->column(key: 'stock_code', label: __('Artefact'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'maker', label: __('Artisan'), canBeHidden: false, sortable: true)
-                ->column(key: 'quantity', label: __('Quantity (SKO)'), canBeHidden: false, align: 'right')
+                ->column(key: 'quantity', label: __('Qty (SKO)'), canBeHidden: false, align: 'right')
                 ->column(key: 'priority', label: __('Priority'), canBeHidden: false, sortable: true)
-                ->column(key: 'needed_by', label: __('Needed by'), canBeHidden: false, sortable: true)
                 ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true)
                 ->column(key: 'job_order_reference', label: __('Job order'), canBeHidden: false)
                 ->column(key: 'created_at', label: __('Added'), canBeHidden: false, sortable: true)

@@ -242,7 +242,7 @@ function submitCherryPick() {
                         <td v-if="groupBy !== 'maker'" class="w-32 px-2 py-1.5 text-gray-500">{{ item.maker }}</td>
                         <td class="w-24 px-2 py-1.5 text-right tabular-nums">{{ useLocaleStore().number(Number(item.quantity)) }}</td>
                         <td class="w-24 px-2 py-1.5 text-gray-500">{{ item.priority }}</td>
-                        <td class="w-28 px-2 py-1.5 text-gray-500">{{ item.needed_by ? useFormatTime(item.needed_by, { formatTime: "mdy" }) : "-" }}</td>
+                        <td class="w-28 px-2 py-1.5 text-gray-500 whitespace-nowrap">{{ item.needed_by ? useFormatTime(item.needed_by, { formatTime: "mdy" }) : "-" }}</td>
                         <td class="w-20 px-4 py-1.5 text-gray-500">{{ item.state }}</td>
                         <td class="w-32 px-2 py-1.5"><Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink">{{ item.job_order_reference }}</Link></td>
                     </tr>
@@ -255,6 +255,10 @@ function submitCherryPick() {
         <template #cell(buyer_code)="{ item }">
             <span v-if="item.buyer_code">{{ item.buyer_code }}</span>
             <span v-else>{{ item.customer_name }} <span class="text-gray-500">{{ item.order_reference }}</span></span>
+        </template>
+        <template #cell(stock_code)="{ item }">
+            <div class="whitespace-nowrap">{{ item.stock_code }} <span v-if="item.family" class="ml-1 rounded-full bg-gray-100 border border-gray-200 px-2 py-0.5 text-xs text-gray-600">{{ item.family }}</span></div>
+            <div class="text-gray-500">{{ item.stock_name }}</div>
         </template>
         <template #cell(job_order_reference)="{ item }">
             <Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink">{{ item.job_order_reference }}</Link>
@@ -276,11 +280,8 @@ function submitCherryPick() {
         <template #cell(quantity)="{ item }">
             <span class="tabular-nums">{{ useLocaleStore().number(Number(item.quantity)) }}</span>
         </template>
-        <template #cell(needed_by)="{ item }">
-            {{ item.needed_by ? useFormatTime(item.needed_by, { formatTime: "mdy" }) : "-" }}
-        </template>
         <template #cell(created_at)="{ item }">
-            {{ useFormatTime(item.created_at, { formatTime: "mdy" }) }}
+            <span class="whitespace-nowrap tabular-nums">{{ useFormatTime(item.created_at, { formatTime: "mdy" }) }}</span>
         </template>
     </Table>
 </template>
