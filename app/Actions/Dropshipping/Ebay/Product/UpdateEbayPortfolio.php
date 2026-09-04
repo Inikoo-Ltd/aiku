@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Ebay\Product;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
@@ -82,14 +83,18 @@ class UpdateEbayPortfolio implements ShouldBeUnique
             $offer = $ebayUser->getOffer($portfolio->platform_product_id);
 
             if (!Arr::get($offer, 'offerId')) {
+                $errors = Arr::get($offer, 'errors', $offer);
+
                 UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => 'E1: '.json_encode(Arr::get($offer, 'errors', $offer))
+                    'response' => 'E1: '.json_encode($errors)
                 ]);
 
                 $portfolio->update([
                     'stock_last_fail_updated_at' => now()
                 ]);
+
+                $this->markBrokenIfListingEnded($portfolio, $errors);
 
                 if (!Arr::has($offer, 'errors')) {
                     $customerSalesChannel->update([
@@ -135,6 +140,8 @@ class UpdateEbayPortfolio implements ShouldBeUnique
                 $portfolio->update([
                     'stock_last_fail_updated_at' => now()
                 ]);
+
+                $this->markBrokenIfListingEnded($portfolio, $errors);
             }
         } catch (Throwable $e) {
             UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
@@ -148,6 +155,45 @@ class UpdateEbayPortfolio implements ShouldBeUnique
                 'ban_stock_update_util' => now()->addSeconds(10)
             ]);
         }
+    }
+
+    public function markBrokenIfListingEnded(Portfolio $portfolio, mixed $errors): bool
+    {
+        if (!self::isListingEndedError($errors)) {
+            return false;
+        }
+
+        $portfolio->update([
+            'platform_status'  => false,
+            'errors_response'  => is_array($errors) ? $errors : [$errors],
+        ]);
+
+        CustomerSalesChannelsHydratePortfolios::dispatch($portfolio->customerSalesChannel);
+
+        return true;
+    }
+
+    public static function isListingEndedError(mixed $errors): bool
+    {
+        if (!is_array($errors)) {
+            return false;
+        }
+
+        foreach ($errors as $error) {
+            if (!is_array($error)) {
+                continue;
+            }
+
+            if ((int) Arr::get($error, 'errorId') !== 25002) {
+                continue;
+            }
+
+            if (str_contains(strtolower((string) Arr::get($error, 'message')), 'ended item')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static function quantityToSend(Product $product, CustomerSalesChannel $customerSalesChannel): int

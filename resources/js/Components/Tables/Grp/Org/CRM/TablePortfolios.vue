@@ -299,6 +299,32 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
             </div>
         </template>
 
+        <template #cell(stock)="{ item }">
+            <div v-if="item.item_type === 'Product'" class="whitespace-nowrap tabular-nums">
+                <span v-tooltip="trans('Current stock in AW')">{{ item.available_quantity ?? '-' }}</span>
+                <span class="text-gray-400 mx-1">/</span>
+                <span v-tooltip="item.is_stock_in_sync === null ? trans('Never pushed to the platform') : trans('Last stock value pushed to the platform')"
+                    :class="item.is_stock_in_sync === false ? 'text-red-500 font-medium' : 'text-gray-500'">
+                    {{ item.last_stock_value ?? '-' }}
+                </span>
+                <FontAwesomeIcon v-if="item.is_stock_in_sync === false"
+                    v-tooltip="trans('Stock in AW differs from the last value pushed to the platform')"
+                    icon="fal fa-exclamation-triangle" class="text-amber-500 ml-1 text-xl" fixed-width aria-hidden="true" />
+            </div>
+        </template>
+
+        <template #cell(stock_last_updated_at)="{ item }">
+            <div class="whitespace-nowrap">
+                <span v-if="item.stock_last_updated_at" class="text-gray-500">
+                    {{ useFormatTime(item.stock_last_updated_at, { localeCode: locale.language.code, formatTime: "hm" }) }}
+                </span>
+                <span v-else class="text-gray-400">-</span>
+                <FontAwesomeIcon v-if="item.stock_last_fail_updated_at && (!item.stock_last_updated_at || item.stock_last_fail_updated_at > item.stock_last_updated_at)"
+                    v-tooltip="trans('Last stock push failed on :date', { date: useFormatTime(item.stock_last_fail_updated_at, { localeCode: locale.language.code, formatTime: 'hm' }) })"
+                    icon="fal fa-exclamation-circle" class="text-red-500 ml-1 text-xl" fixed-width aria-hidden="true" />
+            </div>
+        </template>
+
         <template #cell(matches)="{ item }">
             <template v-if="item.customer_sales_channel_platform_status">
                 <template v-if="!item.platform_status">
