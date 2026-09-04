@@ -32,7 +32,7 @@ const isShopOffer = computed<boolean>(() => isShopOrderedSubTrigger(props.offers
 </script>
 
 <template>
-    <div v-if="is_discretionary_offer" class="bg-[#A80000] px-1 py-0.5 text-xs border flex items-center border-[#A80000] rounded-sm w-fit text-white">
+    <div v-if="is_discretionary_offer" class="bg-[#b084e2] px-1 py-0.5 text-xs border flex items-center border-[#b084e2] rounded-sm w-fit text-white">
         <span class="font-bold bg-black/25 -ml-1 -my-0.5 px-1.5 py-0.5 rounded-l-sm mr-1.5">{{ formatPercentage(offers_data?.o?.p) }} {{ ctrans("OFF") }}</span>
         {{ offers_data?.o?.l }}
         <FontAwesomeIcon :icon="faMoneyCheckEditAlt" class="text-white text-[0.8333rem] align-middle ml-1 mb-1" fixed-width aria-hidden="true" />
@@ -46,7 +46,7 @@ const isShopOffer = computed<boolean>(() => isShopOrderedSubTrigger(props.offers
 
 
     <!-- Label: Step Discount -->
-    <div v-else-if="offers_data?.o?.st === 'sd'" class="bg-[#A80000] px-1 py-0.5 text-xs border flex items-center border-[#A80000] rounded-sm w-fit text-white">
+    <div v-else-if="offers_data?.o?.st === 'sd'" class="bg-[#C48497] px-1 py-0.5 text-xs border flex items-center border-[#C48497] rounded-sm w-fit text-white">
         <span class="font-bold bg-black/25 -ml-1 -my-0.5 px-1.5 py-0.5 rounded-l-sm mr-1.5">{{ formatPercentage(offers_data?.o?.p) }} {{ ctrans("OFF") }}</span>
         {{ offers_data?.o?.l }}
     </div>
