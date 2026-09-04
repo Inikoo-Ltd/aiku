@@ -223,7 +223,10 @@ const knownDirect = computed(() => ({
     orders: Math.max(0, (props.overview?.untraced?.orders ?? 0) - (props.overview?.before_tracking?.orders ?? 0)),
 }))
 
-const beforeTrackingHelp = trans('These customers signed up before we started recording where people come from, and nothing has been recorded for them since, so we cannot tell whether an ad, a search or a mailshot once brought them. As the recorded history grows past the attribution window this figure shrinks on its own, so read it as the part of Direct that is still a measurement gap.')
+const beforeTrackingHelp = (reliableFrom: string | null) =>
+    trans('Customers who registered before tracking started.') + ' '
+    + (reliableFrom ? trans('Reliable from') + ' ' + useFormatTime(reliableFrom) + '. ' : '')
+    + trans('These customers signed up before we started recording where people come from, and nothing has been recorded for them since, so we cannot tell whether an ad, a search or a mailshot once brought them. As the recorded history grows past the attribution window this figure shrinks on its own, so read it as the part of Direct that is still a measurement gap.')
 
 const untracedHelp = trans('People who typed the address, used a bookmark, or came from somewhere we could not name. Visits are counted directly, once per day; revenue, sign-ups and orders are whatever is left of the shop total once every channel has taken its share. It is not "no marketing": somebody who saw an ad and typed the address later lands here too.')
 
@@ -654,7 +657,7 @@ const typeLabel: Record<string, string> = {
                             <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
                         </tr>
                         <tr v-if="overview.before_tracking && (overview.before_tracking.revenue > 0 || overview.before_tracking.orders > 0)" class="text-gray-600 border-b border-dashed border-gray-300 leading-tight">
-                            <td class="py-1.5 pr-2 text-xs leading-tight italic">{{ trans('Origin unknown') }} <span class="not-italic text-gray-400">{{ trans('registered before tracking started') }}<template v-if="overview.before_tracking.reliable_from"> · {{ trans('reliable from') }} {{ useFormatTime(overview.before_tracking.reliable_from) }}</template></span> <span v-tooltip="beforeTrackingHelp" class="ml-1 text-gray-400 cursor-help">?</span></td>
+                            <td class="py-1.5 pr-2 text-xs leading-tight italic">{{ trans('Origin unknown') }} <span v-tooltip="beforeTrackingHelp(overview.before_tracking.reliable_from)" class="ml-1 text-gray-400 cursor-help">?</span></td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
