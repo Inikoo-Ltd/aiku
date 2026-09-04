@@ -475,7 +475,7 @@ const columnHelp: Record<string, string> = {
                 </thead>
                 <tbody v-for="group in groupedChannels" :key="group.key">
                     <tr class="text-gray-900 bg-gray-100/80 border-t-2 border-b border-gray-300 font-medium leading-tight">
-                        <td class="py-1 pr-2 text-xs leading-tight cursor-pointer select-none" @click="toggleGroup(group.key)"><FontAwesomeIcon :icon="chevron(group.key)" class="text-gray-400 mr-1.5 text-[10px]" fixed-width />{{ group.label }}</td>
+                        <td class="py-1 pr-2 text-xs leading-tight cursor-pointer select-none" @click="toggleGroup(group.key)">{{ group.label }}<FontAwesomeIcon :icon="chevron(group.key)" class="text-gray-400 ml-1.5 text-[10px]" fixed-width /></td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
                             <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
                                 <span>{{ group.visits > 0 ? locale.number(group.visits) : '' }}</span>
@@ -527,11 +527,11 @@ const columnHelp: Record<string, string> = {
                     <tr v-if="group.channels.length > 1"
                         class="border-b border-gray-50 text-gray-600">
                         <td class="py-2 pr-2 pl-5">
-                            <span v-if="hasHosts(channel)" class="cursor-pointer select-none" @click="toggleHosts(channel.type)">
-                                <FontAwesomeIcon :icon="openHosts[channel.type] ? 'fal fa-chevron-down' : 'fal fa-chevron-right'" class="text-gray-400 mr-1.5 text-[10px]" fixed-width />
-                            </span>
                             <Link :href="route(channel.route.name, channel.route.parameters)"
                                   class="text-gray-500 hover:text-gray-900 hover:underline">{{ channel.name }}</Link>
+                            <span v-if="hasHosts(channel)" class="cursor-pointer select-none" @click="toggleHosts(channel.type)">
+                                <FontAwesomeIcon :icon="openHosts[channel.type] ? 'fal fa-chevron-down' : 'fal fa-chevron-right'" class="text-gray-400 ml-1.5 text-[10px]" fixed-width />
+                            </span>
                         </td>
                         <!-- Visits it sent, and how many of them bought. The pair is the point: people
                              arrived and nobody ordered is the case worth seeing. -->
@@ -715,7 +715,7 @@ const columnHelp: Record<string, string> = {
                      last row still adds up to the total management carries in their head. -->
                 <tbody v-for="group in outOfScopeGroups" :key="group.key">
                     <tr class="text-gray-600 border-b border-dashed border-gray-300 leading-tight">
-                        <td class="py-1.5 pr-2 text-xs leading-tight italic"><span class="cursor-pointer select-none" @click="toggleGroup(group.key)"><FontAwesomeIcon :icon="chevron(group.key)" class="text-gray-400 mr-1.5 text-[10px]" fixed-width />{{ group.label }}</span> <span v-tooltip="group.help" class="ml-1 text-gray-400 cursor-help">?</span></td>
+                        <td class="py-1.5 pr-2 text-xs leading-tight italic"><span class="cursor-pointer select-none" @click="toggleGroup(group.key)">{{ group.label }}<FontAwesomeIcon :icon="chevron(group.key)" class="text-gray-400 ml-1.5 text-[10px]" fixed-width /></span> <span v-tooltip="group.help" class="ml-1 text-gray-400 cursor-help">?</span></td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
