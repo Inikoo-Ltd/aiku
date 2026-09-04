@@ -3,15 +3,20 @@ import { ref } from 'vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faRobot } from '@far'
+import { faGlobe } from '@fal'
+import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 
 const props = defineProps<{
 	data: any[]
 	loading: boolean
+	loadingMore?: boolean
+	hasMore?: boolean
 	showAiSummary?: boolean
 }>()
 
 const emit = defineEmits<{
 	(e: "click-session", session: any): void
+	(e: "load-more"): void
 }>()
 
 const sentimentClass = (sentiment?: string): string => {
@@ -20,8 +25,6 @@ const sentimentClass = (sentiment?: string): string => {
 	return 'bg-gray-100 text-gray-500'
 }
 
-// Popover teleported to <body> + fixed positioning so it never gets clipped
-// by the scrolling list container.
 const activePopover = ref<string | null>(null)
 const popStyle = ref<Record<string, string>>({})
 
@@ -36,8 +39,6 @@ const openPopover = (event: MouseEvent, session: any) => {
 	if (left < 8) left = 8
 
 	const style: Record<string, string> = { left: `${left}px`, width: `${POP_WIDTH}px` }
-	// Open toward whichever side has more room, and cap the height to that space so a
-	// long summary scrolls inside the popover instead of overflowing the screen.
 	const spaceAbove = rect.top - 16
 	const spaceBelow = window.innerHeight - rect.bottom - 16
 	if (spaceAbove >= spaceBelow) {
@@ -53,10 +54,18 @@ const openPopover = (event: MouseEvent, session: any) => {
 }
 
 const closePopover = () => { activePopover.value = null }
+
+const onScroll = (event: Event) => {
+	if (!props.hasMore || props.loadingMore) return
+	const el = event.target as HTMLElement
+	if (el.scrollTop + el.clientHeight >= el.scrollHeight - 60) {
+		emit('load-more')
+	}
+}
 </script>
 
 <template>
-	<div class="flex-1 min-h-0 overflow-y-auto">
+	<div class="flex-1 min-h-0 overflow-y-auto" @scroll="onScroll">
 		<div v-if="loading" class="p-3 text-sm text-gray-400">
 			Loading...
 		</div>
@@ -68,8 +77,16 @@ const closePopover = () => { activePopover.value = null }
 			class="px-3 py-2 border-b cursor-pointer hover:bg-gray-50"
 		>
 			<div class="flex justify-between text-sm">
-				<span>{{ s.contact_name || s.guest_identifier }}</span>
-				<span class="text-xs text-gray-400">
+				<div class="flex items-center gap-1.5 min-w-0">
+					<span v-if="s.channel === 'whatsapp'" class="shrink-0 text-green-500" title="WhatsApp">
+						<FontAwesomeIcon :icon="faWhatsapp" class="text-xs" />
+					</span>
+					<span v-else-if="s.channel === 'website'" class="shrink-0 text-blue-500" title="Website">
+						<FontAwesomeIcon :icon="faGlobe" class="text-xs" />
+					</span>
+					<span class="truncate">{{ s.contact_name || s.guest_identifier }}</span>
+				</div>
+				<span class="text-xs text-gray-400 shrink-0 ml-2">
 					   {{ useFormatTime(s.last_message?.created_at ) }}
 				</span>
 			</div>
@@ -78,7 +95,6 @@ const closePopover = () => { activePopover.value = null }
 				{{ s.last_message?.message }}
 			</div>
 
-			<!-- AI summary: compact icon + snippet, full summary on hover (agent only) -->
 			<div v-if="showAiSummary && s.ai_summary?.summary"
 				class="mt-1 flex items-center gap-1.5"
 				@click.stop
@@ -114,6 +130,10 @@ const closePopover = () => { activePopover.value = null }
 					</div>
 				</Teleport>
 			</div>
+		</div>
+
+		<div v-if="loadingMore" class="p-3 text-center text-xs text-gray-400">
+			Loading more...
 		</div>
 	</div>
 </template>

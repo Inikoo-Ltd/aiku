@@ -124,7 +124,10 @@ const timelineError = ref<string | null>(null)
 
 const historySessions = ref<any[]>([])
 const isLoadingHistory = ref(false)
+const isLoadingMoreHistory = ref(false)
 const historyLoaded = ref(false)
+const historyHasMore = ref(false)
+const historyPage = ref(1)
 const selectedHistory = ref<any | null>(null)
 
 const statusColors: Record<string, string> = {
@@ -176,32 +179,42 @@ const loadTimeline = async () => {
     }
 }
 
-const loadHistory = async () => {
-    if (props.session.is_guest || historyLoaded.value) return
-    if (props.session.channel === 'whatsapp') {
-        if (!props.session.customer_id) return
-        try {
-            isLoadingHistory.value = true
-            const res = await axios.get(`${baseUrl}/app/api/chats/meta/sessions`, {
-                params: { customer_id: props.session.customer_id },
-            })
-            historySessions.value = res.data?.data?.sessions ?? []
-            historyLoaded.value = true
-        } finally {
-            isLoadingHistory.value = false
-        }
+const loadHistory = async (loadMore = false) => {
+    if (props.session.is_guest) return
+    if (!loadMore && historyLoaded.value) return
+    if (!props.session.customer_id && !props.session.web_user_id) return
+
+    const params: Record<string, any> = { limit: 20 }
+    if (props.session.customer_id) params.customer_id = props.session.customer_id
+    if (props.session.web_user_id) params.web_user_id = props.session.web_user_id
+
+    if (loadMore) {
+        params.page = historyPage.value + 1
+        isLoadingMoreHistory.value = true
     } else {
-        if (!props.session.web_user_id) return
-        try {
-            isLoadingHistory.value = true
-            const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, {
-                params: { web_user_id: props.session.web_user_id },
-            })
-            historySessions.value = res.data?.data?.sessions ?? []
-            historyLoaded.value = true
-        } finally {
-            isLoadingHistory.value = false
+        isLoadingHistory.value = true
+    }
+
+    try {
+        const res = await axios.get(`${baseUrl}/app/api/chats/customer-chat-history`, {
+            params,
+            withCredentials: true,
+        })
+        const sessions = res.data?.data?.sessions ?? []
+        const pagination = res.data?.data?.pagination ?? {}
+
+        if (loadMore) {
+            historySessions.value = [...historySessions.value, ...sessions]
+        } else {
+            historySessions.value = sessions
         }
+
+        historyHasMore.value = !!pagination.has_more
+        historyPage.value = pagination.current_page ?? historyPage.value
+        historyLoaded.value = true
+    } finally {
+        isLoadingHistory.value = false
+        isLoadingMoreHistory.value = false
     }
 }
 
@@ -210,6 +223,8 @@ const resetAndLoad = () => {
     timelineLoaded.value = false
     historyLoaded.value = false
     historySessions.value = []
+    historyHasMore.value = false
+    historyPage.value = 1
     selectedHistory.value = null
     customerProfile.value = { tags: [], stats: null, email: null, profile_url: null }
     activeTab.value = 'profile'
@@ -541,13 +556,15 @@ const copyChatId = async () => {
                         <p class="text-xs">No previous chats</p>
                     </div>
                     <HistoryChatList v-else :data="historySessions" :loading="isLoadingHistory"
-                        :show-ai-summary="true" @click-session="selectedHistory = $event" />
+                        :loading-more="isLoadingMoreHistory" :has-more="historyHasMore"
+                        :show-ai-summary="true" @click-session="selectedHistory = $event"
+                        @load-more="loadHistory(true)" />
                 </template>
 
-                <!-- Detail: a past session's messages (MessageHistory has its own back + status header) -->
                 <template v-else>
                     <MessageHistory class="flex-1 min-h-0" :sessionUlid="selectedHistory.ulid"
-                        :session="selectedHistory" viewerType="agent" :channel="session.channel" @back="selectedHistory = null" />
+                        :session="selectedHistory" viewerType="agent"
+                        :channel="selectedHistory.channel ?? session.channel" @back="selectedHistory = null" />
                 </template>
             </div>
         </div>

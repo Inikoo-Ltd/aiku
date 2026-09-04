@@ -53,6 +53,8 @@ use App\Actions\Chat\ChatSession\TranslateSessionMessages;
 use App\Actions\Chat\ChatSession\TranslateSingleMessage;
 use App\Actions\Chat\ChatSession\UpdateChatAgent;
 use App\Actions\Chat\ChatSession\UpdateChatSession;
+use App\Actions\Chat\GetCustomerChatHistory;
+use App\Actions\Chat\MetaChatSession\UpdateMetaChatSession;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
@@ -71,6 +73,9 @@ use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatEvent;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
+use App\Models\Chat\MetaChannel;
+use App\Models\Chat\MetaChatEvent;
+use App\Models\Chat\MetaChatSession;
 use App\Models\Chat\ShopHasChatAgent;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
@@ -2596,4 +2601,105 @@ describe('staff chat audience seeding', function () {
 
         expect(\Illuminate\Support\Arr::get($this->shop->fresh()->settings, 'staff_chat.crm_user_ids'))->toBe([$curated->id]);
     });
+});
+
+test('customer chat history merges website and whatsapp sessions', function () {
+    $customer = createCustomer($this->shop);
+    $webUser  = StoreWebUser::make()->action($customer, WebUser::factory()->definition());
+
+    $websiteSession = ChatSession::create([
+        'ulid'        => (string)Str::ulid(),
+        'status'      => ChatSessionStatusEnum::ACTIVE,
+        'web_user_id' => $webUser->id,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'shop_id'     => $this->shop->id,
+    ]);
+
+    // GetChatSessions only surfaces sessions that actually have messages.
+    SendChatMessage::make()->handle($websiteSession, [
+        'message_text' => 'Website enquiry',
+        'message_type' => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'  => ChatSenderTypeEnum::GUEST->value,
+        'sender_id'    => null,
+    ]);
+
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $whatsappSession = MetaChatSession::create([
+        'ulid'            => (string)Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $customer->id,
+        'phone_number'    => '+628123456789',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $result = GetCustomerChatHistory::make()->handle(['customer_id' => $customer->id]);
+
+    $byUlid = $result['rows']->keyBy(fn (array $row) => $row['session']->ulid);
+
+    expect($result['rows'])->toHaveCount(2)
+        ->and($byUlid[$websiteSession->ulid]['channel'])->toBe('website')
+        ->and($byUlid[$whatsappSession->ulid]['channel'])->toBe('whatsapp');
+});
+
+test('customer chat history resolves the customer from a web user id', function () {
+    $customer = createCustomer($this->shop);
+    $webUser  = StoreWebUser::make()->action($customer, WebUser::factory()->definition());
+
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $whatsappSession = MetaChatSession::create([
+        'ulid'            => (string)Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $customer->id,
+        'phone_number'    => '+628987654321',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    // Only the web user id is known; the WhatsApp thread is keyed by customer.
+    $result = GetCustomerChatHistory::make()->handle(['web_user_id' => $webUser->id]);
+
+    expect($result['rows'])->toHaveCount(1)
+        ->and($result['rows'][0]['channel'])->toBe('whatsapp')
+        ->and($result['rows'][0]['session']->ulid)->toBe($whatsappSession->ulid);
+});
+
+test('customer chat history is empty when no identity is given', function () {
+    $result = GetCustomerChatHistory::make()->handle([]);
+
+    expect($result['rows'])->toHaveCount(0)
+        ->and($result['has_more'])->toBeFalse();
+});
+
+test('can update rating on a meta chat session', function () {
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $metaChatSession = MetaChatSession::create([
+        'ulid'            => (string)Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+628111222333',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $updated = UpdateMetaChatSession::make()->handle($metaChatSession, ['rating' => 4]);
+
+    expect($updated)->toBe(['rating' => 4])
+        ->and($metaChatSession->fresh()->rating)->toBe(4);
+
+    $event = MetaChatEvent::where('meta_chat_session_id', $metaChatSession->id)
+        ->where('event_type', ChatEventTypeEnum::RATING)
+        ->first();
+
+    expect($event)->toBeInstanceOf(MetaChatEvent::class)
+        ->and($event->payload['values']['rating'])->toBe(4);
 });

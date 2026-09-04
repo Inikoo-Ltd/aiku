@@ -84,15 +84,24 @@ const panelSession = computed(() => {
     const s = selectedSession.value
     if (!s) return null
     const channel = (s as any).channel ?? (selectedChannel.value === "whatsapp" ? "whatsapp" : "website")
+    const isWhatsapp = channel === "whatsapp"
+
+    // A WhatsApp thread is keyed to a customer, but the list mapper stores that customer
+    // in the shared `web_user` slot, so read it from whichever side carries it.
+    const webUserId = isWhatsapp ? null : (s.web_user?.id ?? null)
+    const customerId = isWhatsapp
+        ? ((s as any).customer?.id ?? s.web_user?.id ?? null)
+        : ((s as any).customer?.id ?? null)
+
     return {
         ulid: String(s.ulid),
         channel,
-        contact_name: s.web_user?.id
+        contact_name: (webUserId || customerId)
             ? (s.contact_name || s.guest_identifier || "Customer")
             : ((s as any).metadata?.name || s.guest_profile?.name || s.guest_identifier || "Guest"),
-        is_guest: !(s.web_user?.id ?? s.customer?.id),
-        web_user_id: s.web_user?.id ?? null,
-        customer_id: s.customer?.id ?? null,
+        is_guest: !(webUserId || customerId),
+        web_user_id: webUserId,
+        customer_id: customerId,
         guest_email: (s as any).metadata?.email ?? s.guest_profile?.email ?? null,
         guest_phone: (s as any).metadata?.phone ?? s.guest_profile?.phone ?? null,
         phone_number: (s as any).phone_number ?? null,

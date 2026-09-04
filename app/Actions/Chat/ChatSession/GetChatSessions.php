@@ -170,7 +170,7 @@ class GetChatSessions
         }
 
         if (isset($filters['web_user_id'])) {
-            $query->where('web_user_id', $filters['web_user_id']);
+            $query->whereIn('web_user_id', (array) $filters['web_user_id']);
         }
 
         if (!empty($filters['search'])) {
