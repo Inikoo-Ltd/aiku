@@ -149,6 +149,9 @@ class GetShopMarketingOverview
         $totalRegistrations = round(array_sum(array_column($channels, 'registrations')), 2);
         $totalPending       = round(array_sum(array_column($channels, 'pending')), 2);
         $baseline           = $this->baseline($shop, $from, $to);
+        $outOfScope         = $this->outOfScopeSalesChannels([$shop->id], $from, $to, 'net_amount');
+        $outOfScopeRevenue  = round(array_sum(array_column($outOfScope, 'revenue')), 2);
+        $outOfScopeOrders   = array_sum(array_column($outOfScope, 'orders'));
 
         return [
             'from'          => $from?->toDateString(),
@@ -188,10 +191,11 @@ class GetShopMarketingOverview
                totals or a ROAS - nobody paid for it. */
             'untraced'      => [
                 'visits'        => $directVisits,
-                'revenue'       => round(max(0, $baseline['revenue'] - $totalRevenue), 2),
+                'revenue'       => round(max(0, $baseline['revenue'] - $totalRevenue - $outOfScopeRevenue), 2),
                 'registrations' => round(max(0, $baseline['registrations'] - $totalRegistrations), 2),
-                'orders'        => round(max(0, $baseline['orders'] - array_sum(array_column($channels, 'orders'))), 2),
+                'orders'        => round(max(0, $baseline['orders'] - array_sum(array_column($channels, 'orders')) - $outOfScopeOrders), 2),
             ],
+            'out_of_scope'  => $outOfScope,
             'campaigns'     => $this->campaigns($campaignRevenue, $campaignRegistrations, $costs),
             'referrers'     => $this->referrers($shop, $campaignRevenue, $campaignRegistrations),
             'spend_by_day'  => $this->spendByDay($shop, $from, $to),

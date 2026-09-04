@@ -8,7 +8,10 @@
 
 namespace App\Actions\CRM\TrafficSource;
 
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -68,5 +71,55 @@ trait WithAttributionWindow
 
         return $query->join('traffic_sources as ts', 'ts.id', '=', 'p.traffic_source_id')
             ->where('ts.type', $channelType);
+    }
+    /**
+     * Trade that never went through the website: phone, showroom, marketplaces. It sits in the shop
+     * total management knows by heart, so hiding it would make the table look short; but no channel
+     * can claim it and no visit precedes it, so it is listed on its own rather than left in Direct.
+     * Orders and invoices with no sales channel are website trade, which is where the bulk of the
+     * older web orders still sit.
+     *
+     * @param array<int, int> $shopIds
+     *
+     * @return array<int, array{name: string, revenue: float, orders: float}>
+     */
+    protected function outOfScopeSalesChannels(array $shopIds, ?Carbon $from, ?Carbon $to, string $revenueColumn): array
+    {
+        $isOutOfScope = fn ($query) => $query
+            ->whereNotNull('sales_channel_id')
+            ->where('sc.type', '!=', SalesChannelTypeEnum::WEBSITE->value);
+
+        $revenue = DB::table('invoices')
+            ->join('sales_channels as sc', 'sc.id', '=', 'invoices.sales_channel_id')
+            ->whereIn('invoices.shop_id', $shopIds)
+            ->where('in_process', false)
+            ->tap($isOutOfScope)
+            ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
+            ->when($to, fn ($query) => $query->where('invoices.date', '<=', $to))
+            ->groupBy('sc.name')
+            ->select('sc.name', DB::raw("SUM({$revenueColumn}) as total"))
+            ->pluck('total', 'name');
+
+        $orders = DB::table('orders')
+            ->join('sales_channels as sc', 'sc.id', '=', 'orders.sales_channel_id')
+            ->whereIn('orders.shop_id', $shopIds)
+            ->whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
+            ->whereNull('orders.deleted_at')
+            ->tap($isOutOfScope)
+            ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
+            ->when($to, fn ($query) => $query->where('orders.date', '<=', $to))
+            ->groupBy('sc.name')
+            ->select('sc.name', DB::raw('COUNT(*) as total'))
+            ->pluck('total', 'name');
+
+        return collect(array_unique(array_merge($revenue->keys()->all(), $orders->keys()->all())))
+            ->map(fn (string $name) => [
+                'name'    => trim($name),
+                'revenue' => round((float) ($revenue[$name] ?? 0), 2),
+                'orders'  => (float) ($orders[$name] ?? 0),
+            ])
+            ->sortByDesc('revenue')
+            ->values()
+            ->all();
     }
 }

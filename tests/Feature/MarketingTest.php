@@ -3598,6 +3598,45 @@ describe('the aggregated marketing overview', function () {
             ->and($overview['untraced']['registrations'])->toBe(round($overview['baseline']['registrations'] - $overview['totals']['registrations'], 2));
     });
 
+    it('lists phone and marketplace sales as out of scope and takes them off the direct remainder', function () {
+        /* A phone order from somebody a channel touched would be claimed twice; the row is about the
+           trade nobody touched. */
+        $this->customer->trafficSources()->detach();
+
+        $phone = App\Models\Ordering\SalesChannel::where('type', 'phone')->first()
+            ?? App\Models\Ordering\SalesChannel::create(['name' => 'Phone', 'code' => 'phone', 'type' => 'phone']);
+
+        DB::table('invoices')->insert([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $this->customer->id,
+            'sales_channel_id' => $phone->id,
+            'currency_id'     => $this->shop->currency_id,
+            'tax_category_id' => App\Models\Helpers\TaxCategory::firstOrFail()->id,
+            'reference'       => 'INV-PHONE-'.uniqid(),
+            'slug'            => 'inv-phone-'.uniqid(),
+            'type'            => 'invoice',
+            'net_amount'      => 40,
+            'org_net_amount'  => 40,
+            'grp_net_amount'  => 40,
+            'total_amount'    => 40,
+            'in_process'      => false,
+            'payment_data'    => '{}',
+            'data'            => '{}',
+            'date'            => now()->subDay()->toDateTimeString(),
+            'created_at'      => now()->subDay()->toDateTimeString(),
+            'updated_at'      => now()->subDay()->toDateTimeString(),
+        ]);
+
+        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
+        $row      = collect($overview['out_of_scope'])->firstWhere('name', 'Phone');
+
+        expect($row['revenue'])->toBe(40.0)
+            ->and($overview['untraced']['revenue'] + $overview['totals']['revenue'] + array_sum(array_column($overview['out_of_scope'], 'revenue')))
+                ->toBe($overview['baseline']['revenue']);
+    });
+
     it('links each shop of the organisation to its own dashboard instead of repeating it', function () {
         $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
 

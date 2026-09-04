@@ -69,6 +69,11 @@ const props = defineProps<{
             visitors: number
             revenue: number
         }[]
+        out_of_scope?: {
+            name: string
+            revenue: number
+            orders: number
+        }[]
         untraced: {
             visits: number
             revenue: number
@@ -183,6 +188,13 @@ const share = (part: number, whole: number) =>
    which reads as nobody having bought when somebody did. */
 const conversionRate = (orders: number, visits: number) =>
     visits > 0 ? (orders / visits * 100).toFixed(2) + '%' : '—'
+
+const outOfScopeTotals = computed(() => (props.overview?.out_of_scope ?? []).reduce((totals, channel) => ({
+    revenue: totals.revenue + channel.revenue,
+    orders: totals.orders + channel.orders,
+}), { revenue: 0, orders: 0 }))
+
+const outOfScopeHelp = trans('Sales that never went through the website: phone, showroom and marketplace orders. No channel can claim them and no visit precedes them, so they are listed here rather than counted as direct. Sign-ups are not split by sales channel.')
 
 const untracedHelp = trans('People who typed the address, used a bookmark, or came from somewhere we could not name. Visits are counted directly, once per day; revenue, sign-ups and orders are whatever is left of the shop total once every channel has taken its share. It is not "no marketing": somebody who saw an ad and typed the address later lands here too.')
 
@@ -513,6 +525,50 @@ const columnHelp: Record<string, string> = {
                         <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
                     </tr>
                 </tbody>
+                <!-- Sales that never went through the website: phone, showroom, marketplaces. Listed so the
+                     last row still adds up to the total management carries in their head. -->
+                <tbody v-if="overview.out_of_scope?.length">
+                    <tr class="text-gray-900 bg-gray-100/80 border-b border-gray-300 font-medium leading-tight">
+                        <td class="py-1 pr-2 text-xs leading-tight">{{ trans('Out of scope') }} <span v-tooltip="outOfScopeHelp" class="ml-1 text-gray-400 cursor-help">?</span></td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[2.75rem_5.5rem]">
+                                <span class="font-normal text-gray-400 text-left">{{ share(outOfScopeTotals.revenue, overview.baseline?.revenue ?? 0) }}</span>
+                                <span>{{ money(outOfScopeTotals.revenue) }}</span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[2.75rem_3.5rem]">
+                                <span class="font-normal text-gray-400 text-left">{{ share(outOfScopeTotals.orders, overview.baseline?.orders ?? 0) }}</span>
+                                <span>{{ count(outOfScopeTotals.orders, decimalColumns.orders) }}</span>
+                            </span>
+                        </td>
+                        <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
+                    </tr>
+                    <tr v-for="channel in (showChannelDetail ? overview.out_of_scope : [])" :key="channel.name" class="border-b border-gray-50 text-gray-600">
+                        <td class="py-2 pr-2 pl-5 text-gray-500">{{ channel.name }}</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[2.75rem_5.5rem]">
+                                <span class="font-normal text-gray-400 text-left">{{ share(channel.revenue, overview.baseline?.revenue ?? 0) }}</span>
+                                <span>{{ money(channel.revenue) }}</span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[2.75rem_3.5rem]">
+                                <span class="font-normal text-gray-400 text-left">{{ share(channel.orders, overview.baseline?.orders ?? 0) }}</span>
+                                <span>{{ count(channel.orders, decimalColumns.orders) }}</span>
+                            </span>
+                        </td>
+                        <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
+                    </tr>
+                </tbody>
                 <tfoot>
                     <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
                         <td class="py-1.5 pr-2">{{ trans('All channels') }}</td>
@@ -561,6 +617,16 @@ const columnHelp: Record<string, string> = {
                         <td class="text-right pl-2 tabular-nums">
                             {{ channelTotals.spend > 0 && channelTotals.revenue > 0 ? (channelTotals.revenue / channelTotals.spend).toFixed(2) + '×' : '' }}
                         </td>
+                    </tr>
+                    <tr class="text-gray-700 border-t border-gray-200">
+                        <td class="py-1.5 pr-2">{{ trans('Everything') }} <span class="font-normal text-gray-400">{{ trans('channels, direct and out of scope') }}</span></td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">{{ money(overview.baseline?.revenue ?? 0) }}</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">{{ count(overview.baseline?.registrations ?? 0, decimalColumns.registrations) }}</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">{{ count(overview.baseline?.orders ?? 0, decimalColumns.orders) }}</td>
+                        <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
                     </tr>
                 </tfoot>
             </table>

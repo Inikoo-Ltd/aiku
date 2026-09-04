@@ -37,7 +37,7 @@ class GetAggregatedMarketingOverview
      * campaign table would be a list of other people's campaigns; the children table links down to
      * each organisation instead, and the drill-down continues on that dashboard.
      *
-     * @return array{from: string|null, to: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, unsubscribed: int, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, registrations_route: array{name: string, parameters: array<string, string>}, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, baseline: array{registrations: float, orders: float, revenue: float}, untraced: array{visits: int, revenue: float, registrations: float, orders: float}, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, registrations_total: int, orders: float, orders_total: int, pending: float, revenue_total: float, top_channel: string|null, route: array{name: string, parameters: array<int, string>}}>}
+     * @return array{from: string|null, to: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, unsubscribed: int, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, registrations_route: array{name: string, parameters: array<string, string>}, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, baseline: array{registrations: float, orders: float, revenue: float}, untraced: array{visits: int, revenue: float, registrations: float, orders: float}, out_of_scope: array<int, array{name: string, revenue: float, orders: float}>, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, registrations_total: int, orders: float, orders_total: int, pending: float, revenue_total: float, top_channel: string|null, route: array{name: string, parameters: array<int, string>}}>}
      */
     public function handle(Organisation|Group $parent, ?Carbon $from = null, ?Carbon $to = null): array
     {
@@ -164,6 +164,9 @@ class GetAggregatedMarketingOverview
 
         $baselineByShop     = $this->baselineByShop($shops, $from, $to, $revenueColumn);
         $baseline           = $this->baseline($baselineByShop);
+        $outOfScope         = $this->outOfScopeSalesChannels($shops->pluck('id')->all(), $from, $to, $revenueColumn);
+        $outOfScopeRevenue  = round(array_sum(array_column($outOfScope, 'revenue')), 2);
+        $outOfScopeOrders   = array_sum(array_column($outOfScope, 'orders'));
 
         return [
             'from'          => $from?->toDateString(),
@@ -204,10 +207,11 @@ class GetAggregatedMarketingOverview
                totals or a ROAS - nobody paid for it. */
             'untraced'      => [
                 'visits'        => (int) ($visits[TrafficSourcesTypeEnum::DIRECT->value] ?? 0),
-                'revenue'       => round(max(0, $baseline['revenue'] - $totalRevenue), 2),
+                'revenue'       => round(max(0, $baseline['revenue'] - $totalRevenue - $outOfScopeRevenue), 2),
                 'registrations' => round(max(0, $baseline['registrations'] - $totalRegistrations), 2),
-                'orders'        => round(max(0, $baseline['orders'] - array_sum(array_column($channels, 'orders'))), 2),
+                'orders'        => round(max(0, $baseline['orders'] - array_sum(array_column($channels, 'orders')) - $outOfScopeOrders), 2),
             ],
+            'out_of_scope'  => $outOfScope,
             'referrers'     => $this->referrers($shops, $from, $to, $revenueColumn, $window ?? 0),
             'children'      => $this->children($parent, $shops, $attributed, $baselineByShop),
         ];
