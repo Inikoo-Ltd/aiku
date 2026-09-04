@@ -72,9 +72,13 @@ class CaptureTrafficSource
                not arriving - and it dominates: one session leaves one identifiable arrival and then a
                dozen of these, which is why counting them as `direct` made healthy capture read as 7%
                identified. `direct` is a genuine arrival with no referrer at all: typed, bookmarked. */
+            /* Not the Referer header: capture runs from the first-hit fetch, whose Referer is always
+               the storefront page that issued it, so judging by it made every direct arrival read as
+               internal and nobody was ever direct. document.referrer, forwarded in X-Original-Referer,
+               is what the browser knew about where the visitor came from. */
             $outcome = match (true) {
                 $candidates !== [] => 'unmatched',
-                filled(request()->headers->get('X-Original-Referer')) || filled($referer) => 'internal',
+                filled(request()->headers->get('X-Original-Referer')) => 'internal',
                 default => 'direct',
             };
 

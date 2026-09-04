@@ -4165,8 +4165,10 @@ describe('traffic source clicks', function () {
         $visitKey = 'traffic_visits:'.now()->toDateString().':'.$this->shop->id.':direct';
         Illuminate\Support\Facades\Cache::forget($visitKey);
 
+        /* The fetch that runs capture always carries the storefront page as its Referer; only
+           document.referrer, forwarded as X-Original-Referer, says where the visitor came from. */
         $arrive = function (array $server = [], array $cookies = []) {
-            $request = Illuminate\Http\Request::create('https://ecom.test/', 'GET', [], $cookies, [], $server);
+            $request = Illuminate\Http\Request::create('https://ecom.test/json/first-hit', 'GET', [], $cookies, [], $server + ['HTTP_REFERER' => 'https://ecom.test/']);
             $request->attributes->set('website', (object) ['id' => 1, 'shop_id' => $this->shop->id, 'type' => null]);
             app()->instance('request', $request);
 
