@@ -40,13 +40,7 @@ const maxDiscountLabel = computed(() => {
         <div class="offer-max-discount"
             :class="variantClass">
             <div class="offer-label">
-                <span v-if="maxDiscountLabel" class="discount">
-                    - {{ maxDiscountLabel }}% <strong>OFF</strong>
-                </span>
-
-                <span class="label-text">
-                    {{ props.offer?.label || trans("Special Offers") }}
-                </span>
+                <span v-if="maxDiscountLabel" class="discount">{{ maxDiscountLabel }}% {{ trans("OFF") }}</span>{{ props.offer?.label || trans("Special Offers") }}
 
                 <span v-if="!layout?.user?.gr_data?.customer_is_gr" @click="_popoverInfoCircle?.toggle"
                     @mouseenter="_popoverInfoCircle?.show" @mouseleave="_popoverInfoCircle?.hide" class="info-icon">
@@ -86,7 +80,7 @@ const maxDiscountLabel = computed(() => {
 }
 
 .offer-max-discount {
-    @apply items-center min-w-0 border text-gray-100 w-fit flex rounded-sm px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1;
+    @apply min-w-0 max-w-full border text-gray-100 w-fit block rounded-sm px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1;
 }
 
 .offer-max-discount-default {
@@ -108,18 +102,15 @@ const maxDiscountLabel = computed(() => {
 }
 
 .offer-label {
-    @apply flex items-center gap-1 min-w-0 flex-nowrap;
+    @apply min-w-0 leading-5;
 }
 
 .discount {
-    @apply flex items-center gap-0.5 shrink-0 whitespace-nowrap;
+    @apply inline-block font-bold bg-black/25 rounded-l-sm mr-1.5 -my-0.5 px-1.5 py-0.5 -ml-1 sm:-ml-1.5 md:-ml-2 sm:-my-1;
 }
 
-.label-text {
-    @apply leading-none truncate min-w-0;
-}
 .info-icon {
-    @apply flex items-center ml-1 shrink-0 opacity-80 hover:opacity-100 cursor-pointer;
+    @apply inline-block ml-1 opacity-80 hover:opacity-100 cursor-pointer;
 }
 
 
