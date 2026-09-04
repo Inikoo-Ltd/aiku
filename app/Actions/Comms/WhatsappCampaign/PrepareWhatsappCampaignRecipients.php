@@ -9,18 +9,20 @@ namespace App\Actions\Comms\WhatsappCampaign;
 
 use App\Models\Comms\WhatsappCampaign;
 use Illuminate\Console\Command;
-use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Turns the stored recipient selection into chunks of sendable rows.
+ * Hands the recipients the picker already stored to the jobs that send them.
  *
- * recipients_list holds phone numbers and nothing else, so the name and customer behind each
- * number are looked up again here, straight from the customers and chat sessions that carry
- * them. The selection stays the source of truth: the audience recipe is not re-applied, and a
- * number nothing is known about is still sent to with only its phone number.
+ * The rows exist before this runs, written by StoreWhatsappCampaignRecipients with a null
+ * whatsapp_delivery_channel_id. That null is what is left to do: this walks the unclaimed
+ * rows and batches them, and ProcessSendWhatsappCampaign stamps each batch with the channel
+ * it created. A row that already carries a channel is somebody else's, so re-running this
+ * after a partial send picks up only what was missed.
+ *
+ * The name and customer behind each number were resolved when the audience was chosen and
+ * are on the row, so nothing is looked up again here.
  */
 class PrepareWhatsappCampaignRecipients
 {
@@ -37,106 +39,42 @@ class PrepareWhatsappCampaignRecipients
 
     public function handle(WhatsappCampaign $campaign): void
     {
-        /* Re-checked here rather than trusted from the selection: a list saved before the
-           audience started filtering unsendable numbers still holds them. */
-        $phoneKeys = array_values(array_filter(
-            Arr::pluck($campaign->recipients_list ?? [], 'phone_number'),
-            fn ($phone) => GetWhatsappRecipientsQuery::isSendablePhone((string) $phone)
-        ));
+        /* chunkById rather than chunk: the dispatched job claims the rows it was given, so
+           on a sync queue the where clause stops matching them mid walk and an offset paged
+           read would skip a batch for every one it handed out. */
+        $campaign->recipients()
+            ->whereNull('whatsapp_delivery_channel_id')
+            ->orderBy('id')
+            ->chunkById(self::CHUNK_SIZE, function (Collection $recipients) use ($campaign) {
+                $rows = $this->buildRows($recipients);
 
-        if (!$phoneKeys) {
-            return;
-        }
-
-        $resolved = $this->resolveRecipients($campaign, $phoneKeys);
-
-        foreach (array_chunk($this->buildRows($phoneKeys, $resolved), self::CHUNK_SIZE) as $rows) {
-            ProcessSendWhatsappCampaign::dispatch($campaign->id, $rows);
-        }
+                if ($rows) {
+                    ProcessSendWhatsappCampaign::dispatch($campaign->id, $rows);
+                }
+            });
     }
 
     /**
-     * Looks up what is known about each selected number, and nothing else. The recipe is
-     * deliberately not consulted: recipients_list is already the audience the user confirmed,
-     * so re-applying the channels and filters here would drop contacts they picked whenever
-     * the recipe was tightened, or a customer stopped matching it, after the selection.
+     * Ids rather than whole rows, so the job payload stays small and the job reads the row
+     * as it is when it runs rather than as it was when it was queued.
      *
-     * @param  array<int, string>  $phoneKeys
-     * @return array<string, array<string, mixed>> keyed by recipient_key
-     */
-    private function resolveRecipients(WhatsappCampaign $campaign, array $phoneKeys): array
-    {
-        $sessions = $this->keyedByPhone(
-            DB::table('meta_chat_sessions')
-                ->where('shop_id', $campaign->shop_id)
-                ->whereNull('deleted_at')
-                ->orderBy('id')
-                ->select(['customer_id', 'guest_identifier as name']),
-            'phone_number',
-            $phoneKeys
-        );
-
-        /* Layered over the sessions rather than merged with them: a real customer carries a
-           better name than a chat session's WhatsApp profile label, and is what makes the
-           recipient record a Customer rather than a bare session. */
-        $customers = $this->keyedByPhone(
-            DB::table('customers')
-                ->where('shop_id', $campaign->shop_id)
-                ->whereNull('deleted_at')
-                ->orderBy('id')
-                ->select([DB::raw('id as customer_id'), DB::raw('contact_name as name')]),
-            'phone',
-            $phoneKeys
-        );
-
-        return array_replace($sessions, $customers);
-    }
-
-    /**
-     * Matched on the digits only form of the number, the SQL twin of
-     * GetWhatsappRecipientsQuery::normalisePhoneKey(), because that is the shape
-     * recipients_list stores and the two have to agree for a row to be found at all.
+     * The phone is re-checked here rather than trusted: a selection saved before the
+     * audience started filtering unsendable numbers still holds them.
      *
-     * @param  array<int, string>  $phoneKeys
-     * @return array<string, array<string, mixed>>
-     */
-    private function keyedByPhone(Builder $query, string $phoneColumn, array $phoneKeys): array
-    {
-        $key = sprintf("regexp_replace(%s, '[^0-9]', '', 'g')", $phoneColumn);
-
-        return $query
-            ->addSelect(DB::raw($key.' as recipient_key'))
-            ->whereIn(DB::raw($key), $phoneKeys)
-            ->get()
-            ->keyBy('recipient_key')
-            ->map(fn ($row) => (array) $row)
-            ->all();
-    }
-
-    /**
-     * A number nothing is known about is still sent to, carrying only its phone: the
-     * selection is the source of truth, and ProcessSendWhatsappCampaign falls back to the
-     * chat session it creates for the name and customer it needs to record the recipient.
-     *
-     * @param  array<int, string>  $phoneKeys
-     * @param  array<string, array<string, mixed>>  $resolved
      * @return array<int, array<string, mixed>>
      */
-    private function buildRows(array $phoneKeys, array $resolved): array
+    private function buildRows(Collection $recipients): array
     {
-        $rows = [];
-
-        foreach ($phoneKeys as $phoneKey) {
-            $row = $resolved[$phoneKey] ?? [];
-
-            $rows[] = [
-                'phone'       => $phoneKey,
-                'name'        => Arr::get($row, 'name'),
-                'customer_id' => Arr::get($row, 'customer_id'),
-            ];
-        }
-
-        return $rows;
+        return $recipients
+            ->filter(fn ($recipient) => GetWhatsappRecipientsQuery::isSendablePhone($recipient->phone))
+            ->map(fn ($recipient) => [
+                'recipient_id' => $recipient->id,
+                'phone'        => $recipient->phone,
+                'name'         => $recipient->recipient_name,
+                'customer_id'  => $recipient->recipient_type == 'Customer' ? $recipient->recipient_id : null,
+            ])
+            ->values()
+            ->all();
     }
 
     public string $commandSignature = 'whatsapp-campaign:prepare-recipients {campaign}';

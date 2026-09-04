@@ -35,6 +35,7 @@ const props = defineProps<{
     campaign: { name: string; meta_message_template_id: number | null; recipients_count: number }
     updateRoute: routeType
     recipientsRoute: routeType
+    clearRecipientsRoute: routeType
     createTemplateRoute: routeType
     templates: TemplateOption[]
     mergeTags: { value: string }[]
@@ -100,16 +101,27 @@ const isConfirmingReset = ref(false)
    remounting it rather than by leaving templateId alone. */
 const selectKey = ref(0)
 
+/* The recipients are rows of their own now, so clearing them is a second call rather than a
+   field on the campaign. Template first: a failed clear leaves a stale count next to the new
+   template, which the picker corrects, where the reverse would drop an audience the user
+   never agreed to lose. */
 const applyTemplate = async (value: number | null, resetRecipients = false) => {
     templateId.value = value
 
-    await persist(
-        resetRecipients
-            ? { meta_message_template_id: value, recipients_list: [] }
-            : { meta_message_template_id: value }
-    )
+    await persist({ meta_message_template_id: value })
 
-    if (resetRecipients && !saveError.value) recipientsCount.value = 0
+    if (!resetRecipients || saveError.value) return
+
+    try {
+        await axios.post(
+            route(props.clearRecipientsRoute.name, props.clearRecipientsRoute.parameters),
+            { phone_keys: [] }
+        )
+        recipientsCount.value = 0
+    } catch (error: any) {
+        saveError.value =
+            error?.response?.data?.message ?? trans("Could not clear the recipients, please try again.")
+    }
 }
 
 const onTemplateChange = (value: number | null) => {

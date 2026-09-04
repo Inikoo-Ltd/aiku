@@ -80,6 +80,15 @@ class ShowWhatsappCampaignWorkshop extends OrgAction
                         'whatsappCampaign' => $campaign->slug,
                     ],
                 ],
+                'clearRecipientsRoute' => [
+                    'name'       => 'grp.org.shops.show.marketing.whatsapp_campaigns.recipients.store',
+                    'parameters' => [
+                        'organisation'     => $shop->organisation->slug,
+                        'shop'             => $shop->slug,
+                        'whatsappCampaign' => $campaign->slug,
+                    ],
+                    'method'     => 'post',
+                ],
                 'createTemplateRoute' => [
                     'name'       => 'grp.org.shops.show.chat.whatsapp_templates.create',
                     'parameters' => [

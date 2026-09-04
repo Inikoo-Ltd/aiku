@@ -28,8 +28,12 @@ class DeleteWhatsappCampaign extends OrgAction
     {
         $this->assertDeletable($campaign);
 
-        /* Soft delete, and nothing to cascade: recipients and delivery channels are only
-           created once sending starts, which a draft by definition has not done. */
+        /* The picker stores recipients as soon as an audience is chosen, so a draft can
+           carry rows, and whatsapp_recipients has a hard cascade that a soft delete never
+           fires. Only the unclaimed ones are ours to remove; a campaign holding rows a
+           delivery channel has taken is past being deletable anyway. */
+        $campaign->recipients()->whereNull('whatsapp_delivery_channel_id')->delete();
+
         $campaign->delete();
 
         return $campaign;
