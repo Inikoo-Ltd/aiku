@@ -92,7 +92,11 @@ class GetShopMarketingOverview
         $campaignRevenue       = $this->revenueByCampaign($shop, $from, $to, $window);
         $campaignRegistrations = $this->registrationsBy('traffic_source_campaign_id', $shop, $from, $to, $window);
 
+        $directVisits = (int) $sources->where('type', TrafficSourcesTypeEnum::DIRECT->value)
+            ->sum(fn ($source) => $visits[$source->id] ?? 0);
+
         $channels = $sources
+            ->reject(fn ($source) => $source->type === TrafficSourcesTypeEnum::DIRECT->value)
             ->map(fn ($source) => [
                 'name'          => $source->name,
                 'type'          => $source->type,
@@ -144,6 +148,7 @@ class GetShopMarketingOverview
         $totalRevenue       = round(array_sum(array_column($channels, 'revenue')), 2);
         $totalRegistrations = round(array_sum(array_column($channels, 'registrations')), 2);
         $totalPending       = round(array_sum(array_column($channels, 'pending')), 2);
+        $baseline           = $this->baseline($shop, $from, $to);
 
         return [
             'from'          => $from?->toDateString(),
@@ -175,8 +180,18 @@ class GetShopMarketingOverview
                ad and mailshot in the period earned us nobody. The remainder is the trade that arrives
                whether we advertise or not. */
             'attribution_started_at' => GetAttributionStartedAt::run()?->toIso8601String(),
-            'baseline'      => $this->baseline($shop, $from, $to),
+            'baseline'      => $baseline,
             'channels'      => $channels,
+            /* The trade no channel can claim: typed, bookmarked, or arrived from somewhere we could
+               not name. Its visits are counted directly; its money is what is left of the baseline
+               once every channel has taken its share. Not a channel, so it never enters the channel
+               totals or a ROAS - nobody paid for it. */
+            'untraced'      => [
+                'visits'        => $directVisits,
+                'revenue'       => round(max(0, $baseline['revenue'] - $totalRevenue), 2),
+                'registrations' => round(max(0, $baseline['registrations'] - $totalRegistrations), 2),
+                'orders'        => round(max(0, $baseline['orders'] - array_sum(array_column($channels, 'orders'))), 2),
+            ],
             'campaigns'     => $this->campaigns($campaignRevenue, $campaignRegistrations, $costs),
             'referrers'     => $this->referrers($shop, $campaignRevenue, $campaignRegistrations),
             'spend_by_day'  => $this->spendByDay($shop, $from, $to),

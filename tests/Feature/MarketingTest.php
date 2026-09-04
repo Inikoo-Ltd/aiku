@@ -3411,6 +3411,26 @@ describe('marketing periods', function () {
             ->and($overview['baseline']['registrations'])->toBeGreaterThan(0.0);
     });
 
+    it('reports direct visits and the unattributed remainder as an untraced row on the shop dashboard', function () {
+        $direct = App\Models\CRM\TrafficSource::where('shop_id', $this->shop->id)->where('type', 'direct')->first();
+
+        DB::table('traffic_source_visits')->insert([
+            'shop_id'           => $this->shop->id,
+            'traffic_source_id' => $direct->id,
+            'date'              => now()->subDay()->toDateString(),
+            'visits'            => 33,
+            'created_at'        => now(),
+            'updated_at'        => now(),
+        ]);
+
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
+
+        expect(collect($overview['channels'])->firstWhere('type', 'direct'))->toBeNull()
+            ->and($overview['untraced']['visits'])->toBe(33)
+            ->and($overview['untraced']['revenue'])->toBe(round($overview['baseline']['revenue'] - $overview['totals']['revenue'], 2))
+            ->and($overview['untraced']['orders'])->toBe(round($overview['baseline']['orders'] - array_sum(array_column($overview['channels'], 'orders')), 2));
+    });
+
     it('shows visits a channel sent even when none of them converted', function () {
         $source = App\Models\CRM\TrafficSource::where('shop_id', $this->shop->id)->where('type', 'google-ads')->first();
 

@@ -30,6 +30,12 @@ const props = defineProps<{
             orders: number
             revenue: number
         }
+        untraced?: {
+            visits: number
+            revenue: number
+            registrations: number
+            orders: number
+        }
         channels: {
             name: string
             type: string
@@ -178,6 +184,8 @@ const count = (value: number, decimals = false) =>
     decimals || !Number.isInteger(value) ? value.toFixed(2) : value.toString()
 
 const hasDecimals = (values: number[]) => values.some(value => !Number.isInteger(value))
+
+const untracedHelp = trans('People who typed the address, used a bookmark, or came from somewhere we could not name. Visits are counted directly, once per day; revenue, sign-ups and orders are whatever is left of the shop total once every channel has taken its share. It is not "no marketing": somebody who saw an ad and typed the address later lands here too.')
 
 const unsubscribedHelp = trans('People who left our mailing lists over the same period. Shown beside the sign-ups rather than taken off them: an unsubscribe costs permission to email somebody, not the customer, and a mailshot that wins ten sign-ups while losing fifty subscribers is not a mailshot that won ten.')
 const pctOf = (part: number, whole: number) => whole > 0 ? Math.round((part / whole) * 100) + '%' : '—'
@@ -514,6 +522,49 @@ const typeLabel: Record<string, string> = {
                                 :class="channel.roas === null ? 'text-gray-300' : channel.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">
                                 {{ channel.roas !== null ? channel.roas.toFixed(2) + '×' : '—' }}
                             </td>
+                        </tr>
+                    </tbody>
+                    <!-- What no channel can claim: typed, bookmarked, or arrived from somewhere we could not
+                         name. Kept out of the channel totals - nobody paid for it, so it has no spend and
+                         no ROAS - but shown next to them, because it is usually the biggest number here. -->
+                    <tbody v-if="overview.untraced">
+                        <tr class="text-gray-900 bg-gray-100/80 border-t-2 border-b border-gray-300 font-medium leading-tight">
+                            <td class="py-1 pr-2 text-xs leading-tight">
+                                {{ trans('Direct / untraced') }}
+                                <span v-tooltip="untracedHelp" class="ml-1 text-gray-400 cursor-help">?</span>
+                            </td>
+                            <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                                <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
+                                    <span :class="overview.untraced.visits > 0 ? '' : 'text-gray-300'">{{ overview.untraced.visits > 0 ? locale.number(overview.untraced.visits) : '—' }}</span>
+                                    <span class="text-xs font-normal" :class="overview.untraced.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
+                                        <template v-if="overview.untraced.visits > 0">{{ count(overview.untraced.orders, decimalColumns.orders) }} {{ trans('bought') }}</template>
+                                    </span>
+                                    <span class="text-xs font-normal" :class="overview.untraced.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
+                                        <template v-if="overview.untraced.visits > 0">{{ conversionRate(overview.untraced.orders, overview.untraced.visits) }}</template>
+                                    </span>
+                                </span>
+                            </td>
+                            <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                            <td class="text-right px-2 tabular-nums text-gray-300">—</td>
+                            <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                                <span class="inline-grid grid-cols-[5.5rem_2.75rem]">
+                                    <span>{{ money(overview.untraced.revenue) }}</span>
+                                    <span class="font-normal text-gray-400">{{ pctOf(overview.untraced.revenue, overview.baseline?.revenue ?? 0) }}</span>
+                                </span>
+                            </td>
+                            <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                                <span class="inline-grid grid-cols-[3.5rem_2.75rem]">
+                                    <span>{{ count(overview.untraced.registrations, decimalColumns.registrations) }}</span>
+                                    <span></span>
+                                </span>
+                            </td>
+                            <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                                <span class="inline-grid grid-cols-[3.5rem_2.75rem]">
+                                    <span>{{ count(overview.untraced.orders, decimalColumns.orders) }}</span>
+                                    <span class="font-normal text-gray-400">{{ pctOf(overview.untraced.orders, overview.baseline?.orders ?? 0) }}</span>
+                                </span>
+                            </td>
+                            <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
                         </tr>
                     </tbody>
                     <tfoot>
