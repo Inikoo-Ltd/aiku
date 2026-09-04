@@ -49,7 +49,7 @@ class ProcessSendWhatsappCampaign
         ]);
 
         foreach ($recipientRows as $row) {
-            $this->storeRecipient($campaign, $channel, $row);
+            $this->stampRecipient($campaign, $channel, $row);
         }
 
         $channel->update([
@@ -61,9 +61,12 @@ class ProcessSendWhatsappCampaign
     }
 
     /**
-     * A number that cannot be turned into a session is skipped rather than stored: without
-     * a session there is nothing to attach the sent message to, and the unique index on
-     * (campaign, phone) means the row would block a later retry from succeeding.
+     * The row already exists, written when the audience was chosen, so this claims it for
+     * this channel rather than creating it.
+     *
+     * A number that cannot be turned into a session is left unclaimed instead of stamped:
+     * without a session there is nothing to attach the sent message to, and leaving the
+     * channel null keeps the row where a later run of prepare will find it again.
      *
      * The format check repeats the one the audience and the selection already applied. It
      * is the last line before the Meta call, and by here there is no session to hang a
@@ -71,7 +74,7 @@ class ProcessSendWhatsappCampaign
      *
      * @param  array<string, mixed>  $row
      */
-    private function storeRecipient(WhatsappCampaign $campaign, WhatsappDeliveryChannel $channel, array $row): void
+    private function stampRecipient(WhatsappCampaign $campaign, WhatsappDeliveryChannel $channel, array $row): void
     {
         $phone = (string) Arr::get($row, 'phone');
 
@@ -90,19 +93,18 @@ class ProcessSendWhatsappCampaign
             return;
         }
 
-        $customerId = Arr::get($row, 'customer_id') ?? $session->customer_id;
+        /* Guarded on the channel still being null so a re-run cannot move a row another
+           channel has already claimed and send it twice.
 
-        WhatsappRecipient::firstOrCreate(
-            [
-                'whatsapp_campaign_id' => $campaign->id,
-                'phone'                => $phone,
-            ],
-            [
+           recipient_type and recipient_id are left as the picker resolved them: the session
+           created here is a side effect of sending, not a better answer to who this is. */
+        WhatsappRecipient::where('id', Arr::get($row, 'recipient_id'))
+            ->where('whatsapp_campaign_id', $campaign->id)
+            ->whereNull('whatsapp_delivery_channel_id')
+            ->update([
                 'whatsapp_delivery_channel_id' => $channel->id,
-                'recipient_type'               => $customerId ? 'Customer' : 'MetaChatSession',
-                'recipient_id'                 => $customerId ?: $session->id,
                 'recipient_name'               => Arr::get($row, 'name') ?? $session->guest_identifier,
-            ]
-        );
+                'updated_at'                   => now(),
+            ]);
     }
 }

@@ -98,7 +98,6 @@ const props = withDefaults(defineProps<{
     exportFields?: { key: string, label: string }[]
     channels?: Record<string, boolean>
     channelOptions?: { value: string, label: string }[]
-    selection?: string[]
     reloadOnly?: string[]
 }>(), {
     showSave: true,
@@ -134,10 +133,12 @@ if (props.channelOptions?.length) {
     extraQuery.channels = { ...selectedChannels.value }
 }
 
-// The selection rides along so the server can narrow it to the rows the new audience keeps
+/* The selection no longer rides along: the server answers per row whether the campaign holds
+   that contact, so a channel change just re-asks. Deleted rather than left unset because a
+   value from an earlier visit would otherwise keep being sent on every later reload. */
 const onChannelChange = () => {
     extraQuery.channels = { ...selectedChannels.value }
-    extraQuery.selection = [...(props.selection ?? [])]
+    delete extraQuery.selection
     fetchCustomers()
 }
 

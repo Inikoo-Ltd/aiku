@@ -32,7 +32,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $cancelled_at
  * @property \Illuminate\Support\Carbon|null $stopped_at
  * @property array|null $recipients_recipe
- * @property array|null $recipients_list
+ * @property array|null $recipients_list no longer written, see the recipients() rows
  * @property int $recipients_count
  * @property int|null $publisher_id
  * @property array|null $data

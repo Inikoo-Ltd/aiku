@@ -7,8 +7,7 @@
 
 namespace App\Actions\UI\Dropshipping\Marketing;
 
-use App\Actions\Comms\WhatsappCampaign\FilterRecipientsByTemplateTags;
-use App\Actions\Comms\WhatsappCampaign\GetWhatsappRecipientsQuery;
+use App\Actions\Comms\WhatsappCampaign\WithWhatsappCampaignAudience;
 use App\Actions\CRM\Customer\GetCustomerFilterStructure;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
@@ -21,10 +20,10 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
@@ -35,6 +34,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexWhatsappCampaignRecipients extends OrgAction
 {
     use WithMarketingEditAuthorisation;
+    use WithWhatsappCampaignAudience;
 
     private WhatsappCampaign $campaign;
 
@@ -42,15 +42,13 @@ class IndexWhatsappCampaignRecipients extends OrgAction
 
     private array $customerFilters = [];
 
-    private array $validSelection = [];
-
     private array $templateTags = [];
 
     public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
-        $this->channels        = $this->readChannels();
-        $this->customerFilters = $this->readCustomerFilters();
-        $this->templateTags    = $this->readTemplateTags();
+        $this->channels        = $this->readAudienceChannels(request()->input('channels'), $this->campaign);
+        $this->customerFilters = $this->readAudienceCustomerFilters(request()->input('filters'), $this->campaign);
+        $this->templateTags    = $this->readTemplateTags($this->campaign);
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $term = strtolower($value);
@@ -65,14 +63,9 @@ class IndexWhatsappCampaignRecipients extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $recipients = FilterRecipientsByTemplateTags::run(
-            GetWhatsappRecipientsQuery::run($shop, $this->channels, $this->customerFilters),
-            $this->templateTags
-        );
+        $recipients = $this->audienceQuery($this->campaign, $this->channels, $this->customerFilters);
 
-        $this->validSelection = $this->readValidSelection($recipients);
-
-        return QueryBuilder::for(Customer::query()->withoutGlobalScopes()->fromSub($recipients, 'recipients'))
+        return QueryBuilder::for($this->markStoredRecipients($recipients))
             ->defaultSort('-last_visitor_message_at')
             ->allowedSorts(['name', 'phone_number', 'last_visitor_message_at', 'created_at'])
             ->allowedFilters([$globalSearch])
@@ -81,92 +74,35 @@ class IndexWhatsappCampaignRecipients extends OrgAction
     }
 
     /**
-     * Defaults to the subscriber channel, the audience that opted in to being messaged.
-     */
-    private function readChannels(): array
-    {
-        $requested = request()->input('channels');
-
-        if (!is_array($requested)) {
-            $requested = Arr::get($this->campaign->recipients_recipe ?? [], 'channels');
-        }
-
-        if (!is_array($requested) || empty(array_filter($requested, fn ($value) => filter_var($value, FILTER_VALIDATE_BOOLEAN)))) {
-            return GetWhatsappRecipientsQuery::DEFAULT_CHANNELS;
-        }
-
-        $channels = [];
-
-        foreach (GetWhatsappRecipientsQuery::CHANNELS as $channel) {
-            $channels[$channel] = filter_var(Arr::get($requested, $channel, false), FILTER_VALIDATE_BOOLEAN);
-        }
-
-        return $channels;
-    }
-
-    private function readCustomerFilters(): array
-    {
-        $filters = request()->input('filters');
-
-        if (!is_array($filters)) {
-            $filters = Arr::get($this->campaign->recipients_recipe ?? [], 'customer_filters', []);
-        }
-
-        if (!is_array($filters)) {
-            return [];
-        }
-
-        return array_diff_key($filters, ['all_customers' => true]);
-    }
-
-    /**
-     * The merge tags the campaign's template was written with, read from the same path
-     * SendWhatsappDeliveryChannel fills them from. A recipient who cannot supply one of
-     * them is not sent to, so the picker leaves them out rather than letting the campaign
-     * count contacts it will only fail on.
+     * Tells each row whether the campaign already holds it, as a column on the row itself.
      *
-     * @return array<int, string>
-     */
-    private function readTemplateTags(): array
-    {
-        $tags = Arr::get($this->campaign->metaMessageTemplate?->data ?? [], 'merge_tags.body', []);
-
-        return is_array($tags) ? $tags : [];
-    }
-
-    /**
-     * The keys the page may keep ticked: the current selection narrowed to the rows the
-     * audience still holds. The table is paginated, so the browser cannot judge a selection
-     * sitting on a page it never loaded, and a channel it unticks would otherwise leave
-     * those rows saved into recipients_list and messaged.
+     * Asked per row rather than as a list of everything stored: the picker is paginated, so
+     * only the contacts on screen need an answer, and a campaign holding a whole shop would
+     * otherwise have to be enumerated into memory, into a bind list and into a prop just to
+     * tick twenty five checkboxes.
      *
-     * The selection is read from the request while the user is toggling channels and falls
-     * back to what the campaign has stored on first load.
+     * The exists sits on the outer query so it is evaluated after the paginator has cut the
+     * page down, and it reads the (whatsapp_campaign_id, phone) unique index directly.
      *
-     * @return array<int, string>
+     * A recipient a send has already claimed still counts as stored: they are being messaged,
+     * and showing them unticked would misdescribe the campaign. The picker cannot drop them,
+     * which StoreWhatsappCampaignRecipients enforces on its own.
      */
-    private function readValidSelection(Builder $recipients): array
+    private function markStoredRecipients(Builder $recipients): EloquentBuilder
     {
-        $selection = request()->input('selection');
+        $isStored = DB::table('whatsapp_recipients')
+            ->selectRaw('1')
+            ->whereColumn('whatsapp_recipients.phone', 'recipients.recipient_key')
+            ->where('whatsapp_recipients.whatsapp_campaign_id', $this->campaign->id);
 
-        if (!is_array($selection)) {
-            $selection = Arr::pluck($this->campaign->recipients_list ?? [], 'phone_number');
-        }
-
-        $phoneKeys = array_values(array_unique(array_filter(array_map(
-            fn ($phone) => GetWhatsappRecipientsQuery::normalisePhoneKey(is_string($phone) ? $phone : null),
-            $selection
-        ))));
-
-        if (!$phoneKeys) {
-            return [];
-        }
-
-        return DB::query()
-            ->fromSub($recipients, 'selection')
-            ->whereIn('selection.recipient_key', $phoneKeys)
-            ->pluck('selection.recipient_key')
-            ->all();
+        /* recipients.* is restored explicitly because naming any column stops the paginator
+           from selecting everything, which would otherwise strip the row down to this flag. */
+        return Customer::query()
+            ->withoutGlobalScopes()
+            ->fromSub($recipients, 'recipients')
+            ->select('recipients.*')
+            ->selectRaw('exists ('.$isStored->toSql().') as is_selected')
+            ->addBinding($isStored->getBindings(), 'select');
     }
 
     public function tableStructure($prefix = null): Closure
@@ -242,17 +178,20 @@ class IndexWhatsappCampaignRecipients extends OrgAction
                         'title' => __('Recipients'),
                     ],
                 ],
-                'validSelection'     => $this->validSelection,
                 'templateTags'       => $this->templateTags,
+                /* The count comes from the rows rather than from anything the page counts for
+                   itself: the browser only ever sees one page of contacts, so it has no way to
+                   total an audience it never receives. */
+                'recipientsCount'    => $campaign->recipients_count,
                 'channels'           => $this->channels,
                 'filtersStructure'   => GetCustomerFilterStructure::run($this->shop),
                 'filters'            => $this->customerFilters,
                 'shop_id'            => $this->shop->id,
                 'shop_slug'          => $this->shop->slug,
-                'updateRoute'        => [
-                    'name'       => 'grp.org.shops.show.marketing.whatsapp_campaigns.update',
+                'storeRoute'         => [
+                    'name'       => 'grp.org.shops.show.marketing.whatsapp_campaigns.recipients.store',
                     'parameters' => $routeParameters,
-                    'method'     => 'patch',
+                    'method'     => 'post',
                 ],
                 'backRoute'          => [
                     'name'       => 'grp.org.shops.show.marketing.whatsapp_campaigns.workshop',

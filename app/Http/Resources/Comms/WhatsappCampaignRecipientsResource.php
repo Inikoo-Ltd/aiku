@@ -19,6 +19,7 @@ class WhatsappCampaignRecipientsResource extends JsonResource
             'recipient_key'           => $this->recipient_key,
             'name'                    => $this->name,
             'phone_number'            => $this->phone_number,
+            'is_selected'             => (bool) $this->is_selected,
             'customer_id'             => $this->customer_id,
             'meta_chat_session_id'    => $this->meta_chat_session_id,
             'sources'                 => array_values(array_filter([

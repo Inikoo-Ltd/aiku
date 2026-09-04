@@ -22,10 +22,18 @@ use Illuminate\Database\Query\Builder;
  */
 trait WithWhatsappRecipientStatusQuery
 {
+    /**
+     * Only the recipients a send has actually claimed. The picker writes rows as soon as an
+     * audience is chosen, carrying a null whatsapp_delivery_channel_id until a delivery
+     * channel takes them, so without this a campaign that has not started sending would
+     * report its whole audience as failed: every one of those rows has a null
+     * meta_chat_message_id, which is what the failed bucket looks for.
+     */
     protected function recipientStatusBaseQuery(WhatsappCampaign $campaign): EloquentBuilder
     {
         return WhatsappRecipient::query()
             ->where('whatsapp_recipients.whatsapp_campaign_id', $campaign->id)
+            ->whereNotNull('whatsapp_recipients.whatsapp_delivery_channel_id')
             ->leftJoin('meta_chat_messages', 'meta_chat_messages.id', '=', 'whatsapp_recipients.meta_chat_message_id')
             ->leftJoin('meta_chat_sessions', 'meta_chat_sessions.id', '=', 'meta_chat_messages.meta_chat_session_id');
     }

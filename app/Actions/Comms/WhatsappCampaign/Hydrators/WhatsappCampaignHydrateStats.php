@@ -44,6 +44,10 @@ class WhatsappCampaignHydrateStats implements ShouldBeUnique
             return;
         }
 
+        /* Every chosen recipient, including the ones a send has not reached yet, so this
+           agrees with the campaign's recipients_count. The status buckets below deliberately
+           do not: they only describe rows a delivery channel has taken, so mid send the
+           parts legitimately add up to less than the whole. */
         $stats = [
             'number_recipients' => $campaign->recipients()->count(),
         ];
