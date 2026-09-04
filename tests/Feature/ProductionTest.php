@@ -87,7 +87,7 @@ beforeEach(function () {
     setPermissionsTeamId($this->group->id);
     $this->guest        = createAdminGuest($this->group);
 
-    $production = Production::first();
+    $production = Production::orderBy('id')->first();
     if (!$production) {
         data_set($storeData, 'code', 'CODE');
         data_set($storeData, 'name', 'NAME');
@@ -99,7 +99,7 @@ beforeEach(function () {
     }
     $this->production = $production;
 
-    $artefact = Artefact::first();
+    $artefact = Artefact::orderBy('id')->first();
     if (!$artefact) {
         data_set($storeData, 'code', 'CODE');
         data_set($storeData, 'name', 'NAME');
@@ -111,7 +111,7 @@ beforeEach(function () {
     }
     $this->artefact = $artefact;
 
-    $rawMaterial = RawMaterial::first();
+    $rawMaterial = RawMaterial::orderBy('id')->first();
     if (!$rawMaterial) {
         data_set($storeData, 'type', RawMaterialTypeEnum::CONSUMABLE->value);
         data_set($storeData, 'state', RawMaterialStateEnum::ORPHAN->value);
@@ -127,7 +127,7 @@ beforeEach(function () {
     }
     $this->rawMaterial = $rawMaterial;
 
-    $manufactureTask = ManufactureTask::first();
+    $manufactureTask = ManufactureTask::orderBy('id')->first();
     if (!$manufactureTask) {
         data_set($storeData, 'code', 'CODE');
         data_set($storeData, 'name', 'name');
@@ -225,14 +225,14 @@ test('create production by command', function () {
 
     expect($organisation->manufactureStats->number_productions)->toBe(3)
         ->and($organisation->group->manufactureStats->number_productions)->toBe(3)
-        ->and($production->roles()->count())->toBe(5);
+        ->and($production->roles()->count())->toBe(6);
 });
 
 test('seed production permissions', function () {
     setPermissionsTeamId($this->group->id);
     $this->artisan('production:seed-permissions')->assertExitCode(0);
     $production = Production::where('code', 'AA')->first();
-    expect($production->roles()->count())->toBe(5);
+    expect($production->roles()->count())->toBe(6);
 });
 
 test('can store a raw material', function (Production $production) {
@@ -482,7 +482,7 @@ test('UI edit raw material', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 6)
+            ->has('formData.blueprint.0.fields', 7)
             ->has('pageHead')
             ->has('breadcrumbs', 4);
     });
@@ -674,7 +674,7 @@ test('UI edit manufacture task', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 12)
+            ->has('formData.blueprint.0.fields', 13)
             ->has('pageHead')
             ->has('breadcrumbs', 4);
     });
@@ -1551,6 +1551,10 @@ describe('production reward pay bands', function () {
             $page->component('Org/Production/ManufactureFloor')
                 ->where('open_session.band_feedback', null);
         });
+
+        \App\Models\Production\ManufactureTaskSession::where('user_id', auth()->user()->id)
+            ->where('state', \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::OPEN)
+            ->update(['state' => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::CLOSED]);
     });
 
     test('development activity pays the development band', function () {

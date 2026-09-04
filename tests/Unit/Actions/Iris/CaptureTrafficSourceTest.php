@@ -98,7 +98,12 @@ it('ignores a forwarded referrer that is the storefront itself', function () {
 it('ignores an empty forwarded referrer from a direct visit', function () {
     irisAjaxRequest('https://ecom.test/', [], '');
 
-    expect(CaptureTrafficSource::make()->getCookies())->toBe([]);
+    /* No touch to record, but somebody did arrive: typed or bookmarked is still a direct visit. */
+    $cookies = CaptureTrafficSource::make()->getCookies();
+
+    expect($cookies)->not->toHaveKey('aiku_tsd')
+        ->and($cookies)->not->toHaveKey('aiku_lts')
+        ->and($cookies['aiku_vcd']['value'])->toBe(now()->toDateString().'|w');
 });
 
 it('prefers a paid click id over the forwarded organic referrer', function () {
@@ -111,10 +116,14 @@ it('prefers a paid click id over the forwarded organic referrer', function () {
     expect(CaptureTrafficSource::make()->getCookies()['aiku_lts']['value'])->toBe('b99887766');
 });
 
-it('captures nothing for a plain visit with no ad params and no external referrer', function () {
+it('captures no touch for a plain visit with no ad params and no external referrer', function () {
     irisAjaxRequest('https://ecom.test/products/candles');
 
-    expect(CaptureTrafficSource::make()->getCookies())->toBe([]);
+    $cookies = CaptureTrafficSource::make()->getCookies();
+
+    expect($cookies)->not->toHaveKey('aiku_tsd')
+        ->and($cookies)->not->toHaveKey('aiku_lts')
+        ->and($cookies['aiku_vcd']['value'])->toBe(now()->toDateString().'|w');
 });
 
 it('does not record the same touch twice in a row', function () {

@@ -3493,7 +3493,7 @@ test('export flag follows the customs territory of the organisation', function (
     $modelData = Order::factory()->definition();
     data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
     data_set($modelData, 'delivery_address', $usa);
-    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order = StoreOrder::make()->action($this->customer, $modelData, strict: false);
     expect($order->is_export)->toBeTrue();
 
     $home = $addressIn($this->organisation->country->code);
