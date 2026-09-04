@@ -38,7 +38,7 @@ class TariffCode extends Model
 
     /**
      * Short export label for a product tariff code: the most specific named row wins, so a curated
-     * 8 digit name beats a 6 digit one. Codes may carry spaces or national digits beyond 8.
+     * 10 digit name beats an 8 digit one, which beats the 6 digit heading. Codes may carry spaces.
      */
     public static function exportNameFor(?string $tariffCode): ?string
     {
@@ -47,7 +47,7 @@ class TariffCode extends Model
             return null;
         }
 
-        return static::whereIn('hs_code', [substr($digits, 0, 8), substr($digits, 0, 6)])
+        return static::whereIn('hs_code', [substr($digits, 0, 10), substr($digits, 0, 8), substr($digits, 0, 6)])
             ->whereNotNull('name')
             ->orderByDesc('level')
             ->value('name');
