@@ -1109,8 +1109,9 @@ test('tariff codes index lists rows and the export name is editable', function (
     $fetch = \App\Actions\Transfers\Aurora\FetchAuroraTariffCodeNames::make();
 
     expect($tariffCode->fresh()->name)->toBe('Incense')
-        ->and(\App\Models\Helpers\TariffCode::exportNameFor('3307 41 0000'))->toBe('Incense')
-        ->and(\App\Models\Helpers\TariffCode::exportNameFor('3307410010'))->toBe('Incense Sticks')
+        ->and(\App\Models\Helpers\TariffCode::exportNameFor('3307 41 0099'))->toBe('Incense Sticks')
+        ->and(\App\Models\Helpers\TariffCode::exportNameFor('3307490000'))->toBeNull()
+        ->and(\App\Models\Helpers\TariffCode::exportNameFor('330741'))->toBe('Incense')
         ->and(\App\Models\Helpers\TariffCode::exportNameFor('9999999999'))->toBeNull()
         ->and($fetch->normaliseCode('902300000'))->toBe('0902300000')
         ->and($fetch->normaliseCode('9021000'))->toBe('09021000')

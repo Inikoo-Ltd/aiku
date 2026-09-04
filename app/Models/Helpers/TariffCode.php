@@ -37,8 +37,9 @@ class TariffCode extends Model
     }
 
     /**
-     * Short export label for a product tariff code: the most specific named row wins, so a curated
-     * 10 digit name beats an 8 digit one, which beats the 6 digit heading. Codes may carry spaces.
+     * Short export label for a product tariff code, the Aurora rule: any named row that shares the
+     * first 8 digits matches, whatever its national digits say, and the most specific one wins.
+     * The 6 digit heading is the last resort. Codes may carry spaces.
      */
     public static function exportNameFor(?string $tariffCode): ?string
     {
@@ -47,8 +48,11 @@ class TariffCode extends Model
             return null;
         }
 
-        return static::whereIn('hs_code', [substr($digits, 0, 10), substr($digits, 0, 8), substr($digits, 0, 6)])
-            ->whereNotNull('name')
+        return static::whereNotNull('name')
+            ->where(function ($query) use ($digits) {
+                $query->whereRaw('left(hs_code, 8) = ?', [substr($digits, 0, 8)])
+                    ->orWhere('hs_code', substr($digits, 0, 6));
+            })
             ->orderByDesc('level')
             ->value('name');
     }
