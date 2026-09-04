@@ -93,7 +93,10 @@ trait WithAttributionWindow
            creation. Marketplaces and the rest split by the sales channel's type. */
         $kindSql = fn (string $table) => "CASE WHEN {$table}.as_organisation_id IS NOT NULL THEN 'partners'"
             ." WHEN sc.type = '".SalesChannelTypeEnum::MARKETPLACE->value."' THEN 'marketplaces' ELSE 'non_web' END";
-        $nameSql = fn (string $table) => "CASE WHEN {$table}.as_organisation_id IS NOT NULL THEN c.name ELSE sc.name END";
+        /* Partners are named by the organisation they are, not by the customer record: the same
+           sister company has a customer in every shop it buys from, spelt a little differently each
+           time, and the page must show it once. */
+        $nameSql = fn (string $table) => "CASE WHEN {$table}.as_organisation_id IS NOT NULL THEN org.name ELSE sc.name END";
         $key     = fn ($row) => $row->kind.'|'.$row->name;
 
         $isOutOfScope = fn (string $table) => fn ($query) => $query->where(fn ($scope) => $scope
@@ -104,7 +107,7 @@ trait WithAttributionWindow
 
         $revenue = DB::table('invoices')
             ->leftJoin('sales_channels as sc', 'sc.id', '=', 'invoices.sales_channel_id')
-            ->join('customers as c', 'c.id', '=', 'invoices.customer_id')
+            ->leftJoin('organisations as org', 'org.id', '=', 'invoices.as_organisation_id')
             ->whereIn('invoices.shop_id', $shopIds)
             ->where('invoices.in_process', false)
             ->tap($isOutOfScope('invoices'))
@@ -117,7 +120,7 @@ trait WithAttributionWindow
 
         $orders = DB::table('orders')
             ->leftJoin('sales_channels as sc', 'sc.id', '=', 'orders.sales_channel_id')
-            ->join('customers as c', 'c.id', '=', 'orders.customer_id')
+            ->leftJoin('organisations as org', 'org.id', '=', 'orders.as_organisation_id')
             ->whereIn('orders.shop_id', $shopIds)
             ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
             ->whereNull('orders.deleted_at')

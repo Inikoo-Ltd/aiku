@@ -3787,7 +3787,7 @@ describe('the aggregated marketing overview', function () {
         $rows     = collect($overview['out_of_scope']);
 
         expect($rows->firstWhere('kind', 'partners')['revenue'])->toBe(70.0)
-            ->and($rows->firstWhere('kind', 'partners')['name'])->toBe($this->customer->name)
+            ->and($rows->firstWhere('kind', 'partners')['name'])->toBe($this->organisation->name)
             ->and($rows->firstWhere('name', 'Phone')['revenue'] ?? 0.0)->toBe(0.0);
 
     });
