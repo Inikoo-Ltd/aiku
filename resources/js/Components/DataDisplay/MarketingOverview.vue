@@ -264,7 +264,16 @@ const hostsBehind = (channel: { type: string }) => {
 
     /* Five lines and a remainder, never a screenful: the long tail of engines nobody has heard of
        is one line that says how much it adds up to. Referrers arrive sorted by revenue then visits. */
-    const hosts = (props.overview?.referrers ?? []).filter(referrer => referrer.kind === kind)
+    const byName: Record<string, any> = {}
+    for (const referrer of (props.overview?.referrers ?? []).filter(referrer => referrer.kind === kind)) {
+        const name = hostName(referrer.host)
+        const row = byName[name] ??= { ...referrer, host: name, visits: 0, visitors: 0, revenue: 0, registrations: 0 }
+        row.visits += referrer.visits
+        row.visitors += referrer.visitors
+        row.revenue += referrer.revenue
+        row.registrations += referrer.registrations ?? 0
+    }
+    const hosts = Object.values(byName).sort((a, b) => b.revenue - a.revenue || b.visits - a.visits)
     if (hosts.length <= HOSTS_SHOWN + 1) return hosts
 
     const rest = hosts.slice(HOSTS_SHOWN)
@@ -279,20 +288,24 @@ const hostsBehind = (channel: { type: string }) => {
     }]
 }
 
-const hostName = (host: string) => ({
-    'chatgpt.com': 'ChatGPT',
-    'gemini.google.com': 'Gemini',
-    'copilot.microsoft.com': 'Copilot',
-    'claude.ai': 'Claude',
-    'perplexity.ai': 'Perplexity',
-    'duckduckgo.com': 'DuckDuckGo',
-    'search.yahoo.com': 'Yahoo',
-    'yandex.com': 'Yandex',
-    'ecosia.org': 'Ecosia',
-    'seznam.cz': 'Seznam',
-    'qwant.com': 'Qwant',
-    'search.brave.com': 'Brave',
-}[host] ?? host)
+/* One name per engine or assistant: uk.search.yahoo.com and fr.search.yahoo.com are Yahoo, and
+   every country edition folds into the same line. */
+const HOST_NAMES: [RegExp, string][] = [
+    [/(^|\.)chatgpt\.com$/, 'ChatGPT'],
+    [/(^|\.)gemini\.google\.com$/, 'Gemini'],
+    [/(^|\.)copilot\.microsoft\.com$/, 'Copilot'],
+    [/(^|\.)claude\.ai$/, 'Claude'],
+    [/(^|\.)perplexity\.ai$/, 'Perplexity'],
+    [/(^|\.)duckduckgo\.com$/, 'DuckDuckGo'],
+    [/(^|\.)yahoo\.(com|co\.[a-z]+|[a-z]{2})$/, 'Yahoo'],
+    [/(^|\.)yandex\.(com|ru|[a-z]{2})$/, 'Yandex'],
+    [/(^|\.)ecosia\.org$/, 'Ecosia'],
+    [/(^|\.)seznam\.cz$/, 'Seznam'],
+    [/(^|\.)qwant\.com$/, 'Qwant'],
+    [/(^|\.)brave\.com$/, 'Brave'],
+]
+
+const hostName = (host: string) => HOST_NAMES.find(([pattern]) => pattern.test(host))?.[1] ?? host
 
 const untracedHelp = trans('People who typed the address, used a bookmark, or came from somewhere we could not name. Visits are counted directly, once per day; revenue, sign-ups and orders are whatever is left of the shop total once every channel has taken its share. It is not "no marketing": somebody who saw an ad and typed the address later lands here too.')
 
@@ -641,7 +654,7 @@ const typeLabel: Record<string, string> = {
                              the question, and the channel total cannot answer it. Visits per assistant come from the click log, so they reach back to when the channel began;
                              touched customers and revenue are share-weighted like everywhere else. -->
                         <tr v-for="assistant in ((group.channels.length === 1 || openHosts[channel.type]) ? hostsBehind(channel) : [])" :key="assistant.host" class="border-b border-gray-50 text-gray-500">
-                            <td class="py-1.5 pr-2 text-xs" :class="group.channels.length === 1 ? 'pl-5' : 'pl-10'"><template v-if="assistant.host === '__rest__'">{{ assistant.restCount }} {{ trans('others') }}</template><template v-else>{{ hostName(assistant.host) }}</template></td>
+                            <td class="py-1.5 pr-2 text-xs" :class="group.channels.length === 1 ? 'pl-5' : 'pl-10'"><template v-if="assistant.host === '__rest__'">{{ assistant.restCount }} {{ trans('others') }}</template><template v-else>{{ assistant.host }}</template></td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap text-xs">
                                 <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
                                     <span :class="assistant.visits > 0 ? '' : 'text-gray-300'">{{ assistant.visits > 0 ? locale.number(assistant.visits) : '—' }}</span>                                    <span :class="assistant.visitors > 0 ? 'text-[#006300]' : 'text-gray-500'">{{ count(assistant.visitors, true) }} {{ trans('touched') }}</span>                                    <span></span>
