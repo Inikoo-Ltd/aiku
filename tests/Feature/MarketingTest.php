@@ -1302,6 +1302,24 @@ describe('referral traffic sources', function () {
             ->and(GetTrafficSourceFromRefererHeader::run('https://mail.ru/inbox'))->toBeNull();
     });
 
+    it('reads an assistant filed as a referral by an old cookie as AI, so registration cannot mint a Referral campaign for it', function () {
+        $ai       = createTrafficSource($this->shop, TrafficSourcesTypeEnum::AI->value, 'AI Assistants');
+        $recorded = now()->subDay()->timestamp;
+
+        $customer = StoreCustomer::make()->action(
+            $this->shop,
+            array_merge(Customer::factory()->definition(), [
+                'traffic_sources' => $recorded.'qchatgpt.com|'.$recorded.'qesources.co.uk',
+            ])
+        );
+
+        $aiAbbr = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::AI->value];
+
+        expect($customer->refresh()->traffic_sources)->toBe($recorded.$aiAbbr.'chatgpt.com|'.$recorded.'qesources.co.uk')
+            ->and(TrafficSourceCampaign::where('reference', 'chatgpt.com')->pluck('traffic_source_id')->all())->toBe([$ai->id])
+            ->and($customer->trafficSources()->pluck('type')->all())->toContain(TrafficSourcesTypeEnum::AI->value);
+    });
+
     it('reclassifies the AI touches recorded before the channel existed', function () {
         $ai       = createTrafficSource($this->shop, TrafficSourcesTypeEnum::AI->value, 'AI Assistants');
         $recorded = now()->subDay()->timestamp;

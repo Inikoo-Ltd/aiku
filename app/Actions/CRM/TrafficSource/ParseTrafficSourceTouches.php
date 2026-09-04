@@ -52,15 +52,50 @@ class ParseTrafficSourceTouches
 
             $timestampPart = substr($segment, 0, strlen($segment) - strlen($withoutTimestamp));
             $campaignRef   = strlen($withoutTimestamp) > 1 ? substr($withoutTimestamp, 1) : null;
+            $rawAbbr       = $withoutTimestamp[0];
+
+            /* Cookies written before the AI channel existed file ChatGPT and its kind as a referral
+               from a website, and they live for four months. Read as AI here, at the one point every
+               consumer goes through, so a registration from such a cookie can no longer mint a
+               Referral campaign for an assistant. `raw_abbr` keeps what the string actually said. */
+            if (in_array($type, [TrafficSourcesTypeEnum::REFERRAL, TrafficSourcesTypeEnum::ORGANIC_SEARCH], true)
+                && GetTrafficSourceFromRefererHeader::isAiAssistantHost($campaignRef)) {
+                $type = TrafficSourcesTypeEnum::AI;
+            }
 
             $touches[] = [
                 'timestamp'    => $timestampPart === '' ? null : (int) $timestampPart,
-                'abbr'         => $withoutTimestamp[0],
+                'abbr'         => TrafficSourcesTypeEnum::abbr()[$type->value],
+                'raw_abbr'     => $rawAbbr,
                 'type'         => $type,
                 'campaign_ref' => $campaignRef,
             ];
         }
 
         return $touches;
+    }
+
+    /**
+     * The touches back as the string the column stores, with every translated abbreviation made
+     * permanent, so the stored history says what it means.
+     *
+     * @param array<int, array{timestamp: int|null, abbr: string, campaign_ref: string|null}> $touches
+     */
+    public static function serialise(array $touches): string
+    {
+        return implode('|', array_map(
+            fn (array $touch) => ($touch['timestamp'] ?? '').$touch['abbr'].($touch['campaign_ref'] ?? ''),
+            $touches
+        ));
+    }
+
+    /**
+     * Whether any touch read differently from how it was written.
+     *
+     * @param array<int, array{abbr: string, raw_abbr: string}> $touches
+     */
+    public static function wasTranslated(array $touches): bool
+    {
+        return (bool) array_filter($touches, fn (array $touch) => $touch['abbr'] !== $touch['raw_abbr']);
     }
 }

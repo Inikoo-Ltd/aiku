@@ -255,21 +255,9 @@ class ReclassifyAiTrafficSourceTouches
             return null;
         }
 
-        $aiAbbr    = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::AI->value];
-        $rewritten = false;
-
-        $segments = array_map(function (array $touch) use ($aiAbbr, &$rewritten) {
-            $isReclassifiable = $touch['type'] === TrafficSourcesTypeEnum::REFERRAL
-                && GetTrafficSourceFromRefererHeader::isAiAssistantHost($touch['campaign_ref']);
-
-            if ($isReclassifiable) {
-                $rewritten = true;
-            }
-
-            return $touch['timestamp'].($isReclassifiable ? $aiAbbr : $touch['abbr']).($touch['campaign_ref'] ?? '');
-        }, $touches);
-
-        return $rewritten ? implode('|', $segments) : null;
+        /* The parser already reads an assistant filed as a referral as AI; this makes that reading
+           permanent in the stored string. */
+        return ParseTrafficSourceTouches::wasTranslated($touches) ? ParseTrafficSourceTouches::serialise($touches) : null;
     }
 
     public function getCommandSignature(): string
