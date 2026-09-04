@@ -11,7 +11,8 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head, usePage } from "@inertiajs/vue3"
 import LayoutIris from "@/Layouts/Iris.vue"
 import IrisBlockRenderer from "@/Iris/Components/IrisBlockRenderer.vue"
-import { useStructuredData } from "@/Iris/Composables/useStructuredData"
+import { useStructuredData, getEntityImageUrls } from "@/Iris/Composables/useStructuredData"
+import { resolveProductImages } from "@/Composables/useProductPage"
 import { useRevealBlocks } from "@/Iris/Composables/useRevealBlocks"
 import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
 library.add(faCheck, faPlus, faMinus)
@@ -72,6 +73,29 @@ const checkScreenType = () => {
 
 const shareImageAlt = computed(() => props.webpage_data.seo_image_alt || props.webpage_data.title || '')
 
+const PRODUCT_PAGE_BLOCK_TYPES = ["product-1", "product-2", "product-3"]
+
+const firstProductImage = computed(() => {
+    const blocks = Array.isArray(props.web_blocks) ? props.web_blocks : []
+
+    for (const block of blocks) {
+        if (!PRODUCT_PAGE_BLOCK_TYPES.includes(block?.type)) continue
+
+        const fieldValue = block?.web_block?.layout?.data?.fieldValue ?? block?.structure
+        const product = fieldValue?.product
+        if (!product) continue
+
+        const imageUrl = resolveProductImages(product)[0]?.source?.original ?? getEntityImageUrls(product)[0]
+        if (imageUrl) return imageUrl
+    }
+
+    return ''
+})
+
+const shareImage = computed(
+    () => props.webpage_img?.png || props.webpage_img?.original || props.webpage_img?.url || firstProductImage.value
+)
+
 const robotsContent = computed(() => {
     const index = props.index_page ? "index" : "noindex"
     const follow = props.follow_link ? "follow" : "nofollow"
@@ -116,15 +140,15 @@ onBeforeUnmount(() => {
         <meta property="og:title" :content="webpage_data.title || ''" />
         <meta property="og:description" :content="webpage_data.description || ''" />
         <meta property="og:url" :content="webpage_data.canonical_url || currentUrl" />
-        <meta property="og:image" :content="webpage_img?.png || webpage_img?.url || ''" />
-        <meta property="og:image:alt" :content="shareImageAlt" />
+        <meta v-if="shareImage" property="og:image" :content="shareImage" />
+        <meta v-if="shareImage" property="og:image:alt" :content="shareImageAlt" />
         <meta property="og:locale" content="en_US" />
         <meta property="og:site_name" :content="usePage().props?.iris?.website?.name || webpage_data.title" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" :content="webpage_data.title || ''" />
         <meta name="twitter:description" :content="webpage_data.description || ''" />
-        <meta name="twitter:image" :content="webpage_img?.png || webpage_img?.url || ''" />
-        <meta name="twitter:image:alt" :content="shareImageAlt" />
+        <meta v-if="shareImage" name="twitter:image" :content="shareImage" />
+        <meta v-if="shareImage" name="twitter:image:alt" :content="shareImageAlt" />
     </Head>
 
     <div class="bg-white">
