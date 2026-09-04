@@ -115,6 +115,9 @@ class UpdateEbayPortfolio implements ShouldBeUnique
                 'requests' => [
                     [
                         'sku'    => Arr::get($offer, 'sku'),
+                        'shipToLocationAvailability' => [
+                            'quantity' => $availableQuantity
+                        ],
                         'offers' => [
                             [
                                 'offerId'           => $portfolio->platform_product_id,
