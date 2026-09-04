@@ -16,6 +16,7 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -88,11 +89,11 @@ class ShowPupilDashboard
             'shop'    => $shopifyUser?->customer?->shop?->name,
             'shopUrl' => 'https://' . $shopifyUser?->customer?->shop?->website?->domain . '/app/login?ref=/app/dropshipping/channels/' . $shopifyUser?->customerSalesChannel?->slug,
             'user'    => $shopifyUser,
-            'shops'   => $query->map(function (Shop $shop) {
+            'shops'   => $query->map(function (Shop $shop) use ($shopifyUser) {
                 return [
                     'id'   => $shop->id,
                     'name' => $shop->website?->domain,
-                    'domain' => 'https://' . $shop->website?->domain . '/app/login?ref=/app/dropshipping/sale-channels/create&modal=shopify'
+                    'domain' => 'https://' . $shop->website?->domain . '/app/login?ref=' . urlencode('/app/dropshipping/sale-channels/create?shop=' . Str::before($shopifyUser->name, '.myshopify.com'))
                 ];
             }),
             ...$routes,

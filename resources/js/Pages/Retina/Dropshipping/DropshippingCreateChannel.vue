@@ -273,6 +273,11 @@ onMounted(() => {
 	if (route().params?.["continueEbayRegistration"]) {
 		openCreateEbayModal()
 	}
+
+	if (route().params?.["shop"]) {
+		websiteInput.value = route().params["shop"]
+		isModalOpen.value = "shopify"
+	}
 })
 
 const isModalCreateEbay = ref(false)

@@ -12,12 +12,15 @@ use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
+use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
 use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
+use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerClient;
@@ -132,3 +135,28 @@ test('bulk portfolio upload dispatches one job per portfolio', function (Portfol
 
     StoreNewProductToCurrentShopify::assertPushed();
 })->depends('add product to customer portfolio');
+
+test('reconnecting a shopify store reopens its closed channel with the portfolio instead of creating another', function () {
+    $customer = createCustomer($this->shop);
+
+    $firstLogin = StoreShopifyUser::make()->handle($customer, ['name' => 'reconnect-shop']);
+    $channel    = $firstLogin->customerSalesChannel;
+    $portfolio  = StorePortfolio::make()->action($channel, $this->product, []);
+
+    CloseCustomerSalesChannel::make()->handle($channel);
+
+    expect($channel->fresh()->status)->toBe(CustomerSalesChannelStatusEnum::CLOSED)
+        ->and($firstLogin->fresh()->trashed())->toBeTrue()
+        ->and($portfolio->fresh()->status)->toBeFalse();
+
+    $secondLogin = StoreShopifyUser::make()->handle($customer, ['name' => 'reconnect-shop']);
+    $channel->refresh();
+
+    expect($customer->customerSalesChannels()->where('reference', 'reconnect-shop')->count())->toBe(1)
+        ->and($secondLogin->customer_sales_channel_id)->toBe($channel->id)
+        ->and($channel->status)->toBe(CustomerSalesChannelStatusEnum::OPEN)
+        ->and($channel->closed_at)->toBeNull()
+        ->and($channel->user?->id)->toBe($secondLogin->id)
+        ->and($channel->portfolios()->count())->toBe(1)
+        ->and($portfolio->fresh()->status)->toBeTrue();
+});
