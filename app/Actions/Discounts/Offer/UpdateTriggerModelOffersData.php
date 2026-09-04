@@ -11,6 +11,7 @@ namespace App\Actions\Discounts\Offer;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateTriggerModelOffersData
@@ -31,6 +32,8 @@ class UpdateTriggerModelOffersData
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
+
         if ($command->argument('type') == 'offer') {
             $slug  = $command->argument('model');
             $offer = Offer::where('slug', $slug)->firstOrFail();
