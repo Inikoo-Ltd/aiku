@@ -250,6 +250,12 @@ const beforeTrackingHelp = (reliableFrom: string | null) =>
    engines behind Organic search. Google and Bing keep their own channel and are not repeated here. */
 const HOSTS_SHOWN = 5
 
+/* Second level: the hosts behind a channel only show when that channel line is opened, so an open
+   group stays a short list of channels. */
+const openHosts = ref<Record<string, boolean>>({})
+const toggleHosts = (type: string) => { openHosts.value = { ...openHosts.value, [type]: !openHosts.value[type] } }
+const hasHosts = (channel: { type: string }) => hostsBehind(channel).length > 0
+
 const hostsBehind = (channel: { type: string }) => {
     const kind = { ai: 'ai', 'organic-search': 'search' }[channel.type]
     if (!kind) return []
@@ -520,6 +526,9 @@ const columnHelp: Record<string, string> = {
                     <tr
                         class="border-b border-gray-50 text-gray-600">
                         <td class="py-2 pr-2 pl-5">
+                            <span v-if="hasHosts(channel)" class="cursor-pointer select-none" @click="toggleHosts(channel.type)">
+                                <FontAwesomeIcon :icon="openHosts[channel.type] ? 'fal fa-chevron-down' : 'fal fa-chevron-right'" class="text-gray-400 mr-1.5 text-[10px]" fixed-width />
+                            </span>
                             <Link :href="route(channel.route.name, channel.route.parameters)"
                                   class="text-gray-500 hover:text-gray-900 hover:underline">{{ channel.name }}</Link>
                         </td>
@@ -575,7 +584,7 @@ const columnHelp: Record<string, string> = {
                     <!-- The hosts behind a channel that is a family of sites (assistants behind AI, engines behind Organic search), one line each: which of them actually sends buyers is
                          the question, and the channel total cannot answer it. Visits per assistant come from the click log, so they reach back to when the channel began;
                          touched customers and revenue are share-weighted like everywhere else. -->
-                    <tr v-for="assistant in hostsBehind(channel)" :key="assistant.host" class="border-b border-gray-50 text-gray-500">
+                    <tr v-for="assistant in (openHosts[channel.type] ? hostsBehind(channel) : [])" :key="assistant.host" class="border-b border-gray-50 text-gray-500">
                         <td class="py-1.5 pr-2 pl-10 text-xs"><template v-if="assistant.host === '__rest__'">{{ assistant.restCount }} {{ trans('others') }}</template><template v-else>{{ hostName(assistant.host) }}</template></td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap text-xs">
                             <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
