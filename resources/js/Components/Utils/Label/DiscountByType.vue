@@ -9,6 +9,7 @@ type Offer = {
 
 const props = defineProps<{
     template : string  // 'active-inactive-gr', 'triggers_labels'
+    isGoldenProduct?: boolean
     offers_data: {
         number_offers: number
         offers: Offer[]
@@ -60,6 +61,7 @@ const resolvedComponent = computed(() => {
         :is="resolvedComponent"
         :offer="bestOffer"
         :template
+        :isGoldenProduct="isGoldenProduct || undefined"
         :use_duration="use_duration"
     />
 </template>

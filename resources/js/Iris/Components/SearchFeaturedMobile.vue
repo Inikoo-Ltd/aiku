@@ -35,6 +35,7 @@ interface FeaturedProduct {
     discounted_price_per_unit?: number | null
     discounted_percentage?: string | null
     product_offers_data?: any
+    is_golden_product?: boolean
     stock?: number | null
     units?: number | string | null
     unit?: string | null
@@ -82,6 +83,7 @@ const isIntervalOffer = (product: FeaturedProduct): boolean => getOffer(product)
 // The member price is already earned once the family has been ordered past the offer trigger
 const hasMemberPrice = (product: FeaturedProduct): boolean => {
     if (isGoldRewardMember.value) return true
+    if (product.is_golden_product) return true
 
     const trigger = getOffer(product)?.category_qty_trigger
     if (trigger == null || product.family_id == null) return false
@@ -197,6 +199,7 @@ const isOuter = (product: FeaturedProduct): boolean => (Number(product.units) ||
                                             v-if="product.discounted_price && isIntervalOffer(product)"
                                             :offer="getOffer(product)"
                                             :active="hasMemberPrice(product)"
+                                            :isGoldenProduct="product.is_golden_product"
                                         />
                                     </div>
                                 </div>

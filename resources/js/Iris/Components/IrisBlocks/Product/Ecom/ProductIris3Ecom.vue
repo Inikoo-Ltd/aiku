@@ -531,7 +531,7 @@ onMounted(async () => {
                         <NonMemberPriceLabel v-else :product="product" />
                     </template>
 
-                    <DiscountByType v-if="showDiscount" template="products_triggers_label" :offers_data="offersData" />
+                    <DiscountByType v-if="showDiscount" template="products_triggers_label" :offers_data="offersData" :isGoldenProduct="product?.is_golden_product" />
 
                     <DiscountByType
                         v-if="isPurchasable && bestOffer?.type !== 'Category Quantity Ordered Order Interval'"
@@ -760,7 +760,7 @@ onMounted(async () => {
                     <NonMemberPriceLabel v-else :product="product" />
                 </template>
 
-                <DiscountByType v-if="showDiscount" template="products_triggers_label" :offers_data="offersData" />
+                <DiscountByType v-if="showDiscount" template="products_triggers_label" :offers_data="offersData" :isGoldenProduct="product?.is_golden_product" />
 
                 <DiscountByType v-if="isPurchasable && bestOffer?.type !== 'Category Quantity Ordered Order Interval'"
                     template="max_discount" :offers_data="offersData" />

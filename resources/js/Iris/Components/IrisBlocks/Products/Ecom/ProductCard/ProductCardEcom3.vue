@@ -19,7 +19,6 @@ import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartBu
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
-import GoldenProductBadge from '@/Components/CMS/Webpage/Products/GoldenProductBadge.vue'
 import { routeType } from '@/types/route'
 /* import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue' */
 import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
@@ -279,7 +278,6 @@ defineExpose({
                 <div v-if="product.is_golden_product || (layout?.iris?.is_logged_in && basketButton && !product.is_variant)"
                     class="absolute right-2 top-2 z-10 flex items-center gap-1.5">
 
-                    <GoldenProductBadge v-if="product.is_golden_product" />
 
                     <template v-if="layout?.iris?.is_logged_in && basketButton && !product.is_variant">
                         <div v-if="isLoadingFavourite" class="text-pink-400 text-xl">
