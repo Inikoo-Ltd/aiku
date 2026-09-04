@@ -495,6 +495,26 @@ export function useFilterRecipients(props: any) {
         debouncedReverseGeocode(filter)
     }
 
+    const findOnMapErrors = computed<Record<string, string>>(() => {
+        const errors: Record<string, string> = {}
+
+        Object.entries(activeFilters.value).forEach(([key, filter]: any) => {
+            if (filter?.config?.type !== 'location' || filter.value?.mode !== 'radius') return
+
+            const v = filter.value
+
+            if (!String(v.location ?? '').trim()) {
+                errors[key] = trans('Enter a location first')
+            } else if (!v.radius) {
+                errors[key] = trans('Select a radius first')
+            } else if (v.radius === 'custom' && !(Number(v.radius_custom) > 0)) {
+                errors[key] = trans('Enter a custom radius in km first')
+            }
+        })
+
+        return errors
+    })
+
     const shouldShowMap = (val: any) => {
         if (val.mode === 'radius') return true
         if (val.mode === 'direct' && (val.country_ids?.length || val.postal_codes?.length)) return true
@@ -530,6 +550,7 @@ export function useFilterRecipients(props: any) {
         readyFilters,
         radiusInMeters,
         shouldShowMap,
+        findOnMapErrors,
         getPostalCodeModel,
         addFilter,
         removeFilter,

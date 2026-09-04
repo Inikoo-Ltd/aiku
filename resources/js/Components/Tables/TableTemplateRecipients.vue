@@ -117,6 +117,7 @@ const {
     onMarkerDrag,
     radiusInMeters,
     shouldShowMap,
+    findOnMapErrors,
     saveFilters,
     getPostalCodeModel,
     hydrateSavedFilters,
@@ -681,10 +682,14 @@ watch(
                             <InputNumber v-if="filter.value.radius === 'custom'" v-model="filter.value.radius_custom"
                                 placeholder="Radius in km" class="w-full" />
 
-                            <Button label="Find On Map" @click="() => {
-                                filter.value.lastSource = 'input'
-                                getLatLngToLocation(filter, 'forward')
-                            }" />
+                            <Button :label="trans('Find On Map')" :disabled="!!findOnMapErrors[key]"
+                                :loading="!!filter.value.loadingMap" :tooltip="findOnMapErrors[key]" @click="() => {
+                                    filter.value.lastSource = 'input'
+                                    getLatLngToLocation(filter, 'forward')
+                                }" />
+                            <small v-if="findOnMapErrors[key]" class="block text-amber-600">
+                                {{ findOnMapErrors[key] }}
+                            </small>
                             <!-- MAP PLACEHOLDER -->
                             <div v-if="shouldShowMap(filter.value)" class="h-72 w-full rounded">
                                 <div v-if="filter.value.loadingMap"

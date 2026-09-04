@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from "@inertiajs/vue3"
+import { PageProps as InertiaPageProps } from "@inertiajs/core"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import { inject, provide, ref } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
@@ -58,8 +59,14 @@ const isOpenMenuMobile = ref(false)
 provide("layout", layout)
 provide("locale", locale)
 provide('isOpenMenuMobile', isOpenMenuMobile)
-const { props } = usePage()
-const isOpenModalCreditCard = ref(props.retina.show_cards_modal)
+interface RetinaPageProps extends InertiaPageProps {
+	retina?: {
+		show_cards_modal?: boolean
+	}
+}
+
+const { props } = usePage<RetinaPageProps>()
+const isOpenModalCreditCard = ref(props.retina?.show_cards_modal ?? false)
 const irisTheme = props?.iris?.theme ?? { color: [...useColorTheme[2]] }
 
 const sidebarOpen = ref(false)
@@ -191,7 +198,7 @@ console.log("asd ")
 			<RetinaBottomNavigationOnMobile>
 				<template #default>
 					<a
-                        v-if="layout.retina.portal_link"
+                        v-if="layout.retina?.portal_link"
                         :href="layout.retina.portal_link"
                         class="relative group flex items-center px-2 text-[20px] gap-x-2 navigation"
                         v-tooltip="{ content: trans('Open help portal'), delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 } }"
