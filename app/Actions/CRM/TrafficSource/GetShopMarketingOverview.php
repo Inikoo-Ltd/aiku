@@ -600,7 +600,7 @@ class GetShopMarketingOverview
                 'host'          => $campaign->name,
                 'kind'          => TrafficSourcesTypeEnum::referrerKind($kindBySource[$campaign->traffic_source_id] ?? ''),
                 'visitors'      => round((float) ($touches[$campaign->id] ?? 0), 2),
-                'visits'        => (int) ($visits[$campaign->reference] ?? 0),
+                'visits'        => (int) ($visits[($kindBySource[$campaign->traffic_source_id] ?? '').'|'.$campaign->reference] ?? 0),
                 'registrations' => round((float) ($registrations[$campaign->id] ?? 0), 2),
                 'revenue'       => round((float) ($revenue[$campaign->id] ?? 0), 2),
             ])

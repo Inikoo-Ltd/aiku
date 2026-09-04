@@ -433,7 +433,7 @@ class GetAggregatedMarketingOverview
                 'reference' => $campaign->reference,
                 'kind'      => TrafficSourcesTypeEnum::referrerKind($kindBySource[$campaign->traffic_source_id] ?? ''),
                 'visitors'  => (float) ($visitors[$campaign->id] ?? 0),
-                'visits'    => (int) ($visits[$campaign->reference] ?? 0),
+                'visits'    => (int) ($visits[($kindBySource[$campaign->traffic_source_id] ?? '').'|'.$campaign->reference] ?? 0),
                 'revenue'   => (float) ($revenue[$campaign->id] ?? 0),
             ])
             ->groupBy(fn (array $referrer) => $referrer['reference'].'|'.$referrer['kind'])

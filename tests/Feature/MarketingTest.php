@@ -1313,7 +1313,34 @@ describe('referral traffic sources', function () {
             ])
         );
 
+        /* Two ChatGPT arrivals from one browser and one from another, all filed under Referral on the
+           day, plus the day's Referral visit row that counted them. */
+        $day = now()->subDay();
+        foreach ([['203.0.113.7', 0], ['203.0.113.7', 2], ['198.51.100.9', 1]] as [$ip, $hours]) {
+            DB::table('traffic_source_clicks')->insert([
+                'shop_id'      => $this->shop->id,
+                'type'         => 'referral',
+                'campaign_ref' => 'chatgpt.com',
+                'ip'           => $ip,
+                'user_agent'   => 'Mozilla/5.0',
+                'is_bot'       => false,
+                'created_at'   => $day->copy()->addHours($hours)->toDateTimeString(),
+            ]);
+        }
+        DB::table('traffic_source_visits')->insert([
+            'shop_id'           => $this->shop->id,
+            'traffic_source_id' => $this->referral->id,
+            'date'              => $day->toDateString(),
+            'visits'            => 5,
+            'created_at'        => now(),
+            'updated_at'        => now(),
+        ]);
+
         ReclassifyAiTrafficSourceTouches::run();
+
+        expect(DB::table('traffic_source_clicks')->where('campaign_ref', 'chatgpt.com')->where('type', 'ai')->count())->toBe(3)
+            ->and(DB::table('traffic_source_visits')->where('traffic_source_id', $this->referral->id)->where('date', $day->toDateString())->value('visits'))->toBe(3)
+            ->and(DB::table('traffic_source_visits')->where('traffic_source_id', $ai->id)->where('date', $day->toDateString())->value('visits'))->toBe(2);
 
         $aiAbbr = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::AI->value];
 

@@ -222,7 +222,8 @@ trait WithAttributionWindow
      * People each referring host sent, per browser per day, from the click log: the log keeps every
      * arrival with the host that sent it, so an assistant or a search engine can have its own visit
      * count and its own history without a second counter. Bots are left out, as they are of the
-     * channel counter. Keyed by host.
+     * channel counter. Keyed by `<channel type>|<host>`: a host's arrivals filed under another channel
+     * belong to that channel's line, so a child line can never outgrow its parent.
      *
      * @param array<int, int> $shopIds
      *
@@ -237,8 +238,8 @@ trait WithAttributionWindow
             ->where('is_bot', false)
             ->when($from, fn ($query) => $query->where('created_at', '>=', $from))
             ->when($to, fn ($query) => $query->where('created_at', '<=', $to))
-            ->groupBy('campaign_ref')
-            ->select('campaign_ref', DB::raw('COUNT(DISTINCT (ip, user_agent, created_at::date)) as visits'))
-            ->pluck('visits', 'campaign_ref');
+            ->groupBy('type', 'campaign_ref')
+            ->select(DB::raw("type || '|' || campaign_ref as bucket"), DB::raw('COUNT(DISTINCT (ip, user_agent, created_at::date)) as visits'))
+            ->pluck('visits', 'bucket');
     }
 }
