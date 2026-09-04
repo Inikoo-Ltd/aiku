@@ -27,7 +27,7 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
      * @param  array<int, int>  $ids
      * @return array{job_orders: array<int, JobOrder>, skipped: array<int, array{id: int, reason: string}>}
      */
-    public function handle(Production $production, array $ids): array
+    public function handle(Production $production, array $ids, ?int $employeeId = null, float|int|null $quantity = null): array
     {
         $seller = $production->organisation;
 
@@ -55,12 +55,12 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
 
             $lines[] = [
                 'artefact' => $artefact,
-                'quantity' => $item->quantity,
+                'quantity' => $quantity && count($ids) === 1 ? $quantity : $item->quantity,
                 'after'    => fn (JobOrder $jobOrder) => $item->update(['job_order_id' => $jobOrder->id]),
             ];
         }
 
-        $jobOrders = StoreJobOrdersGroupedByArtisan::run($production, $lines);
+        $jobOrders = StoreJobOrdersGroupedByArtisan::run($production, $lines, $employeeId);
 
         return ['job_orders' => $jobOrders, 'skipped' => $skipped];
     }
@@ -84,6 +84,8 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
         return [
             'ids'   => ['required', 'array', 'min:1'],
             'ids.*' => ['integer'],
+            'employee_id' => ['sometimes', 'nullable', 'integer', 'exists:employees,id'],
+            'quantity'    => ['sometimes', 'nullable', 'numeric', 'min:1'],
         ];
     }
 
@@ -111,7 +113,7 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
     {
         $this->initialisationFromProduction($production, $request);
 
-        return $this->handle($production, $this->validatedData['ids']);
+        return $this->handle($production, $this->validatedData['ids'], $this->validatedData['employee_id'] ?? null, $this->validatedData['quantity'] ?? null);
     }
 
     public function htmlResponse(array $result): RedirectResponse

@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { Head, Link, router } from "@inertiajs/vue3"
-import { reactive, ref, watch } from "vue"
+import { computed, reactive, ref, watch } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -14,6 +14,11 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { trans } from "laravel-vue-i18n"
 import { PageHeadingTypes } from "@/types/PageHeading"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faUserHardHat } from "@fal"
+
+library.add(faUserHardHat)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -60,13 +65,45 @@ function sendToWarehouse(orderId: number) {
     )
 }
 
-function createJobOrders() {
+function createJobOrders(ids: number[] = Object.keys(selected).map(Number), employeeId: number | null = null, quantity: number | null = null) {
     router.post(
         route("grp.org.productions.show.to_produce.job_orders.store", [route().params["organisation"], route().params["production"]]),
-        { ids: Object.keys(selected).map(Number) },
+        { ids, employee_id: employeeId, quantity },
         { preserveScroll: true, onSuccess: () => { for (const k in selected) delete selected[k] } }
     )
 }
+
+type BoardItem = { id: number, stock_code: string, stock_name: string, state: string, quantity: number, maker: string | null, maker_id: number | null }
+const dragging = ref<BoardItem | null>(null)
+const pendingAssign = ref<BoardItem | null>(null)
+const assignQuantity = ref(1)
+const pickerPosition = ref({ x: 0, y: 0 })
+
+function dropOnAssigned(event: DragEvent) {
+    if (dragging.value) {
+        pendingAssign.value = dragging.value
+        assignQuantity.value = Math.ceil(Number(dragging.value.quantity))
+        const laneLeft = (event.currentTarget as HTMLElement).getBoundingClientRect().left
+        pickerPosition.value = {
+            x: Math.max(8, laneLeft - 144),
+            y: Math.max(8, Math.min(event.clientY - 40, window.innerHeight - 380)),
+        }
+        dragging.value = null
+    }
+}
+
+function assign(employeeId: number) {
+    if (pendingAssign.value) {
+        createJobOrders([pendingAssign.value.id], employeeId, assignQuantity.value)
+        pendingAssign.value = null
+    }
+}
+
+const artisanChoices = computed(() => {
+    const list = (props.artisanWorkload ?? []).filter(artisan => !artisan.hidden)
+    const defaultId = pendingAssign.value?.maker_id
+    return defaultId ? [...list.filter(a => a.id === defaultId), ...list.filter(a => a.id !== defaultId)] : list
+})
 
 const showHiddenArtisans = ref(false)
 
@@ -184,7 +221,7 @@ function submitCherryPick() {
         </table>
     </div>
 
-    <div v-if="artisanWorkload" class="mx-4 mt-5 rounded-lg border border-gray-200 px-4 py-3 dark:border-gray-700">
+    <div v-if="artisanWorkload && groupBy === 'maker'" class="mx-4 mt-5 rounded-lg border border-gray-200 px-4 py-3 dark:border-gray-700">
         <div class="mb-2 flex items-center gap-2 text-sm text-gray-500">
             <span>{{ trans("Open job orders per artisan") }} <span class="text-gray-400">· {{ trans("everyone should have at least two") }}</span></span>
             <button v-if="artisanWorkload.some(artisan => artisan.hidden)" type="button" class="ml-auto text-xs text-gray-400 hover:text-indigo-600" @click="showHiddenArtisans = !showHiddenArtisans">
@@ -209,7 +246,81 @@ function submitCherryPick() {
         </div>
     </div>
 
-    <div v-if="groups" class="mx-4 mt-5 space-y-6">
+    <Teleport to="body">
+        <div v-if="pendingAssign" class="fixed inset-0 z-40" @click="pendingAssign = null" />
+        <div v-if="pendingAssign" class="fixed z-50 w-72 rounded-lg border border-indigo-300 bg-white p-3 text-xs shadow-xl dark:bg-gray-900" :style="{ left: pickerPosition.x + 'px', top: pickerPosition.y + 'px' }">
+            <div class="mb-1.5 font-medium">{{ pendingAssign.stock_code }} <span class="font-normal text-gray-500">{{ pendingAssign.stock_name }}</span></div>
+            <label class="mb-2 flex items-center gap-2">
+                <span class="text-gray-500">{{ trans("Quantity") }}</span>
+                <input v-model.number="assignQuantity" type="number" min="1" step="1" class="w-20 rounded border-gray-300 py-0.5 text-xs tabular-nums" />
+                <span v-if="assignQuantity > Math.ceil(Number(pendingAssign.quantity))" class="text-gray-400">+{{ assignQuantity - Math.ceil(Number(pendingAssign.quantity)) }} {{ trans("for stock") }}</span>
+            </label>
+            <div class="mb-1 text-gray-500">{{ trans("Who makes it?") }}</div>
+            <div class="flex max-h-64 flex-col gap-0.5 overflow-y-auto">
+                <button
+                    v-for="artisan in artisanChoices"
+                    :key="artisan.id"
+                    type="button"
+                    class="flex items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-indigo-50"
+                    :class="artisan.id === pendingAssign.maker_id ? 'bg-indigo-50 font-medium text-indigo-700' : ''"
+                    @click="assign(artisan.id)">
+                    <FontAwesomeIcon icon="fal fa-user-hard-hat" fixed-width class="text-gray-400" />
+                    <span class="truncate">{{ artisan.name }}</span>
+                    <span v-if="artisan.id === pendingAssign.maker_id" class="ml-auto text-[10px] uppercase tracking-wide">{{ trans("default") }}</span>
+                    <span v-else class="ml-auto text-gray-400">{{ artisan.open_job_orders }}</span>
+                </button>
+            </div>
+        </div>
+    </Teleport>
+
+    <div v-if="groupBy === 'board' && groups" class="mx-4 mt-5 flex gap-3">
+        <div
+            v-for="(lane, laneIndex) in groups"
+            :key="lane.label"
+            class="flex min-w-0 flex-1 flex-col rounded-lg border bg-gray-50 transition dark:bg-gray-800"
+            :class="laneIndex === 1 && dragging ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200 dark:border-gray-700'"
+            @dragover="laneIndex === 1 && dragging ? $event.preventDefault() : null"
+            @drop.prevent="laneIndex === 1 ? dropOnAssigned($event) : null">
+            <div class="flex items-center gap-2 px-3 py-2 font-medium">
+                <span>{{ lane.label }}</span>
+                <span class="ml-auto rounded-full bg-white px-2 text-xs text-gray-500 dark:bg-gray-900">{{ lane.items.length }}</span>
+            </div>
+            <div class="flex max-h-[70vh] flex-col gap-1.5 overflow-y-auto px-2 pb-2">
+                <div
+                    v-for="item in lane.items"
+                    :key="item.id"
+                    class="rounded border border-gray-200 bg-white px-2 py-1.5 text-xs dark:border-gray-700 dark:bg-gray-900"
+                    :class="laneIndex === 0 && item.state === 'open' ? 'cursor-grab active:cursor-grabbing' : ''"
+                    :draggable="laneIndex === 0 && item.state === 'open'"
+                    @dragstart="dragging = item"
+                    @dragend="dragging = null">
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-medium">{{ item.stock_code }}</span>
+                        <span class="ml-auto tabular-nums" :class="item.priority === 'urgent' ? 'text-red-600 font-semibold' : ''">
+                            ×{{ useLocaleStore().number(Number(item.quantity)) }}
+                            <span v-if="item.job_order_quantity && Number(item.job_order_quantity) !== Number(item.quantity)" class="text-indigo-600" :title="trans('Making :count', { count: item.job_order_quantity })">→ {{ useLocaleStore().number(Number(item.job_order_quantity)) }}</span>
+                        </span>
+                    </div>
+                    <div class="truncate text-gray-600" :title="item.stock_name">{{ item.stock_name }}</div>
+                    <div class="flex items-center gap-1 text-gray-400">
+                        <span>{{ item.buyer_code ?? item.customer_name }}</span>
+                        <span v-if="item.family">· {{ item.family }}</span>
+                        <Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink ml-auto">{{ item.job_order_reference }}</Link>
+                    </div>
+                    <div v-if="item.job_order_id" class="flex items-center gap-1 text-gray-600">
+                        <FontAwesomeIcon icon="fal fa-user-hard-hat" class="text-gray-400" fixed-width />
+                        {{ item.job_order_artisan ?? trans("No artisan") }}
+                    </div>
+                    <div v-else-if="item.maker" class="flex items-center gap-1 text-gray-400">
+                        <FontAwesomeIcon icon="fal fa-user-hard-hat" fixed-width />
+                        {{ item.maker }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div v-else-if="groups" class="mx-4 mt-5 space-y-6">
         <div class="flex flex-wrap gap-1.5">
             <button
                 v-for="group in groups"

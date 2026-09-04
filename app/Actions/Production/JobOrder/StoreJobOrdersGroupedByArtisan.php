@@ -22,12 +22,12 @@ class StoreJobOrdersGroupedByArtisan
      * @param  array<int, array{artefact: Artefact, quantity: float|int, after?: callable(JobOrder): void}>  $lines
      * @return array<int, JobOrder>
      */
-    public function handle(Production $production, array $lines): array
+    public function handle(Production $production, array $lines, ?int $employeeId = null): array
     {
         $byArtisan = [];
         foreach ($lines as $line) {
             $artefact  = $line['artefact'];
-            $artisanId = $artefact->artisans()->first()?->id ?? $artefact->artefactFamily?->artisans()->first()?->id ?? 0;
+            $artisanId = $employeeId ?? $artefact->artisans()->first()?->id ?? $artefact->artefactFamily?->artisans()->first()?->id ?? 0;
 
             $byArtisan[$artisanId][] = $line;
         }

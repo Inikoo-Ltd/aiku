@@ -80,6 +80,7 @@ class IndexPartnerShippingList extends OrgAction
             ->leftJoin('orders', 'orders.id', 'transactions.order_id')
             ->leftJoin('customers', 'customers.id', 'orders.customer_id')
             ->leftJoin('job_orders', 'job_orders.id', 'partner_shopping_list_items.job_order_id')
+            ->leftJoin('employees as job_order_artisans', 'job_order_artisans.id', 'job_orders.employee_id')
             ->where(function ($query) use ($seller) {
                 $query->where('partner_shopping_list_items.partner_organisation_id', $seller->id)
                     ->orWhere(function ($query) use ($seller) {
@@ -100,6 +101,7 @@ class IndexPartnerShippingList extends OrgAction
         return $queryBuilder
             ->select([
                 'partner_shopping_list_items.id',
+                'partner_shopping_list_items.job_order_id',
                 'partner_shopping_list_items.quantity',
                 'partner_shopping_list_items.priority',
                 'partner_shopping_list_items.state',
@@ -110,11 +112,15 @@ class IndexPartnerShippingList extends OrgAction
                 'stocks.name as stock_name',
                 'artefact_families.name as family',
                 'employees.contact_name as maker',
+                'employees.id as maker_id',
                 'organisations.code as buyer_code',
                 'customers.name as customer_name',
                 'orders.reference as order_reference',
                 'job_orders.reference as job_order_reference',
                 'job_orders.slug as job_order_slug',
+                'job_orders.state as job_order_state',
+                'job_order_artisans.contact_name as job_order_artisan',
+                DB::raw('(select sum(quantity) from job_order_items where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as job_order_quantity'),
             ])
             ->defaultSort('-created_at')
             ->allowedFilters([$globalSearch])
@@ -212,6 +218,14 @@ class IndexPartnerShippingList extends OrgAction
         return $this->handle($organisation);
     }
 
+    public function board(Organisation $organisation, Production $production, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->groupBy = 'board';
+        $this->initialisationFromProduction($production, $request);
+
+        return $this->handle($organisation);
+    }
+
     public function byFor(Organisation $organisation, Production $production, ActionRequest $request): LengthAwarePaginator
     {
         $this->groupBy = 'buyer_code';
@@ -223,6 +237,10 @@ class IndexPartnerShippingList extends OrgAction
     /** @return array<int, array{label: string, items: array<int, array<string, mixed>>}> */
     public function getGroups(LengthAwarePaginator $items): array
     {
+        if ($this->groupBy === 'board') {
+            return $this->getBoardLanes($items);
+        }
+
         return collect($items->items())
             ->groupBy(fn ($item) => $item->{$this->groupBy} ?? ($this->groupBy === 'buyer_code' ? $item->customer_name : null) ?? '')
             ->sortKeys()
@@ -230,6 +248,28 @@ class IndexPartnerShippingList extends OrgAction
                 'label' => $label === '' ? __('Unassigned') : $label,
                 'items' => $groupItems->values()->all(),
             ])
+            ->values()
+            ->all();
+    }
+
+    /** @return array<int, array{label: string, items: array<int, array<string, mixed>>}> */
+    public function getBoardLanes(LengthAwarePaginator $items): array
+    {
+        $stageByJobOrderState = [
+            ''             => 'backlog',
+            'in_process'   => 'assigned',
+            'submitted'    => 'assigned',
+            'confirmed'    => 'producing',
+            'received'     => 'done',
+            'not_received' => 'done',
+            'booking_in'   => 'done',
+            'booked_in'    => 'done',
+        ];
+        $lanes  = ['backlog' => __('Backlog'), 'assigned' => __('Assigned'), 'producing' => __('Producing'), 'done' => __('Done')];
+        $byLane = collect($items->items())->groupBy(fn ($item) => $stageByJobOrderState[$item->job_order_state ?? ''] ?? 'backlog');
+
+        return collect($lanes)
+            ->map(fn ($label, $key) => ['label' => $label, 'items' => $byLane->get($key, collect())->values()->all()])
             ->values()
             ->all();
     }
@@ -280,7 +320,8 @@ class IndexPartnerShippingList extends OrgAction
             ->count();
 
         return [
-            $tab(__('All'), 'grp.org.productions.show.to_produce.index', 'fa-bars', $openItems) + ['isAnchor' => true],
+            $tab(__('Board'), 'grp.org.productions.show.to_produce.index', 'fa-columns', $openItems) + ['isAnchor' => true],
+            $tab(__('All'), 'grp.org.productions.show.to_produce.list', 'fa-bars'),
             $tab(__('By artisan'), 'grp.org.productions.show.to_produce.by_artisan', 'fa-user-hard-hat'),
             $tab(__('By category'), 'grp.org.productions.show.to_produce.by_category', 'fa-layer-group'),
             $tab(__('By buyer'), 'grp.org.productions.show.to_produce.by_for', 'fa-building'),
@@ -304,7 +345,7 @@ class IndexPartnerShippingList extends OrgAction
                     'subNavigation' => $this->getSubNavigation($request->route()->originalParameters()),
                 ],
                 'groupBy'      => $this->groupBy,
-                'artisanWorkload' => $this->groupBy === 'maker' ? $this->getArtisanWorkload() : null,
+                'artisanWorkload' => in_array($this->groupBy, ['maker', 'board']) ? $this->getArtisanWorkload() : null,
                 'groups'       => $this->groupBy && $this->groupBy !== 'mixes' ? $this->getGroups($items) : null,
                 'mixes'        => $this->groupBy === 'mixes' ? GetMixesToPrepare::run($this->production) : null,
                 'data'         => $items,

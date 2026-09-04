@@ -65,7 +65,8 @@ Route::prefix('{production}')
 
                 Route::name('.to_produce.')->prefix('to-produce')
                     ->group(function () {
-                        Route::get('', IndexPartnerShippingList::class)->name('index');
+                        Route::get('', [IndexPartnerShippingList::class, 'board'])->name('index');
+                        Route::get('list', IndexPartnerShippingList::class)->name('list');
                         Route::get('by-artisan', [IndexPartnerShippingList::class, 'byArtisan'])->name('by_artisan');
                         Route::get('by-category', [IndexPartnerShippingList::class, 'byFamily'])->name('by_category');
                         Route::get('for', [IndexPartnerShippingList::class, 'byFor'])->name('by_for');
