@@ -16,9 +16,9 @@ import { trans } from "laravel-vue-i18n"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faUserHardHat } from "@fal"
+import { faUserHardHat, faPencil } from "@fal"
 
-library.add(faUserHardHat)
+library.add(faUserHardHat, faPencil)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -74,7 +74,11 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number }
+type BoardItem = { id: number, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null }
+
+function isReassignable(item: BoardItem): boolean {
+    return !!item.job_order_id && ["in_process", "submitted"].includes(item.job_order_state ?? "")
+}
 
 const STAGE_BY_JOB_ORDER_STATE: Record<string, "assigned" | "producing" | "done"> = {
     in_process: "assigned", submitted: "assigned", confirmed: "producing",
@@ -117,10 +121,19 @@ const LANE_ASSIGNED = 2
 function dropTarget(laneIndex: number): boolean {
     const first = dragging.value[0]
     if (!first || first.kind === "mix") return false
+    if (first.job_order_id) return laneIndex === LANE_PREPARING && isReassignable(first)
     if (laneIndex === LANE_BACKLOG) return !!first.preparing_at
     if (laneIndex === LANE_PREPARING) return !first.preparing_at
     if (laneIndex === LANE_ASSIGNED) return !!first.preparing_at
     return false
+}
+
+function unassign(items: BoardItem[]) {
+    router.post(
+        route("grp.org.productions.show.to_produce.items.unassign", [route().params["organisation"], route().params["production"]]),
+        { ids: items.map(item => item.id) },
+        { preserveScroll: true, onSuccess: () => { selectedCards.value = [] } }
+    )
 }
 
 function setPreparing(lines: { id: number, quantity?: number | null }[], preparing: boolean) {
@@ -133,7 +146,10 @@ function setPreparing(lines: { id: number, quantity?: number | null }[], prepari
 
 function onDrop(laneIndex: number, event: DragEvent) {
     if (!dropTarget(laneIndex)) return
-    if (laneIndex === LANE_ASSIGNED) {
+    if (dragging.value[0].job_order_id) {
+        unassign(dragging.value)
+        dragging.value = []
+    } else if (laneIndex === LANE_ASSIGNED) {
         openPicker("assign", event)
     } else if (laneIndex === LANE_PREPARING) {
         openPicker("prepare", event)
@@ -164,10 +180,22 @@ function startDrag(item: BoardItem, laneItems: BoardItem[]) {
 const dragging = ref<BoardItem[]>([])
 const pendingItems = ref<BoardItem[]>([])
 const pendingQuantities = reactive<Record<number, number>>({})
-const pickerMode = ref<"prepare" | "assign" | "assign-mix">("prepare")
+const pickerMode = ref<"prepare" | "assign" | "assign-mix" | "reassign">("prepare")
 const pickerPosition = ref({ x: 0, y: 0 })
 
 const pendingFirst = computed(() => pendingItems.value[0] ?? null)
+
+function openReassign(item: BoardItem, event: MouseEvent) {
+    dragging.value = [item]
+    pickerMode.value = "reassign"
+    artisanSearch.value = ""
+    pendingItems.value = [item]
+    pickerPosition.value = {
+        x: Math.max(8, Math.min(event.clientX - 40, window.innerWidth - 330)),
+        y: Math.max(8, Math.min(event.clientY + 8, window.innerHeight - 420)),
+    }
+    dragging.value = []
+}
 
 function openPicker(mode: "prepare" | "assign" | "assign-mix", event: DragEvent) {
     if (!dragging.value.length) return
@@ -201,7 +229,9 @@ function confirmPrepare() {
 function assign(employeeId: number) {
     const first = pendingFirst.value
     if (!first) return
-    if (first.kind === "mix") {
+    if (pickerMode.value === "reassign") {
+        router.patch(route("grp.models.job-order.update", { jobOrder: first.job_order_id }), { employee_id: employeeId }, { preserveScroll: true })
+    } else if (first.kind === "mix") {
         router.post(
             route("grp.org.productions.show.to_produce.mixes.job_orders.store", [route().params["organisation"], route().params["production"]]),
             { lines: [{ artefact_id: first.artefact_id, quantity: pendingQuantities[first.id] }], employee_id: employeeId },
@@ -266,10 +296,46 @@ function initials(name: string): string {
 
 const artisanSearch = ref("")
 
+function fold(text: string): string {
+    return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+}
+
+function fuzzyMatch(needle: string, haystack: string): boolean {
+    let index = 0
+    for (const char of needle) {
+        index = haystack.indexOf(char, index)
+        if (index === -1) return false
+        index++
+    }
+    return true
+}
+
+function editDistance(a: string, b: string): number {
+    const row = Array.from({ length: b.length + 1 }, (_, i) => i)
+    for (let i = 1; i <= a.length; i++) {
+        let previous = row[0]
+        row[0] = i
+        for (let j = 1; j <= b.length; j++) {
+            const temp = row[j]
+            row[j] = Math.min(row[j] + 1, row[j - 1] + 1, previous + (a[i - 1] === b[j - 1] ? 0 : 1))
+            previous = temp
+        }
+    }
+    return row[b.length]
+}
+
+function nameMatches(needle: string, name: string): boolean {
+    const folded = fold(name)
+    if (fuzzyMatch(needle, folded)) return true
+    if (needle.length < 3) return false
+    return folded.split(/[\s-]+/).some(word => editDistance(needle, word.slice(0, needle.length)) <= 1 || editDistance(needle, word) <= 1)
+}
+
 const artisanChoices = computed(() => {
-    const needle = artisanSearch.value.trim().toLowerCase()
-    const list = (props.artisanWorkload ?? [])
-        .filter(artisan => !artisan.hidden && (!needle || artisan.name.toLowerCase().includes(needle)))
+    const needle = fold(artisanSearch.value.trim())
+    const visible = (props.artisanWorkload ?? []).filter(artisan => !artisan.hidden)
+    const matched = needle ? visible.filter(artisan => nameMatches(needle, artisan.name)) : visible
+    const list = (matched.length ? matched : visible)
         .sort((a, b) => a.name.localeCompare(b.name))
     const ref = pendingDefaultMaker.value
     const isDefault = (a: { id: number, name: string }) => ref?.maker_id ? a.id === ref.maker_id : (!!ref?.maker && a.name === ref.maker)
@@ -455,7 +521,8 @@ function submitCherryPick() {
                     <span v-for="item in pendingItems" :key="item.id" class="rounded bg-gray-100 px-1.5 py-px text-gray-600" :title="item.stock_name">{{ item.stock_code }} <span class="text-gray-400">×{{ Math.ceil(Number(item.quantity_to_produce ?? item.quantity)) }}</span></span>
                 </div>
                 <div class="mb-1 text-gray-500">
-                    {{ pickerMode === 'assign-mix' ? trans("Who mixes it?") : pendingItems.length > 1 ? trans("Who makes them?") : trans("Who makes :count?", { count: Math.ceil(Number(pendingFirst.quantity_to_produce ?? pendingFirst.quantity)) }) }}
+                    <template v-if="pickerMode === 'reassign'">{{ trans("Change artisan of :reference", { reference: pendingFirst.job_order_reference ?? "" }) }} <span class="text-gray-400">({{ pendingFirst.job_order_artisan ?? trans("nobody") }})</span></template>
+                    <template v-else>{{ pickerMode === 'assign-mix' ? trans("Who mixes it?") : pendingItems.length > 1 ? trans("Who makes them?") : trans("Who makes :count?", { count: Math.ceil(Number(pendingFirst.quantity_to_produce ?? pendingFirst.quantity)) }) }}</template>
                 </div>
                 <input v-if="(artisanWorkload ?? []).length > 8" v-model="artisanSearch" type="search" :placeholder="trans('Type a name…')" autofocus class="mb-1 w-full rounded border-gray-300 py-0.5 text-xs" />
                 <div class="flex max-h-64 flex-col gap-0.5 overflow-y-auto">
@@ -538,11 +605,11 @@ function submitCherryPick() {
                     :key="item.id"
                     class="rounded border bg-white px-2 py-1.5 text-xs transition dark:bg-gray-900"
                     :class="[
-                        laneIndex <= LANE_PREPARING && item.state === 'open' ? 'cursor-grab select-none active:cursor-grabbing' : '',
+                        (laneIndex <= LANE_PREPARING && item.state === 'open') || (laneIndex === LANE_ASSIGNED && isReassignable(item)) ? 'cursor-grab select-none active:cursor-grabbing' : '',
                         selectedCards.includes(item.id) ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500 dark:bg-indigo-950' : 'border-gray-200 dark:border-gray-700',
                     ]"
-                    :draggable="laneIndex <= LANE_PREPARING && item.state === 'open'"
-                    @click="laneIndex <= LANE_PREPARING && item.state === 'open' ? toggleCard(item, laneIndex) : null"
+                    :draggable="(laneIndex <= LANE_PREPARING && item.state === 'open') || (laneIndex === LANE_ASSIGNED && isReassignable(item))"
+                    @click="(laneIndex <= LANE_PREPARING && item.state === 'open') || (laneIndex === LANE_ASSIGNED && isReassignable(item)) ? toggleCard(item, laneIndex) : null"
                     @dragstart="startDrag(item, lane.items)"
                     @dragend="dragging = []">
                     <div class="flex items-center gap-1.5">
@@ -571,7 +638,12 @@ function submitCherryPick() {
                         <span v-if="item.family">· {{ item.family }}</span>
                         <Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink ml-auto">{{ item.job_order_reference }}</Link>
                     </div>
-                    <div v-if="item.job_order_id" class="flex items-center gap-1 text-gray-600">
+                    <button v-if="item.job_order_id && isReassignable(item)" type="button" class="flex items-center gap-1 rounded text-gray-600 hover:bg-indigo-50 hover:text-indigo-700" :title="trans('Change artisan')" @click.stop="openReassign(item, $event)">
+                        <FontAwesomeIcon icon="fal fa-user-hard-hat" class="text-gray-400" fixed-width />
+                        {{ item.job_order_artisan ?? trans("No artisan") }}
+                        <FontAwesomeIcon icon="fal fa-pencil" class="text-[9px] text-gray-300" fixed-width />
+                    </button>
+                    <div v-else-if="item.job_order_id" class="flex items-center gap-1 text-gray-600">
                         <FontAwesomeIcon icon="fal fa-user-hard-hat" class="text-gray-400" fixed-width />
                         {{ item.job_order_artisan ?? trans("No artisan") }}
                     </div>

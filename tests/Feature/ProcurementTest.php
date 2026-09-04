@@ -79,6 +79,7 @@ use App\Models\HumanResources\Employee;
 use App\Models\Production\Artefact;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
+use App\Models\Production\JobOrder;
 use App\Models\Production\Production;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
 use App\Actions\Production\PartnerShippingList\SendPartnerOrderToWarehouse;
@@ -3458,6 +3459,18 @@ test('to produce item moves backlog to preparing and back', function () {
         ->assertRedirect();
     expect($item->fresh()->preparing_at)->toBeNull()
         ->and($item->fresh()->quantity_to_produce)->toBeNull();
+});
+
+test('assigned to produce item can be sent back to preparing', function () {
+    $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
+    $item       = PartnerShoppingListItem::whereNotNull('job_order_id')->first();
+    expect($item)->not->toBeNull();
+    $jobOrderId = $item->job_order_id;
+
+    $this->post(route('grp.org.productions.show.to_produce.items.unassign', [$this->organisation->slug, $production->slug]), ['ids' => [$item->id]])
+        ->assertRedirect();
+    expect($item->fresh()->job_order_id)->toBeNull()
+        ->and(JobOrder::withTrashed()->find($jobOrderId)->jobOrderItems()->count())->toBe(0);
 });
 
 test('UI to produce list grouped by artisan, family and for', function () {
