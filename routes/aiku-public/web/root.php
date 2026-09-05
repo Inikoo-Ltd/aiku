@@ -35,6 +35,7 @@ Route::get('llms.txt', function () {
         "# aiku\n\n> Open source operating system for commerce: ERP, warehouse and dispatch, fulfilment, storefronts, marketplaces, dropshipping, CRM, marketing and accounting in one Laravel codebase. Licensed AGPL-3.0.\n\n"
         ."- [Home](".route('aiku-public.home').")\n"
         ."- [Engineering notes](".route('aiku-public.blog.index').") — short notes on how the system is built and run\n"
+        ."- [Architecture](".route('aiku-public.architecture').") — interactive map of how the platform is put together\n"
         ."- [Documentation](".route('aiku-public.docs.index').") — how to use aiku, feature by feature\n"
         ."- [RSS feed](".route('aiku-public.feed').")\n"
         ."- [Sitemap](".route('aiku-public.sitemap').")\n"
@@ -55,6 +56,11 @@ Route::get('visit.json', LogPublicVisit::class)->middleware('throttle:30,1')->na
 Route::get('blog/{slug}', ShowBlogPost::class)->name('blog.show');
 Route::get('docs', ShowDocs::class)->name('docs.index');
 Route::get('docs/{slug}', ShowDoc::class)->name('docs.show');
+Route::get('architecture', function () {
+    return response()->file(resource_path('aiku-public/architecture/aiku-architecture.html'), [
+        'Cache-Control' => 'public, max-age=3600',
+    ]);
+})->name('architecture');
 Route::get('whatsapp-term-policies', ShowWhatsappTermsAndPolicies::class)->name('whatsapp-term-policies');
 Route::get('sitemap.xml', ShowSitemap::class)->name('sitemap');
 Route::get('feed.xml', ShowFeed::class)->name('feed');

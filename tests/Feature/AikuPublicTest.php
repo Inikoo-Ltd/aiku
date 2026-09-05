@@ -395,3 +395,10 @@ test('reading time counts non-latin scripts instead of reporting one minute', fu
     expect($devanagari['reading_minutes'])->toBeGreaterThan(3)
         ->and($chinese['reading_minutes'])->toBeGreaterThan(3);
 });
+
+test('architecture page serves the interactive diagram', function () {
+    $response = get($this->host.'/architecture')->assertOk();
+
+    expect($response->baseResponse->getFile()->getPathname())->toBe(resource_path('aiku-public/architecture/aiku-architecture.html'))
+        ->and(file_get_contents($response->baseResponse->getFile()->getPathname()))->toContain('Aiku Platform Architecture');
+});
