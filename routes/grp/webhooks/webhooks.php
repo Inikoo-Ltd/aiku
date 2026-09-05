@@ -28,10 +28,12 @@ use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Orders\CallbackFetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Webhook\DeleteProductWebhooksWooCommerce;
 use App\Actions\Helpers\Jira\Webhook\HandleJiraWebhook;
+use App\Actions\Helpers\Ticket\ReceiveSlackTicketCommand;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns')->middleware(Sample::never());
+    Route::post('slack-ticket', ReceiveSlackTicketCommand::class)->name('slack_ticket');
     Route::any('checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
     Route::post('traffic-source-costs', ReceiveTrafficSourceCostWebhook::class)->name('traffic_source_costs');
 });

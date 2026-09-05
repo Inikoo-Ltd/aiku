@@ -11,6 +11,8 @@ namespace App\Actions\Helpers\Ticket\UI;
 use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Enums\Helpers\Ticket\TicketKindEnum;
+use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Http\Resources\Helpers\TicketCommentResource;
 use App\Http\Resources\Helpers\TicketResource;
@@ -34,6 +36,7 @@ class ShowTicket extends OrgAction
 
     public function asController(Ticket $ticket, ActionRequest $request): Ticket
     {
+        abort_unless($ticket->isVisibleTo($request->user()), 403);
         $this->initialisationFromGroup($ticket->group, $request);
 
         return $this->handle($ticket);
@@ -56,6 +59,9 @@ class ShowTicket extends OrgAction
                 'options'     => [
                     'statuses'   => collect(TicketStatusEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                     'priorities' => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
+                    'tags'       => Ticket::knownTags($ticket->group_id),
+                    'kinds'      => collect(TicketKindEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
+                    'modules'    => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                     'assignees'  => User::where('group_id', $ticket->group_id)->where('status', true)->orderBy('username')->get(['id', 'username', 'contact_name'])
                         ->map(fn (User $user) => ['label' => $user->contact_name ?: $user->username, 'value' => $user->id])->values(),
                 ],
@@ -64,6 +70,7 @@ class ShowTicket extends OrgAction
                     'update'  => ['name' => 'grp.models.ticket.update', 'parameters' => ['ticket' => $ticket->id]],
                     'comment' => ['name' => 'grp.models.ticket.comment.store', 'parameters' => ['ticket' => $ticket->id]],
                     'rate'    => ['name' => 'grp.models.ticket.rate', 'parameters' => ['ticket' => $ticket->id]],
+                    'escalate' => ['name' => 'grp.models.ticket.escalate', 'parameters' => ['ticket' => $ticket->id]],
                 ],
             ]
         );

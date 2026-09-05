@@ -9,6 +9,8 @@
 namespace App\Http\Resources\Helpers;
 
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Enums\Helpers\Ticket\TicketKindEnum;
+use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Models\Helpers\Ticket;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -24,6 +26,15 @@ class TicketResource extends JsonResource
             'id'             => $this->id,
             'reference'      => $this->reference,
             'type'           => $this->type->value,
+            'kind'           => $this->kind?->value,
+            'module'         => $this->module?->value,
+            'module_label'   => $this->module ? TicketModuleEnum::labels()[$this->module->value] : null,
+            'tags'           => $this->tags ?? [],
+            'is_confidential' => (bool) $this->is_confidential,
+            'kind_label'     => $this->kind ? TicketKindEnum::labels()[$this->kind->value] : null,
+            'parent'         => $this->model_type === 'Ticket' ? $this->model?->reference : null,
+            'escalations'    => $this->escalations()->pluck('reference'),
+            'staff_conversation_ulid' => $this->staffConversation?->ulid,
             'status'         => $this->status->value,
             'status_label'   => TicketStatusEnum::labels()[$this->status->value],
             'status_icon'    => TicketStatusEnum::stateIcon()[$this->status->value],
