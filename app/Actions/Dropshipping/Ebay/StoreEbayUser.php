@@ -10,6 +10,8 @@
 namespace App\Actions\Dropshipping\Ebay;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\EbayUserStepEnum;
@@ -29,6 +31,13 @@ class StoreEbayUser extends OrgAction
 
     public function handle(Customer $customer, array $modelData): EbayUser
     {
+        if ($unfinished = self::unfinishedRow($customer)) {
+            UpdateEbayUser::run($unfinished, ['name' => Arr::get($modelData, 'name'), 'step' => EbayUserStepEnum::MARKETPLACE]);
+            UpdateCustomerSalesChannel::run($unfinished->customerSalesChannel, ['name' => Arr::get($modelData, 'name')]);
+
+            return $unfinished->refresh();
+        }
+
         $platform = Platform::where('type', PlatformTypeEnum::EBAY->value)->first();
 
         data_set($modelData, 'group_id', $customer->group_id);
@@ -52,5 +61,14 @@ class StoreEbayUser extends OrgAction
         ]);
 
         return $ebayUser;
+    }
+
+    public static function unfinishedRow(Customer $customer): ?EbayUser
+    {
+        return EbayUser::where('customer_id', $customer->id)
+            ->whereNot('step', EbayUserStepEnum::COMPLETED)
+            ->whereHas('customerSalesChannel', fn ($query) => $query->where('status', CustomerSalesChannelStatusEnum::OPEN))
+            ->orderByDesc('updated_at')
+            ->first();
     }
 }

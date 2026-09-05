@@ -27,7 +27,7 @@ class CheckEbayUserAuthorized extends RetinaAction
     use WithActionUpdate;
     use WithEbayApiRequest;
 
-    public function handle(EbayUser $ebayUser): void
+    public function handle(EbayUser $ebayUser): EbayUser
     {
         try {
             $result = $ebayUser->getUser();
@@ -37,12 +37,33 @@ class CheckEbayUserAuthorized extends RetinaAction
         } catch (\Throwable $e) {
             throw ValidationException::withMessages(['message' => __('You are not authenticated yet, please click auth store button')]);
         }
+
+        return $ebayUser->refresh();
     }
 
-    public function asController(EbayUser $ebayUser, ActionRequest $request): void
+    public function asController(EbayUser $ebayUser, ActionRequest $request): EbayUser
     {
         $this->initialisation($request);
 
-        $this->handle($ebayUser);
+        return $this->handle($ebayUser);
+    }
+
+    /**
+     * The wizard only needs to know which row and channel to continue on; the row itself carries eBay tokens.
+     *
+     * @return array{id: int, customer_sales_channel_id: int|null, name: string|null, step: string|null}|null
+     */
+    public function jsonResponse(?EbayUser $ebayUser): ?array
+    {
+        if (!$ebayUser) {
+            return null;
+        }
+
+        return [
+            'id'                        => $ebayUser->id,
+            'customer_sales_channel_id' => $ebayUser->customer_sales_channel_id,
+            'name'                      => $ebayUser->name,
+            'step'                      => $ebayUser->step?->value,
+        ];
     }
 }

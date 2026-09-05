@@ -20,7 +20,12 @@ use App\Actions\Dropshipping\Tiktok\Product\UpdateInventoryTiktokProducts;
 use App\Actions\Dropshipping\Tiktok\Product\UpdateTiktokInventory;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio;
+use App\Actions\Dropshipping\Ebay\CallbackRetinaEbayUser;
 use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
+use App\Actions\Maintenance\Dropshipping\RepairEbayDuplicateChannels;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Dropshipping\EbayUserStepEnum;
+use App\Models\Dropshipping\EbayUser;
 use App\Actions\Dropshipping\Ebay\StoreEbayUser;
 use App\Actions\Dropshipping\Ebay\Product\CheckEbayPortfolio;
 use App\Actions\Dropshipping\Ebay\Product\UpdateEbayPortfolio;
@@ -52,6 +57,7 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Helpers\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -1035,4 +1041,112 @@ test('dashboard shortcut reports how many open manual channels the customer has'
     $shortcut = GetRetinaDropshippingHomeData::run($customer->refresh())['shortcut']['order'];
     expect($shortcut['number_manual_channels'])->toBe(1)
         ->and($shortcut['manual_data']['reference'])->toBe('test_manual_shortcut');
+});
+
+test('ebay wizard step one reuses an unfinished ebay user instead of minting another channel', function () {
+    $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $first  = StoreEbayUser::make()->handle($customer, ['name' => 'typo-name']);
+    $second = StoreEbayUser::make()->handle($customer, ['name' => 'real-name']);
+
+    expect($second->id)->toBe($first->id)
+        ->and($second->name)->toBe('real-name')
+        ->and($second->customerSalesChannel->name)->toBe('real-name')
+        ->and($customer->customerSalesChannels()->count())->toBe(1);
+
+    $second->update(['step' => EbayUserStepEnum::COMPLETED]);
+    $third = StoreEbayUser::make()->handle($customer, ['name' => 'second-account']);
+
+    expect($third->id)->not->toBe($first->id)
+        ->and($customer->customerSalesChannels()->count())->toBe(2);
+});
+
+test('ebay callback hands the existing channel to the fresh row when the same ebay account is authorised again', function () {
+    Queue::fake();
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'oauth2/token')) {
+            return Http::response(['access_token' => 'tok', 'refresh_token' => 'ref', 'expires_in' => 7200]);
+        }
+        if (str_contains($request->url(), '/commerce/identity/')) {
+            return Http::response(['userId' => 'EBAY-U1', 'username' => 'asad512-545']);
+        }
+
+        return Http::response([]);
+    });
+    CheckEbayChannel::mock()->shouldReceive('handle')->andReturnUsing(fn ($ebayUser) => $ebayUser->customerSalesChannel);
+
+    $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $stale = StoreEbayUser::make()->handle($customer, ['name' => 'asad512-545']);
+    $stale->update(['step' => EbayUserStepEnum::COMPLETED, 'return_policy_id' => 'RP-1', 'data' => ['ebay_user' => ['userId' => 'EBAY-U1', 'username' => 'asad512-545']]]);
+    $keep = $stale->customerSalesChannel;
+    StorePortfolio::make()->action($keep, $this->product, []);
+
+    $fresh  = StoreEbayUser::make()->handle($customer, ['name' => 'asad512-545']);
+    $minted = $fresh->customerSalesChannel;
+    expect($minted->id)->not->toBe($keep->id);
+
+    CallbackRetinaEbayUser::make()->handle($customer, ['code' => 'abc']);
+
+    $fresh->refresh();
+    $keep->refresh();
+
+    expect($fresh->customer_sales_channel_id)->toBe($keep->id)
+        ->and($fresh->return_policy_id)->toBe('RP-1')
+        ->and(Arr::get($fresh->data, 'ebay_user.userId'))->toBe('EBAY-U1')
+        ->and($keep->platform_user_id)->toBe($fresh->id)
+        ->and($keep->status)->toBe(CustomerSalesChannelStatusEnum::OPEN)
+        ->and($keep->portfolios()->count())->toBe(1)
+        ->and(EbayUser::withTrashed()->find($stale->id)->trashed())->toBeTrue()
+        ->and($minted->refresh()->status)->toBe(CustomerSalesChannelStatusEnum::CLOSED)
+        ->and($customer->customerSalesChannels()->where('status', CustomerSalesChannelStatusEnum::OPEN)->count())->toBe(1);
+});
+
+test('ebay duplicate repair folds the extra channel into the one holding most and skips channels with orders', function () {
+    Queue::fake();
+    $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $a = StoreEbayUser::make()->handle($customer, ['name' => 'shop-a']);
+    $a->update(['step' => EbayUserStepEnum::COMPLETED, 'data' => ['ebay_user' => ['userId' => 'EBAY-U9']]]);
+    $b = StoreEbayUser::make()->handle($customer, ['name' => 'shop-a']);
+    $b->update(['step' => EbayUserStepEnum::COMPLETED, 'data' => ['ebay_user' => ['userId' => 'EBAY-U9']]]);
+
+    $keep  = $a->customerSalesChannel;
+    $extra = $b->customerSalesChannel;
+    StorePortfolio::make()->action($keep, $this->product, []);
+    $family      = $this->shop->productCategories()->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY)->first();
+    $makeProduct = fn () => \App\Actions\Catalogue\Product\StoreProduct::make()->action($family, array_merge(
+        Product::factory()->definition(),
+        [
+            'trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]],
+            'price'       => 50,
+        ]
+    ));
+    StorePortfolio::make()->action($keep, $makeProduct(), []);
+    StorePortfolio::make()->action($extra, $this->product, []);
+    StorePortfolio::make()->action($extra, $makeProduct(), []);
+    $keep->refresh();
+    $extra->refresh();
+
+    $preview = RepairEbayDuplicateChannels::run(collect([$keep, $extra]), dryRun: true);
+    expect($preview)->toHaveCount(1)
+        ->and($preview[0]['action'])->toBe('would merge')
+        ->and($preview[0]['portfolios'])->toBe(1)
+        ->and($extra->refresh()->status)->toBe(CustomerSalesChannelStatusEnum::OPEN);
+
+    $keep->update(['number_orders' => 2]);
+    $extra->update(['number_orders' => 1]);
+    $rows = RepairEbayDuplicateChannels::run(collect([$keep->refresh(), $extra->refresh()]));
+    expect($rows[0]['action'])->toBe('skipped: has orders')
+        ->and($rows[0]['keep'])->toBe($keep->slug)
+        ->and($extra->refresh()->status)->toBe(CustomerSalesChannelStatusEnum::OPEN);
+    $keep->update(['number_orders' => 0]);
+    $extra->update(['number_orders' => 0]);
+
+    $rows = RepairEbayDuplicateChannels::run(collect([$keep->refresh(), $extra->refresh()]));
+    expect($rows[0]['action'])->toBe('merged')
+        ->and($rows[0]['keep'])->toBe($keep->slug)
+        ->and($keep->refresh()->portfolios()->count())->toBe(3)
+        ->and($extra->refresh()->status)->toBe(CustomerSalesChannelStatusEnum::CLOSED)
+        ->and(EbayUser::withTrashed()->find($b->id)->trashed())->toBeTrue();
 });

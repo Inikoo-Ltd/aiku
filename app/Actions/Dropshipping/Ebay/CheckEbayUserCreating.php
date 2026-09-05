@@ -41,4 +41,23 @@ class CheckEbayUserCreating extends RetinaAction
 
         return $this->handle($this->customer);
     }
+
+    /**
+     * The wizard only needs to know which row and channel to continue on; the row itself carries eBay tokens.
+     *
+     * @return array{id: int, customer_sales_channel_id: int|null, name: string|null, step: string|null}|null
+     */
+    public function jsonResponse(?EbayUser $ebayUser): ?array
+    {
+        if (!$ebayUser) {
+            return null;
+        }
+
+        return [
+            'id'                        => $ebayUser->id,
+            'customer_sales_channel_id' => $ebayUser->customer_sales_channel_id,
+            'name'                      => $ebayUser->name,
+            'step'                      => $ebayUser->step?->value,
+        ];
+    }
 }
