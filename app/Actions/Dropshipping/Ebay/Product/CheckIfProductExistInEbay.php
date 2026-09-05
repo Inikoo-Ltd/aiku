@@ -53,19 +53,34 @@ class CheckIfProductExistInEbay extends RetinaAction
                 }
             }
 
-            if (Arr::has($result, 'error')) {
-                return [];
-            }
-
-            if (Arr::get($result, 'status') === 'PUBLISHED') {
-                return $result;
-            }
-
-            return [];
+            return self::publishedOffer($result);
         } catch (\Exception $e) {
             Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
 
             return [];
         }
+    }
+
+    /**
+     * The offer list endpoint wraps results in {offers: [...], total: n}; the single offer endpoint returns the offer itself.
+     *
+     * @param  array<string, mixed>  $result
+     * @return array<string, mixed>
+     */
+    public static function publishedOffer(array $result): array
+    {
+        if (Arr::has($result, 'error')) {
+            return [];
+        }
+
+        $offers = Arr::has($result, 'offers') ? Arr::get($result, 'offers', []) : [$result];
+
+        foreach ($offers as $offer) {
+            if (is_array($offer) && Arr::get($offer, 'status') === 'PUBLISHED') {
+                return $offer;
+            }
+        }
+
+        return [];
     }
 }

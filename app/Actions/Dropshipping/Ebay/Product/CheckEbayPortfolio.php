@@ -39,23 +39,12 @@ class CheckEbayPortfolio
             $hasVariantAtLocation   = $productExistsInEbay;
         }
 
-        $numberMatches = 0;
-        $matchesLabels = [];
-        $matches       = [];
-
-        if (!$hasValidProductId || !$productExistsInEbay || !$hasVariantAtLocation) {
-            $result = CheckIfProductExistInEbay::run($ebayUser, $portfolio);
-
-            $matches       = $result;
-            $numberMatches = count($matches);
-            $matchesLabels = Arr::pluck($matches, 'name');
-        }
+        $matches = $hasVariantAtLocation ? [] : self::possibleMatches($ebayUser, $portfolio);
 
         $matchData = [
-            'number_matches' => $numberMatches,
-            'matches_labels' => $matchesLabels,
+            'number_matches' => count($matches),
+            'matches_labels' => Arr::pluck($matches, 'name'),
             'raw_data'       => $matches
-
         ];
 
         $portfolio->update([
@@ -75,5 +64,39 @@ class CheckEbayPortfolio
         return $portfolio;
     }
 
+    /**
+     * @return array<int, array{id: string, name: string, images: array<int, array{src: string}>}>
+     */
+    public static function possibleMatches(EbayUser $ebayUser, Portfolio $portfolio): array
+    {
+        if (blank($portfolio->sku)) {
+            return [];
+        }
 
+        $offer = CheckIfProductExistInEbay::publishedOffer($ebayUser->getOffers(['sku' => $portfolio->sku]));
+
+        if (!$offer) {
+            return [];
+        }
+
+        return [self::matchFromOffer($offer, $ebayUser->getProduct(Arr::get($offer, 'sku')))];
+    }
+
+    /**
+     * The retina match button posts raw_data[0].id as platform_product_id, which the eBay matcher looks up by SKU.
+     *
+     * @param  array<string, mixed>  $offer
+     * @param  array<string, mixed>  $inventoryItem
+     * @return array{id: string, name: string, images: array<int, array{src: string}>}
+     */
+    public static function matchFromOffer(array $offer, array $inventoryItem): array
+    {
+        $sku = (string) Arr::get($offer, 'sku');
+
+        return [
+            'id'     => $sku,
+            'name'   => (string) Arr::get($inventoryItem, 'product.title', $sku),
+            'images' => array_map(fn (string $url) => ['src' => $url], Arr::get($inventoryItem, 'product.imageUrls', [])),
+        ];
+    }
 }
