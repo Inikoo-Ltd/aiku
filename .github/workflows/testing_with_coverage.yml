@@ -54,8 +54,16 @@ jobs:
       - name: Retrieve db dumps
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
       - name: Run tests with coverage
-        run: /usr/bin/php8.4 -d memory_limit=-1 -d newrelic.enabled=0 vendor/bin/pest --parallel --processes=8 --coverage-clover clover.xml --log-junit junit.xml
+        run: |
+          COVERAGE=""
+          if php8.4 -m | grep -qiE '^(pcov|xdebug)$'; then
+            COVERAGE="--coverage-clover clover.xml"
+          else
+            echo "::warning::No coverage driver (pcov/xdebug) for php8.4 on this runner, running tests without coverage"
+          fi
+          /usr/bin/php8.4 -d memory_limit=-1 -d newrelic.enabled=0 vendor/bin/pest --parallel --processes=8 $COVERAGE --log-junit junit.xml
       - name: Upload coverage to Codecov
+        if: ${{ hashFiles('clover.xml') != '' }}
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
