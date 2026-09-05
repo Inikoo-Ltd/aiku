@@ -52,7 +52,7 @@ class CheckEbayPortfolio
             'exist_in_platform'                => $productExistsInEbay,
             'platform_status'                  => $hasVariantAtLocation,
             'platform_possible_matches'        => $matchData,
-            'number_platform_possible_matches' => $numberMatches
+            'number_platform_possible_matches' => count($matches)
 
         ]);
 

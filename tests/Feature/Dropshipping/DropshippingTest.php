@@ -22,6 +22,7 @@ use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio;
 use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
 use App\Actions\Dropshipping\Ebay\StoreEbayUser;
+use App\Actions\Dropshipping\Ebay\Product\CheckEbayPortfolio;
 use App\Actions\Dropshipping\Ebay\Product\UpdateEbayPortfolio;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInEbayPortfolio;
@@ -49,6 +50,7 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Helpers\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -971,4 +973,46 @@ test('exclusive products and bundles advertise real stock on sales channels', fu
     UpdateProduct::make()->action($product, ['state' => ProductStateEnum::DISCONTINUED]);
     $this->product->update(['available_quantity' => 64]);
     expect(UpdateWooCustomerSalesChannelPortfolio::quantityToSend($this->product->refresh(), $customerSalesChannel))->toBe(0);
+});
+
+test('ebay portfolio check stores a published sku match in the shape the retina table expects', function () {
+    Http::fake(function ($request) {
+        $url = $request->url();
+
+        if (str_contains($url, 'oauth2/token')) {
+            return Http::response(['access_token' => 'tok', 'refresh_token' => 'ref', 'expires_in' => 7200]);
+        }
+
+        if (str_contains($url, '/inventory_item/')) {
+            return Http::response(['sku' => 'abc-1', 'product' => ['title' => 'Listed On Ebay', 'imageUrls' => ['https://i.ebayimg.com/x.jpg']]]);
+        }
+
+        if (str_contains($url, '/offer')) {
+            return Http::response([
+                'offers' => [
+                    ['offerId' => '1', 'sku' => 'abc-1', 'status' => 'UNPUBLISHED'],
+                    ['offerId' => '2', 'sku' => 'abc-1', 'status' => 'PUBLISHED'],
+                ],
+                'total'  => 2
+            ]);
+        }
+
+        return Http::response([]);
+    });
+
+    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-match']);
+    $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+
+    $portfolio->update(['sku' => 'abc-1']);
+
+    $portfolio = CheckEbayPortfolio::run($portfolio)->refresh();
+
+    expect($portfolio->number_platform_possible_matches)->toBe(1)
+        ->and($portfolio->platform_possible_matches['matches_labels'])->toBe(['Listed On Ebay'])
+        ->and($portfolio->platform_possible_matches['raw_data'][0])->toBe([
+            'id'     => 'abc-1',
+            'name'   => 'Listed On Ebay',
+            'images' => [['src' => 'https://i.ebayimg.com/x.jpg']],
+        ])
+        ->and($portfolio->platform_status)->toBeFalse();
 });
