@@ -42,6 +42,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Actions\CRM\Customer\StoreCustomer;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -1019,7 +1020,7 @@ test('ebay portfolio check stores a published sku match in the shape the retina 
 });
 
 test('dashboard shortcut reports how many open manual channels the customer has', function () {
-    $customer = createCustomer($this->shop);
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
 
     $ebayUser = StoreEbayUser::make()->handle($customer, ['name' => 'test-ebay-only']);
     expect($ebayUser->customerSalesChannel)->not->toBeNull();
