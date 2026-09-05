@@ -9,12 +9,15 @@
 namespace App\Actions\Accounting;
 
 use App\Models\Accounting\PaymentAccountShop;
+use App\Models\CRM\Customer;
 use App\Models\Helpers\Address;
 use Checkout\CheckoutApiException;
+use Checkout\Customers\CustomerRequest;
 use Checkout\CheckoutSdk;
 use Checkout\Environment;
 use Checkout\Payments\BillingInformation;
 use Checkout\Payments\PaymentsQueryFilter;
+use Checkout\Payments\Sessions\PaymentSessionsClient;
 use Checkout\Payments\Sessions\PaymentSessionsRequest;
 use Sentry;
 
@@ -23,6 +26,7 @@ trait WithCheckoutCom
     public const array CHECKOUT_COM_PENDING_STATUSES = ['Pending', 'Retry Scheduled'];
     public const array CHECKOUT_COM_FAILURE_STATUSES = ['Voided', 'Declined', 'Cancelled', 'Canceled', 'Expired'];
     public const array CHECKOUT_COM_CAPTURED_STATUSES = ['Captured', 'Paid'];
+    public const array CHECKOUT_COM_CUSTOMER_PHONE_CURRENCIES = ['SEK'];
 
     public function getCheckoutApi($publicKey, $secretKey): ?\Checkout\CheckoutApi
     {
@@ -41,8 +45,12 @@ trait WithCheckoutCom
     }
 
 
-    private function setBillingInformation(PaymentSessionsRequest $paymentSessionRequest, Address $billingAddress): PaymentSessionsRequest
+    private function setBillingInformation(PaymentSessionsRequest $paymentSessionRequest, ?Address $billingAddress): PaymentSessionsRequest
     {
+        if (!$billingAddress?->country) {
+            return $paymentSessionRequest;
+        }
+
         $address                = new \Checkout\Common\Address();
         $address->address_line1 = $billingAddress->address_line_1;
         $address->address_line2 = $billingAddress->address_line_2;
@@ -58,11 +66,109 @@ trait WithCheckoutCom
         return $paymentSessionRequest;
     }
 
+    public function getCustomerPhone(?string $phone, ?string $billingCountryPhoneCode): ?\Checkout\Common\Phone
+    {
+        $phone = trim((string) $phone);
+        preg_match('/\d+/', (string) $billingCountryPhoneCode, $phoneCodeDigits);
+        $billingPhoneCode = $phoneCodeDigits[0] ?? '';
+        if ($phone === '' || $billingPhoneCode === '') {
+            return null;
+        }
+
+        $digits = preg_replace('/\D/', '', str_replace('(0)', '', $phone));
+
+        $carriesCountryCode = str_starts_with($phone, '+')
+            || str_starts_with($digits, '00')
+            || (!str_starts_with($digits, '0') && str_starts_with($digits, $billingPhoneCode) && strlen($digits) >= 10);
+
+        $international = $carriesCountryCode ? ltrim($digits, '0') : $billingPhoneCode.ltrim($digits, '0');
+
+        if (!str_starts_with($international, $billingPhoneCode)) {
+            if (strlen($international) < 8 || strlen($international) > 24) {
+                return null;
+            }
+            $checkoutPhone         = new \Checkout\Common\Phone();
+            $checkoutPhone->number = '+'.$international;
+
+            return $checkoutPhone;
+        }
+
+        $number = ltrim(substr($international, strlen($billingPhoneCode)), '0');
+        if (strlen($number) < 6 || strlen($number) > 25) {
+            return null;
+        }
+
+        $checkoutPhone               = new \Checkout\Common\Phone();
+        $checkoutPhone->country_code = '+'.$billingPhoneCode;
+        $checkoutPhone->number       = $number;
+
+        return $checkoutPhone;
+    }
+
+    private function setCustomerPhone(PaymentSessionsRequest $paymentSessionRequest, string $currencyCode, Customer $customer, ?string $billingCountryPhoneCode): PaymentSessionsRequest
+    {
+        if (!in_array($currencyCode, self::CHECKOUT_COM_CUSTOMER_PHONE_CURRENCIES)) {
+            return $paymentSessionRequest;
+        }
+
+        $customerPhone = $this->getCustomerPhone($customer->phone, $billingCountryPhoneCode);
+        if (!$customerPhone) {
+            return $paymentSessionRequest;
+        }
+
+        if (!$paymentSessionRequest->customer) {
+            $paymentSessionRequest->customer       = new CustomerRequest();
+            $paymentSessionRequest->customer->name = $customer->name;
+            if ($customer->email) {
+                $paymentSessionRequest->customer->email = $customer->email;
+            }
+        }
+        $paymentSessionRequest->customer->phone = $customerPhone;
+
+        return $paymentSessionRequest;
+    }
+
+    private function createPaymentSession(PaymentSessionsClient $paymentSessionClient, PaymentSessionsRequest $paymentSessionRequest): array
+    {
+        try {
+            return $paymentSessionClient->createPaymentSessions($paymentSessionRequest);
+        } catch (\Exception $e) {
+            Sentry::captureException($e);
+            if (!$this->isCustomerPhoneRejected($e, $paymentSessionRequest)) {
+                return ['error' => $e->getMessage()];
+            }
+        }
+
+        $paymentSessionRequest->customer->phone = null;
+        try {
+            return $paymentSessionClient->createPaymentSessions($paymentSessionRequest);
+        } catch (\Exception $e) {
+            Sentry::captureException($e);
+
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    private function isCustomerPhoneRejected(\Exception $e, PaymentSessionsRequest $paymentSessionRequest): bool
+    {
+        if (empty($paymentSessionRequest->customer?->phone) || !$e instanceof CheckoutApiException) {
+            return false;
+        }
+
+        return isset($e->http_metadata) && $e->http_metadata->getStatusCode() == 422;
+    }
+
     public function getCheckOutPaymentsByReference(PaymentAccountShop $paymentAccountShop, string $reference): array
     {
         list($publicKey, $secretKey) = $paymentAccountShop->getCredentials();
 
         $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
+        if (!$checkoutApi) {
+            return [
+                'error'            => true,
+                'http_status_code' => null,
+            ];
+        }
 
         try {
             $queryFilter            = new PaymentsQueryFilter();
@@ -90,6 +196,13 @@ trait WithCheckoutCom
 
 
         $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
+        if (!$checkoutApi) {
+            return [
+                'error'            => true,
+                'message'          => 'checkout.com credentials rejected',
+                'http_status_code' => null,
+            ];
+        }
 
         try {
             return $checkoutApi->getPaymentsClient()->getPaymentDetails($paymentID);
