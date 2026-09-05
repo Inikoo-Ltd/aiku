@@ -217,13 +217,6 @@ const onClickCopy = (textToCopy: string) => {
                 {{ trans("Retrying payment... Attempt :retryCount of :max_entries", { retryCount: retryCount, max_entries: MAX_RETRIES }) }}
             </div>
         </Transition>
-        
-        <!-- Section: payment session id -->
-        <div v-if="props.data?.data?.id" class="italic opacity-50 text-[10px] mt-5">
-           <span @click="useCopyText(props.data.data.id)" class="cursor-pointer">
-                {{ props.data.data.id }}
-            </span>
-        </div>
     </div>
 </template>
 

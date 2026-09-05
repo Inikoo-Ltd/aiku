@@ -2956,6 +2956,179 @@ describe('payment method from checkout.com source', function () {
     });
 });
 
+describe('checkout.com payment session customer phone', function () {
+    $checkoutCom = fn () => new class () {
+        use \App\Actions\Accounting\WithCheckoutCom;
+
+        public function phoneFor(\Checkout\Payments\Sessions\PaymentSessionsRequest $request, string $currency, \App\Models\CRM\Customer $customer, ?string $code): \Checkout\Payments\Sessions\PaymentSessionsRequest
+        {
+            return $this->setCustomerPhone($request, $currency, $customer, $code);
+        }
+
+        public function session(\Checkout\Payments\Sessions\PaymentSessionsClient $client, \Checkout\Payments\Sessions\PaymentSessionsRequest $request): array
+        {
+            return $this->createPaymentSession($client, $request);
+        }
+
+        public function billing(\Checkout\Payments\Sessions\PaymentSessionsRequest $request, ?\App\Models\Helpers\Address $address): \Checkout\Payments\Sessions\PaymentSessionsRequest
+        {
+            return $this->setBillingInformation($request, $address);
+        }
+    };
+
+    test('a missing billing address or rejected credentials degrade instead of crashing', function () use ($checkoutCom) {
+        $request = $checkoutCom()->billing(new \Checkout\Payments\Sessions\PaymentSessionsRequest(), null);
+        expect($request->billing)->toBeNull();
+
+        $addressWithoutCountry = new \App\Models\Helpers\Address();
+        $request               = $checkoutCom()->billing(new \Checkout\Payments\Sessions\PaymentSessionsRequest(), $addressWithoutCountry);
+        expect($request->billing)->toBeNull();
+
+        expect($checkoutCom()->getCheckoutApi('', ''))->toBeNull()
+            ->and($checkoutCom()->getCheckoutApi('not-a-key', 'nope'))->toBeNull();
+    });
+
+    $sessionRequestWithPhone = function (): \Checkout\Payments\Sessions\PaymentSessionsRequest {
+        $request                          = new \Checkout\Payments\Sessions\PaymentSessionsRequest();
+        $request->customer                = new \Checkout\Customers\CustomerRequest();
+        $request->customer->phone         = new \Checkout\Common\Phone();
+        $request->customer->phone->number = '737589344';
+
+        return $request;
+    };
+
+    $phoneRejected                = new \Checkout\CheckoutApiException('422');
+    $phoneRejected->http_metadata = new \Checkout\HttpMetadata('Unprocessable Entity', 422, [], '1.1');
+    $phoneRejected->error_details = ['error_codes' => ['customer_phone_number_invalid']];
+
+    test('stored phones are split using the billing country dialing code', function () use ($checkoutCom) {
+        $parse = fn (?string $phone, ?string $code = '46') => $checkoutCom()->getCustomerPhone($phone, $code);
+
+        $compact = $parse('+46737589344');
+        expect($compact->country_code)->toBe('+46')->and($compact->number)->toBe('737589344');
+
+        $spaced = $parse('+46 73 758 93 44');
+        expect($spaced->country_code)->toBe('+46')->and($spaced->number)->toBe('737589344');
+
+        $national = $parse('0737589344');
+        expect($national->country_code)->toBe('+46')->and($national->number)->toBe('737589344');
+
+        $doubleZero = $parse('0046737589344');
+        expect($doubleZero->country_code)->toBe('+46')->and($doubleZero->number)->toBe('737589344');
+
+        $alreadyPrefixed = $parse('46737589344');
+        expect($alreadyPrefixed->country_code)->toBe('+46')->and($alreadyPrefixed->number)->toBe('737589344');
+
+        $polishPrefixed = $parse('48123456789', '48');
+        expect($polishPrefixed->country_code)->toBe('+48')->and($polishPrefixed->number)->toBe('123456789');
+
+        $lundLandlineWithoutTrunkZero = $parse('46123456');
+        expect($lundLandlineWithoutTrunkZero->country_code)->toBe('+46')->and($lundLandlineWithoutTrunkZero->number)->toBe('46123456');
+
+        $trunkZeroAfterCode = $parse('+46 073 758 93 44');
+        expect($trunkZeroAfterCode->country_code)->toBe('+46')->and($trunkZeroAfterCode->number)->toBe('737589344');
+
+        $trunkZero = $parse('+44 (0)1142 729 165', '44');
+        expect($trunkZero->country_code)->toBe('+44')->and($trunkZero->number)->toBe('1142729165');
+
+        $foreign = $parse('+358400915168');
+        expect($foreign->country_code)->toBeNull()->and($foreign->number)->toBe('+358400915168');
+
+        $compoundDialingCode = $parse('7371234567', '+1-809 and 1-829');
+        expect($compoundDialingCode->country_code)->toBe('+1')->and($compoundDialingCode->number)->toBe('7371234567');
+
+        $shortestAccepted = $parse('+46123456');
+        expect($shortestAccepted->number)->toBe('123456');
+
+        expect($parse('+46'))->toBeNull()
+            ->and($parse('+421000'))->toBeNull()
+            ->and($parse('+4612345'))->toBeNull()
+            ->and($parse('+46'.str_repeat('7', 26)))->toBeNull()
+            ->and($parse('+358'.str_repeat('7', 22)))->toBeNull()
+            ->and($parse('+3581234'))->toBeNull()
+            ->and($parse(''))->toBeNull()
+            ->and($parse(null))->toBeNull()
+            ->and($parse('+46737589344', ''))->toBeNull()
+            ->and($parse('+46737589344', ' '))->toBeNull()
+            ->and($parse('+46737589344', null))->toBeNull();
+    });
+
+    test('phone only travels on SEK sessions until BLIK is verified for PLN, other shops keep their payload', function () use ($checkoutCom) {
+        $customer        = new \App\Models\CRM\Customer();
+        $customer->name  = 'Test Swish';
+        $customer->email = 'swish@example.com';
+        $customer->phone = '+46737589344';
+
+        $orderFlow                 = new \Checkout\Payments\Sessions\PaymentSessionsRequest();
+        $orderFlow->customer       = new \Checkout\Customers\CustomerRequest();
+        $orderFlow->customer->name = 'Already there';
+        $orderFlow                 = $checkoutCom()->phoneFor($orderFlow, 'SEK', $customer, '46');
+        expect($orderFlow->customer->name)->toBe('Already there')
+            ->and($orderFlow->customer->phone->country_code)->toBe('+46')
+            ->and($orderFlow->customer->phone->number)->toBe('737589344');
+
+        $topUp = $checkoutCom()->phoneFor(new \Checkout\Payments\Sessions\PaymentSessionsRequest(), 'SEK', $customer, '46');
+        expect($topUp->customer)->toBeInstanceOf(\Checkout\Customers\CustomerRequest::class)
+            ->and($topUp->customer->name)->toBe('Test Swish')
+            ->and($topUp->customer->email)->toBe('swish@example.com')
+            ->and($topUp->customer->phone->number)->toBe('737589344');
+
+        $unparseable        = new \App\Models\CRM\Customer();
+        $unparseable->name  = 'No phone';
+        $unparseable->phone = '+46';
+        expect($checkoutCom()->phoneFor(new \Checkout\Payments\Sessions\PaymentSessionsRequest(), 'SEK', $unparseable, '46')->customer)->toBeNull();
+
+        $polish        = new \App\Models\CRM\Customer();
+        $polish->phone = '+48123456789';
+        expect($checkoutCom()->phoneFor(new \Checkout\Payments\Sessions\PaymentSessionsRequest(), 'PLN', $polish, '48')->customer)->toBeNull();
+
+        $euro           = new \Checkout\Payments\Sessions\PaymentSessionsRequest();
+        $euro->customer = new \Checkout\Customers\CustomerRequest();
+        $euro           = $checkoutCom()->phoneFor($euro, 'EUR', $customer, '46');
+        expect($euro->customer->phone)->toBeNull();
+
+        $sterling        = new \App\Models\CRM\Customer();
+        $sterling->phone = '+44 7984 903265';
+        expect($checkoutCom()->phoneFor(new \Checkout\Payments\Sessions\PaymentSessionsRequest(), 'GBP', $sterling, '44')->customer)->toBeNull();
+    });
+
+    test('a phone rejected by checkout.com is dropped and the session created again once', function () use ($checkoutCom, $sessionRequestWithPhone, $phoneRejected) {
+        $request = $sessionRequestWithPhone();
+        $client  = \Mockery::mock(\Checkout\Payments\Sessions\PaymentSessionsClient::class);
+        $client->shouldReceive('createPaymentSessions')->once()->andThrow($phoneRejected);
+        $client->shouldReceive('createPaymentSessions')->once()->andReturn(['id' => 'ps_retry']);
+
+        expect($checkoutCom()->session($client, $request))->toBe(['id' => 'ps_retry'])
+            ->and($request->customer->phone)->toBeNull();
+    });
+
+    test('other failures are never retried and keep the error shape', function () use ($checkoutCom, $sessionRequestWithPhone, $phoneRejected) {
+        $serverError                = new \Checkout\CheckoutApiException('500');
+        $serverError->http_metadata = new \Checkout\HttpMetadata('Internal Server Error', 500, [], '1.1');
+
+        $request = $sessionRequestWithPhone();
+        $client  = \Mockery::mock(\Checkout\Payments\Sessions\PaymentSessionsClient::class);
+        $client->shouldReceive('createPaymentSessions')->once()->andThrow($serverError);
+        expect($checkoutCom()->session($client, $request))->toBe(['error' => '500'])
+            ->and($request->customer->phone->number)->toBe('737589344');
+
+        $timeout = \Mockery::mock(\Checkout\Payments\Sessions\PaymentSessionsClient::class);
+        $timeout->shouldReceive('createPaymentSessions')->once()->andThrow(new \Exception('timeout'));
+        expect($checkoutCom()->session($timeout, $sessionRequestWithPhone()))->toBe(['error' => 'timeout']);
+
+        $noPhone           = new \Checkout\Payments\Sessions\PaymentSessionsRequest();
+        $noPhone->customer = new \Checkout\Customers\CustomerRequest();
+        $rejectedWithoutPhone = \Mockery::mock(\Checkout\Payments\Sessions\PaymentSessionsClient::class);
+        $rejectedWithoutPhone->shouldReceive('createPaymentSessions')->once()->andThrow($phoneRejected);
+        expect($checkoutCom()->session($rejectedWithoutPhone, $noPhone))->toBe(['error' => '422']);
+
+        $noCustomer = new \Checkout\Payments\Sessions\PaymentSessionsRequest();
+        $rejectedWithoutCustomer = \Mockery::mock(\Checkout\Payments\Sessions\PaymentSessionsClient::class);
+        $rejectedWithoutCustomer->shouldReceive('createPaymentSessions')->once()->andThrow($phoneRejected);
+        expect($checkoutCom()->session($rejectedWithoutCustomer, $noCustomer))->toBe(['error' => '422']);
+    });
+});
+
 describe('invoice pdf tax number display', function () {
     $renderInvoiceTemplate = function ($invoice) {
         return view('invoices.templates.pdf.invoice', [

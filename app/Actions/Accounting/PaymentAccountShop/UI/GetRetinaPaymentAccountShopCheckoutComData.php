@@ -18,7 +18,6 @@ use Checkout\Payments\Sessions\PaymentSessionsRequest;
 use Checkout\Payments\ThreeDsRequest;
 use Checkout\Customers\CustomerRequest;
 use Lorisleiva\Actions\Concerns\AsObject;
-use Sentry;
 
 class GetRetinaPaymentAccountShopCheckoutComData
 {
@@ -32,6 +31,9 @@ class GetRetinaPaymentAccountShopCheckoutComData
         list($publicKey, $secretKey) = $paymentAccountShop->getCredentials();
 
         $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
+        if (!$checkoutApi) {
+            return ['error' => __('Online payments are temporarily unavailable')];
+        }
 
         $paymentSessionClient = $checkoutApi->getPaymentSessionsClient();
 
@@ -71,6 +73,12 @@ class GetRetinaPaymentAccountShopCheckoutComData
         if ($order->customer->email) {
             $paymentSessionRequest->customer->email = $order->customer->email;
         }
+        $paymentSessionRequest = $this->setCustomerPhone(
+            $paymentSessionRequest,
+            $order->currency->code,
+            $order->customer,
+            $order->billingAddress?->country?->phone_code
+        );
 
         $paymentSessionRequest->metadata = [
             'origin'       => 'aiku',
@@ -89,16 +97,7 @@ class GetRetinaPaymentAccountShopCheckoutComData
 
         $paymentSessionRequest = $this->setBillingInformation($paymentSessionRequest, $billingAddress);
 
-        try {
-            $paymentSession = $paymentSessionClient->createPaymentSessions($paymentSessionRequest);
-        } catch (\Exception $e) {
-            $paymentSession = [
-                'error' => $e->getMessage(),
-            ];
-            Sentry::captureException($e);
-        }
-
-        return $paymentSession;
+        return $this->createPaymentSession($paymentSessionClient, $paymentSessionRequest);
     }
 
 
