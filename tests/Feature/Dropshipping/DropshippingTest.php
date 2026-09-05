@@ -25,6 +25,7 @@ use App\Actions\Dropshipping\Ebay\StoreEbayUser;
 use App\Actions\Dropshipping\Ebay\Product\CheckEbayPortfolio;
 use App\Actions\Dropshipping\Ebay\Product\UpdateEbayPortfolio;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Retina\UI\Dashboard\GetRetinaDropshippingHomeData;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInEbayPortfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetPictureSources;
@@ -1015,4 +1016,22 @@ test('ebay portfolio check stores a published sku match in the shape the retina 
             'images' => [['src' => 'https://i.ebayimg.com/x.jpg']],
         ])
         ->and($portfolio->platform_status)->toBeFalse();
+});
+
+test('dashboard shortcut reports how many open manual channels the customer has', function () {
+    $customer = createCustomer($this->shop);
+
+    $ebayUser = StoreEbayUser::make()->handle($customer, ['name' => 'test-ebay-only']);
+    expect($ebayUser->customerSalesChannel)->not->toBeNull();
+
+    $shortcut = GetRetinaDropshippingHomeData::run($customer->refresh())['shortcut']['order'];
+    expect($shortcut['number_manual_channels'])->toBe(0)
+        ->and($shortcut['manual_data'])->toBeNull();
+
+    $manualPlatform = $this->group->platforms()->where('type', PlatformTypeEnum::MANUAL)->first();
+    StoreCustomerSalesChannel::make()->action($customer, $manualPlatform, ['reference' => 'test_manual_shortcut']);
+
+    $shortcut = GetRetinaDropshippingHomeData::run($customer->refresh())['shortcut']['order'];
+    expect($shortcut['number_manual_channels'])->toBe(1)
+        ->and($shortcut['manual_data']['reference'])->toBe('test_manual_shortcut');
 });
