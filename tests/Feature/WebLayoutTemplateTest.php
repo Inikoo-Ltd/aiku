@@ -43,7 +43,7 @@ beforeEach(function () {
     );
 });
 
-test('index web layout templates only returns the ones matching the webpage scope', function () {
+test('index web layout templates returns every template for the scope by default', function () {
     $storefront = $this->website->storefront;
 
     $template = WebLayoutTemplate::create([
@@ -69,6 +69,12 @@ test('index web layout templates only returns the ones matching the webpage scop
 
     $response->assertOk();
 
+    expect($response->json('data'))->toHaveCount(2);
+
+    $response = getJson(route('grp.json.template_layouts.index', ['webpage' => $storefront->id, 'filter' => ['show' => 'matching']]));
+
+    $response->assertOk();
+
     expect($response->json('data'))->toHaveCount(1)
         ->and($response->json('data.0.id'))->toBe($template->id)
         ->and($response->json('data.0.name'))->toBe('Storefront template')
@@ -76,7 +82,7 @@ test('index web layout templates only returns the ones matching the webpage scop
         ->and($response->json('data.0.blocks_count'))->toBe(2);
 });
 
-test('index web layout templates returns empty when there is no template for the scope', function () {
+test('index web layout templates returns empty when no template matches the webpage type', function () {
     $storefront = $this->website->storefront;
 
     WebLayoutTemplate::query()->delete();
@@ -89,7 +95,7 @@ test('index web layout templates returns empty when there is no template for the
         'blocks'   => [],
     ]);
 
-    $response = getJson(route('grp.json.template_layouts.index', ['webpage' => $storefront->id]));
+    $response = getJson(route('grp.json.template_layouts.index', ['webpage' => $storefront->id, 'filter' => ['show' => 'matching']]));
 
     $response->assertOk();
 
