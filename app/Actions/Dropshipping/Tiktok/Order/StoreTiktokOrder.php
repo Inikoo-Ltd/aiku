@@ -83,13 +83,6 @@ class StoreTiktokOrder extends RetinaAction
             );
         }
 
-        $handOverMethod = null;
-        $packageId = Arr::get($order, 'packages.0.id');
-        if ($packageId) {
-            $package = $tiktokUser->getPackageDetail($packageId);
-            $handOverMethod = Arr::get($package, 'data.handover_method');
-        }
-
         if ($shipByTiktok) {
             UpdateOrder::run($order, [
                 'shipping_notes' => __("We're unable to ship this order due to customer's default shipping template is not 'Shipped by Seller' and the default handover method is DROP_OFF. TikTok Order ID: :__tiktokOrderId", ['__tiktokOrderId' => $order->platform_order_id])
@@ -162,29 +155,29 @@ class StoreTiktokOrder extends RetinaAction
         return new Address($address);
     }
 
+    /**
+     * TikTok sends one line item per unit sold, so the units of a product are folded into a single
+     * transaction the way the fulfilment path already does.
+     */
     public function digestTiktokProducts(TiktokUser $tiktokUser, array $tiktokOrderData): array
     {
         $orderedProducts = [];
-        /*$lineItems = collect(Arr::get($tiktokOrderData, 'line_items', []))
-            ->groupBy('product_id')
-            ->map(function ($items) {
-                return [
-                    'product_id' => $items->first()['product_id'],
-                    'quantity'   => count($items),
-                    'id' => $items->first()['id']
-                ];
-            })
-            ->values();*/
-        foreach (Arr::get($tiktokOrderData, 'line_items', []) as $item) {
 
-            $product = $tiktokUser->getProduct($item['product_id']);
+        $lineItems = collect(Arr::get($tiktokOrderData, 'line_items', []))
+            ->filter(fn ($item) => filled(Arr::get($item, 'product_id')))
+            ->groupBy('product_id');
+
+        foreach ($lineItems as $platformProductId => $items) {
+            $product = $tiktokUser->getProduct((string) $platformProductId);
             $externalProductId = Arr::get($product, 'data.external_product_id');
 
             $portfolioData = DB::table('portfolios')->select('item_id')
                 ->where('item_type', 'Product')
                 ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
-                ->where('platform_product_id', $item['product_id'])
-                ->when(is_numeric($externalProductId), fn ($query) => $query->orWhere('id', $externalProductId))
+                ->where(function ($query) use ($platformProductId, $externalProductId) {
+                    $query->where('platform_product_id', (string) $platformProductId)
+                        ->when(is_string($externalProductId) && ctype_digit($externalProductId), fn ($query) => $query->orWhere('id', $externalProductId));
+                })
                 ->first();
 
             if ($portfolioData && $portfolioData->item_id) {
@@ -192,8 +185,8 @@ class StoreTiktokOrder extends RetinaAction
                 if ($product) {
                     $orderedProducts[] = [
                         'historicAsset'           => $product->currentHistoricProduct,
-                        'quantity_ordered'        => 1,
-                        'platform_transaction_id' => $item['id']
+                        'quantity_ordered'        => $items->count(),
+                        'platform_transaction_id' => Arr::get($items->first(), 'id')
                     ];
                 }
             }
