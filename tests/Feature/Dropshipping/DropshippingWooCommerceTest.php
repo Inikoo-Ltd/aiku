@@ -230,6 +230,18 @@ function wooDown(\GuzzleHttp\Promise\PromiseInterface $response): array
  * Handlers are keyed by "METHOD path" with the path relative to /wp-json/wc/v3/. Anything the test
  * did not fake is a stray request and fails it.
  */
+/**
+ * The ping walks every Woo channel in the database, including ones earlier tests left with blank
+ * settings, whose check registers webhooks and reads the weight unit.
+ */
+function wooFakeForPing(array $handlers = []): void
+{
+    wooFake(array_merge([
+        'POST webhooks'                                 => fn () => Http::response(['id' => random_int(100, 999)], 201),
+        'GET settings/products/woocommerce_weight_unit' => Http::response(['value' => 'kg']),
+    ], $handlers));
+}
+
 function wooFake(array $handlers = []): void
 {
     $handlers = array_merge(['GET settings' => Http::response(wooSettingsGroups())], $handlers);
@@ -1146,7 +1158,7 @@ test('a parked channel whose store answers again is reported on the first run of
     $parked = wooConnect(wooCustomer($this->shop))->customerSalesChannel;
     $parked->update(['ping_error_count' => PingActiveWooChannel::PARKED_AFTER_FAILURES, 'platform_status' => false, 'state' => CustomerSalesChannelStateEnum::NOT_READY]);
 
-    wooFake();
+    wooFakeForPing();
 
     Carbon::setTestNow(Carbon::parse('2026-09-06 15:00:00'));
     Artisan::call('woo:ping_active_channel');
@@ -1178,7 +1190,7 @@ test('a parked channel stays parked when the customer has already connected the 
     $replacement = wooConnect($customer, ['name' => 'new-life', 'store_url' => 'https://tmp.example.test'])->customerSalesChannel;
     $replacement->user->update(['store_url' => 'https://Again.example.test/', 'settings' => ['webhooks' => ['order_created' => 3, 'product_deleted' => 4], 'weight_option' => 'kg']]);
 
-    wooFake();
+    wooFakeForPing();
     Carbon::setTestNow(Carbon::parse('2026-09-07 00:10:00'));
     Artisan::call('woo:ping_active_channel');
     Carbon::setTestNow();
