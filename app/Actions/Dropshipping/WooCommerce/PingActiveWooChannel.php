@@ -19,6 +19,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
 class PingActiveWooChannel
 {
@@ -53,11 +54,10 @@ class PingActiveWooChannel
 
     /**
      * A channel that failed twelve pings in a row is parked so a dead store is not hit every six
-     * hours forever. The first run of each day pings the parked ones too, so a store that comes
-     * back is noticed and its orders flow again instead of staying dark until somebody revives it.
-     * A parked channel whose customer has since connected the same store again stays parked: two
-     * live channels on one store would both fetch orders and push stock, and which one survives
-     * is the repair command's decision, not the ping's.
+     * hours forever. The first run of each day asks the parked ones whether the store answers
+     * again, and only reports the ones that do: reviving them here would import every order the
+     * store still shows as processing, orders the owner has most likely handled by hand while the
+     * channel was dark. A person revives with woo:check once the customer has closed those orders.
      */
     public function handle(Command $command, bool $retryParked = false): void
     {
@@ -67,10 +67,17 @@ class PingActiveWooChannel
             ->when(!$retryParked, fn ($query) => $query->where('ping_error_count', '<', self::PARKED_AFTER_FAILURES))
             ->get();
 
+        $answeringAgain = [];
+
         /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
             if ($customerSalesChannel->user) {
-                if ($customerSalesChannel->ping_error_count >= self::PARKED_AFTER_FAILURES && self::hasLiveSiblingForSameStore($customerSalesChannel)) {
+                if ($customerSalesChannel->ping_error_count >= self::PARKED_AFTER_FAILURES) {
+                    if (!self::hasLiveSiblingForSameStore($customerSalesChannel) && $customerSalesChannel->user->checkConnection()) {
+                        $answeringAgain[] = [$customerSalesChannel->slug, $customerSalesChannel->number_portfolios, $customerSalesChannel->number_orders, $customerSalesChannel->user->store_url];
+                        Sentry::captureMessage('Parked WooCommerce channel '.$customerSalesChannel->slug.' answers again, revive with woo:check once the customer has closed the orders they handled themselves');
+                    }
+
                     continue;
                 }
 
@@ -108,6 +115,11 @@ class PingActiveWooChannel
                 $command->info("\nCustomer Sales Channel Status:");
                 $command->table(['Field', 'Value'], $statusData);
             }
+        }
+
+        if ($answeringAgain) {
+            $command->info("\nParked channels whose store answers again (revive by hand with woo:check):");
+            $command->table(['Customer Sales Channel', 'Portfolios', 'Orders', 'Store'], $answeringAgain);
         }
     }
 }
