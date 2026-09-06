@@ -38,6 +38,7 @@ use App\Actions\Dropshipping\WooCommerce\ReviveInActiveWooChannel;
 use App\Actions\Dropshipping\WooCommerce\StoreTemporaryWooUser;
 use App\Actions\Dropshipping\WooCommerce\StoreWooCommerceUser;
 use App\Actions\Maintenance\Dropshipping\RepairWooChannelReconnects;
+use App\Actions\Maintenance\Dropshipping\RepairWooParkedButLiveChannels;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -1216,4 +1217,30 @@ test('staff get a week-long reconnect link for a dark woo channel and the callba
         ->and($channel->fresh()->platform_status)->toBeTrue()
         ->and($channel->fresh()->state)->toBe(CustomerSalesChannelStateEnum::AUTHENTICATED)
         ->and(ShowCustomerSalesChannel::make()->getReconnectLink($channel->fresh()))->toBeNull();
+});
+
+test('the one-off repair clears the parked label only on channels whose store answers', function () {
+    $live = wooConnect(wooCustomer($this->shop), ['store_url' => 'https://alive.example.test'])->customerSalesChannel;
+    $dead = wooConnect(wooCustomer($this->shop), ['store_url' => 'https://dead.example.test'])->customerSalesChannel;
+    $dark = wooConnect(wooCustomer($this->shop), ['store_url' => 'https://alive.example.test'])->customerSalesChannel;
+
+    $live->update(['ping_error_count' => PingActiveWooChannel::PARKED_AFTER_FAILURES, 'platform_status' => true]);
+    $dead->update(['ping_error_count' => PingActiveWooChannel::PARKED_AFTER_FAILURES, 'platform_status' => true]);
+    $dark->update(['ping_error_count' => PingActiveWooChannel::PARKED_AFTER_FAILURES, 'platform_status' => false]);
+
+    Http::swap(new Factory(app(Dispatcher::class)));
+    Http::fake(fn (Request $request) => str_contains($request->url(), 'alive.example.test')
+        ? Http::response(wooSettingsGroups())
+        : wooError('woocommerce_rest_authentication_error', 'Consumer key is invalid.', 401));
+    Http::preventStrayRequests();
+
+    expect(RepairWooParkedButLiveChannels::run(true))->toBe(['cleared' => 1, 'still_down' => 1])
+        ->and($live->fresh()->ping_error_count)->toBe(PingActiveWooChannel::PARKED_AFTER_FAILURES);
+
+    RepairWooParkedButLiveChannels::run();
+
+    expect($live->fresh()->ping_error_count)->toBe(0)
+        ->and($dead->fresh()->ping_error_count)->toBe(PingActiveWooChannel::PARKED_AFTER_FAILURES)
+        ->and($dead->fresh()->platform_status)->toBeTrue()
+        ->and($dark->fresh()->ping_error_count)->toBe(PingActiveWooChannel::PARKED_AFTER_FAILURES);
 });
