@@ -24,6 +24,7 @@ use App\Actions\Dropshipping\WooCommerce\CheckWooChannel;
 use App\Actions\Dropshipping\WooCommerce\Clients\GetRetinaCustomerClientFromWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Orders\FetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Orders\FulfillOrderToWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\PingActiveWooChannel;
 use App\Actions\Dropshipping\WooCommerce\Product\CheckWooPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\GetProductForWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\GetWooListedSkus;
@@ -56,10 +57,12 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
+use Carbon\Carbon;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -1135,4 +1138,28 @@ test('reconnecting a closed store forgets its webhook ids so the check registers
     CheckWooChannel::run($again);
 
     expect(Arr::get($again->fresh()->settings, 'webhooks'))->toBe(['order_created' => 7, 'product_deleted' => 8]);
+});
+
+test('a parked channel is pinged again on the first run of the day and comes back when the store answers', function () {
+    $parked = wooConnect(wooCustomer($this->shop))->customerSalesChannel;
+    $parked->update(['ping_error_count' => PingActiveWooChannel::PARKED_AFTER_FAILURES, 'platform_status' => false, 'state' => CustomerSalesChannelStateEnum::NOT_READY]);
+    $parked->user->update(['settings' => ['webhooks' => ['order_created' => 1, 'product_deleted' => 2], 'weight_option' => 'kg']]);
+
+    wooFake([
+        'POST webhooks' => Http::response(['id' => 9], 201),
+        'GET settings/products/woocommerce_weight_unit' => Http::response(['value' => 'kg']),
+    ]);
+
+    Carbon::setTestNow(Carbon::parse('2026-09-06 15:00:00'));
+    Artisan::call('woo:ping_active_channel');
+    expect($parked->fresh()->ping_error_count)->toBe(PingActiveWooChannel::PARKED_AFTER_FAILURES)
+        ->and($parked->fresh()->platform_status)->toBeFalse();
+
+    Carbon::setTestNow(Carbon::parse('2026-09-07 00:10:00'));
+    Artisan::call('woo:ping_active_channel');
+    expect($parked->fresh()->ping_error_count)->toBe(0)
+        ->and($parked->fresh()->platform_status)->toBeTrue()
+        ->and($parked->fresh()->state)->toBe(CustomerSalesChannelStateEnum::AUTHENTICATED);
+
+    Carbon::setTestNow();
 });
