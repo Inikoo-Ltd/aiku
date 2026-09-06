@@ -1164,7 +1164,8 @@ test('a parked channel whose store answers again is reported on the first run of
     Artisan::call('woo:check', ['customerSalesChannel' => $parked->slug]);
 
     expect($parked->fresh()->platform_status)->toBeTrue()
-        ->and($parked->fresh()->state)->toBe(CustomerSalesChannelStateEnum::AUTHENTICATED);
+        ->and($parked->fresh()->state)->toBe(CustomerSalesChannelStateEnum::AUTHENTICATED)
+        ->and($parked->fresh()->ping_error_count)->toBe(0);
 });
 
 test('a parked channel stays parked when the customer has already connected the same store again', function () {
