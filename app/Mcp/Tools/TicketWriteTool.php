@@ -8,6 +8,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Actions\Helpers\Ticket\Concerns\WithTicketsWriteGuard;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicket;
@@ -38,6 +39,10 @@ class TicketWriteTool extends Tool
             'tags'        => ['sometimes', 'array'],
             'tags.*'      => ['string', 'max:64'],
         ]);
+
+        if (WithTicketsWriteGuard::ticketsAreReadOnly()) {
+            return Response::error(WithTicketsWriteGuard::readOnlyMessage());
+        }
 
         $user = $request->user();
 

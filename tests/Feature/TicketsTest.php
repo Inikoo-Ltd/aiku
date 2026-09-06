@@ -38,6 +38,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
 use App\Helpers\SlackNotification;
 use Inertia\Testing\AssertableInertia;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -523,4 +524,26 @@ test('deployed commits that name a ticket are recorded on it once', function () 
         ->and($ticket->comments()->count())->toBe(1)
         ->and($ticket->comments()->first()->body)->toContain('v2.360.0')
         ->and(TicketResource::make($ticket)->resolve()['commits'][0]['hash'])->toBe('deadbeef0001');
+});
+
+test('read-only mirror mode blocks every write but still lets everyone read', function () {
+    $ticket         = StoreTicket::make()->action($this->group, ['subject' => 'Before freeze']);
+    $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Customer before freeze']);
+    Config::set('tickets.read_only', true);
+
+    get(route('grp.tickets.index'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('tickets_read_only', true));
+    get(route('grp.tickets.show', $ticket->reference))->assertOk();
+
+    post(route('grp.models.ticket.store'), ['subject' => 'During freeze'])->assertStatus(423);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertStatus(423);
+    post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'nope'])->assertStatus(423);
+    post(route('grp.models.ticket.escalate', $customerTicket->id))->assertStatus(423);
+    expect(fn () => StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'retina during freeze']))->toThrow(HttpException::class);
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'comment' => 'x'])->assertHasErrors();
+    AikuServer::actingAs($this->user)->tool(TicketsTool::class, ['reference' => $ticket->reference])->assertOk();
+
+    expect(Ticket::where('subject', 'During freeze')->exists())->toBeFalse()
+        ->and($ticket->fresh()->status)->toBe(TicketStatusEnum::OPEN)
+        ->and($ticket->comments()->count())->toBe(0);
 });

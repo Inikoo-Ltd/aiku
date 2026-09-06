@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Ticket;
 
+use App\Actions\Helpers\Ticket\Concerns\WithTicketsWriteGuard;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Helpers\Ticket;
@@ -60,6 +61,9 @@ class ReceiveSlackTicketCommand
     public function asController(Request $request): JsonResponse
     {
         abort_unless($this->signatureIsValid($request), 401);
+        if (WithTicketsWriteGuard::ticketsAreReadOnly()) {
+            return response()->json(['response_type' => 'ephemeral', 'text' => WithTicketsWriteGuard::readOnlyMessage()]);
+        }
 
         if (trim((string) $request->input('text')) === '') {
             return response()->json(['response_type' => 'ephemeral', 'text' => 'Usage: /ticket what is broken. Add a second line for details.']);

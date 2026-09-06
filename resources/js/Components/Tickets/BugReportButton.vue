@@ -5,8 +5,8 @@
   -->
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue"
-import { useForm } from "@inertiajs/vue3"
+import { ref, computed, onMounted, onUnmounted } from "vue"
+import { useForm, usePage } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -17,6 +17,7 @@ import { faBug, faCheckCircle, faPaperPlane } from "@fal"
 library.add(faBug, faCheckCircle, faPaperPlane)
 import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 
+const readOnly = computed(() => !!(usePage().props as any).tickets_read_only)
 const isOpen = ref(false)
 const sentReference = ref<string | null>(null)
 
@@ -47,7 +48,7 @@ const submit = () =>
     })
 
 const onKey = (event: KeyboardEvent) => {
-    if (event.altKey && event.shiftKey && event.key.toLowerCase() === "b") open()
+    if (!readOnly.value && event.altKey && event.shiftKey && event.key.toLowerCase() === "b") open()
 }
 onMounted(() => window.addEventListener("keydown", onKey))
 onUnmounted(() => window.removeEventListener("keydown", onKey))
@@ -55,6 +56,7 @@ onUnmounted(() => window.removeEventListener("keydown", onKey))
 
 <template>
     <button
+        v-if="!readOnly"
         type="button"
         class="fixed bottom-12 md:bottom-3 left-3 z-40 h-9 px-3 rounded-full bg-red-600 text-white shadow-lg flex items-center gap-x-2 text-sm hover:bg-red-700"
         :title="trans('Report a bug') + ' (Alt+Shift+B)'"

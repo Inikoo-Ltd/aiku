@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue"
-import { Head, Link, router } from "@inertiajs/vue3"
+import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -43,6 +43,7 @@ const props = defineProps<{
     }
 }>()
 
+const readOnly = computed(() => !!(usePage().props as any).tickets_read_only)
 const staffMessaging = useStaffMessaging()
 
 const newTag = ref("")
@@ -69,7 +70,8 @@ const update = (field: string, value: unknown) => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <div class="p-4 grid gap-4 lg:grid-cols-3">
+    <div v-if="readOnly" class="mx-4 mt-4 rounded-md bg-amber-50 border border-amber-300 text-amber-800 px-4 py-2 text-sm">{{ trans("Mirror of Jira, read-only until the cut-over. Raise or update tickets in Jira for now.") }}</div>
+    <div class="p-4 grid gap-4 lg:grid-cols-3" :class="{ 'pointer-events-none opacity-70': readOnly }">
         <div class="lg:col-span-2 space-y-4">
             <h2 class="text-lg font-semibold">{{ ticket.subject }}</h2>
             <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />

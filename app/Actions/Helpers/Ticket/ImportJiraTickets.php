@@ -34,7 +34,7 @@ class ImportJiraTickets
     use AsAction;
     use WithJiraApiRequest;
 
-    public string $commandSignature = 'jira:import_tickets {project : AD or HELP} {--base-url=} {--email=} {--token=} {--jql=}';
+    public string $commandSignature = 'jira:import_tickets {project : AD or HELP} {--base-url=} {--email=} {--token=} {--jql=} {--since= : only issues updated in the last N minutes}';
 
     private const array USERNAME_BY_JIRA_NAME = [
         'Raul A Perusquia' => 'raul',
@@ -307,7 +307,11 @@ class ImportJiraTickets
             $this->setJiraCredentials($holder->settings['jira']);
         }
 
-        $imported = $this->handle($group, strtoupper($command->argument('project')), $command->option('jql'));
+        $jql = $command->option('jql');
+        if ($since = $command->option('since')) {
+            $jql = 'project = '.strtoupper($command->argument('project')).' AND updated >= -'.((int) $since).'m ORDER BY updated ASC';
+        }
+        $imported = $this->handle($group, strtoupper($command->argument('project')), $jql);
         $command->info("Imported $imported tickets from Jira ".$command->argument('project'));
 
         return 0;
