@@ -67,6 +67,14 @@ use Inertia\Testing\AssertableInertia;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 
+function storeConnectedEbayUser(Customer $customer, string $name): EbayUser
+{
+    $ebayUser = StoreEbayUser::make()->handle($customer, ['name' => $name]);
+    $ebayUser->update(['step' => EbayUserStepEnum::COMPLETED]);
+
+    return $ebayUser->refresh();
+}
+
 beforeAll(function () {
     loadDB();
 });
@@ -713,7 +721,7 @@ test('updating woo and tiktok channel stock settings queues inventory sync', fun
 test('updating ebay channel stock settings queues inventory sync', function () {
     Queue::fake();
 
-    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-user']);
+    $ebayUser = storeConnectedEbayUser($this->customer, 'test-ebay-user');
     $customerSalesChannel = $ebayUser->customerSalesChannel;
 
     CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
@@ -733,7 +741,7 @@ test('updating ebay channel stock settings queues inventory sync', function () {
 });
 
 test('ebay channel do not update prices setting is stored', function () {
-    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-user-prices']);
+    $ebayUser = storeConnectedEbayUser($this->customer, 'test-ebay-user-prices');
     $customerSalesChannel = $ebayUser->customerSalesChannel;
 
     CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
@@ -750,7 +758,7 @@ test('ebay channel do not update prices setting is stored', function () {
 });
 
 test('ebay channel upload as draft setting is stored', function () {
-    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-user-draft']);
+    $ebayUser = storeConnectedEbayUser($this->customer, 'test-ebay-user-draft');
     $customerSalesChannel = $ebayUser->customerSalesChannel;
 
     CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
@@ -771,7 +779,7 @@ test('ebay channel upload as draft setting is stored', function () {
 test('bulk publish queues a publish job only for draft ebay portfolios', function () {
     Queue::fake();
 
-    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-bulk-publish']);
+    $ebayUser = storeConnectedEbayUser($this->customer, 'test-ebay-bulk-publish');
     $customerSalesChannel = $ebayUser->customerSalesChannel;
 
     CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
@@ -788,7 +796,7 @@ test('bulk publish queues a publish job only for draft ebay portfolios', functio
 });
 
 test('channel percent pricing rule prices new portfolios honestly', function () {
-    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-pricing-store']);
+    $ebayUser = storeConnectedEbayUser($this->customer, 'test-ebay-pricing-store');
     $customerSalesChannel = $ebayUser->customerSalesChannel;
 
     CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
@@ -808,7 +816,7 @@ test('channel percent pricing rule prices new portfolios honestly', function () 
 test('saving a channel pricing policy queues a reprice of every product', function () {
     Queue::fake();
 
-    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-pricing-all']);
+    $ebayUser = storeConnectedEbayUser($this->customer, 'test-ebay-pricing-all');
     $customerSalesChannel = $ebayUser->customerSalesChannel;
 
     CheckEbayChannel::mock()->shouldReceive('handle')->andReturn($customerSalesChannel);
@@ -896,7 +904,7 @@ test('ebay token refresh marks auth revoked only on invalid grant', function () 
             ->push(['error' => 'invalid_grant'], 400)
     ]);
 
-    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-auth-transient']);
+    $ebayUser = storeConnectedEbayUser($this->customer, 'test-ebay-auth-transient');
     $ebayUser->settings = ['credentials' => ['ebay_refresh_token' => 'live-token']];
 
     $ebayUser->refreshEbayToken();
@@ -1008,7 +1016,7 @@ test('ebay portfolio check stores a published sku match in the shape the retina 
         return Http::response([]);
     });
 
-    $ebayUser = StoreEbayUser::make()->handle($this->customer, ['name' => 'test-ebay-match']);
+    $ebayUser = storeConnectedEbayUser($this->customer, 'test-ebay-match');
     $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
 
     $portfolio->update(['sku' => 'abc-1']);
