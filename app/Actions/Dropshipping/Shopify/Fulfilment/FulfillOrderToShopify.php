@@ -16,7 +16,9 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
+use Sentry;
 
 class FulfillOrderToShopify extends OrgAction
 {
@@ -122,12 +124,9 @@ class FulfillOrderToShopify extends OrgAction
             ]);
         }
 
-        if (!empty($response['body']['data']['fulfillmentCreateV2']['userErrors'])) {
-            throw ValidationException::withMessages([
-                'messages' => collect($response['body']['data']['fulfillmentCreateV2']['userErrors'])
-                    ->pluck('message')
-                    ->join(', ')
-            ]);
+        $userErrors = Arr::get($response['body']->toArray(), 'data.fulfillmentCreate.userErrors', []);
+        if (!empty($userErrors)) {
+            Sentry::captureMessage('Shopify refused the fulfilment of order '.$order->id.' ('.$fulfillOrderId.'): '.json_encode($userErrors));
         }
     }
 }

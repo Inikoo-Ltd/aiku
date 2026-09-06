@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
+use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Catalogue\Product;
@@ -20,6 +21,7 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
 class BulkUpdateShopifyPortfolio implements ShouldBeUnique
 {
@@ -71,14 +73,11 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             ->get()
             ->keyBy('id');
 
-        $maxQtyAd = $customerSalesChannel->max_quantity_advertise;
-        $stockThreshold = $customerSalesChannel->stock_threshold;
-
-        foreach ($portfolios->chunk(100) as $portfolioChunk) {
+        foreach ($portfolios->chunk(50) as $portfolioChunk) {
             try {
-                $this->processChunk($shopifyUser, $portfolioChunk, $productMap, $maxQtyAd, $stockThreshold, $command);
-            } catch (\Throwable) {
-                // Individual chunk failure handled by not throwing to allow other chunks to proceed
+                $this->processChunk($shopifyUser, $customerSalesChannel, $portfolioChunk, $productMap, $command);
+            } catch (\Throwable $e) {
+                Sentry::captureException($e);
             }
         }
     }
@@ -87,7 +86,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
      * @param  Collection<int, Portfolio>  $portfolios
      * @param  Collection<int, Product>  $productMap
      */
-    private function processChunk(ShopifyUser $shopifyUser, Collection $portfolios, Collection $productMap, ?int $maxQtyAd, ?int $stockThreshold = null, ?Command $command = null): void
+    private function processChunk(ShopifyUser $shopifyUser, CustomerSalesChannel $customerSalesChannel, Collection $portfolios, Collection $productMap, ?Command $command = null): void
     {
         $logs                   = [];
         $inventoryItems         = [];
@@ -103,19 +102,9 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 continue;
             }
 
-            $availableQuantity = $productData->available_quantity;
-            if (!$productData->isSellableThroughSalesChannels()) {
-                $availableQuantity = 0;
-            }
+            $availableQuantity = UpdateWooCustomerSalesChannelPortfolio::quantityToSend($productData, $customerSalesChannel);
 
-            if ($stockThreshold > 0 && $availableQuantity <= $stockThreshold) {
-                $availableQuantity = 0;
-            } elseif ($maxQtyAd > 0) {
-                $availableQuantity = min($availableQuantity, $maxQtyAd);
-            }
-
-            $key         = $portfolio->platform_product_variant_id ?: $portfolio->platform_product_id;
-            $shopifyData = $shopifyDataMap[$key] ?? null;
+            $shopifyData = $shopifyDataMap[$portfolio->platform_product_variant_id] ?? $shopifyDataMap[$portfolio->platform_product_id] ?? null;
 
             if (!$shopifyData) {
                 continue;
@@ -232,12 +221,15 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
     }
 
     /**
+     * The product id goes along with the variant id because a stored variant id can point at a
+     * variant Shopify has since replaced, and the product still resolves to the live one.
+     *
      * @param  Collection<int, Portfolio>  $portfolios
      * @return list<string>
      */
     public static function shopifyIdsToFetch(Collection $portfolios): array
     {
-        return $portfolios->map(fn (Portfolio $portfolio) => $portfolio->platform_product_variant_id ?: $portfolio->platform_product_id)
+        return $portfolios->flatMap(fn (Portfolio $portfolio) => [$portfolio->platform_product_variant_id, $portfolio->platform_product_id])
             ->filter()
             ->unique()
             ->values()

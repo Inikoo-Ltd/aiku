@@ -135,6 +135,10 @@ class SplitShopifyFulfillmentRequest extends OrgAction
 
             list($status, $response) = $this->doPost($shopifyUser, $mutation, $variables);
 
+            if (!$status) {
+                return ['error' => $response];
+            }
+
             $body = $response['body']->toArray();
 
             $remainingFulfillmentOrder = Arr::get($body, 'data.fulfillmentOrderSplit.fulfillmentOrderSplits.0.remainingFulfillmentOrder');
