@@ -1163,3 +1163,22 @@ test('a parked channel is pinged again on the first run of the day and comes bac
 
     Carbon::setTestNow();
 });
+
+test('a parked channel stays parked when the customer has already connected the same store again', function () {
+    $customer = wooCustomer($this->shop);
+    $parked   = wooConnect($customer, ['name' => 'old-life', 'store_url' => 'https://again.example.test'])->customerSalesChannel;
+    $parked->update(['ping_error_count' => PingActiveWooChannel::PARKED_AFTER_FAILURES, 'platform_status' => false, 'state' => CustomerSalesChannelStateEnum::NOT_READY]);
+    $parked->user->update(['settings' => ['webhooks' => ['order_created' => 1, 'product_deleted' => 2], 'weight_option' => 'kg']]);
+
+    $replacement = wooConnect($customer, ['name' => 'new-life', 'store_url' => 'https://tmp.example.test'])->customerSalesChannel;
+    $replacement->user->update(['store_url' => 'https://Again.example.test/', 'settings' => ['webhooks' => ['order_created' => 3, 'product_deleted' => 4], 'weight_option' => 'kg']]);
+
+    wooFake();
+    Carbon::setTestNow(Carbon::parse('2026-09-07 00:10:00'));
+    Artisan::call('woo:ping_active_channel');
+    Carbon::setTestNow();
+
+    expect($parked->fresh()->ping_error_count)->toBe(PingActiveWooChannel::PARKED_AFTER_FAILURES)
+        ->and($parked->fresh()->platform_status)->toBeFalse()
+        ->and($replacement->fresh()->platform_status)->toBeTrue();
+});
