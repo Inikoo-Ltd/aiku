@@ -1891,7 +1891,7 @@ trait WithEbayApiRequest
     public function getInventoryLocations()
     {
         try {
-            $endpoint = "/sell/inventory/v1/location?limit=20&offset=0";
+            $endpoint = "/sell/inventory/v1/location?limit=100&offset=0";
 
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {

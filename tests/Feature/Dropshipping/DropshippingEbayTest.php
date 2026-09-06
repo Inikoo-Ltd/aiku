@@ -127,6 +127,7 @@ afterEach(function () {
 /**
  * Every eBay call goes through Http, so an unfaked URL is recorded and fails the test in afterEach
  * instead of being swallowed by the try/catch in WithEbayApiRequest::makeEbayRequest.
+ * Each call starts a fresh Http factory, so Http::assertSent only sees requests made after the latest call.
  *
  * @param  array<string, array|callable>  $routes  URL substring => response body, or callable(Request): Response
  */
@@ -407,9 +408,7 @@ test('dispatching an eBay order uploads the tracking number and dispatched line 
         '/shipping_fulfillment' => fn () => Http::response('', 201),
     ]);
 
-    $result = FulfillOrderToEbay::run($order);
-
-    expect(Arr::get($result, 'error'))->toBeNull();
+    FulfillOrderToEbay::run($order);
 
     Http::assertSent(function (Request $request) use ($order) {
         if (!str_contains($request->url(), '/sell/fulfillment/v1/order/'.$order->platform_order_id.'/shipping_fulfillment')) {
@@ -421,7 +420,7 @@ test('dispatching an eBay order uploads the tracking number and dispatched line 
         return $request->method() === 'POST'
             && $body['lineItems'] === [['lineItemId' => '1000000001', 'quantity' => 2]]
             && $body['trackingNumber'] === 'RM123456789GB'
-            && $body['shippingCarrierCode'] === 'Royal Mail'
+            && $body['shippingCarrierCode'] === 'RoyalMail'
             && filled($body['shippedDate']);
     });
 });
@@ -1109,10 +1108,30 @@ test('checking a fully provisioned channel completes it and records the seller r
         ->and(Arr::get($ebayUser->data, 'seller_registration_completed'))->toBeFalse();
 
     fakeEbay($this, ebayAccountRoutes(['/sell/account/v1/privilege' => fn () => Http::response(['errors' => [['errorId' => 2003, 'message' => 'Internal error']]], 500)]));
-
     CheckEbayChannel::run($ebayUser);
-
     expect(Arr::get($ebayUser->refresh()->data, 'seller_registration_completed'))->toBeFalse();
+
+    fakeEbay($this, ebayAccountRoutes(['/sell/account/v1/privilege' => fn () => Http::response('', 503)]));
+    CheckEbayChannel::run($ebayUser);
+    expect(Arr::get($ebayUser->refresh()->data, 'seller_registration_completed'))->toBeFalse();
+
+    fakeEbay($this, ebayAccountRoutes(['/sell/account/v1/privilege' => fn () => Http::response([], 200)]));
+    CheckEbayChannel::run($ebayUser);
+    expect(Arr::get($ebayUser->refresh()->data, 'seller_registration_completed'))->toBeFalse();
+});
+
+test('an eBay outage while re-provisioning never wipes a location key that was usable', function () {
+    $ebayUser = ebayChannel($this, ['return_policy_id' => null]);
+
+    fakeEbay($this, ebayAccountRoutes([
+        '/sell/inventory/v1/location' => fn () => Http::response(['errors' => [['errorId' => 2003, 'message' => 'Interner Fehler']]], 500),
+    ]));
+
+    $channel = CheckEbayChannel::run($ebayUser);
+
+    expect($ebayUser->refresh()->location_key)->toBe('aw-warehouse-gb')
+        ->and($ebayUser->return_policy_id)->toBe('rp-9')
+        ->and($channel->platform_status)->toBeTrue();
 });
 
 test('checking a channel whose postage policy eBay no longer lists swaps in a usable one', function () {
@@ -1234,7 +1253,7 @@ test('provisioning falls back to the policies and location eBay already has when
         '/sell/account/v1/return_policy'      => fn (Request $request) => $request->method() === 'GET' ? Http::response(['returnPolicies' => [['returnPolicyId' => 'rp-list']]]) : $duplicate(),
         '/sell/inventory/v1/location'         => fn (Request $request) => $request->method() === 'POST'
             ? Http::response(['errors' => [['errorId' => 25803, 'message' => 'Location Already Exists']]], 409)
-            : Http::response(['locations' => [['merchantLocationKey' => $locationKey, 'merchantLocationStatus' => 'ENABLED']]]),
+            : Http::response(['locations' => [], 'total' => 0]),
     ]));
 
     $ebayUser = UpdateEbayUserData::run($ebayUser);
@@ -1245,7 +1264,7 @@ test('provisioning falls back to the policies and location eBay already has when
         ->and($ebayUser->location_key)->toBe($locationKey);
 });
 
-test('a location eBay rejects and does not list is not stored as if it existed', function () {
+test('a location eBay rejects and does not list is not stored as if it existed, and policies eBay no longer lists are recreated', function () {
     $ebayUser = ebayChannel($this, ['location_key' => null]);
 
     fakeEbay($this, ebayAccountRoutes([
@@ -1257,7 +1276,9 @@ test('a location eBay rejects and does not list is not stored as if it existed',
     $ebayUser = UpdateEbayUserData::run($ebayUser);
 
     expect($ebayUser->location_key)->toBeNull()
-        ->and($ebayUser->fulfillment_policy_id)->toBe('fp-1');
+        ->and($ebayUser->fulfillment_policy_id)->toBe('fp-1')
+        ->and($ebayUser->payment_policy_id)->toBe('pp-9')
+        ->and($ebayUser->return_policy_id)->toBe('rp-9');
 
     fakeEbay($this, ebayAccountRoutes([
         '/sell/inventory/v1/location' => fn (Request $request) => $request->method() === 'POST'

@@ -9,7 +9,6 @@
 namespace App\Actions\Dropshipping\Ebay;
 
 use App\Models\Dropshipping\EbayUser;
-use Illuminate\Support\Arr;
 
 /**
  * eBay refuses to list anything until the seller has finished registering, and it only says so at
@@ -26,13 +25,13 @@ trait WithEbaySellerRegistration
         $privileges = $ebayUser->getPrivileges();
 
         // An unreadable answer is not evidence of a problem, so the last known state stands.
-        if (!is_array($privileges) || Arr::hasAny($privileges, ['error', 'errors'])) {
+        if (!is_array($privileges) || !array_key_exists('sellerRegistrationCompleted', $privileges)) {
             return;
         }
 
         $ebayUser->updateQuietly([
             'data' => array_merge((array)$ebayUser->data, [
-                'seller_registration_completed' => (bool)Arr::get($privileges, 'sellerRegistrationCompleted', true),
+                'seller_registration_completed' => (bool)$privileges['sellerRegistrationCompleted'],
             ]),
         ]);
     }

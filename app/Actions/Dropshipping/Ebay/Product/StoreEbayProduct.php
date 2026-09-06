@@ -85,7 +85,7 @@ class StoreEbayProduct extends RetinaAction
                         'errors_response' => ['params' => $params] + $errorResponse
                     ]);
 
-                    return $displayError;
+                    return $displayError ?: true;
                 }
 
                 return false;
