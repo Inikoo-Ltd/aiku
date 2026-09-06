@@ -24,6 +24,7 @@ use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dropshipping\PlatformOutboundGuard;
 use App\Actions\Dropshipping\Portfolio\MatchBulkPortfoliosToPlatform;
+use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\RetrieveShopifyAssignedOrders;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolio;
 use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyInventory;
@@ -499,6 +500,10 @@ test('the six-hourly stock push only queues open channels that want stock update
 
 test('outbound shopify calls are blocked in tests unless every http request is faked', function () {
     expect(PlatformOutboundGuard::blocks('Shopify'))->toBeTrue();
+
+    $shopifyUser = shopifyProductChannel($this, 'no-client');
+    [$status, $message] = RetrieveShopifyAssignedOrders::run($shopifyUser);
+    expect($status)->toBeFalse()->and($message)->toContain('Failed to initialize');
 
     Http::preventStrayRequests();
     expect(PlatformOutboundGuard::blocks('Shopify'))->toBeFalse();

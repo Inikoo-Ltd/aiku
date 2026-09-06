@@ -19,7 +19,11 @@ trait WithShopifyApi
 {
     public function doPost(ShopifyUser $shopifyUser, $mutation, $variables): array
     {
-        $client   = $shopifyUser->getShopifyClient();
+        $client = $shopifyUser->getShopifyClient();
+
+        if (!$client) {
+            return [false, 'Failed to initialize Shopify client'];
+        }
 
         $response = $client->request('POST', '/admin/api/2025-07/graphql.json', [
             'json' => [

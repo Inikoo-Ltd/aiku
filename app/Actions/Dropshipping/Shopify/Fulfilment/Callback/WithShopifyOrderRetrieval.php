@@ -91,7 +91,7 @@ trait WithShopifyOrderRetrieval
             list($status, $response) = $this->doPost($shopifyUser, $query, $variables);
 
             if (!$status) {
-                return $response;
+                return [false, $response];
             }
 
             if (!empty($response['errors']) || !isset($response['body'])) {
