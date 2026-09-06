@@ -15,6 +15,7 @@ use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
 use App\Actions\Dropshipping\Order\RetryOrderImport;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
@@ -1184,4 +1185,34 @@ test('a parked channel stays parked when the customer has already connected the 
         ->and($parked->fresh()->ping_error_count)->toBe(PingActiveWooChannel::PARKED_AFTER_FAILURES)
         ->and($parked->fresh()->platform_status)->toBeFalse()
         ->and($replacement->fresh()->platform_status)->toBeTrue();
+});
+
+test('staff get a week-long reconnect link for a dark woo channel and the callback on it reconnects the same user', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $wooCommerceUser->update(['settings' => ['webhooks' => ['order_created' => 1, 'product_deleted' => 2], 'weight_option' => 'kg']]);
+    $channel = $wooCommerceUser->customerSalesChannel;
+
+    $channel->update(['platform_status' => true, 'state' => CustomerSalesChannelStateEnum::AUTHENTICATED]);
+    expect(ShowCustomerSalesChannel::make()->getReconnectLink($channel->refresh()))->toBeNull();
+
+    $channel->update(['platform_status' => false, 'state' => CustomerSalesChannelStateEnum::NOT_READY]);
+    $link = ShowCustomerSalesChannel::make()->getReconnectLink($channel->refresh());
+
+    expect($link)->toStartWith(WOO_STORE_URL.'/wc-auth/v1/authorize?');
+    parse_str((string) parse_url($link, PHP_URL_QUERY), $query);
+    expect($query['scope'])->toBe('read_write')
+        ->and($query['callback_url'])->toBe(route('webhooks.woo.callback'));
+
+    Carbon::setTestNow(now()->addDays(6));
+    $payload = CallbackRetinaWooCommerceUser::make()->getWooAuthorizationTokenPayload($query['user_id']);
+    expect(Arr::get($payload, 'woo_commerce_user_id'))->toBe($wooCommerceUser->id);
+
+    wooFake();
+    CallbackRetinaWooCommerceUser::make()->handleReAuthorization($wooCommerceUser, ['consumer_key' => 'ck_again', 'consumer_secret' => 'cs_again']);
+    Carbon::setTestNow();
+
+    expect($wooCommerceUser->fresh()->consumer_key)->toBe('ck_again')
+        ->and($channel->fresh()->platform_status)->toBeTrue()
+        ->and($channel->fresh()->state)->toBe(CustomerSalesChannelStateEnum::AUTHENTICATED)
+        ->and(ShowCustomerSalesChannel::make()->getReconnectLink($channel->fresh()))->toBeNull();
 });
