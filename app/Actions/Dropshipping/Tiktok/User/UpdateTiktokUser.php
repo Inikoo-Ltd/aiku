@@ -52,6 +52,7 @@ class UpdateTiktokUser extends RetinaAction
 
     public function action(TiktokUser $tiktokUser, array $modelData): TiktokUser
     {
+        $this->asAction = true;
         $this->initialisationActions($tiktokUser->customer, $modelData);
 
         return $this->handle($tiktokUser, $this->validatedData);
