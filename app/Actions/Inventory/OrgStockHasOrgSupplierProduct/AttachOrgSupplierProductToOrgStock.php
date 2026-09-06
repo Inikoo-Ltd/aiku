@@ -56,6 +56,9 @@ class AttachOrgSupplierProductToOrgStock extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->asAction) {
+            return true;
+        }
         /** @var OrgStock $orgStock */
         $orgStock = $request->route('orgStock');
 
