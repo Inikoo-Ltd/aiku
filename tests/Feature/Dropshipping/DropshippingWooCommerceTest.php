@@ -1140,28 +1140,30 @@ test('reconnecting a closed store forgets its webhook ids so the check registers
     expect(Arr::get($again->fresh()->settings, 'webhooks'))->toBe(['order_created' => 7, 'product_deleted' => 8]);
 });
 
-test('a parked channel is pinged again on the first run of the day and comes back when the store answers', function () {
+test('a parked channel whose store answers again is reported on the first run of the day but not revived', function () {
     $parked = wooConnect(wooCustomer($this->shop))->customerSalesChannel;
     $parked->update(['ping_error_count' => PingActiveWooChannel::PARKED_AFTER_FAILURES, 'platform_status' => false, 'state' => CustomerSalesChannelStateEnum::NOT_READY]);
-    $parked->user->update(['settings' => ['webhooks' => ['order_created' => 1, 'product_deleted' => 2], 'weight_option' => 'kg']]);
 
-    wooFake([
-        'POST webhooks' => Http::response(['id' => 9], 201),
-        'GET settings/products/woocommerce_weight_unit' => Http::response(['value' => 'kg']),
-    ]);
+    wooFake();
 
     Carbon::setTestNow(Carbon::parse('2026-09-06 15:00:00'));
     Artisan::call('woo:ping_active_channel');
-    expect($parked->fresh()->ping_error_count)->toBe(PingActiveWooChannel::PARKED_AFTER_FAILURES)
-        ->and($parked->fresh()->platform_status)->toBeFalse();
+    expect(Artisan::output())->not->toContain($parked->slug);
 
     Carbon::setTestNow(Carbon::parse('2026-09-07 00:10:00'));
     Artisan::call('woo:ping_active_channel');
-    expect($parked->fresh()->ping_error_count)->toBe(0)
-        ->and($parked->fresh()->platform_status)->toBeTrue()
-        ->and($parked->fresh()->state)->toBe(CustomerSalesChannelStateEnum::AUTHENTICATED);
-
     Carbon::setTestNow();
+
+    expect(Artisan::output())->toContain('answers again')->toContain($parked->slug)
+        ->and($parked->fresh()->ping_error_count)->toBe(PingActiveWooChannel::PARKED_AFTER_FAILURES)
+        ->and($parked->fresh()->platform_status)->toBeFalse()
+        ->and($parked->fresh()->state)->toBe(CustomerSalesChannelStateEnum::NOT_READY);
+
+    $parked->user->update(['settings' => ['webhooks' => ['order_created' => 1, 'product_deleted' => 2], 'weight_option' => 'kg']]);
+    Artisan::call('woo:check', ['customerSalesChannel' => $parked->slug]);
+
+    expect($parked->fresh()->platform_status)->toBeTrue()
+        ->and($parked->fresh()->state)->toBe(CustomerSalesChannelStateEnum::AUTHENTICATED);
 });
 
 test('a parked channel stays parked when the customer has already connected the same store again', function () {
@@ -1178,7 +1180,8 @@ test('a parked channel stays parked when the customer has already connected the 
     Artisan::call('woo:ping_active_channel');
     Carbon::setTestNow();
 
-    expect($parked->fresh()->ping_error_count)->toBe(PingActiveWooChannel::PARKED_AFTER_FAILURES)
+    expect(Artisan::output())->not->toContain($parked->slug)
+        ->and($parked->fresh()->ping_error_count)->toBe(PingActiveWooChannel::PARKED_AFTER_FAILURES)
         ->and($parked->fresh()->platform_status)->toBeFalse()
         ->and($replacement->fresh()->platform_status)->toBeTrue();
 });
