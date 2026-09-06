@@ -24,6 +24,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -131,6 +132,8 @@ class ImportJiraTickets
             ]
         );
 
+        $this->importAttachments($ticket, Arr::get($fields, 'attachment', []));
+
         $ticket->comments()->delete();
         foreach (Arr::get($fields, 'comment.comments', []) as $comment) {
             $author = $this->resolveReporter($type, $shop, Arr::get($comment, 'author'));
@@ -145,6 +148,34 @@ class ImportJiraTickets
         }
 
         return $ticket;
+    }
+
+    private function importAttachments(Ticket $ticket, array $attachments): void
+    {
+        $known = $ticket->media()->get()->map(fn ($media) => data_get($media->custom_properties, 'source.jira_attachment_id'))->filter()->all();
+
+        foreach ($attachments as $attachment) {
+            if (in_array($attachment['id'], $known) || !Arr::get($attachment, 'content')) {
+                continue;
+            }
+            if (Arr::get($attachment, 'size', 0) > config('media-library.max_file_size')) {
+                Log::warning('Jira attachment too big', ['ticket' => $ticket->reference, 'attachment' => $attachment['id'], 'size' => $attachment['size']]);
+                continue;
+            }
+            $path = tempnam(sys_get_temp_dir(), 'jira');
+            try {
+                $response = $this->jiraClient()->connectTimeout(10)->timeout(120)->sink($path)->get($attachment['content']);
+                if ($response->successful() && filesize($path) > 0) {
+                    $ticket->attachTicketFile($path, $attachment['filename'], Arr::get($attachment, 'mimeType'), ['jira_attachment_id' => $attachment['id']]);
+                } else {
+                    Log::warning('Jira attachment skipped', ['ticket' => $ticket->reference, 'attachment' => $attachment['id'], 'status' => $response->status()]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Jira attachment download failed', ['ticket' => $ticket->reference, 'attachment' => $attachment['id'], 'error' => $e->getMessage()]);
+            } finally {
+                @unlink($path);
+            }
+        }
     }
 
     private function resolveShop(Group $group, TicketTypeEnum $type, array $fields): ?Shop
@@ -261,6 +292,7 @@ class ImportJiraTickets
     {
         Nightwatch::dontSample();
         $group = Group::firstOrFail();
+        app()->instance('group', $group);
 
         $this->setJiraGroup($group);
         if ($command->option('base-url')) {

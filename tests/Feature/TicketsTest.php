@@ -9,6 +9,8 @@
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
 use App\Actions\Helpers\Ticket\ImportJiraTickets;
+use App\Actions\Helpers\Ticket\LinkTicketsToAppDeployment;
+use App\Models\DevOps\AppDeployment;
 use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
@@ -26,6 +28,7 @@ use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Mcp\Servers\AikuServer;
 use App\Mcp\Tools\TicketsTool;
 use App\Mcp\Tools\TicketWriteTool;
+use App\Http\Resources\Helpers\TicketResource;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Guest;
 use Illuminate\Http\UploadedFile;
@@ -310,6 +313,8 @@ test('jira import keeps keys, maps fields, resolves customer by email and bumps 
     $adf = fn (string $text) => ['type' => 'doc', 'content' => [['type' => 'paragraph', 'content' => [['type' => 'text', 'text' => $text]]]]];
 
     Http::fake([
+        'jira.test/rest/api/3/attachment/content/77' => Http::response('%PDF', 200, ['Content-Type' => 'application/pdf']),
+        'jira.test/rest/api/3/attachment/content/78' => Http::response(UploadedFile::fake()->image('shot.png', 10, 10)->getContent(), 200, ['Content-Type' => 'image/png']),
         'jira.test/rest/api/3/search/jql' => Http::response(['issues' => [
             [
                 'id'     => '1',
@@ -327,6 +332,10 @@ test('jira import keeps keys, maps fields, resolves customer by email and bumps 
                     'resolutiondate'    => null,
                     'customfield_10227' => ['value' => 'Dropship UK'],
                     'customfield_10294' => 'Shopper Ltd',
+                    'attachment'        => [
+                        ['id' => '77', 'filename' => 'invoice.pdf', 'mimeType' => 'application/pdf', 'size' => 4, 'content' => 'https://jira.test/rest/api/3/attachment/content/77'],
+                        ['id' => '78', 'filename' => 'shot.png', 'mimeType' => 'image/png', 'size' => 100, 'content' => 'https://jira.test/rest/api/3/attachment/content/78'],
+                    ],
                     'comment'           => ['comments' => [
                         ['author' => ['displayName' => $this->user->contact_name], 'body' => $adf('Looking into it'), 'jsdPublic' => false, 'created' => '2026-01-02T11:00:00.000+0100'],
                     ]],
@@ -367,7 +376,13 @@ test('jira import keeps keys, maps fields, resolves customer by email and bumps 
         ->and($ticket->created_at->year)->toBe(2026)
         ->and($ticket->comments()->count())->toBe(1)
         ->and($ticket->comments()->first()->is_internal)->toBeTrue()
-        ->and(Ticket::where('reference', 'AD-7')->first()->resolved_at)->not->toBeNull();
+        ->and(Ticket::where('reference', 'AD-7')->first()->resolved_at)->not->toBeNull()
+        ->and($ticket->getMedia('ticket_attachments')->pluck('name')->all())->toBe(['invoice.pdf'])
+        ->and($ticket->getMedia('ticket_images'))->toHaveCount(1)
+        ->and($ticket->ticketAttachments()[0]['url'])->toBeString();
+
+    ImportJiraTickets::make()->setJiraCredentials(['base_url' => 'https://jira.test', 'email' => 'x', 'api_token' => 'y'])->handle($this->group, 'AD');
+    expect($ticket->fresh()->media()->count())->toBe(2);
 
     $next = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'After import']);
     expect($next->number)->toBe(501);
@@ -487,4 +502,25 @@ test('slack slash command raises a bug ticket for the matching aiku user', funct
         ->and($response->json('text'))->toContain($ticket->reference);
 
     $this->call('POST', route('webhooks.slack_ticket'), $params, [], [], $this->transformHeadersToServerVars(['X-Slack-Request-Timestamp' => $timestamp, 'X-Slack-Signature' => 'v0=bad']), $body)->assertStatus(401);
+});
+
+test('deployed commits that name a ticket are recorded on it once', function () {
+    $ticket     = StoreTicket::make()->action($this->group, ['subject' => 'Labels blank']);
+    $deployment = AppDeployment::create(['commit_hash' => 'abc123abc123', 'semantic_version' => 'v2.360.0']);
+    $commits    = [
+        ['hash' => 'deadbeef0001', 'subject' => "🐛 dispatching: labels print blank, fixes {$ticket->reference}", 'name' => 'x', 'email' => 'x@x'],
+        ['hash' => 'deadbeef0002', 'subject' => 'chore: unrelated', 'name' => 'x', 'email' => 'x@x'],
+        ['hash' => 'deadbeef0003', 'subject' => 'HELP-999999 does not exist', 'name' => 'x', 'email' => 'x@x'],
+    ];
+
+    $linked = LinkTicketsToAppDeployment::run($deployment, $commits);
+    LinkTicketsToAppDeployment::run($deployment, $commits);
+
+    $ticket->refresh();
+    expect($linked)->toBe([$ticket->reference => 1])
+        ->and($ticket->data['commits'])->toHaveCount(1)
+        ->and($ticket->data['commits'][0]['version'])->toBe('v2.360.0')
+        ->and($ticket->comments()->count())->toBe(1)
+        ->and($ticket->comments()->first()->body)->toContain('v2.360.0')
+        ->and(TicketResource::make($ticket)->resolve()['commits'][0]['hash'])->toBe('deadbeef0001');
 });

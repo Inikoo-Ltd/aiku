@@ -57,6 +57,8 @@ class TicketResource extends JsonResource
             'rating'         => $this->rating,
             'rating_comment' => $this->rating_comment,
             'images'         => $this->ticketImageSources(),
+            'attachments'    => $this->ticketAttachments(),
+            'commits'        => collect(data_get($this->data, 'commits', []))->map(fn ($commit) => $commit + ['url' => config('services.github.repo') ? 'https://github.com/'.config('services.github.repo').'/commit/'.$commit['hash'] : null])->all(),
         ];
     }
 }

@@ -15,6 +15,11 @@ import TicketRating from "@/Components/Tickets/TicketRating.vue"
 import { Select, MultiSelect } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faPaperclip } from "@fal"
+
+library.add(faPaperclip)
 
 const props = defineProps<{
     pageHead: any
@@ -105,6 +110,23 @@ const update = (field: string, value: unknown) => {
                 <input type="checkbox" :checked="ticket.is_confidential" class="rounded border-gray-300" @change="update('is_confidential', ($event.target as HTMLInputElement).checked)" />
                 {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter, assignee and admins") }})</span>
             </label>
+            <div v-if="ticket.commits?.length">
+                <p class="text-xs text-gray-500 mb-1">{{ trans("Commits") }}</p>
+                <ul class="space-y-1 text-xs">
+                    <li v-for="commit in ticket.commits" :key="commit.hash">
+                        <a v-if="commit.url" :href="commit.url" target="_blank" class="font-mono text-blue-600 hover:underline">{{ commit.hash.slice(0, 8) }}</a>
+                        <span v-else class="font-mono">{{ commit.hash.slice(0, 8) }}</span>
+                        <span class="text-gray-600"> {{ commit.subject }}</span>
+                        <span v-if="commit.version || commit.deployed_at" class="text-gray-400"> · {{ commit.version || trans("deployed") }} {{ commit.deployed_at ? new Date(commit.deployed_at).toLocaleDateString() : "" }}</span>
+                    </li>
+                </ul>
+            </div>
+            <div v-if="ticket.attachments?.length">
+                <p class="text-xs text-gray-500 mb-1">{{ trans("Attachments") }}</p>
+                <ul class="space-y-1">
+                    <li v-for="file in ticket.attachments" :key="file.url"><a :href="file.url" target="_blank" class="text-blue-600 hover:underline break-all"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</a></li>
+                </ul>
+            </div>
             <dl class="space-y-1 text-gray-600">
                 <div class="flex justify-between"><dt>{{ trans("Type") }}</dt><dd>{{ ticket.type }}</dd></div>
                 <div v-if="ticket.parent" class="flex justify-between"><dt>{{ trans("Escalated from") }}</dt><dd><Link :href="route('grp.tickets.show', ticket.parent)" class="text-blue-600 hover:underline">{{ ticket.parent }}</Link></dd></div>
