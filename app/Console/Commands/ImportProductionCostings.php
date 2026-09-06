@@ -20,6 +20,8 @@ use App\Models\Production\ArtefactManufactureTask;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
 use App\Models\Production\RawMaterial;
+use App\Models\Inventory\OrgStock;
+use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 use Laravel\Nightwatch\Facades\Nightwatch;
@@ -102,7 +104,7 @@ class ImportProductionCostings extends Command
     /** @param list<array{master_row:int,code:?string,name:string,cost:float,unit:string,cas:?string,inci:?string,section:string,family:?string,times_used:int,aiku_code:?string,pack_size:?float}> $materials */
     private function importMaterials(array $materials): array
     {
-        $counts = ['exact' => 0, 'alias' => 0, 'auto' => 0, 'created' => 0, 'repriced' => 0, 'unused' => 0];
+        $counts = ['exact' => 0, 'alias' => 0, 'auto' => 0, 'stock' => 0, 'created' => 0, 'repriced' => 0, 'unused' => 0];
         $rows   = [];
         foreach ($materials as $material) {
             if ((int) $material['times_used'] === 0) {
@@ -294,9 +296,52 @@ class ImportProductionCostings extends Command
             }
         }
 
+        if (!$found) {
+            [$found, $how] = $this->matchByStock($material['name']);
+        }
+
         $this->resolved[$row] = $found;
 
         return [$found, $found ? ($found->source_id === 'costings:master:'.$row || $how !== 'alias' ? $how : 'alias') : 'created'];
+    }
+
+    /**
+     * A Master name often carries a supplier part number (Almond PN780634) or an aiku stock code (Glass Vial (GBOT-37)).
+     * Either leads to an org stock, and the raw material already sitting on that stock is the right match.
+     *
+     * @return array{0: ?RawMaterial, 1: string}
+     */
+    private function matchByStock(string $name): array
+    {
+        $orgStock = $this->findOrgStock($name);
+        if (!$orgStock) {
+            return [null, 'created'];
+        }
+        $found = RawMaterial::where('production_id', $this->production->id)->where('org_stock_id', $orgStock->id)->first();
+
+        return [$found, $found ? 'stock' : 'created'];
+    }
+
+    private function findOrgStock(string $name): ?OrgStock
+    {
+        $organisationId = $this->production->organisation_id;
+        preg_match_all('/\b((?:PN|AR)\d{5,}|\d{5,6})\b/i', $name, $partNumbers);
+        foreach ($partNumbers[1] as $partNumber) {
+            $supplierProduct = SupplierProduct::whereRaw('upper(code) = ?', [strtoupper($partNumber)])->first();
+            $orgStock        = $supplierProduct?->orgSupplierProducts()->where('organisation_id', $organisationId)->first()?->orgStock;
+            if ($orgStock) {
+                return $orgStock;
+            }
+        }
+        preg_match_all('/\b([A-Za-z]{2,7}-?\d{1,3}[a-z]?)\b/', $name, $codes);
+        foreach ($codes[1] as $code) {
+            $orgStock = OrgStock::where('organisation_id', $organisationId)->whereRaw('upper(code) = ?', [strtoupper($code)])->first();
+            if ($orgStock) {
+                return $orgStock;
+            }
+        }
+
+        return OrgStock::where('organisation_id', $organisationId)->whereRaw('lower(name) = ?', [strtolower(trim($name))])->first();
     }
 
     /** @return array{0: ?RawMaterial, 1: string} */
@@ -345,20 +390,22 @@ class ImportProductionCostings extends Command
 
     private function createRawMaterial(array $material): RawMaterial
     {
-        $code = $material['code'] ?: 'CST-'.$material['master_row'];
+        $code = preg_match('/[A-Za-z]/', (string) $material['code']) ? $material['code'] : 'CST-'.$material['master_row'];
         $code = preg_replace('/[^A-Za-z0-9_-]/', '-', $code);
         if (RawMaterial::where('organisation_id', $this->production->organisation_id)->whereRaw('upper(code) = ?', [strtoupper($code)])->exists()) {
             $code = 'CST-'.$material['master_row'];
         }
 
-        $rawMaterial = StoreRawMaterial::make()->action($this->production, [
-            'type'        => RawMaterialTypeEnum::STOCK->value,
-            'code'        => $code,
-            'description' => Str::limit($material['name'], 255, ''),
-            'unit'        => $material['unit'],
-            'unit_cost'   => (float) $material['cost'],
-            'source_id'   => 'costings:master:'.$material['master_row'],
-        ]);
+        $orgStock    = $this->findOrgStock($material['name']);
+        $rawMaterial = StoreRawMaterial::make()->action($this->production, array_filter([
+            'type'         => RawMaterialTypeEnum::STOCK->value,
+            'code'         => $code,
+            'description'  => Str::limit($material['name'], 255, ''),
+            'unit'         => $material['unit'],
+            'unit_cost'    => (float) $material['cost'],
+            'source_id'    => 'costings:master:'.$material['master_row'],
+            'org_stock_id' => $orgStock?->id,
+        ], fn ($v) => $v !== null));
         $rawMaterial->update(['data' => array_filter(['cas' => $material['cas'] ?? null, 'inci' => $material['inci'] ?? null, 'section' => $material['section'] ?? null])]);
         $this->byNormalisedName[$this->normaliseName($material['name'])][] = $rawMaterial;
 

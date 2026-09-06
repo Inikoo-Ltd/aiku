@@ -1993,7 +1993,7 @@ test('costings import resolves materials, creates artefacts and writes per-unit 
     file_put_contents($dir.'/import.json', json_encode([
         'materials' => [
             ['master_row' => 1, 'code' => $this->rawMaterial->code, 'name' => 'Whatever', 'cost' => 9, 'unit' => 'kilogram', 'cas' => null, 'inci' => null, 'section' => 'x', 'family' => null, 'times_used' => 1],
-            ['master_row' => 2, 'code' => null, 'name' => 'Lavender Essential Oil', 'cost' => 16, 'unit' => 'kilogram', 'cas' => '8000-28-0', 'inci' => null, 'section' => 'ESSENTIAL OILS', 'family' => 'EOKG', 'times_used' => 1],
+            ['master_row' => 2, 'code' => '1.0', 'name' => 'Lavender Essential Oil', 'cost' => 16, 'unit' => 'kilogram', 'cas' => '8000-28-0', 'inci' => null, 'section' => 'ESSENTIAL OILS', 'family' => 'EOKG', 'times_used' => 1],
             ['master_row' => 3, 'code' => null, 'name' => 'Unused thing', 'cost' => 1, 'unit' => 'unit', 'cas' => null, 'inci' => null, 'section' => 'x', 'family' => null, 'times_used' => 0],
             ['master_row' => 4, 'code' => null, 'name' => 'Bicarb', 'cost' => 0.72, 'unit' => 'kilogram', 'cas' => null, 'inci' => null, 'section' => 'x', 'family' => null, 'times_used' => 1, 'aiku_code' => $this->rawMaterial->code, 'pack_size' => 25],
         ],
@@ -2014,6 +2014,7 @@ test('costings import resolves materials, creates artefacts and writes per-unit 
     $lavender = RawMaterial::where('source_id', 'costings:master:2')->first();
     expect(RawMaterial::count())->toBe($rawMaterialsBefore + 1)
         ->and($lavender)->not->toBeNull()
+        ->and($lavender->code)->toBe('CST-2')
         ->and((float)$lavender->unit_cost)->toBe(16.0)
         ->and($lavender->data['cas'])->toBe('8000-28-0')
         ->and(RawMaterial::where('source_id', 'costings:master:1')->exists())->toBeFalse();
