@@ -41,17 +41,17 @@ class UpdateEbayUserData extends OrgAction
         $shop = $ebayUser->customer?->shop;
 
         $ebayUser->createOptInProgram();
-        $createdFulfilmentPolicy = $ebayUser->createFulfilmentPolicy([]);
-        $createdPaymentPolicy = $ebayUser->createPaymentPolicy();
-        $createdReturnPolicy = $ebayUser->createReturnPolicy();
 
-        $fulfilmentPolicyId = Arr::get($createdFulfilmentPolicy, 'fulfillmentPolicyId')
+        $fulfilmentPolicyId = $ebayUser->fulfillment_policy_id
+            ?: Arr::get($ebayUser->createFulfilmentPolicy([]), 'fulfillmentPolicyId')
             ?? $ebayUser->getUsableFulfilmentPolicyId();
 
-        $paymentPolicyId = Arr::get($createdPaymentPolicy, 'paymentPolicyId')
+        $paymentPolicyId = $ebayUser->payment_policy_id
+            ?: Arr::get($ebayUser->createPaymentPolicy(), 'paymentPolicyId')
             ?? Arr::get($ebayUser->getPaymentPolicies(), 'paymentPolicies.0.paymentPolicyId');
 
-        $returnPolicyId = Arr::get($createdReturnPolicy, 'returnPolicyId')
+        $returnPolicyId = $ebayUser->return_policy_id
+            ?: Arr::get($ebayUser->createReturnPolicy(), 'returnPolicyId')
             ?? Arr::get($ebayUser->getReturnPolicies(), 'returnPolicies.0.returnPolicyId');
 
         $country = Country::find(Arr::get($shop?->settings, 'ebay.warehouse_country'));
@@ -67,7 +67,9 @@ class UpdateEbayUserData extends OrgAction
             'fulfillment_policy_id' => $fulfilmentPolicyId,
             'payment_policy_id' => $paymentPolicyId,
             'return_policy_id' => $returnPolicyId,
-            'location_key' => $this->provisionLocationKey($ebayUser, $defaultLocationData),
+            'location_key' => $ebayUser->hasUsableLocationKey()
+                ? $ebayUser->location_key
+                : $this->provisionLocationKey($ebayUser, $defaultLocationData),
         ]);
     }
 
@@ -76,7 +78,7 @@ class UpdateEbayUserData extends OrgAction
         $locationKey = Arr::get($locationData, 'locationKey');
         $response    = $ebayUser->createInventoryLocation($locationData);
 
-        if (!Arr::has($response, 'error')) {
+        if (!is_array($response) || !Arr::hasAny($response, ['error', 'errors'])) {
             return $locationKey;
         }
 
@@ -87,7 +89,7 @@ class UpdateEbayUserData extends OrgAction
     {
         $locations = $ebayUser->getInventoryLocations();
 
-        if (Arr::has($locations, 'error')) {
+        if (!is_array($locations) || Arr::hasAny($locations, ['error', 'errors'])) {
             return false;
         }
 

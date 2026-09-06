@@ -40,10 +40,10 @@ class FulfillOrderToEbay extends OrgAction
         /** @var EbayUser $ebayUser */
         $ebayUser = $order->customerSalesChannel->user;
 
-        /** @var DeliveryNote $deliveryNote */
+        /** @var DeliveryNote|null $deliveryNote */
         $deliveryNote = $order->deliveryNotes->first();
 
-        $shipment = $deliveryNote->shipments()->first();
+        $shipment  = $deliveryNote?->shipments()->first();
         $lineItems = [];
 
         foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
@@ -56,9 +56,9 @@ class FulfillOrderToEbay extends OrgAction
         }
 
         return $ebayUser->fulfillOrder($fulfillOrderId, [
-            'line_items' => $lineItems,
-            'tracking_number' => $shipment->tracking,
-            'carrier_code' => $shipment->shipper->name
+            'line_items'      => $lineItems,
+            'tracking_number' => $shipment?->tracking,
+            'carrier_code'    => $shipment?->shipper?->name
         ]);
     }
 

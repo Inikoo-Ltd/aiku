@@ -26,7 +26,7 @@ trait WithEbaySellerRegistration
         $privileges = $ebayUser->getPrivileges();
 
         // An unreadable answer is not evidence of a problem, so the last known state stands.
-        if (!is_array($privileges) || Arr::has($privileges, 'error')) {
+        if (!is_array($privileges) || Arr::hasAny($privileges, ['error', 'errors'])) {
             return;
         }
 
