@@ -24,17 +24,24 @@ class PingActiveWooChannel
 
     public string $commandSignature = 'woo:ping_active_channel';
 
+    public const int PARKED_AFTER_FAILURES = 12;
+
     public function asCommand(Command $command): void
     {
-        $this->handle($command);
+        $this->handle($command, now()->hour < 6);
     }
 
-    public function handle(Command $command): void
+    /**
+     * A channel that failed twelve pings in a row is parked so a dead store is not hit every six
+     * hours forever. The first run of each day pings the parked ones too, so a store that comes
+     * back is noticed and its orders flow again instead of staying dark until somebody revives it.
+     */
+    public function handle(Command $command, bool $retryParked = false): void
     {
         $platform = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
 
         $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
-            ->where('ping_error_count', '<', 12)
+            ->when(!$retryParked, fn ($query) => $query->where('ping_error_count', '<', self::PARKED_AFTER_FAILURES))
             ->get();
 
         /** @var CustomerSalesChannel $customerSalesChannel */

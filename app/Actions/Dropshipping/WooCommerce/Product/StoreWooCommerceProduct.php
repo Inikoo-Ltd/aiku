@@ -80,11 +80,7 @@ class StoreWooCommerceProduct extends RetinaAction
 
             $description = $portfolio->customer_description . '<br><br>' . $attachmentLinks;
 
-            $availableQuantity = $product->available_quantity;
-
-            if ($customerSalesChannel->max_quantity_advertise > 0) {
-                $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
-            }
+            $availableQuantity = UpdateWooCustomerSalesChannelPortfolio::quantityToSend($product, $customerSalesChannel);
 
             $attributes = [];
             $dimensions = [];
@@ -126,7 +122,7 @@ class StoreWooCommerceProduct extends RetinaAction
                 }
             }*/
 
-            $ingredients = explode(',', $product->marketing_ingredients);
+            $ingredients = array_values(array_filter(array_map('trim', explode(',', (string) $product->marketing_ingredients))));
 
             if (! blank($ingredients)) {
                 $attributes[] = [
@@ -158,8 +154,8 @@ class StoreWooCommerceProduct extends RetinaAction
                 'categories'        => [],
                 'images'            => $images,
                 'stock_quantity'    => $availableQuantity,
-                'manage_stock'      => !is_null($availableQuantity),
-                'stock_status'      => Arr::get($product, 'stock_status', 'instock'),
+                'manage_stock'      => true,
+                'stock_status'      => $availableQuantity > 0 ? 'instock' : 'outofstock',
                 'sku'               => $portfolio->sku,
                 'weight'            => (string) $weight,
                 'dimensions'        => $dimensions,
