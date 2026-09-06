@@ -30,7 +30,8 @@ class ImportProductionCostings extends Command
                            {production : Production slug}
                            {dir : Folder holding import.json (review CSVs are written to <dir>/review)}
                            {--phase=materials : materials | artefacts | recipes}
-                           {--write : Persist changes; without it the command only writes the review files}';
+                           {--write : Persist changes; without it the command only writes the review files}
+                           {--replace : Rewrite recipes this import created earlier and refresh the unit cost of materials it created, so workbook edits flow in on reruns}';
 
     protected $description = 'Import raw materials, artefacts and per-unit recipes extracted from the production costings workbook';
 
@@ -38,6 +39,7 @@ class ImportProductionCostings extends Command
 
     private Production $production;
     private bool $write = false;
+    private bool $replace = false;
     private string $reviewDir;
     /** @var array<int, RawMaterial|null> */
     private array $resolved = [];
@@ -72,6 +74,7 @@ class ImportProductionCostings extends Command
         $this->resolved         = [];
         $this->byNormalisedName = [];
         $this->write            = (bool) $this->option('write');
+        $this->replace          = (bool) $this->option('replace');
         $this->reviewDir = rtrim($this->argument('dir'), '/').'/review';
         if (!is_dir($this->reviewDir)) {
             mkdir($this->reviewDir, 0755, true);
@@ -99,7 +102,7 @@ class ImportProductionCostings extends Command
     /** @param list<array{master_row:int,code:?string,name:string,cost:float,unit:string,cas:?string,inci:?string,section:string,family:?string,times_used:int,aiku_code:?string,pack_size:?float}> $materials */
     private function importMaterials(array $materials): array
     {
-        $counts = ['exact' => 0, 'alias' => 0, 'auto' => 0, 'created' => 0, 'unused' => 0];
+        $counts = ['exact' => 0, 'alias' => 0, 'auto' => 0, 'created' => 0, 'repriced' => 0, 'unused' => 0];
         $rows   = [];
         foreach ($materials as $material) {
             if ((int) $material['times_used'] === 0) {
@@ -107,6 +110,12 @@ class ImportProductionCostings extends Command
                 continue;
             }
             [$rawMaterial, $how] = $this->resolveMaterial($material);
+            if ($rawMaterial && $this->replace && $this->importOwns($rawMaterial) && abs((float) $rawMaterial->unit_cost - (float) $material['cost']) > 0.0005) {
+                $how = 'repriced';
+                if ($this->write) {
+                    $rawMaterial->update(['unit_cost' => (float) $material['cost']]);
+                }
+            }
             if (!$rawMaterial) {
                 $how = 'created';
                 if ($this->write) {
@@ -175,7 +184,7 @@ class ImportProductionCostings extends Command
     {
         $masterCost = collect($materials)->keyBy('master_row')->map(fn ($m) => (float) $m['cost']);
         $materialByRow = collect($materials)->keyBy('master_row');
-        $counts = ['imported' => 0, 'kept_existing' => 0, 'no_artefact' => 0, 'no_lines' => 0, 'unresolved_material' => 0];
+        $counts = ['imported' => 0, 'replaced' => 0, 'kept_existing' => 0, 'no_artefact' => 0, 'no_lines' => 0, 'unresolved_material' => 0];
         $rows   = [];
         $compare = [];
         foreach ($artefacts as $data) {
@@ -210,8 +219,9 @@ class ImportProductionCostings extends Command
                 $resolvedLines[] = ['raw_material' => $rawMaterial, 'quantity_per_unit' => round((float) $line['quantity_per_unit'] / $packSize, 6), 'label' => $line['label'] ?? $material['name']];
             }
 
-            $existing = $this->existingRecipeLines($artefact);
-            if ($existing->isNotEmpty()) {
+            $existing  = $this->existingRecipeLines($artefact);
+            $replacing = $existing->isNotEmpty() && $this->replace && $this->importOwnsRecipe($artefact) && !$unresolved;
+            if ($existing->isNotEmpty() && !$replacing) {
                 $counts['kept_existing']++;
                 $aikuCost = $existing->sum(fn ($l) => $l->quantity_per_unit * $l->rawMaterial->unit_cost);
                 $rows[]   = [$data['code'], $data['name'], 'existing recipe kept', $existing->count(), round($sheetMaterialCost, 4), round($aikuCost, 4), $data['cost_per_unit'], implode('; ', $unresolved)];
@@ -226,10 +236,14 @@ class ImportProductionCostings extends Command
             }
 
             $aikuCost = collect($resolvedLines)->sum(fn ($l) => $l['quantity_per_unit'] * $l['raw_material']->unit_cost);
-            $counts['imported']++;
-            $rows[] = [$data['code'], $data['name'], 'imported', count($resolvedLines), round($sheetMaterialCost, 4), round($aikuCost, 4), $data['cost_per_unit'], ''];
+            $counts[$replacing ? 'replaced' : 'imported']++;
+            $rows[] = [$data['code'], $data['name'], $replacing ? 'replaced' : 'imported', count($resolvedLines), round($sheetMaterialCost, 4), round($aikuCost, 4), $data['cost_per_unit'], ''];
             if ($this->write) {
                 $step = $this->recipeStep($artefact);
+                if ($replacing) {
+                    $step->rawMaterials()->delete();
+                }
+                $artefact->update(['data' => array_merge($artefact->data ?? [], ['costings_recipe' => ['imported_at' => now()->toDateTimeString(), 'summary_row' => $data['summary_row'] ?? null]])]);
                 foreach ($resolvedLines as $line) {
                     AttachRawMaterialToRecipeStep::make()->action($step, [
                         'raw_material_id'   => $line['raw_material']->id,
@@ -374,6 +388,16 @@ class ImportProductionCostings extends Command
         return Artefact::where('production_id', $this->production->id)
             ->whereRaw('upper(code) = ?', [strtoupper($code)])
             ->first();
+    }
+
+    private function importOwns(RawMaterial $rawMaterial): bool
+    {
+        return str_starts_with((string) $rawMaterial->source_id, 'costings:master:');
+    }
+
+    private function importOwnsRecipe(Artefact $artefact): bool
+    {
+        return !empty(data_get($artefact->data, 'costings_recipe')) || str_starts_with((string) $artefact->source_id, 'costings:summary:');
     }
 
     private function existingRecipeLines(Artefact $artefact)

@@ -2035,6 +2035,28 @@ test('costings import resolves materials, creates artefacts and writes per-unit 
     expect($lines($existingArtefact)->count())->toBe(2)
         ->and(RawMaterial::count())->toBe($rawMaterialsBefore + 1)
         ->and(str_contains(file_get_contents($dir.'/review/recipes_review.csv'), 'existing recipe kept'))->toBeTrue();
+
+    $auroraArtefact = StoreArtefact::make()->action($this->production, ['code' => 'CST-AURORA2', 'name' => 'Aurora product', 'source_id' => '4:999']);
+    $auroraArtefact->manufactureTasks()->syncWithoutDetaching([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+    AttachRawMaterialToRecipeStep::make()->action(ArtefactManufactureTask::where('artefact_id', $auroraArtefact->id)->first(), ['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 3]);
+
+    $edited = json_decode(file_get_contents($dir.'/import.json'), true);
+    $edited['materials'][1]['cost'] = 20;
+    $edited['artefacts'][0]['lines'][1]['quantity_per_unit'] = 0.02;
+    $edited['artefacts'][] = ['code' => 'CST-AURORA2', 'name' => 'Aurora product', 'create' => false, 'summary_row' => 13, 'sheet_codes' => ['CST-AURORA2'], 'cost_per_unit' => 1, 'lines' => [['master_row' => 1, 'label' => 'Base', 'quantity_per_unit' => 9]]];
+    file_put_contents($dir.'/import.json', json_encode($edited));
+
+    $this->artisan('manufacture:import-costings', ['production' => $slug, 'dir' => $dir, '--phase' => 'recipes', '--write' => true])->assertExitCode(0);
+    expect((float)$lines($existingArtefact)->firstWhere('raw_material_id', $lavender->id)->quantity_per_unit)->toBe(0.012);
+
+    $this->artisan('manufacture:import-costings', ['production' => $slug, 'dir' => $dir, '--phase' => 'materials', '--write' => true, '--replace' => true])->assertExitCode(0);
+    $this->artisan('manufacture:import-costings', ['production' => $slug, 'dir' => $dir, '--phase' => 'recipes', '--write' => true, '--replace' => true])->assertExitCode(0);
+    expect((float)$lavender->refresh()->unit_cost)->toBe(20.0)
+        ->and((float)$this->rawMaterial->refresh()->unit_cost)->not->toBe(9.0)
+        ->and($lines($existingArtefact)->count())->toBe(2)
+        ->and((float)$lines($existingArtefact)->firstWhere('raw_material_id', $lavender->id)->quantity_per_unit)->toBe(0.02)
+        ->and((float)$lines($auroraArtefact)->first()->quantity_per_unit)->toBe(3.0)
+        ->and(str_contains(file_get_contents($dir.'/review/recipes_review.csv'), 'replaced'))->toBeTrue();
 });
 
 test('aurora recipe quantities are divided by batch size exactly once', function () {
