@@ -8,19 +8,21 @@
 
 namespace App\Actions\Dropshipping;
 
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Sales channel platforms without a sandbox (Shopify, WooCommerce, Magento) are reached at the
  * customer's own live store, using the credentials held in the database. A non production
  * environment restored from a production database would therefore write to real customer shops,
- * so every outbound call to those platforms is refused outside production.
+ * so every outbound call to those platforms is refused outside production. A test that has told
+ * the HTTP client to refuse anything it has not faked cannot reach a store either, so it is let through.
  */
 class PlatformOutboundGuard
 {
     public static function blocks(string $platform, string $context = ''): bool
     {
-        if (app()->isProduction()) {
+        if (app()->isProduction() || (app()->runningUnitTests() && Http::preventingStrayRequests())) {
             return false;
         }
 

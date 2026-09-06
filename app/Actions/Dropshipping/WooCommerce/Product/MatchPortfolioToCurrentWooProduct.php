@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\WooCommerce\Product;
 
 use App\Actions\OrgAction;
 use App\Events\UploadProductToWooCommerceProgressEvent;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Arr;
@@ -38,7 +39,13 @@ class MatchPortfolioToCurrentWooProduct extends OrgAction
         /** @var Portfolio $portfolio */
         $portfolio = CheckWooPortfolio::run($portfolio);
 
-        $quantity = $portfolio->item->available_quantity;
+        if (!$portfolio->platform_status || !$portfolio->item instanceof Product) {
+            UploadProductToWooCommerceProgressEvent::dispatch($wooCommerceUser, $portfolio);
+
+            return;
+        }
+
+        $quantity = UpdateWooCustomerSalesChannelPortfolio::quantityToSend($portfolio->item, $portfolio->customerSalesChannel);
         $wooCommerceUser->updateWooCommerceProduct($portfolio->platform_product_id, [
             'manage_stock' => true,
             'stock_quantity' => $quantity,
