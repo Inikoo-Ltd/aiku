@@ -28,7 +28,7 @@ class PingActiveWooChannel
 
     public string $commandSignature = 'woo:ping_active_channel';
 
-    public const int PARKED_AFTER_FAILURES = 12;
+    public const int PARKED_AFTER_FAILURES = 8;
 
     public static function hasLiveSiblingForSameStore(CustomerSalesChannel $customerSalesChannel): bool
     {
@@ -53,7 +53,7 @@ class PingActiveWooChannel
     }
 
     /**
-     * A channel that failed twelve pings in a row is parked so a dead store is not hit every six
+     * A channel that failed eight pings in a row, two days at the six hour cadence, is parked so a dead store is not hit every six
      * hours forever. The first run of each day asks the parked ones whether the store answers
      * again, and only reports the ones that do: reviving them here would import every order the
      * store still shows as processing, orders the owner has most likely handled by hand while the
