@@ -14,12 +14,16 @@ import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 const props = defineProps<{
     storeRoute: { name: string; parameters?: Record<string, unknown> }
     priorities: { label: string; value: string }[]
+    kinds?: { label: string; value: string }[]
+    modules?: { label: string; value: string }[]
 }>()
 
-const form = useForm<{ subject: string; description: string; priority: string; images: File[] }>({
+const form = useForm<{ subject: string; description: string; priority: string; kind: string | null; module: string | null; images: File[] }>({
     subject: "",
     description: "",
     priority: "normal",
+    kind: props.kinds?.[0]?.value ?? null,
+    module: null,
     images: [],
 })
 
@@ -37,6 +41,16 @@ const submit = () => form.post(route(props.storeRoute.name, props.storeRoute.par
             <label class="block text-xs text-gray-500 mb-1">{{ trans("Details") }}</label>
             <TicketComposer v-model:body="form.description" v-model:images="form.images" :rows="8" />
             <p v-if="form.errors.description || form.errors.images" class="text-xs text-red-600 mt-1">{{ form.errors.description || form.errors.images }}</p>
+        </div>
+        <div v-if="kinds?.length" class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">{{ trans("Kind") }}</label>
+                <Select v-model="form.kind" :options="kinds" option-label="label" option-value="value" class="w-full" />
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">{{ trans("Module") }}</label>
+                <Select v-model="form.module" :options="modules" option-label="label" option-value="value" show-clear filter class="w-full" :placeholder="trans('Which part of aiku')" />
+            </div>
         </div>
         <div class="max-w-xs">
             <label class="block text-xs text-gray-500 mb-1">{{ trans("Priority") }}</label>

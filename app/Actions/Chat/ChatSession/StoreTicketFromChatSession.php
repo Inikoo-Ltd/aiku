@@ -36,15 +36,15 @@ class StoreTicketFromChatSession
         }
 
         $ticket = StoreTicket::make()->action($agent->user->group, [
-            'type'            => TicketTypeEnum::HELP->value,
+            'type'            => TicketTypeEnum::CUSTOMER->value,
             'subject'         => Arr::get($modelData, 'summary'),
             'description'     => $description ?: null,
             'priority'        => Arr::get($modelData, 'priority', ChatPriorityEnum::NORMAL->value),
             'organisation_id' => $chatSession->shop?->organisation_id,
             'shop_id'         => $chatSession->shop_id,
             'customer_id'     => $chatSession->webUser?->customer_id,
-            'reporter_type'   => 'User',
-            'reporter_id'     => $agent->user_id,
+            'reporter_type'   => $chatSession->webUser ? 'WebUser' : 'User',
+            'reporter_id'     => $chatSession->webUser?->id ?? $agent->user_id,
             'model_type'      => 'ChatSession',
             'model_id'        => $chatSession->id,
         ]);
