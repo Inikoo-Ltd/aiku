@@ -50,6 +50,9 @@ use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\HydrateWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
+use App\Actions\Maintenance\CRM\RepairTaxNumbersGuessedAsAustralia;
+use App\Actions\Web\Website\LaunchWebsite;
+use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Actions\Helpers\TaxNumber\ValidateEuropeanTaxNumber;
 use App\Actions\Ordering\Order\ResetCustomerOrdersTaxCategory;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -68,6 +71,7 @@ use App\Enums\CRM\Prospect\ProspectContactedStateEnum;
 use App\Enums\CRM\Prospect\ProspectFailStatusEnum;
 use App\Enums\CRM\Prospect\ProspectStateEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
+use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberValidationTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Analytics\AikuScopedSection;
@@ -82,6 +86,7 @@ use App\Models\CRM\PollOption;
 use App\Models\CRM\PollReply;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
+use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Models\Ordering\Order;
 use App\Models\Web\Website;
@@ -100,6 +105,7 @@ use Inertia\Testing\AssertableInertia;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 use function Pest\Laravel\patch;
+use function Pest\Laravel\post;
 
 beforeAll(function () {
     loadDB();
@@ -830,7 +836,7 @@ test('external shop customer: edit form is tax number only and update ignores ev
 
     patch(route('grp.models.customer.update', [$customer->id]), [
         'contact_name' => 'Faire does not know this name',
-        'tax_number'   => ['value' => 'GB123456789', 'country' => ['isoCode' => ['short' => 'GB']]],
+        'tax_number'   => ['number' => 'GB123456789', 'country_code' => 'GB'],
     ])->assertStatus(302);
 
     $customer->refresh();
@@ -1564,3 +1570,66 @@ test('store customer from shopify dedups on external id', function (Customer $cu
             Customer::where('shop_id', $this->shop->id)->where('external_id', '987654321')->count()
         )->toBe(1);
 })->depends('store customer from shopify payload');
+
+test('web registration files the tax number under the contact address country, not the browser guess', function () {
+    if ($this->website->state != WebsiteStateEnum::LIVE) {
+        LaunchWebsite::make()->action($this->website);
+    }
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($this->website);
+    $italy = Country::where('code', 'IT')->first();
+
+    auth()->logout();
+    post(route('retina.register_from_standalone.store'), [
+        'contact_name'    => 'Ylenia Test',
+        'company_name'    => 'Arcana Test',
+        'email'           => 'registration-tax@example.com',
+        'password'        => 'password',
+        'is_opt_in'       => true,
+        'contact_address' => array_merge(Address::factory()->definition(), ['country_id' => $italy->id, 'country_code' => 'IT']),
+        'tax_number'      => ['number' => '04851400400'],
+    ]);
+
+    $customer = Customer::where('email', 'registration-tax@example.com')->firstOrFail();
+    expect($customer->taxNumber->country_code)->toBe('IT')
+        ->and($customer->taxNumber->number)->toBe('04851400400');
+});
+
+test('a picked tax number country wins over the customer address country', function () {
+    $customer = StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), [
+        'contact_address' => array_merge(Address::factory()->definition(), ['country_id' => Country::where('code', 'IT')->first()->id, 'country_code' => 'IT']),
+    ]));
+
+    patch(route('grp.models.customer.update', [$customer->id]), [
+        'tax_number' => ['number' => 'FR12345678901', 'country_code' => 'FR'],
+    ])->assertStatus(302);
+
+    expect($customer->refresh()->taxNumber->country_code)->toBe('FR');
+});
+
+test('posting a tax number with no country and no address country is rejected', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $customer->address->update(['country_id' => null, 'country_code' => null]);
+
+    patch(route('grp.models.customer.update', [$customer->id]), [
+        'tax_number' => ['number' => '04851400400'],
+    ])->assertSessionHasErrors('tax_number');
+
+    expect($customer->refresh()->taxNumber)->toBeNull();
+});
+
+test('repair moves never-validated australian tax numbers to the customer country', function () {
+    $italy    = Country::where('code', 'IT')->first();
+    $customer = StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), [
+        'contact_address' => array_merge(Address::factory()->definition(), ['country_id' => $italy->id, 'country_code' => 'IT']),
+    ]));
+    StoreTaxNumber::run($customer, ['number' => '04851400400', 'country_id' => Country::where('code', 'AU')->first()->id], false);
+    expect($customer->refresh()->taxNumber->country_code)->toBe('AU');
+
+    $repair = RepairTaxNumbersGuessedAsAustralia::make();
+    $row    = $repair->query()->where('tax_numbers.owner_id', $customer->id)->first();
+    $repair->handle($row, $row->address_country_id);
+
+    expect($customer->refresh()->taxNumber->country_code)->toBe('IT')
+        ->and($customer->taxNumber->status)->not->toBe(TaxNumberStatusEnum::UNKNOWN)
+        ->and($repair->query()->where('tax_numbers.owner_id', $customer->id)->exists())->toBeFalse();
+});

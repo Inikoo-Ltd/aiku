@@ -114,6 +114,9 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         'label'         => __('Tax number'),
                                         'value'         => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
                                         'country'       => $customer->address->country_code,
+                                        'options'       => [
+                                            'countriesAddressData' => GetAddressData::run()
+                                        ],
                                         'europeanUnion' => $isEu ? implode(', ', IsEuropeanUnion::getEUCountryCodes()) : '',
                                     ],
                                     'is_re'            => [

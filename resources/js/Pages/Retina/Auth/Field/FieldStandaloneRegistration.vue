@@ -19,6 +19,7 @@ library.add(faExclamationCircle)
 
 const props = defineProps<{
     countriesAddressData: {}
+    defaultCountryId?: number | null
     polls: []
     form: {}
     requiresPhoneNumber: boolean,
@@ -43,7 +44,7 @@ const addressFieldData = {
         dependent_locality: null,
         administrative_area: null,
         country_code: null,
-        country_id: 48,
+        country_id: props.defaultCountryId ?? null,
     },
     options: props.countriesAddressData,
     isWithRequiredField: true,
@@ -75,7 +76,13 @@ const toggleInterest = (interestValue: string) => {
     props.form.clearErrors('interest');
 };
 
-const selectedCountryCode = ref('')
+if (!props.form.contact_address?.country_id) {
+    props.form.contact_address = { ...addressFieldData.value, ...(props.form.contact_address ?? {}) }
+}
+
+const selectedCountryCode = computed(
+    () => props.countriesAddressData?.[props.form.contact_address?.country_id]?.code ?? ''
+)
 </script>
 
 <template>
@@ -123,7 +130,7 @@ const selectedCountryCode = ref('')
             <Phone
                 :form="form"
                 fieldName="phone"
-                :options="{ defaultCountry: 'GB' }"
+                :options="{ defaultCountry: selectedCountryCode || 'GB' }"
                 :fieldData="{ placeholder: trans('Enter phone number') }"
             />
         </div>
@@ -196,7 +203,6 @@ const selectedCountryCode = ref('')
             :form="form"
             :options="{ countriesAddressData: countriesAddressData }"
             :fieldData="addressFieldData"
-            @select="(value) => selectedCountryCode = value.code"
         />
     </div>
 
@@ -211,6 +217,7 @@ const selectedCountryCode = ref('')
             :form="form"
             fieldName="tax_number"
             :country_code="selectedCountryCode"
+            :options="{ countriesAddressData: countriesAddressData }"
         >
         </TaxNumber>
     </div>

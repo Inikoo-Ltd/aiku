@@ -97,7 +97,10 @@ class CreateCustomer extends OrgAction
                                         'type'    => 'tax_number',
                                         'label'   => __('Tax number'),
                                         'value'   => null,
-                                        'country' => null,
+                                        'country' => $shop->country->code,
+                                        'options' => [
+                                            'countriesAddressData' => GetAddressData::run()
+                                        ],
                                     ]
                                 ]
                             ]

@@ -130,6 +130,9 @@ class EditCustomer extends OrgAction
                         'cus_id'    => $customer->id,
                     ],
                     'country'               => $customer->address->country_code,
+                    'options'               => [
+                        'countriesAddressData' => GetAddressData::run()
+                    ],
                 ],
                 'is_re'                    => [
                     'type'   => 'toggle',
