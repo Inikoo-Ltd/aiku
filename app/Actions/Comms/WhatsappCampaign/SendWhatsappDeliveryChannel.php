@@ -79,7 +79,7 @@ class SendWhatsappDeliveryChannel
         /* ponytail: no throttling between sends. Meta caps throughput per phone number,
            but the 50 per channel split already spreads a campaign over separate jobs.
            If Meta starts rejecting, delay each channel or put a token bucket here. */
-        foreach ($campaign->recipients()->where('whatsapp_delivery_channel_id', $channel->id)->get() as $recipient) {
+        foreach ($campaign->recipients()->with('metaChatMessage')->where('whatsapp_delivery_channel_id', $channel->id)->get() as $recipient) {
             $campaign->refresh();
 
             if ($campaign->state == WhatsappCampaignStateEnum::STOPPED) {
@@ -88,7 +88,7 @@ class SendWhatsappDeliveryChannel
                 return;
             }
 
-            if ($recipient->meta_chat_message_id) {
+            if ($this->hasBeenSentTo($recipient)) {
                 continue;
             }
 
@@ -103,6 +103,24 @@ class SendWhatsappDeliveryChannel
         WhatsappCampaignHydrateStats::dispatch($campaign->id);
 
         UpdateWhatsappCampaignSentState::run($campaign->refresh());
+    }
+
+    /**
+     * A recipient is done with once the message they were linked to is one that did not fail.
+     * Every attempt is linked, the failures included, so the link alone no longer says a send
+     * succeeded; the message's wa_status is what separates the two.
+     *
+     * Reading wa_status is safe against a webhook arriving later because
+     * UpdateWhatsappMessageStatus ranks failed highest and never walks a status backwards,
+     * so a message that failed stays failed.
+     */
+    private function hasBeenSentTo(WhatsappRecipient $recipient): bool
+    {
+        if (!$recipient->meta_chat_message_id) {
+            return false;
+        }
+
+        return Arr::get($recipient->metaChatMessage?->metadata ?? [], 'wa_status') != 'failed';
     }
 
     private function sendToRecipient(
@@ -210,8 +228,11 @@ class SendWhatsappDeliveryChannel
     /**
      * A failure is kept against the contact's thread rather than dropped, carrying the text
      * that was going to be sent, so both what was missed and why are visible where the rest
-     * of their history is. The recipient keeps a null meta_chat_message_id, which is what
-     * lets a re-run retry it.
+     * of their history is.
+     *
+     * The recipient is linked to that message the same way a sent one is, so every attempt
+     * points at the record of itself. A re-run still retries them: hasBeenSentTo() reads the
+     * linked message's failed wa_status rather than the mere presence of a link.
      */
     private function recordFailure(MetaChatSession $session, WhatsappCampaign $campaign, WhatsappRecipient $recipient, string $messageText, string $reason): void
     {
@@ -229,6 +250,8 @@ class SendWhatsappDeliveryChannel
                 'wa_error'               => ['message' => $reason],
             ],
         ]);
+
+        $recipient->update(['meta_chat_message_id' => $metaChatMessage->id]);
 
         /* The send never reached Meta, so no wamid was issued and no status webhook will
            ever follow; this is the only record these failures get. */

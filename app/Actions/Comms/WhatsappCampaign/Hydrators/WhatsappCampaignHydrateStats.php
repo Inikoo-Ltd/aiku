@@ -16,9 +16,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * Recounts a campaign's delivery stats from its recipients.
  *
- * A full recount rather than per-event increments: SendWhatsappDeliveryChannel leaves
- * meta_chat_message_id null on a failure precisely so a re-run can retry that recipient,
- * which would make an incrementing counter double-count on every retry.
+ * A full recount rather than per-event increments: SendWhatsappDeliveryChannel retries a
+ * recipient whose last attempt failed, which would make an incrementing counter
+ * double-count on every retry.
  */
 class WhatsappCampaignHydrateStats implements ShouldBeUnique
 {

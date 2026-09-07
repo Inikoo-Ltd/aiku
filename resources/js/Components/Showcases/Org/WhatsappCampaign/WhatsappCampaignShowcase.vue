@@ -46,6 +46,7 @@ const props = defineProps<{
         body: string | null
         footer: string | null
         buttons: { type?: string; text?: string }[]
+        mergeTags: string[]
     } | null
     workshopRoute: routeType
     sendRoute: routeType
@@ -441,7 +442,7 @@ const handleCancelSchedule = async () => {
                     :footer="template?.footer"
                     :buttons="template?.buttons ?? []"
                     :businessName="businessName"
-                    :mergeTags="mergeTags"
+                    :mergeTags="template?.mergeTags ?? []"
                     :placeholder="trans('No template chosen yet…')" />
             </div>
 

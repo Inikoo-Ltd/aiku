@@ -116,7 +116,8 @@ class IndexWhatsappCampaigns extends OrgAction
                         'title' => $title,
                     ],
                     'subNavigation' => $this->getSubNavigation($request),
-                    'actions'       => $this->canEdit ? [
+                    // TODO: later remove local restriction when feature is stable and ready for production
+                    'actions'       => $this->canEdit && app()->isLocal() ? [
                         [
                             'type'  => 'button',
                             'style' => 'create',
