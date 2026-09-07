@@ -995,6 +995,37 @@ test('create product category discount', function () {
         ->and($offer2->offerAllowances->count())->toBe(1);
 });
 
+test('editing discount and trigger of a live offer rewrites allowance data, signature and trigger data', function () {
+    $shop = $this->shop;
+    /** @var ProductCategory $category */
+    $category = ProductCategory::factory()->create([
+        'shop_id'         => $shop->id,
+        'organisation_id' => $shop->organisation_id,
+        'group_id'        => $shop->group_id,
+        'code'            => 'CAT-EDIT',
+        'type'            => ProductCategoryTypeEnum::FAMILY->value,
+    ]);
+
+    $offer = StoreProductCategoryDiscount::make()->action($category, [
+        'type'                       => 'quantity',
+        'trigger_data_item_quantity' => 2,
+        'percentage_off'             => .10,
+        'duration'                   => 'interval',
+        'start_at'                   => now()->toDateTimeString(),
+        'end_at'                     => now()->addDays(7)->toDateTimeString(),
+    ]);
+    expect($offer->status)->toBeTrue();
+
+    $offer = UpdateOffer::make()->action($offer, [
+        'edit_offer_discount' => ['percentage_off' => 40],
+        'edit_offer_trigger'  => ['trigger_item_quantity' => 5],
+    ]);
+
+    expect($offer->offerAllowances()->first()->data['percentage_off'])->toBe(0.4)
+        ->and($offer->allowance_signature)->toContain('percentage_off:0.4')
+        ->and($offer->trigger_data['item_quantity'])->toBe(5);
+});
+
 test('create volume gr discount', function () {
     $shop = $this->shop;
     if (!$shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::VOLUME_DISCOUNT)->exists()) {
