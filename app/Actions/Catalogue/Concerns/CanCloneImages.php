@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Concerns;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateImages;
 use App\Actions\Catalogue\Product\UpdateProductWebImages;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoImage;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -98,6 +99,10 @@ trait CanCloneImages
 
         if (!empty($changed)) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);
+        }
+
+        if (Arr::has($changed, 'image_id')) {
+            ShopHydrateProductsWithNoImage::dispatch($product->shop)->delay(2);
         }
 
         ProductHydrateImages::run($product);

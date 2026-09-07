@@ -189,7 +189,7 @@ const label = {
                                 class="px-1 py-1 space-y-2.5 min-w-24 w-fit max-w-96 absolute left-0 mt-2 origin-top-right rounded-lg bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
                                 <!-- Dropdown: Group -->
                                 <TopBarDropdownScope
-                                    v-if="layoutStore.group"
+                                    v-if="layoutStore.group && layoutStore.has_group_access"
                                     class=""
                                     :menuItems="[{
                                         label: layoutStore.group?.label,

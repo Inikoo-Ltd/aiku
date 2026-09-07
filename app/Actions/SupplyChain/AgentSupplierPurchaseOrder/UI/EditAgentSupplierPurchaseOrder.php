@@ -47,7 +47,7 @@ class EditAgentSupplierPurchaseOrder extends OrgAction
 
     public function htmlResponse(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, ActionRequest $request): Response
     {
-        $isAgentLogin = !$request->user()->hasGroupAccess();
+        $isAgentLogin = $request->user()->authorisedShopOrganisations()->doesntExist();
 
         return Inertia::render(
             'EditModel',

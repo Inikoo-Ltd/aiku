@@ -9,6 +9,7 @@
 
 namespace App\Actions\Catalogue\Product\Hydrators;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsNotOnline;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
 use Illuminate\Console\Command;
@@ -46,6 +47,10 @@ class ProductHydrateHasLiveWebpage implements ShouldBeUnique
     public function handle(Product $product): void
     {
         $product->update(['has_live_webpage' => $product->webpage()->where('state', WebpageStateEnum::LIVE)->exists()]);
+
+        if ($product->wasChanged('has_live_webpage')) {
+            ShopHydrateProductsNotOnline::dispatch($product->shop)->delay(2);
+        }
     }
 
 }

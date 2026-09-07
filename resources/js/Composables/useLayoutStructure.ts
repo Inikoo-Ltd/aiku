@@ -30,6 +30,7 @@ export const layoutStructure = {
     currentQuery: {} as {[key: string]: string},
     digital_agency: null as {data: OrganisationsData[]} | null,
     group: null as Group | null,
+    has_group_access: false,
     help_portal_url: null as string | null,
     leftSidebar: {
         show: true,

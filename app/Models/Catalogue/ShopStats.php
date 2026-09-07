@@ -191,6 +191,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_bundles_state_inactive
  * @property int $number_families_no_images
  * @property int $number_products_no_images
+ * @property int $number_products_mismatch_family
+ * @property int $number_products_no_description
+ * @property int $number_products_not_online
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dDepartment
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dFamily
