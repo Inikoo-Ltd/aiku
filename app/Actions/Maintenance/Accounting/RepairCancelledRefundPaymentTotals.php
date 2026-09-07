@@ -14,6 +14,7 @@ use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Payment;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairCancelledRefundPaymentTotals
 {
@@ -34,6 +35,7 @@ class RepairCancelledRefundPaymentTotals
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $query = Payment::where('type', PaymentTypeEnum::REFUND->value)
             ->where('state', PaymentStateEnum::CANCELLED->value)
             ->whereNotNull('original_payment_id');

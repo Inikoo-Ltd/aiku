@@ -293,6 +293,11 @@ class WowsbarOrganisationService implements SourceOrganisationService
         return null;
     }
 
+    public function fetchAgentSupplierPurchaseOrder($id): ?array
+    {
+        return null;
+    }
+
     public function fetchStockDelivery($id): ?array
     {
         return null;
@@ -309,6 +314,16 @@ class WowsbarOrganisationService implements SourceOrganisationService
     }
 
     public function fetchArtefact($id): ?array
+    {
+        return null;
+    }
+
+    public function fetchRawMaterial($id): ?array
+    {
+        return null;
+    }
+
+    public function fetchJobOrder($id): ?array
     {
         return null;
     }

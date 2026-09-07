@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive">
+<defs>
+    <filter id="pen" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="bleed" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.014" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="18" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="1.6" result="b"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="4" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 -0.2" result="ga"/>
+      <feComposite in="b" in2="ga" operator="in" result="mottled"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="mottled"/></feMerge>
+    </filter>
+    <filter id="marker" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="21" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" seed="2" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.90  0 0 0 0 0.87  0 0 0 0 0.80  0 0 0 0.28 0" result="c"/>
+      <feComposite in="c" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <style>
+      .pen { fill: none; stroke: #23222e; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: url(#pen); }
+      .soft { stroke-width: 1.4; opacity: .6; }
+      .w { mix-blend-mode: multiply; filter: url(#bleed); stroke: none; opacity: .8; }
+      .m { fill: none; stroke-linecap: round; stroke-width: 26; opacity: .55; mix-blend-mode: multiply; filter: url(#marker); }
+      .h { fill: #23222e; filter: url(#pen); }
+      .hl { fill: #8a4b9e; filter: url(#pen); }
+    </style>
+  </defs>
+  <rect width="1200" height="750" fill="#fbf7ee"/>
+  <rect width="1200" height="750" fill="#fbf7ee" filter="url(#paper)"/>
+
+  <g class="w">
+    <path d="M70 90 C220 70 420 80 520 96 C540 260 536 420 520 520 C380 540 180 536 80 520 C60 380 60 180 70 90 Z" fill="#9dcab0" opacity=".30"/>
+    <path d="M660 90 C820 70 1030 80 1130 96 C1150 260 1146 420 1130 520 C980 540 780 536 670 520 C650 380 650 180 660 90 Z" fill="#76b7c2" opacity=".28"/>
+    <path d="M420 600 C560 570 760 580 830 610 C840 660 820 700 760 706 C620 716 480 710 430 690 C410 660 410 620 420 600 Z" fill="#f3c04a" opacity=".34"/>
+    <path d="M330 250 C380 240 420 250 430 270 C430 300 400 310 360 306 C330 300 320 270 330 250 Z" fill="#e88a73" opacity=".38"/>
+  </g>
+  <g class="m">
+    <path d="M110 208 L470 204" stroke="#9dcab0"/>
+    <path d="M700 208 L1090 204" stroke="#76b7c2"/>
+  </g>
+
+  <g class="pen">
+    <path d="M78 96 C220 88 400 96 512 92 C524 260 522 400 512 512 C380 522 200 520 86 512 C74 380 72 200 78 96 Z"/>
+    <path d="M78 150 C240 144 400 150 512 146" class="soft"/>
+    <path d="M90 240 C240 234 400 240 500 236" class="soft"/>
+    <path d="M90 316 C240 310 400 316 500 312" class="soft"/>
+    <path d="M90 392 C240 386 400 392 500 388" class="soft"/>
+    <path d="M370 414 l108 -3 l2 34 l-110 3 z"/>
+    <path d="M666 96 C820 88 1000 96 1122 92 C1134 260 1132 400 1122 512 C990 522 800 520 674 512 C662 380 660 200 666 96 Z"/>
+    <path d="M666 150 C830 144 1000 150 1122 146" class="soft"/>
+    <path d="M680 240 C830 234 1000 240 1110 236" class="soft"/>
+    <path d="M680 316 C830 310 1000 316 1110 312" class="soft"/>
+    <path d="M680 392 C830 386 1000 392 1110 388" class="soft"/>
+    <path d="M690 180 l22 -1 l1 22 l-23 1 z M694 191 l7 7 l11 -16"/>
+    <path d="M690 256 l22 -1 l1 22 l-23 1 z M694 267 l7 7 l11 -16"/>
+    <path d="M690 332 l22 -1 l1 22 l-23 1 z"/>
+    <path d="M810 428 l236 -6 l3 40 l-238 6 z"/>
+    <path d="M540 300 C580 280 620 320 656 300" class="soft" stroke-dasharray="6 10"/>
+    <path d="M646 292 l14 6 l-8 12" class="soft"/>
+    <path d="M900 520 C880 560 820 590 760 610" class="soft" stroke-dasharray="6 10"/>
+    <path d="M770 600 l-12 8 l10 10" class="soft"/>
+    <path d="M470 620 l110 -4 l4 -44 l64 2 l32 40 l2 44 l-212 6 z M584 574 l0 46 M600 580 l38 0 l22 30 l-60 2 z"/>
+    <circle cx="510" cy="672" r="15"/><circle cx="640" cy="668" r="15"/>
+    <path d="M400 600 C360 620 320 650 300 680 M300 680 l-4 -16 M300 680 l16 -4" class="soft"/>
+    <path d="M150 620 l70 -20 l60 24 l-70 22 z M150 620 l0 46 l60 26 l0 -46 M280 624 l0 46 l-70 22"/>
+  </g>
+
+  <g class="h" font-size="24">
+    <text x="96" y="132">Procurement › Partners › Shopping list</text>
+    <text x="110" y="200">SKU-01  lavender oil</text><text x="440" y="200">96</text>
+    <text x="110" y="278">SKU-02  bath bombs</text><text x="440" y="278">200</text>
+    <text x="110" y="354">SKU-03  gift boxes</text><text x="440" y="354">17</text>
+    <text x="684" y="132">Partners › Shipping list</text>
+    <text x="726" y="200">SKU-01 for partner</text><text x="1032" y="200">96</text>
+    <text x="726" y="278">SKU-02 for partner</text><text x="1032" y="278">200</text>
+    <text x="726" y="354">SKU-03 for partner</text><text x="1032" y="354">17</text>
+    <text x="826" y="456" font-size="23">Send to warehouse</text>
+  </g>
+  <g class="h" font-size="21">
+    <text x="382" y="438">Auto-fill</text>
+  </g>
+  <g class="hl" font-size="21">
+    <text x="96" y="70">the buyer says what they need</text>
+    <text x="666" y="70">the seller picks when they can ship</text>
+    <text x="96" y="450">edit or delete any</text>
+    <text x="96" y="476">open line — it is your list</text>
+    <text x="720" y="676">one click, and it flows like</text>
+    <text x="720" y="702">any other order</text>
+    <text x="96" y="700">a stock delivery appears</text>
+    <text x="96" y="726">on your side, follow the truck</text>
+  </g>
+  <g class="h" font-size="19" opacity=".7"><text x="760" y="736">— ordering from a partner organisation</text></g>
+</svg>

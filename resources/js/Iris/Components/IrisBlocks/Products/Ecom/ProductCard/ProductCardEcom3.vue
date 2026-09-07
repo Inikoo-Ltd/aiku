@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import Image from "@common/Components/Image.vue"
-import { inject, ref, computed } from 'vue'
+import { defineAsyncComponent, inject, ref, computed } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import LoadingOverlay2 from '@/Components/Utils/LoadingOverlay2.vue'
 import { faEnvelope, faHeart } from '@far'
 import {  faHeart as fasHeart } from '@fas'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
@@ -22,6 +23,8 @@ import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.v
 import { routeType } from '@/types/route'
 /* import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue' */
 import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
+
+const ProductSoundButton = defineAsyncComponent(() => import("@/Iris/Components/ProductSoundButton.vue"))
 
 library.add(faStarHalfAlt, faQuestionCircle)
 const locale = useLocaleStore()
@@ -67,7 +70,12 @@ const emits = defineEmits<{
 }>()
 
 const _button_variant = ref(null)
+const _button_add_to_cart = ref(null)
 const currency = layout?.iris?.currency
+
+const onOrderStepQuantity = async (quantity: number) => {
+    await _button_add_to_cart.value?.orderQuantity(quantity)
+}
 
 
 const onAddFavourite = (product: ProductResource) => {
@@ -180,12 +188,13 @@ defineExpose({
 </script>
 
 <template>
-    <div id="product-card-ecom-3" class="text-gray-800 isolate h-full flex flex-col flex-grow" comp="product-render-ecom">
+    <div id="product-card-ecom-3" class="relative text-gray-800 isolate h-full flex flex-col flex-grow" comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
         <div class="text-gray-800 isolate">
             <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller"
                 :screenType="screenType" />
+            
 
             <!-- Section: Product Image, Add to Cart button, Email out of stock, Favourite -->
             <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
@@ -264,29 +273,37 @@ defineExpose({
                     </slot>
                 </div>
 
-                <!-- Section: Favourite -->
-                <template v-if="layout?.iris?.is_logged_in && basketButton && !product.is_variant">
-                    <div v-if="isLoadingFavourite" class="absolute right-2 top-2 text-pink-400 text-xl z-10">
-                        <LoadingIcon />
-                    </div>
-                    <div v-else
-                        @click.prevent="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
-                        class="cursor-pointer absolute right-2 top-2 group text-xl z-10">
+                <ProductSoundButton v-if="product.audio" :src="product.audio" :topSeller="product.top_seller" />
 
-                        <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width
-                            class="text-pink-500" />
-                        <div v-else class="relative">
-                            <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400"
-                                fixed-width />
-                            <FontAwesomeIcon :icon="faHeart" class="inline group-hover:hidden text-pink-300"
-                                fixed-width />
+                <!-- Section: Golden product, Favourite -->
+                <div v-if="product.is_golden_product || (layout?.iris?.is_logged_in && basketButton && !product.is_variant)"
+                    class="absolute right-2 top-2 z-10 flex items-center gap-1.5">
+
+
+                    <template v-if="layout?.iris?.is_logged_in && basketButton && !product.is_variant">
+                        <div v-if="isLoadingFavourite" class="text-pink-400 text-xl">
+                            <LoadingIcon />
                         </div>
-                    </div>
-                </template>
+                        <div v-else
+                            @click.prevent="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
+                            class="cursor-pointer group text-xl">
+
+                            <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width
+                                class="text-pink-500" />
+                            <div v-else class="relative">
+                                <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400"
+                                    fixed-width />
+                                <FontAwesomeIcon :icon="faHeart" class="inline group-hover:hidden text-pink-300"
+                                    fixed-width />
+                            </div>
+                        </div>
+                    </template>
+                </div>
           
 
                 <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
                     <NewAddToCartButton v-if="product.stock && basketButton && !product.is_coming_soon" :hasInBasket
+                        ref="_button_add_to_cart"
                         :product="product" :key="product" :addToBasketRoute="addToBasketRoute"
                         :buttonStyleHover="buttonStyleHover" :updateBasketQuantityRoute="addToBasketRoute"
                         :buttonStyle="buttonStyle"  :routeGettransactionProductData/>
@@ -342,7 +359,8 @@ defineExpose({
 
         <div class="mt-auto">
             <section v-if="isPriceVisible">
-                  <Prices4  :product="product" :currency="currency" :basketButton :hasInBasket/>
+                  <Prices4  :product="product" :currency="currency" :basketButton :hasInBasket
+                      :orderQuantity="onOrderStepQuantity"/>
             </section>
             <section v-else class="text-xs leading-tight space-y-1">
 
@@ -358,10 +376,7 @@ defineExpose({
             </section>
         </div>
 
-        <div v-if="idxSlideLoading"
-            class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
-            <LoadingIcon />
-        </div>
+        <LoadingOverlay2 v-if="idxSlideLoading" class="z-30 rounded" />
     </div>
 </template>
 

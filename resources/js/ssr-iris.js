@@ -18,6 +18,17 @@ import Aura from "@primevue/themes/aura"
 import { definePreset } from "@primevue/themes"
 import { ctrans } from "@/Composables/useTrans"
 import IrisLayout from "@/Layouts/Iris.vue"
+import cluster from "node:cluster"
+
+if (cluster.isPrimary) {
+	cluster.on("exit", (worker, code, signal) => {
+		if (signal === "SIGTERM" || signal === "SIGINT") {
+			return
+		}
+		console.error(`SSR worker ${worker.process.pid} exited (${signal ?? code}), respawning`)
+		cluster.fork()
+	})
+}
 
 
 const MyPreset = definePreset(Aura, {

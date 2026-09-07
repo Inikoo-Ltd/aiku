@@ -2,6 +2,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\GoodsIn\StockDeliveryItem\Traits\WithStockDeliveryItemStatePropagation;
 use App\Actions\OrgAction;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class DispatchStockDelivery extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use AsAction;
     use HasStockDeliveryHydrators;
     use WithActionUpdate;
@@ -31,15 +33,6 @@ class DispatchStockDelivery extends OrgAction
         StockDeliveryStateEnum::CONFIRMED,
         StockDeliveryStateEnum::READY_TO_SHIP,
     ];
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-    }
 
     public function afterValidator(Validator $validator): void
     {

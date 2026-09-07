@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive">
+  <defs>
+    <filter id="pen" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="bleed" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.014" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="22" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="1.6" result="b"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="4" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 -0.2" result="ga"/>
+      <feComposite in="b" in2="ga" operator="in" result="mottled"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="mottled"/></feMerge>
+    </filter>
+    <filter id="marker" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="21" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" seed="2" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.90  0 0 0 0 0.87  0 0 0 0 0.80  0 0 0 0.28 0" result="c"/>
+      <feComposite in="c" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <style>
+      .pen { fill: none; stroke: #23222e; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: url(#pen); }
+      .soft { stroke-width: 1.4; opacity: .6; }
+      .w { mix-blend-mode: multiply; filter: url(#bleed); stroke: none; opacity: .8; }
+      .m { fill: none; stroke-linecap: round; stroke-width: 26; opacity: .55; mix-blend-mode: multiply; filter: url(#marker); }
+      .h { fill: #23222e; filter: url(#pen); }
+      .hl { fill: #8a4b9e; filter: url(#pen); }
+    </style>
+  </defs>
+  <rect width="1200" height="750" fill="#fbf7ee"/>
+  <rect width="1200" height="750" fill="#fbf7ee" filter="url(#paper)"/>
+  <g class="w">
+    <path d="M540 100 C620 70 680 110 660 170 C640 220 560 220 530 180 C510 150 500 120 540 100 Z" fill="#f3c04a" opacity=".5"/>
+    <path d="M200 560 C280 520 360 550 350 610 C340 660 250 680 190 640 C150 610 160 580 200 560 Z" fill="#76b7c2" opacity=".45"/>
+    <path d="M880 560 C960 520 1040 550 1030 610 C1020 660 930 680 870 640 C830 610 840 580 880 560 Z" fill="#e88a73" opacity=".45"/>
+    <path d="M480 320 C560 290 660 300 660 360 C660 420 560 440 490 410 C450 390 440 350 480 320 Z" fill="#9dcab0" opacity=".4"/>
+  </g>
+  <g class="m">
+    <path d="M420 250 L500 400" stroke="#f3c04a"/>
+    <path d="M780 250 L700 400" stroke="#f3c04a"/>
+    <path d="M330 630 L870 630" stroke="#76b7c2"/>
+  </g>
+  <g class="pen" stroke-width="3">
+    <path d="M600 150 C500 320 400 480 280 610"/>
+    <path d="M600 150 C700 320 800 480 920 610"/>
+    <path d="M280 610 C500 640 700 640 920 610"/>
+  </g>
+  <g class="pen">
+    <ellipse cx="600" cy="140" rx="70" ry="44"/>
+    <ellipse cx="250" cy="620" rx="90" ry="46"/>
+    <ellipse cx="950" cy="620" rx="90" ry="46"/>
+  </g>
+  <g class="h" font-size="26">
+    <text x="548" y="150">trade unit</text>
+    <text x="188" y="628">product</text>
+    <text x="884" y="628">org stock</text>
+  </g>
+  <g class="h" font-size="24">
+    <text x="410" y="290">× 6</text>
+    <text x="770" y="290">× 1</text>
+    <text x="560" y="660">1/12 ?</text>
+  </g>
+  <g class="pen">
+    <path d="M596 330 c-4 -20 8 -30 4 -50 c14 10 20 24 14 40 c14 -6 22 -18 20 -34 c16 16 18 40 4 56 c-10 12 -30 10 -38 -6 c-4 -8 -4 -14 -4 -6 z"/>
+    <path d="M600 330 l0 40" class="soft"/>
+  </g>
+  <g class="h" font-size="20"><text x="614" y="360">1 candle</text></g>
+  <g class="hl" font-size="22">
+    <text x="640" y="470">the number on the edge is the truth</text>
+  </g>
+  <g class="h" font-size="19" opacity=".7"><text x="70" y="732">— the triangle: trade units, products, org stock</text></g>
+</svg>

@@ -29,6 +29,7 @@ use App\Http\Middleware\CheckWebsiteState;
 use App\Http\Middleware\DetectWebsite;
 use App\Http\Middleware\HandleAikuPublicInertiaRequests;
 use App\Http\Middleware\HandleRetinaInertiaRequests;
+use App\Http\Middleware\LogAikuPublicPageVisit;
 use App\Http\Middleware\LogUserRequestMiddleware;
 use App\Http\Middleware\EncryptCookies;
 use App\Http\Middleware\ForceJsonResponse;
@@ -69,6 +70,7 @@ use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Osiset\ShopifyApp\Http\Middleware\VerifyShopify;
+use App\Http\Middleware\ElevateWebsiteChatStateful;
 
 class Kernel extends HttpKernel
 {
@@ -123,6 +125,7 @@ class Kernel extends HttpKernel
         ],
 
         'grp-api' => [
+            ElevateWebsiteChatStateful::class,
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
@@ -191,8 +194,8 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
             HandleAikuPublicInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            AddFrameOptionsHeader::class
-
+            AddFrameOptionsHeader::class,
+            LogAikuPublicPageVisit::class,
         ],
         'analytics'   => [
             DetectIrisWebsite::class,

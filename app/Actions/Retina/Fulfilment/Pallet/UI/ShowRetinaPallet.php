@@ -150,8 +150,8 @@ class ShowRetinaPallet extends RetinaAction
                     : Inertia::optional(fn () => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($pallet, PalletTabsEnum::MOVEMENTS->value))),
 
                 PalletTabsEnum::HISTORY->value => $this->tab == PalletTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($this->pallet))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($this->pallet)))
+                    fn () => HistoryResource::collection(IndexHistory::run($this->pallet, PalletTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($this->pallet, PalletTabsEnum::HISTORY->value)))
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: PalletTabsEnum::HISTORY->value))

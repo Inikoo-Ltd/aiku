@@ -13,6 +13,7 @@ use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 /**
  * Corrects `products.units` where it is merely a stale number, and nothing else.
@@ -142,6 +143,7 @@ class SyncMasterChildUnitsWhereScalarIsStale
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $masterShop = MasterShop::where('slug', $command->argument('master_shop'))->firstOrFail();
         $shopCode   = $command->option('shop');
         $fix        = (bool) $command->option('fix');

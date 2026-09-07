@@ -18,6 +18,7 @@ enum ShipperTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
@@ -25,6 +26,12 @@ enum ShipperTabsEnum: string
             ShipperTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fas fa-info-circle',
+            ],
+            ShipperTabsEnum::HISTORY => [
+                'title' => __('History'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
         };
     }

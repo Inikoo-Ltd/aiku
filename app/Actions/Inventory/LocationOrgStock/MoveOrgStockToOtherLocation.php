@@ -9,10 +9,10 @@
 namespace App\Actions\Inventory\LocationOrgStock;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
+use App\Actions\Inventory\OrgStock\SetOrgStockPickingLocation;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
-use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
@@ -61,7 +61,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
                 // 'note'                  => $note,
             ]);
 
-            RepairOrgStockMissingLocationIds::dispatch($currentLocationStock->org_stock_id)->delay(2);
+            SetOrgStockPickingLocation::dispatch($currentLocationStock->org_stock_id)->delay(2);
             OrgStockHydrateQuantityInLocations::run($currentLocationStock->org_stock_id);
 
         });
@@ -78,7 +78,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
         $newQuantity  = Arr::pull($modelData, 'quantity');
         $stockDiff    = $newQuantity - $currentStock;
 
-        $costPerSku = $this->getCostPerSku($locationOrgStock->orgStock, Carbon::now());
+        $costPerSku = $this->getLppPerSku($locationOrgStock->orgStock, Carbon::now());
 
         $exchangeRate = GetCurrencyExchange::run($locationOrgStock->organisation->currency, $locationOrgStock->group->currency);
 
@@ -148,9 +148,10 @@ class MoveOrgStockToOtherLocation extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(LocationOrgStock $currentLocationStock, LocationOrgStock $targetLocationOrgStock, array $modelData): LocationOrgStock
+    public function action(LocationOrgStock $currentLocationStock, LocationOrgStock $targetLocationOrgStock, array $modelData, User|null $user = null): LocationOrgStock
     {
         $this->asAction = true;
+        $this->user = $user;
         $this->sourceLocationOrgStock = $currentLocationStock;
         $this->targetLocationOrgStock = $targetLocationOrgStock;
         $this->initialisation($currentLocationStock->organisation, $modelData);

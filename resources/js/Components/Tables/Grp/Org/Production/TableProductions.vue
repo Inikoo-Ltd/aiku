@@ -16,23 +16,11 @@ const props = defineProps<{
 }>()
 
 
-console.log(route().current())
 function productionRoute(production: Production) {
     switch (route().current()) {
         case 'grp.org.productions.index':
             return route(
                 'grp.org.productions.show',
-                [route().params['organisation'], production.slug]);
-    }
-}
-
-
-
-function locationsRoute(production: Production) {
-    switch (route().current()) {
-        case 'grp.org.productions.index':
-            return route(
-                'grp.org.productions.show.infrastructure.locations.index',
                 [route().params['organisation'], production.slug]);
     }
 }
@@ -43,9 +31,6 @@ function locationsRoute(production: Production) {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(state_icon)="{ item: production }">
-            <!-- <Link :href="productionRoute(production)" class="primaryLink">
-                {{ production['code'] }}
-            </Link> -->
             <Icon :data="production['state_icon']" class="px-1" />
         </template>
 
@@ -55,10 +40,5 @@ function locationsRoute(production: Production) {
             </Link>
         </template>
 
-        <template #cell(number_locations)="{ item: production }">
-            <Link :href="locationsRoute(production)" class="primaryLink">
-                {{ production['number_locations'] }}
-            </Link>
-        </template>
     </Table>
 </template>

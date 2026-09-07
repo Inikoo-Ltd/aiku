@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairCustomerSearchableText
 {
@@ -28,6 +29,7 @@ class RepairCustomerSearchableText
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $customers = Customer::query();
         $total = (clone $customers)->count();
 

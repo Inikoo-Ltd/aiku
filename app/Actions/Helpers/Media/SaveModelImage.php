@@ -29,6 +29,7 @@ use App\Models\Web\AnnouncementTemplate;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
+use App\Models\GoodsIn\UnidentifiedReturn;
 use Lorisleiva\Actions\Concerns\AsAction;
 use stdClass;
 
@@ -37,11 +38,11 @@ class SaveModelImage
     use AsAction;
 
     public function handle(
-        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate $model,
+        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|UnidentifiedReturn $model,
         array $imageData,
         string $scope = 'image',
         string $foreignKeyMedia = 'image_id'
-    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate {
+    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|UnidentifiedReturn {
         $oldImage = $model->image;
 
         $checksum = md5_file($imageData['path']);

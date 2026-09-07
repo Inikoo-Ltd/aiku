@@ -9,7 +9,11 @@
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 use App\Actions\Comms\Notifications\GetSnsNotification;
 use App\Actions\CRM\Customer\GoogleAds\CallbackShopGoogleAds;
+use App\Actions\CRM\TrafficSource\ReceiveTrafficSourceCostWebhook;
 use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
+use App\Actions\Dropshipping\Wix\Webhooks\HandleWixAppInstanceInstalled;
+use App\Actions\Dropshipping\Wix\Webhooks\HandleWixOrderApproved;
+use App\Actions\Dropshipping\Wix\Webhooks\HandleWixOrderCanceled;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFetchStock;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackProductChanged;
@@ -24,11 +28,14 @@ use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Orders\CallbackFetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Webhook\DeleteProductWebhooksWooCommerce;
 use App\Actions\Helpers\Jira\Webhook\HandleJiraWebhook;
+use App\Actions\Helpers\Ticket\ReceiveSlackTicketCommand;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns')->middleware(Sample::never());
+    Route::post('slack-ticket', ReceiveSlackTicketCommand::class)->name('slack_ticket');
     Route::any('checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
+    Route::post('traffic-source-costs', ReceiveTrafficSourceCostWebhook::class)->name('traffic_source_costs');
 });
 
 Route::get('google-ads/callback', CallbackShopGoogleAds::class)->name('google_ads.callback');
@@ -74,6 +81,15 @@ Route::prefix('tiktok')->as('webhooks.tiktok.')->group(function () {
 
 Route::prefix('allegro')->as('allegro.')->group(function () {
     Route::get('callback', AuthenticateAllegroAccount::class)->name('callback');
+});
+
+Route::prefix('wix')->as('webhooks.wix.')->group(function () {
+    Route::post('app-instance-installed', HandleWixAppInstanceInstalled::class)->name('app_instance_installed');
+
+    Route::prefix('orders')->as('orders.')->group(function () {
+        Route::post('approved', HandleWixOrderApproved::class)->name('approved');
+        Route::post('canceled', HandleWixOrderCanceled::class)->name('canceled');
+    });
 });
 
 Route::prefix('jira/{group:id}')->as('webhooks.jira.')->group(function () {

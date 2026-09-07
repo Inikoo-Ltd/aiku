@@ -20,6 +20,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class UpdateEmailSubscriptionsFromAurora
 {
@@ -86,6 +87,7 @@ class UpdateEmailSubscriptionsFromAurora
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $organisation = Organisation::find($command->argument('organisation_id'));
 
         try {

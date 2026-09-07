@@ -177,7 +177,7 @@ watch(
             <!-- right side -->
             <div class="flex items-center gap-3">
 
-                <Button :label="trans('Save')" type="positive" icon="save" @click="saveFilters" class="h-10 px-4" />
+                <Button :label="trans('Save recipients')" type="positive" icon="save" @click="saveFilters" class="h-10 px-4" />
             </div>
         </div>
         <div v-if="Object.keys(activeFilters).length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">

@@ -9,6 +9,8 @@
 namespace App\Actions\Inventory\OrgStockHistory\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithStockHistoryArchiveRead;
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\LocationOrgStockHistory;
 use App\Models\Inventory\OrganisationStockHistory;
@@ -21,6 +23,8 @@ use Spatie\QueryBuilder\AllowedSort;
 
 class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
 {
+    use WithStockHistoryArchiveRead;
+
     public function handle(OrganisationStockHistory $organisationStockHistory, ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -38,7 +42,9 @@ class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
         // TODO: after running repair:location_org_stock_histories_organisation_stock_history_id, remove the join to org_stock_histories and use this instead:
         // ->where('location_org_stock_histories.organisation_stock_history_id', $organisationStockHistory->id)
 
-        return QueryBuilder::for(LocationOrgStockHistory::class)
+        $connection = $this->stockHistoryDayConnection($organisationStockHistory);
+
+        return QueryBuilder::for($connection ? LocationOrgStockHistory::on($connection) : LocationOrgStockHistory::query())
             ->leftJoin('org_stock_histories', 'location_org_stock_histories.org_stock_history_id', '=', 'org_stock_histories.id')
             ->leftJoin('org_stocks', 'location_org_stock_histories.org_stock_id', '=', 'org_stocks.id')
             ->leftJoin('locations', 'location_org_stock_histories.location_id', '=', 'locations.id')
@@ -51,7 +57,9 @@ class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
                 'org_stocks.slug as stock_slug',
                 'locations.code as location_code',
                 'location_org_stock_histories.quantity_in_locations',
-                'location_org_stock_histories.org_stock_value',
+                'location_org_stock_histories.org_stock_lpp_value',
+                'location_org_stock_histories.org_stock_wac_value',
+                'location_org_stock_histories.org_stock_fifo_value',
                 DB::raw("'" . $organisationStockHistory->organisation->currency->code . "' as currency_code"),
             ])
             ->defaultSort('org_stocks.code')
@@ -60,7 +68,9 @@ class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
                 AllowedSort::field('stock_name', 'org_stocks.name'),
                 AllowedSort::field('location_code', 'locations.code'),
                 AllowedSort::field('quantity_in_locations', 'location_org_stock_histories.quantity_in_locations'),
-                AllowedSort::field('org_stock_value', 'location_org_stock_histories.org_stock_value'),
+                AllowedSort::field('org_stock_lpp_value', 'location_org_stock_histories.org_stock_lpp_value'),
+                AllowedSort::field('org_stock_wac_value', 'location_org_stock_histories.org_stock_wac_value'),
+                AllowedSort::field('org_stock_fifo_value', 'location_org_stock_histories.org_stock_fifo_value'),
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -83,9 +93,13 @@ class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
                 ->column(key: 'stock_code', label: __('SKO'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'location_code', label: __('Location'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'quantity_in_locations', label: __('Quantity'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'org_stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency', align: 'right')
-                ->defaultSort('stock_code');
+                ->column(key: 'quantity_in_locations', label: __('Quantity'), canBeHidden: false, sortable: true, align: 'right');
+
+            foreach (OrgStockValuationMethodEnum::ordered() as $index => $method) {
+                $table->column(key: $method->stockValueColumn(), label: __('Value').' ('.$method->label().')', tooltip: $method->legend(), tooltipIcon: $index === 0, canBeHidden: $index !== 0, sortable: true, type: 'currency', align: 'right');
+            }
+
+            $table->defaultSort('stock_code');
         };
     }
 }

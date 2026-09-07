@@ -11,6 +11,7 @@ import { routeType } from "@/types/route"
 import { Link, router } from "@inertiajs/vue3"
 import InputNumber from "primevue/inputnumber"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import PaymentMethodBadge from "@/Components/Accounting/PaymentMethodBadge.vue"
 import { faCheck, faSave } from "@far"
 import { faPlus, faMinus, faArrowRight } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -295,6 +296,11 @@ const compTooltipTotalToPay = computed(() => {
                     </dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                         {{ !is_external ? locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_paid_in)) : '-' }}
+                        <div v-if="!is_external && invoice_pay.payments?.length" class="flex flex-wrap justify-end gap-x-3 text-xs text-gray-500 leading-5">
+                            <PaymentMethodBadge v-for="payment in invoice_pay.payments" :key="payment.id"
+                                :label="payment.method_label" :method="payment.method"
+                                :accountType="payment.payment_account_type" :accountName="payment.payment_account_name" />
+                        </div>
                     </dd>
                 </div>
             </div>

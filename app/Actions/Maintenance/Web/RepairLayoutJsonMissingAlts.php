@@ -18,6 +18,7 @@ use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairLayoutJsonMissingAlts
 {
@@ -186,6 +187,7 @@ class RepairLayoutJsonMissingAlts
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $total = 0;
 
         $websiteSlug = $command->argument('website');

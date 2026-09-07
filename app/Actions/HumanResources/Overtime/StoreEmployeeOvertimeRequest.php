@@ -2,6 +2,7 @@
 
 namespace App\Actions\HumanResources\Overtime;
 
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Actions\OrgAction;
 use App\Enums\HumanResources\Overtime\OvertimeRequestSourceEnum;
 use App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum;
@@ -22,38 +23,7 @@ class StoreEmployeeOvertimeRequest extends OrgAction
 
     private function resolveEmployee(Request $request): ?Employee
     {
-        $user = $request->user();
-
-        if (!$user) {
-            return null;
-        }
-
-        $organisationScope = $request->input('organisation') ?? $request->route('organisation');
-
-        if (is_object($organisationScope)) {
-            $organisationScope = $organisationScope->slug ?? $organisationScope->id ?? null;
-        }
-
-        if ($organisationScope) {
-            $organisationScope = (string) $organisationScope;
-            $isNumericOrganisationId = ctype_digit($organisationScope);
-
-            $employee = $user->employees()
-                ->whereHas('organisation', function ($query) use ($organisationScope, $isNumericOrganisationId) {
-                    $query->where('slug', $organisationScope);
-
-                    if ($isNumericOrganisationId) {
-                        $query->orWhere('id', (int) $organisationScope);
-                    }
-                })
-                ->first();
-
-            if ($employee) {
-                return $employee;
-            }
-        }
-
-        return $user->employees()->first();
+        return GetUserCurrentEmployee::fromRequest($request);
     }
 
     public function handle(Employee $employee, array $modelData): OvertimeRequest

@@ -74,11 +74,27 @@ class StoreNotPickPicking extends OrgAction
         ];
     }
 
+    /**
+     * What the requirement still leaves open once everything already accounted for is taken out:
+     * picked, previously marked as not picked, and the two waiting buckets. This is the same
+     * amount the picking screen prints on the button, so pressing it twice cannot claim the
+     * quantity twice the way subtracting only the picks did.
+     */
+    private function outstandingQuantity(DeliveryNoteItem $deliveryNoteItem): float
+    {
+        $outstanding = (float)$deliveryNoteItem->quantity_required
+            - (float)$deliveryNoteItem->quantity_picked
+            - (float)$deliveryNoteItem->quantity_not_picked
+            - (float)$deliveryNoteItem->quantity_waiting_warehouse
+            - (float)$deliveryNoteItem->quantity_waiting_crm;
+
+        return $outstanding > 0 ? $outstanding : 0.0;
+    }
+
     public function prepareForValidation(ActionRequest $request): void
     {
         if (!$request->has('quantity')) {
-            $quantityNotToPick = $this->deliveryNoteItem->quantity_required - $this->deliveryNoteItem->quantity_picked;
-            $this->set('quantity', $quantityNotToPick < 0 ? 0 : $quantityNotToPick);
+            $this->set('quantity', $this->outstandingQuantity($this->deliveryNoteItem));
         }
     }
 
@@ -86,6 +102,16 @@ class StoreNotPickPicking extends OrgAction
     {
         $this->deliveryNoteItem = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $request);
+
+        /*
+         * An item with nothing required at all is ignored by recording a picking of zero, which is
+         * what marks it as handled, so the first press still goes through. Once one exists there is
+         * nothing further to record and every later press is a repeat of the same button.
+         */
+        if ($this->outstandingQuantity($deliveryNoteItem) <= 0
+            && $deliveryNoteItem->pickings()->where('type', PickingTypeEnum::NOT_PICK)->exists()) {
+            return null;
+        }
 
         return $this->handle($deliveryNoteItem, $request->user(), $this->validatedData);
     }

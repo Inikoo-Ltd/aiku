@@ -9,6 +9,7 @@ import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import TableAnnouncements from '@/Components/Tables/Grp/Websites/TableAnnouncements.vue'
+import AnnouncementSimulator from '@/Components/Websites/Announcement/AnnouncementSimulator.vue'
 import { PageHeadingTypes } from "@/types/PageHeading"
 
 defineProps<{
@@ -19,9 +20,13 @@ defineProps<{
 
 </script>
 
-<template layout="CustomerApp">
+<template>
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead"></PageHeading>
+
+  <div class="px-4 mb-2">
+    <AnnouncementSimulator />
+  </div>
 
   <TableAnnouncements :data="data" />
 </template>

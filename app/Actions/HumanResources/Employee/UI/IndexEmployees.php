@@ -122,7 +122,7 @@ class IndexEmployees extends OrgAction
             );
         }
 
-        $queryBuilder->select(['employees.slug', 'employees.job_title', 'employees.contact_name', 'employees.state', 'employees.date_of_birth', 'organisations.name as organisation_name', 'organisations.slug as organisation_slug', 'employees.probation_period_days', 'employees.employment_start_at', 'employees.employment_end_at']);
+        $queryBuilder->select(['employees.id', 'employees.slug', 'employees.worker_number', 'employees.job_title', 'employees.contact_name', 'employees.state', 'employees.date_of_birth', 'organisations.name as organisation_name', 'organisations.slug as organisation_slug', 'employees.probation_period_days', 'employees.employment_start_at', 'employees.employment_end_at']);
 
         if (class_basename($parent) == 'Organisation') {
             $jobPositions = DB::table('employee_has_job_positions')

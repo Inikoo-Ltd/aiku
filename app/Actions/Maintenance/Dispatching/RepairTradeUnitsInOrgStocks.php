@@ -8,13 +8,14 @@
 
 namespace App\Actions\Maintenance\Dispatching;
 
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
+use App\Actions\Inventory\OrgStock\SyncOrgStockTradeUnits;
 use App\Actions\OrgAction;
 use App\Models\Inventory\OrgStock;
 use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairTradeUnitsInOrgStocks extends OrgAction
 {
@@ -34,8 +35,7 @@ class RepairTradeUnitsInOrgStocks extends OrgAction
                 ];
             }
 
-            $orgStock->tradeUnits()->sync($tradeUnits);
-            OrgStockHydratePackedIn::run($orgStock);
+            $orgStock = SyncOrgStockTradeUnits::run($orgStock, $tradeUnits);
         }
 
         return $orgStock;
@@ -48,6 +48,7 @@ class RepairTradeUnitsInOrgStocks extends OrgAction
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $command->info('Matching trade units to org stocks');
 
         $chunkSize = 100;

@@ -29,6 +29,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue";
 import { faX } from "@fortawesome/free-solid-svg-icons";
 import { capitalize } from "@/Composables/capitalize"
 import TableStocks from "@/Components/Tables/Grp/Goods/TableStocks.vue";
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import { Link } from "@inertiajs/vue3"
 import Button from '@/Components/Elements/Buttons/Button.vue';
 
@@ -54,6 +55,7 @@ const props = defineProps<{
         current: string;
         navigation: object;
     }
+    history?: object;
 }>()
 
 let currentTab = ref(props.tabs.current);
@@ -62,6 +64,7 @@ const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
 
     const components = {
+        history: TableHistories,
     };
     return components[currentTab.value];
 

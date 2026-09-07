@@ -9,10 +9,12 @@
 
 namespace App\Actions\Dispatching\Shipper\UI;
 
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
 use App\Enums\UI\Dispatch\ShipperTabsEnum;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Dispatching\Shipper;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -75,8 +77,12 @@ class ShowShipper extends OrgAction
                 ShipperTabsEnum::SHOWCASE->value => $this->tab == ShipperTabsEnum::SHOWCASE->value ?
                     fn () => GetShipperShowcase::run($shipper)
                     : Inertia::optional(fn () => GetShipperShowcase::run($shipper)),
+
+                ShipperTabsEnum::HISTORY->value => $this->tab == ShipperTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($shipper, ShipperTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($shipper, ShipperTabsEnum::HISTORY->value))),
             ]
-        );
+        )->table(IndexHistory::make()->tableStructure(ShipperTabsEnum::HISTORY->value));
     }
 
     public function getBreadcrumbs(Shipper $shipper, string $routeName, array $routeParameters, string $suffix = ''): array

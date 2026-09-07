@@ -30,7 +30,7 @@ class LastOrderedProductsResource extends JsonResource
         if ($canonicalUrl && !app()->environment('production')) {
             $canonicalUrl = ShowIrisWebpage::make()->getEnvironmentUrl($canonicalUrl);
         }
-        
+
         return [
             'code'          => $this->code,
             'canonical_url' => $canonicalUrl,

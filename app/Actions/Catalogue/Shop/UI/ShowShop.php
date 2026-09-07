@@ -52,7 +52,7 @@ class ShowShop extends OrgAction
         $userSettings = $request->user()->settings;
 
         $tabsNavigation = ShopDashboardSalesTableTabsEnum::navigation($shop);
-        $validTabs  = array_keys($tabsNavigation);
+        $validTabs  = array_keys(array_filter($tabsNavigation, fn ($tab) => !isset($tab['route'])));
         $currentTab = $this->resolveDashboardTableTab($validTabs, $userSettings, 'shop_dashboard_tab');
 
         $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
@@ -88,12 +88,17 @@ class ShowShop extends OrgAction
                         'current'    => $this->tab,
                         'navigation' => $tabsBox
                     ],
+                    'widgets_route' => [
+                        'name'       => 'grp.org.shops.show.dashboard.widgets',
+                        'parameters' => ['organisation' => $this->organisation->slug, 'shop' => $shop->slug],
+                    ],
                 ],
             ],
         ];
 
         if ($shop->type->value === 'dropshipping') {
             $dashboard['super_blocks'][0]['channel_health'] = $this->getChannelHealthStats($shop);
+            $dashboard['super_blocks'][0]['brands_link']    = ShopDashboardSalesTableTabsEnum::brandsLink($shop);
         }
 
         $currentTabEnum = ShopDashboardSalesTableTabsEnum::from($currentTab);

@@ -18,8 +18,27 @@ trait HasWebBlockLayoutData
         $webBlockType = data_get($webBlock, 'type', '');
         $webPublishedLayout = $webpage->website->published_layout;
 
+        $webBlockData = $this->getWebBlockLayoutData($webPublishedLayout, $webBlockType, $layoutKey);
+
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
-        data_set($webBlock, 'web_block.layout.data.fieldValue', data_get($webPublishedLayout, "$layoutKey.$webBlockType.fieldValue", []));
+        data_set($webBlock, 'web_block.layout.data.fieldValue', $webBlockData);
         data_set($webBlock, 'web_block.layout.data.fieldValue.id', data_get($webBlock, 'type'));
+    }
+
+    protected function getWebBlockLayoutData(array $webPublishedLayout, string $webBlockType, string $layoutKey): array
+    {
+        return data_get($webPublishedLayout, "$layoutKey.$webBlockType.fieldValue", []);
+    }
+
+    protected function getFamilyExtraDescriptionLayoutData(array $webPublishedLayout): ?array
+    {
+        $webBlockType = collect(array_keys(data_get($webPublishedLayout, 'family_description', [])))
+            ->first(fn ($code) => str_ends_with($code, '-extra-description'));
+
+        if (!$webBlockType) {
+            return null;
+        }
+
+        return $this->getWebBlockLayoutData($webPublishedLayout, $webBlockType, 'family_description');
     }
 }

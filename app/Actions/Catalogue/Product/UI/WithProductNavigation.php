@@ -117,6 +117,10 @@ trait WithProductNavigation
         return match ($routeName) {
             'grp.org.shops.show.catalogue.products.all_products.show',
             'grp.org.shops.show.catalogue.products.all_products.edit',
+            'grp.org.shops.show.catalogue.products.mismatched_families.show',
+            'grp.org.shops.show.catalogue.products.mismatched_families.edit',
+            'grp.org.shops.show.catalogue.products.no_image_product.show',
+            'grp.org.shops.show.catalogue.products.no_image_product.edit',
             'grp.org.shops.show.catalogue.products.orphan_products.show',
             'grp.org.shops.show.catalogue.products.orphan_products.edit',
             'grp.org.shops.show.catalogue.products.out_of_stock_products.show',

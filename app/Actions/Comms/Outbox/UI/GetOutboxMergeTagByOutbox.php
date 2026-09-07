@@ -25,7 +25,7 @@ class GetOutboxMergeTagByOutbox extends OrgAction
             case OutboxCodeEnum::REVIEW_REMINDER:
                 return OutboxMergeTagsEnum::filterTags([OutboxMergeTagsEnum::CUSTOMER_NAME, OutboxMergeTagsEnum::REVIEW_REMINDER_LINKS]);
             case OutboxCodeEnum::INVOICE_PAID:
-                return OutboxMergeTagsEnum::filterTags([OutboxMergeTagsEnum::CUSTOMER_NAME, OutboxMergeTagsEnum::DOWNLOAD_INVOICE_PDF]);
+                return OutboxMergeTagsEnum::filterTags([OutboxMergeTagsEnum::CUSTOMER_NAME, OutboxMergeTagsEnum::DOWNLOAD_INVOICE_PDF, OutboxMergeTagsEnum::INVOICE_REFERENCE]);
             case OutboxCodeEnum::GOLD_REWARD_REMINDER_1:
             case OutboxCodeEnum::GOLD_REWARD_REMINDER_2:
             case OutboxCodeEnum::GOLD_REWARD_REMINDER_3:
@@ -56,6 +56,25 @@ class GetOutboxMergeTagByOutbox extends OrgAction
                 return ProspectMailshotMergeTagsEnum::filterTags([
                         ProspectMailshotMergeTagsEnum::PROSPECT_EMAIL,
                         ProspectMailshotMergeTagsEnum::PROSPECT_REGISTRATION_DATE,
+                    ]);
+            case OutboxCodeEnum::ABANDONED_CART_REMINDER_1:
+            case OutboxCodeEnum::ABANDONED_CART_REMINDER_2:
+            case OutboxCodeEnum::ABANDONED_CART_REMINDER_3:
+            case OutboxCodeEnum::ABANDONED_CHECKOUT:
+                return OutboxMergeTagsEnum::filterTags([
+                        OutboxMergeTagsEnum::CUSTOMER_NAME,
+                        OutboxMergeTagsEnum::ABANDONED_CART_ITEMS,
+                    ]);
+            case OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER:
+                return OutboxMergeTagsEnum::filterTags([
+                        OutboxMergeTagsEnum::CUSTOMER_NAME,
+                        OutboxMergeTagsEnum::CHAT_LINK,
+                        OutboxMergeTagsEnum::CHAT_MESSAGE,
+                    ]);
+            case OutboxCodeEnum::ABANDONED_CHECKOUT:
+                return OutboxMergeTagsEnum::filterTags([
+                        OutboxMergeTagsEnum::CUSTOMER_NAME,
+                        OutboxMergeTagsEnum::ABANDONED_CART_ITEMS,
                     ]);
             default:
                 return GetMailshotMergeTags::run();

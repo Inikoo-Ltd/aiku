@@ -393,7 +393,7 @@ class IndexMasterProductsWithMismatch extends OrgAction
                 'shopsData'               => $shopsData,
                 'tabs' => [
                     'current'    => $this->tab,
-                    'navigation' => MasterProductsTabsEnum::navigationExcept([MasterProductsTabsEnum::SALES, MasterProductsTabsEnum::INDEX_ORDERING]),
+                    'navigation' => MasterProductsTabsEnum::navigationExcept([MasterProductsTabsEnum::INDEX_ORDERING]),
                 ],
                 MasterProductsTabsEnum::INDEX->value => $this->tab == MasterProductsTabsEnum::INDEX->value ?
                     fn () => MasterProductsResource::collection($masterAssets)

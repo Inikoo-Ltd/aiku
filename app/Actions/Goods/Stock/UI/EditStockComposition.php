@@ -99,7 +99,7 @@ class EditStockComposition extends OrgAction
                             'id'       => $tradeUnit->id,
                             'code'     => $tradeUnit->code,
                             'name'     => $tradeUnit->name,
-                            'quantity' => $tradeUnit->pivot->quantity,
+                            'quantity' => (float) $tradeUnit->pivot->quantity,
                         ])->values(),
 
                         /*

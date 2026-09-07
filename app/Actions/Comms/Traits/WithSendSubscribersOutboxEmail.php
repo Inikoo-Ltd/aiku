@@ -21,6 +21,7 @@ use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Outbox;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 
 trait WithSendSubscribersOutboxEmail
 {
@@ -37,12 +38,18 @@ trait WithSendSubscribersOutboxEmail
      * - send using sendEmailWithMergeTags
      */
     protected function sendOutboxEmailToSubscribers(
-        Outbox $outbox,
+        ?Outbox $outbox,
         array $additionalData = [],
         string $unsubscribeUrl = '',
         ?string $passwordToken = null,
         ?string $invoiceUrl = null
     ): void {
+        if (!$outbox) {
+            Log::warning('Outbox not found, subscribers email not sent', ['caller' => static::class]);
+
+            return;
+        }
+
         $subscribedUsers = $outbox->subscribedUsers ?? [];
 
         if ($outbox->state != OutboxStateEnum::ACTIVE) {

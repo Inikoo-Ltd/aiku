@@ -9,6 +9,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
@@ -22,20 +23,12 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdatePurchaseOrderStateToConfirmed extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use AsAction;
     use HasPurchaseOrderHydrators;
     use WithActionUpdate;
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-    }
-
-    public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
+    public function handle(PurchaseOrder $purchaseOrder, array $modelData = []): PurchaseOrder
     {
         if ($purchaseOrder->state !== PurchaseOrderStateEnum::SUBMITTED) {
             abort(422, __('Purchase order can only be confirmed if it is submitted'));
@@ -47,10 +40,18 @@ class UpdatePurchaseOrderStateToConfirmed extends OrgAction
                 'state' => PurchaseOrderTransactionStateEnum::CONFIRMED,
             ]);
 
-        $purchaseOrder = $this->update($purchaseOrder, [
+        $updateData = [
             'state'        => PurchaseOrderStateEnum::CONFIRMED,
             'confirmed_at' => now(),
-        ]);
+        ];
+
+        if (array_key_exists('estimated_receiving_date', $modelData)) {
+            $updateData['data'] = [
+                'estimated_receiving_date' => $modelData['estimated_receiving_date'],
+            ];
+        }
+
+        $purchaseOrder = $this->update($purchaseOrder, $updateData, ['data']);
 
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
 
@@ -63,15 +64,22 @@ class UpdatePurchaseOrderStateToConfirmed extends OrgAction
     {
         $this->initialisation($purchaseOrder->organisation, $request);
 
-        return $this->handle($purchaseOrder);
+        return $this->handle($purchaseOrder, $this->validatedData);
     }
 
-    public function action(PurchaseOrder $purchaseOrder): PurchaseOrder
+    public function rules(): array
+    {
+        return [
+            'estimated_receiving_date' => ['sometimes', 'nullable', 'date'],
+        ];
+    }
+
+    public function action(PurchaseOrder $purchaseOrder, array $modelData = []): PurchaseOrder
     {
         $this->asAction = true;
-        $this->initialisation($purchaseOrder->organisation, []);
+        $this->initialisation($purchaseOrder->organisation, $modelData);
 
-        return $this->handle($purchaseOrder);
+        return $this->handle($purchaseOrder, $this->validatedData);
     }
 
     public function jsonResponse(PurchaseOrder $purchaseOrder): PurchaseOrderResource

@@ -59,6 +59,7 @@ use App\Actions\Search\StoreSearchSynonym;
 use App\Actions\Web\Website\UI\CreateWebsite;
 use App\Actions\Web\Website\UI\GetWebsiteSearchBoostCandidates;
 use App\Actions\Web\Website\UpdateWebsiteSearchBoosts;
+use App\Actions\Web\Website\UpdateWebsiteSearchFeaturedItems;
 use App\Actions\Web\Website\UI\EditWebsite;
 use App\Actions\Web\Website\UI\IndexWebsites;
 use App\Actions\Web\Website\UI\ShowRestrictedCountry;
@@ -203,6 +204,7 @@ Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
     Route::get('search', ShowWebsiteSearchAnalytics::class)->name('search');
     Route::get('search/boost-candidates', GetWebsiteSearchBoostCandidates::class)->name('search.boost_candidates');
     Route::post('search/boosts', UpdateWebsiteSearchBoosts::class)->name('search.boosts.update');
+    Route::post('search/featured-items', UpdateWebsiteSearchFeaturedItems::class)->name('search.featured_items.update');
     Route::get('search/synonyms', IndexSearchSynonyms::class)->name('search.synonyms.index');
     Route::post('search/synonyms', StoreSearchSynonym::class)->name('search.synonyms.store');
     Route::delete('search/synonyms/{synonym}', DeleteSearchSynonym::class)->name('search.synonyms.delete');

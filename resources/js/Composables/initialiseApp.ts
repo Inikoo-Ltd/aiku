@@ -8,6 +8,8 @@ import { useEchoGrpGeneral } from '@/Stores/echo-grp-general.js'
 import { useLiveUsers } from '@/Stores/active-users'
 import { useChatAgentPresence } from '@/Composables/useChatAgentPresence'
 import { resetStuckOverlays } from '@/Composables/resetStuckOverlays'
+import { applyChatTheme } from '@/Composables/useChatThemes'
+import { setComponentDebugInfo } from '@/Composables/useComponentDebugInfo'
 
 export const initialiseApp = () => {
     const layout = useLayoutStore()
@@ -21,6 +23,8 @@ export const initialiseApp = () => {
         storageLayout = JSON.parse(localStorage.getItem('layout') || '{}')  // Get layout from localStorage
         layout.organisationsState = storageLayout  // { 'awa' : { currentShop: 'bali', currentWarehouse: 'ed' }, ... }
     }
+
+    setComponentDebugInfo()
 
     const echoPersonal = useEchoGrpPersonal()
     const echoGeneral = useEchoGrpGeneral()
@@ -43,15 +47,7 @@ export const initialiseApp = () => {
             layout.stackedComponents = []
             resetStuckOverlays()
 
-            // To see Vue filename in console (component.vue)
-            if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
-                if (window.component.vue !== '') {
-                    if (window.component.vue !== usePage().component) {
-                        window.component.php = ''
-                    }
-                }
-                window.component.vue = usePage().component
-            }
+            setComponentDebugInfo()  // To see PHP action and Vue filename in console (window.component)
 
             layout.currentParams = route().routeParams  // current params
             layout.currentQuery = route().queryParams  // current query
@@ -169,11 +165,17 @@ export const initialiseApp = () => {
         if (usePage().props.layout?.group) {
             layout.group = usePage().props.layout.group
         }
+        layout.has_group_access = !!usePage().props.layout?.has_group_access
 
 
         // Set App theme
         if (usePage().props.layout?.app_theme) {
             layout.app.theme = usePage().props.layout?.app_theme
+        }
+
+        // Set Chat theme
+        if (usePage().props.layout?.chat_theme) {
+            applyChatTheme(usePage().props.layout.chat_theme as string)
         }
 
         // Set App Environment
@@ -254,6 +256,10 @@ export const initialiseApp = () => {
 
         if (usePage().props.master_updated_count !== undefined) {
             layout.master_updated_count = usePage().props.master_updated_count as number
+        }
+
+        if (usePage().props.faire_skipped_count !== undefined) {
+            layout.faire_skipped_count = usePage().props.faire_skipped_count as number
         }
 
         layout.app.name = "Aiku"

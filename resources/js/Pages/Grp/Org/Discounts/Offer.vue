@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, usePoll } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -15,7 +15,7 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import Coupon from '@/Components/Utils/Coupon.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { inject, computed, ref } from 'vue'
+import { inject, computed, ref, watch } from 'vue'
 import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
 import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
@@ -120,7 +120,7 @@ const isExpired = computed(() => {
 const stateClass = computed(() => {
     if (isExpired.value) return 'bg-red-200 text-red-800 border'
 
-    switch (state) {
+    switch (state.value) {
         case 'active':
             return 'bg-green-50 text-green-700 border border-green-300'
         case 'in_process':
@@ -157,7 +157,20 @@ const hasTrigger = computed(() => {
     )
 })
 
-const state = props.data.offer_allowances[0]?.state
+const state = computed(() => props.data.offer_allowances[0]?.state)
+
+const { start: startPollingState, stop: stopPollingState } = usePoll(
+    3000,
+    { only: ['data', 'pageHead'] },
+    { autoStart: false }
+)
+
+watch(
+    state,
+    (currentState) => currentState === 'in_process' ? startPollingState() : stopPollingState(),
+    { immediate: true }
+)
+
 const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
 
 const offerSimulation = ref<OfferSimulation | null>(null)

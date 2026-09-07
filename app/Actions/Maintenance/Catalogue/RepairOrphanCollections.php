@@ -13,6 +13,7 @@ use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairOrphanCollections
 {
@@ -56,6 +57,7 @@ class RepairOrphanCollections
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
 
         $dry = (bool)$command->option('dry-run');

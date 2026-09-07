@@ -7,23 +7,26 @@ import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
 import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue" */
 /* import ListProductsEcomIris from "@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue" */
 
-// ponytail: a dynamic import that loses its request permanently kills the block, and for header-1 that is
-// the site header. One delayed retry covers the transient case. Deliberately no reload: deploys copy the
-// old chunks forward, so a missing file is not the cause, and a forced reload would throw away whatever
-// the customer had typed.
-const retryOnce = (loader: () => Promise<any>): Promise<any> =>
-	loader().catch(() => new Promise((resolve) => setTimeout(resolve, 250)).then(() => loader()))
-
 const async = (loader: () => Promise<any>): Component =>
 	defineAsyncComponent({
-		loader: () => retryOnce(loader),
+		loader,
 		delay: 200,
-		timeout: 15000,
+		timeout: 30000,
+		onError(_error, retry, fail, attempts) {
+			if (attempts >= 3) {
+				fail()
+
+				return
+			}
+
+			setTimeout(retry, attempts * 1000)
+		},
 	})
 
 //Department
 const DepartmentDescriptionIris = async(() => import("@/Iris/Components/IrisBlocks/DepartmentDescriptionIris.vue"))
 const DepartmentDescriptionIris2 = async(() => import("@/Iris/Components/IrisBlocks/DepartmentDescriptionIris2.vue"))
+const DepartmentDescriptionIris3 = async(() => import("@/Iris/Components/IrisBlocks/DepartmentDescriptionIris3.vue"))
 
 // Sub-department
 const SubDepartmentDescriptionIris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentDescriptionIris.vue"))
@@ -32,7 +35,7 @@ const ListProductsIris = async(() => import("@/Iris/Components/IrisBlocks/Produc
 const ProductRender = async(() => import("@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue"))
 const ListProductsEcomIris = async(() => import("@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue"))
 const ProductIris1 = async(() => import("@/Iris/Components/IrisBlocks/Product/Ds/ProductDsIris1.vue"))
-const ProductIris1Ecom = async(() => import("@/Components/CMS/Webpage/Product1/Ecommerce/ProductIris1Ecom.vue"))
+const ProductIris1Ecom = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris1Ecom.vue"))
 const LuigiTrends1Iris = async(() => import("@/Iris/Components/IrisBlocks/LuigiTrends1Iris.vue"))
 const LuigiLastSeen1Iris = async(() => import("@/Iris/Components/IrisBlocks/LuigiLastSeen1Iris.vue"))
 const LuigiItemAlternatives1Iris = async(() => import("@/Iris/Components/IrisBlocks/LuigiItemAlternatives1Iris.vue"))
@@ -44,38 +47,35 @@ const AnnouncementPromo1 = async(() => import("@/Iris/Components/IrisBlocks/Anno
 const AnnouncementPromo2Countdown = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo2Countdown.vue"))
 const AnnouncementInformation2TransitionText = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformation2TransitionText.vue"))
 const AnnouncementPromo3 = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo3.vue"))
-const RenderDropshippingProduct = async(() => import("@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductIris.vue"))
-const RenderEcommerceProduct = async(() => import("@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductIris.vue"))
-
+const RenderDropshippingProduct = async(() => import("@/Iris/Components/IrisBlocks/Product/Ds/RenderDropshippingProductIris.vue"))
+const RenderEcommerceProduct = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/RenderEcommerceProductIris.vue"))
 const RecommendationCRB1Iris = async(() => import("@/Iris/Components/IrisBlocks/RecommendationCRB1Iris.vue"))
-const ProductIris2Ecom = async(() => import("@/Components/CMS/Webpage/Product2/ProductIris2Ecom.vue"))
-
+const ProductIris2Ecom = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris2Ecom.vue"))
+const ProductIris3Ecom = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris3Ecom.vue"))
 const AnnouncementInformational1 = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformational1Iris.vue"))
 const Products2Render = async(() => import("@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom2.vue"))
-
 const Header2Iris = async(() => import("@/Iris/Components/IrisBlocks/Header2Iris.vue"))
 const Header1Iris = async(() => import("@/Iris/Components/IrisBlocks/Header1Iris.vue"))
-
 const Topbar1FulfilmentIris = async(() => import("@/Iris/Components/IrisBlocks/Topbar1FulfilmentIris.vue"))
 const Topbar2FulfilmentIris = async(() => import("@/Iris/Components/IrisBlocks/Topbar2FulfilmentIris.vue"))
-
 const Topbar1Iris = async(() => import("@/Iris/Components/IrisBlocks/Topbar1Iris.vue"))
 const Topbar2Iris = async(() => import("@/Iris/Components/IrisBlocks/Topbar2Iris.vue"))
-
-
 const Menu1Workshop = async(() => import("@/Iris/Components/IrisBlocks/Menu1Iris.vue"))
 const Footer1Iris = async(() => import("@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"))
 const SeeAlso1Iris = async(() => import("@/Iris/Components/IrisBlocks/SeeAlso1Iris.vue"))
 const family1Iris = async(() => import("@/Iris/Components/IrisBlocks/family1Iris.vue"))
 const family2Iris = async(() => import("@/Iris/Components/IrisBlocks/family2Iris.vue"))
 const family3Iris = async(() => import("@/Iris/Components/IrisBlocks/family3Iris.vue"))
+
 const FamiliesIris1 = async(() => import("@/Iris/Components/IrisBlocks/FamiliesIris1.vue"))
 const FamiliesIris2 = async(() => import("@/Iris/Components/IrisBlocks/FamiliesIris2.vue"))
 const FamiliesIris3 = async(() => import("@/Iris/Components/IrisBlocks/FamiliesIris3.vue"))
+const FamiliesIris4 = async(() => import("@/Iris/Components/IrisBlocks/FamiliesIris4.vue"))
 
 const SubDepartment1Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris.vue"))
 const SubDepartment2Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris2.vue"))
 const SubDepartment3Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris3.vue"))
+const SubDepartment4Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris4.vue"))
 
 const WowsbarBannerIris = async(() => import("@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue"))
 const ImageIris = async(() => import("@/Iris/Components/IrisBlocks/ImageIris.vue"))
@@ -121,6 +121,8 @@ const RelatedProductcategoryFormMaster = async(() => import("@/Iris/Components/I
 const TabsIris = async(() => import("@/Iris/Components/IrisBlocks/TabsIris.vue"))
 const FaqDepartment = async(() => import("@/Iris/Components/IrisBlocks/FaqDepartment.vue"))
 const TopFamiliesIris = async(() => import("@/Iris/Components/IrisBlocks/TopFamiliesIris.vue"))
+const BlogListIris = async(() => import("@/Iris/Components/IrisBlocks/BlogListIris.vue"))
+const CategoryComparisonIris = async(() => import("@/Iris/Components/IrisBlocks/CategoryComparisonIris.vue"))
 
 interface IrisComponentOptions {
 	search_model?: string // 'luigi' | 'internal'
@@ -136,7 +138,7 @@ const components = (shop_type?: string, options: IrisComponentOptions = {}): Rec
 		"top-bar-2": Topbar2Iris,
 
 		"top-bar-1-fulfilment": Topbar1FulfilmentIris,
-		"top-bar-2-fulfilment": Topbar2FulfilmentIris,
+		"top-bar-2-fulfilment": Topbar2Iris,
 
 		//header
 		"header-1": Header1Iris,
@@ -153,17 +155,20 @@ const components = (shop_type?: string, options: IrisComponentOptions = {}): Rec
 		'collection-description-1' : CollectionDescriptionIris,
 		'department-description-1' : DepartmentDescriptionIris,
 		'department-description-2' : DepartmentDescriptionIris2,
+		'department-description-3' : DepartmentDescriptionIris3,
 		'sub-department-description-1' : SubDepartmentDescriptionIris,
 
 		//sub-department
 		"sub-departments-1": SubDepartment1Iris,
 		"sub-departments-2": SubDepartment2Iris,
 		"sub-departments-3": SubDepartment3Iris,
+		"sub-departments-4": SubDepartment4Iris,
 
 		//family
 		"families-1": FamiliesIris1,
 		"families-2": FamiliesIris2,
 		"families-3": FamiliesIris3,
+		"families-4": FamiliesIris4,
 
 
 		//family
@@ -182,6 +187,8 @@ const components = (shop_type?: string, options: IrisComponentOptions = {}): Rec
 		"product-1": shop_type === "b2b" ? RenderEcommerceProduct : RenderDropshippingProduct,
 
 		"product-2": RenderEcommerceProduct,
+
+		"product-3": RenderEcommerceProduct,
 
 		//product list
 		"products-1": shop_type === "b2b" ? ListProductsEcomIris : ListProductsIris,
@@ -236,7 +243,9 @@ const components = (shop_type?: string, options: IrisComponentOptions = {}): Rec
 		'recommendation-product-category-from-master' : RelatedProductcategoryFormMaster,
 		'tabs' : TabsIris,
 		'faq-department' : FaqDepartment,
-		'top-families' : TopFamiliesIris
+		'top-families' : TopFamiliesIris,
+		'blog-list' : BlogListIris,
+		'category-comparison' : CategoryComparisonIris
 	}
 }
 
@@ -280,6 +289,7 @@ export const getProductRenderB2bComponent = (
 	const components: Record<string, any> = {
 		"product-1": ProductIris1Ecom,
 		"product-2": ProductIris2Ecom,
+		"product-3": ProductIris3Ecom,
 	}
 
 	return components[componentName] ?? null

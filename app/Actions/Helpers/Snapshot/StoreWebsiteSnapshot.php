@@ -11,9 +11,11 @@ namespace App\Actions\Helpers\Snapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Helpers\Snapshot\SnapshotBuilderEnum;
+use App\Enums\Helpers\Snapshot\SnapshotScopeEnum;
 use App\Models\Helpers\Snapshot;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 
 class StoreWebsiteSnapshot extends OrgAction
@@ -51,6 +53,7 @@ class StoreWebsiteSnapshot extends OrgAction
     {
         $rules = [
             'layout' => ['required', 'array'],
+            'scope'  => ['required', Rule::enum(SnapshotScopeEnum::class)],
         ];
 
         if (!$this->strict) {

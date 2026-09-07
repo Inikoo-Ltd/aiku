@@ -24,27 +24,27 @@ class GetProductImages
         return [
             'id'                  => $product->id,
             'bucket_images'       => $product->bucket_images,
-            'editable'            => false,
+            'editable'            => $product->not_follow_master_media,
             'images_category_box' => $this->getImagesData($product),
             'images_update_route' => [
                 'method'     => 'patch',
-                'name'       => 'grp.models.product.update_images',
+                'name'       => 'grp.models.product.images.update_images',
                 'parameters' => [
-                    'masterAsset' => $product->id,
+                    'product' => $product->id,
                 ],
             ],
             'upload_images_route' => [
                 'method'     => 'post',
-                'name'       => 'grp.models.product.upload_images',
+                'name'       => 'grp.models.product.images.store',
                 'parameters' => [
-                    'masterAsset' => $product->id,
+                    'product' => $product->id,
                 ],
             ],
             'delete_images_route' => [
                 'method'     => 'post',
-                'name'       => 'grp.models.product.delete_images',
+                'name'       => 'grp.models.product.images.delete_images',
                 'parameters' => [
-                    'masterAsset' => $product->id,
+                    'product' => $product->id,
                     'media'       => ''
                 ],
             ],

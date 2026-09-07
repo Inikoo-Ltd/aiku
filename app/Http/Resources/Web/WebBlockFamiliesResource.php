@@ -40,17 +40,17 @@ class WebBlockFamiliesResource extends JsonResource
 
 
         return [
-            'code'        => $this->code,
-            'name'        => $this->name,
-            'title'       => $this->title,
-            'url'         => $this->canonical_url,
-            'web_images'  => [
+            'code'              => $this->code,
+            'name'              => $this->name,
+            'title'             => $this->title,
+            'url'               => $this->canonical_url,
+            'web_images'        => [
                 'main' => [
                     'gallery'  => $this->getPictureFormats(Arr::get($webImages, 'main.gallery')),
                     'original' => $this->getPictureFormats(Arr::get($webImages, 'main.original')),
                 ]
             ],
-            'offers_data' => $this->offers_data
+            'offers_data'       => $this->offers_data
         ];
     }
 }

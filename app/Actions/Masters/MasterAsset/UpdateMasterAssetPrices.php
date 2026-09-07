@@ -155,7 +155,7 @@ class UpdateMasterAssetPrices extends OrgAction
             $key = $type . ' ' . $currency;
             $result[$key] = $price['value'];
 
-            if (!($currency === 'EUR' || $currency === 'GBP') && $price['independent']) {
+            if (!($currency === 'EUR' || $currency === 'GBP') && ($price['independent'] ?? false)) {
                 $result[$key] .= ' (Is Rebel)';
             }
         }

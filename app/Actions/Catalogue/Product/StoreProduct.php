@@ -277,6 +277,8 @@ class StoreProduct extends OrgAction
             'settings'          => ['sometimes', 'array'],
             'is_main'           => ['required', 'boolean'],
             'units'             => ['sometimes', 'numeric'],
+
+            'has_independent_units' => ['sometimes', 'boolean'],
             'description_title' => ['sometimes', 'string', 'nullable', 'max:300'],
             'description_extra' => ['sometimes', 'string', 'nullable', 'max:15000'],
 

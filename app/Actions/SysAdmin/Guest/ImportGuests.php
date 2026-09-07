@@ -13,15 +13,23 @@ use App\Actions\Helpers\Upload\StoreUpload;
 use App\Actions\Traits\WithImportModel;
 use App\Imports\Auth\GuestImport;
 use App\Models\Helpers\Upload;
-use App\Models\SysAdmin\Guest;
+use App\Models\SysAdmin\Group;
 
 class ImportGuests
 {
     use WithImportModel;
 
-    public function handle($file): Upload
+    public function handle(Group $group, $file): Upload
     {
-        $upload = StoreUpload::run($file, Guest::class);
+        $upload = StoreUpload::make()->fromFile(
+            $group,
+            $file,
+            [
+                'model'       => 'Guest',
+                'parent_type' => $group->getMorphClass(),
+                'parent_id'   => $group->id,
+            ]
+        );
 
         if ($this->isSync) {
             ImportUpload::run(
@@ -41,5 +49,12 @@ class ImportGuests
 
     }
 
-    public string $commandSignature = 'guest:import {--g|g_drive} {filename}';
+    public string $commandSignature = 'guest:import {group} {--g|g_drive} {filename}';
+
+    public function runImportForCommand($file, $command): Upload
+    {
+        $group = Group::where('slug', $command->argument('group'))->firstOrFail();
+
+        return $this->handle($group, $file);
+    }
 }

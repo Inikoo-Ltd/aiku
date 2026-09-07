@@ -18,6 +18,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Rules\Password;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,6 +30,11 @@ class UpdateProfile extends OrgAction
 
     public function handle(User $user, array $modelData): User
     {
+        if (Arr::exists($modelData, 'nickname')) {
+            $nickname               = trim((string) $modelData['nickname']);
+            $modelData['nickname'] = $nickname === '' ? null : $nickname;
+        }
+
         if (Arr::exists($modelData, 'hide_logo')) {
             $hideLogo                           = Arr::pull($modelData, 'hide_logo');
             $modelData['settings']['hide_logo'] = $hideLogo;
@@ -53,10 +59,26 @@ class UpdateProfile extends OrgAction
             }
         }
 
-        $user = $this->processProfileAvatar($modelData, $user);
+        $avatarBeforeUpdate = $user->image_id;
+        $user               = $this->processProfileAvatar($modelData, $user);
+        $avatarWasChanged   = $user->image_id !== $avatarBeforeUpdate;
+
         if (Arr::exists($modelData, 'app_theme')) {
             $appTheme                           = Arr::pull($modelData, 'app_theme');
             $modelData['settings']['app_theme'] = $appTheme;
+        }
+
+        if (Arr::exists($modelData, 'stale_orders_days')) {
+            $modelData['settings']['stale_orders_days'] = max(1, (int) Arr::pull($modelData, 'stale_orders_days'));
+        }
+
+        if (Arr::exists($modelData, 'stale_orders_filters')) {
+            $modelData['settings']['stale_orders_filters'] = Arr::pull($modelData, 'stale_orders_filters');
+        }
+
+        if (Arr::exists($modelData, 'chat_theme')) {
+            $chatTheme                           = Arr::pull($modelData, 'chat_theme');
+            $modelData['settings']['chat_theme'] = $chatTheme;
         }
         data_forget($modelData, 'image');
 
@@ -65,8 +87,19 @@ class UpdateProfile extends OrgAction
         $user = $this->update($user, $modelData, ['settings']);
 
         $changes = $user->getChanges();
-        if (Arr::has($changes, 'timezone_id')) {
+
+        /*
+         * The avatar is saved by SaveModelImage before the update above, so image_id never appears
+         * in getChanges() and has to be tracked on its own. Without the recache the cached first
+         * load props keep the old avatar_thumbnail for the rest of their TTL, and without
+         * reloadLayout the next Inertia request would not ship those props until a full page load.
+         */
+        if ($avatarWasChanged || Arr::hasAny($changes, ['timezone_id', 'settings'])) {
             BreakUserUiProps::run($user);
+        }
+
+        if ($avatarWasChanged) {
+            Session::put('reloadLayout', '1');
         }
 
         /*
@@ -95,8 +128,10 @@ class UpdateProfile extends OrgAction
             'password'          => ['sometimes', 'required', app()->isLocal() || app()->environment('testing') ? null : Password::min(8)],
             'email'             => 'sometimes|required|email|unique:App\Models\SysAdmin\User,email,'.request()->user()->id,
             'about'             => ['sometimes', 'nullable', 'string', 'max:255'],
+            'nickname'          => ['sometimes', 'nullable', 'string', 'min:2', 'max:24', 'regex:/^[\pL\pN ._-]+$/u', Rule::unique('users', 'nickname')->ignore(request()->user()->id)],
             'language_id'       => ['sometimes', 'required', 'exists:languages,id'],
             'app_theme'         => ['sometimes', 'required'],
+            'chat_theme'        => ['sometimes', 'nullable', Rule::in(['light', 'sky', 'blush', 'sand', 'mint', 'dracula', 'nord', 'gruvbox', 'monokai', 'onedark', 'solarized'])],
             'hide_logo'         => ['sometimes', 'boolean'],
             'preferred_printer' => ['sometimes', 'integer'],
             'image'             => [
@@ -108,6 +143,12 @@ class UpdateProfile extends OrgAction
             'timezone'          => ['sometimes', 'nullable', 'exists:timezones,name'],
             'enable_2fa'        => ['sometimes', 'array'],
             'settings'          => ['sometimes'],
+            'stale_orders_days' => ['sometimes', 'integer', 'min:1'],
+            'stale_orders_filters'                => ['sometimes', 'array'],
+            'stale_orders_filters.show_aspos'     => ['sometimes', 'boolean'],
+            'stale_orders_filters.show_pos'       => ['sometimes', 'boolean'],
+            'stale_orders_filters.agents'         => ['sometimes', 'array'],
+            'stale_orders_filters.agents.*'       => ['string'],
         ];
     }
 

@@ -11,17 +11,22 @@ import type { Component } from 'vue'
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
-import TableManufactureTasks from "@/Components/Tables/Grp/Org/Production/TableManufactureTasks.vue"
-// import FileShowcase from '@/xxxxxxxxxxxx'
+import TableArtefactRecipe from "@/Components/Tables/Grp/Org/Production/TableArtefactRecipe.vue"
+import TableArtefactCompliance from "@/Components/Tables/Grp/Org/Production/TableArtefactCompliance.vue"
+import ArtefactShowcase from "@/Components/Showcases/Grp/ArtefactShowcase.vue"
+import ArtisanAssignments from "@/Components/Production/ArtisanAssignments.vue"
 
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     tabs: TSTabs
+    showcase?: {}
     manufacture_tasks?:{}
+    compliance?: {}
     history?: {}
+    artisans: {}
 
-    
+
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -30,8 +35,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
 
     const components: Component = {
-        // showcase: FileShowcase
-        manufacture_tasks: TableManufactureTasks,
+        showcase: ArtefactShowcase,
+        manufacture_tasks: TableArtefactRecipe,
+        compliance: TableArtefactCompliance,
         history: TableHistories,
     }
 
@@ -45,6 +51,7 @@ const component = computed(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <ArtisanAssignments :data="artisans" />
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />

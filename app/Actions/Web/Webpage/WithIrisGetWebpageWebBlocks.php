@@ -41,9 +41,36 @@ trait WithIrisGetWebpageWebBlocks
             }
 
             $parsedWebBlocks = $this->fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock);
+
+            $reveal = $this->getWebBlockReveal(Arr::get($webBlock, 'web_block.layout.reveal'));
+
+            if ($reveal && Arr::exists($parsedWebBlocks, $key)) {
+                data_set($parsedWebBlocks[$key], 'reveal', $reveal);
+            }
         }
 
         return $parsedWebBlocks;
+    }
+
+    /**
+     * Blocks rebuilt by the GetIrisWebBlock* actions keep only type and structure,
+     * so their reveal-on-click setting is read from the original block and put back.
+     *
+     * @return array{key: string, close_label: string|null, scroll_to: bool}|null
+     */
+    private function getWebBlockReveal(object|array|null $reveal): ?array
+    {
+        $reveal = (array) $reveal;
+
+        if (!Arr::get($reveal, 'enabled') || !Arr::get($reveal, 'key')) {
+            return null;
+        }
+
+        return [
+            'key'         => Arr::get($reveal, 'key'),
+            'close_label' => Arr::get($reveal, 'close_label') ?: null,
+            'scroll_to'   => (bool) Arr::get($reveal, 'scroll_to', true),
+        ];
     }
 
 }

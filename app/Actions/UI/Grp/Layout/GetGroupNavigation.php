@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Grp\Layout;
 
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetGroupNavigation
@@ -79,6 +80,54 @@ class GetGroupNavigation
         }
 
 
+        if (\App\Models\Catalogue\Shop::pluck('id')->contains(fn ($shopId) => $user->authTo("marketing.$shopId.view"))) {
+            $groupNavigation['marketing'] = [
+                'label' => __('Group Marketing'),
+                'icon'  => ['fal', 'fa-bullhorn'],
+                'root'  => 'grp.marketing.',
+                'route' => [
+                    'name' => 'grp.marketing.dashboard',
+                ],
+            ];
+        }
+
+        $groupNavigation['tickets'] = [
+            'label'   => __('Tickets'),
+            'icon'    => ['fal', 'fa-life-ring'],
+            'root'    => 'grp.tickets.',
+            'route'   => [
+                'name' => 'grp.tickets.index',
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('List'),
+                        'icon'  => ['fal', 'fa-list'],
+                        'root'  => 'grp.tickets.index',
+                        'route' => [
+                            'name' => 'grp.tickets.index',
+                        ],
+                    ],
+                    [
+                        'label' => __('Board'),
+                        'icon'  => ['fal', 'fa-columns'],
+                        'root'  => 'grp.tickets.board',
+                        'route' => [
+                            'name' => 'grp.tickets.board',
+                        ],
+                    ],
+                    [
+                        'label' => __('Reports'),
+                        'icon'  => ['fal', 'fa-chart-line'],
+                        'root'  => 'grp.tickets.dashboard',
+                        'route' => [
+                            'name' => 'grp.tickets.dashboard',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
         $groupNavigation['chat'] = [
             'label'   => __('Chat'),
             'tooltip' => __('Chat'),
@@ -89,6 +138,15 @@ class GetGroupNavigation
             ],
             'topMenu' => [
                 'subSections' => [
+                    [
+                        'label'   => __('Messaging'),
+                        'tooltip' => __('Messaging'),
+                        'icon'    => ['fal', 'fa-comments'],
+                        'root'    => 'grp.chat.staff.index',
+                        'route'   => [
+                            'name' => 'grp.chat.staff.index',
+                        ],
+                    ],
                     [
                         'label'   => __('Dashboard'),
                         'tooltip' => __('Dashboard'),
@@ -140,6 +198,10 @@ class GetGroupNavigation
 
         if ($user->hasPermissionTo('sysadmin.view')) {
             $groupNavigation['sysadmin'] = $this->getSysAdminNavs();
+        }
+
+        if (!$user->hasGroupAccess()) {
+            return Arr::only($groupNavigation, ['tickets']);
         }
 
         return $groupNavigation;
@@ -280,6 +342,15 @@ class GetGroupNavigation
                             'parameters' => []
                         ]
                     ],
+                    [
+                        'label' => __('Tariff codes'),
+                        'icon'  => ['fal', 'fa-globe'],
+                        'root'  => 'grp.goods.tariff_codes.',
+                        'route' => [
+                            'name'       => 'grp.goods.tariff_codes.index',
+                            'parameters' => []
+                        ]
+                    ],
                 ]
             ]
 
@@ -313,15 +384,28 @@ class GetGroupNavigation
                         ]
                     ],
                     [
+                        'label' => __('Agent Suppliers'),
+                        'icon'  => ['fal', 'fa-people-arrows'],
+                        'root'  => 'grp.supply-chain.agent_suppliers.',
+                        'route' => [
+                            'name' => 'grp.supply-chain.agent_suppliers.index',
+                        ]
+                    ],
+                    [
                         'label' => __('Suppliers'),
                         'icon'  => ['fal', 'fa-person-dolly'],
                         'root'  => 'grp.supply-chain.suppliers.',
                         'route' => [
-                            'name' => 'grp.supply-chain.suppliers.index',
+                            'name'       => 'grp.supply-chain.suppliers.index',
+                            'parameters' => [
+                                '_query' => [
+                                    'sort' => 'code',
+                                ],
+                            ],
                         ]
                     ],
                     [
-                        'label' => __('Supplier products'),
+                        'label' => __('Supplier Products'),
                         'icon'  => ['fal', 'fa-box-usd'],
                         'root'  => 'grp.supply-chain.supplier_products.',
                         'route' => [
@@ -410,6 +494,14 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
+                        'tooltip' => __('System Administration'),
+                        'icon'    => ['fal', 'fa-users-cog'],
+                        'root'    => 'grp.sysadmin.dashboard',
+                        'route'   => [
+                            'name' => 'grp.sysadmin.dashboard',
+                        ]
+                    ],
+                    [
                         'label' => __('Users'),
                         'icon'  => ['fal', 'fa-user-circle'],
                         'root'  => 'grp.sysadmin.users.',
@@ -426,45 +518,13 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('Analytics'),
+                        'label' => __('System Analytics'),
                         'icon'  => ['fal', 'fa-analytics'],
                         'root'  => 'grp.sysadmin.analytics.',
                         'route' => [
                             'name' => 'grp.sysadmin.analytics.dashboard',
                         ]
                     ],
-                    [
-                        'label' => __('Scheduled Tasks'),
-                        'icon'  => ['fal', 'fa-clock'],
-                        'root'  => 'grp.sysadmin.scheduled-tasks.',
-                        'route' => [
-                            'name' => 'grp.sysadmin.scheduled-tasks.index',
-                        ]
-                    ],
-                    [
-                        'label' => __('Search analytics'),
-                        'icon'  => ['fal', 'fa-search'],
-                        'root'  => 'grp.sysadmin.search_logs.',
-                        'route' => [
-                            'name' => 'grp.sysadmin.search_logs.index',
-                        ]
-                    ],
-                    [
-                        'label' => __('System Settings'),
-                        'icon'  => ['fal', 'fa-cog'],
-                        'root'  => 'grp.sysadmin.settings.',
-                        'route' => [
-                            'name' => 'grp.sysadmin.settings.edit',
-                        ]
-                    ],
-                    [
-                        'label' => __('Changelogs'),
-                        'icon'  => ['fal', 'fa-history'],
-                        'root'  => 'grp.sysadmin.changelogs.index',
-                        'route' => [
-                            'name' => 'grp.sysadmin.changelogs.index',
-                        ]
-                    ]
                 ]
             ]
         ];

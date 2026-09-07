@@ -75,6 +75,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $source_quantity_in_submitted_orders
  * @property numeric $source_quantity_to_be_picked
  * @property bool $is_on_demand
+ * @property bool $is_excluded_from_auto_ordering
  * @property bool $has_been_in_warehouse
  * @property HealthRankEnum|null $health_rank
  * @property bool $movements_fixed
@@ -85,8 +86,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $note_to_pickers
  * @property string|null $note_to_packers
  * @property array<array-key, mixed>|null $consumables [{"code": "IAL01", "quantity": 1}] the packer adds per product ordered
+ * @property string|null $barcode the outer/SKO CODE 128 barcode printed on the external packing
+ * @property string|null $unit_barcode the EAN13 of the individual unit
+ * @property bool $independent_barcode
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, BatchCode> $batchCodes
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNoteItem> $deliveryNoteItems
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations
@@ -180,7 +185,9 @@ class OrgStock extends Model implements Auditable
         'name',
         'state',
         'is_on_demand',
+        'is_excluded_from_auto_ordering',
         'packed_in',
+        'barcode',
     ];
 
     public function getSlugOptions(): SlugOptions

@@ -14,11 +14,14 @@ import { useEchoRetinaWebsite } from "@/Stores/echo-retina-website.js"
 import { useEchoRetinaCustomer } from "@/Stores/echo-retina-customer.js"
 import { initialiseIrisVarnishCustomerData, recordWebsiteHit } from '@/Composables/initialiseIrisVarnish'
 import { resetStuckOverlays } from '@/Composables/resetStuckOverlays'
+import { setComponentDebugInfo } from '@/Composables/useComponentDebugInfo'
 
 
 export const initialiseRetinaApp = () => {
     const layout = useLayoutStore()
     const locale = useLocaleStore()
+
+    setComponentDebugInfo()
 
     const echoPersonal = useEchoRetinaPersonal()
     const echoWebsite = useEchoRetinaWebsite()
@@ -42,15 +45,7 @@ export const initialiseRetinaApp = () => {
         layout.stackedComponents = []
         resetStuckOverlays()
 
-        // To see Vue filename in console (component.vue)
-        if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
-            if (window.component.vue !== '') {
-                if (window.component.vue !== usePage().component) {
-                    window.component.php = ''
-                }                    
-            }
-            window.component.vue = usePage().component
-        }
+        setComponentDebugInfo()  // To see PHP action and Vue filename in console (window.component)
         
         layout.currentParams = route().routeParams  // current params
         layout.currentQuery = route().queryParams  // current query

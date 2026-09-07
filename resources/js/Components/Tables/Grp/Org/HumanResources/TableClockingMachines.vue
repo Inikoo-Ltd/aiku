@@ -13,8 +13,11 @@ defineProps<{
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
+import Tag from "@/Components/Tag.vue";
+import ModalClockingMachineKioskLink from "@/Components/HumanResources/ModalClockingMachineKioskLink.vue";
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 import { trans } from "laravel-vue-i18n";
-import { faPencil } from '@fortawesome/free-solid-svg-icons';
+import { faPencil, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { ClockingMachine } from "@/types/clocking-machine";
 
 function clockingMachineRoute(clockingMachine: ClockingMachine) {
@@ -99,10 +102,35 @@ function workplaceRoute(clockingMachine: ClockingMachine) {
         {{ clockingMachine["workplace_name"] }}
       </Link>
     </template>
+    <template #cell(kiosk_enabled)="{ item: clockingMachine }">
+      <Tag
+        v-if="clockingMachine.kiosk_enabled !== null"
+        :label="trans(clockingMachine.kiosk_enabled ? 'On' : 'Off')"
+        :class="clockingMachine.kiosk_enabled
+          ? 'bg-green-100 border border-green-200 text-green-600'
+          : 'bg-gray-100 border border-gray-200 text-gray-500'" />
+      <span v-else class="text-gray-300">—</span>
+    </template>
     <template #cell(actions)="{ item: clockingMachine }">
-      <Link :href="editClockingMachineRoute(clockingMachine)">
-        <Button type="tertiary" size="xs" :icon="faPencil" :tooltip="trans('Edit')" />
-      </Link>
+      <div class="flex items-center gap-x-1">
+        <ModalClockingMachineKioskLink
+          v-if="clockingMachine.type === 'pin' || clockingMachine.type === 'barcode-scanner' || clockingMachine.type === 'camera-qr'"
+          :clocking-machine="clockingMachine" />
+
+        <Link :href="editClockingMachineRoute(clockingMachine)">
+          <Button type="tertiary" size="xs" :icon="faPencil" :tooltip="trans('Edit')" />
+        </Link>
+
+        <ModalConfirmationDelete
+          v-if="clockingMachine.delete_route"
+          :routeDelete="clockingMachine.delete_route"
+          :title="trans('Delete this clocking machine?')"
+          :description="trans('This will also delete all clockings recorded on this machine. This action cannot be undone.')">
+          <template #default="{ changeModel }">
+            <Button type="cancel" :label="trans('Delete')" size="xs" :icon="faTrash" :tooltip="trans('Delete')" @click="changeModel(true)" />
+          </template>
+        </ModalConfirmationDelete>
+      </div>
     </template>
   </Table>
 </template>

@@ -7,7 +7,6 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 
 trait WithDeliveryNoteHandler
@@ -21,9 +20,11 @@ trait WithDeliveryNoteHandler
     public const TEMP_HANDLING_MINUTES = 60;
 
     /**
-     * The assigned picker, or packer once packing has started, may always act. Anyone else
-     * needs a temporary claim, which slides forward each time they use it so that it cannot
-     * expire underneath somebody who is still working.
+     * While the note is being picked the picker owns it, even if a packer is already recorded
+     * from an earlier pass. From packing onwards the packer owns it and keeps that right after
+     * the note leaves packing, so a batch code or a miscount can still be corrected on a packed
+     * or finalised note. Anyone else needs a temporary claim, which slides forward each time it
+     * is used so that it cannot expire underneath somebody who is still working.
      */
     protected function canHandleDeliveryNote(?DeliveryNote $deliveryNote): bool
     {
@@ -31,8 +32,8 @@ trait WithDeliveryNoteHandler
             return false;
         }
 
-        $handler = $deliveryNote->state == DeliveryNoteStateEnum::PACKING
-            ? $deliveryNote->packer_user_id
+        $handler = $deliveryNote->state->isPickedOrLater()
+            ? $deliveryNote->packer_user_id ?? $deliveryNote->picker_user_id
             : $deliveryNote->picker_user_id;
 
         if ($handler && $handler == request()->user()?->id) {

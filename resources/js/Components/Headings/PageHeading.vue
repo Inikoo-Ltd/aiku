@@ -159,7 +159,8 @@ const setError = (e) => {
 
 				<!-- Section: Main title group -->
 				<div
-					class="flex leading-none py-1.5 items-center gap-x-2 font-bold text-gray-700 text-2xl tracking-tight">
+					class="flex leading-none py-1.5 items-center gap-x-2 text-gray-700 tracking-tight"
+					:class="data.titleStyle ?? 'font-bold text-2xl'">
 					<div v-if="data.container" class="text-slate-500 text-lg">
 						<Link
 							v-if="data.container.href"
@@ -200,10 +201,10 @@ const setError = (e) => {
 					<div class="flex flex-col sm:flex-row gap-y-1.5 gap-x-3 sm:items-center">
 						<div class="xspace-x-2">
 							<template v-if="data.model">
-								<span class="text-gray-400 font-medium">{{ data.model }}</span>
+								<span class="text-gray-400 font-medium" :class="data.modelStyle">{{ data.model }}</span>
 								<span>&nbsp;</span>
 							</template>
-							<span class="inline-block">{{ useTruncate(data.title, 30) }}</span>
+							<span class="inline-block" v-tooltip="data.title?.length > 30 ? data.title : undefined">{{ useTruncate(data.title, 30) }}</span>
 						</div>
 						<!-- Section: After Title -->
 						<slot name="afterTitle" :data="data">
@@ -249,7 +250,15 @@ const setError = (e) => {
 								class="h-6 max-w-7 min-w-5 w-auto text-gray-400 font-normal text-lg leading-none"
 								:alt="data.platform.type"
 								v-tooltip="data.platform.title || data.platform.name" />
+                            <span v-tooltip="'platform order id'" v-if="data.platform?.order_id" class="text-light font-sm">{{ data.platform?.order_id }}</span>
 						</slot>
+
+						<span
+							v-if="data.api_order"
+							v-tooltip="data.api_order.tooltip"
+							class="rounded-md bg-orange-100 border border-orange-300 px-2 py-0.5 text-sm font-semibold text-orange-700 leading-none">
+							{{ data.api_order.label }}
+						</span>
 
 						<slot name="afterTitle2" />
 
@@ -267,9 +276,9 @@ const setError = (e) => {
 								<FontAwesomeIcon
 									:icon="iconLink.icon"
 									class="text-gray-400 hover:text-gray-600"
-									:style="{
-										color: iconLink.color,
-									}"
+									:style="[
+										iconLink.color ? `color: ${iconLink.color}` : ''
+									]"
 									fixed-width
 									aria-hidden="true" />
 							</Link>

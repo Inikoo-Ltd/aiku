@@ -54,14 +54,10 @@ class StoreNewProductToCurrentShopify extends OrgAction implements ShouldBeUniqu
 
     public function handle(Portfolio $portfolio, array $modelData): Portfolio
     {
-        $result1 = StoreShopifyProduct::run($portfolio, $modelData);
+        [$stored] = StoreShopifyProduct::run($portfolio, $modelData);
 
-        if ($result1[0]) {
-            $result2 = StoreShopifyProductVariant::run($portfolio);
-
-            if ($result2[0]) {
-                $portfolio = CheckShopifyPortfolio::run($portfolio);
-            }
+        if ($stored) {
+            $portfolio = CheckShopifyPortfolio::run($portfolio->refresh());
         }
 
         return $portfolio;

@@ -23,7 +23,9 @@ class DownloadRetinaAttachment
 
     public function handle(Media $media)
     {
-        return response()->download($media->getPath(), $media->file_name);
+        $filename = $media->media_scope == 'labeling_guide' ? $media->name : $media->file_name;
+
+        return response()->download($media->getPath(), $filename);
     }
 
 

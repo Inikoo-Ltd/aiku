@@ -55,12 +55,9 @@ trait WithUpdateWebImages
             $model->update([
                 'images_updated_at' => now()
             ]);
-        } else if($model instanceof ProductCategory && $model->wasChanged('web_images')) {
+        } elseif ($model instanceof ProductCategory && $model->wasChanged('web_images')) {
             if ($model->webpage) {
                 BreakWebpageCache::run($model->webpage, true);
-            }
-
-            if ($model->webpage_id) {
                 ReindexWebpageLuigiData::dispatch($model->webpage->id)->delay(60);
                 ClearCacheByWildcard::run("irisData:website:{$model->webpage->website_id}:*");
             }

@@ -7,7 +7,7 @@ import AccordionContent from 'primevue/accordioncontent'
 import Icon from '@/Components/Icon.vue'
 import RenderFields from './RenderFields.vue'
 import ChildFieldSideEditor from '@/Components/Workshop/SideEditor/ChildFieldSideEditor.vue'
-import { getFormValue, setFormValue } from '@/Composables/SideEditorHelper'
+import { getFormValue, setFormValue, getFieldKey } from '@/Composables/SideEditorHelper'
 import { routeType } from '@/types/route'
 
 // FontAwesome setup
@@ -56,13 +56,7 @@ const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
     emits('update:modelValue', setValue);
 }
 
-const accordionKey = computed(() => {
-    if (Array.isArray(props.blueprint.key)) {
-        return props.blueprint.key.join('-')
-    }
-
-    return props.blueprint.key
-})
+const accordionKey = computed(() => getFieldKey(props.blueprint.key, props.blueprint.name))
 
 // Method: Check if the future date has passed
 const isFutureDatePassed = (futureDate: string) => {
@@ -97,7 +91,7 @@ const isFutureDatePassed = (futureDate: string) => {
             </div>
         </AccordionHeader>
 
-        <AccordionContent class="p-4">
+        <AccordionContent class="p-2">
             <ChildFieldSideEditor v-if="hasCustomForm" :modelValue="getFormValue(modelValue, blueprint.key)" :editable="editable"
                 :blueprint="blueprint" :uploadImageRoute="uploadImageRoute" @update:model-value="(e)=>onPropertyUpdate(blueprint.key,e)" />
 
@@ -108,7 +102,7 @@ const isFutureDatePassed = (futureDate: string) => {
     </AccordionPanel>
 
     <!-- Non-accordion mode -->
-    <div v-else class="mt-0 mb-2 pb-3">
+    <div v-else class="mt-0 mb-1 pb-1.5">
         <ChildFieldSideEditor v-if="hasCustomForm" :modelValue="getFormValue(modelValue, blueprint.key)" :editable="editable"
             :blueprint="blueprint" :uploadImageRoute="uploadImageRoute"  @update:model-value="(e)=>onPropertyUpdate(blueprint.key,e)" />
 
@@ -136,7 +130,7 @@ const isFutureDatePassed = (futureDate: string) => {
 
 /* Accordion content styling */
 .p-accordioncontent-content {
-  padding: 1rem !important;
+  padding: 0.5rem !important;
   background-color: #f9f9f9 !important;
   border-top: 1px solid #e5e7eb;
 }

@@ -3,6 +3,7 @@
 namespace App\Actions\UI\Dashboards;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGroupDashboardSalesAuthorisation;
 use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Enums\Dashboards\GroupDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
@@ -13,6 +14,16 @@ use Lorisleiva\Actions\ActionRequest;
 class GetGroupDashboardTabData extends OrgAction
 {
     use WithPerformanceDateResolution;
+    use WithGroupDashboardSalesAuthorisation;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        return $this->canViewGroupDashboardSales($request->user());
+    }
 
     public function asController(ActionRequest $request): JsonResponse
     {

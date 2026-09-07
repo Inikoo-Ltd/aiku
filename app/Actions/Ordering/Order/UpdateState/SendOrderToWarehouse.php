@@ -12,6 +12,7 @@ use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
+use App\Actions\Dispatching\FulfilmentGate\GetGateCoverage;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\UpdateOrder;
@@ -46,13 +47,19 @@ class SendOrderToWarehouse extends OrgAction
 
     private Order $order;
 
+    private bool $releaseFromGate = false;
+
 
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order, array $modelData): DeliveryNote
+    public function handle(Order $order, array $modelData): ?DeliveryNote
     {
         data_set($modelData, 'state', OrderStateEnum::IN_WAREHOUSE);
+
+        if ($this->releaseFromGate && $order->at_gate_at) {
+            $this->update($order, ['at_gate_at' => null]);
+        }
         $date = now();
 
 
@@ -63,6 +70,43 @@ class SendOrderToWarehouse extends OrgAction
             data_set($modelData, 'in_warehouse_at', $date);
         }
 
+        if (!$order->transactions()->where('model_type', 'Product')->exists()
+            && $order->transactions()->where('model_type', 'Service')->exists()) {
+            if ($order->customer) {
+                $modelData['email']        = $order->customer->email;
+                $modelData['phone']        = $order->customer->phone;
+                $modelData['contact_name'] = $order->customer->contact_name;
+                $modelData['company_name'] = $order->customer->company_name;
+            }
+            UpdateOrder::make()->action($order, $modelData);
+
+            FinaliseOrder::make()->action($order, true);
+            DispatchOrder::make()->action($order, null);
+
+            if (in_array($order->salesChannel?->type, [
+                SalesChannelTypeEnum::PHONE,
+                SalesChannelTypeEnum::SHOWROOM,
+                SalesChannelTypeEnum::EMAIL,
+                SalesChannelTypeEnum::OTHER
+            ])) {
+                SendNewOrderEmailToSubscribers::dispatch($order->id);
+                SendNewOrderEmailToCustomer::dispatch($order->id);
+            }
+
+            return null;
+        }
+
+
+        if (!$this->releaseFromGate
+            && $order->organisation->hasFulfilmentGate()
+            && !GetGateCoverage::make()->isFullyCoverable($order)
+        ) {
+            if (!$order->at_gate_at) {
+                $this->update($order, ['at_gate_at' => $date]);
+            }
+
+            return null;
+        }
 
         $deliveryNoteData = [
             'delivery_address'          => $order->deliveryAddress,
@@ -87,7 +131,7 @@ class SendOrderToWarehouse extends OrgAction
 
         $deliveryNote = DB::transaction(function () use ($order, $deliveryNoteData, $date) {
             /** @var Transaction $transactions */
-            $transactions = $order->transactions()->where('state', TransactionStateEnum::SUBMITTED)->get();
+            $transactions = $order->transactions()->whereIn('state', [TransactionStateEnum::CREATING, TransactionStateEnum::SUBMITTED])->get();
             foreach ($transactions as $transaction) {
                 $transactionData = [
                     'state'           => TransactionStateEnum::IN_WAREHOUSE,
@@ -187,7 +231,7 @@ class SendOrderToWarehouse extends OrgAction
                 $companyName = $order->customerClient->company_name;
             }
         } else {
-            $companyName = $order->customer->company_name;
+            $companyName = $order->company_name ?? $order->customer->company_name;
         }
 
         return $companyName;
@@ -201,7 +245,7 @@ class SendOrderToWarehouse extends OrgAction
                 $contactName = $order->customerClient->contact_name;
             }
         } else {
-            $contactName = $order->customer->contact_name;
+            $contactName = $order->contact_name ?? $order->customer->contact_name;
         }
 
         return Str::substr($contactName, 0, 40);
@@ -250,10 +294,11 @@ class SendOrderToWarehouse extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Order $order, array $modelData): DeliveryNote
+    public function action(Order $order, array $modelData, bool $releaseFromGate = false): ?DeliveryNote
     {
-        $this->asAction = true;
-        $this->order    = $order;
+        $this->asAction        = true;
+        $this->releaseFromGate = $releaseFromGate;
+        $this->order           = $order;
         $this->initialisationFromShop($order->shop, $modelData);
 
         return $this->handle($order, $this->validatedData);
@@ -262,7 +307,7 @@ class SendOrderToWarehouse extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(Order $order, ActionRequest $request): DeliveryNote
+    public function asController(Order $order, ActionRequest $request): ?DeliveryNote
     {
         $this->order = $order;
         $this->initialisationFromShop($order->shop, $request);

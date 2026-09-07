@@ -76,6 +76,13 @@ class FetchAuroraCollections extends FetchAuroraAction
             }
 
 
+            // Collection membership is curated in aiku now. Only a collection this run
+            // just created gets its members attached from Aurora; attaching to — and
+            // above all pruning from — an existing collection would revert staff edits.
+            if (!$collection->wasRecentlyCreated) {
+                return $collection;
+            }
+
             $productsDelete = $collection->products()->where('type', 'direct')->pluck('model_id')->all();
             $familiesDelete = $collection->families()->pluck('model_id')->all();
 

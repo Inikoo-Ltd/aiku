@@ -8,6 +8,8 @@
 
 namespace App\Actions\Dropshipping\ShopifyUser\Traits;
 
+use App\Actions\Dropshipping\PlatformOutboundGuard;
+use App\Actions\Dropshipping\Shopify\ShopifyThrottleRetryMiddleware;
 use Gnikyt\BasicShopifyAPI\Contracts\GraphRequester;
 use Gnikyt\BasicShopifyAPI\Contracts\RestRequester;
 use Sentry;
@@ -16,6 +18,10 @@ trait WithInitShopifyClient
 {
     public function getShopifyClient($graphQl = false): GraphRequester|RestRequester|null
     {
+        if (PlatformOutboundGuard::blocks('Shopify')) {
+            return null;
+        }
+
         try {
             $api = $this->api();
             $api->getOptions()->setGuzzleOptions(
@@ -25,6 +31,8 @@ trait WithInitShopifyClient
                     'default_retry_multiplier' => 0.0,
                 ]
             );
+            $api->removeMiddleware(ShopifyThrottleRetryMiddleware::NAME)
+                ->addMiddleware(new ShopifyThrottleRetryMiddleware(), ShopifyThrottleRetryMiddleware::NAME);
 
             return $graphQl ? $api->getGraphClient() : $api->getRestClient();
         } catch (\Exception $e) {

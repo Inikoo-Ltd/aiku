@@ -139,14 +139,14 @@ class EditTradeUnit extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'label'  => __('Id'),
+                            'label'  => __('Properties'),
                             'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
-                                'code' => [
-                                    'type'  => 'input',
-                                    'label' => __('Code'),
-                                    'value' => $tradeUnit->code
-                                ],
+                                // 'code' => [
+                                //     'type'  => 'input',
+                                //     'label' => __('Code'),
+                                //     'value' => $tradeUnit->code
+                                // ],
                                 'cpnp_number' => [
                                     'type' => 'input',
                                     'label' => __('CPNP Number'),

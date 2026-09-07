@@ -56,10 +56,11 @@ class EditStoredItem extends OrgAction
     {
         $fields = [
             'reference' => [
-                'type'    => 'input',
-                'label'   => __('Reference'),
-                'value'   => $storedItem->reference,
-                'required' => true
+                'type'        => 'input',
+                'label'       => __('Reference'),
+                'information' => __('Printed as a barcode on the item label, and read by scan-to-pick. After changing it, reprint the label. The barcode the goods themselves carry (the EAN) is set on the stored item page.'),
+                'value'       => $storedItem->reference,
+                'required'    => true
             ],
             'name' => [
                 'type'    => 'input',

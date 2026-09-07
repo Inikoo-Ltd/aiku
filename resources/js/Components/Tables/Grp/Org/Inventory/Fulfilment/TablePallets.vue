@@ -12,10 +12,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrashAlt } from "@far";
 import { faSignOutAlt, faSpellCheck, faCheck, faTimes, faCheckDouble, faCross, faFragile, faGhost, faBoxUp, faStickyNote,faSquare } from "@fal";
 import Tag from "@/Components/Tag.vue";
-import Popover from "@/Components/Popover.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import Multiselect from "@vueform/multiselect";
-import axios from "axios";
 import { inject, ref } from "vue";
 import { notify } from "@kyvg/vue3-notification";
 import type { Meta, Links } from "@/types/Table";
@@ -82,41 +79,11 @@ function locationRoute(pallet: Pallet) {
     ]);
 }
 
-const palletSelected = ref<{ [key: string]: number } | null>({
-  abc: 1
-});  // Helper on which pallet selected to move
-const isLoading = ref(false);
-const locationsList = ref([]);
+const palletSelected = ref<Record<string, number>>({});
 
-// Method: Get locations list from current Warehouse
-const getLocationsList = async () => {
-//   isLoading.value = true;
-//   try {
-//     const response = await axios.get(route("grp.org.warehouses.show.infrastructure.locations.index", { "organisation": layout?.currentParams?.organisation, "warehouse": layout?.currentParams?.warehouse }));
-//     console.log(response.data)
-//     // Add 'disabled' key to current location
-//     locationsList.value = response.data.data.map(loc => {
-//       if (loc.slug == route().params.location) {
-//         return {
-//           ...loc,
-//           disabled: true
-//         };
-//       }
-//       return loc;
-//     });
-
-//     // console.log('resposne', locationsList.value)
-//     isLoading.value = false;
-//   } catch (error) {
-//     console.error(error);
-//     isLoading.value = false;
-//     // notify({
-//     //     title: "Failed",
-//     //     text: "Error while fetching data",
-//     //     type: "error"
-//     // })
-//   }
-};
+const initPalletSelected = (pallet: Pallet) => {
+  palletSelected.value[pallet.reference] ??= pallet.location_id
+}
 
 // Method: On submit move pallet
 const isLoadingMove = ref(false)
@@ -207,46 +174,37 @@ const onUpdateStatus=(routes,data)=>{
     <template #cell(actions)="{ item, proxyItem }">
       <div class="flex gap-x-1 gap-y-1.5 isolate">
         <!-- Action: Move Pallet -->
-        <Popover v-if="item.status === 'storing' && isMovePallet" class="relative" position="bottom-[125%] right-1/2">
-          <template #button="{ open }">
-            <Button
-              @click="() => (locationsList.length ? '' : getLocationsList(), palletSelected?.[item.reference] ? '' : palletSelected = { [item.reference]: item.location_id })"
-              type="tertiary" tooltip="Move pallet to another location" label="Move" :key="item.index"
-              :disabled="open"
-              :size="'xs'" />
-          </template>
+        <VDropdown v-if="item.status === 'storing' && isMovePallet" placement="bottom-end" :distance="6"
+          popper-class="movePalletPopper">
+          <Button
+            @click="initPalletSelected(item)"
+            type="tertiary" tooltip="Move pallet to another location" label="Move"
+            :size="'xs'" />
 
-          <template #content="{ close }">
-            <div class="w-[250px]">
-              <div class="text-xs px-1 my-2">{{ trans('Select new location to move')}}:</div>
-              <div>
-                <PureMultiselectInfiniteScroll
-                    v-model="palletSelected[item.reference]"
-                    :fetchRoute="{ name: 'grp.org.warehouses.show.infrastructure.locations.index', parameters: { organisation: layout?.currentParams?.organisation, warehouse: layout?.currentParams?.warehouse } }"
-                    :placeholder="trans('Select warehouse')"
-                    valueProp="id"
-                    labelProp="code"
-                    :isLoading="isLoadingMove"
-                />
-                <!-- <Multiselect ref="_multiselectRef" v-model="palletSelected[item.reference]" :canClear="false"
-                  :canDeselect="false" label="code" valueProp="id" placeholder="Select location.."
-                  :options="locationsList" :noResultsText="isLoading ? 'loading...' : 'No Result'">
-                </Multiselect> -->
-              </div>
+          <template #popper="{ hide }">
+            <div class="w-[250px] px-3 py-2">
+              <div class="text-xs px-1 mb-2">{{ trans('Select new location to move')}}:</div>
+              <PureMultiselectInfiniteScroll
+                  v-model="palletSelected[item.reference]"
+                  :fetchRoute="{ name: 'grp.org.warehouses.show.infrastructure.locations.index', parameters: { organisation: layout?.currentParams?.organisation, warehouse: layout?.currentParams?.warehouse } }"
+                  :placeholder="trans('Select warehouse')"
+                  valueProp="id"
+                  labelProp="code"
+                  :isLoading="isLoadingMove"
+              />
               <div class="flex justify-end mt-2">
                 <Button
-                  @click="() => onMovePallet(route(item.updateLocationRoute.name, item.updateLocationRoute.parameters), palletSelected?.[item.reference], item.reference, close)"
+                  @click="() => onMovePallet(route(item.updateLocationRoute.name, item.updateLocationRoute.parameters), palletSelected[item.reference], item.reference, hide)"
                   type="primary"
                   full
                   tooltip="Move pallet"
                   :loading="isLoadingMove"
                   label="save"
-                  :key="item.index + palletSelected?.[item.reference]"
-                  :disabled="palletSelected?.[item.reference] == item.location_id" />
+                  :disabled="palletSelected[item.reference] == item.location_id" />
               </div>
             </div>
           </template>
-        </Popover>
+        </VDropdown>
 
         <ButtonAction :item="item"/>
     <!--     <pre>{{ item }}</pre> -->
@@ -273,3 +231,9 @@ const onUpdateStatus=(routes,data)=>{
 </template>
 
 <style src="../../../../../../../../node_modules/@vueform/multiselect/themes/default.css"></style>
+
+<style>
+.movePalletPopper .v-popper__inner {
+  overflow: visible;
+}
+</style>

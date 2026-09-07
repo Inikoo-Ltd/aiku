@@ -10,9 +10,11 @@
 namespace App\Actions\Goods\Ingredient\UI;
 
 use App\Actions\Goods\UI\ShowGoodsDashboard;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\IngredientTabsEnum;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Goods\Ingredient;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -64,8 +66,12 @@ class ShowIngredient extends OrgAction
                     'navigation' => IngredientTabsEnum::navigation()
 
                 ],
+
+                IngredientTabsEnum::HISTORY->value => $this->tab == IngredientTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($ingredient, IngredientTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($ingredient, IngredientTabsEnum::HISTORY->value))),
             ]
-        );
+        )->table(IndexHistory::make()->tableStructure(IngredientTabsEnum::HISTORY->value));
     }
 
     public function getBreadcrumbs(Ingredient $ingredient, string $routeName, array $routeParameters, $suffix = null): array

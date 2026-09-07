@@ -11,9 +11,11 @@ import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { searchRoute } from "@/Iris/Composables/useSearchRoute"
 import { useIrisSearchMobile } from "@/Iris/Composables/useIrisSearchMobile"
+import { useSearchFeaturedItems } from "@/Iris/Composables/useSearchFeaturedItems"
 library.add(faSearch, faTimes, faChevronUp, faChevronDown)
 
 const SearchResultCatalogueMobile = defineAsyncComponent(() => import("@/Iris/Components/SearchResultCatalogueMobile.vue"))
+const SearchFeaturedMobile = defineAsyncComponent(() => import("@/Iris/Components/SearchFeaturedMobile.vue"))
 
 defineProps<{
     id: string
@@ -148,11 +150,16 @@ const closeOverlay = () => {
     isOverlayOpen.value = false
 }
 
+// The items the shop features fill the overlay before anything is typed, so an empty
+// field promotes merchandised products instead of showing a bare hint
+const { featuredResults, isFeaturedLoading, hasFeaturedResults, fetchFeaturedResults } = useSearchFeaturedItems()
+
 watch(isOverlayOpen, (open) => {
     if (open) {
         showDropdown.value = true
         document.body.style.overflow = 'hidden'
         nextTick(() => inputRef.value?.focus())
+        fetchFeaturedResults()
         if (inputValue.value.trim() && !internalResults.value) {
             isInternalLoading.value = true
             fetchResults(inputValue.value)
@@ -370,6 +377,12 @@ const visitSearchPage = () => {
                     :is-loading="isInternalLoading"
                     :query="inputValue"
                     :search-log-ulid="searchLogUlid"
+                />
+                <SearchFeaturedMobile
+                    v-else-if="isFeaturedLoading || hasFeaturedResults"
+                    v-model:open="showDropdown"
+                    :results="featuredResults"
+                    :is-loading="isFeaturedLoading"
                 />
                 <div v-else class="h-full flex items-center justify-center text-gray-400 text-sm px-8 text-center">
                     {{ trans('Start typing to search the catalogue') }}

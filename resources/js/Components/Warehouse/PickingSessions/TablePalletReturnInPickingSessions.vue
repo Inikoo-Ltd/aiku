@@ -600,7 +600,7 @@ const locationRoute = (item: any) => {
                     class="border-b last:border-b-0 py-2"
                 >
                     <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-                        <div class="min-w-[140px]">
+                        <div class="lg:min-w-[140px]">
                             <Link v-if="palletRoute(pallet)" :href="palletRoute(pallet)" class="primaryLink">
                                 {{ pallet.reference }}
                             </Link>
@@ -609,7 +609,7 @@ const locationRoute = (item: any) => {
                             </div>
                         </div>
 
-                        <div class="min-w-[160px]">
+                        <div class="lg:min-w-[160px]">
                             <div>
                                 <span class="text-gray-400">{{ pallet.customer_reference || "-" }}</span>
                                 <div v-if="pallet.notes" class="text-gray-400">

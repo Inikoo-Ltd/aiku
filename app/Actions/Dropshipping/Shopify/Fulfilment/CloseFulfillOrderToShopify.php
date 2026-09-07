@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 
 class CloseFulfillOrderToShopify extends OrgAction
@@ -75,9 +76,10 @@ class CloseFulfillOrderToShopify extends OrgAction
             ]);
         }
 
-        if (!empty($response['body']['data']['fulfillmentOrderClose']['userErrors'])) {
+        $userErrors = Arr::get($response['body']->toArray(), 'data.fulfillmentOrderClose.userErrors', []);
+        if (!empty($userErrors)) {
             throw ValidationException::withMessages([
-                'messages' => collect($response['body']['data']['fulfillmentOrderClose']['userErrors'])
+                'messages' => collect($userErrors)
                     ->pluck('message')
                     ->join(', ')
             ]);

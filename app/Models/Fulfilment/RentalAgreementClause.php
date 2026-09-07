@@ -11,10 +11,12 @@ namespace App\Models\Fulfilment;
 use App\Enums\Fulfilment\RentalAgreementClause\RentalAgreementCauseStateEnum;
 use App\Enums\Fulfilment\RentalAgreementClause\RentalAgreementClauseTypeEnum;
 use App\Models\Catalogue\Asset;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\InFulfilmentCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property int $id
@@ -45,10 +47,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementClause withoutTrashed()
  * @mixin \Eloquent
  */
-class RentalAgreementClause extends Model
+class RentalAgreementClause extends Model implements Auditable
 {
     use InFulfilmentCustomer;
     use SoftDeletes;
+    use HasHistory;
 
     protected $guarded = [];
 
@@ -68,6 +71,15 @@ class RentalAgreementClause extends Model
         return $this->belongsTo(RentalAgreement::class);
     }
 
+    public function generateTags(): array
+    {
+        return ['fulfilment'];
+    }
 
+    protected array $auditInclude = [
+        'state',
+        'type',
+        'percentage_off'
+    ];
 
 }

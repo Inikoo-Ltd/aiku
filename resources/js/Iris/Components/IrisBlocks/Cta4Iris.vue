@@ -6,19 +6,18 @@
 
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { ctaImageBoxCss } from "@/Iris/Composables/useCtaImageBoxCss"
 import { FieldValue } from "@/types/webpageTypes"
 import { inject, computed } from 'vue'
 import { faCube, faLink, faImage } from "@fal"
-import { faSpinnerThird } from "@fas"
 import Button from "@iris/Components/IrisButton.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { get, isPlainObject } from 'lodash-es'
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faCube, faLink, faImage, faSpinnerThird)
+library.add(faCube, faLink, faImage)
 
 const props = defineProps<{
 	fieldValue: FieldValue
@@ -80,13 +79,7 @@ const imageBoxStyle = computed(() => {
 							v-if="isLoading"
 							class="absolute inset-0 z-10 flex items-center justify-center bg-black/35 pointer-events-none"
 						>
-							<FontAwesomeIcon
-								icon="fas fa-spinner-third"
-								spin
-								class="text-3xl text-white"
-								fixed-width
-								aria-hidden="true"
-							/>
+							<LoadingIcon class="text-3xl text-white" />
 						</div>
 					</template>
 				</component>
@@ -98,7 +91,7 @@ const imageBoxStyle = computed(() => {
 					<div class="max-w-xl w-full">
 						<div v-html="fieldValue.text" class="mb-6"></div>
 						<div class="flex justify-center">
-							<LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.taget"
+							<LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target"
 								typeof="button" :type="fieldValue?.button?.link?.type"
 								:canonical_url="fieldValue?.button?.link?.canonical_url">
 								<template #default="{ isLoading } = { isLoading: false }">

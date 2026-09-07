@@ -13,6 +13,7 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Language;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairProductCategoryIsReviewed
 {
@@ -23,6 +24,7 @@ class RepairProductCategoryIsReviewed
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $fields = [
             'name',
             'description',

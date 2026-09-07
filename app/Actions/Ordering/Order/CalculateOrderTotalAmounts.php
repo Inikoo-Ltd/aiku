@@ -21,6 +21,7 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
     use WithLineTaxCategories;
 
     public string $jobQueue = 'urgent';
+    public int $jobUniqueFor = 120;
 
     public function getJobUniqueId(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false, bool $onlyIfInBasket = false): string
     {
@@ -53,6 +54,7 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         $numberItemTransactions = $order->transactions()->where('model_type', 'Product')->count();
 
         $chargesAmount   = $order->transactions()->where('model_type', 'Charge')->sum('net_amount');
+        $servicesAmount  = $order->transactions()->where('model_type', 'Service')->sum('net_amount');
         $estimatedWeight = $order->transactions()->where('model_type', 'Product')->sum('estimated_weight');
 
         if ($order->collection_address_id) {
@@ -78,6 +80,7 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         data_set($modelData, 'gross_amount', $itemsGross);
         data_set($modelData, 'shipping_amount', $shippingAmount);
         data_set($modelData, 'charges_amount', $chargesAmount);
+        data_set($modelData, 'services_amount', $servicesAmount);
         data_set($modelData, 'estimated_weight', $estimatedWeight);
         data_set($modelData, 'number_item_transactions', $numberItemTransactions);
 

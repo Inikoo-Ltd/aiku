@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUn
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateCustomerExclusiveProducts;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateOrgStocksWithoutProducts;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateProducts;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -83,6 +84,10 @@ trait WithProductOrgStocks
         $orgStocks = $this->processOrgStocks($orgStocksRaw);
         $product->orgStocks()->sync($orgStocks);
         $product->refresh();
+
+        foreach ($product->organisation->warehouses as $warehouse) {
+            WarehouseHydrateOrgStocksWithoutProducts::dispatch($warehouse)->delay(2);
+        }
 
 
         $product = $this->syncTradeUnitsToBeDeleted($product);

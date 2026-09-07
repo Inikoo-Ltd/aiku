@@ -5,13 +5,14 @@
   -->
 
 <script setup lang="ts">
-import { Head, router } from "@inertiajs/vue3"
+import { Head, router, Link } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal, faAtomAlt } from "@fal"
 import { computed, defineAsyncComponent, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
+import Breadcrumb from 'primevue/breadcrumb'
 import { capitalize } from "@/Composables/capitalize"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -30,7 +31,7 @@ import TableMasterProducts from "@/Components/Tables/Grp/Goods/TableMasterProduc
 import TableOrgStocks from "@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal)
+library.add(faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal, faAtomAlt)
 
 const isModalUploadOpen = ref(false)
 const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"))
@@ -68,6 +69,7 @@ const props = defineProps<{
     images_update_route: routeType
     id: number | string
     tradeUnitFamilySlug?: string
+    mini_breadcrumbs? : any[]
 }>()
 
 
@@ -119,8 +121,23 @@ const visitTradeUnitFamily = () => {
             </span>
         </template>
     </PageHeading>
-
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+    <div v-if="mini_breadcrumbs?.length" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
+        <Breadcrumb :model="mini_breadcrumbs">
+            <template #item="{ item, index }">
+                <div class="flex items-center gap-1 whitespace-nowrap">
+                    <component :is="item.to ? Link : 'span'" v-bind="item.to ? { href: route(item.to.name, item.to.parameters) } : {}" v-tooltip="item.tooltip"
+                        :title="item.label" class="flex items-center gap-2 text-sm transition-colors duration-150"
+                        :class="item.to
+                            ? 'text-gray-500'
+                            : 'text-gray-500 cursor-default'">
+                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
+                        <span>{{ item.label || '-' }}</span> <span v-if="item.post_label" class="text-gray-400">{{ item.post_label }}</span>
+                    </component>
+                </div>
+            </template>
+        </Breadcrumb>
+    </div>
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :tag_routes :handleTabUpdate="handleTabUpdate"/>
 
     <!-- <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
@@ -128,3 +145,16 @@ const visitTradeUnitFamily = () => {
         information: 'The list of column file: customer_reference, notes, stored_items'
     }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" /> -->
 </template>
+<style scoped>
+/* Remove default breadcrumb styles */
+:deep(.p-breadcrumb) {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+}
+
+:deep(.p-breadcrumb-list > li.p-breadcrumb-separator:first-child) {
+    display: none !important;
+}
+</style>

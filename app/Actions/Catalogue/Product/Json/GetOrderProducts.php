@@ -50,6 +50,8 @@ class GetOrderProducts extends OrgAction
                 'products.asset_id',
                 'products.code',
                 'products.name',
+                'products.units',
+                'products.unit',
                 'products.state',
                 'products.price',
                 'products.web_images',
@@ -61,7 +63,8 @@ class GetOrderProducts extends OrgAction
             ]);
 
 
-        return $queryBuilder->allowedSorts(['code', 'name'])
+        return $queryBuilder->with('orgStocks:id,code,name,packed_in')
+            ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix)
             ->withQueryString();

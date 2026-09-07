@@ -14,6 +14,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\Rules\WithStoreOfferRules;
 use App\Actions\Traits\WithStoreOffer;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
@@ -26,6 +27,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Lorisleiva\Actions\ActionRequest;
 
 class StoreFirstOrderBonus extends OrgAction
 {
@@ -52,6 +54,10 @@ class StoreFirstOrderBonus extends OrgAction
         $offerCampaign = OfferCampaign::where('shop_id', $shop->id)->where('type', OfferCampaignTypeEnum::FIRST_ORDER)->first();
         if (!$offerCampaign) {
             return null;
+        }
+
+        if ($offerCampaign->offers()->where('state', '!=', OfferStateEnum::FINISHED)->exists()) {
+            abort(422, __('A first order bonus already exists'));
         }
 
         $code = Str::lower($offerCampaign->code.'-'.$shop->code);
@@ -142,6 +148,23 @@ class StoreFirstOrderBonus extends OrgAction
         }
 
         return 0;
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function asController(Shop $shop, ActionRequest $request): ?Offer
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop, $this->validatedData);
+    }
+
+    public function jsonResponse(?Offer $offer): array
+    {
+        return [
+            'slug' => $offer?->slug,
+        ];
     }
 
     /**

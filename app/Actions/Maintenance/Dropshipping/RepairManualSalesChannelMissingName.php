@@ -15,6 +15,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairManualSalesChannelMissingName
 {
@@ -36,6 +37,7 @@ class RepairManualSalesChannelMissingName
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->argument('customerSalesChannel')) {
             $customerSalesChannel = CustomerSalesChannel::find($command->argument('customerSalesChannel'));
             $this->handle($customerSalesChannel);

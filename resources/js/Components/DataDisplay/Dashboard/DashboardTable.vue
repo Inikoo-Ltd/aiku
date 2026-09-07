@@ -9,16 +9,18 @@ import TabList from "primevue/tablist"
 import Tab from "primevue/tab"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faYinYang, faShoppingBasket, faSitemap, faStore } from "@fal"
+import { Link } from "@inertiajs/vue3"
+import { route } from "ziggy-js"
+import { faYinYang, faShoppingBasket, faSitemap, faStore, faArrowRight } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import axios from "axios"
-import { debounce } from 'lodash-es'
+import { debounce, get, groupBy } from 'lodash-es'
 import DashboardCell from "./DashboardCell.vue"
 import { formatInTimeZone } from "date-fns-tz"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { Intervals, Settings } from "@/types/Components/Dashboard"
-library.add(faYinYang, faShoppingBasket, faSitemap, faStore)
+library.add(faYinYang, faShoppingBasket, faSitemap, faStore, faArrowRight)
 
 interface Column {
 	formatted_value: string  // "€0.00"
@@ -104,17 +106,61 @@ watch(() => props.tableData.current_tab, (newVal) => {
 	localCurrentTab.value = newVal
 })
 
+/**
+ * Rows carrying parent_slug are child rows glued under their parent (e.g. Manual's Web/API
+ * sales channels). A table containing them switches to lazy + controlled sorting so a sort
+ * reorders parents only and children ride along; every other table keeps PrimeVue's own
+ * sorting untouched.
+ */
+const hasGroupedRows = computed(() => {
+	const body = props.tableData.tables?.[localCurrentTab.value]?.body
+	return !!body?.some((row: any) => row.parent_slug)
+})
+
+const groupSortField = ref<string | null>(null)
+const groupSortOrder = ref<number>(0)
+
+const onGroupSort = (event: { sortField: string, sortOrder: number }) => {
+	if (!hasGroupedRows.value) {
+		return
+	}
+	groupSortField.value = event.sortField
+	groupSortOrder.value = event.sortOrder ?? 0
+}
+
 const compTableBody = computed(() => {
 	const table = props.tableData.tables?.[localCurrentTab.value]
 	if (!table) {
 		return []
 	}
 
+	let body = table.body
 	if (props.settings.model_state_type?.value === 'open') {
-		return table.body?.filter(row => row.state === 'active')
+		body = body?.filter(row => row.state === 'active')
 	}
 
-	return table.body;
+	if (!hasGroupedRows.value || !body?.length) {
+		return body
+	}
+
+	const parents = body.filter((row: any) => !row.parent_slug)
+	const childrenByParent = groupBy(body.filter((row: any) => row.parent_slug), 'parent_slug')
+
+	if (groupSortField.value && groupSortOrder.value) {
+		const sortValue = (row: any) => Number(get(row, groupSortField.value as string)) || 0
+		const comparator = (a: any, b: any) => (sortValue(a) - sortValue(b)) * groupSortOrder.value
+		parents.sort(comparator)
+		Object.values(childrenByParent).forEach(children => children.sort(comparator))
+	}
+
+	const orphans = { ...childrenByParent }
+	const rows = parents.flatMap((parent: any) => {
+		const children = orphans[parent.slug] ?? []
+		delete orphans[parent.slug]
+		return [parent, ...children]
+	})
+
+	return [...rows, ...Object.values(orphans).flat()]
 })
 
 
@@ -172,20 +218,28 @@ const updateTab = (value: string) => {
 			<!-- Section: Tabs -->
 			<Tabs v-if="showTabs" :value="localCurrentTab" class="overflow-x-auto text-xs md:text-base pb-2">
 				<TabList>
-					<Tab
-						v-for="(tab, tabSlug) in tableData.tabs"
-						@click="() => updateTab(tabSlug)"
-						:key="tabSlug"
-						:value="tabSlug"
-					>
-						<FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" class="" fixed-width aria-hidden="true" />
-						{{ tab.title }}
-					</Tab>
+					<template v-for="(tab, tabSlug) in tableData.tabs" :key="tabSlug">
+						<Tab
+							@click="() => updateTab(tabSlug)"
+							:value="tabSlug"
+						>
+							<FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" class="" fixed-width aria-hidden="true" />
+							{{ tab.title }}
+						</Tab>
+					</template>
 				</TabList>
 			</Tabs>
 
 			<!-- Section: Table -->
-			<DataTable :value="compTableBody" removableSort scrollable >
+			<DataTable
+				:value="compTableBody"
+				removableSort
+				scrollable
+				:lazy="hasGroupedRows"
+				:sortField="hasGroupedRows ? groupSortField : undefined"
+				:sortOrder="hasGroupedRows ? groupSortOrder : undefined"
+				@sort="onGroupSort"
+			>
 				<template #empty>
 					<div class="flex items-center justify-center h-full text-center">
 						{{ trans("No data available.") }}

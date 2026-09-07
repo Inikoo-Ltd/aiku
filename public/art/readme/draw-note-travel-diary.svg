@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" width="1200" height="700" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive">
+  <defs>
+    <filter id="wash" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="12"/>
+      <feGaussianBlur stdDeviation="0.6"/>
+    </filter>
+    <filter id="pencil" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/>
+    </filter>
+    <filter id="paper">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="11" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.55  0 0 0 0 0.5  0 0 0 0 0.42  0 0 0 0.05 0"/>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+
+  <rect width="720" height="420" rx="8" fill="#F2ECDD" filter="url(#paper)"/>
+
+  <path d="M60 330 q90 -120 130 -180 q60 40 120 10 q40 60 120 40 q60 -30 110 20 q50 -20 110 30"
+        fill="none" stroke="#6B6355" stroke-width="1.6" stroke-dasharray="1 7" stroke-linecap="round" filter="url(#pencil)"/>
+
+  <g transform="translate(568,212) rotate(14)" filter="url(#pencil)">
+    <path d="M0 0 l34 -10 l-24 16 l2 12 l6 -9 l16 13 z" fill="#F2ECDD" stroke="#4A4238" stroke-width="1.4"/>
+  </g>
+
+  <g transform="translate(36,286) rotate(-6)">
+    <rect width="128" height="62" rx="6" fill="#E9DEC4" stroke="#4A4238" stroke-width="1.3" filter="url(#wash)"/>
+    <circle cx="14" cy="14" r="5" fill="none" stroke="#4A4238" stroke-width="1.2" filter="url(#pencil)"/>
+    <text x="26" y="30" font-size="21" fill="#7A4A33" filter="url(#pencil)">Mijas Costa, Sain</text>
+    <text x="26" y="50" font-size="15" fill="#6B6355" filter="url(#pencil)">10 Oct 2015 (sic)</text>
+  </g>
+
+  <g transform="translate(130,118) rotate(4)">
+    <rect width="112" height="58" rx="6" fill="#DCE4E0" stroke="#4A4238" stroke-width="1.3" filter="url(#wash)"/>
+    <circle cx="14" cy="14" r="5" fill="none" stroke="#4A4238" stroke-width="1.2" filter="url(#pencil)"/>
+    <text x="24" y="28" font-size="21" fill="#3E6E72" filter="url(#pencil)">Sheffield</text>
+    <text x="24" y="48" font-size="15" fill="#6B6355" filter="url(#pencil)">Nov 2015</text>
+  </g>
+
+  <g transform="translate(268,160) rotate(-3)">
+    <rect width="100" height="58" rx="6" fill="#E7D6CF" stroke="#4A4238" stroke-width="1.3" filter="url(#wash)"/>
+    <circle cx="14" cy="14" r="5" fill="none" stroke="#4A4238" stroke-width="1.2" filter="url(#pencil)"/>
+    <text x="24" y="28" font-size="21" fill="#8A3B37" filter="url(#pencil)">Yiwu</text>
+    <text x="24" y="48" font-size="15" fill="#6B6355" filter="url(#pencil)">Mar 2016</text>
+  </g>
+
+  <g transform="translate(388,220) rotate(5)">
+    <rect width="96" height="58" rx="6" fill="#DFE3CE" stroke="#4A4238" stroke-width="1.3" filter="url(#wash)"/>
+    <circle cx="14" cy="14" r="5" fill="none" stroke="#4A4238" stroke-width="1.2" filter="url(#pencil)"/>
+    <text x="24" y="28" font-size="21" fill="#5B6E3E" filter="url(#pencil)">Bali</text>
+    <text x="24" y="48" font-size="15" fill="#6B6355" filter="url(#pencil)">Apr 2016</text>
+  </g>
+
+  <g transform="translate(300,58) rotate(-5)">
+    <rect width="118" height="58" rx="6" fill="#E9DEC4" stroke="#4A4238" stroke-width="1.3" filter="url(#wash)"/>
+    <circle cx="14" cy="14" r="5" fill="none" stroke="#4A4238" stroke-width="1.2" filter="url(#pencil)"/>
+    <text x="24" y="28" font-size="21" fill="#7A4A33" filter="url(#pencil)">CdMx</text>
+    <text x="24" y="48" font-size="15" fill="#6B6355" filter="url(#pencil)">9 May 2017</text>
+  </g>
+
+  <g transform="translate(478,84) rotate(6)">
+    <rect width="102" height="58" rx="6" fill="#DCE4E0" stroke="#4A4238" stroke-width="1.3" filter="url(#wash)"/>
+    <circle cx="14" cy="14" r="5" fill="none" stroke="#4A4238" stroke-width="1.2" filter="url(#pencil)"/>
+    <text x="24" y="28" font-size="21" fill="#3E6E72" filter="url(#pencil)">Tokyo</text>
+    <text x="24" y="48" font-size="15" fill="#6B6355" filter="url(#pencil)">23:17, Sep 2018</text>
+  </g>
+
+  <g transform="translate(524,286) rotate(-4)">
+    <rect width="158" height="66" rx="6" fill="#E8D9B8" stroke="#8A6B4A" stroke-width="1.6" filter="url(#wash)"/>
+    <circle cx="15" cy="15" r="5" fill="none" stroke="#4A4238" stroke-width="1.2" filter="url(#pencil)"/>
+    <text x="26" y="30" font-size="22" fill="#7A4A33" filter="url(#pencil)">Kuala Lumpur</text>
+    <text x="26" y="52" font-size="15" fill="#6B6355" filter="url(#pencil)">2016 &#8594; still writing</text>
+  </g>
+
+  <g transform="translate(196,368) rotate(2)" filter="url(#pencil)">
+    <text font-size="19" fill="#6B6355">"Created: 19 August 2017&#8230; Flight Delhi India to Bangkok"</text>
+  </g>
+</svg>

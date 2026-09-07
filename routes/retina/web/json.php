@@ -9,6 +9,7 @@
 use App\Actions\Catalogue\Product\Json\GetRetinaPortfoliosInProduct;
 use App\Actions\Catalogue\Product\Json\GetRetinaSalesChannelInProductCategory;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetAllegroProducts;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWixProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerCollectionSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerProductCategorySalesChannelIds;
@@ -34,7 +35,7 @@ Route::get('fulfilment/{fulfilment}/return/{scope}/services', [GetRetinaFulfilme
 Route::get('fulfilment/{fulfilment}/delivery/{scope}/physical-goods', [GetRetinaFulfilmentPhysicalGoods::class, 'inPalletDelivery'])->name('fulfilment.delivery.physical-goods.index');
 Route::get('fulfilment/{fulfilment}/return/{scope}/physical-goods', [GetRetinaFulfilmentPhysicalGoods::class, 'inPalletReturn'])->name('fulfilment.return.physical-goods.index');
 Route::get('pallet-return/{palletReturn}/pallets', GetPalletsInReturnPalletWholePallets::class)->name('pallet-return.pallets.index');
-Route::get('/{order}/recent-uploads', \App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads::class)->name('recent_uploads');
+Route::get('/{order}/recent-uploads', \App\Actions\Retina\Ordering\IndexRetinaRecentOrderTransactionUploads::class)->name('recent_uploads');
 
 Route::get('/{order:id}/get-checkout-com-token-to_pay-order', GetCheckoutComTokenToPayOrder::class)->name('get_checkout_com_token_to_pay_order')->whereNumber('order');
 
@@ -54,6 +55,7 @@ Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetW
 Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetEbayProducts::class)->name('dropshipping.customer_sales_channel.ebay_products')->whereNumber('customerSalesChannel');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/tiktok-products', GetTiktokProducts::class)->name('dropshipping.customer_sales_channel.tiktok_products')->whereNumber('customerSalesChannel');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/allegro-products', GetAllegroProducts::class)->name('dropshipping.customer_sales_channel.allegro_products')->whereNumber('customerSalesChannel');
+Route::get('customer-sales-channel/{customerSalesChannel:id}/wix-products', GetWixProducts::class)->name('dropshipping.customer_sales_channel.wix_products')->whereNumber('customerSalesChannel');
 
 Route::get('first-hit', GetRetinaFirstHitData::class)->name('first_hit');
 Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');

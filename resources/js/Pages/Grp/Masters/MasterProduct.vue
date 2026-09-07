@@ -229,7 +229,7 @@ onMounted(() => {
         <MasterAnomalyBlocks :anomalies="anomalies" />
     </div>
 
-    <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :salesData="props.salesData" :handleTabUpdate :currency="currency" />
+    <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :salesData="props.salesData" :anomalies="anomalies" :handleTabUpdate :currency="currency" />
 
     <!-- ✅ PrimeVue Dialog -->
     <Dialog 

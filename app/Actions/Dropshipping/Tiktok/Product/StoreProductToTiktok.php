@@ -145,9 +145,9 @@ class StoreProductToTiktok extends RetinaAction
                     'unit' => 'KILOGRAM'
                 ],
                 'package_dimensions' => [
-                    'width' => (string) ceil($w),
-                    'length' => (string) ceil($l),
-                    'height' => (string) ceil($h),
+                    'width' => number_format(ceil($w), 2),
+                    'length' => number_format(ceil($l), 2),
+                    'height' => number_format(ceil($h), 2),
                     'unit' => "CENTIMETER",
                 ],
                 'product_certifications' => $requiredCertifications,
@@ -192,8 +192,14 @@ class StoreProductToTiktok extends RetinaAction
             $portfolio->refresh();
 
             if ($portfolio->platform_status) {
+                $warnings = collect(Arr::get($tiktokProduct, 'data.warnings', []))
+                    ->pluck('message')
+                    ->filter()
+                    ->implode(' ');
+
                 UpdatePortfolio::run($portfolio, [
-                    'errors_response' => null
+                    'errors_response' => null,
+                    'upload_warning'  => $warnings ?: $portfolio->upload_warning
                 ]);
 
                 UpdatePlatformPortfolioLog::dispatch($logs, [

@@ -195,11 +195,6 @@ const effectiveOtherShopTemplates = computed(() =>
                 </div>
             </div>
             <div v-if="isReady" class="mb-4">
-                <div class="text-sm text-gray-600 mb-2">
-                    Estimated email size: approximately <span class="font-semibold">{{ data.compiled_layout_size }}
-                        KB</span>
-                </div>
-
                 <div v-if="data.compiled_layout_size > 102"
                     class="flex items-start gap-3 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded-md shadow-sm">
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 text-2xl mt-0.5 flex-shrink-0"
@@ -259,7 +254,23 @@ const effectiveOtherShopTemplates = computed(() =>
                 </div>
             </Modal>
         </template>
-        <div v-if="isInProcess">
+        <div v-if="isInProcess && data.is_composed">
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-2">
+                    {{ trans(`:mailshotSubject is composed but not published yet`, {
+                        mailshotSubject: props.data.mailshot.data.subject
+                            ?? ''
+                    }) }}
+                </h2>
+                <p class="text-gray-600 mb-4">
+                    {{ trans('Open the workshop and press Save to publish the email, then it will be ready to send.') }}
+                </p>
+                <Link v-if="props.workshopRoute" :href="route(props.workshopRoute.name, props.workshopRoute.parameters)">
+                    <Button :label="trans('Go to Compose')" type="primary" iconRight="fal fa-arrow-right" />
+                </Link>
+            </div>
+        </div>
+        <div v-else-if="isInProcess">
             <div class="mb-6">
                 <h2 class="text-xl font-semibold text-gray-900 mb-2">
                     {{ trans(`:mailshotSubject is still in process`, {

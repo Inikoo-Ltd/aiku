@@ -42,6 +42,13 @@ class GetMasterProductCategoryImages
                     'masterProductCategory' => $masterProductCategory->id,
                 ],
             ],
+            'attach_images_route' => [
+                'method'     => 'post',
+                'name'       => 'grp.models.master_product_category.attach_images',
+                'parameters' => [
+                    'masterProductCategory' => $masterProductCategory->id,
+                ],
+            ],
             'delete_images_route' => [
                 'method'     => 'post',
                 'name'       => 'grp.models.master_product_category.delete_images',

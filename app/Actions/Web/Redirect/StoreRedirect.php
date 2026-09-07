@@ -11,6 +11,8 @@ namespace App\Actions\Web\Redirect;
 
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\OrgAction;
+use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Actions\Web\Webpage\PurgeVarnishPath;
 use App\Actions\Web\Website\HydrateRedirect;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
@@ -19,6 +21,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redirect as FacadesRedirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -42,6 +45,11 @@ class StoreRedirect extends OrgAction
         $redirect = $webpage->redirectedTo()->create($modelData);
         HydrateRedirect::run($webpage);
         BreakProductInWebpagesCache::make()->breakCache($webpage);
+
+        Cache::forget(config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.$redirect->from_path);
+        PurgeVarnishPath::run($webpage->website, $redirect->from_path);
+        BreakWebpageCache::run($webpage);
+
         return $redirect;
 
     }

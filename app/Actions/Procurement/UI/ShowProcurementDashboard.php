@@ -8,15 +8,20 @@
 
 namespace App\Actions\Procurement\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\UI\GetPartnerMiniCart;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Search\GetSearchDemandOpportunities;
 use App\Actions\UI\WithInertia;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Dispatching\Shipper;
 use App\Models\GoodsIn\StockDelivery;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgAgent;
+use App\Models\Procurement\ShoppingListItem;
+use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
@@ -29,15 +34,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowProcurementDashboard extends OrgAction
 {
+    use WithProcurementAuthorisation;
     use AsAction;
     use WithInertia;
     use WithAgentOrganisation;
 
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
-    }
 
 
     public function asController(Organisation $organisation, ActionRequest $request): ActionRequest
@@ -74,24 +75,220 @@ class ShowProcurementDashboard extends OrgAction
         ];
     }
 
-    public function htmlResponse(ActionRequest $request): Response
+    private function getDashboardCards(array $numbers): array
     {
-        $numbers = $this->getDashboardNumbers();
-        $agents  = null;
+        $organisation = $this->organisation;
 
-        if ($this->organisation->type === OrganisationTypeEnum::SHOP) {
-            $agents = [
-                'name'         => __('Agents'),
-                'icon'         => ['fal', 'fa-people-arrows'],
-                'route'         => [
-                    'name'       => 'grp.org.procurement.org_agents.index',
-                    'parameters' => ['organisation' => $this->organisation->slug]
+        if ($organisation->type !== OrganisationTypeEnum::SHOP) {
+            return [
+                $this->dashboardCard(__('Suppliers'), __('Current suppliers'), 'fal fa-person-dolly', $numbers['suppliers'], 'emerald', 'grp.org.procurement.org_suppliers.index'),
+                $this->dashboardCard(__('Supplier Products'), __('Current supplier products'), 'fal fa-box-usd', $numbers['supplier_products'], 'amber', 'grp.org.procurement.org_supplier_products.index'),
+                $this->dashboardCard(__('Purchase Orders'), __('Purchase orders'), 'fal fa-clipboard-list', $numbers['purchase_orders'], 'indigo', 'grp.org.procurement.purchase_orders.index'),
+                $this->dashboardCard(__('Stock Deliveries'), __('Stock deliveries'), 'fal fa-truck-container', $numbers['stock_deliveries'], 'sky', 'grp.org.procurement.stock_deliveries.index'),
+            ];
+        }
+
+        $stats = $organisation->procurementStats;
+        $openPurchaseOrders = $stats->number_purchase_orders_state_in_process
+            + $stats->number_purchase_orders_state_submitted
+            + $stats->number_purchase_orders_state_confirmed;
+        $preparingDeliveries = $stats->number_stock_deliveries_state_in_process
+            + $stats->number_stock_deliveries_state_confirmed
+            + $stats->number_stock_deliveries_state_ready_to_ship;
+        $receivingDeliveries = $stats->number_stock_deliveries_state_received
+            + $stats->number_stock_deliveries_state_checked
+            + $stats->number_stock_deliveries_state_booking_in
+            + $stats->number_stock_deliveries_state_booked_in;
+        $activeDeliveries = $preparingDeliveries
+            + $stats->number_stock_deliveries_state_dispatched
+            + $receivingDeliveries;
+
+        return [
+            $this->dashboardCard(
+                __('Agents'),
+                __('Active purchasing agents'),
+                'fal fa-people-arrows',
+                $stats->number_active_org_agents,
+                'violet',
+                'grp.org.procurement.org_agents.index',
+                [
+                    $this->dashboardMetric(
+                        __('Agent Suppliers'),
+                        $stats->number_active_org_suppliers_in_agents,
+                        'grp.org.procurement.org_agent_suppliers.index'
+                    ),
+                ]
+            ),
+            $this->dashboardCard(
+                __('Suppliers'),
+                __('Active free suppliers'),
+                'fal fa-person-dolly',
+                $stats->number_active_independent_org_suppliers,
+                'emerald',
+                'grp.org.procurement.org_suppliers.index'
+            ),
+            $this->dashboardCard(
+                __('Supplier Products'),
+                __('Current supplier products'),
+                'fal fa-box-usd',
+                $stats->number_current_org_supplier_products,
+                'amber',
+                'grp.org.procurement.org_supplier_products.index',
+                [
+                    $this->dashboardMetric(__('Active'), $stats->number_org_supplier_products_state_active, 'grp.org.procurement.org_supplier_products.index', ['elements[state]' => 'active']),
+                    $this->dashboardMetric(__('Discontinuing'), $stats->number_org_supplier_products_state_discontinuing, 'grp.org.procurement.org_supplier_products.index', ['elements[state]' => 'discontinuing']),
                 ],
-                'index'        => [
-                    'number' => $this->organisation->procurementStats->number_active_org_agents
+                ['elements[state]' => 'active,discontinuing']
+            ),
+            $this->dashboardCard(
+                __('Purchase Orders'),
+                __('Open purchase orders'),
+                'fal fa-clipboard-list',
+                $openPurchaseOrders,
+                'indigo',
+                'grp.org.procurement.purchase_orders.index',
+                [
+                    $this->dashboardMetric(__('In process'), $stats->number_purchase_orders_state_in_process, 'grp.org.procurement.purchase_orders.index', ['elements[state]' => 'in_process']),
+                    $this->dashboardMetric(__('Submitted'), $stats->number_purchase_orders_state_submitted, 'grp.org.procurement.purchase_orders.index', ['elements[state]' => 'submitted']),
+                    $this->dashboardMetric(__('Confirmed'), $stats->number_purchase_orders_state_confirmed, 'grp.org.procurement.purchase_orders.index', ['elements[state]' => 'confirmed']),
+                ],
+                ['elements[state]' => 'in_process,submitted,confirmed']
+            ),
+            $this->dashboardCard(
+                __('Stock Deliveries'),
+                __('Deliveries in progress'),
+                'fal fa-truck-container',
+                $activeDeliveries,
+                'sky',
+                'grp.org.procurement.stock_deliveries.index',
+                [
+                    $this->dashboardMetric(__('Preparing'), $preparingDeliveries, 'grp.org.procurement.stock_deliveries.index', ['elements[state]' => 'in_process,confirmed,ready_to_ship']),
+                    $this->dashboardMetric(__('In transit'), $stats->number_stock_deliveries_state_dispatched, 'grp.org.procurement.stock_deliveries.index', ['elements[state]' => 'dispatched']),
+                    $this->dashboardMetric(__('Receiving'), $receivingDeliveries, 'grp.org.procurement.stock_deliveries.index', ['elements[state]' => 'received,checked,booking_in,booked_in']),
+                ],
+                ['elements[state]' => 'in_process,confirmed,ready_to_ship,dispatched,received,checked,booking_in,booked_in']
+            ),
+        ];
+    }
+
+    private function getShoppingLists(): array
+    {
+        $withItems = [];
+        $empty     = [];
+
+        foreach (OrgPartner::where('organisation_id', $this->organisation->id)->get() as $orgPartner) {
+            $miniCart = GetPartnerMiniCart::run($orgPartner);
+
+            if ($miniCart['count'] > 0) {
+                $withItems[] = $miniCart;
+
+                continue;
+            }
+
+            $shopId = Arr::get($orgPartner->partner->settings, 'procurement.shop_id');
+
+            $empty[] = [
+                'name'  => $miniCart['partner_name'],
+                'route' => [
+                    'name'       => $shopId ? 'grp.org.procurement.org_partners.show.browse.index' : 'grp.org.procurement.org_partners.show.shopping_list.index',
+                    'parameters' => [$this->organisation->slug, $orgPartner->id],
                 ],
             ];
         }
+
+        foreach (OrgAgent::where('organisation_id', $this->organisation->id)->where('status', true)->with('agent')->get() as $orgAgent) {
+            $openItems = ShoppingListItem::query()
+                ->join('supplier_products', 'supplier_products.id', 'shopping_list_items.supplier_product_id')
+                ->where('shopping_list_items.organisation_id', $this->organisation->id)
+                ->where('shopping_list_items.agent_id', $orgAgent->agent_id)
+                ->where('shopping_list_items.state', ShoppingListItemStateEnum::OPEN->value)
+                ->select([
+                    'shopping_list_items.id',
+                    'shopping_list_items.quantity_units',
+                    'supplier_products.code',
+                    'supplier_products.name',
+                ])
+                ->orderByDesc('shopping_list_items.created_at')
+                ->get();
+
+            if ($openItems->isEmpty()) {
+                $empty[] = [
+                    'name'  => $orgAgent->agent->name,
+                    'route' => $this->dashboardRoute('grp.org.procurement.shopping_list.index'),
+                ];
+
+                continue;
+            }
+
+            $withItems[] = [
+                'partner_name' => $orgAgent->agent->name,
+                'count'        => $openItems->count(),
+                'total'        => 0,
+                'currency'     => $this->organisation->currency->code,
+                'items'        => $openItems->take(10)->map(fn (ShoppingListItem $item) => [
+                    'id'             => $item->id,
+                    'quantity'       => $item->quantity_units,
+                    'org_stock_code' => $item->code,
+                    'org_stock_name' => $item->name,
+                    'family_name'    => null,
+                ])->values()->all(),
+                'listRoute'    => $this->dashboardRoute('grp.org.procurement.shopping_list.index'),
+            ];
+        }
+
+        return [
+            'withItems' => $withItems,
+            'empty'     => $empty,
+        ];
+    }
+
+    private function dashboardCard(
+        string $label,
+        string $description,
+        string $icon,
+        int $value,
+        string $tone,
+        string $routeName,
+        array $metrics = [],
+        array $query = []
+    ): array {
+        return [
+            'label'       => $label,
+            'description' => $description,
+            'icon'        => $icon,
+            'value'       => $value,
+            'tone'        => $tone,
+            'route'       => $this->dashboardRoute($routeName, $query),
+            'metrics'     => $metrics,
+        ];
+    }
+
+    private function dashboardMetric(string $label, int $value, string $routeName, array $query = []): array
+    {
+        return [
+            'label' => $label,
+            'value' => $value,
+            'route' => $this->dashboardRoute($routeName, $query),
+        ];
+    }
+
+    private function dashboardRoute(string $routeName, array $query = []): array
+    {
+        $parameters = ['organisation' => $this->organisation->slug];
+
+        if ($query !== []) {
+            $parameters['_query'] = $query;
+        }
+
+        return [
+            'name'       => $routeName,
+            'parameters' => $parameters,
+        ];
+    }
+
+    public function htmlResponse(ActionRequest $request): Response
+    {
+        $numbers = $this->getDashboardNumbers();
 
         return Inertia::render(
             'Procurement/ProcurementDashboard',
@@ -112,56 +309,8 @@ class ShowProcurementDashboard extends OrgAction
 
                 'shippers' => Shipper::query()->get(),
                 'search_demand' => GetSearchDemandOpportunities::run($this->group, $this->organisation),
-                'flatTreeMaps' => [
-
-                    array_filter([
-                        $agents,
-                        [
-                            'name'         => __('Suppliers'),
-                            'icon'         => ['fal', 'fa-person-dolly'],
-                            'route'         => [
-                                'name'       => 'grp.org.procurement.org_suppliers.index',
-                                'parameters' => ['organisation' => $this->organisation->slug]
-                            ],
-                            'index'        => [
-                                'number' => $numbers['suppliers']
-                            ],
-                        ],
-                        [
-                            'name'         => __('Supplier Products'),
-                            'shortName'    => __('Products'),
-                            'icon'         => ['fal', 'fa-box-usd'],
-                            'route'         => [
-                                'name'       => 'grp.org.procurement.org_supplier_products.index',
-                                'parameters' => ['organisation' => $this->organisation->slug]
-                            ],
-                            'index'        => [
-                                'number' => $numbers['supplier_products']
-                            ]
-                        ],
-                    ]),
-
-                    [
-                        [
-                            'name'  => __('Purchase Orders'),
-                            'icon'  => ['fal', 'fa-clipboard-list'],
-                            'route'  => ['name' => 'grp.org.procurement.purchase_orders.index', 'parameters' => ['organisation' => $this->organisation->slug]],
-                            'index' => [
-                                'number' => $numbers['purchase_orders']
-                            ]
-
-                        ],
-                        [
-                            'name'  => __('Stock Deliveries'),
-                            'icon'  => ['fal', 'fa-truck-container'],
-                            'route'  => ['name' => 'grp.org.procurement.stock_deliveries.index', 'parameters' => ['organisation' => $this->organisation->slug]],
-                            'index' => [
-                                'number' => $numbers['stock_deliveries']
-                            ]
-
-                        ],
-                    ],
-                ]
+                'dashboardCards' => $this->getDashboardCards($numbers),
+                'shoppingLists' => $this->getShoppingLists(),
 
             ]
         );

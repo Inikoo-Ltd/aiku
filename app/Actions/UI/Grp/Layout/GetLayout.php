@@ -11,6 +11,7 @@ namespace App\Actions\UI\Grp\Layout;
 use App\Actions\SysAdmin\User\UI\GetUserOrganisationLayout;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetLayout
@@ -25,6 +26,7 @@ class GetLayout
 
         return [
             'group'          => $this->getGroupData($user->group),
+            'has_group_access' => $user->hasGroupAccess(),
             'organisations'  => GetUserOrganisationLayout::make()->getOrganisations($user),
             'agents'         => GetUserOrganisationLayout::make()->getAgents($user),
             'digital_agency' => GetUserOrganisationLayout::make()->getDigitalAgencies($user),
@@ -34,6 +36,10 @@ class GetLayout
                 'org' => GetOrganisationsLayout::run($user),
             ],
             'app_theme'      => $user->settings['app_theme'] ?? null,
+            'chat_theme'     => $user->settings['chat_theme'] ?? 'dracula',
+            'staff_chat'     => [
+                'quick_replies' => Arr::get($user->group->settings, 'staff_chat.quick_replies') ?: null,
+            ],
 
 
         ];

@@ -4,6 +4,14 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+export interface OfferFreshness {
+	value: string
+	label: string
+	tooltip: string
+	class: string
+	text_class: string
+}
+
 export interface Family {
 	id: number
 	slug: string
@@ -31,4 +39,5 @@ export interface Family {
 		start_at: string | null
 		end_at: string | null
 	} | null
+	offer_freshness?: OfferFreshness
 }

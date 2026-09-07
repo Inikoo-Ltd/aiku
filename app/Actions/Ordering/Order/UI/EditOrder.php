@@ -65,7 +65,15 @@ class EditOrder extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead' => [
-                    'title'    => $order->slug,
+                    'title'           => $order->reference,
+                    'model'           => __('Order'),
+                    'icon'            => [
+                        'icon'  => 'fal fa-shopping-cart',
+                        'title' => __('Customer client')
+                    ],
+                    'afterTitle'      => [
+                        'label' => $order->state->labels()[$order->state->value],
+                    ],
                     'actions'  => [
                         [
                             'type'  => 'button',
@@ -80,17 +88,17 @@ class EditOrder extends OrgAction
 
                 'formData' => [
                     'blueprint' => [
-                        [
-                            'label'  => __('Reference'),
-                            'title'  => __('id'),
-                            'fields' => [
-                                'reference' => [
-                                    'type'  => 'input',
-                                    'label' => __('Reference'),
-                                    'value' => $order->reference
-                                ],
-                            ]
-                        ],
+                        // [
+                        //     'label'  => __('Reference'),
+                        //     'title'  => __('id'),
+                        //     'fields' => [
+                        //         'reference' => [
+                        //             'type'  => 'input',
+                        //             'label' => __('Reference'),
+                        //             'value' => $order->reference
+                        //         ],
+                        //     ]
+                        // ],
                         [
                             'label'  => __('Sales Channel'),
                             'title'  => __('Sales Channel'),
@@ -103,7 +111,19 @@ class EditOrder extends OrgAction
                                     'value' => $order->sales_channel_id,
                                 ],
                             ],
-                        ]
+                        ],
+                        ...($order->billingAddress?->country_code == 'ES' && !$order->invoices()->exists() ? [[
+                            'label'  => 'Recargo de equivalencia',
+                            'title'  => 'Recargo de equivalencia',
+                            'fields' => [
+                                'is_re' => [
+                                    'type'        => 'toggle',
+                                    'label'       => 'Recargo de equivalencia',
+                                    'information' => __("Changes the tax category of this order only, not the customer's"),
+                                    'value'       => $order->is_re
+                                ],
+                            ],
+                        ]] : [])
                     ],
                     'args' => [
                         'updateRoute' => [

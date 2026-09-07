@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\Transaction;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\LogBasketEvent;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -34,6 +35,8 @@ class UpdateTransaction extends OrgAction
         if (Arr::has($modelData, 'units_ordered')) {
             $unitsOrders = Arr::pull($modelData, 'units_ordered');
             $product     = $transaction->model;
+
+            // TODO: below should be $units = $transaction->historicAsset?->units ?? $transaction->model->units;
             $units       = $product->units;
             if ($units == 0) {
                 abort(423);
@@ -65,7 +68,7 @@ class UpdateTransaction extends OrgAction
             $historicAsset = $transaction->historicAsset;
 
             $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
-            $net   = round($gross * ($transaction->current_discount_factor ?? 1), 2);
+            $net   = $gross - discountAmountOffGross($gross, $transaction->current_discount_factor);
 
             data_set($modelData, 'gross_amount', $gross);
             data_set($modelData, 'net_amount', $net);
@@ -89,6 +92,7 @@ class UpdateTransaction extends OrgAction
             data_set($modelData, 'grp_net_amount', $grpExchange * $netAmount);
         }
 
+        $quantityBefore = (float) $transaction->quantity_ordered;
         $this->update($transaction, $modelData, ['data']);
 
         if ($this->strict) {
@@ -98,6 +102,16 @@ class UpdateTransaction extends OrgAction
             if (Arr::hasAny($changes, ['quantity_ordered', 'net_amount', 'gross_amount'])) {
                 OrderHydrateCategoriesData::run($transaction->order);
                 CalculateOrderTotalAmounts::run($transaction->order, $calculateShipping, $calculateDiscounts);
+
+                if (Arr::has($changes, 'quantity_ordered')) {
+                    $delta = (float) $transaction->quantity_ordered - $quantityBefore;
+                    LogBasketEvent::run(
+                        $transaction->order->fresh(),
+                        $delta > 0 ? 'up' : 'down',
+                        $transaction,
+                        $delta
+                    );
+                }
             }
         }
 
@@ -157,6 +171,10 @@ class UpdateTransaction extends OrgAction
     public function asController(Transaction $transaction, ActionRequest $request): Transaction
     {
         $this->initialisationFromShop($transaction->shop, $request);
+
+        if ($transaction->trashed()) {
+            return $transaction;
+        }
 
         return $this->handle($transaction, $this->validatedData);
     }

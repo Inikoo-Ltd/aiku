@@ -9,7 +9,12 @@
 namespace App\Actions\Inventory\OrgStock\Hydrators;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Dispatching\FulfilmentGate\ReleaseCoverableOrdersAtGate;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLowStockAudits;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateReplenishments;
+use App\Actions\Production\RawMaterial\Hydrators\RawMaterialHydrateFromOrgStock;
 use App\Models\Inventory\OrgStock;
+use App\Models\Production\RawMaterial;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -40,7 +45,7 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
             return;
         }
 
-        //        $oldQuantityAvailable   = $orgStock->quantity_available;
+        $oldQuantityAvailable = $orgStock->quantity_available;
         //        $oldQuantityInLocations = $orgStock->quantity_in_locations;
 
         $quantityInLocations = DB::table('location_org_stocks')->where('org_stock_id', $orgStock->id)->sum('quantity');
@@ -68,6 +73,12 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
         ]);
 
         if ($orgStock->wasChanged('quantity_available')) {
+            OrgStockHydrateOutOfStockForecast::dispatch($orgStock)->delay(30);
+
+            if ($quantityAvailable > $oldQuantityAvailable && $orgStock->organisation->hasFulfilmentGate()) {
+                ReleaseCoverableOrdersAtGate::dispatch($orgStock->organisation_id)->delay(5);
+            }
+
             //            DB::table('debug_stock_updates')->insert([
             //                'org_stock_id'              => $orgStock->id,
             //                'slug'                      => $orgStock->slug,
@@ -85,11 +96,31 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
             }
 
             OrgStockHydrateStockValue::dispatch($orgStock);
+        } elseif (!$orgStock->is_on_demand) {
+            $outOfSyncProducts = $orgStock->products()
+                ->where('product_has_org_stocks.quantity', '>', 0)
+                ->whereRaw(
+                    'products.available_quantity is distinct from floor(?::numeric / product_has_org_stocks.quantity)',
+                    [$quantityAvailable]
+                )->get();
+
+            foreach ($outOfSyncProducts as $product) {
+                ProductHydrateAvailableQuantity::dispatch($product);
+            }
         }
 
         if ($orgStock->wasChanged('quantity_in_locations')) {
             OrgStockHydrateValueInLocations::dispatch($orgStock);
             OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock);
+
+            foreach ($orgStock->organisation->warehouses as $warehouse) {
+                WarehouseHydrateLowStockAudits::dispatch($warehouse)->delay(2);
+                WarehouseHydrateReplenishments::dispatch($warehouse)->delay(2);
+            }
+
+            foreach (RawMaterial::where('org_stock_id', $orgStock->id)->get() as $rawMaterial) {
+                RawMaterialHydrateFromOrgStock::dispatch($rawMaterial);
+            }
         }
     }
 

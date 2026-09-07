@@ -10,7 +10,7 @@ import Table from "@/Components/Table/Table.vue"
 import { DeliveryNote } from "@/types/delivery-note"
 import { DialogTitle, Tab } from "@headlessui/vue"
 import type { Table as TableTS } from "@/types/Table"
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Icon from "@/Components/Icon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -21,15 +21,17 @@ import NotesDisplay from "@/Components/NotesDisplay.vue"
 import WaitingOppositeCountBadge from "@/Components/Warehouse/DeliveryNotes/WaitingOppositeCountBadge.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faMapMarkerAlt, faTruck, faYinYang } from "@fal"
+import { faMapMarkerAlt, faTruck, faYinYang, faCalendarAlt, faHistory } from "@fal"
 import { faCertificate } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faTruck, faYinYang)
 
-defineProps<{
+const props = defineProps<{
 	data: TableTS
 	tab?: string
+	bucket: string
 }>()
+
 
 
 const routeParams = route().routeParams
@@ -228,10 +230,74 @@ const generateRouteDeliveryNote = (id: string) => {
 		deliveryNote: id,
 	})
 }
+
+const showSubmittedDate = ref(props.bucket == 'all')
+
+const hasDateColumnToggle = computed(() => !!props.bucket && props.bucket != 'all')
+
+const bucketEvent = computed(() => {
+	const events: Record<string, { label: string; header: string }> = {
+		handling: { label: trans('Handling'), header: trans('Handling date') },
+		handling_blocked: { label: trans('Blocked'), header: trans('Blocked date') },
+		waiting: { label: trans('Blocked'), header: trans('Blocked date') },
+		picked: { label: trans('Picked'), header: trans('Picked date') },
+		packing: { label: trans('Packing'), header: trans('Packing date') },
+		packed: { label: trans('Packed'), header: trans('Packed date') },
+		finalised: { label: trans('Finalised'), header: trans('Finalised date') },
+		dispatched: { label: trans('Dispatched'), header: trans('Dispatched date') },
+	}
+
+	return events[props.bucket] ?? { label: trans('Last event'), header: trans('Last event date') }
+})
+
+const dateColumnOptions = computed(() => [
+	{
+		value: false,
+		icon: faHistory,
+		label: bucketEvent.value.label,
+		tooltip: trans('Show when the delivery note entered this stage (:event)', {
+			event: bucketEvent.value.header.toLowerCase(),
+		}),
+	},
+	{
+		value: true,
+		icon: faCalendarAlt,
+		label: trans('Submitted'),
+		tooltip: trans('Show when the delivery note was submitted by the customer'),
+	},
+])
 </script>
 
 <template>
 	<Table :resource="data" :name="tab" class="mt-5">
+		<template #tableExtraAction v-if="hasDateColumnToggle">
+			<div class="flex items-center gap-x-1.5">
+				<label class="text-xs text-gray-500 whitespace-nowrap">
+					{{ ctrans('Date') }}
+				</label>
+				<div
+					role="group"
+					:aria-label="ctrans('Date shown in the date column')"
+					class="dateColumnToggle">
+					<button
+						v-for="option in dateColumnOptions"
+						:key="String(option.value)"
+						type="button"
+						v-tooltip="option.tooltip"
+						:aria-pressed="showSubmittedDate === option.value"
+						@click="showSubmittedDate = option.value"
+						:class="{ active: showSubmittedDate === option.value }">
+						<FontAwesomeIcon
+							:icon="option.icon"
+							class="text-[0.65rem]"
+							fixed-width
+							aria-hidden="true" />
+						{{ option.label }}
+					</button>
+				</div>
+			</div>
+		</template>
+
 		<template #cell(status)="{ item: deliveryNote }">
 			<!-- {{deliveryNote.state_icon}} -->
 			<Icon :data="deliveryNote.state_icon" />
@@ -250,6 +316,13 @@ const generateRouteDeliveryNote = (id: string) => {
 					<Link :href="deliveryNoteHref(deliveryNote)" class="primaryLink">
 						{{ deliveryNote["reference"] }}
 					</Link>
+					<FontAwesomeIcon
+						v-if="deliveryNote.is_collection"
+						v-tooltip="ctrans('Collection')"
+						:icon="faMapMarkerAlt"
+						class="text-pink-500"
+						fixed-width
+						aria-hidden="true" />
 					<FontAwesomeIcon
 						v-if="deliveryNote.is_premium_dispatch"
 						v-tooltip="trans('Priority dispatch')"
@@ -271,6 +344,13 @@ const generateRouteDeliveryNote = (id: string) => {
 						class="text-yellow-500"
 						fixed-width
 						aria-hidden="true" />
+					<FontAwesomeIcon
+						v-if="Number(deliveryNote.number_items_composition_dirty) > 0"
+						v-tooltip="trans('The packing of :count item(s) changed after this note was worked — check the quantities before dispatching', { count: deliveryNote.number_items_composition_dirty })"
+						icon="fas fa-triangle-exclamation"
+						class="text-red-600"
+						fixed-width
+						aria-hidden="true" />
 					<NotesDisplay :item="deliveryNote" reference-field="reference" />
 					<WaitingOppositeCountBadge
 						v-if="Number(deliveryNote.waiting_warehouse_count) > 0"
@@ -285,16 +365,6 @@ const generateRouteDeliveryNote = (id: string) => {
 						:href="deliveryNoteHref(deliveryNote)"
 					/>
 				</div>
-				<span
-                    v-if="deliveryNote.is_collection"
-					class="border border-pink-500 text-pink-500 py-[0.15rem] px-[0.25rem] rounded-md ml-auto text-xs my-auto whitespace-nowrap"
-				>
-					{{ ctrans('Collection') }}
-					<FontAwesomeIcon 
-						:icon="faMapMarkerAlt"
-						class="text-pink-500"
-					/>
-				</span>
 			</div>
 		</template>
 
@@ -306,12 +376,25 @@ const generateRouteDeliveryNote = (id: string) => {
 			</div>
 		</template>
 
+		<template #table-header-date v-if="hasDateColumnToggle || showSubmittedDate">
+			{{ showSubmittedDate ? ctrans("Submitted date") : bucketEvent.header }}
+		</template>
+
 		<template #cell(date)="{ item }">
-			{{
-				useFormatTime(item.date, {
-					formatTime: "EEE, do MMM yy, HH:mm",
-				})
-			}}
+			<span v-if="showSubmittedDate">
+				{{
+					useFormatTime(item.date, {
+						formatTime: "EEE, do MMM yy, HH:mm",
+					})
+				}}
+			</span>
+			<span v-else>
+				{{
+					useFormatTime(item.last_modified_date, {
+						formatTime: "EEE, do MMM yy, HH:mm",
+					})
+				}}
+			</span>
 		</template>
 
 		<template #cell(effective_weight)="{ item: deliveryNote }">
@@ -491,3 +574,30 @@ const generateRouteDeliveryNote = (id: string) => {
 		</div>
 	</Modal>
 </template>
+
+<style scoped>
+.dateColumnToggle {
+	@apply inline-flex items-center gap-0.5 rounded-md border p-0.5;
+	border-color: color-mix(in srgb, var(--theme-color-4, #4f46e5) 35%, transparent);
+	background-color: color-mix(in srgb, var(--theme-color-4, #4f46e5) 8%, transparent);
+}
+
+.dateColumnToggle button {
+	@apply flex items-center gap-x-1 rounded px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-colors duration-150 focus:outline-none;
+	color: color-mix(in srgb, var(--theme-color-4, #4f46e5) 70%, black);
+}
+
+.dateColumnToggle button:hover:not(.active) {
+	background-color: color-mix(in srgb, var(--theme-color-4, #4f46e5) 16%, transparent);
+}
+
+.dateColumnToggle button:focus-visible {
+	box-shadow: 0 0 0 2px var(--theme-color-4, #4f46e5);
+}
+
+.dateColumnToggle button.active {
+	@apply shadow-sm;
+	background-color: var(--theme-color-4, #4f46e5);
+	color: var(--theme-color-5, #f3f4f6);
+}
+</style>

@@ -199,7 +199,7 @@ onMounted(async () => {
 		</div>
 
 		<!-- Messages -->
-		<div ref="messagesContainer" class="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+		<div ref="messagesContainer" class="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-4">
 			<div class="flex justify-center mb-2">
 				<button
 					v-if="canLoadMore && messages.length && !isLoadingMore"
@@ -227,7 +227,8 @@ onMounted(async () => {
 
 					<BubbleChat
 						:message="message"
-						:viewerType="viewerType" />
+						:viewerType="viewerType"
+						readonly />
 				</div>
 			</template>
 

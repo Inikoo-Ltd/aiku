@@ -7,28 +7,27 @@
 
 import axios from "axios"
 
-// Method: to get the redirect url
-export const getRefRedirect = async () => {
+export const getRefRedirect = async (options: { registered?: boolean } = {}) => {
     try {
-        console.log('-Re:')
+        const params = new URLSearchParams()
+        const ref = route()?.params?.['ref']
 
-        const response = await axios.get(
-          `/json/canonical-redirect?ref=${route()?.params?.['ref']}`,
-        )
-
-
-
-        console.log('-Response-redirect', response)
-
-
-        if (response.data?.redirect_url) {
-            return response.data?.redirect_url  // "https://ecom.test/gold_reward"
+        if (ref) {
+            params.set('ref', String(ref))
         }
 
-        return route('iris.iris_webpage')
+        if (options.registered) {
+            params.set('registered', '1')
+        }
 
+        const response = await axios.get(`/json/canonical-redirect?${params.toString()}`)
 
+        if (response.data?.redirect_url) {
+            return response.data?.redirect_url
+        }
+
+        return '/'
     } catch (error: any) {
-        return route('iris.iris_webpage')
+        return '/'
     }
 }

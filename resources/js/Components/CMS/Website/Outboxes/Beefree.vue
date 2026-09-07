@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, inject, watch } from "vue";
+import { onMounted, nextTick, ref, inject, watch } from "vue";
 import axios from "axios"
 import BeefreeSDK from '@beefree.io/sdk'
 import { routeType } from "@/types/route";
@@ -145,8 +145,20 @@ const initializeBeefree = async () => {
     }
 }
 
+const wrapperRef = ref<HTMLElement | null>(null)
+const wrapperTop = ref(177)
+
 onMounted(() => {
     initializeBeefree()
+})
+
+watch(showBee, async (value) => {
+    if (value) {
+        await nextTick()
+        if (wrapperRef.value) {
+            wrapperTop.value = Math.round(wrapperRef.value.getBoundingClientRect().top)
+        }
+    }
 })
 
 watch(
@@ -170,7 +182,7 @@ defineExpose({
 </script>
 
 <template>
-    <div v-if="showBee" class="beefree-wrapper">
+    <div v-if="showBee" ref="wrapperRef" class="beefree-wrapper" :style="{ height: `calc(100vh - ${wrapperTop}px)` }">
         <!-- Loading Animation -->
         <div v-if="isLoading" class="loading-overlay">
             <div class="loading-spinner">
@@ -206,7 +218,6 @@ defineExpose({
 <style scoped>
 .beefree-wrapper {
     position: relative;
-    height: calc(100vh - 177px);
 }
 
 .editor-container {

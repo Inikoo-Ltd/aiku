@@ -45,6 +45,10 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
             return $deliveryNote;
         }
 
+        if ($deliveryNote->hasBlockingItems()) {
+            abort(422, __('Cannot pack: some items are waiting for a replacement decision or warehouse release'));
+        }
+
         $oldState = $deliveryNote->state;
 
         data_set($modelData, 'packed_at', now());
@@ -57,9 +61,15 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
                 fn ($item) => UpdateDeliveryNoteItemPacking::isFullyPacked($item)
             );
 
+            /*
+             * These lines are swept up by one click on the note rather than confirmed one by one at
+             * the bench, so they all carry the same done_at. They are flagged so that per line
+             * packing rates can exclude them instead of reading a whole note as packed in an instant.
+             */
             foreach ($notFullyPacked as $item) {
                 StorePacking::make()->action($item, $this->user, [
                     'quantity' => UpdateDeliveryNoteItemPacking::quantityLeftToPack($item),
+                    'data'     => ['auto_packed' => true],
                 ]);
             }
 

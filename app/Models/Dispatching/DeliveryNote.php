@@ -10,6 +10,7 @@ namespace App\Models\Dispatching;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Helpers\NaturalLanguage;
 use App\Models\Catalogue\Shop;
@@ -159,6 +160,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $total_skos
  * @property int $total_units
  * @property bool $is_bypass_platform_update
+ * @property string|null $private_warehouse_note
+ * @property int $number_items_composition_dirty
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -270,6 +273,20 @@ class DeliveryNote extends Model implements Auditable
             'phone'           => (string)$this->phone,
             'company_name'    => (string)$this->company_name,
             'contact_name'    => (string)$this->contact_name,
+            'tracking'        => (string)$this->tracking_number,
+            'customer_name'   => (string)$this->customer?->name,
+            'customer_reference' => (string)$this->customer?->reference,
+            'order_references' => $this->orders()->get()->flatMap(fn (Order $order) => [
+                $order->reference,
+                $order->customer_reference,
+                $order->external_id,
+            ])->filter()->values()->all(),
+            'address'         => trim(implode(' ', array_filter([
+                $this->address?->address_line_1,
+                $this->address?->address_line_2,
+                $this->address?->locality,
+                $this->address?->postal_code,
+            ]))),
             'date'            => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
         ];
     }
@@ -319,6 +336,34 @@ class DeliveryNote extends Model implements Auditable
     public function deliveryNoteItems(): HasMany
     {
         return $this->hasMany(DeliveryNoteItem::class);
+    }
+
+    /**
+     * The one answer to "is something on this note still holding it", asked the same way by every
+     * transition and every screen. A line blocks while it waits on the warehouse or on CRM, or
+     * while a quantity that moved under the picker still has work outstanding on it. A line over
+     * picked is not blocking: the trim at the end of picking settles that one. A line finished, or
+     * finished short, is not blocking either, whatever flags it still carries: what blocks is work,
+     * never a flag on its own.
+     */
+    public function blockingItems(): HasMany
+    {
+        return $this->deliveryNoteItems()
+            ->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)
+            ->where(function ($query) {
+                $query->where('has_waiting_warehouse', true)
+                    ->orWhere('has_waiting_crm', true)
+                    ->orWhere(function ($query) {
+                        $query->where('is_dirty', true)
+                            ->where('is_handled', false)
+                            ->whereColumn('quantity_picked', '<=', 'quantity_required');
+                    });
+            });
+    }
+
+    public function hasBlockingItems(): bool
+    {
+        return $this->blockingItems()->exists();
     }
 
     public function warehouse(): BelongsTo

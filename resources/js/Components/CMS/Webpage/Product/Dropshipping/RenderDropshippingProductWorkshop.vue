@@ -55,7 +55,7 @@ const props = withDefaults(defineProps<{
     indexBlock?: number
     screenType: "mobile" | "tablet" | "desktop"
     code: string
-    currency: {
+    currency?: {
         code: string
         name: string
     }

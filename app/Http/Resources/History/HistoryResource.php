@@ -16,11 +16,13 @@ class HistoryResource extends JsonResource
 {
     public function toArray($request): array|Arrayable|JsonSerializable
     {
+        $isStaff = $request->user() instanceof \App\Models\SysAdmin\User;
+
         return [
             'id'             => $this['id'],
-            'ip_address'     => $this['ip_address'],
+            'ip_address'     => $isStaff ? $this['ip_address'] : null,
             'datetime'       => $this['created_at'],
-            'url'            => $this['url'],
+            'url'            => $isStaff ? $this['url'] : null,
             'type'           => $this['type'],
             'organisation'   => $this['organisation_slug'],
             'old_values'     => $this['old_values'],
@@ -32,7 +34,7 @@ class HistoryResource extends JsonResource
             'user_id'        => $this['user_id'],
             'user_type'      => $this['user_type'],
             'slug'           => $this['slug'],
-            'user_agent'     => $this['user_agent'],
+            'user_agent'     => $isStaff ? $this['user_agent'] : null,
             'user_name'      => $this['user_type'] === __('WebUser') ? __('Customer') : ($this->user?->contact_name ?? __('System')),
             'tags'           => $this['tags']
         ];

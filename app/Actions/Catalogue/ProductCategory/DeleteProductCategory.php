@@ -9,6 +9,9 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDepartments;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoImage;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithMismatchFamily;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoFamily;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDepartments;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDepartments;
@@ -52,12 +55,18 @@ class DeleteProductCategory extends OrgAction
             if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
                 DB::table('products')->where('family_id', $productCategory->id)->update(['family_id' => null]);
             }
-            $productCategory->webpage()->delete();
+            $productCategory->webpages()->delete();
             $productCategory->delete();
         }
         ShopHydrateDepartments::dispatch($productCategory->shop)->delay($this->hydratorsDelay);
         OrganisationHydrateDepartments::dispatch($productCategory->organisation)->delay($this->hydratorsDelay);
         GroupHydrateDepartments::dispatch($productCategory->group)->delay($this->hydratorsDelay);
+
+        if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
+            ShopHydrateFamiliesWithNoImage::dispatch($productCategory->shop)->delay($this->hydratorsDelay);
+            ShopHydrateProductsWithNoFamily::dispatch($productCategory->shop)->delay($this->hydratorsDelay);
+            ShopHydrateProductsWithMismatchFamily::dispatch($productCategory->shop)->delay($this->hydratorsDelay);
+        }
 
         return $productCategory;
     }

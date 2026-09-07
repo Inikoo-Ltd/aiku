@@ -48,7 +48,6 @@ class PickAllItemFromWaitingWarehouse extends OrgAction
 
             $deliveryNoteItem->update([
                 'quantity_waiting_warehouse' => 0,
-                'has_waiting_warehouse'      => false,
             ]);
             DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 

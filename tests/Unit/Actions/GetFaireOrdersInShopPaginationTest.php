@@ -33,3 +33,28 @@ test('follows faire cursor pagination until exhausted', function () {
             && !isset($query['excluded_states']);
     });
 });
+
+test('records and clears skipped faire orders in shop settings', function () {
+    $action = GetFaireOrdersInShop::make();
+
+    $shop           = new Shop();
+    $shop->settings = ['faire' => ['access_token' => 'test-token']];
+
+    $action->recordSkippedFaireOrder($shop, ['id' => 'bo_1', 'display_id' => 'ABC123'], ['Product not found in catalogue']);
+
+    expect($shop->settings['faire']['skipped_orders']['bo_1']['display_id'])->toBe('ABC123')
+        ->and($shop->settings['faire']['skipped_orders']['bo_1']['reasons'])->toBe(['Product not found in catalogue'])
+        ->and($shop->settings['faire']['skipped_orders']['bo_1']['first_seen'])->not->toBeNull();
+
+    $firstSeen = $shop->settings['faire']['skipped_orders']['bo_1']['first_seen'];
+    $action->recordSkippedFaireOrder($shop, ['id' => 'bo_1', 'display_id' => 'ABC123'], ['Retailer not found on Faire']);
+
+    expect($shop->settings['faire']['skipped_orders']['bo_1']['first_seen'])->toBe($firstSeen)
+        ->and($shop->settings['faire']['skipped_orders']['bo_1']['reasons'])->toBe(['Retailer not found on Faire']);
+
+    $action->clearSkippedFaireOrder($shop, 'unknown-id');
+    expect($shop->settings['faire']['skipped_orders'])->toHaveKey('bo_1');
+
+    $action->clearSkippedFaireOrder($shop, 'bo_1');
+    expect($shop->settings['faire']['skipped_orders'])->toBe([]);
+});

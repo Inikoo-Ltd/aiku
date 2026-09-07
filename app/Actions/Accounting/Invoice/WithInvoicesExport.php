@@ -11,24 +11,27 @@
 namespace App\Actions\Accounting\Invoice;
 
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Fulfilment\Pallet;
+use App\Models\Helpers\TariffCode;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Sentry;
 
 trait WithInvoicesExport
 {
-    public function getInvoicePdfContent(Invoice $invoice, array $options = []): string
+    public function getInvoicePdfContent(Invoice $invoice): string
     {
         $locale = $invoice->shop->language->code;
         app()->setLocale($locale);
 
         try {
-            [$pdf] = $this->buildInvoicePdf($invoice, $options);
+            [$pdf] = $this->buildInvoicePdf($invoice);
 
             return $pdf->output();
         } catch (Exception $e) {
@@ -38,13 +41,13 @@ trait WithInvoicesExport
         }
     }
 
-    public function processDataExportPdf(Invoice $invoice, array $options = []): \Symfony\Component\HttpFoundation\Response
+    public function processDataExportPdf(Invoice $invoice): \Symfony\Component\HttpFoundation\Response
     {
         $locale = $invoice->shop->language->code;
         app()->setLocale($locale);
 
         try {
-            [$pdf, $filename] = $this->buildInvoicePdf($invoice, $options);
+            [$pdf, $filename] = $this->buildInvoicePdf($invoice);
 
             $isAttachIsdocToPdf = Arr::get($invoice->organisation->settings, "invoice_export.attach_isdoc_to_pdf", false);
 
@@ -72,22 +75,113 @@ trait WithInvoicesExport
     }
 
     /**
+     * Splits off the lines that were entirely undispatched because of a stock shortage.
+     *
+     * A line only qualifies when every one of its delivery note items is out of stock and it carries
+     * no money at all, so partially dispatched lines and any priced line always stay in the main
+     * table and the invoice totals are untouched.
+     *
+     * @return array{0: Collection, 1: Collection} [outOfStock, remaining]
+     */
+    public function splitOutOfStockTransactions(Collection $transactions): array
+    {
+        $transactionIds = $transactions->pluck('transaction_id')->filter();
+
+        if ($transactionIds->isEmpty()) {
+            return [collect(), $transactions];
+        }
+
+        $outOfStockTransactionIds = DB::table('delivery_note_items')
+            ->whereIn('transaction_id', $transactionIds)
+            ->groupBy('transaction_id')
+            ->havingRaw('bool_and(state = ?)', [DeliveryNoteItemStateEnum::OUT_OF_STOCK->value])
+            ->pluck('transaction_id')
+            ->all();
+
+        return $transactions->partition(fn ($transaction) => $this->isFullyOutOfStockLine($transaction, $outOfStockTransactionIds))->all();
+    }
+
+
+    /**
+     * Quantity ordered but never supplied, in the invoice's own units.
+     *
+     * Covers the short shipped lines too: a line that was ordered 12 and supplied 8.5 is missing 3.5
+     * even though it is dispatched, priced and stays in the main table.
+     */
+    public function undeliveredQuantity(object $transaction): float
+    {
+        $ordered = (float)($transaction->transaction?->quantity_ordered ?? 0);
+
+        return max(0.0, $ordered - (float)$transaction->quantity);
+    }
+
+    public function isFullyOutOfStockLine(object $transaction, array $outOfStockTransactionIds): bool
+    {
+        return in_array($transaction->transaction_id, $outOfStockTransactionIds)
+            && (float)$transaction->net_amount === 0.0
+            && (float)$transaction->gross_amount === 0.0;
+    }
+
+    /**
+     * Collapses the lines into one row per tariff code + country of origin pair, the way export
+     * invoices are laid out for customs, so an order of 60 products becomes a handful of lines.
+     * The description is the curated tariff code name; a line without one falls back to the first
+     * product name marked with an asterisk, as Aurora did. Lines with nothing supplied are left out:
+     * customs only care about what is in the boxes.
+     *
+     * @return Collection<int, array{tariff_code: string, origin: string, description: string, codes: string, quantity: float, net_amount: float}>
+     */
+    public function groupTransactionsByTariffCodeAndOrigin(Collection $transactions, ?callable $nameResolver = null): Collection
+    {
+        $nameResolver ??= fn (string $tariffCode) => TariffCode::exportNameFor($tariffCode);
+
+        return $transactions
+            ->filter(fn ($transaction) => (float)$transaction->quantity > 0)
+            ->groupBy(fn ($transaction) => ($transaction->model?->tariff_code ?? '').'|'.($transaction->model?->country_of_origin ?? ''))
+            ->map(function (Collection $group) use ($nameResolver) {
+                $tariffCode   = $group->first()->model?->tariff_code ?? '';
+                $productNames = $group->map(fn ($transaction) => $transaction->historicAsset?->name)->filter()->unique();
+
+                return [
+                    'tariff_code' => $tariffCode,
+                    'origin'      => $group->first()->model?->country_of_origin ?? '',
+                    'description' => $nameResolver($tariffCode) ?? $productNames->first().' *',
+                    'codes'       => $group->map(fn ($transaction) => $transaction->historicAsset?->code)->filter()->unique()->implode(', '),
+                    'quantity'    => (float)$group->sum('quantity'),
+                    'net_amount'  => (float)$group->sum('net_amount'),
+                ];
+            })
+            ->sortBy(fn ($row) => $row['tariff_code'].'|'.$row['origin'])
+            ->values();
+    }
+
+    /**
+     * On invoices, shipping/charges/adjustments render as their own totals rows, so their
+     * transactions are excluded from the item lines. Refund totals have no such rows: every
+     * refund transaction must appear as a line or the credit note doesn't say what it refunds.
+     */
+    public function getInvoicePdfTransactions(Invoice $invoice): \Illuminate\Support\Collection
+    {
+        $invoiceTransactions = $invoice->invoiceTransactions()->with(['model', 'historicAsset', 'transaction'])->get();
+
+        if ($invoice->customer->is_fulfilment || $invoice->type == InvoiceTypeEnum::REFUND) {
+            return $invoiceTransactions;
+        }
+
+        return $invoiceTransactions->whereIn('model_type', ['Product', 'Service']);
+    }
+
+    /**
      * @return array{0: \Mccarlosen\LaravelMpdf\LaravelMpdf, 1: string}
      */
-    private function buildInvoicePdf(Invoice $invoice, array $options = []): array
+    private function buildInvoicePdf(Invoice $invoice): array
     {
         $totalItemsNet = $invoice->total_amount;
         $totalShipping = $invoice->order?->shipping_amount ?? 0;
 
         $totalNet = $totalItemsNet + $totalShipping;
 
-        $invoiceTransactions = $invoice->invoiceTransactions()->with(['model', 'historicAsset'])->get();
-
-        if ($invoice->customer->is_fulfilment) {
-            $transactionModel = $invoiceTransactions;
-        } else {
-            $transactionModel = $invoiceTransactions->where('model_type', 'Product');
-        }
+        $transactionModel = $this->getInvoicePdfTransactions($invoice);
 
         $transactions = $transactionModel->map(function ($transaction) {
             if (!empty($transaction->data['pallet_id'])) {
@@ -118,6 +212,36 @@ trait WithInvoicesExport
 
             return $transaction;
         })->sortBy(fn ($transaction) => strtolower($transaction->historicAsset?->code ?? ''));
+
+        $pdfColumns = GetInvoicePdfColumns::run($invoice);
+
+        $separateOutOfStock = $pdfColumns['separate_out_of_stock'];
+
+        $outOfStockTransactions = collect();
+        if ($separateOutOfStock && $invoice->type == InvoiceTypeEnum::INVOICE) {
+            [$outOfStockTransactions, $transactions] = $this->splitOutOfStockTransactions($transactions);
+
+            $outOfStockTransactions = $outOfStockTransactions
+                ->concat($transactions->filter(fn ($transaction) => $this->undeliveredQuantity($transaction) > 0))
+                ->each(function ($transaction) {
+                    $transaction->quantity_not_supplied = $this->undeliveredQuantity($transaction);
+                })
+                ->sortBy(fn ($transaction) => strtolower($transaction->historicAsset?->code ?? ''))
+                ->values();
+        }
+
+        $showDiscounts = $pdfColumns['show_discounts'];
+
+        $discountOfferNames = collect();
+        if ($showDiscounts) {
+            $discountOfferNames = DB::table('invoice_transaction_has_offer_allowances')
+                ->leftJoin('offers', 'offers.id', '=', 'invoice_transaction_has_offer_allowances.offer_id')
+                ->where('invoice_transaction_has_offer_allowances.invoice_id', $invoice->id)
+                ->select('invoice_transaction_has_offer_allowances.invoice_transaction_id', 'offers.name')
+                ->get()
+                ->groupBy('invoice_transaction_id')
+                ->map(fn ($rows) => $rows->pluck('name')->filter()->unique()->implode(', '));
+        }
 
         $orderData     = $invoice->order?->data ?? [];
         $recipientName = null;
@@ -188,24 +312,16 @@ trait WithInvoicesExport
             'deliveryNote'            => $deliveryNote,
             'deliveryAddress'         => $deliveryNote?->deliveryAddress,
             'recipientName'           => $recipientName,
-            'invoiceNumberLabel'      => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice number') : __('Refund Number'),
-            'dateLabel'               => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice date') : __('Refund Date'),
-            'typeLabel'               => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice') : __('Refund'),
+            'invoiceNumberLabel'      => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice number') : __('Credit Note Number'),
+            'dateLabel'               => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice date') : __('Credit Note Date'),
+            'typeLabel'               => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice') : __('Credit Note'),
             'transactions'            => $transactions,
+            'outOfStockTransactions'  => $outOfStockTransactions,
+            'tariffExportRows'        => $pdfColumns['export_by_tariff_code'] ? $this->groupTransactionsByTariffCodeAndOrigin($transactions) : collect(),
             'totalNet'                => number_format($totalNet, 2, '.', ''),
             'refunds'                 => $refundData,
-            'pro_mode'                => Arr::get($options, 'pro_mode', false),
-            'country_of_origin'       => Arr::get($options, 'country_of_origin', false),
-            'rrp'                     => Arr::get($options, 'rrp', false),
-            'parts'                   => Arr::get($options, 'parts', false),
-            'commodity_codes'         => Arr::get($options, 'commodity_codes', false),
-            'weight'                  => Arr::get($options, 'weight', false),
-            'barcode'                 => Arr::get($options, 'barcode', false),
-            'cpnp'                    => Arr::get($options, 'cpnp', false),
-            'hide_payment_status'     => Arr::get($options, 'hide_payment_status', false),
-            'group_by_tariff_code'    => Arr::get($options, 'group_by_tariff_code', false),
-            'show_dispatch_totals'    => Arr::get($options, 'show_dispatch_totals', false),
-            'show_batch_code'         => Arr::get($options, 'show_batch_code', false),
+            ...$pdfColumns,
+            'discountOfferNames'      => $discountOfferNames,
             'dispatch_total_skos'     => $deliveryNote?->total_skos > 0 ? $deliveryNote->total_skos : null,
             'dispatch_total_units'    => $deliveryNote?->total_units > 0 ? $deliveryNote->total_units : null,
             'dispatch_total_quantity' => $transactions->sum(fn ($t) => $t->quantity ?? 0),

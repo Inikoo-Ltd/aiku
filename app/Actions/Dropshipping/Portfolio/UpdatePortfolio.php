@@ -66,7 +66,7 @@ class UpdatePortfolio extends OrgAction
             data_set($modelData, 'margin', CalculationsProfitMargin::run(Arr::get($modelData, 'selling_price'), $price));
         }
 
-        $portfolio = $this->update($portfolio, $modelData, ['data']);
+        $portfolio = $this->update($portfolio, $modelData, ['data', 'settings']);
 
         if ($portfolio->wasChanged(['status'])) {
 

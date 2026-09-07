@@ -5,10 +5,14 @@ namespace App\Actions\Dropshipping\Platform;
 use App\Actions\Helpers\Dashboard\CalculateTimeSeriesStats;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
+use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetPlatformTimeSeriesStats
@@ -24,7 +28,7 @@ class GetPlatformTimeSeriesStats
         };
 
         $platforms = Platform::query()
-            ->select(['id', 'slug', 'code', 'name', 'group_id'])
+            ->select(['id', 'slug', 'code', 'name', 'type', 'group_id'])
             ->where('group_id', $groupId)
             ->with([
                 'timeSeries' => fn ($q) => $q->select(['id', 'platform_id', 'frequency'])
@@ -108,9 +112,79 @@ class GetPlatformTimeSeriesStats
             }
 
             $results[] = $platformData;
+
+            if ($parent instanceof Shop && $platform->type === PlatformTypeEnum::MANUAL) {
+                $results = [
+                    ...$results,
+                    ...$this->manualSalesChannelChildren($timeSeriesId, $platform->slug, $parent, $totalSalesByInterval, $from_date, $to_date)
+                ];
+            }
         }
 
         return $results;
+    }
+
+    /**
+     * Child rows under the manual platform, one per sales channel with invoices (Web, API, ...),
+     * read from the pre-aggregated platform_sales_channel_time_series_records so the dashboard
+     * never scans orders. Rows are flagged is_sales_channel so resources and totals can tell
+     * them apart from platform rows.
+     */
+    private function manualSalesChannelChildren(int $timeSeriesId, string $platformSlug, Shop $shop, array $totalSalesByInterval, $from_date, $to_date): array
+    {
+        $channelIds = DB::table('platform_sales_channel_time_series_records')
+            ->where('platform_time_series_id', $timeSeriesId)
+            ->where('shop_id', $shop->id)
+            ->distinct()
+            ->pluck('sales_channel_id');
+
+        if ($channelIds->isEmpty()) {
+            return [];
+        }
+
+        $stats = CalculateTimeSeriesStats::run(
+            $channelIds->all(),
+            [
+                'sales_external'              => 'sales_external',
+                'sales_org_currency_external' => 'sales_org_currency_external',
+                'sales_grp_currency_external' => 'sales_grp_currency_external',
+                'invoices'                    => 'invoices',
+            ],
+            'platform_sales_channel_time_series_records',
+            'sales_channel_id',
+            $from_date,
+            $to_date,
+            [
+                'platform_time_series_id' => $timeSeriesId,
+                'shop_id'                 => $shop->id,
+            ]
+        );
+
+        $channels = SalesChannel::whereIn('id', $channelIds)->get()->keyBy('id');
+
+        $children = [];
+        foreach ($channelIds as $channelId) {
+            $channelStats = $stats[$channelId] ?? [];
+
+            if (empty($channelStats) || collect($channelStats)->every(fn ($value) => $value == 0)) {
+                continue;
+            }
+
+            $channel = $channels[$channelId] ?? null;
+
+            $children[] = array_merge(
+                $this->addSalesPercentage($channelStats, $totalSalesByInterval, $shop),
+                [
+                    'id'               => $channelId,
+                    'slug'             => 'manual-channel-'.($channel->code ?? $channelId),
+                    'name'             => $channel?->type === SalesChannelTypeEnum::WEBSITE ? __('Web') : ($channel->name ?? (string) $channelId),
+                    'is_sales_channel' => true,
+                    'parent_slug'      => $platformSlug,
+                ]
+            );
+        }
+
+        return $children;
     }
 
     private function calculateTotalSales(array $allStats, Group|Organisation|Shop $parent): array

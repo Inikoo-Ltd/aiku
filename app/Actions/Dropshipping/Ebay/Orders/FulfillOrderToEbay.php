@@ -40,10 +40,10 @@ class FulfillOrderToEbay extends OrgAction
         /** @var EbayUser $ebayUser */
         $ebayUser = $order->customerSalesChannel->user;
 
-        /** @var DeliveryNote $deliveryNote */
+        /** @var DeliveryNote|null $deliveryNote */
         $deliveryNote = $order->deliveryNotes->first();
 
-        $shipment = $deliveryNote->shipments()->first();
+        $shipment  = $deliveryNote?->shipments()->first();
         $lineItems = [];
 
         foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
@@ -56,10 +56,27 @@ class FulfillOrderToEbay extends OrgAction
         }
 
         return $ebayUser->fulfillOrder($fulfillOrderId, [
-            'line_items' => $lineItems,
-            'tracking_number' => $shipment->tracking,
-            'carrier_code' => $shipment->shipper->name
+            'line_items'      => $lineItems,
+            'tracking_number' => $shipment?->tracking,
+            'carrier_code'    => $this->carrierCode($ebayUser, $shipment?->shipper?->name)
         ]);
+    }
+
+    /**
+     * eBay links tracking to a carrier only when it gets its own carrier code, so a shipper name that matches
+     * one of the marketplace carriers is translated; anything else is passed through as it was before.
+     */
+    public function carrierCode(EbayUser $ebayUser, ?string $shipperName): ?string
+    {
+        if (blank($shipperName)) {
+            return null;
+        }
+
+        $carrier = collect($ebayUser->getServicesWithCarrierInfo())->first(
+            fn ($service) => strcasecmp($service['carrier_name'], $shipperName) === 0 || strcasecmp($service['carrier_code'], $shipperName) === 0
+        );
+
+        return $carrier['carrier_code'] ?? $shipperName;
     }
 
     public string $commandSignature = 'ebay-order-fulfill {order}';

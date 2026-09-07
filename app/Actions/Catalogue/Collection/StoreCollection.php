@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateCollections;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
+use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateCollections;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCollections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCollections;
@@ -73,6 +74,10 @@ class StoreCollection extends OrgAction
 
         if ($parent instanceof ProductCategory) {
             ProductCategoryHydrateCollections::dispatch($parent)->delay($this->hydratorsDelay);
+        }
+
+        if ($collection->masterCollection) {
+            MasterCollectionHydrateCollections::dispatch($collection->masterCollection)->delay($this->hydratorsDelay);
         }
 
         return $collection;

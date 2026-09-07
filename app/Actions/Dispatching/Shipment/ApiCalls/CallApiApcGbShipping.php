@@ -92,12 +92,15 @@ class CallApiApcGbShipping extends OrgAction
 
         $items = [];
         foreach ($parcels as $parcel) {
+            // apc measures its limits against the longest dimension, so send the box that way round
+            [$length, $width, $height] = $this->sortedDimensions($parcel);
+
             $items[] = [
                 'Type'   => 'ALL',
                 'Weight' => $parcel['weight'], // apc weight in kg
-                'Length' => $parcel['dimensions'][0] ?? 0, // cm
-                'Width'  => $parcel['dimensions'][1] ?? 0, // cm
-                'Height' => $parcel['dimensions'][2] ?? 0 // cm
+                'Length' => $length, // cm
+                'Width'  => $width, // cm
+                'Height' => $height // cm
             ];
         }
 
@@ -165,17 +168,7 @@ class CallApiApcGbShipping extends OrgAction
             return $this->sizeFailure();
         }
 
-        // ponytail: LQ and NC keep their code on remote routes; confirm with APC whether TDAY has equivalents
-        if (
-            !in_array($productCode, ['NC16', 'LQ16'])
-            && !preg_match('/^(BT51|IV(\d\s|20|25|30|31|32|33|34|35|36|37|63)|AB(41|51|52)|PA79)/', $postalCode)
-            && preg_match(
-                '/^((JE|GG|IM|KW|HS|ZE|IV)\d+)|AB(30|33|34|35|36|37|38)|AB[4-5]\d|DD[89]|FK(16)|PA(20|36|4\d|6\d|7\d)|PH((15|16|17|18|19)|[2-5]\d)|KA(27|28)/',
-                $postalCode
-            )
-        ) {
-            $productCode = 'TDAY';
-        }
+        $productCode = $this->productCodeForPostcode($postalCode, $productCode);
 
 
         $prepareParams['ProductCode'] = $productCode;
@@ -295,6 +288,74 @@ class CallApiApcGbShipping extends OrgAction
             'modelData' => $modelData,
             'errorData' => $errorData,
         ];
+    }
+
+    public function isTwoToFiveDayPostcode(string $postalCode): bool
+    {
+        if ($this->requiresTdayProductCode($postalCode)) {
+            return true;
+        }
+
+        if (!preg_match('/^([A-Z]{1,2})(\d{1,2})/', strtoupper(trim($postalCode)), $matches)) {
+            return false;
+        }
+        return in_array($matches[1], ['JE', 'GG', 'IM']);
+    }
+
+    public function productCodeForPostcode(string $postalCode, string $productCode): string
+    {
+        if ($this->requiresTdayProductCode($postalCode)) {
+            return 'TDAY';
+        }
+
+        if (!$this->isTwoToFiveDayPostcode($postalCode)) {
+            return $productCode;
+        }
+
+        return match ($productCode) {
+            'LW16' => 'TDLW',
+            'ND16' => 'TDAY',
+            'NC16' => 'TDNC',
+            default => $productCode,
+        };
+    }
+
+    public function requiresTdayProductCode(string $postalCode): bool
+    {
+        if (!preg_match('/^([A-Z]{1,2})(\d{1,2})/', strtoupper(trim($postalCode)), $matches)) {
+            return false;
+        }
+
+        $area     = $matches[1];
+        $district = (int)$matches[2];
+
+        return match ($area) {
+            'AB' => ($district >= 30 && $district <= 39)
+                || ($district >= 41 && $district <= 45)
+                || ($district >= 51 && $district <= 56),
+            'IV' => ($district >= 1 && $district <= 28)
+                || ($district >= 30 && $district <= 32)
+                || $district === 36
+                || ($district >= 40 && $district <= 49)
+                || ($district >= 51 && $district <= 56)
+                || $district === 63,
+            'PH' => ($district >= 3 && $district <= 13)
+                || ($district >= 15 && $district <= 26)
+                || ($district >= 30 && $district <= 44)
+                || ($district >= 49 && $district <= 50),
+            'PA' => ($district >= 20 && $district <= 38)
+                || ($district >= 41 && $district <= 49)
+                || ($district >= 60 && $district <= 78)
+                || $district === 80,
+            'DD' => $district >= 8 && $district <= 11,
+            'FK' => $district >= 7 && $district <= 21,
+            'KY' => $district === 66,
+            'KA' => $district >= 27 && $district <= 28,
+            'KW' => $district >= 1 && $district <= 17,
+            'HS' => $district >= 1 && $district <= 9,
+            'ZE' => $district >= 1 && $district <= 3,
+            default => false,
+        };
     }
 
     public function sizeFailure(): array

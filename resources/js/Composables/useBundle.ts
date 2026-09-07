@@ -242,14 +242,15 @@ export function useBundle(routes?: any) {
                 text: trans('Success generate AI'),
                 type: 'success'
             })
-        } catch (e) {
+        } catch (e: any) {
             aiTitleError.value =
-            'The OpenAI service is currently unreachable, please try again later.'
+                e?.response?.data?.message
+                || trans('The OpenAI service is currently unreachable, please try again later.')
 
             console.error('[useBundle] generateAITitle failed', e)
             notify({
                 title: trans('Error'),
-                text: trans('Failed to generate AI'),
+                text: aiTitleError.value,
                 type: 'error'
             })
         } finally {
@@ -282,12 +283,14 @@ export function useBundle(routes?: any) {
                 text: trans('Success generate AI'),
                 type: 'success'
             })
-        } catch (e) {
+        } catch (e: any) {
             console.error('[useBundle] generateAIDescription failed', e)
-            aiDescError.value = 'The OpenAI service is currently unreachable, please try again later.'
+            aiDescError.value =
+                e?.response?.data?.message
+                || trans('The OpenAI service is currently unreachable, please try again later.')
             notify({
                 title: trans('Error'),
-                text: trans('Failed to generate AI'),
+                text: aiDescError.value,
                 type: 'error'
             })
         } finally {

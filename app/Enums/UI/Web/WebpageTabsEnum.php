@@ -46,7 +46,7 @@ enum WebpageTabsEnum: string
                 'icon'  => 'fal fa-browser',
             ],
             WebpageTabsEnum::ANALYTICS => [
-                'title' => __('Analytics'),
+                'title' => __('Performance'),
                 'icon'  => 'fal fa-analytics',
             ],
             WebpageTabsEnum::SNAPSHOTS => [

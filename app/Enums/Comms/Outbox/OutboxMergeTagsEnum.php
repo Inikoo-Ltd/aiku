@@ -21,6 +21,7 @@ enum OutboxMergeTagsEnum: string
     case CUSTOMER_EMAIL = 'Customer Email';
     case CUSTOMER_REGISTER_DATE = 'Customer Register Date';
     case INVOICE_URL = 'Invoice_Url';
+    case INVOICE_REFERENCE = 'Invoice Reference';
     case RESET_PASSWORD_URL = 'Reset_Password_URL';
     case UNSUBSCRIBE = 'Unsubscribe';
     case REJECTED_NOTES = 'Rejected Notes';
@@ -45,6 +46,7 @@ enum OutboxMergeTagsEnum: string
     case CUSTOMER_NOTE = 'Customer Note';
     case DELIVERY_ADDRESS = 'Delivery Address';
     case INVOICE_ADDRESS = 'Invoice Address';
+    case ABANDONED_CART_ITEMS = 'Abandoned Cart Items';
 
 
     public static function tags(): array
@@ -61,6 +63,10 @@ enum OutboxMergeTagsEnum: string
             [
                 'name'  => __('Invoice URL'),
                 'value' => '[Invoice_Url]'
+            ],
+            [
+                'name'  => __('Invoice Reference'),
+                'value' => '[Invoice Reference]'
             ],
             [
                 'name'  => __('Reset Password URL'),
@@ -177,6 +183,10 @@ enum OutboxMergeTagsEnum: string
             [
                 'name' => __('Invoice Address'),
                 'value' => '[Invoice Address]'
+            ],
+            [
+                'name' => __('Abandoned Cart Items'),
+                'value' => '[Abandoned Cart Items]'
             ],
 
         ];

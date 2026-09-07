@@ -22,6 +22,7 @@ use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\EmergencyFormFieldsResource;
 use App\Http\Resources\HumanResources\JobPositionResource;
 use App\Http\Resources\Inventory\WarehouseResource;
+use App\Http\Resources\Production\ProductionsResource;
 use App\Http\Resources\SysAdmin\Organisation\OrganisationsResource;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
@@ -94,6 +95,11 @@ class EditEmployee extends OrgAction
             'label' => __('Properties'),
             'icon' => 'fal fa-sliders-h',
             'fields' => [
+                'image' => [
+                    'type' => 'image_crop_square',
+                    'label' => __('Photo'),
+                    'value' => $employee->imageSources(320, 320)
+                ],
                 'worker_number' => [
                     'type' => 'input',
                     'label' => __('Worker number'),
@@ -210,6 +216,7 @@ class EditEmployee extends OrgAction
                                 'shops' => ShopResource::collection($this->organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get()),
                                 'fulfilments' => ShopResource::collection($this->organisation->shops()->where('type', '=', ShopTypeEnum::FULFILMENT)->get()),
                                 'warehouses' => WarehouseResource::collection($this->organisation->warehouses),
+                                'productions' => ProductionsResource::collection($this->organisation->productions),
                             ],
                         ],
                         'is_in_organisation' => true,  // To remove parameter
@@ -453,6 +460,37 @@ class EditEmployee extends OrgAction
                     'label' => __('Unpaid Leave Used'),
                     'value' => $employee->leaveBalance?->unpaid_used ?? 0,
                     'disabled' => true,
+                ],
+            ]
+        ];
+
+        $employeeWorkSchedule = $employee->getDefaultWorkSchedule()?->load('days.breaks');
+
+        $workingHoursData = [];
+        if ($employeeWorkSchedule) {
+            foreach ($employeeWorkSchedule->days as $day) {
+                $workingHoursData[(string) $day->day_of_week] = [
+                    's' => $day->start_time,
+                    'e' => $day->end_time,
+                    'b' => $day->breaks->map(fn ($break) => [
+                        's' => $break->start_time?->format('H:i'),
+                        'e' => $break->end_time?->format('H:i'),
+                        'n' => $break->break_name,
+                        'p' => $break->is_paid,
+                    ])->values(),
+                ];
+            }
+        }
+
+        $sections['working_hours'] = [
+            'label' => __('Working hours'),
+            'icon' => 'fal fa-business-time',
+            'fields' => [
+                'working_hours' => [
+                    'type' => 'employee-working-hours',
+                    'label' => __('Working hours'),
+                    'noTitle' => true,
+                    'value' => ['data' => $workingHoursData],
                 ],
             ]
         ];

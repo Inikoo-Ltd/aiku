@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\OrderPaymentApiPoint\WebHooks;
 
 use App\Actions\Accounting\OrderPaymentApiPoint\UpdateOrderPaymentApiPoint;
+use App\Actions\Accounting\Payment\CheckoutCom\StoreFailedCheckoutComPayment;
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\RetinaWebhookAction;
 use App\Enums\Accounting\OrderPaymentApiPoint\OrderPaymentApiPointStateEnum;
@@ -19,6 +20,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
+use Sentry;
 
 class CheckoutComOrderPaymentFailure extends RetinaWebhookAction
 {
@@ -57,8 +59,10 @@ class CheckoutComOrderPaymentFailure extends RetinaWebhookAction
         return $this->processFailure($orderPaymentApiPoint, $checkoutComPayment);
     }
 
-    public function processFailure(OrderPaymentApiPoint $orderPaymentApiPoint, array $checkoutComPayment)
+    public function processFailure(OrderPaymentApiPoint $orderPaymentApiPoint, array $checkoutComPayment, ?string $eventType = null)
     {
+        $this->recordFailedAttempt($orderPaymentApiPoint, $checkoutComPayment, $eventType);
+
         return DB::transaction(function () use ($orderPaymentApiPoint, $checkoutComPayment) {
             /** @var OrderPaymentApiPoint $orderPaymentApiPoint locked so a racing capture webhook committing SUCCESS is never overwritten */
             $orderPaymentApiPoint = OrderPaymentApiPoint::lockForUpdate()->find($orderPaymentApiPoint->id);
@@ -81,6 +85,26 @@ class CheckoutComOrderPaymentFailure extends RetinaWebhookAction
         });
     }
 
+
+    /**
+     * Best effort: the failed attempt is for the report, it must never get in the way of
+     * telling the customer their payment did not go through.
+     */
+    private function recordFailedAttempt(OrderPaymentApiPoint $orderPaymentApiPoint, array $checkoutComPayment, ?string $eventType): void
+    {
+        try {
+            $paymentAccountShop = PaymentAccountShop::find(Arr::get($orderPaymentApiPoint->data, 'payment_methods.checkout'));
+            $customer           = $orderPaymentApiPoint->order?->customer;
+            if ($paymentAccountShop && $customer) {
+                StoreFailedCheckoutComPayment::run($customer, $paymentAccountShop, $checkoutComPayment, $eventType, [
+                    'type' => class_basename($orderPaymentApiPoint),
+                    'id'   => $orderPaymentApiPoint->id,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Sentry::captureException($e);
+        }
+    }
 
     public function rules(): array
     {

@@ -83,6 +83,10 @@ class GetImages extends RetinaApiAction
 
     public function afterValidator(Validator $validator): void
     {
+        if ($validator->errors()->isNotEmpty()) {
+            return;
+        }
+
         $id = $this->get('id');
         $type = $this->get('type');
 

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * @property mixed $id
  * @property mixed $state
+ * @property mixed $delivery_note_id
  * @property mixed $delivery_note_slug
  * @property mixed $delivery_note_reference
  * @property mixed $delivery_note_state
@@ -49,6 +50,7 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $shop_code
  * @property mixed $notes
  * @property mixed $trolley_names
+ * @property mixed $trolleys_data
  * @property mixed $picked_bay_codes
  * @property mixed $opposite_waiting_count
  */
@@ -130,11 +132,13 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
             'id'                         => $this->id,
             'state'                      => $this->state,
             'state_icon'                 => $this->state->stateIcon()[$this->state->value],
+            'delivery_note_id'           => $this->delivery_note_id,
             'delivery_note_slug'         => $this->delivery_note_slug,
             'delivery_note_reference'    => $this->delivery_note_reference,
             'delivery_note_state'        => $this->delivery_note_state,
             'opposite_waiting_count'     => (int) $this->opposite_waiting_count,
             'trolley_names'   => $this->trolley_names,
+            'trolleys'        => json_decode($this->trolleys_data ?? '[]', true) ?? [],
             'picked_bay_codes' => $this->picked_bay_codes,
 
             'delivery_note_customer_notes' => $this->delivery_note_customer_notes,

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydratePurchaseOrders;
 use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydratePurchaseOrders;
@@ -26,16 +27,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeletePurchaseOrder extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     private PurchaseOrder $purchaseOrder;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-    }
 
     public function afterValidator(Validator $validator): void
     {

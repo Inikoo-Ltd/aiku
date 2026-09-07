@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, inject } from "vue"
 import { Link, usePage } from "@inertiajs/vue3"
 import Table from "../Tables/Table.vue"
 import { routeType } from "@/types/route"
@@ -18,6 +18,8 @@ import Tag from "@/Components/Tag.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExternalLink } from "@far";
 import { GridProducts } from "@/Components/Product"
+import CatalogueDownloadLink from "./CatalogueDownloadLink.vue"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure.js"
 
 
 
@@ -35,6 +37,10 @@ const props = defineProps<{
 }>()
 
 const page = usePage()
+
+const layout = inject('layout', retinaLayoutStructure)
+
+const isLoggedIn = computed(() => !!layout?.iris?.is_logged_in)
 
 const labelMap: Record<string, string> = {
     department: 'Department',
@@ -103,6 +109,17 @@ const parentInfo = computed(() => {
                 </a>
             </div>
         </template>
+        <template #cell(download_csv)="{ item }">
+            <div class="flex justify-center">
+                <CatalogueDownloadLink scope="family" :slug="item.slug" type="csv" />
+            </div>
+        </template>
+
+        <template #cell(download_images)="{ item }">
+            <div class="flex justify-center">
+                <CatalogueDownloadLink scope="family" :slug="item.slug" type="images" />
+            </div>
+        </template>
     </Table>
 
     <GridProducts :resource="data" :preserve-scroll="true" class="mt-5 md:hidden" :name="tab"
@@ -140,6 +157,11 @@ const parentInfo = computed(() => {
                     title="Open public page">
                     <FontAwesomeIcon :icon="faExternalLink" />
                 </a>
+
+                <div v-if="isLoggedIn" class="flex flex-shrink-0 items-center gap-1">
+                    <CatalogueDownloadLink scope="family" :slug="item.slug" type="csv" variant="card" />
+                    <CatalogueDownloadLink scope="family" :slug="item.slug" type="images" variant="card" />
+                </div>
             </div>
         </template>
     </GridProducts>

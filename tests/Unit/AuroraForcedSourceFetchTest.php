@@ -49,7 +49,7 @@ it('refuses a denied fetcher unless both -s and --force are given', function (?s
         // Aurora is unreachable from a test; the guard decides before any of that
     }
 
-    expect((bool)preg_grep('/no longer follows Aurora/', $lines))->toBe($refused);
+    expect((bool)preg_grep('/aiku owns this data now/', $lines))->toBe($refused);
 })->with([
     'nothing given, refused'       => [null, false, true],
     '-s alone, still refused'      => ['2788500', false, true],
@@ -65,7 +65,7 @@ it('never refuses an organisation that still follows aurora', function () {
     } catch (Throwable) {
     }
 
-    expect(preg_grep('/no longer follows Aurora/', $lines))->toBeEmpty();
+    expect(preg_grep('/aiku owns this data now/', $lines))->toBeEmpty();
 });
 
 it('hands the forced flag to the source object the parsers read', function (?string $sourceId, bool $force, bool $expected) {

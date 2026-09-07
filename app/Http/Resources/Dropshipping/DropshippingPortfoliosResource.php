@@ -92,6 +92,7 @@ class DropshippingPortfoliosResource extends JsonResource
         $ebayUploadRoute    = [];
         $amazonUploadRoute  = [];
         $magentoUploadRoute = [];
+        $wixUploadRoute     = [];
 
 
         if ($this->platform_type != PlatformTypeEnum::MANUAL->value && $this->platform_user_id) {
@@ -147,6 +148,18 @@ class DropshippingPortfoliosResource extends JsonResource
                 ];
             }
 
+            if ($this->platform_type == PlatformTypeEnum::WIX->value) {
+                $wixUploadRoute = [
+                    'platform_upload_portfolio' => [
+                        'method'     => 'post',
+                        'name'       => 'retina.models.portfolio.store_new_wix_product',
+                        'parameters' => [
+                            'portfolio' => $this->id
+                        ]
+                    ],
+                ];
+            }
+
             if ($this->platform_type == PlatformTypeEnum::MAGENTO->value) {
                 $magentoUploadRoute = [
                     'platform_upload_portfolio' => [
@@ -160,6 +173,10 @@ class DropshippingPortfoliosResource extends JsonResource
                 ];
             }
         }
+
+        $platformError = $this->platform_status
+            ? []
+            : PlatformResponseFormatter::make()->format($this->errors_response);
 
         return [
             'id'                    => $this->id,
@@ -187,11 +204,13 @@ class DropshippingPortfoliosResource extends JsonResource
             'updated_at'            => $this->updated_at,
             'platform_product_id'   => $this->platform_product_id,
             'upload_warning'        => $this->upload_warning,
-            'message'               => $this->platform_status ? 'OK' : PlatformResponseFormatter::make()->message($this->errors_response),
+            'message'               => $this->platform_status ? 'OK' : Arr::get($platformError, 'message'),
+            'message_hint'          => Arr::get($platformError, 'hint'),
             'shopify_product_data'  => Arr::get($this->data, 'shopify_product', []),
             'platform_product_data' => match ($this->platform_type) {
                 PlatformTypeEnum::WOOCOMMERCE->value => Arr::get($this->data, 'woo_product', []),
                 PlatformTypeEnum::EBAY->value => Arr::get($this->data, 'ebay_product', []),
+                PlatformTypeEnum::WIX->value => Arr::get($this->data, 'wix_product', []),
                 default => [],
             },
 
@@ -199,6 +218,7 @@ class DropshippingPortfoliosResource extends JsonResource
             'bundle_id'      => $this->bundle_id,
             'is_bundle'      => $this->is_bundle,
 
+            'is_platform_draft'                      => (bool) Arr::get($this->data, 'is_platform_draft'),
             'has_valid_platform_product_id'          => $this->has_valid_platform_product_id,
             'exist_in_platform'                      => $this->exist_in_platform,
             'platform_status'                        => $this->platform_status,
@@ -231,11 +251,13 @@ class DropshippingPortfoliosResource extends JsonResource
             'product_state'                          => $this->product_state ?? null,
             'is_for_sale'                            => ($this->is_bundle ? true : $this->is_for_sale) ?? null,
             'product_rrp'                            => $this->rrp,
+            'price_rule'                             => Arr::get($this->settings, 'pricing'),
             ...$shopifyUploadRoute,
             ...$wooUploadRoute,
             ...$ebayUploadRoute,
             ...$amazonUploadRoute,
-            ...$magentoUploadRoute
+            ...$magentoUploadRoute,
+            ...$wixUploadRoute
         ];
     }
 }

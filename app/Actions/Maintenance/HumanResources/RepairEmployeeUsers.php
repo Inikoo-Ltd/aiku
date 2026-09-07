@@ -10,6 +10,7 @@ namespace App\Actions\Maintenance\HumanResources;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\HumanResources\Employee;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairEmployeeUsers
 {
@@ -41,6 +42,7 @@ class RepairEmployeeUsers
 
     public function asCommand(): void
     {
+        Nightwatch::dontSample();
         $employees = Employee::all();
 
         foreach ($employees as $employee) {

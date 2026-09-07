@@ -39,7 +39,7 @@ class ShowApiTokenRetinaDropshipping extends RetinaAction
                 'pageHead' => [
                     'title' => 'API token',
                     'icon'  => [
-                        'title' => __('Api token'),
+                        'title' => __('API token'),
                         'icon'  => 'fal fa-key'
                     ],
                 ],

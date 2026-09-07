@@ -2,33 +2,28 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 10 Aug 2024 22:13:51 Central Indonesia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Mon, 10 Aug 2026 00:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
 namespace App\Actions\SupplyChain\Agent\Search;
 
+use App\Actions\Traits\WithScoutReindex;
 use App\Models\SupplyChain\Agent;
-use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ReindexAgentSearch
 {
     use AsAction;
-    public string $commandSignature = 'search:agents';
+    use WithScoutReindex;
+
+    public string $commandSignature = 'reindex_search:agents';
 
 
-    public function handle(Agent $agent): void
+    public function handle(bool $reindex = true, bool $reset = false): void
     {
+        $this->runScoutReindex(Agent::class, $reindex, $reset);
     }
 
-    public function asCommand(Command $command): int
-    {
-        $command->withProgressBar(Agent::all(), function (Agent $agent) {
-            $this->handle($agent);
-        });
-
-        return 0;
-    }
 
 }

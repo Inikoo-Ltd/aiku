@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
@@ -17,6 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePurchaseOrderTransactionQuantity extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
+
     public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, array $modelData): PurchaseOrderTransaction
     {
         $purchaseOrderTransaction = UpdatePurchaseOrderTransaction::make()->action($purchaseOrderTransaction, $modelData);

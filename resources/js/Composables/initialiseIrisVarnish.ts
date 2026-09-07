@@ -39,7 +39,11 @@ export const initialiseIrisVarnish = async (layoutStore) => {
   const currentUrl = new URL(window.location.href)
   const headers = {
     "X-Traffic-Sources": currentUrl.search?.replace(/^\?/, "") || "", //todo: review this because this headers are no set anymore use url queries instead
-    "X-Original-Referer": currentUrl.origin + currentUrl.pathname, //todo: review this because this headers are no set anymore use url queries instead
+    // The page HTML comes from Varnish, so the backend never sees the click that landed the visitor
+    // here and this fetch's own Referer is just the storefront. document.referrer is the only place
+    // the external referrer survives, so forward it or organic traffic can never be attributed.
+    // Paid clicks are handled separately: their click ids ride along in this request's Referer.
+    "X-Original-Referer": document.referrer || "",
     "X-Requested-With": "XMLHttpRequest"
   }
 
@@ -71,6 +75,21 @@ export const initialiseIrisVarnish = async (layoutStore) => {
 
   const varnish = await getVarnishData()
   if (!varnish) return
+
+  /* Written before anything branches on the visitor being logged in. The logged-out branch below
+     returns early, so keeping this at the foot of the function meant an anonymous visitor - the only
+     kind who can still be acquired - had their touch cookie computed by the backend, sent to the
+     browser and thrown away. Every touch we held came from somebody already logged in, which is why
+     no registration was ever credited to a channel. */
+  if (varnish?.traffic_source_cookies) {
+    for (const [key, cookieData] of Object.entries(varnish.traffic_source_cookies)) {
+      if (cookieData?.value) {
+        // js-cookie's third argument is an attributes object; a bare number is silently ignored and
+        // the cookie dies with the session. duration arrives in minutes, expires wants days.
+        Cookies.set(key, cookieData.value, { expires: cookieData.duration / (60 * 24) })
+      }
+    }
+  }
 
   console.log("Initial Varnish Response:", varnish)
 
@@ -132,14 +151,6 @@ export const initialiseIrisVarnish = async (layoutStore) => {
     layout.iris.customer = varnish.customer ?? null
   }
 
-  // --- Set Traffic Source Cookies ---
-  if (varnish?.traffic_source_cookies) {
-    for (const [key, cookieData] of Object.entries(varnish.traffic_source_cookies)) {
-      if (cookieData?.value) {
-        Cookies.set(key, cookieData.value, cookieData.duration)
-      }
-    }
-  }
 }
 
 
@@ -149,7 +160,11 @@ export const initialiseIrisVarnishCustomerData = async (layout) => {
   const currentUrl = new URL(window.location.href)
   const headers = {
     "X-Traffic-Sources": currentUrl.search?.replace(/^\?/, "") || "", //todo: review this because this headers are no set anymore use url queries instead
-    "X-Original-Referer": currentUrl.origin + currentUrl.pathname, //todo: review this because this headers are no set anymore use url queries instead
+    // The page HTML comes from Varnish, so the backend never sees the click that landed the visitor
+    // here and this fetch's own Referer is just the storefront. document.referrer is the only place
+    // the external referrer survives, so forward it or organic traffic can never be attributed.
+    // Paid clicks are handled separately: their click ids ride along in this request's Referer.
+    "X-Original-Referer": document.referrer || "",
     "X-Requested-With": "XMLHttpRequest"
   }
 

@@ -19,6 +19,7 @@ import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons
 import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
+import TrendingNowProducts from "@/Iris/Components/IrisBlocks/SeeAlso/TrendingNowProducts.vue"
 import { trans } from "laravel-vue-i18n"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
 library.add(faChevronLeft, faChevronRight)
@@ -69,6 +70,8 @@ const compSwiperOptions = computed(() => {
         return props.modelValue?.settings?.products_data?.top_sellers || []
     }
 })
+
+const isTrendingNow = computed(() => props.modelValue?.settings?.products_data?.type === 'trending-now')
 </script>
 
 <template>
@@ -78,7 +81,7 @@ const compSwiperOptions = computed(() => {
     width: '100%'
   }" :dropdown-type="props.modelValue?.settings?.products_data?.type">
     <!-- Title -->
-    <div class="px-4 py-6 pb-2">
+    <div class="px-4 py-6 pb-2" :class="isTrendingNow ? 'text-center' : ''">
       <div class="text-3xl font-semibold text-gray-800">
         <EditorV2 v-model="modelValue.title" @focus="() => {
           sendMessageToParent('activeBlock', indexBlock)
@@ -100,6 +103,13 @@ const compSwiperOptions = computed(() => {
         </div>
         <!-- <RecommendersLuigi1Workshop recommendation_type="trends" :slidesPerView /> -->
     </div>
+
+    <TrendingNowProducts
+      v-else-if="isTrendingNow && compSwiperOptions?.length"
+      :products="compSwiperOptions"
+      :perRow="modelValue?.settings?.per_row"
+      :screenType="screenType"
+    />
 
     <!-- Carousel with custom navigation -->
     <div v-else-if="compSwiperOptions?.length" class="relative px-4 py-6" @click="() => {

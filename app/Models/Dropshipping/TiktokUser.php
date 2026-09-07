@@ -12,12 +12,14 @@ use App\Actions\Dropshipping\Tiktok\Traits\WithTiktokApiServices;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Models\Traits\HasEmail;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Permission\Traits\HasPermissions;
 use Spatie\Sluggable\SlugOptions;
 
@@ -68,13 +70,14 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser withoutTrashed()
  * @mixin \Eloquent
  */
-class TiktokUser extends Model
+class TiktokUser extends Model implements Auditable
 {
     use HasPermissions;
     use HasEmail;
     use InCustomer;
     use SoftDeletes;
     use WithTiktokApiServices;
+    use HasHistory;
 
     protected $guarded = [];
 

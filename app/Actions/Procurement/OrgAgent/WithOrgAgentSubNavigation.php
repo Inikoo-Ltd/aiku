@@ -29,6 +29,17 @@ trait WithOrgAgentSubNavigation
                 "isAnchor" => true,
             ],
             [
+                "label"    => __("Shopping"),
+                "route"    => [
+                    "name"       => "grp.org.procurement.org_agents.show.shopping.dashboard",
+                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-shopping-basket"],
+                    "tooltip" => __("Shopping"),
+                ],
+            ],
+            [
                 "label"    => __("Suppliers"),
                 "route"    => [
                     "name"       => "grp.org.procurement.org_agents.show.suppliers.index",
@@ -63,6 +74,18 @@ trait WithOrgAgentSubNavigation
                     "tooltip" => __("Purchase Orders"),
                 ],
                 "number"   => $parent->stats->number_purchase_orders,
+            ],
+            [
+                "label"    => __("Supplier Purchase Orders"),
+                "route"    => [
+                    "name"       => "grp.org.procurement.org_agents.show.agent_supplier_purchase_orders.index",
+                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-clipboard-list"],
+                    "tooltip" => __("Supplier Purchase Orders"),
+                ],
+                "number"   => $parent->stats->number_agent_supplier_purchase_orders,
             ],
             [
                 "label"    => __("Stock Deliveries"),

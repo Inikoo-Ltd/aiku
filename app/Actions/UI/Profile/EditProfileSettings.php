@@ -75,14 +75,19 @@ class EditProfileSettings
                         "fields" => [
                             "language_id" => [
                                 "type"    => "select",
-                                "label"   => __("language"),
+                                "label"   => __("Language"),
                                 "value"   => $user->language_id,
                                 'options' => GetLanguagesOptions::make()->translated(),
                             ],
                             "app_theme" => [
                                 "type"  => "app_theme",
-                                "label" => __("theme color"),
+                                "label" => __("Theme color"),
                                 "value" => Arr::get($user->settings, 'app_theme'),
+                            ],
+                            "chat_theme" => [
+                                "type"  => "chat_theme",
+                                "label" => __("Chat panel color"),
+                                "value" => Arr::get($user->settings, 'chat_theme'),
                             ],
                             "hide_logo" => [
                                 "type"    => "toggle",
@@ -93,7 +98,7 @@ class EditProfileSettings
                             ],
                             'preferred_printer' => [
                                 'type'     => 'select_printer',
-                                'label'    => __('preferred printer'),
+                                'label'    => __('Preferred printer'),
                                 'required' => false,
                                 'options'  => $printers,
                                 'value'    => Arr::get($user->settings, 'preferred_printer_id'),

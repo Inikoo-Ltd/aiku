@@ -74,6 +74,12 @@ class RouteServiceProvider extends ServiceProvider
 
         Route::middleware('aiku-public')
             ->domain(config('app.domain'))
+            ->prefix('wix')
+            ->name('wix.')
+            ->group(base_path('routes/grp/wix.php'));
+
+        Route::middleware('aiku-public')
+            ->domain(config('app.domain'))
             ->name('aiku-public.')
             ->group(base_path('routes/aiku-public/web/root.php'));
 
@@ -96,6 +102,12 @@ class RouteServiceProvider extends ServiceProvider
             ->name('analytics.')
             ->group(base_path('routes/analytics/analytics.php'));
 
+        foreach ([config('app.domain'), 'app.'.config('app.domain'), 'pupil.'.config('app.domain')] as $aikuDomain) {
+            Route::domain($aikuDomain)->get('favicon.ico', function () {
+                return response()->file(public_path('favicon.png'));
+            });
+        }
+
         Route::middleware('iris')
             ->name('iris.')
             ->group(base_path('routes/iris/root.php'));
@@ -103,6 +115,12 @@ class RouteServiceProvider extends ServiceProvider
 
     protected function configureRateLimiting(): void
     {
+        RateLimiter::for('retina-api', function (Request $request) {
+            $token = $request->user()?->currentAccessToken();
+
+            return Limit::perMinute(120)->by($token ? 'token:'.$token->id : 'ip:'.$request->ip());
+        });
+
         RateLimiter::for('han', function (Request $request) {
             return Limit::perMinute(600)->by($request->user()?->id ?: $request->ip());
         });
@@ -115,8 +133,33 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(600)->by($request->ip());
         });
 
+        /*
+         * The kiosk submit endpoints are unauthenticated and match a 6 character employee pin,
+         * so they are brute forceable by anyone holding a kiosk link. Limited per kiosk token as
+         * well as per ip, since a whole workplace shares one tablet behind a single ip.
+         */
+        RateLimiter::for('kiosk-submit', function (Request $request) {
+            return [
+                Limit::perMinute(20)->by('kiosk-token:'.$request->route('kioskToken')),
+                Limit::perMinute(20)->by('kiosk-ip:'.$request->ip()),
+            ];
+        });
+
         RateLimiter::for('iris-search', function (Request $request) {
             return Limit::perMinute(6000)->by($request->ip());
+        });
+
+        /*
+         * A catalogue feed reads every image of a category and zips it, so one request is worth
+         * thousands of ordinary ones. An unauthenticated scraper walked 84 categories on a loop and
+         * took boro's disk to 100%; the limit stands even behind the login, since the volume that
+         * hurt was never about who was asking.
+         */
+        RateLimiter::for('iris-feeds', function (Request $request) {
+            return [
+                Limit::perMinute(3)->by($request->user()?->id ?: $request->ip()),
+                Limit::perDay(200)->by($request->user()?->id ?: $request->ip()),
+            ];
         });
     }
 }

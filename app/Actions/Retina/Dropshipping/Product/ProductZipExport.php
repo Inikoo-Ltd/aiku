@@ -27,16 +27,18 @@ class ProductZipExport
     /**
      * @throws \ZipStream\Exception\OverflowException
      */
-    public function handle(Shop|ProductCategory|Product|Collection $parent, string $filename): void
+    public function handle(Shop|ProductCategory|Product|Collection $parent, string $filename): string
     {
-        $zip         = new ZipStream(
-            sendHttpHeaders: true,
+        $tmpPath = tempnam(sys_get_temp_dir(), 'product_images_');
+        $output  = fopen($tmpPath, 'wb');
+
+        $zip = new ZipStream(
+            outputStream: $output,
+            sendHttpHeaders: false,
             outputName: $filename,
         );
 
-
         $imagesData = $this->getImages($parent);
-
 
         foreach ($imagesData as $imageId => $imageData) {
             $image = $imageData['image'];
@@ -70,6 +72,9 @@ class ProductZipExport
         }
 
         $zip->finish();
+        fclose($output);
+
+        return $tmpPath;
     }
 
 

@@ -177,12 +177,15 @@ class UpdateMasterAsset extends OrgAction
             /** @var MasterAsset $masterAsset */
             if (!empty($tradeUnits)) {
                 $this->processTradeUnits($masterAsset, $tradeUnits);
-                if (count($tradeUnits) == 1) {
-                    data_set($modelData, 'units', $tradeUnits[0]['quantity']);
-                    data_set($modelData, 'unit', $tradeUnits[0]['type']);
-                } else {
-                    data_set($modelData, 'units', 1);
-                    data_set($modelData, 'unit', 'bundle');
+                $hasIndependentUnits = Arr::get($modelData, 'has_independent_units', $masterAsset->has_independent_units);
+
+                $unitsFromTradeUnits = $this->getUnitsFromTradeUnits($tradeUnits);
+                if (!$hasIndependentUnits && $unitsFromTradeUnits['units'] !== null) {
+                    data_set($modelData, 'units', $unitsFromTradeUnits['units']);
+                }
+                /** A label typed in this same save wins over the one the composition suggests. */
+                if (!Arr::has($modelData, 'unit')) {
+                    data_set($modelData, 'unit', $unitsFromTradeUnits['unit']);
                 }
 
                 foreach ($masterAsset->products()->whereNot('products.not_follow_master_trade_units', true)->get() as $product) {
@@ -217,17 +220,36 @@ class UpdateMasterAsset extends OrgAction
         if ($masterAsset->wasChanged('unit')) {
             $english = Language::where('code', 'en')->first();
 
+            /**
+             * The unit is a label a customer reads, so it rides the same rails as the name:
+             * copied verbatim to shops that speak the language it was written in, machine
+             * translated for the rest. A shop that has opted out of following the master
+             * keeps whatever it set, in any language. How many trade units the master is
+             * built from says nothing about that, so it does not gate the cascade.
+             */
             foreach ($masterAsset->products as $product) {
-                if ($product->is_single_trade_unit && $product->shop->language_id == $english->id) {
+                $shop = $product->shop;
+
+                if ($shop->language_id == $english->id) {
                     UpdateProduct::run($product, [
                         'unit' => $masterAsset->unit,
                     ]);
+
+                    continue;
                 }
+
+                if (!data_get($shop->settings, 'catalog.product_follow_master') || !$masterAsset->unit) {
+                    continue;
+                }
+
+                UpdateProduct::run($product, [
+                    'unit' => Translate::run($masterAsset->unit, $english, $shop->language, 'gpt-5-nano'),
+                ]);
             }
         }
 
         if ($masterAsset->wasChanged('units')) {
-            foreach ($masterAsset->products as $product) {
+            foreach ($masterAsset->products()->where('has_independent_units', false)->get() as $product) {
                 UpdateProduct::run($product, [
                     'units' => $masterAsset->units,
                 ]);
@@ -348,34 +370,37 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->wasChanged(['name', 'description', 'description_title', 'description_extra', 'code'])) {
+        if ($masterAsset->wasChanged(['name', 'description', 'description_title', 'description_extra', 'code', 'is_golden_product'])) {
             $english = Language::where('code', 'en')->first();
 
             foreach ($masterAsset->products as $product) {
-                $shop = $product->shop;
-                if (!data_get($shop->settings, 'catalog.product_follow_master')) {
-                    continue;
-                }
-
-                $shopLanguage    = $shop->language;
+                $shop            = $product->shop;
                 $dataToBeUpdated = [];
 
-                // Updates the affected field name using translation if follow_master_{field} is true
-                if ($masterAsset->wasChanged('name')) {
-                    $dataToBeUpdated['name']             = Translate::run($masterAsset->name, $english, $shopLanguage, 'gpt-5-nano');
-                    $dataToBeUpdated['is_name_reviewed'] = false;
+                if ($masterAsset->wasChanged('is_golden_product')) {
+                    $dataToBeUpdated['is_golden_product'] = $masterAsset->is_golden_product;
                 }
-                if ($masterAsset->wasChanged('description_title')) {
-                    $dataToBeUpdated['description_title']             = Translate::run($masterAsset->description_title, $english, $shopLanguage, 'gpt-5-nano');
-                    $dataToBeUpdated['is_description_title_reviewed'] = false;
-                }
-                if ($masterAsset->wasChanged('description')) {
-                    $dataToBeUpdated['description']             = Translate::run($masterAsset->description, $english, $shopLanguage, 'gpt-5-nano');
-                    $dataToBeUpdated['is_description_reviewed'] = false;
-                }
-                if ($masterAsset->wasChanged('description_extra')) {
-                    $dataToBeUpdated['description_extra']             = Translate::run($masterAsset->description_extra, $english, $shopLanguage, 'gpt-5-nano');
-                    $dataToBeUpdated['is_description_extra_reviewed'] = false;
+
+                if (data_get($shop->settings, 'catalog.product_follow_master', false)) {
+                    $shopLanguage    = $shop->language;
+
+                    // Updates the affected field name using translation if follow_master_{field} is true
+                    if ($masterAsset->wasChanged('name')) {
+                        $dataToBeUpdated['name']             = Translate::run($masterAsset->name, $english, $shopLanguage, 'gpt-5-nano');
+                        $dataToBeUpdated['is_name_reviewed'] = false;
+                    }
+                    if ($masterAsset->wasChanged('description_title')) {
+                        $dataToBeUpdated['description_title']             = Translate::run($masterAsset->description_title, $english, $shopLanguage, 'gpt-5-nano');
+                        $dataToBeUpdated['is_description_title_reviewed'] = false;
+                    }
+                    if ($masterAsset->wasChanged('description')) {
+                        $dataToBeUpdated['description']             = Translate::run($masterAsset->description, $english, $shopLanguage, 'gpt-5-nano');
+                        $dataToBeUpdated['is_description_reviewed'] = false;
+                    }
+                    if ($masterAsset->wasChanged('description_extra')) {
+                        $dataToBeUpdated['description_extra']             = Translate::run($masterAsset->description_extra, $english, $shopLanguage, 'gpt-5-nano');
+                        $dataToBeUpdated['is_description_extra_reviewed'] = false;
+                    }
                 }
 
                 if ($dataToBeUpdated) {
@@ -428,6 +453,8 @@ class UpdateMasterAsset extends OrgAction
             'data'                         => ['sometimes', 'array'],
             'status'                       => ['sometimes', 'required', 'boolean'],
             'units'                        => ['sometimes', 'numeric', 'min:0'],
+
+            'has_independent_units' => ['sometimes', 'boolean'],
             'master_family_id'             => [
                 'sometimes',
                 'nullable',
@@ -452,6 +479,7 @@ class UpdateMasterAsset extends OrgAction
             'master_rrps'                   => ['sometimes', 'array'],
             'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
             'master_rrps.*.independent'     => ['sometimes', 'boolean'],
+            'is_golden_product'             => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

@@ -155,16 +155,13 @@ class EditWebpage extends OrgAction
             ],
         ];
 
-        if ($isBlog) {
+        if ($isBlog && $webpage->sub_type != WebpageSubTypeEnum::MAILSHOT) {
             $fields['sub_type'] = [
                 'type'        => 'select',
                 'label'       => __('Blog Category'),
                 'placeholder' => __('Select a blog category'),
                 'mode'        => 'single',
-                'options'     => [
-                    ['value' => 'davids_travel_blog', 'label' => __("David's Travel Blog")],
-                    ['value' => 'tips', 'label' => __('Tips')],
-                ],
+                'options'     => WebpageSubTypeEnum::blogCategoriesWithLabel(),
                 'value'       => $webpage->sub_type?->value ?? '',
                 'required'    => true,
             ];

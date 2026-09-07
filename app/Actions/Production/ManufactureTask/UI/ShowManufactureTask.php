@@ -9,7 +9,7 @@
 namespace App\Actions\Production\ManufactureTask\UI;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
-use App\Actions\Production\Production\UI\ShowCraftsDashboard;
+use App\Actions\Production\Production\UI\ShowOperationsDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\UI\Production\ManufactureTaskTabsEnum;
@@ -108,8 +108,8 @@ class ShowManufactureTask extends OrgAction
                     : Inertia::optional(fn () => ArtefactsResource::collection(GetManufactureTaskArtefacts::run($manufactureTask, $request))),
 
                 ManufactureTaskTabsEnum::HISTORY->value => $this->tab == ManufactureTaskTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($manufactureTask))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($manufactureTask)))
+                    fn () => HistoryResource::collection(IndexHistory::run($manufactureTask, ManufactureTaskTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($manufactureTask, ManufactureTaskTabsEnum::HISTORY->value)))
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: ManufactureTaskTabsEnum::HISTORY->value));
@@ -126,14 +126,14 @@ class ShowManufactureTask extends OrgAction
         $manufactureTask = ManufactureTask::where('slug', $routeParameters['manufactureTask'])->first();
 
         return array_merge(
-            ShowCraftsDashboard::make()->getBreadcrumbs($routeParameters),
+            ShowOperationsDashboard::make()->getBreadcrumbs($routeParameters),
             [
                 [
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.index',
+                                'name'       => 'grp.org.productions.show.operations.manufacture_tasks.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('manufacture tasks'),
@@ -141,7 +141,7 @@ class ShowManufactureTask extends OrgAction
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.show',
+                                'name'       => 'grp.org.productions.show.operations.manufacture_tasks.show',
                                 'parameters' => $routeParameters
                             ],
                             'label' => $manufactureTask?->code,

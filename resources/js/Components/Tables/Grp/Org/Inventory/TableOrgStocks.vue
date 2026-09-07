@@ -433,19 +433,36 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
             <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.stock_value) }}</span>
         </template>
 
-        <template #cell(sales_grp_currency_external)="{ item }">
-            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.sales_grp_currency_external) }}</span>
+        <template #cell(potential_sales)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.potential_sales) }}</span>
         </template>
 
-        <template #cell(sales_grp_currency_external_delta)="{ item }">
-            <div v-if="item.sales_grp_currency_external_delta">
-                <span>{{ item.sales_grp_currency_external_delta.formatted }}</span>
+        <template #cell(stock_cover)="{ item }">
+            <span v-if="item.stock_cover !== null" class="tabular-nums whitespace-nowrap">{{ item.stock_cover.toFixed(1) }} mo</span>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+
+        <template #cell(sales_org_currency_external)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.sales_org_currency_external) }}</span>
+        </template>
+
+        <template #cell(gross_profit)="{ item }">
+            <span
+                v-tooltip="item.gross_profit_percentage !== null ? `${item.gross_profit_percentage}%` : undefined"
+                class="tabular-nums"
+                :class="item.gross_profit_percentage !== null ? 'cursor-help' : ''"
+            >{{ locale.currencyFormat(item.currency_code, item.gross_profit) }}</span>
+        </template>
+
+        <template #cell(sales_org_currency_external_delta)="{ item }">
+            <div v-if="item.sales_org_currency_external_delta">
+                <span>{{ item.sales_org_currency_external_delta.formatted }}</span>
                 <FontAwesomeIcon
-                    :icon="getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive)?.icon"
+                    :icon="getIntervalChangesIcon(item.sales_org_currency_external_delta.is_positive)?.icon"
                     class="text-xxs md:text-sm"
                     :class="[
-                        getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive).class,
-                        getIntervalStateColor(item.sales_grp_currency_external_delta.is_positive),
+                        getIntervalChangesIcon(item.sales_org_currency_external_delta.is_positive).class,
+                        getIntervalStateColor(item.sales_org_currency_external_delta.is_positive),
                     ]"
                     fixed-width
                     aria-hidden="true"
@@ -493,8 +510,16 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
             <span class="tabular-nums">{{ locale.number(item.quantity_in_locations) }}</span>
         </template>
 
-        <template #cell(org_stock_value)="{ item }">
-            <span v-if="item.org_stock_value">{{ locale.currencyFormat(item.currency_code, item.org_stock_value) }}</span>
+        <template #cell(org_stock_lpp_value)="{ item }">
+            <span v-if="item.org_stock_lpp_value">{{ locale.currencyFormat(item.currency_code, item.org_stock_lpp_value) }}</span>
+        </template>
+
+        <template #cell(org_stock_wac_value)="{ item }">
+            <span v-if="item.org_stock_wac_value != null">{{ locale.currencyFormat(item.currency_code, item.org_stock_wac_value) }}</span>
+        </template>
+
+        <template #cell(org_stock_fifo_value)="{ item }">
+            <span v-if="item.org_stock_fifo_value != null">{{ locale.currencyFormat(item.currency_code, item.org_stock_fifo_value) }}</span>
         </template>
 
         <template #cell(sold_within_1y)="{ item }">

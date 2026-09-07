@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Models\Accounting\PaymentAccount;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairPastpayAccountTerms
 {
@@ -46,6 +47,7 @@ class RepairPastpayAccountTerms
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         PaymentAccount::where('type', PaymentAccountTypeEnum::PASTPAY)->chunk(100, function ($paymentAccounts) use ($command) {
             foreach ($paymentAccounts as $paymentAccount) {
                 $this->handle($paymentAccount, $command);

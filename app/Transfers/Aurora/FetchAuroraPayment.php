@@ -8,9 +8,11 @@
 
 namespace App\Transfers\Aurora;
 
+use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -96,12 +98,37 @@ class FetchAuroraPayment extends FetchAurora
 
         ];
 
+        $source = self::sourceFromMetadata($this->auroraModelData->{'Payment Metadata'} ?? null);
+        if ($source) {
+            $this->parsedData['payment'] = array_merge(
+                $this->parsedData['payment'],
+                ['source' => $source],
+                StorePayment::methodFromSource($source, $this->parsedData['paymentAccount'])
+            );
+        }
+
 
         if ($this->parsedData['customer']) {
             $this->parsedData['payment']['customer_id'] = $this->parsedData['customer']->id;
         }
 
 
+    }
+
+    /**
+     * Aurora keeps the raw checkout.com payment response in Payment Metadata; its source block
+     * (scheme, wallet, APM type) is what names the payment method.
+     */
+    public static function sourceFromMetadata(?string $metadata): ?array
+    {
+        if (!$metadata) {
+            return null;
+        }
+
+        $decoded = json_decode($metadata, true);
+        $source  = is_array($decoded) ? Arr::get($decoded, 'source') : null;
+
+        return is_array($source) && (Arr::get($source, 'type') || Arr::get($source, 'scheme')) ? $source : null;
     }
 
     protected function fetchData($id): object|null

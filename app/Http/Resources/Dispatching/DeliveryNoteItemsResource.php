@@ -38,6 +38,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $warehouse_slug
  * @property mixed $warehouse_code
  * @property mixed $org_stocks_batch_code_count
+ * @property mixed $org_stocks_batch_code_id
  * @property mixed $org_stocks_batch_code
  * @property mixed $un_numbers
  * @property mixed $packings_quantity
@@ -46,10 +47,19 @@ class DeliveryNoteItemsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $requiredFactionalData = riseDivisor(
+        $requiredFractionalData = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors(
                     $this->quantity_required
+                )
+            ),
+            $this->packed_in
+        );
+
+        $originalRequiredFractionalData = riseDivisor(
+            divideWithRemainder(
+                findSmallestFactors(
+                    $this->original_quantity_required ?? 0
                 )
             ),
             $this->packed_in
@@ -111,13 +121,16 @@ class DeliveryNoteItemsResource extends JsonResource
             ->values()
             ->all();
 
+        $totalUnitsCount = $this->quantity_required * $packedIn;
 
         return [
             'id'                                       => $this->id,
             'state'                                    => $this->state,
             'state_icon'                               => $this->state->stateIcon()[$this->state->value],
+            'original_quantity_required'               => $this->original_quantity_required,
+            'original_quantity_required_fractional'    => $originalRequiredFractionalData,
             'quantity_required'                        => $this->quantity_required,
-            'quantity_required_fractional'             => $requiredFactionalData,
+            'quantity_required_fractional'             => $requiredFractionalData,
             'composition_dirty_at'                     => $this->composition_dirty_at,
             'composition_dirty_quantity_required'      => $this->composition_dirty_quantity_required,
             'applyNewCompositionRoute'                 => $this->composition_dirty_at ? [
@@ -149,6 +162,7 @@ class DeliveryNoteItemsResource extends JsonResource
                     'orgStock'     => $this->org_stock_id,
                 ],
             ],
+            'packed_in'                                => $packedIn,
             'packed_in_message'                        => $packedInMessage,
             'is_done_packing'                          => $hasAnyPacking && $isFullyPacked,
             'is_partially_packed'                      => $hasAnyPacking && !$isFullyPacked,
@@ -170,7 +184,7 @@ class DeliveryNoteItemsResource extends JsonResource
                         'warehouse_slug'          => $this->warehouse_slug,
                         'warehouse_code'          => $this->warehouse_code,
                         'show_batch_code_ui'      => $this->org_stocks_batch_code_count > 0,
-                        'batch_code_id'           => $picking->batch_code_id ?? $this->org_stocks_batch_code_count,
+                        'batch_code_id'           => $picking->batch_code_id ?? $this->org_stocks_batch_code_id,
                         'batch_code'              => $picking->batch_code ?? $this->org_stocks_batch_code,
                         'update_route'            => [
                             'name'       => 'grp.models.picking.update',
@@ -198,7 +212,10 @@ class DeliveryNoteItemsResource extends JsonResource
                 ],
                 'method'     => 'post'
             ],
-            'un_numbers'                               => $unNumbers
+            'un_numbers'                               => $unNumbers,
+            'is_dirty'                                 => $this->is_dirty,
+            'total_units_count'                        => $totalUnitsCount,
+            'total_units_count_fractional'             => riseDivisor(divideWithRemainder(findSmallestFactors($totalUnitsCount)), $packedIn),
         ];
     }
 }

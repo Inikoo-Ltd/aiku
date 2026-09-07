@@ -39,12 +39,15 @@ class LogMcpRequest
                 return;
             }
 
+            $error = $this->responseError($response->getContent() ?: '');
+
             McpRequest::create([
                 'group_id'    => $user->group_id,
                 'user_id'     => $user->id,
                 'tool'        => Arr::get($payload, 'params.name', 'unknown'),
                 'arguments'   => Arr::get($payload, 'params.arguments', []),
-                'is_error'    => $this->responseHasError($response->getContent() ?: ''),
+                'is_error'    => $error !== null,
+                'error'       => $error,
                 'duration_ms' => (int) ((microtime(true) - $request->attributes->get('mcp_request_start', microtime(true))) * 1000),
             ]);
         } catch (Throwable $e) {
@@ -53,13 +56,26 @@ class LogMcpRequest
     }
 
     /**
-     * Tool-level failures set isError; protocol failures such as calling a tool the
-     * user does not have come back as a top-level JSON-RPC error object. Tool payloads
-     * are JSON-encoded strings with escaped quotes, so a bare "error":{ is protocol-level.
+     * Tool-level failures set isError with the message in content[].text; protocol
+     * failures such as calling a tool the user does not have come back as a top-level
+     * JSON-RPC error object. Responses may be plain JSON or an SSE stream of data: lines.
      */
-    protected function responseHasError(string $content): bool
+    protected function responseError(string $content): ?string
     {
-        return str_contains($content, '"isError":true')
-            || (bool) preg_match('/"error"\s*:\s*\{/', $content);
+        foreach (preg_split('/\R/', $content) as $line) {
+            $line = preg_replace('/^data:\s*/', '', trim($line));
+            $decoded = json_decode($line, true);
+            if (!is_array($decoded)) {
+                continue;
+            }
+            if (isset($decoded['error'])) {
+                return mb_substr((string) Arr::get($decoded, 'error.message', json_encode($decoded['error'])), 0, 2000);
+            }
+            if (Arr::get($decoded, 'result.isError')) {
+                return mb_substr((string) Arr::get($decoded, 'result.content.0.text', 'error'), 0, 2000);
+            }
+        }
+
+        return null;
     }
 }

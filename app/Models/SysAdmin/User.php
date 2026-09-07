@@ -51,6 +51,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $password
  * @property UserAuthTypeEnum $auth_type
  * @property string|null $contact_name no-normalised depends on parent
+ * @property string|null $nickname
  * @property string|null $email
  * @property string|null $about
  * @property int $number_models
@@ -85,6 +86,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $employed_in_organisation_id
  * @property bool $can_use_mcp
  * @property bool $can_use_mcp_sql
+ * @property int|null $timezone_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedAgentsOrganisations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedDigitalAgencyOrganisations
@@ -100,6 +102,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Employee> $employees
  * @property-read \App\Models\Notifications\FcmToken|null $fcmToken
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Notifications\FcmToken> $fcmTokens
+ * @property-read string $timezone_name
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Guest> $guests
  * @property-read \App\Models\Helpers\Media|null $image
@@ -117,6 +120,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OutBoxHasSubscriber> $subscribedOutboxes
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Task> $tasks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserTimeSeries> $timeSeries
+ * @property-read Timezone|null $timezone
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserHasAuthorisedModels> $userAuthorisedModels
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserFailedLogIn> $userFailedLogins
@@ -189,6 +193,11 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
         return $this->contact_name ?? $this->username;
     }
 
+    public function chatName(): string
+    {
+        return $this->nickname ?: ($this->contact_name ?: $this->username);
+    }
+
     public function searchIndexShouldBeUpdated(): bool
     {
         return $this->wasRecentlyCreated
@@ -253,6 +262,11 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
         return $this->fcmTokens->pluck('fcm_token')->toArray();
     }
 
+
+    public function teamMembers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'user_has_team_members', 'user_id', 'member_user_id')->withTimestamps();
+    }
 
     public function employees(): MorphToMany
     {
@@ -351,6 +365,12 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     public function authorisedDigitalAgencyOrganisations(): MorphToMany
     {
         return $this->morphedByMany(Organisation::class, 'model', 'user_has_authorised_models')->where('organisations.type', OrganisationTypeEnum::DIGITAL_AGENCY)->withTimestamps();
+    }
+
+    public function hasGroupAccess(): bool
+    {
+        return $this->authorisedShopOrganisations()->count() > 1
+            || $this->authTo(['group-overview', 'sysadmin.view', 'goods.view', 'masters.view', 'supply-chain.view', 'organisations.view']);
     }
 
     public function authorisedShops(): MorphToMany

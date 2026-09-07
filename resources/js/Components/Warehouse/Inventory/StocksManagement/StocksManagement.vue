@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { trans } from 'laravel-vue-i18n'
-import { inject, onMounted, nextTick, computed } from 'vue'
+import { inject, onMounted, onBeforeUnmount, nextTick, computed, watch } from 'vue'
 import formatDistanceStrict from 'date-fns/formatDistanceStrict'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -28,6 +28,8 @@ import AddLocations from './AddLocations.vue'
 import EditLocations from './EditLocations.vue'
 import { WINDOW } from '@sentry/vue'
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
+import { useLowStockAuditBroadcast, LowStockAuditedEvent } from '@/Composables/useLowStockAuditBroadcast'
+import { debounce } from 'lodash-es'
 library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faDollyFlatbedEmptyFal, faShoppingBasket, faStickyNote, faShoppingCart, faDollyFlatbedEmptyFas)
 
 const props = defineProps<{
@@ -48,6 +50,67 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', layoutStructure)
+
+const reloadStocksManagement = debounce(() => router.reload({ only: ['showcase'] }), 600)
+
+const { lockedLocationIds, announceLock } = useLowStockAuditBroadcast({
+    // Someone started counting this SKO elsewhere: whatever is half typed in the modal is about
+    // to be written over, so it is closed rather than left to overwrite the count coming in
+    onAuditStart: (event: LowStockAuditedEvent) => {
+        if (event.org_stock_id !== props.org_stock_id) {
+            return
+        }
+
+        if (isStockCheckModalOpen.value) {
+            isStockCheckModalOpen.value = false
+
+            notify({
+                title: trans('Audit in progress'),
+                text: trans('Location :location is being audited somewhere else', {
+                    location: event.location_code ?? '',
+                }),
+                type: 'warning',
+            })
+        }
+    },
+    onAudited: (event: LowStockAuditedEvent) => {
+        if (event.org_stock_id !== props.org_stock_id) {
+            return
+        }
+
+        const location = props.stocks_management.locations?.find(
+            (location: StockLocation) => location.id === event.location_org_stock_id
+        )
+
+        if (location) {
+            location.quantity = event.quantity ?? location.quantity
+            location.audited_at = event.audited_at ?? location.audited_at
+        }
+
+        reloadStocksManagement()
+    },
+})
+
+// Any location of this SKO being counted elsewhere holds the whole audit shut
+const isAuditLocked = computed(() =>
+    (props.stocks_management.locations ?? []).some((location: StockLocation) =>
+        lockedLocationIds.value.includes(location.id)
+    )
+)
+
+// Having the modal open is the intent to count the whole SKO, so the list is held while it is
+const announceAuditModalLock = (isLocking: boolean) =>
+    announceLock({
+        org_stock_id: props.org_stock_id,
+        is_locked: isLocking,
+        source: 'detail',
+    })
+
+onBeforeUnmount(() => {
+    if (isStockCheckModalOpen.value) {
+        announceAuditModalLock(false)
+    }
+})
 const locale = inject('locale', aikuLocaleStructure)
 const screenType = inject('screenType', ref('desktop'))
 // Active picking location state
@@ -355,14 +418,35 @@ const actionGridClass = computed(() => {
 })
 
 const isStockCheckModalOpen = ref(false)
+
+watch(isStockCheckModalOpen, (isOpen) => {
+    if (!isOpen) {
+        announceAuditModalLock(false)
+    }
+})
 const isMoveStockModalOpen = ref(false)
 const isEditLocationModalOpen = ref(false)
 const isAddLocationModalOpen = ref(false)
 const selectedLocationId = ref<number | null>(null)
-const openModal = (type: string, payload: number | null = null) => {
+const openModal = async (type: string, payload: number | null = null) => {
+    if (type === MODALS.STOCK_CHECK) {
+        if (isAuditLocked.value) {
+            return
+        }
+
+        if (!(await announceAuditModalLock(true))) {
+            notify({
+                title: trans('Being audited somewhere else'),
+                text: trans('This stock is already being counted'),
+                type: 'warning',
+            })
+
+            return
+        }
+    }
+
     activeModal.value = type
 
-    // For stock check modal we want to re-trigger focus even when the same location is selected again.
     if (type === MODALS.STOCK_CHECK) {
         selectedLocationId.value = null
         nextTick(() => {
@@ -487,6 +571,7 @@ const onAddLocationShow = () => {
                     @close="isStockCheckModalOpen = false"
                     :auditRoute="props.stocks_management?.routes?.audit_route"
                     :bulkAuditRoute="props.stocks_management?.routes?.bulk_audit_route"
+                    :lockedLocationIds
                     :reasons
                     :org_stock_id
                 />
@@ -513,7 +598,7 @@ const onAddLocationShow = () => {
 
             <Dialog v-model:visible="isEditLocationModalOpen" modal :header="ctrans('Remove Locations')"
                 :dismissableMask="screenType === 'desktop'"
-                :style="{ width: '50vw' }"                
+                :style="{ width: '50vw' }"
                 :closeOnEscape="true"
                 :breakpoints="{
                     '1200px': '76vw',
@@ -690,7 +775,7 @@ const onAddLocationShow = () => {
                                 <span
                                     v-tooltip="trans('Stock quantity')"
                                     class="cursor-pointer hover:text-blue-500 transition tabular-nums"
-                                    @dblclick="openModal(MODALS.STOCK_CHECK, loc.id)"
+                                    @dblclick="!isAuditLocked && openModal(MODALS.STOCK_CHECK, loc.id)"
                                 >
                                     <FractionDisplay v-if="loc.quantity_fractional" :fractionData="loc.quantity_fractional"/>
                                     <span v-else>
@@ -708,7 +793,7 @@ const onAddLocationShow = () => {
 
         <!-- Action Buttons -->
         <div class="grid grid-cols-2 border-t pt-3 gap-2" :class="actionGridClass">
-            <Button v-if="showAction(MODALS.STOCK_CHECK)" @click="openModal(MODALS.STOCK_CHECK)" :disabled="locationCount === 0" :tooltip="locationCount === 0 ? ctrans('No location to audit') : undefined" iconRight="fal fa-clipboard-check" :label="ctrans('Audit Stock')" size="sm" type="tertiary" full class="whitespace-nowrap" />
+            <Button v-if="showAction(MODALS.STOCK_CHECK)" @click="openModal(MODALS.STOCK_CHECK)" :disabled="locationCount === 0 || isAuditLocked" :tooltip="locationCount === 0 ? ctrans('No location to audit') : (isAuditLocked ? ctrans('This stock is being audited somewhere else') : undefined)" iconRight="fal fa-clipboard-check" :label="ctrans('Audit Stock')" size="sm" type="tertiary" full class="whitespace-nowrap" />
             <Button v-if="showAction(MODALS.MOVE_STOCK)" @click="openModal(MODALS.MOVE_STOCK)" :disabled="locationCount < 2" :tooltip="locationCount < 2 ? ctrans('Requires at least 2 locations') : undefined" iconRight="fal fa-forklift" :label="ctrans('Move Stock')" size="sm" type="tertiary" full class="whitespace-nowrap" />
             <Button v-if="showAction(MODALS.EDIT_LOCATION)" @click="openModal(MODALS.EDIT_LOCATION)" :disabled="locationCount === 0" :tooltip="locationCount === 0 ? ctrans('No location to edit') : undefined" iconRight="fal fa-edit" :label="ctrans('Remove Locations')" size="sm" type="tertiary" full class="whitespace-nowrap" />
             <Button v-if="showAction(MODALS.ADD_LOCATION)" @click="openModal(MODALS.ADD_LOCATION)" iconRight="fal fa-plus" :label="ctrans('Add Location')" size="sm" type="tertiary" full class="whitespace-nowrap" />

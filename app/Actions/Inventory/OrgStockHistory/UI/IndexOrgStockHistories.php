@@ -9,6 +9,8 @@
 namespace App\Actions\Inventory\OrgStockHistory\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithStockHistoryArchiveRead;
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrganisationStockHistory;
 use App\Models\Inventory\OrgStockHistory;
@@ -21,6 +23,8 @@ use Spatie\QueryBuilder\AllowedSort;
 
 class IndexOrgStockHistories extends OrgAction
 {
+    use WithStockHistoryArchiveRead;
+
     public function handle(OrganisationStockHistory $organisationStockHistory, $prefix = null, ?string $filter = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -34,7 +38,9 @@ class IndexOrgStockHistories extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(OrgStockHistory::class);
+        $connection = $this->stockHistoryDayConnection($organisationStockHistory);
+
+        $queryBuilder = QueryBuilder::for($connection ? OrgStockHistory::on($connection) : OrgStockHistory::query());
 
         $queryBuilder->leftJoin('org_stocks', 'org_stock_histories.org_stock_id', '=', 'org_stocks.id');
         $queryBuilder->where('org_stock_histories.organisation_stock_history_id', $organisationStockHistory->id);
@@ -52,8 +58,12 @@ class IndexOrgStockHistories extends OrgAction
                 'org_stocks.slug',
                 'org_stocks.state',
                 'org_stock_histories.quantity_in_locations',
-                'org_stock_histories.org_stock_value',
-                'org_stock_histories.grp_stock_value',
+                'org_stock_histories.org_stock_lpp_value',
+                'org_stock_histories.grp_stock_lpp_value',
+                'org_stock_histories.org_stock_wac_value',
+                'org_stock_histories.grp_stock_wac_value',
+                'org_stock_histories.org_stock_fifo_value',
+                'org_stock_histories.grp_stock_fifo_value',
                 'org_stock_histories.sold_within_1y',
                 'org_stock_histories.last_sold_date',
                 'org_stock_histories.non_moving_1y',
@@ -63,8 +73,10 @@ class IndexOrgStockHistories extends OrgAction
                 AllowedSort::field('code', 'org_stocks.code'),
                 AllowedSort::field('name', 'org_stocks.name'),
                 AllowedSort::field('quantity_in_locations', 'org_stock_histories.quantity_in_locations'),
-                AllowedSort::field('org_stock_value', 'org_stock_histories.org_stock_value'),
-                AllowedSort::field('grp_stock_value', 'org_stock_histories.grp_stock_value'),
+                AllowedSort::field('org_stock_lpp_value', 'org_stock_histories.org_stock_lpp_value'),
+                AllowedSort::field('grp_stock_lpp_value', 'org_stock_histories.grp_stock_lpp_value'),
+                AllowedSort::field('org_stock_wac_value', 'org_stock_histories.org_stock_wac_value'),
+                AllowedSort::field('org_stock_fifo_value', 'org_stock_histories.org_stock_fifo_value'),
                 AllowedSort::field('sold_within_1y', 'org_stock_histories.sold_within_1y'),
                 AllowedSort::field('non_moving_1y', 'org_stock_histories.non_moving_1y'),
             ])
@@ -88,8 +100,13 @@ class IndexOrgStockHistories extends OrgAction
                 ->withGlobalSearch()
                 ->column(key: 'code', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'quantity_in_locations', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'org_stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
+                ->column(key: 'quantity_in_locations', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true);
+
+            foreach (OrgStockValuationMethodEnum::ordered() as $index => $method) {
+                $table->column(key: $method->stockValueColumn(), label: __('Value').' ('.$method->label().')', tooltip: $method->legend(), tooltipIcon: $index === 0, canBeHidden: $index !== 0, sortable: true, type: 'currency');
+            }
+
+            $table
                 ->column(key: 'sold_within_1y', label: '', icon: 'fal fa-cash-register', tooltip: __('Sold Within 1Y'), canBeHidden: false, sortable: true, searchable: true, type: 'icon')
                 ->column(key: 'non_moving_1y', label: '', icon: 'fal fa-skull-cow', tooltip: __('Non Moving 1Y'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->defaultSort('code');

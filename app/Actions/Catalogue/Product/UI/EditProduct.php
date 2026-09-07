@@ -22,7 +22,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Helpers\LanguageResource;
-use Illuminate\Support\Facades\DB;
 
 class EditProduct extends OrgAction
 {
@@ -102,10 +101,6 @@ class EditProduct extends OrgAction
         $hasMaster      = (bool)$product->masterProduct;
         $isExternalShop = $product->shop->type == ShopTypeEnum::EXTERNAL;
 
-        if ($product->is_single_trade_unit && $product->shop->type != ShopTypeEnum::EXTERNAL) {
-            $warningText[] = __('This product is associated with trade unit, for weights, ingredients etc edit the trade unit. Changing name or description will affect all shops/websites using same language.');
-        }
-
         $forceFollowMasterProduct = data_get($product->shop->settings, 'catalog.product_follow_master');
 
         if ($hasMaster && $forceFollowMasterProduct) {
@@ -137,11 +132,24 @@ class EditProduct extends OrgAction
                 'color'   => 'rgb(75, 0, 130)'
             ];
         }
+        
+        if ($product->is_single_trade_unit && $product->tradeUnits->first()) {
+            $iconLinks[] = [
+                'icon'    => 'fal fa-atom',
+                'tooltip' => __('Go to Edit Trade Unit'),
+                'route'   => [
+                    'name'       => 'grp.trade_units.units.show',
+                    'parameters' => [
+                        'tradeUnit' => $product->tradeUnits->first()->slug,
+                    ]
+                ],
+            ];
+        }
 
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('Editing product').' '.$product->code,
+                'title'       => __('Editing product') . ' ' . $product->code,
                 'warning'     => $warning,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $product,
@@ -156,10 +164,10 @@ class EditProduct extends OrgAction
                     'title'     => __('Edit product'),
                     'model'     => $product->code,
                     'icon'      =>
-                        [
-                            'icon'  => ['fal', 'fa-cube'],
-                            'title' => __('Goods')
-                        ],
+                    [
+                        'icon'  => ['fal', 'fa-cube'],
+                        'title' => __('Goods')
+                    ],
                     'actions'   => [
                         [
                             'type'  => 'button',
@@ -272,7 +280,7 @@ class EditProduct extends OrgAction
                 'label'     => __('Do not follow master prices'),
                 'value'     => $product->not_follow_master_prices,
                 'information' => __('Enabling this would allow product price to be editable and it will stop following master'),
-                'warningText' => __('Modifying this setting would cause the product to either diverge/follow master').'. '.__('Are you sure you want to do this?'),
+                'warningText' => __('Modifying this setting would cause the product to either diverge/follow master') . '. ' . __('Are you sure you want to do this?'),
                 /* Confirming the warning is the decision: leaving it to a separate save reads as already saved. */
                 'noSaveButton'    => true,
                 'submitOnConfirm' => true,
@@ -293,7 +301,7 @@ class EditProduct extends OrgAction
                 [
                     'price'        => [
                         'type'     => 'input_number',
-                        'label'    => __('Price').'/'.__('outer'),
+                        'label'    => __('Price') . '/' . __('outer'),
                         'required' => true,
                         'bind'     => [
                             'minFractionDigits' => 0,
@@ -315,7 +323,7 @@ class EditProduct extends OrgAction
                     ],
                     'rrp_per_unit' => [
                         'type'     => 'input_number',
-                        'label'    => __('RRP').'/'.__('unit'),
+                        'label'    => __('RRP') . '/' . __('unit'),
                         'required' => true,
                         'bind'     => [
                             'minFractionDigits' => 0,
@@ -335,7 +343,7 @@ class EditProduct extends OrgAction
                 'value'        => $product->units,
                 'saveConfirmation' => $this->getUnitsChangeConfirmation($product),
                 'showWarning'  => true,
-                'warningTitle' => __('Units mismatch with master product').' ('.$product->units_review.')',
+                'warningTitle' => __('Units mismatch with master product') . ' (' . $product->units_review . ')',
                 'warningBody'  => __('Per-unit prices may be wrong, review units before editing prices'),
             ];
         }
@@ -344,6 +352,13 @@ class EditProduct extends OrgAction
         $tradeUnits = $this->getTradeUnitsWithPackingData($product);
 
         $nameFields = [
+            'unit'              => $product->is_single_trade_unit
+                ? [
+                    'type'  => 'input',
+                    'label' => __('Unit'),
+                    'value' => $product->unit,
+                ]
+                : [],
             'name'              => $product->masterProduct
                 ? [
                     'type'          => 'input_translation',
@@ -379,12 +394,12 @@ class EditProduct extends OrgAction
                     'reviewed'      => $product->is_description_reviewed,
                     'information'   => __('This show in product webpage'),
                     'routeGetInternalLink' => [
-                            'name' => 'grp.org.shops.show.web.webpages.index',
-                            'parameters' => [
-                                'shop' => $product->shop->slug,
-                                'organisation' => $product->organisation->slug,
-                                'website' => $product->shop->website?->slug
-                            ]
+                        'name' => 'grp.org.shops.show.web.webpages.index',
+                        'parameters' => [
+                            'shop' => $product->shop->slug,
+                            'organisation' => $product->organisation->slug,
+                            'website' => $product->shop->website?->slug
+                        ]
                     ],
                     'toggle'        => [
                         'heading2',
@@ -417,12 +432,12 @@ class EditProduct extends OrgAction
                         'counter' => true,
                     ],
                     'routeGetInternalLink' => [
-                            'name' => 'grp.org.shops.show.web.webpages.index',
-                            'parameters' => [
-                                'shop' => $product->shop->slug,
-                                'organisation' => $product->organisation->slug,
-                                'website' => $product->shop->website?->slug
-                            ]
+                        'name' => 'grp.org.shops.show.web.webpages.index',
+                        'parameters' => [
+                            'shop' => $product->shop->slug,
+                            'organisation' => $product->organisation->slug,
+                            'website' => $product->shop->website?->slug
+                        ]
                     ],
                     'toggle'      => [
                         'heading2',
@@ -461,12 +476,12 @@ class EditProduct extends OrgAction
                     'reviewed'      => $product->is_description_extra_reviewed,
                     'information'   => __('This above product specification in product webpage'),
                     'routeGetInternalLink' => [
-                            'name' => 'grp.org.shops.show.web.webpages.index',
-                            'parameters' => [
-                                'shop' => $product->shop->slug,
-                                'organisation' => $product->organisation->slug,
-                                'website' => $product->shop->website?->slug
-                            ]
+                        'name' => 'grp.org.shops.show.web.webpages.index',
+                        'parameters' => [
+                            'shop' => $product->shop->slug,
+                            'organisation' => $product->organisation->slug,
+                            'website' => $product->shop->website?->slug
+                        ]
                     ],
                     'toggle'        => [
                         'heading2',
@@ -501,12 +516,12 @@ class EditProduct extends OrgAction
                     ],
                     'value'       => $product->description_extra,
                     'routeGetInternalLink' => [
-                            'name' => 'grp.org.shops.show.web.webpages.index',
-                            'parameters' => [
-                                'shop' => $product->shop->slug,
-                                'organisation' => $product->organisation->slug,
-                                'website' => $product->shop->website?->slug
-                            ]
+                        'name' => 'grp.org.shops.show.web.webpages.index',
+                        'parameters' => [
+                            'shop' => $product->shop->slug,
+                            'organisation' => $product->organisation->slug,
+                            'website' => $product->shop->website?->slug
+                        ]
                     ],
                     'toggle'      => [
                         'heading2',
@@ -548,7 +563,7 @@ class EditProduct extends OrgAction
                 //                ],
                 'webpage_title'       => [
                     'type'        => 'input',
-                    'label'       => __('Meta Title').' (& '.__('Browser title').')',
+                    'label'       => __('Meta Title') . ' (& ' . __('Browser title') . ')',
                     'information' => __('This will be used as the title displayed in the browser, meta title for SEO, and the search feature'),
                     'options'     => [
                         'counter' => true,
@@ -577,11 +592,11 @@ class EditProduct extends OrgAction
                     'label'  => __('Id'),
                     'icon'   => 'fa-light fa-fingerprint',
                     'fields' => [
-                        'code'        => [
-                            'type'  => 'input',
-                            'label' => __('Code'),
-                            'value' => $product->code
-                        ],
+                        //     'code'        => [
+                        //         'type'  => 'input',
+                        //         'label' => __('Code'),
+                        //         'value' => $product->code
+                        //     ],
                         'cpnp_number' => [
                             'hidden' => $product->is_single_trade_unit,
                             'type'   => 'input',
@@ -603,14 +618,30 @@ class EditProduct extends OrgAction
                     ]
                 ],
                 [
-                    'label'  => __('Name/Description'),
+                    'label'  => $product->is_single_trade_unit ? __('Unit/Name/Description') : __('Name/Description'),
                     'icon'   => 'fa-light fa-tag',
-                    'fields' => $nameFields
+                    'fields' => array_filter($nameFields)
                 ],
                 [
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
                     'fields' => $pricingFields
+                ],
+                [
+                    'label'  => __('Media'),
+                    'icon'   => 'fal fa-camera-retro',
+                    'fields' => [
+                        'not_follow_master_media'  => [
+                            'type'      => 'toggle',
+                            'label'     => __('Do not follow master media'),
+                            'value'     => $product->not_follow_master_media,
+                            'information' => __('Enabling this would allow product media to be editable and it will stop following master'),
+                            'warningText' => __('Modifying this setting would cause the product to either diverge/follow master') . '. ' . __('Are you sure you want to do this?'),
+                            /* Confirming the warning is the decision: leaving it to a separate save reads as already saved. */
+                            'noSaveButton'    => true,
+                            'submitOnConfirm' => true,
+                        ]
+                    ]
                 ],
                 $product->is_single_trade_unit
                     ? []
@@ -670,17 +701,17 @@ class EditProduct extends OrgAction
                     ],
                 $canEditNotForSale
                     ? [
-                    'label'  => __('Sale Status'),
-                    'icon'   => 'fal fa-cart-arrow-down',
-                    'fields' => [
-                        'is_for_sale' => [
-                            'type'  => 'toggle',
-                            'information'   => __("If an item is not for sale, it will not appear in the website's search results and will be excluded from other related features"),
-                            'label' => __('For Sale'),
-                            'value' => $product->is_for_sale,
+                        'label'  => __('Sale Status'),
+                        'icon'   => 'fal fa-cart-arrow-down',
+                        'fields' => [
+                            'is_for_sale' => [
+                                'type'          => 'toggle',
+                                'information'   => __("If an item is not for sale, it will not appear in the website's search results and will be excluded from other related features"),
+                                'label'         => __('For Sale'),
+                                'value'         => $product->is_for_sale,
+                            ],
                         ],
-                    ],
-                ] : [],
+                    ] : [],
                 [
                     'label'  => __('Trade Unit'),
                     'icon'   => 'fal fa-atom',
@@ -690,7 +721,7 @@ class EditProduct extends OrgAction
                             'label' => __('Do not follow master trade units'),
                             'value' => $product->not_follow_master_trade_units,
                             'information' => __('Would set product to have standalone trade units (Differs from master)'),
-                            'warningText'     => __('Modifying this setting would cause the product to either diverge/follow master').'. '.__('Are you sure you want to do this?'),
+                            'warningText'     => __('Modifying this setting would cause the product to either diverge/follow master') . '. ' . __('Are you sure you want to do this?'),
                             'noSaveButton'    => true,
                             'submitOnConfirm' => true,
                         ] : [],
@@ -702,7 +733,7 @@ class EditProduct extends OrgAction
                         'composition' => (!$product->masterProduct || $product->not_follow_master_trade_units) ? [
                             'type'         => 'button',
                             'noSaveButton' => true,
-                            'label'        => $tradeUnits->map(fn ($tradeUnit) => trimDecimalZeros($tradeUnit['quantity']).' × '.$tradeUnit['code'])->implode(', '),
+                            'label'        => $tradeUnits->map(fn ($tradeUnit) => trimDecimalZeros($tradeUnit['quantity']) . ' × ' . $tradeUnit['code'])->implode(', '),
                             'label_button' => __('Edit composition & packing'),
                             'icon'         => 'fal fa-atom',
                             'type_button'  => 'secondary',
@@ -717,17 +748,28 @@ class EditProduct extends OrgAction
                         ] : [],
                     ]),
                 ],
+                $product->shop->type == ShopTypeEnum::DROPSHIPPING ? [] : [
+                    'label'  => __('Offer Details'),
+                    'icon'   => 'fa-light fa-badge-percent',
+                    'fields'        => [
+                        'is_golden_product' => [
+                            'type'          => 'toggle',
+                            'label'         => __('Golden Product'),
+                            'value'         => $product->is_golden_product,
+                            'information'   => __("Would mark the product as Golden Product, which would apply Gold Reward offer to all siblings in basket when a customer added it"),
+                            'warningText'   => __('Modifying this setting would mark the product as Golden Product, which would apply Gold Reward offer to all siblings in basket when a customer added it').'. '.__('Are you sure you want to do this?'),
+                            'noSaveButton'    => true,
+                            'submitOnConfirm' => true,
+                        ],
+                    ]
+                ],
             ]
         );
     }
 
     private function getTradeUnitsWithPackingData(Product $product)
     {
-        $packedIn = DB::table('model_has_trade_units')
-            ->where('model_type', 'Stock')
-            ->whereIn('trade_unit_id', $product->tradeUnits->pluck('id'))
-            ->pluck('quantity', 'trade_unit_id')
-            ->toArray();
+        $packedIn = $product->getEffectiveStockPackedInByTradeUnit();
 
         return $product->tradeUnits->map(function ($tradeUnit) use ($packedIn) {
             $packedQuantity = max(1, (int)($packedIn[$tradeUnit->id] ?? 0));
@@ -749,8 +791,7 @@ class EditProduct extends OrgAction
             product: $product,
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '('.__('Editing').')'
+            suffix: '(' . __('Editing') . ')'
         );
     }
-
 }

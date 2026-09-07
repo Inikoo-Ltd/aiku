@@ -16,7 +16,7 @@ use App\Actions\UI\WithInertia;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
 use App\Actions\Web\Redirect\UI\IndexRedirects;
-use App\Actions\Web\Webpage\GetWebpageGoogleCloud;
+use App\Actions\Web\Webpage\GetWebpagePerformance;
 use App\Actions\Web\Webpage\WithWebpageSubNavigation;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -250,7 +250,7 @@ class ShowWebpage extends OrgAction
         }
 
 
-        if ($webpage->sub_type == WebpageSubTypeEnum::BLOG) {
+        if (in_array($webpage->getBlogCategory(), WebpageSubTypeEnum::blogCategories(), true)) {
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'create',
@@ -344,12 +344,12 @@ class ShowWebpage extends OrgAction
                         )
                     )),
                 WebpageTabsEnum::ANALYTICS->value => $this->tab == WebpageTabsEnum::ANALYTICS->value ?
-                    fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))
-                    : Inertia::optional(fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))),
+                    fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))
+                    : Inertia::optional(fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))),
 
                 WebpageTabsEnum::CHANGELOG->value => $this->tab == WebpageTabsEnum::CHANGELOG->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($webpage))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($webpage))),
+                    fn () => HistoryResource::collection(IndexHistory::run($webpage, WebpageTabsEnum::CHANGELOG->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($webpage, WebpageTabsEnum::CHANGELOG->value))),
 
                 WebpageTabsEnum::REDIRECTS->value => $this->tab == WebpageTabsEnum::REDIRECTS->value ?
                     fn () => RedirectsResource::collection(IndexRedirects::run($webpage))

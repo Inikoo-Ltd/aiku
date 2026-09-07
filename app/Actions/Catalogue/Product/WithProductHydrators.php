@@ -13,6 +13,10 @@ use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateProducts;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProducts;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsNotOnline;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithMismatchFamily;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoDescription;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoImage;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProducts;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProducts;
 use App\Models\Catalogue\Product;
@@ -27,6 +31,10 @@ trait WithProductHydrators
         GroupHydrateProducts::dispatch($product->group)->delay($this->hydratorsDelay);
         OrganisationHydrateProducts::dispatch($product->organisation)->delay($this->hydratorsDelay);
         ShopHydrateProducts::dispatch($product->shop)->delay($this->hydratorsDelay);
+        ShopHydrateProductsWithNoImage::dispatch($product->shop)->delay($this->hydratorsDelay);
+        ShopHydrateProductsWithNoDescription::dispatch($product->shop)->delay($this->hydratorsDelay);
+        ShopHydrateProductsWithMismatchFamily::dispatch($product->shop)->delay($this->hydratorsDelay);
+        ShopHydrateProductsNotOnline::dispatch($product->shop)->delay($this->hydratorsDelay);
         if ($product->department_id) {
             DepartmentHydrateProducts::dispatch($product->department_id)->delay(2);
         }

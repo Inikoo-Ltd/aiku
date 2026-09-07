@@ -10,6 +10,7 @@ namespace App\Actions\Inventory\OrganisationStockHistory\UI;
 
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\UI\Inventory\OrganisationStockHistoriesTabsEnum;
 use App\Http\Resources\Inventory\OrganisationStockHistoriesResource;
@@ -46,20 +47,24 @@ class IndexOrganisationStockHistories extends OrgAction
         $select = [
             'id',
             'date as bucket',
-            'org_stock_value',
+            'org_stock_lpp_value',
+            'org_stock_wac_value',
+            'org_stock_fifo_value',
             'number_locations',
             'number_org_stocks',
             'number_out_of_stock_org_stocks',
             'percentage_out_of_stock',
             'percentage_value_dormant_stock_1y',
             'value_dormant_stock_1y',
+            'value_dormant_stock_1y_wac',
+            'value_dormant_stock_1y_fifo',
             'number_org_stocks_not_sold_1y',
             'number_location_org_stocks',
             DB::raw("'".$organisation->currency->code."' as org_currency_code"),
         ];
 
         if (!$sameCurrency) {
-            $select[] = 'grp_stock_value';
+            $select[] = 'grp_stock_lpp_value';
             $select[] = DB::raw("'".$organisation->group->currency->code."' as grp_currency_code");
         }
 
@@ -74,8 +79,11 @@ class IndexOrganisationStockHistories extends OrgAction
                 AllowedSort::field('bucket', 'date'),
                 AllowedSort::field('number_org_stocks'),
                 AllowedSort::field('number_out_of_stock_org_stocks'),
-                AllowedSort::field('org_stock_value'),
-                AllowedSort::field('grp_stock_value'),
+                AllowedSort::field('org_stock_lpp_value'),
+                AllowedSort::field('grp_stock_lpp_value'),
+                AllowedSort::field('org_stock_wac_value'),
+                AllowedSort::field('org_stock_fifo_value'),
+                AllowedSort::field('value_dormant_stock_1y_fifo'),
             ])
             ->withPaginator($bucket, tableName: request()->route()->getName())
             ->withQueryString();
@@ -98,31 +106,29 @@ class IndexOrganisationStockHistories extends OrgAction
             $sameCurrency = $organisation->currency_id === $organisation->group->currency_id;
 
             $table
+                ->withHeaderNote(__('All values in').' '.$organisation->currency->code)
                 ->withLabelRecord([__('record'), __('records')])
                 ->column(key: 'bucket', label: $bucketLabel, canBeHidden: false, sortable: true, type: 'date')
                 ->column(key: 'number_org_stocks', label: __('Total SKOs'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'number_out_of_stock_org_stocks', label: __('Out of Stock'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'number_locations', label: __('Locations'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(
-                    key: 'org_stock_value',
-                    label: $sameCurrency ? __('Stock Value') : __('Stock Value').' ('.$organisation->currency->code.')',
-                    canBeHidden: false,
-                    sortable: true,
-                    type: 'currency',
-                    align: 'right'
-                );
+                ->column(key: 'number_locations', label: __('Locations'), canBeHidden: false, sortable: true, align: 'right');
+
+            foreach (OrgStockValuationMethodEnum::ordered() as $index => $method) {
+                $table->column(key: $method->stockValueColumn(), label: __('Value').' ('.$method->label().')', tooltip: $method->legend(), tooltipIcon: $index === 0, canBeHidden: $index !== 0, sortable: true, type: 'currency', align: 'right');
+            }
+
 
             //            if (!$sameCurrency) {
-            //                $table->column(key: 'grp_stock_value', label: __('Stock Value').' ('.$organisation->group->currency->code.')', canBeHidden: false, sortable: true, type: 'currency', align: 'right');
+            //                $table->column(key: 'grp_stock_lpp_value', label: __('Stock Value').' ('.$organisation->group->currency->code.')', canBeHidden: false, sortable: true, type: 'currency', align: 'right');
             //            }
 
 
             $table->column(key: 'number_org_stocks_not_sold_1y', label: __('No sold 1Y'), icon: 'fal fa-ban', tooltip: __('Number of SKOs not sold in more than 1 year'), canBeHidden: false, sortable: true, align: 'right');
             $table->column(
-                key: 'value_dormant_stock_1y',
+                key: OrgStockValuationMethodEnum::official()->dormantValueColumn(),
                 label: __('Dormant 1Y'),
                 icon: 'fal fa-skull-cow',
-                tooltip: __('Value of dormant stock for more than 1 year'),
+                tooltip: __('Value of stock not moved for more than 1 year, valued with').' '.OrgStockValuationMethodEnum::official()->label().' ('.__('the official valuation').')',
                 canBeHidden: false,
                 sortable: true,
                 type: 'currency',

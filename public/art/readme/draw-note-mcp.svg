@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive">
+<defs>
+    <filter id="pen" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="bleed" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.014" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="20" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="1.6" result="b"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="4" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 -0.2" result="ga"/>
+      <feComposite in="b" in2="ga" operator="in" result="mottled"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="mottled"/></feMerge>
+    </filter>
+    <filter id="marker" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="21" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" seed="2" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.90  0 0 0 0 0.87  0 0 0 0 0.80  0 0 0 0.28 0" result="c"/>
+      <feComposite in="c" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <style>
+      .pen { fill: none; stroke: #23222e; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: url(#pen); }
+      .soft { stroke-width: 1.4; opacity: .6; }
+      .w { mix-blend-mode: multiply; filter: url(#bleed); stroke: none; opacity: .8; }
+      .m { fill: none; stroke-linecap: round; stroke-width: 26; opacity: .55; mix-blend-mode: multiply; filter: url(#marker); }
+      .h { fill: #23222e; filter: url(#pen); }
+      .hl { fill: #8a4b9e; filter: url(#pen); }
+    </style>
+  </defs>
+  <rect width="1200" height="750" fill="#fbf7ee"/>
+  <rect width="1200" height="750" fill="#fbf7ee" filter="url(#paper)"/>
+
+  <g class="w">
+    <path d="M60 160 C120 100 260 110 300 180 C330 250 290 360 200 380 C110 400 40 330 50 250 C54 210 50 180 60 160 Z" fill="#6d63d6" opacity=".36"/>
+    <path d="M420 120 C640 90 820 110 860 170 C890 240 860 330 780 350 C640 370 460 360 420 320 C390 270 390 170 420 120 Z" fill="#f3c04a" opacity=".30"/>
+    <path d="M420 420 C640 390 820 410 860 470 C890 540 860 630 780 650 C640 670 460 660 420 620 C390 570 390 470 420 420 Z" fill="#76b7c2" opacity=".26"/>
+    <path d="M920 140 C1040 90 1180 130 1170 240 C1160 360 1120 560 1080 640 C1040 700 940 700 910 640 C880 560 900 300 920 140 Z" fill="#9dcab0" opacity=".34"/>
+    <path d="M620 260 C680 240 740 270 740 310 C740 360 680 380 630 360 C590 340 580 290 620 260 Z" fill="#e88a73" opacity=".6"/>
+  </g>
+  <g class="m">
+    <path d="M80 330 L280 326" stroke="#6d63d6"/>
+    <path d="M76 606 L190 604" stroke="#f3c04a"/>
+    <path d="M76 642 L200 640" stroke="#f3c04a"/>
+    <path d="M76 678 L280 676" stroke="#f3c04a"/>
+    <path d="M940 690 L1140 686" stroke="#9dcab0"/>
+  </g>
+  <g class="pen">
+    <!-- assistant: speech bubble with a face -->
+    <path d="M80 180 C120 150 260 150 290 190 C300 240 280 300 210 320 C190 326 170 324 160 322 L130 360 L140 318 C90 300 60 240 80 180 Z"/>
+    <circle cx="150" cy="230" r="6"/><circle cx="210" cy="228" r="6"/>
+    <path d="M150 270 C170 290 200 290 220 270" class="soft"/>
+    <!-- tools: row of labelled boxes -->
+    <path d="M430 150 C530 144 620 150 640 146 C644 180 642 206 640 220 C560 226 480 224 430 226 C428 200 430 170 430 150 Z"/>
+    <path d="M660 150 C760 144 850 150 870 146 C874 180 872 206 870 220 C790 226 710 224 660 226 C658 200 660 170 660 150 Z"/>
+    <path d="M430 250 C530 244 620 250 640 246 C644 280 642 306 640 320 C560 326 480 324 430 326 C428 300 430 270 430 250 Z"/>
+    <path d="M660 250 C760 244 850 250 870 246 C874 280 872 306 870 320 C790 326 710 324 660 326 C658 300 660 270 660 250 Z"/>
+    <!-- locked door -->
+    <path d="M430 440 C530 434 620 440 640 436 C644 520 642 600 640 640 C560 646 480 644 430 646 C428 580 430 500 430 440 Z"/>
+    <circle cx="600" cy="540" r="8"/>
+    <path d="M520 520 l30 0 l0 34 l-30 0 z M525 520 c0 -14 20 -14 20 0" stroke-width="3"/>
+    <!-- second door open -->
+    <path d="M660 440 C760 434 850 440 870 436 C874 520 872 600 870 640 C790 646 710 644 660 646 C658 580 660 500 660 440 Z"/>
+    <path d="M680 450 C700 470 700 620 680 636" class="soft"/>
+    <!-- arrows assistant -> tools -->
+    <path d="M300 240 C340 200 380 190 420 186 M406 176 l18 10 l-16 12"/>
+    <path d="M300 260 C340 300 380 290 420 286 M406 276 l18 10 l-16 12"/>
+    <!-- the business: stacked boxes / ledger -->
+    <path d="M930 170 L1150 164 L1152 250 L932 256 Z M930 290 L1150 284 L1152 370 L932 376 Z M930 410 L1150 404 L1152 490 L932 496 Z M930 530 L1150 524 L1152 610 L932 616 Z"/>
+    <path d="M950 200 h120 M950 224 h80 M950 320 h140 M950 344 h90 M950 440 h110 M950 464 h70 M950 560 h130 M950 584 h60" class="soft"/>
+    <!-- tools -> business -->
+    <path d="M880 186 C900 184 910 184 926 182 M914 172 l14 10 l-12 12" class="soft"/>
+    <path d="M880 286 C900 284 910 284 926 282 M914 272 l14 10 l-12 12" class="soft"/>
+    <path d="M880 520 C900 518 910 518 926 516 M914 506 l14 10 l-12 12" class="soft"/>
+  </g>
+  <g class="h" font-size="22">
+    <text x="96" y="400">"how did candles do</text>
+    <text x="96" y="428">in Spain last quarter?"</text>
+    <text x="446" y="196">shop sales</text>
+    <text x="676" y="196">top products</text>
+    <text x="446" y="296">stock levels</text>
+    <text x="676" y="296">customer lookup</text>
+    <text x="446" y="680">not your shop</text>
+    <text x="676" y="680">your shop</text>
+    <text x="946" y="140">the business</text>
+    <text x="946" y="660">real rows, today</text>
+  </g>
+  <g class="hl" font-size="21">
+    <text x="430" y="120">tools, not retrieval</text>
+    <text x="430" y="410">same permissions as the UI</text>
+    <text x="80" y="500">30 seconds later: a table</text>
+    <text x="80" y="600" font-size="24">no RAG</text>
+    <text x="80" y="636" font-size="24">no GPUs</text>
+    <text x="80" y="672" font-size="24">no AI API costs</text>
+  </g>
+  <g class="h" font-size="19" opacity=".7"><text x="70" y="732">— an MCP server for a whole business</text></g>
+</svg>

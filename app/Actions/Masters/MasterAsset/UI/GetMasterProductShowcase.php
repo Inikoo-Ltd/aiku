@@ -147,11 +147,20 @@ class GetMasterProductShowcase
 
     private function getDataTradeUnit(MasterAsset $masterAsset): array
     {
-        $packedIn = $masterAsset->getStockPackedInByTradeUnit();
+        $packedIn      = $masterAsset->getEffectiveStockPackedInByTradeUnit();
+        $packedInByOrg = $masterAsset->getStockPackedInByOrganisationAndTradeUnit();
 
-        return $masterAsset->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) { //louis need fix it
+        return $masterAsset->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn, $packedInByOrg) {
+            $packedInQuantity = Arr::get($packedIn, $tradeUnit->id, 1);
+
             return array_merge(
-                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit->pivot->quantity / Arr::get($packedIn, $tradeUnit->id, 1))), Arr::get($packedIn, $tradeUnit->id, 1))],
+                [
+                    'code'             => $tradeUnit->code,
+                    'quantity'         => (float) $tradeUnit->pivot->quantity,
+                    'packed_in'        => $packedInQuantity,
+                    'packed_in_by_org' => ($packedInByOrg->get($tradeUnit->id) ?? collect())->values()->all(),
+                    'pick_fractional'  => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit->pivot->quantity / $packedInQuantity)), $packedInQuantity),
+                ],
                 GetTradeUnitShowcase::run($tradeUnit)
             );
         })->toArray();

@@ -7,16 +7,35 @@
  */
 
 use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
+use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\CRM\Customer\UpdateCustomer;
+use App\Actions\HumanResources\Employee\StoreEmployee;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
+use App\Models\HumanResources\Employee;
+use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Search\GetWebsiteSearchAnalytics;
 use App\Actions\Search\Search;
 use App\Actions\Search\SearchCatalogue;
+use App\Actions\Search\SearchIrisInvoices;
+use App\Actions\Search\SearchIrisOrders;
+use App\Actions\Search\PurgeStaffWebsiteSearchLogs;
 use App\Actions\Search\StoreWebsiteSearchLog;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Search\WebsiteSearchSourceEnum;
 use App\Events\Web\WebsiteSearchStatsUpdated;
 use Illuminate\Support\Facades\Event;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Models\Accounting\Invoice;
+use App\Models\CRM\Customer;
+use App\Models\Helpers\Address;
 use App\Models\Helpers\WebsiteSearchLog;
+use App\Models\SysAdmin\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -259,6 +278,71 @@ test('iris search only returns hits flagged is_in_website', function () {
     expect($response->json('results.products'))->toBe([]);
 });
 
+test('order search hydrate never returns another customer\'s order', function () {
+    $customer      = createCustomer($this->shop);
+    $otherCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $order = StoreOrder::make()->action($customer, [
+        'reference'        => 'GB550706',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'billing_address'  => new Address(Address::factory()->definition()),
+    ]);
+    $order->update(['state' => OrderStateEnum::SUBMITTED]);
+
+    $otherOrder = StoreOrder::make()->action($otherCustomer, [
+        'reference'        => 'GB550707',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'billing_address'  => new Address(Address::factory()->definition()),
+    ]);
+    $otherOrder->update(['state' => OrderStateEnum::SUBMITTED]);
+
+    // a stale or poisoned index handing over the other customer's order id must be dropped
+    $staleIndexDocuments = [
+        ['id' => (string)$order->id],
+        ['id' => (string)$otherOrder->id],
+    ];
+    $results = SearchIrisOrders::make()->hydrate($staleIndexDocuments, 'GB5507', $customer->id, $this->shop->id);
+    expect(array_column($results, 'id'))->toBe([$order->id])
+        ->and($results[0]['url'])->toBe('/app/orders/'.$order->slug);
+
+    // the direct reference match is scoped to the customer too, even when it matches both references
+    $results = SearchIrisOrders::make()->hydrate([], 'GB5507', $customer->id, $this->shop->id);
+    expect(array_column($results, 'id'))->toBe([$order->id]);
+
+    // orders still in basket state never surface
+    $order->update(['state' => OrderStateEnum::CREATING]);
+    expect(SearchIrisOrders::make()->hydrate([], 'GB5507', $customer->id, $this->shop->id))->toBe([]);
+});
+
+test('invoice search hydrate never returns another customer\'s invoice', function () {
+    $customer      = createCustomer($this->shop);
+    $otherCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $invoiceData = Invoice::factory()->definition();
+    data_set($invoiceData, 'reference', 'INV-550801');
+    $invoice = StoreInvoice::make()->action($customer, $invoiceData);
+
+    $otherInvoiceData = Invoice::factory()->definition();
+    data_set($otherInvoiceData, 'reference', 'INV-550802');
+    $otherInvoice = StoreInvoice::make()->action($otherCustomer, $otherInvoiceData);
+
+    $staleIndexDocuments = [
+        ['id' => (string)$invoice->id],
+        ['id' => (string)$otherInvoice->id],
+    ];
+    $results = SearchIrisInvoices::make()->hydrate($staleIndexDocuments, 'INV-5508', $customer->id, $this->shop->id);
+    expect(array_column($results, 'id'))->toBe([$invoice->id])
+        ->and($results[0]['url'])->toBe('/app/invoices/'.$invoice->slug);
+
+    $results = SearchIrisInvoices::make()->hydrate([], 'INV-5508', $customer->id, $this->shop->id);
+    expect(array_column($results, 'id'))->toBe([$invoice->id]);
+
+    $invoice->update(['in_process' => true]);
+    expect(SearchIrisInvoices::make()->hydrate([], 'INV-5508', $customer->id, $this->shop->id))->toBe([]);
+});
+
 test('a query only the vector arm answers is still logged as an assortment gap', function () {
     config()->set('scout.driver', 'typesense');
 
@@ -340,4 +424,190 @@ test('the typo tuning reaches every search sent to typesense', function () {
 
         return true;
     });
+});
+
+test('discontinued family drops out of the storefront search', function () {
+    [, $product] = createProduct($this->shop);
+    $family      = $product->family;
+    StoreProductCategoryWebpage::make()->action($family)->update(['state' => WebpageStateEnum::LIVE]);
+    \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($family->refresh());
+    expect((bool) $family->refresh()->is_in_website)->toBeTrue();
+
+    Search::shouldRun()->andReturn([
+        'scope'   => 'catalogue',
+        'results' => [
+            'products'           => [],
+            'product_categories' => [['id' => $family->id, 'code' => $family->code, 'name' => $family->name, 'image' => null]],
+            'collections'        => [],
+        ],
+    ]);
+
+    $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q='.$family->code);
+    $response->assertOk();
+    expect($response->json('results.product_categories'))->toHaveCount(1);
+
+    $family->update(['state' => \App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::DISCONTINUED]);
+    expect((bool) $family->refresh()->is_in_website)->toBeFalse();
+
+    $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q='.$family->code.'&v=2');
+    $response->assertOk();
+    expect($response->json('results.product_categories'))->toBe([]);
+});
+
+test('a family that is the strongest hit becomes the best match, superseding products', function () {
+    [, $product] = createProduct($this->shop);
+    $product->update(['is_for_sale' => true]);
+    $productWebpage = $product->webpage ?: StoreProductWebpage::make()->action($product);
+    $productWebpage->update(['state' => WebpageStateEnum::LIVE]);
+    expect((bool) $product->refresh()->is_in_website)->toBeTrue();
+
+    $family = $product->family;
+    StoreProductCategoryWebpage::make()->action($family)->update(['state' => WebpageStateEnum::LIVE]);
+    \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($family->refresh());
+    expect((bool) $family->refresh()->is_in_website)->toBeTrue();
+
+    $searchResults = fn (int $familyScore, int $productScore) => [
+        'scope'   => 'catalogue',
+        'results' => [
+            'products'           => [['id' => $product->id, 'code' => $product->code, 'name' => $product->name, 'image' => null, 'score' => $productScore]],
+            'product_categories' => [['id' => $family->id, 'code' => $family->code, 'name' => $family->name, 'image' => null, 'score' => $familyScore]],
+            'collections'        => [],
+        ],
+    ];
+
+    Search::shouldRun()->andReturn(
+        $searchResults(1, 100),
+        $searchResults(100, 1),
+        $searchResults(1, 100),
+    );
+
+    // exact family code wins the spotlight even when a product outscores it (HELP-3002: jcg -> JCG family, not a JCGB product)
+    $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q='.$family->code);
+    $response->assertOk();
+    expect($response->json('results.best_match.id'))->toBe($family->id)
+        ->and($response->json('results.best_match.type'))->toBe('product_category');
+
+    // a family outscoring every product also takes the spotlight on a non-exact query
+    $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q=bath+bombs');
+    $response->assertOk();
+    expect($response->json('results.best_match.id'))->toBe($family->id);
+
+    // otherwise there is no best_match and the top product keeps the spotlight
+    $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q=bath+bombs+again');
+    $response->assertOk();
+    expect($response->json('results.best_match'))->toBeNull();
+});
+
+test('full page search leads with the products of a best-matching category', function () {
+    [, $product] = createProduct($this->shop);
+    $product->update(['is_for_sale' => true]);
+    $webpage = $product->webpage ?: StoreProductWebpage::make()->action($product);
+    $webpage->update(['state' => WebpageStateEnum::LIVE]);
+    expect((bool) $product->refresh()->is_in_website)->toBeTrue();
+
+    $family = $product->family;
+
+    $action = \App\Actions\Search\SearchIrisCataloguePage::make();
+    $shop   = $this->shop;
+    (function () use ($shop) {
+        $this->shop = $shop;
+    })->call($action);
+
+    $familyHit = fn (int $score) => [
+        'document'   => ['id' => (string) $family->id, 'code' => $family->code, 'name' => $family->name, 'type' => 'family'],
+        'text_match' => $score,
+    ];
+    $productHits = [['document' => ['id' => '999'], 'text_match' => 50]];
+
+    // exact family code pulls its products to the front even when a product hit outscores it
+    expect($action->withBestMatchCategoryProducts($family->code, $familyHit(1), $productHits, [999]))
+        ->toBe([$product->id, 999]);
+
+    // a category outscoring every product hit leads too
+    expect($action->withBestMatchCategoryProducts('gongs', $familyHit(100), $productHits, [999]))
+        ->toBe([$product->id, 999]);
+
+    // otherwise the direct hits keep their order
+    expect($action->withBestMatchCategoryProducts('gongs', $familyHit(1), $productHits, [999]))
+        ->toBe([999]);
+
+    // no category hit at all leaves the ids untouched
+    expect($action->withBestMatchCategoryProducts('gongs', null, $productHits, [999]))->toBe([999]);
+});
+
+test('a family created empty is out of the website until its first product arrives', function () {
+    [, $product] = createProduct($this->shop);
+
+    $familyData = \App\Models\Catalogue\ProductCategory::factory()->definition();
+    data_set($familyData, 'type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY->value);
+    data_set($familyData, 'state', \App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::IN_PROCESS->value);
+    $family = \App\Actions\Catalogue\ProductCategory\StoreProductCategory::make()->action($product->department, $familyData);
+
+    $webpage = StoreProductCategoryWebpage::make()->action($family);
+    $webpage->update(['state' => WebpageStateEnum::LIVE]);
+    \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($family->refresh());
+    expect((bool) $family->refresh()->is_in_website)->toBeFalse();
+
+    \App\Actions\Catalogue\Product\UpdateProductFamily::make()->action($product, ['family_id' => $family->id]);
+    \App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts::run($family->refresh());
+
+    expect($family->refresh()->state)->toBe(\App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::ACTIVE)
+        ->and((bool) $family->is_in_website)->toBeTrue();
+});
+
+test('staff customers never leave a search log and the purge removes the old ones', function () {
+    config(['marketing.staff_email_domains' => ['staff.test']]);
+    Cache::forget('marketing:staff_email_domains');
+
+    $makeLog = fn (Customer $customer) => [
+        'ulid'            => (string) Str::ulid(),
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => $this->shop->id,
+        'website_id'      => $this->website->id,
+        'customer_id'     => $customer->id,
+        'scope'           => 'catalogue',
+        'query'           => 'candles',
+        'results_count'   => 3,
+    ];
+
+    $newCustomer = fn (string $email) => StoreCustomer::make()->action(
+        $this->shop,
+        array_merge(Customer::factory()->definition(), ['email' => $email])
+    );
+    $staffByDomain = $newCustomer('tester@staff.test');
+    $staffByUser   = $newCustomer(User::query()->firstOrFail()->email);
+    $shopper       = $newCustomer('shopper@example.com');
+
+    expect($staffByDomain->is_staff)->toBeTrue()
+        ->and($staffByUser->is_staff)->toBeTrue()
+        ->and($shopper->is_staff)->toBeFalse()
+        ->and(StoreWebsiteSearchLog::run($makeLog($staffByDomain)))->toBeNull()
+        ->and(StoreWebsiteSearchLog::run($makeLog($staffByUser)))->toBeNull()
+        ->and(StoreWebsiteSearchLog::run($makeLog($shopper)))->not->toBeNull();
+
+    $legacy = WebsiteSearchLog::create($makeLog($staffByDomain));
+    expect(PurgeStaffWebsiteSearchLogs::run())->toBe(1)
+        ->and(WebsiteSearchLog::find($legacy->id))->toBeNull()
+        ->and(WebsiteSearchLog::where('customer_id', $shopper->id)->count())->toBe(1);
+
+    UpdateCustomer::make()->action($shopper, ['email' => 'now-staff@staff.test']);
+    expect($shopper->fresh()->is_staff)->toBeTrue();
+
+    $employee = StoreEmployee::make()->action($this->organisation, array_merge(
+        Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray(),
+        [
+            'worker_number'   => 'W-staff',
+            'alias'           => 'staff-alias',
+            'type'            => EmployeeTypeEnum::EMPLOYEE,
+            'employment_type' => EmploymentTypeEnum::FULL_TIME,
+            'state'           => EmployeeStateEnum::WORKING,
+        ]
+    ));
+    $linked = $newCustomer('private-mail@example.com');
+    expect($linked->is_staff)->toBeFalse();
+    UpdateCustomer::make()->action($linked, ['as_employee_id' => $employee->id]);
+    expect($linked->fresh()->is_staff)->toBeTrue();
+    UpdateCustomer::make()->action($linked, ['as_employee_id' => null]);
+    expect($linked->fresh()->is_staff)->toBeFalse();
 });

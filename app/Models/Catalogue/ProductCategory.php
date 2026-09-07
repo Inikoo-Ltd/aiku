@@ -21,6 +21,7 @@ use App\Models\Reviews\ProductCategoryReviewStat;
 use App\Models\Reviews\Review;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\InShop;
@@ -36,7 +37,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Arr;
@@ -79,7 +79,6 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $follow_master
  * @property bool $show_in_website
  * @property int|null $webpage_id
- * @property bool $is_in_website has a live webpage, mirrored into the search index
  * @property string|null $url
  * @property array<array-key, mixed> $web_images
  * @property int|null $top_seller
@@ -116,6 +115,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $has_gr_vol_discount
  * @property bool $follow_master_gr
  * @property bool $not_follow_master_prices
+ * @property bool $is_in_website
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -176,10 +176,12 @@ class ProductCategory extends Model implements Auditable, HasMedia
     use HasImage;
     use HasTranslations;
     use HasSearch;
+    use HasAttachments;
+
     protected static function booted(): void
     {
         static::saved(function (ProductCategory $productCategory) {
-            if ($productCategory->wasChanged('webpage_id')) {
+            if ($productCategory->wasChanged(['webpage_id', 'state'])) {
                 \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($productCategory);
             }
         });
@@ -204,13 +206,20 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'offers_data'                   => 'array',
         'mismatch_with_master_detected' => 'boolean',
         'not_follow_master_prices'      => 'boolean',
+        'customize_option'              => 'array',
+        'storage_option'                => 'array',
+        'category_comparison'           => 'array',
+        'follow_tuf_labeling_guide'     => 'boolean',
     ];
 
     protected $attributes = [
-        'data'        => '{}',
-        'faq'         => '{}',
-        'web_images'  => '{}',
-        'offers_data' => '{}',
+        'data'                  => '{}',
+        'faq'                   => '{}',
+        'web_images'            => '{}',
+        'offers_data'           => '{}',
+        'customize_option'      => '{}',
+        'storage_option'        => '{}',
+        'category_comparison'   => '{}',
     ];
 
     public function toSearchableArray(): array
@@ -368,15 +377,9 @@ class ProductCategory extends Model implements Auditable, HasMedia
             ->withTimestamps();
     }
 
-    public function webpage(): MorphOne
+    public function webpage(): BelongsTo
     {
-        $relation = $this->morphOne(Webpage::class, 'model');
-
-        if ($this->type === ProductCategoryTypeEnum::DEPARTMENT) {
-            $relation->where('url', $this->url);
-        }
-
-        return $relation;
+        return $this->belongsTo(Webpage::class, 'webpage_id');
     }
 
     public function webpages(): MorphMany
@@ -475,5 +478,10 @@ class ProductCategory extends Model implements Auditable, HasMedia
     public function tradeUnitFamily(): BelongsTo
     {
         return $this->belongsTo(TradeUnitFamily::class, 'trade_unit_family_id', 'id');
+    }
+
+    public function labelingGuide(): ?Media
+    {
+        return $this->attachments()->where('scope', 'labeling_guide')->first();
     }
 }

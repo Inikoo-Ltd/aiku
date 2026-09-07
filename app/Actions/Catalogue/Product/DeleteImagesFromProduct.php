@@ -9,12 +9,12 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Product\UI\GetProductShowcase;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoImage;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\WithImageColumns;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
-use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteImagesFromProduct extends OrgAction
@@ -40,6 +40,8 @@ class DeleteImagesFromProduct extends OrgAction
 
         if (!empty($updateData)) {
             $product->update($updateData);
+
+            ShopHydrateProductsWithNoImage::dispatch($product->shop)->delay($this->hydratorsDelay);
         }
 
 
@@ -52,9 +54,9 @@ class DeleteImagesFromProduct extends OrgAction
         return GetProductShowcase::run($product);
     }
 
-    public function asController(Organisation $organisation, Product $product, Media $media, ActionRequest $request): void
+    public function asController(Product $product, Media $media, ActionRequest $request): void
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisation($product->organisation, $request);
         $this->handle($product, $media);
     }
 }

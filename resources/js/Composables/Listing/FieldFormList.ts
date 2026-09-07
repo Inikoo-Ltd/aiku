@@ -2,6 +2,7 @@ import type { Component } from 'vue'
 import { defineAsyncComponent } from 'vue'
 import Input from '@/Components/Forms/Fields/Input.vue'
 import FieldInputNumber from '@/Components/Forms/Fields/FieldInputNumber.vue'
+import FieldCompositionUnits from '@/Components/Forms/Fields/FieldCompositionUnits.vue'
 import Select from '@/Components/Forms/Fields/Select.vue'
 import SelectBillingCycle from '@/Components/Forms/Fields/SelectBillingCycle.vue'
 import Phone from '@/Components/Forms/Fields/Phone.vue'
@@ -22,6 +23,7 @@ import Theme from '@/Components/Forms/Fields/Theme.vue'
 import ColorMode from '@/Components/Forms/Fields/ColorMode.vue'
 import Checkbox from '@/Components/Forms/Fields/Checkbox.vue'
 import AppTheme from '@/Components/Forms/Fields/AppTheme.vue'
+import ChatTheme from '@/Components/Forms/Fields/ChatTheme.vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
 import AppLogin from '@/Components/Forms/Fields/AppLogin.vue'
 import Pin from '@/Components/Forms/Fields/Pin.vue'
@@ -56,13 +58,17 @@ const MailshotRecipient = defineAsyncComponent(() => import('@/Components/Forms/
 const SelectCreate = defineAsyncComponent(() => import('@/Components/Forms/Fields/SelectCreate.vue'))
 const DynamicList = defineAsyncComponent(() => import('@/Components/Forms/Fields/DynamicList.vue'))
 const TaxPreset = defineAsyncComponent(() => import('@/Components/Forms/Fields/TaxPreset.vue'))
+const PricingPolicy = defineAsyncComponent(() => import('@/Components/Forms/Fields/PricingPolicy.vue'))
 import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
 import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
 import TextEditorTranslation from '@/Components/Forms/Fields/TextEditorTranslation.vue'
 import Pricing_zone from '@/Components/Forms/Fields/Pricing_zone.vue'
+import PricingZoneMultiShipper from '@/Components/Forms/Fields/PricingZoneMultiShipper.vue'
+import PricingZoneMode from '@/Components/Forms/Fields/PricingZoneMode.vue'
 import TerritoryZone from '@/Components/Forms/Fields/TerritoryZone.vue'
 import SelectPrinter from '@/Components/Forms/Fields/SelectPrinter.vue'
+import PreferredShippingModal from '@/Components/Forms/Fields/PreferredShippingModal.vue'
 import ListSelectorFrom from '@/Components/Forms/Fields/ListSelectorFrom.vue'
 import BrandsTradeUnit from '@/Components/Forms/Fields/BrandsTradeUnit.vue'
 import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/MultiselectTagsInfiniteScroll.vue'
@@ -74,6 +80,7 @@ import RetinaTagsCustomer from "@/Components/Forms/Fields/RetinaTagsCustomer.vue
 import FileUpload from '@/Components/Forms/Fields/FileUpload.vue'
 import InputJsonByForm from '@/Components/Forms/Fields/InputJsonByForm.vue'
 import VariantsField from '@/Components/Forms/Fields/VariantsField.vue'
+import VariantOption from '@/Components/Forms/Fields/VariantOption.vue'
 import EditOffer from '@/Components/Forms/Fields/EditOffer.vue'
 import ToggleState2FA from '@/Components/Forms/Fields/ToggleState2FA.vue'
 import PasskeysManager from '@/Components/Forms/Fields/PasskeysManager.vue'
@@ -81,6 +88,7 @@ import OfferFields from '@/Components/Forms/Fields/OfferFields.vue'
 import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue'
 import MapPickerField from '@/Components/Forms/Fields/MapPickerField.vue'
 import InputWorkingHours from '@/Components/Forms/Fields/InputWorkingHours.vue'
+import EmployeeWorkingHours from '@/Components/Forms/Fields/EmployeeWorkingHours.vue'
 import InputWithWarning from '@/Components/Forms/Fields/InputWithWarning.vue'
 import Ratio from '@/Components/Forms/Fields/Ratio.vue'
 import EmergencyContact from '@/Components/Forms/Fields/EmergencyContact.vue'
@@ -98,14 +106,19 @@ import BannedCountries from '@/Components/Forms/Fields/BannedCountries.vue'
 import FieldGroup from '@/Components/Forms/Fields/FieldGroup.vue'
 import MultiplePriceCurrency from '@/Components/Forms/Fields/MultiplePriceCurrency.vue'
 import MasterShopPriceExchanges from '@/Components/Forms/Fields/MasterShopPriceExchanges.vue'
+import ContactOptionsPanel from '@/Components/Forms/Fields/ContactOptionPanel.vue'
 import IngredientsField from '@/Components/Forms/Fields/IngredientsField.vue'
 import TradeUnitsForStock from '@/Components/Forms/Fields/TradeUnitsForStock.vue'
+import FamilyCustomize from '@/Components/Forms/Fields/FamilyCustomize.vue'
+import FamilyStorageConditions from '@/Components/Forms/Fields/FamilyStorageConditions.vue'
+import CategoryComparison from '@/Components/Forms/Fields/CategoryComparison.vue'
 
 export const componentsList: { [key: string]: Component } = {
     'image_crop_square': ImageCropSquare,
     'input': Input,
     'input_with_warning': InputWithWarning,
     'input_number': FieldInputNumber,
+    'composition_units': FieldCompositionUnits,
     'inputWithAddOn': InputWithAddOn,
     'phone': Phone,
     'date': Date,
@@ -121,6 +134,7 @@ export const componentsList: { [key: string]: Component } = {
     'customerRoles': CustomerRoles,
     'textarea': Textarea,
     'textEditor': TextEditor,
+    'pricing_policy': PricingPolicy,
     'toggle': Toggle,
     'toggle2fa': ToggleState2FA,
     'passkeys': PasskeysManager,
@@ -133,6 +147,7 @@ export const componentsList: { [key: string]: Component } = {
     'mailshotRecipient': MailshotRecipient,
     'select_billing_cycle': SelectBillingCycle,
     'select_printer': SelectPrinter,
+    'preferred_shipping': PreferredShippingModal,
 
     'action': Action,
     'theme': Theme,
@@ -143,6 +158,7 @@ export const componentsList: { [key: string]: Component } = {
     'checkbox': Checkbox,
     'app_login': AppLogin,
     'app_theme': AppTheme,
+    'chat_theme': ChatTheme,
     'product_parts': ProductParts,
     'employeeState': EmployeeState,
     'pin': Pin,
@@ -157,8 +173,12 @@ export const componentsList: { [key: string]: Component } = {
     'input_translation': InputTranslation,
     'select_infinite': SelectInfiniteScroll,
     'ingredients': IngredientsField,
+    'family_customize': FamilyCustomize,
+    'family_storage_conditions': FamilyStorageConditions,
     'textEditor_translation': TextEditorTranslation,
     'pricing_zone': Pricing_zone,
+    'pricing_zone_multi_shipper': PricingZoneMultiShipper,
+    'pricing_zone_mode': PricingZoneMode,
     'territory_zone': TerritoryZone,
     'crop-image-full': cropImageFull,
     'list-selector': ListSelectorFrom,
@@ -176,11 +196,13 @@ export const componentsList: { [key: string]: Component } = {
     'trade-units-for-stock': TradeUnitsForStock,
     'file_upload': FileUpload,
     'input-variant' : VariantsField,
+    'variant_field' : VariantOption,
     'editOffer' : EditOffer,
     'offer_fields'  : OfferFields,
     'vol_discount' : InputVolDiscount,
     'map-picker' : MapPickerField,
     'working-hours' : InputWorkingHours,
+    'employee-working-hours' : EmployeeWorkingHours,
     'ratio' : Ratio,
     'free_gift': FreeGift,
     'emergency_contact' : EmergencyContact,
@@ -200,7 +222,9 @@ export const componentsList: { [key: string]: Component } = {
     'banned-countries': BannedCountries,
 	field_group: FieldGroup,
     'multiple_price_currency' : MultiplePriceCurrency,
-    'master_shop_price_exchanges' : MasterShopPriceExchanges
+    'master_shop_price_exchanges' : MasterShopPriceExchanges,
+    'contact_options_panel' : ContactOptionsPanel,
+    'category-comparison' : CategoryComparison
 }
 
 export const getComponent = (componentName: string) => {

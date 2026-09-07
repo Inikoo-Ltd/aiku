@@ -11,6 +11,10 @@ namespace App\Actions\Catalogue\Product;
 use App\Actions\Catalogue\Shop\External\Faire\DeleteFaireProduct;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAssets;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProducts;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsNotOnline;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithMismatchFamily;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoDescription;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoImage;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAssets;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProducts;
@@ -54,6 +58,11 @@ class DeleteProduct extends OrgAction
         if ($isFaireProduct && $faireProductId) {
             DeleteFaireProduct::dispatch($product, $faireProductId, $faireVariantId);
         }
+      
+        ShopHydrateProductsWithNoImage::dispatch($product->shop)->delay(2);
+        ShopHydrateProductsWithNoDescription::dispatch($product->shop)->delay(2);
+        ShopHydrateProductsWithMismatchFamily::dispatch($product->shop)->delay(2);
+        ShopHydrateProductsNotOnline::dispatch($product->shop)->delay(2);
 
         return $product;
     }

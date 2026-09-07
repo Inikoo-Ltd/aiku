@@ -2,6 +2,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class DeleteStockDelivery extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use AsAction;
     use HasPurchaseOrderHydrators;
     use HasStockDeliveryHydrators;
@@ -29,15 +31,6 @@ class DeleteStockDelivery extends OrgAction
         StockDeliveryStateEnum::CONFIRMED,
         StockDeliveryStateEnum::READY_TO_SHIP,
     ];
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-    }
 
     public function afterValidator(Validator $validator): void
     {

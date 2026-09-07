@@ -6,18 +6,19 @@
 -->
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue"
+import { computed, ref } from "vue"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBarcodeRead, faCheckCircle, faTimesCircle, faExclamationTriangle } from "@fal"
-import { debounce } from "lodash-es"
 import ToggleSwitch from "primevue/toggleswitch"
 import { ctrans } from "@/Composables/useTrans"
 import { playNotificationSound } from "@/Composables/useNotificationSound"
+import { useBarcodeScanner, useScanQueue } from "@/Composables/useBarcodeScanner"
 import { routeType } from "@/types/route"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
 import Toggle from "../Pure/Toggle.vue"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 
 library.add(faBarcodeRead, faCheckCircle, faTimesCircle, faExclamationTriangle)
 
@@ -30,8 +31,10 @@ const emits = defineEmits<{
     scanned: [payload: ScanOutcome]
 }>()
 
-type ScanStatus = "packed" | "already_packed" | "nothing_to_pack" | "not_found" | "wrong_state" | "error"
+type ScanStatus = "packed" | "already_packed" | "nothing_to_pack" | "not_found" | "not_scannable" | "wrong_state" | "error"
 
+// delivery_note and picking_session_state only come back when the panel is packing a whole picking
+// session, where the packer has to be told which box the scan just went into.
 type ScanOutcome = {
     status: ScanStatus
     message: string
@@ -40,12 +43,21 @@ type ScanOutcome = {
         id: number
         code: string
         name: string
+        packed_in?: number
         quantity_picked: number
         quantity_packed: number
         quantity_to_pack: number
+        quantity_to_pack_label?: string
+        quantity_to_pack_fractional?: [number, [number, number]] | null
+    } | null
+    delivery_note?: {
+        id: number
+        reference: string
+        state: string
     } | null
     row: Record<string, any> | null
     delivery_note_state: string
+    picking_session_state?: string
     remaining_to_pack: number
 }
 
@@ -55,105 +67,62 @@ type PendingScan = { code: string; quantity: number | null; itemId?: number }
 
 type ScanLogEntry = ScanOutcome & { key: number }
 
-// A keyboard wedge scanner types the whole code in a few milliseconds. Anything typed faster than
-// this threshold is treated as machine input, which is what lets us auto submit codes coming from
-// scanners configured without an Enter suffix without also submitting half typed manual entries.
-const MACHINE_KEYSTROKE_INTERVAL_MS = 40
-const IDLE_SUBMIT_DELAY_MS = 120
-const MIN_MACHINE_CODE_LENGTH = 3
 const MAX_LOG_ENTRIES = 8
 
-const buffer = ref("")
-const inputElement = ref<HTMLInputElement | null>(null)
-const isListening = ref(true)
 const isProcessing = ref(false)
-const queuedCount = ref(0)
 const packedCount = ref(0)
 const remainingToPack = ref<number | null>(null)
 const lastOutcome = ref<ScanOutcome | null>(null)
 const scanLog = ref<ScanLogEntry[]>([])
 
-let lastKeystrokeAt = 0
-let looksLikeMachineInput = false
 let logKey = 0
-const pendingScans: PendingScan[] = []
-let isDraining = false
 
 const statusStyles: Record<ScanStatus, { wrapper: string; icon: string; iconClass: string }> = {
     packed: { wrapper: "border-green-500 bg-green-50 text-green-800", icon: "fal fa-check-circle", iconClass: "text-green-600" },
     already_packed: { wrapper: "border-sky-500 bg-sky-50 text-sky-800", icon: "fal fa-exclamation-triangle", iconClass: "text-sky-600" },
     nothing_to_pack: { wrapper: "border-amber-500 bg-amber-50 text-amber-800", icon: "fal fa-exclamation-triangle", iconClass: "text-amber-600" },
     not_found: { wrapper: "border-red-500 bg-red-50 text-red-800", icon: "fal fa-times-circle", iconClass: "text-red-600" },
+    not_scannable: { wrapper: "border-amber-500 bg-amber-50 text-amber-800", icon: "fal fa-exclamation-triangle", iconClass: "text-amber-600" },
     wrong_state: { wrapper: "border-red-500 bg-red-50 text-red-800", icon: "fal fa-times-circle", iconClass: "text-red-600" },
     error: { wrapper: "border-red-500 bg-red-50 text-red-800", icon: "fal fa-times-circle", iconClass: "text-red-600" },
 }
 
 const lastOutcomeStyle = computed(() => (lastOutcome.value ? statusStyles[lastOutcome.value.status] : statusStyles.error))
 
-// Keystrokes are only hijacked while the packer is not interacting with something else, so the
-// scanner works without ever clicking the field but the table search, modals and buttons still
-// behave normally.
-const shouldIgnoreKeydown = (element: EventTarget | null) => {
-    const node = element as HTMLElement | null
+// An item that comes in a pack is counted in units over that pack, the same 1 15/16 the packing
+// table shows, because the raw 1.9375 behind it tells a packer nothing about what to put in the
+// box. The tuple is what gets set in fraction type; the string stays for tooltips, which take
+// no markup.
+const remainingOnLastItem = computed(() => {
+    const item = lastOutcome.value?.item
 
-    if (!node || node === inputElement.value) {
-        return false
+    if (!item) {
+        return ""
     }
 
-    if (document.querySelector(".p-dialog, [role='dialog']")) {
-        return true
-    }
+    return item.quantity_to_pack_label ?? String(item.quantity_to_pack)
+})
 
-    return (
-        node.tagName === "INPUT" ||
-        node.tagName === "TEXTAREA" ||
-        node.tagName === "SELECT" ||
-        node.tagName === "BUTTON" ||
-        node.tagName === "A" ||
-        node.getAttribute("role") === "button" ||
-        node.isContentEditable
-    )
-}
+const remainingFractionOnLastItem = computed(() => lastOutcome.value?.item?.quantity_to_pack_fractional ?? null)
 
-// A scanner configured without an Enter suffix never terminates the code, so the quiet gap right
-// after a burst of machine speed keystrokes is what marks the code as complete.
-const submitWhenScannerWentQuiet = debounce(() => {
-    if (looksLikeMachineInput && buffer.value.trim().length >= MIN_MACHINE_CODE_LENGTH) {
-        flushBuffer()
-    }
-}, IDLE_SUBMIT_DELAY_MS)
+/*
+ * The count sits inside the sentence, so the translated sentence is split around its placeholder and
+ * the fraction rendered into the gap. Translating the words on either side as their own keys would
+ * fix the English word order onto every other language.
+ */
+const splitAroundRemaining = (sentence: string) => ctrans(sentence).split(":remaining").map(part => part.trim())
 
-const registerKeystroke = () => {
-    const now = performance.now()
-    looksLikeMachineInput = now - lastKeystrokeAt < MACHINE_KEYSTROKE_INTERVAL_MS
-    lastKeystrokeAt = now
+const remainingLabelParts = computed(() => splitAroundRemaining(":remaining left on this item"))
 
-    submitWhenScannerWentQuiet()
-}
+const packAllLabelParts = computed(() => splitAroundRemaining("Pack all :remaining"))
 
-const clearBuffer = () => {
-    submitWhenScannerWentQuiet.cancel()
-    buffer.value = ""
-    looksLikeMachineInput = false
-}
+const { queuedCount, enqueueScan } = useScanQueue<PendingScan>((scan) => submitScan(scan))
 
-const flushBuffer = () => {
-    submitWhenScannerWentQuiet.cancel()
-
-    const code = buffer.value.trim()
-    buffer.value = ""
-    looksLikeMachineInput = false
-
-    if (!code) {
-        return
-    }
-
-    // One scan is one physical item, which is what makes partial packing natural: scan as many times
-    // as went into the box, and use the pack-the-rest button to finish the line in one go.
-    pendingScans.push({ code, quantity: 1 })
-    queuedCount.value = pendingScans.length
-    drainQueue()
-}
+// One scan is one physical item, which is what makes partial packing natural: scan as many times
+// as went into the box, and use the pack-the-rest button to finish the line in one go.
+const { buffer, inputElement, isListening, registerKeystroke, clearBuffer, flushBuffer } = useBarcodeScanner(
+    (code) => enqueueScan({ code, quantity: 1 })
+)
 
 const packRestOfLastScannedItem = () => {
     const outcome = lastOutcome.value
@@ -162,26 +131,8 @@ const packRestOfLastScannedItem = () => {
         return
     }
 
-    pendingScans.push({ code: outcome.scanned, quantity: null, itemId: outcome.item.id })
-    queuedCount.value = pendingScans.length
     inputElement.value?.focus()
-    drainQueue()
-}
-
-const drainQueue = async () => {
-    if (isDraining) {
-        return
-    }
-
-    isDraining = true
-
-    while (pendingScans.length) {
-        const scan = pendingScans.shift() as PendingScan
-        queuedCount.value = pendingScans.length
-        await submitScan(scan)
-    }
-
-    isDraining = false
+    enqueueScan({ code: outcome.scanned, quantity: null, itemId: outcome.item.id })
 }
 
 const submitScan = async ({ code, quantity, itemId }: PendingScan) => {
@@ -233,55 +184,8 @@ const applyOutcome = (outcome: ScanOutcome) => {
     } else {
         playNotificationSound({ frequency: 200, duration: 280, type: "square" })
     }
-
     emits("scanned", outcome)
 }
-
-const onKeydown = (event: KeyboardEvent) => {
-    if (!isListening.value) {
-        return
-    }
-
-    if (event.target === inputElement.value) {
-        return
-    }
-
-    if (shouldIgnoreKeydown(event.target) || event.ctrlKey || event.metaKey || event.altKey) {
-        return
-    }
-
-    if (event.key === "Enter") {
-        if (buffer.value) {
-            event.preventDefault()
-            flushBuffer()
-        }
-        return
-    }
-
-    if (event.key === "Escape") {
-        clearBuffer()
-        return
-    }
-
-    if (event.key.length !== 1) {
-        return
-    }
-
-    event.preventDefault()
-    buffer.value += event.key
-    registerKeystroke()
-    inputElement.value?.focus()
-}
-
-onMounted(() => {
-    window.addEventListener("keydown", onKeydown)
-    inputElement.value?.focus()
-})
-
-onBeforeUnmount(() => {
-    window.removeEventListener("keydown", onKeydown)
-    submitWhenScannerWentQuiet.cancel()
-})
 </script>
 
 <template>
@@ -341,6 +245,12 @@ onBeforeUnmount(() => {
                 class="mt-3 flex items-center gap-3 rounded-md border-l-4 px-3 py-2"
                 :class="lastOutcomeStyle.wrapper">
                 <FontAwesomeIcon :icon="lastOutcomeStyle.icon" :class="lastOutcomeStyle.iconClass" class="text-xl" fixed-width aria-hidden="true" />
+                <div
+                    v-if="lastOutcome.delivery_note?.reference"
+                    v-tooltip="ctrans('Put it in this box')"
+                    class="whitespace-nowrap rounded bg-white/70 px-2 py-1 font-mono text-base font-bold">
+                    {{ lastOutcome.delivery_note.reference }}
+                </div>
                 <div class="min-w-0">
                     <div class="font-semibold truncate">{{ lastOutcome.message }}</div>
                     <div v-if="lastOutcome.item?.name" class="text-xs opacity-80 truncate">
@@ -350,8 +260,15 @@ onBeforeUnmount(() => {
                 <div
                     v-if="lastOutcome.item && lastOutcome.item.quantity_to_pack > 0"
                     class="ml-auto flex items-center gap-x-2">
-                    <span class="whitespace-nowrap rounded bg-amber-950 px-2 py-1 text-sm font-bold text-amber-50">
-                        {{ ctrans(":remaining left on this item", { remaining: lastOutcome.item.quantity_to_pack }) }}
+                    <span class="inline-flex items-center gap-x-1 whitespace-nowrap rounded bg-amber-950 px-2 py-1 text-sm font-bold text-amber-50">
+                        <template v-if="remainingFractionOnLastItem">
+                            <span v-if="remainingLabelParts[0]">{{ remainingLabelParts[0] }}</span>
+                            <FractionDisplay :fractionData="remainingFractionOnLastItem" />
+                            <span v-if="remainingLabelParts[1]">{{ remainingLabelParts[1] }}</span>
+                        </template>
+                        <template v-else>
+                            {{ ctrans(":remaining left on this item", { remaining: remainingOnLastItem }) }}
+                        </template>
                     </span>
 
                     <!-- mousedown.prevent stops the button from taking focus at all, so the scanner
@@ -360,11 +277,20 @@ onBeforeUnmount(() => {
                     <button
                         type="button"
                         :disabled="isProcessing || queuedCount > 0"
-                        v-tooltip="ctrans('Pack the remaining :remaining without scanning them one by one', { remaining: lastOutcome.item.quantity_to_pack })"
+                        v-tooltip="ctrans('Pack the remaining :remaining without scanning them one by one', { remaining: remainingOnLastItem })"
                         class="whitespace-nowrap rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
                         @mousedown.prevent
                         @click="packRestOfLastScannedItem">
-                        {{ ctrans("Pack all :remaining", { remaining: lastOutcome.item.quantity_to_pack }) }}
+                        <span class="inline-flex items-center gap-x-1">
+                            <template v-if="remainingFractionOnLastItem">
+                                <span v-if="packAllLabelParts[0]">{{ packAllLabelParts[0] }}</span>
+                                <FractionDisplay :fractionData="remainingFractionOnLastItem" />
+                                <span v-if="packAllLabelParts[1]">{{ packAllLabelParts[1] }}</span>
+                            </template>
+                            <template v-else>
+                                {{ ctrans("Pack all :remaining", { remaining: remainingOnLastItem }) }}
+                            </template>
+                        </span>
                     </button>
                 </div>
                 <div class="font-mono text-xs opacity-70" :class="{ 'ml-auto': !(lastOutcome.item?.quantity_to_pack > 0) }">

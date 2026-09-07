@@ -19,6 +19,7 @@ use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Models\Billables\Charge;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class CreateCollectionCharges extends OrgAction
 {
@@ -51,6 +52,7 @@ class CreateCollectionCharges extends OrgAction
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
 
         $modelData = [

@@ -17,6 +17,7 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RemoveAuroraGrGiftsOrdersInBasket implements ShouldBeUnique
 {
@@ -65,6 +66,7 @@ class RemoveAuroraGrGiftsOrdersInBasket implements ShouldBeUnique
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->argument('shop')) {
             $shop     = Shop::where('slug', $command->argument('shop'))->firstOrFail();
             $shopsIds = [$shop->id];

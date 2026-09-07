@@ -20,6 +20,7 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\ResetOrderTaxCategory;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
@@ -396,4 +397,54 @@ test('a preset change leaves external shop products alone, faire is taxed from i
     } finally {
         $this->shop->updateQuietly(['type' => ShopTypeEnum::B2B]);
     }
+});
+
+/** HELP-2967: order re-rated to 0% mid-life but lines kept the old category; the invoice must not resurrect the old tax. */
+test('invoicing re-syncs stale line tax categories to the order', function () {
+    $order = StoreOrder::make()->action($this->customer, []);
+    $order->updateQuietly(['tax_category_id' => $this->vat20->id]);
+    $order->refresh();
+
+    StoreTransaction::make()->action($order, $this->standardProduct->historicAsset, ['quantity_ordered' => 1]);
+
+    createWarehouse();
+    SubmitOrder::make()->action($order->refresh());
+    SendOrderToWarehouse::make()->action($order, []);
+
+    $order->refresh();
+    $order->updateQuietly(['tax_category_id' => $this->vat0->id]);
+    expect($order->transactions()->value('tax_category_id'))->toBe($this->vat20->id);
+
+    $invoice = GenerateInvoiceFromOrder::make()->handle($order->refresh());
+
+    expect((float)$invoice->tax_amount)->toBe(0.0)
+        ->and($invoice->invoiceTransactions()->where('model_type', 'Product')->value('tax_category_id'))->toBe($this->vat0->id);
+});
+
+/** HELP-2967: a validity flip re-rates open orders, but never touches an invoiced one. */
+test('a tax number validity change re-rates open orders and skips invoiced ones', function () {
+    $openOrder = StoreOrder::make()->action($this->customer, []);
+    StoreTransaction::make()->action($openOrder, $this->standardProduct->historicAsset, ['quantity_ordered' => 1]);
+
+    $invoicedOrder = StoreOrder::make()->action($this->customer, []);
+    StoreTransaction::make()->action($invoicedOrder, $this->standardProduct->historicAsset, ['quantity_ordered' => 1]);
+    createWarehouse();
+    SubmitOrder::make()->action($invoicedOrder->refresh());
+    SendOrderToWarehouse::make()->action($invoicedOrder, []);
+    GenerateInvoiceFromOrder::make()->handle($invoicedOrder->refresh());
+
+    $resetOrderIds = [];
+    ResetOrderTaxCategory::partialMock()
+        ->shouldReceive('handle')
+        ->andReturnUsing(function (Order $order) use (&$resetOrderIds) {
+            $resetOrderIds[] = $order->id;
+
+            return $order;
+        });
+
+    $taxNumber = $this->customer->taxNumber()->create(['number' => '46388143', 'country_code' => 'DK', 'valid' => false]);
+    $taxNumber->update(['valid' => true]);
+
+    expect($resetOrderIds)->toContain($openOrder->id)
+        ->not->toContain($invoicedOrder->id);
 });

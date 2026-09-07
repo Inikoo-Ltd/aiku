@@ -16,6 +16,7 @@ use App\Models\Ordering\Transaction;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairOrdersShippingZones
 {
@@ -69,6 +70,7 @@ class RepairOrdersShippingZones
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $count = Order::count();
 
         $bar = $command->getOutput()->createProgressBar($count);

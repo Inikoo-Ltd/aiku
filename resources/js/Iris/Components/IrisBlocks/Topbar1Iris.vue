@@ -12,7 +12,7 @@ import { router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import SwitchLanguage from "@/Components/Iris/SwitchLanguage.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
-import { set } from "lodash-es"
+import { clearIrisSession } from "@/Composables/clearIrisSession"
 import { notify } from "@kyvg/vue3-notification"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -75,6 +75,7 @@ const layout = inject("layout", {})
 
 // Section: Logout
 const isLoadingLogout = ref(false)
+let restoreIrisSession: (() => void) | null = null
 const onClickLogout = () => {
     router.post(
         '/app/logout',
@@ -84,20 +85,12 @@ const onClickLogout = () => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingLogout.value = true
-            },
-            onSuccess: () => {
-                set(layout, ['iris', 'is_logged_in'], false)
-                if (typeof window !== "undefined") {
-                    let storageIris = JSON.parse(localStorage.getItem('iris') || '{}')  // Get layout from localStorage
-                    localStorage.setItem('iris', JSON.stringify({
-                        ...storageIris,
-                        is_logged_in: false
-                    }))
-                }
+                restoreIrisSession = clearIrisSession(layout)
             },
             onError: errors => {
+                restoreIrisSession?.()
                 notify({
                     title: trans("Something went wrong"),
                     text: trans("Failed to logout"),

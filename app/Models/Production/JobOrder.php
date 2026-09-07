@@ -3,6 +3,7 @@
 namespace App\Models\Production;
 
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Model;
@@ -36,6 +37,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
+ * @property string|null $source_id
  * @property-read Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\JobOrderItem> $jobOrderItems
  * @property-read Organisation $organisation
@@ -95,6 +97,11 @@ class JobOrder extends Model
     public function group(): BelongsTo
     {
         return $this->belongsTo(Group::class);
+    }
+
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class);
     }
 
     public function jobOrderItems(): HasMany

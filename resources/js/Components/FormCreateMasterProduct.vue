@@ -85,6 +85,7 @@ const key = ref(ulid())
 const layout = inject('layout', {});
 const currency = props.masterCurrency ? props.masterCurrency : layout.group.currency;
 const loading = ref(null)
+const errorSummary = ref<string[]>([])
 const modalTradeUnit = ref(false)
 const dataTradeUnitEdit = ref(null)
 const listSelectorRef = ref<InstanceType<typeof ListSelector> | null>(null)
@@ -248,6 +249,7 @@ const priceByCurrency = computed(() => {
 const submitForm = async (redirect = true) => {
     form.processing = true
     form.errors = {}
+    errorSummary.value = []
 
     if (redirect) loading.value = 'save'
     else loading.value = 'create'
@@ -274,8 +276,16 @@ const submitForm = async (redirect = true) => {
     }
 
     // Build payload manual
+    // Only send the trade unit keys the backend reads: full objects push the
+    // request over PHP's max_input_vars and fields get silently truncated
     const payload: any = {
         ...form.data(),
+        trade_units: form.trade_units.map((tu: any) => ({
+            id: tu.id,
+            quantity: tu.quantity,
+            type: tu.type,
+            ds_quantity: tu.ds_quantity,
+        })),
         shop_products: finalDataTable,
         masterShop: route().params['masterShop']
     }
@@ -320,10 +330,11 @@ const submitForm = async (redirect = true) => {
             if (form.errors.code || form.errors.unit || form.errors.name) {
                 detailsVisible.value = true
             }
-            notify({
-                title: trans("Something went wrong"),
-                text: error.response.data.message || trans("Please try again"),
-                type: 'error'
+            errorSummary.value = Object.entries(form.errors as Record<string, string[]>).map(([field, messages]) => {
+                if (field === 'code' && messages.some(m => m.includes('already been taken'))) {
+                    return trans("Code") + ` "${form.code}" ` + trans("is already used by another master product in this master shop")
+                }
+                return messages.join(", ")
             })
         } else {
             notify({
@@ -743,6 +754,17 @@ const successEditTradeUnit = (data) => {
 
         <!-- Footer -->
         <template #footer>
+            <div v-if="errorSummary.length" class="border border-red-300 bg-red-50 text-red-700 rounded-md px-4 py-3 mb-3 text-sm">
+                <div class="flex justify-between items-start gap-3">
+                    <div>
+                        <div class="font-medium mb-1">{{ trans("The product could not be saved") }}</div>
+                        <ul class="list-disc pl-5 space-y-0.5">
+                            <li v-for="(message, index) in errorSummary" :key="index">{{ message }}</li>
+                        </ul>
+                    </div>
+                    <button type="button" class="shrink-0 font-medium hover:text-red-900" @click="errorSummary = []">✕</button>
+                </div>
+            </div>
             <div class="flex justify-end gap-3 border-t pt-3">
                 <Button label="Cancel" type="negative" class="!px-5" @click="emits('update:showDialog', false)" />
                 <Button type="create" :label="'Save & Create Another One'" :loading="loading == 'create'"

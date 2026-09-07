@@ -9,7 +9,7 @@ import { Link } from "@inertiajs/vue3"
 import type { Links, Meta } from "@/types/Table"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faWeight, faBox, faClock, faBallotCheck, faGripVertical } from "@fal"
+import { faWeight, faBox, faClock, faBallotCheck, faGripVertical, faLock } from "@fal"
 import { faTruck } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import draggable from "vuedraggable"
@@ -19,7 +19,7 @@ import { ref, onMounted, onUnmounted, inject, computed, watch } from "vue"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 
-library.add(faWeight, faBox, faClock, faTruck, faGripVertical)
+library.add(faWeight, faBox, faClock, faTruck, faGripVertical, faLock)
 
 interface ShippingZone {
 	id: number
@@ -81,6 +81,10 @@ const routeParams = computed(() => {
 		shippingZoneSchema: params.shippingZoneSchema || ''
 	}
 })
+
+const isCatchAllZone = (zone: ShippingZone) => !zone.territories?.length
+
+const canMove = (event: any) => !isCatchAllZone(event.draggedContext.element)
 
 const getHeaderCell = (columnKey: string) => {
 	const column = columns.value.find(col => col.key === columnKey)
@@ -244,7 +248,7 @@ onUnmounted(() => {
 
 			<component :is="draggable" v-model="items" item-key="id" tag="tbody" :animation="180" handle=".drag-handle"
 				ghost-class="opacity-40" class="divide-y divide-gray-100" @start="handleDragStart" @end="handleDragEnd"
-				@change="handleDragChange">
+				@change="handleDragChange" :move="canMove">
 				<template #item="{ element: zone, index }">
 					<tr :class="[
 						'transition-colors hover:bg-gray-50',
@@ -254,8 +258,16 @@ onUnmounted(() => {
 					]">
 						<!-- Drag -->
 						<td class="px-4 py-3 align-top">
-							<div class="drag-handle inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:bg-gray-100 hover:text-gray-800 cursor-move"
-								:v-tooltip="`Position: ${zone.position}`">
+							<div v-if="isCatchAllZone(zone)"
+								class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-sm font-medium text-gray-400"
+								v-tooltip="ctrans('This zone has no countries, so it matches every address. It is always checked last and cannot be moved.')">
+								<FontAwesomeIcon :icon="faLock" class="text-xs opacity-70" fixed-width />
+								<span>{{ ctrans('Last') }}</span>
+							</div>
+
+							<div v-else
+								class="drag-handle inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:bg-gray-100 hover:text-gray-800 cursor-move"
+								v-tooltip="`Position: ${zone.position}`">
 								<FontAwesomeIcon :icon="faBars" class="text-xs opacity-70" fixed-width />
 
 								<span class="tabular-nums">
@@ -366,7 +378,10 @@ onUnmounted(() => {
 										<!-- Price -->
 										<div class="font-bold text-right text-sm tabular-nums"
 											:class="priceStep.price === 0 ? 'text-green-600' : ''">
-											<span v-if="priceStep.price === 0">
+											<span v-if="priceStep.price === 'TBC'" class="text-gray-500 italic font-normal">
+												{{ ctrans('TBC') }}
+											</span>
+											<span v-else-if="priceStep.price === 0">
 												Free
 											</span>
 											<span v-else-if="typeof priceStep.price == 'number'"> {{

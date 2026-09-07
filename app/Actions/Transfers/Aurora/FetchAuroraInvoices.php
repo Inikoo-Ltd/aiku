@@ -31,7 +31,7 @@ class FetchAuroraInvoices extends FetchAuroraAction
 
     public string $commandSignature = 'fetch:invoices {organisations?*} {--s|source_id=} {--S|shop= : Shop slug} {--U|only_refunds : Fetch only refunds}  {--N|only_new : Fetch only new} {--w|with=* : Accepted values: transactions payments full} {--d|db_suffix=} {--r|reset} {--T|only_orders_no_transactions : Fetch only orders with no transactions} {--D|days= : fetch last n days} {--O|order= : order asc|desc} {--F|force : Overwrite the aiku record even though the shop already runs on aiku}';
 
-    public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId, bool $forceWithTransactions = false): ?Invoice
+    public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId, bool $forceWithTransactions = false, bool $forceWithPayments = false): ?Invoice
     {
         $doTransactions = false;
         if (in_array('transactions', $this->with) || $forceWithTransactions || in_array('full', $this->with)) {
@@ -102,8 +102,8 @@ class FetchAuroraInvoices extends FetchAuroraAction
         }
 
 
-        if (in_array('payments', $this->with) or in_array('full', $this->with)) {
-            $this->fetchPayments($organisationSource, $invoice);
+        if (in_array('payments', $this->with) or in_array('full', $this->with) or $forceWithPayments) {
+            $this->fetchPayments($organisationSource, $invoice, $forceWithPayments);
         }
 
 
@@ -113,7 +113,7 @@ class FetchAuroraInvoices extends FetchAuroraAction
         return $invoice;
     }
 
-    private function fetchPayments($organisationSource, Invoice $invoice): void
+    private function fetchPayments($organisationSource, Invoice $invoice, bool $keepExisting = false): void
     {
         $organisation = $organisationSource->getOrganisation();
         $sourceData   = explode(':', $invoice->source_id);
@@ -142,14 +142,30 @@ class FetchAuroraInvoices extends FetchAuroraAction
             $aikuPayments = $invoice->payments()->whereNull('payments.source_id')->orWhere('payments.source_id', '')->count();
             // do not sync aurora payments if a payment has been made in aiku
             if ($aikuPayments == 0) {
-                $invoice->payments()->sync($modelHasPayments);
+                $this->syncPayments($invoice, $modelHasPayments, $keepExisting);
             }
         } else {
-            $invoice->payments()->sync($modelHasPayments);
+            $this->syncPayments($invoice, $modelHasPayments, $keepExisting);
         }
 
 
         UpdateInvoicePaymentState::run($invoice);
+    }
+
+    /**
+     * A deliberate `--with payments` sweep syncs, so a payment Aurora no longer lists is
+     * detached. The order fetcher calling through on every pass must never detach on the
+     * strength of a parse that came back empty.
+     */
+    private function syncPayments(Invoice $invoice, array $modelHasPayments, bool $keepExisting): void
+    {
+        if ($keepExisting) {
+            $invoice->payments()->syncWithoutDetaching($modelHasPayments);
+
+            return;
+        }
+
+        $invoice->payments()->sync($modelHasPayments);
     }
 
     private function fetchInvoiceTransactions($organisationSource, Invoice $invoice): void

@@ -38,10 +38,13 @@ const props = defineProps<{
         options?: {}[]
         full: boolean
         noTitle?: boolean
+        compact?: boolean       // Tight table-like row, for read-only-until-edited fields
         noSaveButton?: boolean  // Button: save
         updateRoute?: routeType
         isWithRefreshFieldForm?: boolean
         revisit_after_save?: boolean
+        information?: string  // Tooltip on an info icon beside the label
+        warning?: string      // Amber box under the label, for caveats the label cannot carry
         information_warning?: { description: string }[]
         saveConfirmation?: {   // On click save will show modal confirmation
             title?: string
@@ -63,7 +66,10 @@ let formFields = {
 }
 
 if (props['fieldData']['hasOther']) {
-    formFields[props['fieldData']['hasOther']['name']] = props['fieldData']['hasOther']['value']
+    const otherFields = Array.isArray(props['fieldData']['hasOther']) ? props['fieldData']['hasOther'] : [props['fieldData']['hasOther']]
+    otherFields.forEach((other) => {
+        formFields[other['name']] = other['value']
+    })
 }
 formFields['_method'] = 'patch'
 const form = useForm(formFields)
@@ -157,13 +163,17 @@ const needsSaveConfirmation = computed(() => {
     if (confirmation.whenValueIs === undefined) {
         return true
     }
+    if (Array.isArray(confirmation.whenValueIs)) {
+        return confirmation.whenValueIs.includes(form[props.field])
+    }
     return Number(form[props.field]) === Number(confirmation.whenValueIs)
 })
 </script>
 
 <template>
     <form @submit.prevent="submit" class="divide-y divide-gray-200 w-full" :class="props.fieldData.full ? '' : 'max-w-2xl'">
-        <dl class="pb-4 sm:pb-5 sm:grid sm:grid-cols-3 sm:gap-4 ">
+        <!-- compact packs read-only rows as tight table lines instead of roomy form rows -->
+        <dl class="sm:grid sm:grid-cols-3 sm:gap-4" :class="fieldData.compact ? 'py-1.5 items-center' : 'pb-4 sm:pb-5'">
             <!-- Title -->
             <dt v-if="!fieldData.noTitle && fieldData.label" class="qwezxctext-sm font-medium text-gray-400">
                 <div class="inline-flex items-start leading-none">

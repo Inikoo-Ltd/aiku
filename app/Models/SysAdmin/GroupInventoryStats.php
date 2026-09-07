@@ -37,6 +37,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_org_stock_families_state_discontinuing
  * @property int $number_org_stock_families_state_discontinued
  * @property int $number_org_stocks
+ * @property int $number_org_stocks_excluded_from_auto_ordering
  * @property int $number_current_org_stocks active + discontinuing
  * @property int $number_dropped_org_stocks discontinued + abnormality
  * @property int $number_org_stocks_state_active
@@ -82,6 +83,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_current_picked_bays Total picking trolleys status=true
  * @property int $number_current_picked_bays_in_use Total picking trolleys in use status=true, delivery_note_id not null
  * @property int $number_picked_bays Total picking trolleys including status=false ones
+ * @property int $number_org_stock_movements_type_production
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupInventoryStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupInventoryStats newQuery()

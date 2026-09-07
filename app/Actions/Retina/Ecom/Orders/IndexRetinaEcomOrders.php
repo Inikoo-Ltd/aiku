@@ -113,7 +113,7 @@ class IndexRetinaEcomOrders extends RetinaAction
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Orders'),
                 'pageHead'    => [
-                    'icon'       => 'fal fa-shopping-cart',
+                    'icon'       => 'fal fa-shopping-basket',
                     'title'      => __('Orders'),
                     'actions'    => $actions
                 ],

@@ -96,7 +96,8 @@ class ShowProspect extends OrgAction
             )
         )->table(
             IndexHistory::make()->tableStructure(
-                prefix: ProspectTabsEnum::HISTORY->value
+                prefix: ProspectTabsEnum::HISTORY->value,
+                model: $prospect
             )
         );
     }

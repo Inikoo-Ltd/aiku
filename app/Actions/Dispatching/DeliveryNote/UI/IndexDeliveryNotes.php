@@ -107,7 +107,8 @@ class IndexDeliveryNotes extends OrgAction
                 ],
                 'data'        => DeliveryNotesResource::collection($deliveryNotes),
                 "todo"        => $todo,
-                'shopType'      => $this->shopType,
+                'shopType'    => $this->shopType,
+                'bucket'      => $this->bucket,
                 'picking_session_route' => $pickingSessionRoute
             ]
         )->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket, shopType: $this->shopType));

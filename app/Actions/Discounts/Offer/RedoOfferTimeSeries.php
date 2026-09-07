@@ -41,6 +41,19 @@ class RedoOfferTimeSeries implements ShouldBeUnique
         return $offerID.'_'.$from.'_'.$to;
     }
 
+    protected function dateRangeSources(): array
+    {
+        return [
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('invoice_transactions')
+                    ->join('transaction_has_offer_allowances', 'transaction_has_offer_allowances.transaction_id', '=', 'invoice_transactions.transaction_id')
+                    ->whereNull('invoice_transactions.deleted_at'),
+                'key'   => 'transaction_has_offer_allowances.offer_id',
+                'date'  => 'invoice_transactions.date',
+            ],
+        ];
+    }
+
     public function handle(?int  $offerId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$offerId) {
@@ -56,32 +69,14 @@ class RedoOfferTimeSeries implements ShouldBeUnique
         }
 
         if (!$from || !$to) {
-            $firstTransactionDate = DB::connection('aiku_no_sticky')->table('invoice_transactions')
-                ->whereExists(function ($query) use ($offer) {
-                    $query->select(DB::raw(1))
-                        ->from('transaction_has_offer_allowances')
-                        ->whereColumn('transaction_has_offer_allowances.transaction_id', 'invoice_transactions.transaction_id')
-                        ->where('transaction_has_offer_allowances.offer_id', $offer->id);
-                })
-                ->whereNull('deleted_at')
-                ->min('date');
+            $dateRange = $this->getDateRange($offer->id);
 
-            $lastTransactionDate = DB::connection('aiku_no_sticky')->table('invoice_transactions')
-                ->whereExists(function ($query) use ($offer) {
-                    $query->select(DB::raw(1))
-                        ->from('transaction_has_offer_allowances')
-                        ->whereColumn('transaction_has_offer_allowances.transaction_id', 'invoice_transactions.transaction_id')
-                        ->where('transaction_has_offer_allowances.offer_id', $offer->id);
-                })
-                ->whereNull('deleted_at')
-                ->max('date');
-
-            if (!$firstTransactionDate) {
+            if (!$dateRange['from']) {
                 return;
             }
 
-            $from = $from ?? Carbon::parse($firstTransactionDate)->toDateString();
-            $to   = $to ?? Carbon::parse($lastTransactionDate ?? now())->toDateString();
+            $from = $from ?? Carbon::parse($dateRange['from'])->toDateString();
+            $to   = $to ?? Carbon::parse($dateRange['to'] ?? now())->toDateString();
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {

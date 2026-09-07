@@ -30,6 +30,10 @@ class CloneProductImagesFromMasterProduct implements ShouldBeUnique
 
     public function handle(Product $product): void
     {
+        if ($product->not_follow_master_media) {
+            return;
+        }
+
         $canUpdate = false;
         if (!$product->is_single_trade_unit) {
             $canUpdate = true;

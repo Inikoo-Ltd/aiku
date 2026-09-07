@@ -40,6 +40,13 @@ class GetMasterCollectionsImages
                     'masterCollection' => $masterCollection->id,
                 ],
             ],
+            'attach_images_route' => [
+                'method'     => 'post',
+                'name'       => 'grp.models.master_collection.attach_images',
+                'parameters' => [
+                    'masterCollection' => $masterCollection->id,
+                ],
+            ],
             'delete_images_route' => [
                 'method'     => 'delete',
                 'name'       => 'grp.models.master_collection.delete_images',

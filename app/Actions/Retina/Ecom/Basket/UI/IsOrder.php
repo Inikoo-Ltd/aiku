@@ -8,6 +8,8 @@
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
+use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
+use App\Actions\Ordering\Order\GetOrderShippingOptions;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\GetVoucherData;
@@ -16,12 +18,14 @@ use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Actions\Traits\WithLineTaxCategories;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\Accounting\Invoice;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use App\Helpers\NaturalLanguage;
@@ -31,8 +35,47 @@ use Illuminate\Support\Facades\DB;
 trait IsOrder
 {
     use WithLineTaxCategories;
+    use WithPreferredShipperResolver;
 
     use GetPlatformLogo;
+
+    /**
+     * Value of the lines the warehouse has already marked as not picked while the order is still
+     * being picked. Order amounts stay at the submitted figure until Picked, so this is the only
+     * early sign customer service gets of what will come back to the customer's balance.
+     *
+     * @return array{amount: float, expected_return: float}|null
+     */
+    private function notPickedSoFar(Order $order, float $totalToPay): ?array
+    {
+        if (!in_array($order->state, [OrderStateEnum::IN_WAREHOUSE, OrderStateEnum::HANDLING, OrderStateEnum::HANDLING_BLOCKED])) {
+            return null;
+        }
+
+        $notPickedNet = 0;
+        $items        = DeliveryNoteItem::whereIn('delivery_note_id', $order->deliveryNotes()->where('delivery_notes.state', '!=', DeliveryNoteStateEnum::CANCELLED)->pluck('delivery_notes.id'))
+            ->where('quantity_not_picked', '>', 0)
+            ->with('transaction')
+            ->get();
+        foreach ($items as $item) {
+            $transaction = $item->transaction;
+            if (!$transaction || $transaction->quantity_ordered <= 0) {
+                continue;
+            }
+            $notPickedNet += $item->quantity_not_picked * $transaction->net_amount / $transaction->quantity_ordered;
+        }
+        if ($notPickedNet <= 0) {
+            return null;
+        }
+
+        $taxFactor = $order->net_amount > 0 ? 1 + $order->tax_amount / $order->net_amount : 1;
+        $amount    = round($notPickedNet * $taxFactor, 2);
+
+        return [
+            'amount'          => $amount,
+            'expected_return' => round(max(0, $order->payment_amount - ($totalToPay - $amount)), 2),
+        ];
+    }
 
     public function getOrderBoxStats(Order $order): array
     {
@@ -165,6 +208,7 @@ trait IsOrder
                             'shipper_id'   => null
                         ]
                     ],
+                    'shipper_directive'            => $this->getShipperDirective($deliveryNote),
                     'shipments'                    => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null,
                     'shipments_routes'             => [
                         'submit_route' => [
@@ -234,6 +278,16 @@ trait IsOrder
 
         $orderSummary = $itemsData;
 
+        if ($order->services_amount != 0) {
+            $orderSummary[] = [
+                [
+                    'label'       => __('Services'),
+                    'information' => '',
+                    'price_total' => $order->services_amount,
+                ],
+            ];
+        }
+
         $orderSummary[] = [
             [
                 'label'       => __('Charges'),
@@ -262,7 +316,13 @@ trait IsOrder
                         'slug' => $order->shippingZone->slug,
                         'code' => $order->shippingZone->code,
                         'name' => $order->shippingZone->name,
-                    ] : null
+                    ] : null,
+                    'shipper'             => $order->shipper_id ? [
+                        'id'   => $order->shipper_id,
+                        'name' => $order->shipper->name,
+                    ] : null,
+                    'is_shipper_locked'   => (bool) $order->is_shipper_locked,
+                    'shipping_options'    => GetOrderShippingOptions::run($order),
                 ]
             ]
         ];
@@ -303,6 +363,18 @@ trait IsOrder
             ];
         }
 
+        $adjustmentsNet = $order->transactions()->where('model_type', 'Adjustment')->sum('net_amount');
+
+        if ($adjustmentsNet != 0) {
+            $orderSummary[] = [
+                [
+                    'label'       => __('Adjustments (net)'),
+                    'information' => __('Small differences settled by the shop, not charged to the customer'),
+                    'price_total' => $adjustmentsNet,
+                ],
+            ];
+        }
+
         $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)
             ->whereNotIn('state', [
                 OrderStateEnum::CANCELLED->value,
@@ -312,6 +384,10 @@ trait IsOrder
 
         return [
             'customer_client'  => $customerClientData,
+            'recipient'        => [
+                'contact_name' => $order->contact_name,
+                'company_name' => $order->company_name,
+            ],
             'customer'         => $order->customer ? array_merge(
                 CustomerResource::make($order->customer)->getArray(),
                 [
@@ -363,7 +439,18 @@ trait IsOrder
                     'pay_amount'          => $roundedDiff,
                     'pay_status'          => $order->pay_status,
                     'pay_detailed_status' => $order->pay_detailed_status,
+                    'write_off'           => $roundedDiff != 0 && abs($roundedDiff) <= paymentSettlementTolerance($order->shop) && !$order->invoices()->where('in_process', false)->exists() ? [
+                        'amount' => $roundedDiff,
+                        'route'  => [
+                            'name'       => 'grp.models.order.write_off_shortfall',
+                            'parameters' => [
+                                'order' => $order->id
+                            ],
+                            'method'     => 'post'
+                        ]
+                    ] : null,
                 ],
+                'not_picked'       => $this->notPickedSoFar($order, $totalToPay),
                 'excesses_payment' => [
                     'amount'               => round($order->payment_amount - $totalToPay, 2),
                     'route_to_add_balance' => [

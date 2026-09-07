@@ -15,16 +15,16 @@ const props = defineProps<{
             t: string  // Type: "percentage"
             p: string  // Percentage: "10.0%"
             l: string  // Label
+            st: string | null // Sub Trigger --- "so" => Shop Ordered
         }
     }
 }>()
-
 
 </script>
 
 <template>
   <div
-    class="bg-red-700 border border-red-900 text-gray-100 w-fit flex items-center rounded-sm px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1 md:text-sm">
+    class="bg-red-700 border-red-900 text-gray-100 w-fit flex items-center rounded-sm border px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1 md:text-sm">
     <span class="font-bold mr-1 leading-none">
       {{ formatPercentage(offers_data?.o?.p) }}
     </span>

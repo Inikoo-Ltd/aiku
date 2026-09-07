@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Events\BroadcastFulfilmentCustomerNotification;
 use App\Listeners\MeasurementSharedListener;
+use App\Listeners\SetAuditUserContext;
+use Illuminate\Auth\Events\Authenticated;
 use App\Listeners\ShopifyAuthenticatedShopWebhookRegister;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
@@ -20,6 +22,9 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         Registered::class => [
             SendEmailVerificationNotification::class,
+        ],
+        Authenticated::class => [
+            SetAuditUserContext::class,
         ],
        /* BroadcastFulfilmentCustomerNotification::class => [
             MeasurementSharedListener::class

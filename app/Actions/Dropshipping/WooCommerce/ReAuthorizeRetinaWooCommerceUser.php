@@ -22,11 +22,17 @@ class ReAuthorizeRetinaWooCommerceUser extends OrgAction
     use WithActionUpdate;
     use WithWooCommerceAuthorizationToken;
 
-    public function handle(WooCommerceUser $wooCommerceUser): string
+    public const int STAFF_LINK_TTL_SECONDS = 7 * 24 * 3600;
+
+    /**
+     * The customer clicks this within the hour from retina; a link customer services sends by
+     * email needs to survive until the customer gets round to it, hence the longer life.
+     */
+    public function handle(WooCommerceUser $wooCommerceUser, int $ttlSeconds = 3600): string
     {
         $token = $this->storeWooAuthorizationToken([
             'woo_commerce_user_id' => $wooCommerceUser->id
-        ]);
+        ], $ttlSeconds);
 
         $params = [
             'app_name' => 'AW Connect',

@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairWrongMasterProductStock
 {
@@ -66,6 +67,7 @@ class RepairWrongMasterProductStock
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $query = MasterAsset::where('master_shop_id', 2)
         ->whereNull('source_id')
         ->with(['stocks', 'tradeUnits'])

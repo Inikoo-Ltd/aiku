@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgPartner\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Http\Resources\Procurement\OrgPartnersResource;
@@ -25,6 +26,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOrgPartners extends OrgAction
 {
+    use WithProcurementAuthorisation;
     private Organisation $parent;
 
     public function handle(Organisation $parent, $prefix = null): LengthAwarePaginator
@@ -86,13 +88,6 @@ class IndexOrgPartners extends OrgAction
 
                 ->defaultSort('code');
         };
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator

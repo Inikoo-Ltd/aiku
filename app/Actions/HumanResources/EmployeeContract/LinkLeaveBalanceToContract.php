@@ -11,7 +11,6 @@ namespace App\Actions\HumanResources\EmployeeContract;
 use App\Actions\OrgAction;
 use App\Models\HumanResources\EmployeeContract;
 use App\Models\HumanResources\EmployeeLeaveBalance;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -37,9 +36,9 @@ class LinkLeaveBalanceToContract extends OrgAction
         ];
     }
 
-    public function asController(Organisation $organisation, EmployeeLeaveBalance $balance, ActionRequest $request): JsonResponse
+    public function asController(EmployeeLeaveBalance $balance, ActionRequest $request): JsonResponse
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisation($balance->employee->organisation, $request);
 
         $contract = EmployeeContract::findOrFail($this->validatedData['contract_id']);
 

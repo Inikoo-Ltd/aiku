@@ -16,6 +16,7 @@ class GetSupplierProductShowcase
 {
     use AsObject;
     use WithSupplierProductShowcase;
+    use WithSupplierProductInfo;
 
     public function handle(SupplierProduct $supplierProduct): array
     {
@@ -27,6 +28,7 @@ class GetSupplierProductShowcase
                     $this->getAgentParty($supplierProduct->agent),
                 ])),
                 'stats'   => $this->getProcurementStatsBoxes($supplierProduct->stats),
+                'supplierProductInfo' => $this->supplierProductInfo($supplierProduct),
             ]
         );
     }

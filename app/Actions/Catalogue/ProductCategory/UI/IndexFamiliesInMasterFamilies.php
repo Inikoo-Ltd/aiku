@@ -353,6 +353,7 @@ class IndexFamiliesInMasterFamilies extends OrgAction
         return match ($routeName) {
             'grp.masters.master_shops.show.master_departments.show.master_families.families',
             'grp.masters.master_shops.show.master_family.mismatch_detected.families',
+            'grp.masters.master_shops.show.master_family.missing_image.families',
             'grp.masters.master_shops.show.master_sub_departments.master_families.families',
             'grp.masters.master_shops.show.master_families.families',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.families',

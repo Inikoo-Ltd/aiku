@@ -195,9 +195,8 @@ class UpdateLeave extends OrgAction
 
             if (!$request->routeIs('grp.org.hr.leaves.update')) {
                 $user = $request->user();
-                $employee = $user?->employees->first();
 
-                if (!$employee || $leave->employee_id !== $employee->id) {
+                if (!$user || !$user->employees()->where('employees.id', $leave->employee_id)->exists()) {
                     abort(403, __('You can only edit your own leave requests.'));
                 }
             }

@@ -79,6 +79,21 @@ class ShowTimesheet extends OrgAction
                             'parameters' => $request->route()->originalParameters()
                         ]
                     ] : false,
+                    'actions' => $this->parent instanceof Organisation && $timesheet->subject instanceof Employee ? [
+                        [
+                            'type'  => 'button',
+                            'style' => 'tertiary',
+                            'icon'  => 'fal fa-user-hard-hat',
+                            'label' => __('View employee'),
+                            'route' => [
+                                'name'       => 'grp.org.hr.employees.show',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'employee'     => $timesheet->subject->slug,
+                                ],
+                            ],
+                        ],
+                    ] : [],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,

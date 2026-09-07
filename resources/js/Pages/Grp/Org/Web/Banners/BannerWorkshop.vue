@@ -12,15 +12,14 @@ import Publish from "@/Components/Utils/Publish.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { faUser, faUserFriends } from '@fal'
 import { faRocketLaunch } from '@far'
 import { faAsterisk } from '@fas'
-import { faSpinnerThird } from '@fad'
 import { trans } from "laravel-vue-i18n"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
-library.add(faAsterisk, faRocketLaunch, faUser, faUserFriends, faSpinnerThird)
+library.add(faAsterisk, faRocketLaunch, faUser, faUserFriends)
 
 const props = defineProps<{
     modelValue: any
@@ -205,7 +204,7 @@ onBeforeUnmount(() => {
 
 <section>
     <div v-if="loadingState" class="w-full min-h-screen flex justify-center items-center">
-        <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin h-12 text-gray-600'/>
+        <LoadingIcon class='h-12 text-gray-600' />
     </div>
 
     <div v-else>

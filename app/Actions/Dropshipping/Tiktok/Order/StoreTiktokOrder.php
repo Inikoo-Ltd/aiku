@@ -23,6 +23,7 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
+use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -39,6 +40,14 @@ class StoreTiktokOrder extends RetinaAction
 
     public function handle(TiktokUser $tiktokUser, array $tiktokOrders): void
     {
+        $existingOrder = Order::where('customer_id', $tiktokUser->customer_id)
+            ->where('platform_order_id', Arr::get($tiktokOrders, 'id'))
+            ->exists();
+
+        if ($existingOrder) {
+            return;
+        }
+
         $customerClient = $this->digestTiktokCustomerClient($tiktokUser, $tiktokOrders);
         $orderedProducts = $this->digestTiktokProducts($tiktokUser, $tiktokOrders);
 
@@ -72,13 +81,6 @@ class StoreTiktokOrder extends RetinaAction
                 strict: false,
                 forceHydrators: true,
             );
-        }
-
-        $handOverMethod = null;
-        $packageId = Arr::get($order, 'packages.0.id');
-        if ($packageId) {
-            $package = $tiktokUser->getPackageDetail($packageId);
-            $handOverMethod = Arr::get($package, 'data.handover_method');
         }
 
         if ($shipByTiktok) {
@@ -153,29 +155,29 @@ class StoreTiktokOrder extends RetinaAction
         return new Address($address);
     }
 
+    /**
+     * TikTok sends one line item per unit sold, so the units of a product are folded into a single
+     * transaction the way the fulfilment path already does.
+     */
     public function digestTiktokProducts(TiktokUser $tiktokUser, array $tiktokOrderData): array
     {
         $orderedProducts = [];
-        /*$lineItems = collect(Arr::get($tiktokOrderData, 'line_items', []))
-            ->groupBy('product_id')
-            ->map(function ($items) {
-                return [
-                    'product_id' => $items->first()['product_id'],
-                    'quantity'   => count($items),
-                    'id' => $items->first()['id']
-                ];
-            })
-            ->values();*/
-        foreach (Arr::get($tiktokOrderData, 'line_items', []) as $item) {
 
-            $product = $tiktokUser->getProduct($item['product_id']);
+        $lineItems = collect(Arr::get($tiktokOrderData, 'line_items', []))
+            ->filter(fn ($item) => filled(Arr::get($item, 'product_id')))
+            ->groupBy('product_id');
+
+        foreach ($lineItems as $platformProductId => $items) {
+            $product = $tiktokUser->getProduct((string) $platformProductId);
             $externalProductId = Arr::get($product, 'data.external_product_id');
 
             $portfolioData = DB::table('portfolios')->select('item_id')
                 ->where('item_type', 'Product')
                 ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
-                ->where('platform_product_id', $item['product_id'])
-                ->orWhere('id', $externalProductId)
+                ->where(function ($query) use ($platformProductId, $externalProductId) {
+                    $query->where('platform_product_id', (string) $platformProductId)
+                        ->when(is_string($externalProductId) && ctype_digit($externalProductId), fn ($query) => $query->orWhere('id', $externalProductId));
+                })
                 ->first();
 
             if ($portfolioData && $portfolioData->item_id) {
@@ -183,8 +185,8 @@ class StoreTiktokOrder extends RetinaAction
                 if ($product) {
                     $orderedProducts[] = [
                         'historicAsset'           => $product->currentHistoricProduct,
-                        'quantity_ordered'        => 1,
-                        'platform_transaction_id' => $item['id']
+                        'quantity_ordered'        => $items->count(),
+                        'platform_transaction_id' => Arr::get($items->first(), 'id')
                     ];
                 }
             }

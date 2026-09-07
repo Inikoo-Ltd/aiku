@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\Payment\UI;
 use App\Actions\OrgAction;
 use App\Enums\UI\Accounting\PaymentTabsEnum;
 use App\Models\Accounting\Payment;
+use App\Models\Accounting\PaymentAccount;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
@@ -27,10 +28,12 @@ class EditPayment extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        // TODO: fix this to use the correct permissions (can't pass in test)
-        // $this->canEdit = $request->user()->authTo('accounting.edit');
-        // return $request->user()->authTo("accounting.view");
-        return true;
+        $payment = $request->route()->parameter('payment');
+        if ($payment instanceof Payment && !$payment->paymentAccount?->type?->isManuallySettled()) {
+            return false;
+        }
+
+        return $request->user()->authTo("accounting.{$this->organisation->id}.edit");
     }
 
     public function inOrganisation(Organisation $organisation, Payment $payment, ActionRequest $request): Payment
@@ -48,6 +51,20 @@ class EditPayment extends OrgAction
 
 
 
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inPaymentAccount(Organisation $organisation, PaymentAccount $paymentAccount, Payment $payment, ActionRequest $request): Payment
+    {
+        $this->initialisation($organisation, $request)->withTab(PaymentTabsEnum::values());
+        return $this->handle($payment);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inPaymentAccountInPaymentServiceProvider(Organisation $organisation, PaymentServiceProvider $paymentServiceProvider, PaymentAccount $paymentAccount, Payment $payment, ActionRequest $request): Payment
+    {
+        $this->initialisation($organisation, $request)->withTab(PaymentTabsEnum::values());
+        return $this->handle($payment);
+    }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inOrder(Organisation $organisation, Order $order, Payment $payment, ActionRequest $request): Payment
@@ -91,8 +108,8 @@ class EditPayment extends OrgAction
                                     'value' => $payment->amount
                                 ],
                                 'date' => [
-                                    'type'  => 'input',
-                                    'label' => __('label'),
+                                    'type'  => 'date',
+                                    'label' => __('Date'),
                                     'value' => $payment->date
                                 ],
                             ]

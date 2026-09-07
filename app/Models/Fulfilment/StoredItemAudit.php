@@ -86,6 +86,13 @@ class StoredItemAudit extends Model implements Auditable
         'data'          => 'array'
     ];
 
+    protected array $auditInclude = [
+        'reference',
+        'state',
+        'public_notes',
+        'internal_notes',
+    ];
+
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()

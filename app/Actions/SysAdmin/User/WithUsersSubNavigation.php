@@ -43,6 +43,17 @@ trait WithUsersSubNavigation
             ],
 
             [
+                "label"    => __("Staff chat"),
+                "route"     => [
+                    "name"       => "grp.sysadmin.staff_chat.index",
+                    "parameters" => [],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-comments-alt"],
+                    "tooltip" => __("Staff chat analytics"),
+                ],
+            ],
+            [
                 "number"   => $group->sysadminStats->number_users,
                 "label"    => __("All"),
                 'align'  => 'right',

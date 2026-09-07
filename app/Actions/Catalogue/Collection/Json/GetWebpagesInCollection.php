@@ -57,14 +57,9 @@ class GetWebpagesInCollection extends OrgAction
             $queryBuilder->where('webpages.state', WebpageStateEnum::LIVE);
         }
 
-        if ($this->bucket == 'catalogue') {
-            $queryBuilder->where('webpages.type', WebpageTypeEnum::CATALOGUE);
-        } elseif ($this->bucket == 'content') {
-            $queryBuilder->where('webpages.type', WebpageTypeEnum::CONTENT);
-        } elseif ($this->bucket == 'blog') {
-            $queryBuilder->where('webpages.type', WebpageTypeEnum::BLOG);
-        } elseif ($this->bucket == 'storefront') {
-            $queryBuilder->where('webpages.type', WebpageTypeEnum::STOREFRONT);
+        $webpageType = is_string($this->bucket) ? WebpageTypeEnum::tryFrom($this->bucket) : null;
+        if ($webpageType) {
+            $queryBuilder->where('webpages.type', $webpageType);
         }
 
         if (Arr::has($modelData, 'excluded_list')) {

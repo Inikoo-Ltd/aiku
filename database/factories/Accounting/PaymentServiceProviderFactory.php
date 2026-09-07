@@ -16,8 +16,8 @@ class PaymentServiceProviderFactory extends Factory
     public function definition(): array
     {
         return [
-            'code' => fake()->lexify(),
-            'name' => fake()->lexify(),
+            'code' => fake()->lexify('??????'),
+            'name' => fake()->lexify('??????'),
             'type' => PaymentServiceProviderTypeEnum::BANK->value,
         ];
     }

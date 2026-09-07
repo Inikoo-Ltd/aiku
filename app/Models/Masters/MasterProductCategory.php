@@ -91,6 +91,10 @@ use App\Models\Traits\HasSearch;
  * @property int|null $trade_unit_family_id
  * @property array<array-key, mixed> $faq
  * @property int|null $showcase_image_id
+ * @property string|null $name_updated_at
+ * @property string|null $description_updated_at
+ * @property string|null $description_title_updated_at
+ * @property string|null $extra_description_updated_at
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Media|null $descArt1Image
@@ -151,23 +155,29 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
-        'data'            => 'array',
-        'faq'             => 'array',
-        'web_images'      => 'array',
-        'type'            => MasterProductCategoryTypeEnum::class,
-        'health_rank'     => HealthRankEnum::class,
-        'status'          => 'boolean',
-        'fetched_at'      => 'datetime',
-        'last_fetched_at' => 'datetime',
-        'discontinued_at' => 'datetime',
-        'offers_data'     => 'array',
+        'data'                      => 'array',
+        'faq'                       => 'array',
+        'web_images'                => 'array',
+        'type'                      => MasterProductCategoryTypeEnum::class,
+        'health_rank'               => HealthRankEnum::class,
+        'status'                    => 'boolean',
+        'fetched_at'                => 'datetime',
+        'last_fetched_at'           => 'datetime',
+        'discontinued_at'           => 'datetime',
+        'offers_data'               => 'array',
+        'customize_option'          => 'array',
+        'storage_option'            => 'array',
+        'category_comparison'       => 'array',
     ];
 
     protected $attributes = [
-        'data'        => '{}',
-        'faq'         => '{}',
-        'offers_data' => '{}',
-        'web_images'  => '{}',
+        'data'                  => '{}',
+        'faq'                   => '{}',
+        'offers_data'           => '{}',
+        'web_images'            => '{}',
+        'customize_option'      => '{}',
+        'storage_option'        => '{}',
+        'category_comparison'   => '{}',
     ];
 
     public function generateTags(): array

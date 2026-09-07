@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Transaction;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction;
 use App\Actions\Dispatching\DeliveryNoteItem\DeleteDeliveryNoteItem;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\LogBasketEvent;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
@@ -50,6 +51,8 @@ class DeleteTransaction extends OrgAction
             CalculateOrderTotalAmounts::run($order);
             OrderHydrateTransactions::dispatch($order);
         }
+
+        LogBasketEvent::run($order->fresh(), 'remove', $transaction, -(float) $transaction->quantity_ordered);
 
 
         return $transaction;

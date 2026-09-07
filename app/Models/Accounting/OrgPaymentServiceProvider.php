@@ -68,6 +68,11 @@ class OrgPaymentServiceProvider extends Model implements Auditable
 
     protected $guarded = [];
 
+    protected array $auditInclude = [
+        'type',
+        'code',
+    ];
+
     public function getRouteKeyName(): string
     {
         return 'slug';

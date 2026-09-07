@@ -22,6 +22,7 @@ use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Reviews\MasterAssetReviewStat;
 use App\Models\SysAdmin\Group;
+use App\Models\Traits\HasEffectiveStockPackedIn;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\InMasterShop;
@@ -151,6 +152,9 @@ use App\Models\Traits\HasSearch;
  * @property array<array-key, mixed> $master_rrps
  * @property string|null $units_review
  * @property numeric|null $effective_cost stock-weighted avg cost across organisations, group currency, per outer
+ * @property string|null $tax_preset Named tax preset this master follows (standard, food, ...); null is a custom map; tax_category holds the expansion the money path reads
+ * @property bool $has_independent_units Units are set by hand instead of being read off the trade unit composition
+ * @property bool $is_golden_product
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -209,22 +213,24 @@ class MasterAsset extends Model implements Auditable, HasMedia
     use HasImage;
     use HasTranslations;
     use InMasterShop;
+    use HasEffectiveStockPackedIn;
 
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $guarded = [];
 
     protected $casts = [
-        'type'                 => MasterAssetTypeEnum::class,
-        'health_rank'          => HealthRankEnum::class,
-        'marketing_dimensions' => 'array',
-        'variant_ratio'        => 'decimal:3',
-        'price'                => 'decimal:2',
-        'rrp'                  => 'decimal:2',
-        'data'                 => 'array',
-        'status'               => 'boolean',
-        'variant_is_visible'   => 'boolean',
-
+        'type'                    => MasterAssetTypeEnum::class,
+        'health_rank'             => HealthRankEnum::class,
+        'marketing_dimensions'    => 'array',
+        'variant_ratio'           => 'decimal:3',
+        'price'                   => 'decimal:2',
+        'rrp'                     => 'decimal:2',
+        'data'                    => 'array',
+        'status'                  => 'boolean',
+        'has_independent_units'   => 'boolean',
+        'variant_is_visible'      => 'boolean',
+        'is_golden_product'       => 'boolean',
         'fetched_at'              => 'datetime',
         'last_fetched_at'         => 'datetime',
         'discontinued_at'         => 'datetime',
@@ -268,7 +274,8 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'is_main',
         'barcode',
         'is_for_sale',
-        'follow_trade_unit_media'
+        'follow_trade_unit_media',
+        'is_golden_product',
     ];
 
     public function getRouteKeyName(): string

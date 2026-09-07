@@ -28,8 +28,8 @@ trait WithGeneratedWooCommerceAddress
                     'dependent_locality'  => null,
                     'locality'            => Arr::get($data, 'city'),
                     'administrative_area' => Arr::get($data, 'state'),
-                    'country_code'        => Arr::get($data, 'country'),
-                    'country_id'          => $country->id
+                    'country_code'        => $country?->code,
+                    'country_id'          => $country?->id
                 ]
             ];
         }

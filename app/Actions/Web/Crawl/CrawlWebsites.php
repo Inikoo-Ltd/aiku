@@ -19,6 +19,10 @@ class CrawlWebsites
 {
     use AsAction;
 
+    private const DEPLOYMENT_INITIAL_DELAY_SECONDS = 60;
+
+    private const DEPLOYMENT_STAGGER_SECONDS = 5;
+
 
     public function handle(CrawlTriggerEnum $trigger, ?Command $command = null): void
     {
@@ -48,9 +52,16 @@ class CrawlWebsites
             );
             $command?->info("Crawling website: $website->slug ; C: ".$crawl->concurrency);
 
-            $index++;
             $jobQueue = 'cache-warming';
-            CrawlWebsite::dispatch($crawl->id)->onQueue($jobQueue);
+            $pendingDispatch = CrawlWebsite::dispatch($crawl->id)->onQueue($jobQueue);
+
+            if ($trigger === CrawlTriggerEnum::DEPLOYMENT) {
+                $pendingDispatch->delay(
+                    self::DEPLOYMENT_INITIAL_DELAY_SECONDS + ($index * self::DEPLOYMENT_STAGGER_SECONDS)
+                );
+            }
+
+            $index++;
         }
     }
 

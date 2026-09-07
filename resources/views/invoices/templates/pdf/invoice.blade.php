@@ -217,7 +217,7 @@
                     <span class="address_value">{{ $invoice->customer['phone'] }}</span>
                 </div>
                     @endif
-                @if($invoice->tax_number && $invoice->tax_number_valid)
+                @if($invoice->tax_number && ($invoice->tax_number_valid || $invoice->billingAddress?->country?->code === 'ES'))
                     <div>
                         <span class="address_label">{{ __('Tax Number') }}:</span>
                         <span class="address_value">{{ $invoice->tax_number }}</span>
@@ -244,13 +244,14 @@
             </div>
         </td>
         <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;text-align: right">
-            @if($deliveryNote && $deliveryNote->getNumberParcels())
+            @php($isRefund = $invoice->type == \App\Enums\Accounting\Invoice\InvoiceTypeEnum::REFUND)
+            @if(!$isRefund && $deliveryNote && $deliveryNote->getNumberParcels())
                 <div style="text-align: right">{{__('Boxes')}}: <b>{{ $deliveryNote->getNumberParcels() }}</b></div>
             @endif
-            @if($deliveryNote)
+            @if(!$isRefund && $deliveryNote)
                 <div style="text-align: right">{{__('Weight')}}: <b>{{ $deliveryNote->getBestWeight() }}</b></div>
             @endif
-            @if($show_dispatch_totals && $dispatch_total_skos !== null)
+            @if(!$isRefund && $show_dispatch_totals && $dispatch_total_skos !== null)
                 <div style="text-align: right">{{__('Total SKO')}}: <b>{{ number_format($dispatch_total_skos, 0) }}</b></div>
                 <div style="text-align: right">{{__('Total Units')}}: <b>{{ number_format($dispatch_total_units, 0) }}</b></div>
             @endif
@@ -320,18 +321,55 @@
 </table>
 <br>
 
+@php($hidePriceQtyColumns = $isRefund && $transactions->every(fn ($t) => $t->is_refund && !($t->net_amount == 0 && $t->tax_amount != 0) && refundQuantityLabel($t->quantity, soldPackUnits($t->historicAsset?->units, $t->model?->units)) === null))
+@php($isTaxOnlyRefund = $isRefund && $invoice->is_tax_only)
+@php($showDiscountColumn = !empty($show_discounts) && !$hidePriceQtyColumns && !$isTaxOnlyRefund)
+@php($exportByTariffCode = !empty($export_by_tariff_code) && $tariffExportRows->isNotEmpty())
+@php($totalsFillerColspan = $exportByTariffCode ? 3 : ($hidePriceQtyColumns ? 2 : ($isTaxOnlyRefund ? 3 : 4)))
+@php($totalsLabelColspan = $showDiscountColumn || $exportByTariffCode ? 2 : 1)
 <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
+    @if($exportByTariffCode)
+    <thead>
+    <tr>
+        <td style="width:14%;text-align:left">{{ __('Code') }}</td>
+        <td style="width:10%;text-align:left">{{ __('Origin') }}</td>
+        <td style="text-align:left">{{ __('Description') }}</td>
+        <td style="width:22%;text-align:left">{{ __('Codes') }}</td>
+        <td style="width:8%;text-align:right">{{ __('Qty') }}</td>
+        <td style="width:12%;text-align:right">{{ __('Amount') }}</td>
+    </tr>
+    </thead>
+    <tbody>
+        @foreach($tariffExportRows as $row)
+            <tr class="@if($loop->last) last @endif">
+                <td style="text-align:left">{{ $row['tariff_code'] }}</td>
+                <td style="text-align:left">{{ $row['origin'] }}</td>
+                <td style="text-align:left">{{ $row['description'] }}</td>
+                <td style="text-align:left">{{ $row['codes'] }}</td>
+                <td style="text-align:right">{{ trimDecimalZeros($row['quantity']) }}</td>
+                <td style="text-align:right">{{ $invoice->currency->symbol . number_format($row['net_amount'], 2) }}</td>
+            </tr>
+        @endforeach
+    </tbody>
+    @else
     <thead>
     <tr>
         <td style="width:14%;text-align:left">{{ __('Code') }}</td>
 
         <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
-        @if($pro_mode)
-            <td style="text-align:right;width:20%">{{ __('Unit Price') }}</td>
+        @if($hidePriceQtyColumns)
+        @elseif($isTaxOnlyRefund)
+            <td style="text-align:left;width:20%">{{ __('Notes') }}</td>
+        @elseif($pro_mode)
+            <td style="text-align:right;width:18%">{{ __('Unit Price') }}</td>
             <td style="text-align:right">{{ __('Units') }}</td>
         @else
-            <td style="text-align:left;width:20%">{{ __('Price') }}</td>
+            <td style="text-align:left;width:18%">{{ __('Price') }}</td>
             <td style="text-align:left">{{ __('Qty') }}.</td>
+        @endif
+
+        @if($showDiscountColumn)
+            <td style="text-align:right;width:11%">{{ __('Discount') }}</td>
         @endif
 
         <td style="width:14%;text-align:right">{{ __('Amount') }}</td>
@@ -348,7 +386,7 @@
         @foreach($transactionGroups as $tariffCode => $groupTransactions)
             @if($group_by_tariff_code)
                 <tr>
-                    <td colspan="6" style="background-color:#EEEEEE;font-weight:bold;border:0.1mm solid #000000;">
+                    <td colspan="{{ $showDiscountColumn ? 7 : 6 }}" style="background-color:#EEEEEE;font-weight:bold;border:0.1mm solid #000000;">
                         {{ __('Tariff Code') }}: {{ $tariffCode }}
                     </td>
                 </tr>
@@ -360,8 +398,9 @@
 
                     <td style="text-align:left" colspan="2">
                         @if($transaction->historicAsset)
-                            @if(!$pro_mode && $transaction->model && $transaction->model->units > 1)
-                                {{ trimDecimalZeros($transaction->model->units) }}x
+                            @php($packUnits = soldPackUnits($transaction->historicAsset->units, $transaction->model?->units))
+                            @if(!$pro_mode && $packUnits > 1)
+                                {{ trimDecimalZeros($packUnits) }}x
                             @endif
                             {{ $transaction->historicAsset->name }}
                             @if(isset($transaction->pallet))
@@ -407,10 +446,17 @@
                         @endif
                     </td>
                     @php($sameGrossNet = $transaction->gross_amount == $transaction->net_amount)
+                    @php($taxOnlyRefundLine = $transaction->is_refund && $transaction->net_amount == 0 && $transaction->tax_amount != 0)
+                    @php($refundQtyDisplay = $transaction->is_refund && !$taxOnlyRefundLine ? refundQuantityLabel($transaction->quantity, soldPackUnits($transaction->historicAsset?->units, $transaction->model?->units)) : null)
+                    @php($discretionaryRefundLine = $transaction->is_refund && !$taxOnlyRefundLine && $refundQtyDisplay === null)
 
-                    @if($pro_mode)
+                    @if($hidePriceQtyColumns)
+                    @elseif($pro_mode)
                         <td style="text-align:right">
-                            @if($transaction->quantity==0 || $transaction->quantity==null)
+                            @if($taxOnlyRefundLine)
+                                {{ __('VAT refund') }}
+                            @elseif($discretionaryRefundLine)
+                            @elseif($transaction->quantity==0 || $transaction->quantity==null)
                                 {{ $invoice->currency->symbol . optional($transaction->historicAsset)->price }}
                             @elseif($transaction->historicAsset)
                                 @if($sameGrossNet)
@@ -421,10 +467,15 @@
                                 @endif
                             @endif
                         </td>
-                        <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity) }}</td>
+                        @if(!$isTaxOnlyRefund)
+                            <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : trimDecimalZeros($transaction->quantity) }}</td>
+                        @endif
                     @else
                         <td style="text-align:left">
-                            @if($transaction->quantity==0 || $transaction->quantity==null)
+                            @if($taxOnlyRefundLine)
+                                {{ __('VAT refund') }}
+                            @elseif($discretionaryRefundLine)
+                            @elseif($transaction->quantity==0 || $transaction->quantity==null)
                                 {{ $invoice->currency->symbol . optional($transaction->historicAsset)->price }}
                             @elseif($transaction->historicAsset)
                                 @if($sameGrossNet)
@@ -435,9 +486,21 @@
                                 @endif
                             @endif
                         </td>
-                        <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity) }}</td>
+                        @if(!$isTaxOnlyRefund)
+                            <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : trimDecimalZeros($transaction->quantity) }}</td>
+                        @endif
                     @endif
-                    @if ($sameGrossNet)
+                    @if($showDiscountColumn)
+                        <td style="text-align:right">
+                            {{ discountPercentageLabel($transaction->gross_amount, $transaction->net_amount) }}
+                            @if(!empty($discountOfferNames[$transaction->id]))
+                                <br><span style="font-size:7pt;color:#555">{{ $discountOfferNames[$transaction->id] }}</span>
+                            @endif
+                        </td>
+                    @endif
+                    @if($taxOnlyRefundLine)
+                        <td style="text-align:right">{{ $invoice->currency->symbol . number_format(-$transaction->tax_amount, 2) }}</td>
+                    @elseif ($sameGrossNet)
                         <td style="text-align:right">{{ $invoice->currency->symbol . $transaction->net_amount }}</td>
                     @else
                         <td style="text-align:right">
@@ -489,6 +552,10 @@
                                 </td>
                             @endif
 
+                            @if($showDiscountColumn)
+                                <td></td>
+                            @endif
+
                             <td style="text-align:right; font-size:8pt; color:#555;">
                                 {{ $invoice->currency->symbol . number_format($lineTotal, 2) }}
                             </td>
@@ -499,78 +566,111 @@
         @endforeach
 
     </tbody>
+    @endif
     <tbody class="totals">
-        @if ($order && ($order?->goods_amount != $order->gross_amount))
+        @if ($isRefund)
+
+            <tr class="total_net">
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{ __('Total Net') }}</td>
+                <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
+            </tr>
+
+            @include('invoices.templates.pdf.tax-rows', ['document' => $invoice, 'fillerColspan' => $totalsFillerColspan, 'labelColspan' => $totalsLabelColspan])
+
+            <tr class="total">
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}"><b>{{ __('Total') }}</b></td>
+                <td>{{ $invoice->currency->symbol . $invoice->total_amount }}</td>
+            </tr>
+
+        @elseif ($order && ($order?->goods_amount != $order->gross_amount))
 
             <tr>
-                <td style="border:none" colspan="4"></td>
-                <td>{{ __('Total Gross') }}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{ __('Total Gross') }}</td>
                 <td>{{ $invoice->currency->symbol . $order->gross_amount }}</td>
             </tr>
 
             <tr>
-                <td style="border:none" colspan="4"></td>
-                <td style="color: #16a34a">{{ __('Discounts') }}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}" style="color: #16a34a">{{ __('Discounts') }}</td>
                 <td style="color: #16a34a">- {{ $invoice->currency->symbol . number_format($order->gross_amount - $order->goods_amount, 2) }}</td>
             </tr>
 
             <tr>
-                <td style="border:none" colspan="4"></td>
-                <td>{{ __('Items Net') }}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{ __('Items Net') }}</td>
                 <td>{{ $invoice->currency->symbol . $order->goods_amount }}</td>
             </tr>
 
             <tr>
-                <td style="border:none" colspan="4"></td>
-                <td>{{ __('Charges') }}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{ __('Charges') }}</td>
                 <td>{{ $invoice->currency->symbol . $invoice->charges_amount }}</td>
             </tr>
 
             <tr>
-                <td style="border:none" colspan="4"></td>
-                <td>{{ __('Shipping') }}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{ __('Shipping') }}</td>
                 <td>{{ $invoice->currency->symbol . $invoice->shipping_amount }}</td>
             </tr>
 
+
+            @if(($adjustmentsNet = $invoice->invoiceTransactions->where('model_type', 'Adjustment')->sum('net_amount')) != 0)
+                <tr>
+                    <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                    <td colspan="{{ $totalsLabelColspan }}">{{ __('Adjustments') }}</td>
+                    <td>{{ $invoice->currency->symbol . number_format($adjustmentsNet, 2) }}</td>
+                </tr>
+            @endif
             <tr class="total_net">
-                <td style="border:none" colspan="4"></td>
-                <td>{{__('Total Net')}}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{__('Total Net')}}</td>
                 <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
             </tr>
 
-            @include('invoices.templates.pdf.tax-rows', ['document' => $invoice])
+            @include('invoices.templates.pdf.tax-rows', ['document' => $invoice, 'fillerColspan' => $totalsFillerColspan, 'labelColspan' => $totalsLabelColspan])
 
             <tr class="total">
-                <td style="border:none" colspan="4"></td>
-                <td><b>{{ __('Total') }}</b></td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}"><b>{{ __('Total') }}</b></td>
                 <td>{{ $invoice->currency->symbol . $invoice->total_amount }}</td>
             </tr>
 
         @else
 
             <tr>
-                <td style="border:none" colspan="4"></td>
-                <td>{{ __('Charges') }}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{ __('Charges') }}</td>
                 <td>{{ $invoice->currency->symbol . $invoice->charges_amount }}</td>
             </tr>
 
             <tr>
-                <td style="border:none" colspan="4"></td>
-                <td>{{ __('Shipping') }}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{ __('Shipping') }}</td>
                 <td>{{ $invoice->currency->symbol . $invoice->shipping_amount }}</td>
             </tr>
 
+
+            @if(($adjustmentsNet = $invoice->invoiceTransactions->where('model_type', 'Adjustment')->sum('net_amount')) != 0)
+                <tr>
+                    <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                    <td colspan="{{ $totalsLabelColspan }}">{{ __('Adjustments') }}</td>
+                    <td>{{ $invoice->currency->symbol . number_format($adjustmentsNet, 2) }}</td>
+                </tr>
+            @endif
             <tr class="total_net">
-                <td style="border:none" colspan="4"></td>
-                <td>{{__('Total Net')}}</td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}">{{__('Total Net')}}</td>
                 <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
             </tr>
 
-            @include('invoices.templates.pdf.tax-rows', ['document' => $invoice])
+            @include('invoices.templates.pdf.tax-rows', ['document' => $invoice, 'fillerColspan' => $totalsFillerColspan, 'labelColspan' => $totalsLabelColspan])
 
             <tr class="total">
-                <td style="border:none" colspan="4"></td>
-                <td><b>{{ __('Total') }}</b></td>
+                <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                <td colspan="{{ $totalsLabelColspan }}"><b>{{ __('Total') }}</b></td>
                 <td>{{ $invoice->currency->symbol . $invoice->total_amount }}</td>
             </tr>
         @endif
@@ -579,6 +679,41 @@
 </table>
 
 <br>
+@if(!empty($outOfStockTransactions) && count($outOfStockTransactions))
+    <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
+        <tr class="title">
+            <td colspan="5">{{ __('Ordered but not supplied (out of stock)') }}</td>
+        </tr>
+
+        <tr class="title">
+            <td style="width:14%;text-align:left">{{ __('Code') }}</td>
+            <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
+            <td style="width:14%;text-align:right">{{ __('Qty ordered') }}</td>
+            <td style="width:14%;text-align:right">{{ __('Qty not supplied') }}</td>
+        </tr>
+
+        <tbody class="out_of_stock">
+        @foreach($outOfStockTransactions as $transaction)
+            <tr class="@if($loop->last) last @endif">
+                <td style="text-align:left">{{ $transaction->historicAsset?->code }}</td>
+                <td style="text-align:left" colspan="2">
+                    @if(!$pro_mode && $transaction->model && $transaction->model->units > 1)
+                        {{ trimDecimalZeros($transaction->model->units) }}x
+                    @endif
+                    {{ $transaction->historicAsset?->name }}
+                </td>
+                <td style="text-align:right">{{ trimDecimalZeros($transaction->transaction?->quantity_ordered ?? 0) }}</td>
+                <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity_not_supplied ?? 0) }}</td>
+            </tr>
+        @endforeach
+        </tbody>
+    </table>
+    <div style="font-size: 8pt; color: #777; margin-top: 2mm;">
+        {{ __('These quantities were out of stock, have not been supplied and are not charged on this invoice.') }}
+    </div>
+    <br>
+@endif
+
 @if (!empty($refunds))
     <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
         <tr class="title">
@@ -588,7 +723,7 @@
         <tr class="title">
             <td style="width:14%;text-align:left">{{ __('Code') }}</td>
             <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
-            <td style="text-align:left;width:20%">{{ __('Price') }}</td>
+            <td style="text-align:left;width:18%">{{ __('Price') }}</td>
             <td style="text-align:left">{{ __('Qty') }}</td>
             <td style="width:14%;text-align:right">{{ __('Amount') }}</td>
         </tr>
@@ -614,7 +749,7 @@
 <br>
 
 @if($invoice->payments->count() >0)
-    <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
+    <table class="items" width="100%" style="font-size: 7pt; border-collapse: collapse;" cellpadding="4">
         <tr class="title">
             <td colspan="5">{{ __('Payments') }}</td>
         </tr>
@@ -631,10 +766,14 @@
         @foreach($invoice->payments as $payment)
             <tr class="@if($loop->last) last @endif">
                 <td style="text-align:left">
-                    {{ $payment->paymentAccount['name'] }}
+                    @if($payment->paymentAccount->type == \App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum::ACCOUNT)
+                        {{ __('Credit Balance') }}
+                    @else
+                        {{ \App\Models\Accounting\Payment::methodLabel($payment->sub_method ?: $payment->method) ?: $payment->paymentAccount['name'] }}
+                    @endif
                 </td>
                 <td style="text-align:right">
-                    {{ $payment->updated_at?->copy()->setTimezone($shop->timezone->name)->format('F j, Y H:i a') }}
+                    {{ $payment->updated_at?->copy()->setTimezone($shop->timezone->name)->format('M j, Y H:i') }}
                 </td>
                 <td style="text-align:left">{{ $payment->state->labels()[$payment->state->value] }}</td>
                 <td style="text-align:left">{{ $payment->reference }}</td>
@@ -642,6 +781,11 @@
             </tr>
         @endforeach
         </tbody>
+        @if($invoice->payments->contains(fn ($payment) => $payment->paymentAccount->type == \App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum::ACCOUNT && $payment->amount < 0))
+            <tr>
+                <td colspan="5" style="text-align:left; font-size: 7pt;">{{ __('Any outstanding balance has been applied to your customer account balance unless otherwise requested. Please contact Customer Service if you require any assistance.') }}</td>
+            </tr>
+        @endif
 
     </table>
 @endif

@@ -15,20 +15,20 @@ use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Best guess for the barcode a packer will scan off the shelf: when the org stock is one single
- * trade unit, the goods in the warehouse are that trade unit, so they carry its barcode.
+ * Best guess for the unit EAN a packer will find on an individual unit: when the org stock is one
+ * single trade unit, the goods in the warehouse are that trade unit, so they carry its barcode.
  *
  * Org stocks holding several copies of the same trade unit get it too, the packer scans one of the
  * units and that stands for the whole org stock, which is a thing packers have to be trained on.
  *
  * Org stocks made of several different trade units are skipped, a scan of any one of them says
- * nothing about the rest. So are the ones given a barcode by hand.
+ * nothing about the rest.
  */
 class FillOrgStockWithTradeUnitsBarcodes
 {
     use AsAction;
 
-    public string $commandSignature = 'org_stocks:fill_barcodes
+    public string $commandSignature = 'org_stocks:fill_unit_barcodes
         {--apply : Write the barcodes, without this the command only reports how many it would fill}';
 
     public function handle(OrgStock $orgStock): ?string
@@ -36,7 +36,7 @@ class FillOrgStockWithTradeUnitsBarcodes
         $barcode = $this->guess($orgStock);
 
         if ($barcode) {
-            $orgStock->update(['barcode' => $barcode]);
+            $orgStock->update(['unit_barcode' => $barcode]);
         }
 
         return $barcode;
@@ -44,10 +44,6 @@ class FillOrgStockWithTradeUnitsBarcodes
 
     public function guess(OrgStock $orgStock): ?string
     {
-        if ($orgStock->independent_barcode) {
-            return null;
-        }
-
         $tradeUnits = $orgStock->tradeUnits;
 
         if ($tradeUnits->count() != 1) {
@@ -57,7 +53,7 @@ class FillOrgStockWithTradeUnitsBarcodes
         $tradeUnit = $tradeUnits->first();
         $barcode = $tradeUnit->getAttributeValue('barcode');
 
-        if (blank($barcode) || $barcode == $orgStock->barcode) {
+        if (blank($barcode) || $barcode == $orgStock->unit_barcode) {
             return null;
         }
 
@@ -77,7 +73,7 @@ class FillOrgStockWithTradeUnitsBarcodes
         return OrgStock::where('organisation_id', $orgStock->organisation_id)
             ->where('id', '!=', $orgStock->id)
             ->where(function ($query) use ($tradeUnit, $barcode) {
-                $query->where('barcode', $barcode)
+                $query->where('unit_barcode', $barcode)
                     ->orWhere(fn ($query) => $query->where('state', '!=', OrgStockStateEnum::DISCONTINUED)
                         ->whereHas('tradeUnits', fn ($query) => $query->where('trade_units.id', $tradeUnit->id)));
             })
@@ -90,8 +86,7 @@ class FillOrgStockWithTradeUnitsBarcodes
         $filled = 0;
 
         OrgStock::where('is_single_trade_unit', true)
-            ->where('independent_barcode', false)
-            ->whereNull('barcode')
+            ->whereNull('unit_barcode')
             ->with('tradeUnits')
             ->chunkById(1000, function ($orgStocks) use ($apply, &$filled) {
                 foreach ($orgStocks as $orgStock) {

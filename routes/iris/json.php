@@ -26,6 +26,8 @@ use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsOfVariant;
 use App\Actions\Catalogue\Product\Json\GetVariantAndProducts;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesComparisonDetail;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesForComparisonOption;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\Shop\Json\FetchProductReviewThirdParty;
 use App\Actions\CRM\WebUser\Retina\Json\GetRedirectUrl;
@@ -52,6 +54,7 @@ use App\Actions\Retina\Dropshipping\Portfolio\ZentradaWebApi;
 use App\Actions\Reviews\GetReviewableReviews;
 use App\Actions\Reviews\GetReviews;
 use App\Actions\Reviews\Iris\GetIrisReviews;
+use App\Actions\Search\GetIrisSearchFeaturedItems;
 use App\Actions\Search\RecordWebsiteSearchClick;
 use App\Actions\Search\SearchIrisCatalogue;
 use App\Actions\Search\SearchIrisCataloguePage;
@@ -85,6 +88,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('search/catalogue', SearchIrisCatalogue::class)->name('search.catalogue')->middleware('throttle:iris-search');
     Route::get('search/catalogue-page', SearchIrisCataloguePage::class)->name('search.catalogue_page')->middleware('throttle:iris-search');
     Route::post('search/click', RecordWebsiteSearchClick::class)->name('search.click')->middleware('throttle:iris-search');
+    Route::get('search/featured-items', GetIrisSearchFeaturedItems::class)->name('search.featured_items')->middleware('throttle:iris-search');
 
     Route::get('/sidebar', GetIrisSidebarData::class)->name('sidebar');
     Route::get('/footer', GetIrisFooterData::class)->name('footer');
@@ -134,6 +138,9 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     // Families list under department page
     Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
+    // Families list for range comparison in Family Page Workshop
+    Route::get('{productCategory}/comparison-detail', GetFamiliesComparisonDetail::class)->name('website.category.comparison_detail');
+    Route::get('{productCategory}/comparison-option', GetFamiliesForComparisonOption::class)->name('website.category.comparison_option');
 
     Route::get('{webpage:slug}/reviews', FetchIrisReviewsInWebpage::class)->name('fetch_reviews');
     Route::get('reviews/{webpage:id}', GetIrisReviews::class)->name('fetch_reviews_new')->whereNumber('webpage');

@@ -91,7 +91,6 @@ class ZentradaWebApi extends RetinaAction
                 'products.gross_weight',
                 'products.marketing_dimensions',
                 'products.marketing_ingredients',
-                'products.offers_data',
                 'products.tariff_code',
                 'products.country_of_origin',
                 'products.web_images',
@@ -146,7 +145,7 @@ class ZentradaWebApi extends RetinaAction
             'quantity_of_units_per_package'           => $unitsPerPackage,
             'minimum_order_quantity_in_packing_units' => 1,
             'net_price_per_unit'                      => ($row->price ?? 0) / $unitsPerPackage,
-            'promotion_discount'                      => $this->promotionDiscount($row),
+            'promotion_discount'                      => '',
             'volumedbasedpricing_quantity1'           => '',
             'volumebasedpricing_price1'               => '',
             'volumedbasedpricing_quantity2'           => '',
@@ -231,17 +230,6 @@ class ZentradaWebApi extends RetinaAction
         }
 
         return ($product->gross_weight ?? 0) / $unitsPerPackage;
-    }
-
-    /**
-     * Percentage points without the sign, as Zentrada expects: a 3% discount is 3. The offers data
-     * is cleared when an offer finishes, which leaves the promotion at 0.
-     */
-    private function promotionDiscount(Product $product): string
-    {
-        $percentageOff = (float) Arr::get($product->offers_data, 'best_percentage_off.percentage_off', 0);
-
-        return rtrim(rtrim(number_format($percentageOff * 100, 2, '.', ''), '0'), '.') ?: '0';
     }
 
     private function detailedDescription(Product $product, string $shortDescription): string

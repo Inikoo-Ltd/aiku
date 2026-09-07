@@ -44,6 +44,13 @@ class GetMasterProductImages
                     'masterAsset' => $masterAsset->id,
                 ],
             ],
+            'upload_audio_route' => [
+                'method'     => 'post',
+                'name'       => 'grp.models.master_asset.upload_audio',
+                'parameters' => [
+                    'masterAsset' => $masterAsset->id,
+                ],
+            ],
             'delete_images_route' => [
                 'method'     => 'post',
                 'name'       => 'grp.models.master_asset.delete_images',

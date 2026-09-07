@@ -15,6 +15,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -73,7 +74,10 @@ class SubDepartmentHydrateProducts implements ShouldBeUnique
             ->where('state', ProductStateEnum::DISCONTINUING)
             ->count();
 
-        $stats['number_current_products'] = $numberCurrentProductsActiveForSale + $numberCurrentProductsDiscontinuingForSale;
+        // Counted the same way as number_current_families: by state, not by whether it is for
+        // sale. The enum stats above already restrict this to main products.
+        $stats['number_current_products'] = Arr::get($stats, 'number_products_state_active', 0)
+            + Arr::get($stats, 'number_products_state_discontinuing', 0);
 
         UpdateProductCategory::make()->action(
             $subDepartment,

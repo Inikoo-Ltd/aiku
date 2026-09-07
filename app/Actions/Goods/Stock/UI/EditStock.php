@@ -78,11 +78,11 @@ class EditStock extends OrgAction
                             'label'  => __('Properties'),
                             'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
-                                'code' => [
-                                    'type'  => 'input',
-                                    'label' => __('Code'),
-                                    'value' => $stock->code
-                                ],
+                                // 'code' => [
+                                //     'type'  => 'input',
+                                //     'label' => __('Code'),
+                                //     'value' => $stock->code
+                                // ],
                                 'name' => [
                                     'type'  => 'input',
                                     'label' => __('Name'),

@@ -16,6 +16,7 @@ use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
+use App\Models\Production\Artefact;
 use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Http\RedirectResponse;
@@ -35,6 +36,14 @@ class StoreTag extends OrgAction
         $this->initialisationFromGroup($tradeUnit->group, $request);
 
         $this->handle($tradeUnit, $this->validatedData);
+    }
+
+    public function inArtefact(Artefact $artefact, ActionRequest $request): void
+    {
+        $this->forcedScope = TagScopeEnum::ARTEFACT;
+        $this->initialisationFromGroup($artefact->group, $request);
+
+        $this->handle($artefact, $this->validatedData);
     }
 
     public function inCustomer(Customer $customer, ActionRequest $request): void
@@ -101,7 +110,7 @@ class StoreTag extends OrgAction
         }
     }
 
-    public function handle(Shop|Customer|TradeUnit $parent, array $modelData): Tag
+    public function handle(Shop|Customer|TradeUnit|Artefact $parent, array $modelData): Tag
     {
         if (isset($this->group)) {
             data_set($modelData, 'group_id', $this->group->id);
@@ -136,7 +145,7 @@ class StoreTag extends OrgAction
             );
         }
 
-        if ($parent instanceof TradeUnit || $parent instanceof Customer) {
+        if ($parent instanceof TradeUnit || $parent instanceof Customer || $parent instanceof Artefact) {
             AttachTagsToModel::make()->handle($parent, ['tags_id' => [$tag->id]]);
         }
 

@@ -10,11 +10,15 @@
 
 namespace App\Actions\Helpers\AI;
 
+use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
 use App\Actions\OrgAction;
 use OpenAI;
+use Throwable;
 
 class GetGeneratedProductDescription extends OrgAction
 {
+    use WithAICreditErrorHandler;
+
     public function handle(string $prompt, array $metadata = []): string
     {
         $client   = OpenAI::client(config('services.openai.api_key'));
@@ -38,14 +42,20 @@ class GetGeneratedProductDescription extends OrgAction
             'text' => $prompt ?: 'Generate a product description based on the provided images.',
         ];
 
-        $response = $client->chat()->create([
-            'model'      => 'gpt-4o',
-            'messages'   => [
-                ['role' => 'system', 'content' => $systemPrompt],
-                ['role' => 'user',   'content' => $userContent],
-            ],
-            'max_tokens' => 500,
-        ]);
+        try {
+            $response = $client->chat()->create([
+                'model'      => 'gpt-4o',
+                'messages'   => [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user',   'content' => $userContent],
+                ],
+                'max_tokens' => 500,
+            ]);
+        } catch (Throwable $e) {
+            $this->rethrowAICreditThrowable($e);
+
+            throw $e;
+        }
 
         return trim($response->choices[0]->message->content);
     }

@@ -17,6 +17,7 @@ use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class CheckProductMasters
 {
@@ -46,6 +47,7 @@ class CheckProductMasters
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         //        if ($command->argument('product')) {
         //            $product = Product::find($command->argument('product'));
         //            $this->handle($product, $command);

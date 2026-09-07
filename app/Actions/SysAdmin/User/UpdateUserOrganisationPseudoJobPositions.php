@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\User;
 
+use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\CleanUserCaches;
 use App\Actions\Traits\WithActionUpdate;
@@ -19,7 +20,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateUserOrganisationPseudoJobPositions extends OrgAction
@@ -28,15 +28,18 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
     use WithPreparePositionsForValidation;
     use WithReorganisePositions;
 
-    private User $user;
-
     public function handle(User $user, Organisation $organisation, array $modelData): User
     {
         setPermissionsTeamId($user->group->id);
         $jobPositions = Arr::pull($modelData, 'job_positions', []);
         $jobPositions = $this->reorganisePositionsSlugsToIds($jobPositions);
 
-        SyncUserPseudoOrganisationJobPositions::run($user, $organisation, $jobPositions);
+        $employee = $user->employees()->where('employees.organisation_id', $organisation->id)->first();
+        if ($employee) {
+            SyncEmployeeJobPositions::run($employee, $jobPositions);
+        } else {
+            SyncUserPseudoOrganisationJobPositions::run($user, $organisation, $jobPositions);
+        }
         CleanUserCaches::run($user);
         BreakUserUiProps::run($user);
 
@@ -62,6 +65,7 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
             'job_positions.*.scopes.warehouses.slug.*'  => ['sometimes', Rule::exists('warehouses', 'slug')->where('organisation_id', $this->organisation->id)],
             'job_positions.*.scopes.fulfilments.slug.*' => ['sometimes', Rule::exists('fulfilments', 'slug')->where('organisation_id', $this->organisation->id)],
             'job_positions.*.scopes.shops.slug.*'       => ['sometimes', Rule::exists('shops', 'slug')->where('organisation_id', $this->organisation->id)],
+            'job_positions.*.scopes.productions.slug.*' => ['sometimes', Rule::exists('productions', 'slug')->where('organisation_id', $this->organisation->id)],
 
         ];
     }
@@ -70,25 +74,9 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
     {
         $this->asAction     = true;
         $this->organisation = $organisation;
-        $this->user         = $user;
         $this->initialisation($organisation, $modelData);
 
         return $this->handle($user, $organisation, $this->validatedData);
-    }
-
-    public function afterValidator(Validator $validator, ActionRequest $request): void
-    {
-        if ($this->asAction) {
-            $userToUpdate = $this->user;
-        } else {
-            $userToUpdate = $request->route()->parameter('user');
-        }
-
-        $employee = $userToUpdate->employees->where('organisation_id', $this->organisation->id)->first();
-
-        if ($employee) {
-            $validator->errors()->add('permissions', 'User is an employee of the organisation');
-        }
     }
 
     public function prepareForValidation(ActionRequest $request): void

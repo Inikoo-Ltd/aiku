@@ -13,13 +13,9 @@ use App\Actions\Catalogue\HistoricAsset\UpdateHistoricAsset;
 use App\Models\Catalogue\HistoricAsset;
 use App\Transfers\SourceOrganisationService;
 use Illuminate\Support\Facades\DB;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-class FetchAuroraHistoricAssets
+class FetchAuroraHistoricAssets extends FetchAuroraAction
 {
-    use AsAction;
-
-
     public function handle(SourceOrganisationService $organisationSource, int $source_id): ?HistoricAsset
     {
         $historicProductData = $organisationSource->fetchHistoricAsset($source_id);

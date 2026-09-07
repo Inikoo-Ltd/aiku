@@ -2,6 +2,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
@@ -21,26 +22,38 @@ use App\Models\Procurement\PurchaseOrderTransaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreStockDeliveryFromPurchaseOrder extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use AsAction;
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
+    private PurchaseOrder $purchaseOrder;
 
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-    }
-
-    public function handle(PurchaseOrder $purchaseOrder): StockDelivery
+    public function handle(PurchaseOrder $purchaseOrder, array $modelData = []): StockDelivery
     {
         if ($purchaseOrder->state !== PurchaseOrderStateEnum::CONFIRMED) {
             abort(422, __('Only confirmed purchase orders can create a stock delivery'));
+        }
+
+        $purchaseOrderTransactionsQuery = $purchaseOrder->purchaseOrderTransactions()
+            ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)
+            ->with(['historicSupplierProduct', 'orgStock']);
+
+        if (array_key_exists('purchase_order_transaction_ids', $modelData)) {
+            $purchaseOrderTransactionsQuery->whereIn('id', $modelData['purchase_order_transaction_ids']);
+        }
+
+        $purchaseOrderTransactions = $purchaseOrderTransactionsQuery->get();
+
+        if ($purchaseOrderTransactions->isEmpty()) {
+            throw ValidationException::withMessages([
+                'purchase_order_transaction_ids' => __('Select at least one purchase order item'),
+            ]);
         }
 
         $stockDelivery = StoreStockDelivery::make()->action(
@@ -67,10 +80,6 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
             'delivery_state' => PurchaseOrderDeliveryStateEnum::from($stockDelivery->state->value),
         ]);
 
-        $purchaseOrderTransactions = $purchaseOrder->purchaseOrderTransactions()
-            ->where('state', '!=', PurchaseOrderTransactionStateEnum::CANCELLED)
-            ->get();
-
         foreach ($purchaseOrderTransactions as $purchaseOrderTransaction) {
             StoreStockDeliveryItem::run(
                 $stockDelivery,
@@ -80,12 +89,15 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
                     'state'         => StockDeliveryItemStateEnum::IN_PROCESS,
                     'unit_quantity' => $purchaseOrderTransaction->quantity_ordered,
                     'net_amount'    => $purchaseOrderTransaction->net_amount,
+                    'data'          => [
+                        'purchase_order_transaction_id' => $purchaseOrderTransaction->id,
+                    ],
                 ], $this->getExchanges($purchaseOrderTransaction))
             );
         }
 
         $purchaseOrder->purchaseOrderTransactions()
-            ->where('state', '!=', PurchaseOrderTransactionStateEnum::CANCELLED)
+            ->whereIn('id', $purchaseOrderTransactions->modelKeys())
             ->where('delivery_state', '!=', PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS)
             ->update(['delivery_state' => PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS]);
 
@@ -98,22 +110,44 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
 
     public function asController(PurchaseOrder $purchaseOrder, ActionRequest $request): StockDelivery
     {
+        $this->purchaseOrder = $purchaseOrder;
         $this->initialisation($purchaseOrder->organisation, $request);
 
-        return $this->handle($purchaseOrder);
+        return $this->handle($purchaseOrder, $this->validatedData);
     }
 
-    public function action(PurchaseOrder $purchaseOrder): StockDelivery
+    public function rules(): array
+    {
+        return [
+            'purchase_order_transaction_ids'   => ['sometimes', 'array', 'min:1'],
+            'purchase_order_transaction_ids.*' => [
+                'required',
+                'integer',
+                'distinct',
+                Rule::exists('purchase_order_transactions', 'id')->where(
+                    fn ($query) => $query
+                        ->where('purchase_order_id', $this->purchaseOrder->id)
+                        ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED->value)
+                ),
+            ],
+        ];
+    }
+
+    public function action(PurchaseOrder $purchaseOrder, array $modelData = []): StockDelivery
     {
         $this->asAction = true;
-        $this->initialisation($purchaseOrder->organisation, []);
+        $this->purchaseOrder = $purchaseOrder;
+        $this->initialisation($purchaseOrder->organisation, $modelData);
 
-        return $this->handle($purchaseOrder);
+        return $this->handle($purchaseOrder, $this->validatedData);
     }
 
-    public function htmlResponse(): RedirectResponse
+    public function htmlResponse(StockDelivery $stockDelivery): RedirectResponse
     {
-        return Redirect::back();
+        return Redirect::route('grp.org.procurement.stock_deliveries.show', [
+            'organisation' => $stockDelivery->organisation->slug,
+            'stockDelivery' => $stockDelivery->slug,
+        ]);
     }
 
     public function jsonResponse(StockDelivery $stockDelivery): StockDeliveryResource

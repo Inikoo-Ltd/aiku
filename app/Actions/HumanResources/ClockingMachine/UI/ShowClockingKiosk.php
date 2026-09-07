@@ -9,6 +9,8 @@
 namespace App\Actions\HumanResources\ClockingMachine\UI;
 
 use App\Actions\HumanResources\ClockingMachine\WithClockingKioskToken;
+use App\Actions\HumanResources\Employee\SetEmployeePin;
+use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -23,12 +25,28 @@ class ShowClockingKiosk
     {
         $clockingMachine = $this->resolveKioskMachine($kioskToken);
 
+        $mode = match ($clockingMachine->type) {
+            ClockingMachineTypeEnum::BARCODE_SCANNER->value => 'barcode',
+            ClockingMachineTypeEnum::CAMERA_QR->value       => 'camera_qr',
+            default                                         => 'pin',
+        };
+
+        $this->assertKioskModeEnabled($clockingMachine, $mode);
+
+        $pinCharacterSet = null;
+        if ($mode === 'pin') {
+            [$letters, $numbers] = SetEmployeePin::make()->pinCharacterSet();
+            $pinCharacterSet = compact('letters', 'numbers');
+        }
+
         return Inertia::render(
             'Org/HumanResources/ClockingKiosk',
             [
-                'title'       => __('Employee Scan'),
-                'machineName' => $clockingMachine->name,
-                'kioskToken'  => $kioskToken,
+                'title'           => __('Employee Clocking'),
+                'machineName'     => $clockingMachine->name,
+                'kioskToken'      => $kioskToken,
+                'mode'            => $mode,
+                'pinCharacterSet' => $pinCharacterSet,
             ]
         );
     }

@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Discounts;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\OfferCampaign;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairOfferCampaignBracket
 {
@@ -20,6 +21,7 @@ class RepairOfferCampaignBracket
 
     public function asCommand(): void
     {
+        Nightwatch::dontSample();
         $shops = Shop::all();
 
         foreach ($shops as $shop) {

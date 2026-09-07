@@ -14,6 +14,7 @@ use App\Models\Helpers\Address;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairAddressChecksum
 {
@@ -37,6 +38,7 @@ class RepairAddressChecksum
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
 
 
         $address = Address::find($command->argument('address_id'));

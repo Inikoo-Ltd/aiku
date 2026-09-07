@@ -3,7 +3,7 @@ import IrisSidebar from '@/Components/IrisSidebar.vue'
 import { getStyles } from "@/Composables/styles";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
-import { inject, ref, onMounted } from 'vue';
+import { inject, ref, onMounted, defineAsyncComponent } from 'vue';
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGalaxy, faTimesCircle, faUserCircle } from "@fas";
 import { faBaby, faShoppingCart as falShoppingCart, faCactus, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faUserCircle as falUserCircle, faBars } from "@fal";
@@ -33,8 +33,8 @@ import { faLambda } from "@fad";
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { computed } from 'vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
-import LuigiSearchMobile from '../../LuigiSearchMobile.vue'
-import IrisSearchMobile from '@/Iris/Components/IrisSearchMobile.vue'
+const LuigiSearchMobile = defineAsyncComponent(() => import('@/Components/CMS/LuigiSearchMobile.vue'))
+const IrisSearchMobile = defineAsyncComponent(() => import('@/Iris/Components/IrisSearchMobile.vue'))
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 
 // Add icons to the library

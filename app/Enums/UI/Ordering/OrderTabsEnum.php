@@ -17,6 +17,7 @@ enum OrderTabsEnum: string
     use HasTabs;
 
     case TRANSACTIONS                       = 'transactions';
+    case MARKETING                          = 'marketing';
 
     // case HISTORY
     case HISTORY           = 'history';
@@ -41,6 +42,10 @@ enum OrderTabsEnum: string
             OrderTabsEnum::TRANSACTIONS => [
                 'title' => __('Transactions'),
                 'icon'  => 'fal fa-bars',
+            ],
+            OrderTabsEnum::MARKETING => [
+                'title' => __('Marketing'),
+                'icon'  => 'fal fa-bullhorn',
             ],
             OrderTabsEnum::PAYMENTS => [
                 'type'  => 'icon',

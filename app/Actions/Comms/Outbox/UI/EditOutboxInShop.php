@@ -79,9 +79,6 @@ class EditOutboxInShop extends OrgAction
         $fields[] = $subjectField; // init fields
 
         switch ($outbox->code) {
-            case OutboxCodeEnum::REORDER_REMINDER:
-            case OutboxCodeEnum::REORDER_REMINDER_2ND:
-            case OutboxCodeEnum::REORDER_REMINDER_3RD:
             case OutboxCodeEnum::GOLD_REWARD_REMINDER_1:
             case OutboxCodeEnum::GOLD_REWARD_REMINDER_2:
             case OutboxCodeEnum::GOLD_REWARD_REMINDER_3:
@@ -134,8 +131,25 @@ class EditOutboxInShop extends OrgAction
                             'type' => 'input_number',
                             'label' => __('Days after order dispatched'),
                             'placeholder' => __('Days after order dispatched'),
-                            'required' => false,
-                            'value' => $outbox->days_after ?? 10,
+                            'required' => true,
+                            'value' => $outbox->days_after,
+                        ],
+                    ]
+                ];
+                break;
+            case OutboxCodeEnum::ABANDONED_CART_REMINDER_1:
+            case OutboxCodeEnum::ABANDONED_CART_REMINDER_2:
+            case OutboxCodeEnum::ABANDONED_CART_REMINDER_3:
+                $fields[] = [
+                    'title' => '',
+                    'fields' => [
+                        'interval' => [
+                            'type' => 'input_number',
+                            'label' => __('Send After Cart Abandoned (Hours)'),
+                            'placeholder' => __('Hours after the first item was added to the cart'),
+                            'information' => __('Number of hours to wait after the first item was added to the cart before sending this reminder.'),
+                            'required' => true,
+                            'value' => $outbox->interval
                         ],
                     ]
                 ];

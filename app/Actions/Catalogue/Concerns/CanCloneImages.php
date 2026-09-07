@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Concerns;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateImages;
 use App\Actions\Catalogue\Product\UpdateProductWebImages;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoImage;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -50,7 +51,7 @@ trait CanCloneImages
         foreach ($source->images as $image) {
             $images[$image->id] = [
                 'is_public'       => true,
-                'scope'           => 'photo',
+                'scope'           => $image->pivot->scope === 'audio' ? 'audio' : 'photo',
                 'sub_scope'       => $image->pivot->sub_scope,
                 'caption'         => $image->pivot->caption,
                 'organisation_id' => $target->organisation_id ?? null,
@@ -67,6 +68,10 @@ trait CanCloneImages
 
     protected function syncProductImages(TradeUnit|MasterAsset|Model $source, Product $product): void
     {
+        if ($product->not_follow_master_media) {
+            return;
+        }
+
         $this->cloneImages($source, $product);
 
         $product->update([
@@ -86,6 +91,7 @@ trait CanCloneImages
             'art4_image_id'            => $source->art4_image_id,
             'art5_image_id'            => $source->art5_image_id,
             'lifestyle_image_id'       => $source->lifestyle_image_id,
+            'audio_id'                 => $source->audio_id,
             'video_url'                => $source->video_url,
         ]);
 
@@ -93,6 +99,10 @@ trait CanCloneImages
 
         if (!empty($changed)) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);
+        }
+
+        if (Arr::has($changed, 'image_id')) {
+            ShopHydrateProductsWithNoImage::dispatch($product->shop)->delay(2);
         }
 
         ProductHydrateImages::run($product);

@@ -18,6 +18,7 @@ use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitFamily;
 use App\Models\Helpers\Tag;
+use App\Models\Production\Artefact;
 use Exception;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -31,6 +32,27 @@ class AttachTagsToModel extends OrgAction
             $this->forcedScope = TagScopeEnum::PRODUCT_PROPERTY;
             $this->initialisationFromGroup($tradeUnit->group, $request);
             $this->handle($tradeUnit, $this->validatedData);
+
+            request()->session()->flash('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tags successfully attached.'),
+            ]);
+        } catch (Exception $e) {
+            request()->session()->flash('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function inArtefact(Artefact $artefact, ActionRequest $request): void
+    {
+        try {
+            $this->forcedScope = TagScopeEnum::ARTEFACT;
+            $this->initialisationFromGroup($artefact->group, $request);
+            $this->handle($artefact, $this->validatedData);
 
             request()->session()->flash('notification', [
                 'status'  => 'success',
@@ -88,12 +110,15 @@ class AttachTagsToModel extends OrgAction
         }
     }
 
-    public function action(TradeUnit|TradeUnitFamily|Customer $parent, array $modelData, $replace = false): void
+    public function action(TradeUnit|TradeUnitFamily|Customer|Artefact $parent, array $modelData, $replace = false): void
     {
         $hasSession = request()->hasSession();
         try {
             if ($parent instanceof TradeUnit || $parent instanceof TradeUnitFamily) {
                 $this->forcedScope = TagScopeEnum::PRODUCT_PROPERTY;
+                $this->initialisationFromGroup($parent->group, $modelData);
+            } elseif ($parent instanceof Artefact) {
+                $this->forcedScope = TagScopeEnum::ARTEFACT;
                 $this->initialisationFromGroup($parent->group, $modelData);
             } else {
                 $this->initialisationFromShop($parent->shop, $modelData);
@@ -119,7 +144,7 @@ class AttachTagsToModel extends OrgAction
         }
     }
 
-    public function handle(TradeUnit|TradeUnitFamily|Customer $model, array $modelData, $replace = false): void
+    public function handle(TradeUnit|TradeUnitFamily|Customer|Artefact $model, array $modelData, $replace = false): void
     {
         if ($replace) {
             $model->tags()->sync($modelData['tags_id']);

@@ -35,8 +35,9 @@ class RefundInProcessTaxOnlyTransactionsResource extends JsonResource
         $taxChargeAmount = round($this->net_amount * $this->tax_rate, 2);
 
         $packedInMessage = '';
-        if ($this->model_type === 'Product' && $this->model && $this->model->units > 1) {
-            $packedInMessage = '('.__('Pack of').": " . trimDecimalZeros($this->model->units) . ")";
+        $units = soldPackUnits($this->historicAsset?->units, $this->model?->units);
+        if ($this->model_type === 'Product' && $units > 1) {
+            $packedInMessage = '('.__('Pack of').": " . trimDecimalZeros($units) . ")";
         }
 
         return [

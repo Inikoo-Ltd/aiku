@@ -35,7 +35,7 @@ class CustomerHydrateExclusiveProducts implements ShouldBeUnique
         }
 
         $stats = [
-            'number_exclusive_products'         => $customer->exclusiveProducts()->count(),
+            'number_exclusive_products'         => $customer->allExclusiveProducts()->count(),
         ];
         $customer->update($stats);
     }

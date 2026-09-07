@@ -49,9 +49,12 @@ class UpdateBundle extends OrgAction
 
             /** @var Product $product */
             $product = $bundle->bundleable;
+            $portfolio = Portfolio::where('bundle_id', $bundle->id)->first();
             $shopBundleDiscount = Arr::get($product->shop->settings, 'discount.bundle_discount_percentage', 10);
 
             $this->update($product, Arr::only($modelData, ['name', 'description', 'rrp']));
+
+            $portfolioData = $this->getPortfolioPresentationData($modelData);
 
             /** @var array $mainMedia */
             $mainMedia = collect(Arr::get($modelData, 'images'))->where('is_main', true)->first();
@@ -115,18 +118,14 @@ class UpdateBundle extends OrgAction
                 });
                 $productRrp = $productRrp * (1 - ($shopBundleDiscount / 100));
 
-                $portfolio = Portfolio::where('bundle_id', $bundle->id)->first();
-
                 UpdateProduct::run($product, [
                     'trade_units' => $tradeUnits,
                     'price' => $productPrice,
                     'rrp' => $productRrp,
                 ]);
 
-                UpdatePortfolio::make()->action($portfolio, [
-                    'selling_price' => $productRrp,
-                    'customer_price' => $productRrp
-                ]);
+                data_set($portfolioData, 'selling_price', $productRrp);
+                data_set($portfolioData, 'customer_price', $productRrp);
             }
 
             if (! blank($selectedProducts)) {
@@ -176,12 +175,31 @@ class UpdateBundle extends OrgAction
                 ]);
             }
 
+            if ($portfolio && $portfolioData) {
+                UpdatePortfolio::make()->action($portfolio, $portfolioData);
+            }
+
             $bundle->refresh();
 
             ShopHydrateBundles::dispatch($bundle->customer->shop)->delay($this->hydratorsDelay);
 
             return $bundle;
         });
+    }
+
+    private function getPortfolioPresentationData(array $modelData): array
+    {
+        $portfolioData = [];
+
+        if (Arr::exists($modelData, 'name')) {
+            data_set($portfolioData, 'customer_product_name', Arr::get($modelData, 'name'));
+        }
+
+        if (Arr::exists($modelData, 'description')) {
+            data_set($portfolioData, 'customer_description', Arr::get($modelData, 'description'));
+        }
+
+        return $portfolioData;
     }
 
     public function processDelete(Bundle $bundle, array $selectedProducts): array

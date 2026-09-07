@@ -13,6 +13,7 @@ use App\Models\Inventory\OrgStock;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairOrgStocksPackedIn
 {
@@ -22,6 +23,7 @@ class RepairOrgStocksPackedIn
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $chunkSize = 100; // Process 100 records at a time to save memory
         $count = 0;
 

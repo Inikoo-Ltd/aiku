@@ -17,6 +17,11 @@ class GetOrgStockFamilyTimeSeriesData
     use AsObject;
     use WithTimeSeriesData;
 
+    protected function timeSeriesSalesColumn(): string
+    {
+        return 'sales_org_currency_external';
+    }
+
     public function handle(OrgStockFamily $orgStockFamily): array
     {
         $currency = $orgStockFamily->organisation->currency->code;

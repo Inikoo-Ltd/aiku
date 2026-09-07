@@ -11,7 +11,6 @@ use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardAllowance
 use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardTermsEnum;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -59,7 +58,7 @@ class UpdateManufactureTask extends OrgAction
                         [
                             'column'    => 'id',
                             'value'     => $this->manufactureTask->id,
-                            'operation' => '!='
+                            'operator'  => '!='
                         ]
 
                     ]
@@ -75,10 +74,11 @@ class UpdateManufactureTask extends OrgAction
             'operative_reward_terms'            => ['sometimes', Rule::enum(ManufactureTaskOperativeRewardTermsEnum::class)],
             'operative_reward_allowance_type'   => ['sometimes', Rule::enum(ManufactureTaskOperativeRewardAllowanceTypeEnum::class)],
             'operative_reward_amount'           => ['sometimes', 'numeric', 'min:0'],
+            'is_piece_rate'                     => ['sometimes', 'boolean'],
         ];
     }
 
-    public function asController(Organisation $organisation, Production $production, ManufactureTask $manufactureTask, ActionRequest $request): ManufactureTask
+    public function asController(Production $production, ManufactureTask $manufactureTask, ActionRequest $request): ManufactureTask
     {
         $this->manufactureTask = $manufactureTask;
         $this->initialisationFromProduction($manufactureTask->production, $request);

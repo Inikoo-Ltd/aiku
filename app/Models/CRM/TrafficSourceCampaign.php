@@ -5,6 +5,7 @@ namespace App\Models\CRM;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -19,6 +20,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $type
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string|null $channel_type
+ * @property-read \App\Models\CRM\TrafficSourceCampaignStat|null $stats
  * @property-read \App\Models\CRM\TrafficSource $trafficSource
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceCampaign newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceCampaign newQuery()
@@ -48,5 +51,10 @@ class TrafficSourceCampaign extends Model
     public function trafficSource(): BelongsTo
     {
         return $this->belongsTo(TrafficSource::class, 'traffic_source_id');
+    }
+
+    public function stats(): HasOne
+    {
+        return $this->hasOne(TrafficSourceCampaignStat::class);
     }
 }

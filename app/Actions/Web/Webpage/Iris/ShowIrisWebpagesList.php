@@ -41,24 +41,24 @@ class ShowIrisWebpagesList
                 $query = DB::table('webpages')
                     ->leftJoin('products', 'webpages.model_id', '=', 'products.id')
                     ->leftJoin('assets', 'products.asset_id', '=', 'assets.id')
-                    ->select(['webpages.id', 'webpages.url', 'webpages.canonical_url','sales_1q'])
+                    ->select(['webpages.id', 'webpages.url', 'webpages.canonical_url'])
                     ->where('webpages.website_id', $website->id)
                     ->whereNull('webpages.deleted_at')
                     ->where('webpages.state', WebpageStateEnum::LIVE->value)
                     ->where('products.state', ProductStateEnum::ACTIVE->value)
                     ->where('webpages.sub_type', 'product')
-                    ->orderBy('sales_1q', 'desc')
+                    ->orderBy('webpages.id')
                     ->limit(4000);
             } elseif ($mode == 'families') {
                 $query = DB::table('webpages')
                     ->leftJoin('product_categories', 'webpages.model_id', '=', 'product_categories.id')
-                    ->select(['webpages.id', 'webpages.url', 'webpages.canonical_url','sales_1q'])
+                    ->select(['webpages.id', 'webpages.url', 'webpages.canonical_url'])
                     ->where('product_categories.state', ProductCategoryStateEnum::ACTIVE->value)
                     ->where('webpages.website_id', $website->id)
                     ->whereNull('webpages.deleted_at')
                     ->where('webpages.state', WebpageStateEnum::LIVE->value)
                     ->where('webpages.sub_type', 'family')
-                    ->orderBy('sales_1q', 'desc')
+                    ->orderBy('webpages.id')
                     ->limit(750);
 
             } elseif ($mode == 'base') {

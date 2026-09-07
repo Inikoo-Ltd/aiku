@@ -15,6 +15,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMissingSubDepartmentInProduct
 {
@@ -35,6 +36,7 @@ class RepairMissingSubDepartmentInProduct
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->argument('productCategory')) {
             $productCategory = ProductCategory::find($command->argument('productCategory'));
             $products = $productCategory->getProducts()->whereNull('sub_department_id');

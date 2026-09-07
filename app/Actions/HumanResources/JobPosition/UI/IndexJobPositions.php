@@ -64,15 +64,26 @@ class IndexJobPositions extends OrgAction
         } else {
             $queryBuilder->leftJoin('employee_has_job_positions', 'job_positions.id', 'employee_has_job_positions.job_position_id');
             $queryBuilder->where('employee_id', $parent->id);
-            $queryBuilder->addSelect('employee_has_job_positions.share');
         }
         $queryBuilder->leftjoin('organisations', 'job_positions.organisation_id', '=', 'organisations.id');
-        $queryBuilder->select(['job_positions.code', 'job_positions.slug', 'job_positions.name', 'job_position_stats.number_employees_currently_working', 'organisations.name as organisation_name', 'organisations.slug as organisation_slug']);
+        $queryBuilder->select([
+            'job_positions.code as code',
+            'job_positions.slug as slug',
+            'job_positions.name as name',
+            'job_position_stats.number_employees_currently_working',
+            'organisations.name as organisation_name',
+            'organisations.slug as organisation_slug',
+        ]);
+
+        $allowedSorts = ['code', 'name', 'number_employees_currently_working'];
+        if ($parent instanceof Employee) {
+            $queryBuilder->addSelect('employee_has_job_positions.share');
+            $allowedSorts[] = 'share';
+        }
 
         return $queryBuilder
-            ->select(['job_positions.code as code', 'job_positions.slug as slug', 'job_positions.name as name', 'job_position_stats.number_employees_currently_working', 'organisations.name as organisation_name', 'organisations.slug as organisation_slug'])
             ->defaultSort('code')
-            ->allowedSorts(['code', 'name', 'number_employees_currently_working', 'share'])
+            ->allowedSorts($allowedSorts)
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -98,6 +109,10 @@ class IndexJobPositions extends OrgAction
                         'title' => __("No responsibilities found"),
                         'count' => $parent->humanResourcesStats->number_job_positions,
                     ],
+                    'Group' => [
+                        'title' => __("No responsibilities found"),
+                        'count' => $parent->humanResourcesStats->number_job_positions,
+                    ],
                     'Employee' => [
                         'title' => __("Employee has no responsibilities"),
                         'count' => $parent->stats->number_job_positions
@@ -114,10 +129,10 @@ class IndexJobPositions extends OrgAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
-            if ($parent instanceof Organisation) {
-                $table->column(key: 'number_employees_currently_working', label: __('Employees'), canBeHidden: false, sortable: true, searchable: true);
+            if ($parent instanceof Employee) {
+                $table->column(key: 'share', label: __('Share'), canBeHidden: false, sortable: true);
             } else {
-                $table->column(key: 'share', label: __('Share'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'number_employees_currently_working', label: __('Employees'), canBeHidden: false, sortable: true);
             }
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);

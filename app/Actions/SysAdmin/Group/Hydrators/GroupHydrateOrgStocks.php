@@ -42,6 +42,7 @@ class GroupHydrateOrgStocks implements ShouldBeUnique
             'number_org_stocks' => $queryBase->clone()->count(),
             'number_current_org_stocks' => $queryBase->clone()->whereIn('state', [OrgStockStateEnum::ACTIVE->value, OrgStockStateEnum::DISCONTINUING->value])->count(),
             'number_dropped_org_stocks' => $queryBase->clone()->whereIn('state', [OrgStockStateEnum::DISCONTINUED->value, OrgStockStateEnum::ABNORMALITY->value])->count(),
+            'number_org_stocks_excluded_from_auto_ordering' => $queryBase->clone()->where('is_excluded_from_auto_ordering', true)->count(),
         ];
 
         $stats = array_merge(

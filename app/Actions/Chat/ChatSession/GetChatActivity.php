@@ -34,6 +34,9 @@ class GetChatActivity
                     ChatEventTypeEnum::GUEST_PROFILE,
                     ChatEventTypeEnum::REOPEN,
                     ChatEventTypeEnum::JIRA_TICKET,
+                    ChatEventTypeEnum::TICKET,
+                    ChatEventTypeEnum::SPAM,
+                    ChatEventTypeEnum::NOT_SPAM,
                 ])
                 ->with(['actor'])
                 ->orderBy('created_at', 'desc')
@@ -151,7 +154,16 @@ class GetChatActivity
                 break;
 
             case ChatEventTypeEnum::JIRA_TICKET:
+            case ChatEventTypeEnum::TICKET:
                 $formatted['details'] = $this->formatJiraTicketEvent($event);
+                break;
+
+            case ChatEventTypeEnum::SPAM:
+                $formatted['details'] = ['description' => 'Chat session was marked as spam'];
+                break;
+
+            case ChatEventTypeEnum::NOT_SPAM:
+                $formatted['details'] = ['description' => 'Chat session was removed from spam'];
                 break;
         }
 
@@ -170,7 +182,7 @@ class GetChatActivity
         $payload = $event->payload ?? [];
 
         return [
-            'description'   => 'Jira ticket '.Arr::get($payload, 'key', '').' created',
+            'description'   => 'Ticket '.Arr::get($payload, 'key', '').' created',
             'ticket_key'    => Arr::get($payload, 'key'),
             'ticket_url'    => Arr::get($payload, 'url'),
             'summary'       => Arr::get($payload, 'summary'),

@@ -9,6 +9,7 @@
 namespace App\Services;
 
 use Exception;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\StrayRequestException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -31,7 +32,23 @@ class ReportingSsrGateway extends HttpGateway
         }
 
         try {
-            $response = Http::post($this->getUrl('/render'), $page)->throw()->json();
+            $response = Http::connectTimeout(2)
+                ->timeout(10)
+                ->post($this->getUrl('/render'), $page)
+                ->throw()
+                ->json();
+        } catch (RequestException $e) {
+            Log::warning('Inertia SSR request rejected, falling back to CSR', [
+                'url'       => Arr::get($page, 'url'),
+                'component' => Arr::get($page, 'component'),
+                'status'    => $e->response->status(),
+            ]);
+
+            if ($e->response->serverError()) {
+                report($e);
+            }
+
+            return null;
         } catch (Exception $e) {
             if ($e instanceof StrayRequestException) {
                 throw $e;

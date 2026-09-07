@@ -34,12 +34,25 @@ class FixMiscalculatedTransactionAmounts
             $qtyOrdered          = $transaction->quantity_ordered;
             $historicPrice       = $transaction->historicAsset->price;
             $grossAmountExpected = round($qtyOrdered * $historicPrice, 2);
-            $netAmountExpected   = round(($qtyOrdered * $historicPrice) * ($transaction->current_discount_factor ?? 1), 2);
+            $netAmountExpected   = round($qtyOrdered * $historicPrice, 2)
+                - discountAmountOffGross(round($qtyOrdered * $historicPrice, 2), $transaction->current_discount_factor);
 
             $diffGross = abs($grossAmountExpected - $transaction->gross_amount);
             $diffNet   = abs($netAmountExpected - $transaction->net_amount);
 
-            if (($diffGross > 0.016) || ($diffNet > 0.016)) {
+            /**
+             * A line already sold has one right answer, the price it was sold at, so it is held
+             * to the cent rather than to the tolerance below. The tolerance exists for baskets,
+             * where a mismatch means a calculation went wrong; here it was wide enough to hide
+             * every penny drift this watcher was meant to catch.
+             */
+            $soldPriceMoved = $transaction->submitted_net_amount !== null
+                && (float)$transaction->submitted_discount_factor === (float)$transaction->current_discount_factor
+                && (float)$transaction->quantity_ordered === (float)$transaction->submitted_quantity_ordered
+                && (float)$transaction->quantity_picked === (float)$transaction->quantity_ordered
+                && round((float)$transaction->net_amount - (float)$transaction->submitted_net_amount, 2) != 0;
+
+            if ($soldPriceMoved || ($diffGross > 0.016) || ($diffNet > 0.016)) {
                 data_set($miscalculatedTransactionsDebugData, $transaction->id, [
                     'transaction_id'          => $transaction->id,
                     'item_code'               => $transaction->historicAsset->code,
@@ -53,7 +66,9 @@ class FixMiscalculatedTransactionAmounts
                     'offer_data'              => $transaction->offers_data,
                     'current_discount_factor' => $transaction->current_discount_factor,
                     'diff_gross'              => $diffGross,
-                    'diff_net'                => $diffNet
+                    'diff_net'                => $diffNet,
+                    'submitted_net_amount'    => $transaction->submitted_net_amount,
+                    'sold_price_moved'        => $soldPriceMoved,
                 ]);
 
                 if ($repairAmount) {

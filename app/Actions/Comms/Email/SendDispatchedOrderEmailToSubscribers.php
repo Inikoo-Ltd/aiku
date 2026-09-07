@@ -69,14 +69,14 @@ class SendDispatchedOrderEmailToSubscribers extends OrgAction
                 ]),
                 'invoice_link' => $invoiceLink,
                 'invoice_reference' => $invoiceReference,
-                'delivery_note_reference' => $deliveryNote->reference,
-                'delivery_note_link' => route('grp.org.shops.show.crm.customers.show.orders.show.delivery-note.show', [
+                'delivery_note_reference' => $deliveryNote?->reference ?? '',
+                'delivery_note_link' => $deliveryNote ? route('grp.org.shops.show.crm.customers.show.orders.show.delivery-note.show', [
                     $order->organisation->slug,
                     $order->shop->slug,
                     $order->customer->slug,
                     $order->slug,
                     $deliveryNote->slug
-                ]),
+                ]) : '#',
             ]
         );
     }

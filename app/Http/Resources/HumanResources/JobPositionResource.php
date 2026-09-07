@@ -25,9 +25,13 @@ class JobPositionResource extends JsonResource
         return [
             'id'               => $jobPosition->id,
             'slug'             => $jobPosition->slug,
+            'code'             => $jobPosition->code,
             'name'             => $jobPosition->name,
-            'number_employees' => $jobPosition->stats->number_employees,
+            'department'       => $jobPosition->department,
+            'team'             => $jobPosition->team,
+            'number_employees' => $jobPosition->stats?->number_employees ?? 0,
             'scope'            => $jobPosition->scope,
+            'created_at'       => $jobPosition->created_at,
 
         ];
     }

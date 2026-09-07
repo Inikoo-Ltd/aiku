@@ -15,7 +15,6 @@ use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletReturnItem;
-use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteStoredItemFromReturn extends OrgAction
@@ -48,7 +47,7 @@ class DeleteStoredItemFromReturn extends OrgAction
         return $request->user()->authTo("fulfilment.{$this->fulfilment->id}.edit");
     }
 
-    public function asController(Organisation $organisation, FulfilmentCustomer $fulfilmentCustomer, PalletReturn $palletReturn, PalletReturnItem $palletReturnItem, ActionRequest $request): bool
+    public function asController(FulfilmentCustomer $fulfilmentCustomer, PalletReturn $palletReturn, PalletReturnItem $palletReturnItem, ActionRequest $request): bool
     {
         $this->palletReturnItem = $palletReturnItem;
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);

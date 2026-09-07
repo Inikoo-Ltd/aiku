@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive">
+  <defs>
+    <filter id="pen" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="bleed" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.014" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="22" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="1.6" result="b"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="4" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 -0.2" result="ga"/>
+      <feComposite in="b" in2="ga" operator="in" result="mottled"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="mottled"/></feMerge>
+    </filter>
+    <filter id="marker" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="21" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" seed="2" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.90  0 0 0 0 0.87  0 0 0 0 0.80  0 0 0 0.28 0" result="c"/>
+      <feComposite in="c" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <style>
+      .pen { fill: none; stroke: #23222e; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: url(#pen); }
+      .soft { stroke-width: 1.4; opacity: .6; }
+      .w { mix-blend-mode: multiply; filter: url(#bleed); stroke: none; opacity: .8; }
+      .m { fill: none; stroke-linecap: round; stroke-width: 26; opacity: .55; mix-blend-mode: multiply; filter: url(#marker); }
+      .h { fill: #23222e; filter: url(#pen); }
+      .hl { fill: #8a4b9e; filter: url(#pen); }
+    </style>
+  </defs>
+  <rect width="1200" height="750" fill="#fbf7ee"/>
+  <rect width="1200" height="750" fill="#fbf7ee" filter="url(#paper)"/>
+  <g class="w">
+    <path d="M60 120 C160 90 260 110 260 170 C260 240 200 260 140 250 C90 240 40 170 60 120 Z" fill="#f3c04a" opacity=".5"/>
+    <path d="M280 120 C380 90 480 110 480 170 C480 240 420 260 360 250 C310 240 260 170 280 120 Z" fill="#76b7c2" opacity=".45"/>
+    <path d="M500 120 C620 84 740 110 740 170 C740 250 660 270 580 258 C520 246 470 170 500 120 Z" fill="#6d63d6" opacity=".5"/>
+    <path d="M780 200 C900 170 1030 210 1010 300 C990 380 880 390 800 360 C740 330 730 240 780 200 Z" fill="#9dcab0" opacity=".4"/>
+    <path d="M120 420 C260 390 420 410 430 480 C440 560 320 590 210 570 C130 550 70 470 120 420 Z" fill="#e88a73" opacity=".38"/>
+    <path d="M560 460 C700 430 880 460 900 540 C920 630 780 660 650 640 C560 620 500 510 560 460 Z" fill="#76b7c2" opacity=".3"/>
+  </g>
+  <g class="m">
+    <path d="M108 178 L228 176" stroke="#f3c04a"/>
+    <path d="M580 240 L720 236" stroke="#6d63d6"/>
+  </g>
+  <g class="pen">
+    <path d="M84 130 C130 122 160 126 176 130 C180 176 178 214 176 220 C130 226 96 224 84 220 C82 190 82 158 84 130 Z"/>
+    <path d="M300 130 C346 122 380 126 396 130 C400 176 398 214 396 220 C350 226 316 224 300 220 C298 190 298 158 300 130 Z"/>
+    <path d="M520 128 C570 118 606 124 624 128 C630 178 626 220 624 228 C574 236 536 232 520 228 C516 196 516 160 520 128 Z" stroke-width="3.2"/>
+    <path d="M180 168 C230 160 270 168 300 170" class="soft"/>
+    <path d="M280 158 l24 12 l-24 14 z"/>
+  </g>
+  <g class="h" font-size="22">
+    <text x="96" y="118">release-41</text>
+    <text x="312" y="118">release-42</text>
+    <text x="532" y="116" font-size="24">release-43 (new)</text>
+  </g>
+  <g class="pen">
+    <path d="M600 260 C600 300 660 300 660 260" class="soft"/>
+    <path d="M572 300 C700 290 780 300 800 320" stroke-width="3"/>
+    <path d="M780 306 l24 14 l-22 16 z"/>
+    <path d="M560 340 c60 -14 140 -14 200 0 c4 20 2 34 0 40 c-60 14 -140 14 -200 0 c-2 -6 -4 -20 0 -40 z"/>
+    <path d="M580 358 L740 354" class="soft"/>
+  </g>
+  <g class="h" font-size="22">
+    <text x="600" y="298" font-size="20">symlink</text>
+    <text x="620" y="380" font-size="24">current →</text>
+  </g>
+  <g class="pen">
+    <ellipse cx="880" cy="460" rx="36" ry="30"/>
+    <circle cx="820" cy="560" r="24"/>
+    <circle cx="900" cy="600" r="24"/>
+    <circle cx="980" cy="560" r="24"/>
+    <circle cx="1020" cy="480" r="24"/>
+    <path d="M844 480 C820 510 812 540 818 552" class="soft" stroke-dasharray="6 8"/>
+    <path d="M900 490 C900 530 900 560 900 576" class="soft" stroke-dasharray="6 8"/>
+    <path d="M916 480 C950 510 970 540 976 552" class="soft" stroke-dasharray="6 8"/>
+    <path d="M910 450 C960 460 1000 470 1010 476" class="soft" stroke-dasharray="6 8"/>
+    <path d="M820 536 l0 -8 M896 576 l0 -8 M976 536 l0 -8" class="soft"/>
+  </g>
+  <g class="h" font-size="22">
+    <text x="846" y="452" font-size="22">anchor</text>
+    <text x="790" y="656">worker</text>
+    <text x="870" y="666">worker</text>
+    <text x="950" y="656">worker</text>
+    <text x="998" y="454">worker</text>
+  </g>
+  <g class="pen">
+    <path d="M120 500 l16 16 l30 -34" stroke-width="3"/>
+    <path d="M120 540 l16 16 l30 -34" stroke-width="3"/>
+    <path d="M120 580 l16 16 l30 -34" stroke-width="3"/>
+    <path d="M100 470 C220 460 280 470 300 480" class="soft"/>
+  </g>
+  <g class="h" font-size="22">
+    <text x="176" y="512">migrated</text>
+    <text x="176" y="552">config cached</text>
+    <text x="176" y="592">horizon terminated</text>
+  </g>
+  <g class="hl" font-size="22">
+    <text x="700" y="700">workers finish, then come back</text>
+  </g>
+  <g class="h" font-size="19" opacity=".7"><text x="70" y="732">— a deploy: swap the symlink, cycle the workers</text></g>
+</svg>

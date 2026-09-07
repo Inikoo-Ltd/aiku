@@ -17,6 +17,8 @@ use App\Models\Catalogue\Product;
 use App\Models\Discounts\Offer;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
+use App\Helpers\NaturalLanguage;
+use App\Http\Resources\Catalogue\TagResource;
 
 class GetProductDetail extends IrisAction
 {
@@ -80,6 +82,22 @@ class GetProductDetail extends IrisAction
 
         $bestPercentageOff            = Arr::get($product->offers_data, 'best_percentage_off.percentage_off', 0);
         $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;
+        $countriesOrigin = [];
+        $countries      = array_filter(array_map('trim', explode(',', $product->country_of_origin ?? '')));
+        foreach ($countries as $country) {
+            $countriesOrigin[] = NaturalLanguage::make()->country($country);
+        }
+
+        $specifications = [
+            'countries_of_origin' => $countriesOrigin,
+            'ingredients'         => $product->marketing_ingredients,
+            'gross_weight'        => $product->gross_weight,
+            'barcode'             => $product->barcode,
+            'dimensions'          => NaturalLanguage::make()->dimensions(json_encode($product->marketing_dimensions)),
+            'cpnp'                => $product->cpnp_number,
+            'marketing_weight'    => $product->marketing_weight,
+            'unit'                => $product->unit,
+        ];
 
         /** @noinspection PhpUnusedLocalVariableInspection */
         [$marginDiscounted, $rrpPerUnitDiscounted, $profitDiscounted, $profitPerUnitDiscounted, $unitsDiscounted, $pricePerUnitDiscounted] = $this->getPriceMetrics($product->rrp, $bestPercentageOffOfferFactor * $product->price, $product->units);
@@ -93,6 +111,8 @@ class GetProductDetail extends IrisAction
             'discounted_percentage'      => percentage($bestPercentageOff, 1),
             'offers_data'                => $product->offers_data,
             'step_discount'              => $this->getStepDiscount($product),
+            'tags'                       => TagResource::collection($product->tags)->toArray($request),
+            'specifications'             => $specifications
 
         ];
 

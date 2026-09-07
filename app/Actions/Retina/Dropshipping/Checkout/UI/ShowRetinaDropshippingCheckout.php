@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Dropshipping\Checkout\UI;
 
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -44,6 +45,10 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         $orderPaymentApiPoint = StoreOrderPaymentApiPoint::run($order);
 
         $order = FixMiscalculatedTransactionAmounts::run($order, true);
+
+        /** Priced at the moment the amount to pay is derived: see ShowRetinaEcomCheckout. */
+        CalculateOrderTotalAmounts::make()->handle($order, forceRecalculate: true);
+        $order->refresh();
 
         $paymentMethods = GetRetinaPaymentMethods::run($order, $orderPaymentApiPoint);
 

@@ -19,6 +19,7 @@ use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMissingFixedWebBlocksInProductsWebpages
 {
@@ -213,6 +214,7 @@ class RepairMissingFixedWebBlocksInProductsWebpages
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $websiteId       = $command->option('website_id');
         $singleWebpageId = $command->option('webpage_id');
 

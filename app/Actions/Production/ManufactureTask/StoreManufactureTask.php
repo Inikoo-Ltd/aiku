@@ -16,7 +16,6 @@ use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardAllowance
 use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardTermsEnum;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -57,7 +56,7 @@ class StoreManufactureTask extends OrgAction
     {
         $production   = $manufactureTask->production;
         $organisation = $manufactureTask->organisation;
-        return Redirect::route('grp.org.productions.show.crafts.manufacture_tasks.index', [$organisation, $production]);
+        return Redirect::route('grp.org.productions.show.operations.manufacture_tasks.index', [$organisation, $production]);
     }
 
 
@@ -85,14 +84,9 @@ class StoreManufactureTask extends OrgAction
             'operative_reward_terms'            => ['required', Rule::enum(ManufactureTaskOperativeRewardTermsEnum::class)],
             'operative_reward_allowance_type'   => ['required', Rule::enum(ManufactureTaskOperativeRewardAllowanceTypeEnum::class)],
             'operative_reward_amount'           => ['required', 'numeric', 'min:0'],
+            'is_piece_rate'                     => ['sometimes', 'boolean'],
         ];
     }
-
-    //     public function afterValidator($validator)
-    // {
-    //     dd($validator);
-    // }
-
 
     public function action(Production $production, array $modelData): ManufactureTask
     {
@@ -102,7 +96,7 @@ class StoreManufactureTask extends OrgAction
         return $this->handle($production, $this->validatedData);
     }
 
-    public function asController(Organisation $organisation, Production $production, ActionRequest $request): ManufactureTask
+    public function asController(Production $production, ActionRequest $request): ManufactureTask
     {
         $this->initialisationFromProduction($production, $request);
 

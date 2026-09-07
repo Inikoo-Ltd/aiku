@@ -15,6 +15,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Shop\BreakShopPricesCache;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProduct;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoDescription;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
@@ -26,6 +27,7 @@ use App\Models\Masters\MasterAsset;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Web\Webpage\CloseWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\ReopenWebpage;
@@ -59,6 +61,7 @@ class UpdateProduct extends OrgAction
     use WithProductOrgStocks;
     use HasDangerousGoodsFields;
     use HasProductInformation;
+    use WithMasterAssetTradeUnits;
 
     private Product $product;
 
@@ -135,7 +138,19 @@ class UpdateProduct extends OrgAction
                 $this->syncOrgStocksToBeDeleted($product, $orgStocks);
             }
         } elseif (Arr::has($modelData, 'trade_units')) {
-            $product = SyncProductTradeUnits::run($product, Arr::pull($modelData, 'trade_units'));
+            $tradeUnits = Arr::pull($modelData, 'trade_units');
+            $product    = SyncProductTradeUnits::run($product, $tradeUnits);
+
+            $hasIndependentUnits = Arr::get($modelData, 'has_independent_units', $product->has_independent_units);
+            if (!empty($tradeUnits) && !$hasIndependentUnits && !Arr::has($modelData, 'units')) {
+                $unitsFromTradeUnits = $this->getUnitsFromTradeUnits($tradeUnits);
+                if ($unitsFromTradeUnits['units'] !== null) {
+                    data_set($modelData, 'units', $unitsFromTradeUnits['units']);
+                }
+                if (!Arr::has($modelData, 'unit') && $unitsFromTradeUnits['unit']) {
+                    data_set($modelData, 'unit', $unitsFromTradeUnits['unit']);
+                }
+            }
         }
 
 
@@ -247,6 +262,8 @@ class UpdateProduct extends OrgAction
                 ]
             ]);
 
+            ShopHydrateProductsWithNoDescription::dispatch($product->shop)->delay($this->hydratorsDelay);
+
             if ($product->master_product_id) {
                 MasterAssetHydrateMissingChildDescription::dispatch(
                     MasterAsset::find($product->master_product_id)
@@ -262,7 +279,7 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-        if (Arr::hasAny($changed, ['name', 'code', 'price', 'units', 'unit'])) {
+        if (Arr::hasAny($changed, ['name', 'code', 'price', 'units', 'unit', 'is_golden_product'])) {
             $historicAsset = StoreHistoricAsset::run($product, [], $this->hydratorsDelay);
 
             $product->updateQuietly(
@@ -281,8 +298,8 @@ class UpdateProduct extends OrgAction
             UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
         }
 
-        if (Arr::hasAny($changed, ['state', 'status', 'exclusive_for_customer_id'])) {
-            $this->productHydrators($product);
+        if (Arr::hasAny($changed, ['state', 'status', 'is_for_sale', 'exclusive_for_customer_id'])) {
+            $this->productHydrators($product, hydrateForSale: !Arr::has($modelData, 'is_for_sale'));
         }
 
         if (Arr::has($changed, 'exclusive_for_customer_id')) {
@@ -318,6 +335,15 @@ class UpdateProduct extends OrgAction
             $this->getDangerousGoodsFieldNames(),
             $this->getProductInformationFieldNames()
         );
+
+        if (Arr::has($changed, 'not_follow_master_media')) {
+
+            if (!$product->not_follow_master_media) {
+                CloneProductImagesFromTradeUnits::run($product);
+            }
+
+            BreakProductInWebpagesCache::dispatch($product)->delay(15);
+        }
 
         if (!$this->bulkPriceUpdate
             && !$this->skipWebpageCacheBreak
@@ -451,12 +477,14 @@ class UpdateProduct extends OrgAction
             'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
             'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
             'units'                     => ['sometimes', 'numeric'],
+
+            'has_independent_units'     => ['sometimes', 'boolean'],
             'unit'                      => ['sometimes', 'string'],
             'exclusive_for_customer_id' => [
                 'sometimes',
                 'nullable',
                 'integer',
-                Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
+                Rule::exists('customers', 'id')->where('shop_id', $this->shop->id)
             ],
 
             'name_i8n'              => ['sometimes', 'array'],
@@ -514,6 +542,8 @@ class UpdateProduct extends OrgAction
             'marketplace_id'                => ['sometimes'],
             'not_follow_master_trade_units' => ['sometimes', 'boolean'],
             'not_follow_master_prices'      => ['sometimes', 'boolean'],
+            'not_follow_master_media'       => ['sometimes', 'boolean'],
+            'is_golden_product'             => ['sometimes', 'boolean'],
         ];
 
 

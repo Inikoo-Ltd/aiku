@@ -28,13 +28,18 @@ trait HasImage
         return $this->hasOne(Media::class, 'id', 'image_id');
     }
 
-    public function imageSources($width = 0, $height = 0, $getImage = 'image')
+    public function imageSources($width = 800, $height = 800, $getImage = 'image')
     {
         if ($this->{$getImage}) {
             $avatarThumbnail = $this->{$getImage}->getImage()->resize($width, $height);
             return GetPictureSources::run($avatarThumbnail);
         }
         return null;
+    }
+
+    public function audio(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'audio_id');
     }
 
     public function seoImage(): HasOne

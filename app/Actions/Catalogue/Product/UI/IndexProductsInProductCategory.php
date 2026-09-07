@@ -20,6 +20,7 @@ use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\WithListingsColumns;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -48,6 +49,7 @@ class IndexProductsInProductCategory extends OrgAction
     use WithFamilySubNavigation;
     use WithCatalogueAuthorisation;
     use WithSubDepartmentSubNavigation;
+    use WithListingsColumns;
 
 
     private ProductCategory $parent;
@@ -123,6 +125,7 @@ class IndexProductsInProductCategory extends OrgAction
             'products.id',
             'products.code',
             'products.name',
+            'products.description',
             'products.state',
             'products.price',
             'products.rrp',
@@ -137,6 +140,7 @@ class IndexProductsInProductCategory extends OrgAction
             'products.web_images',
             DB::raw('products.price / products.units as rrp_per_unit'),
             'currencies.code as currency_code',
+            DB::raw("'".group()->currency->code."' as grp_currency_code"),
             'variant.slug as variant_slug',
             'variant.code as variant_code',
             'products.is_variant_leader as is_variant_leader',
@@ -144,19 +148,22 @@ class IndexProductsInProductCategory extends OrgAction
             'assets.health_rank',
         ];
 
+        $hasListingsColumns = $this->hasListingsColumns($productCategory);
+
         if ($prefix === 'sales') {
             $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
                 timeSeriesTable: 'asset_time_series',
                 timeSeriesRecordsTable: 'asset_time_series_records',
                 foreignKey: 'asset_id',
-                aggregateColumns: [
+                aggregateColumns: array_merge([
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
                     'invoices'                    => 'invoices',
                     'refunds'                     => 'refunds',
+                    'sold'                        => 'sold'
+                ], $hasListingsColumns ? [
                     'dropshippers'                => 'dropshippers',
                     'listings'                    => 'listings',
-                    'sold'                        => 'sold'
-                ],
+                ] : []),
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
                 includeLY: true,
@@ -167,10 +174,13 @@ class IndexProductsInProductCategory extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['refunds'];
-            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
-            $selects[] = $timeSeriesData['selectRaw']['listings'];
             $selects[] = $timeSeriesData['selectRaw']['sold'];
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
+
+            if ($hasListingsColumns) {
+                $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
+                $selects[] = $timeSeriesData['selectRaw']['listings'];
+            }
         } else {
             $queryBuilder
                 ->with('orgStocks');
@@ -201,13 +211,12 @@ class IndexProductsInProductCategory extends OrgAction
                 'sales_grp_currency_external',
                 'invoices',
                 'refunds',
-                'dropshippers',
-                'listings',
                 'sold',
                 'health_rank',
                 'price',
                 'rrp_per_unit',
-                'available_quantity'
+                'available_quantity',
+                ...($hasListingsColumns ? ['dropshippers', 'listings'] : []),
             ])
             ->allowedFilters([$globalSearch]);
 
@@ -254,15 +263,29 @@ class IndexProductsInProductCategory extends OrgAction
                 );
 
             if ($prefix === 'sales') {
-                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
-                    ->column(key: 'listings', label: __('Total Listing'), canBeHidden: true, sortable: true, align: 'right')
-                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+
+                if ($this->hasListingsColumns($productCategory)) {
+                    $table->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
+                        ->column(key: 'listings', label: __('Total Listing'), canBeHidden: true, sortable: true, align: 'right');
+                }
+
+                $table->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'refunds', label: __('Refunds'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                     ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
+            } elseif ($prefix === ProductsTabsEnum::EDIT->value) {
+                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'unit', label: __('Unit'), canBeHidden: false)
+                    ->column(key: 'description', label: __('Description'), canBeHidden: false)
+                    ->column(key: 'actions', label: __('Actions'), canBeHidden: false, align: 'right');
+            } elseif ($prefix === ProductsTabsEnum::BULK_UNIT->value) {
+                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'unit', label: __('Unit'), canBeHidden: false);
             } else {
                 $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                     ->column(key: 'image_thumbnail', label: '', type: 'avatar');
@@ -288,13 +311,13 @@ class IndexProductsInProductCategory extends OrgAction
     {
         $productCategory = $this->parent;
 
-        $exception  = [ProductsTabsEnum::INDEX_ORDERING];
+        $exception  = [ProductsTabsEnum::INDEX_ORDERING, ProductsTabsEnum::EDIT, ProductsTabsEnum::BULK_UNIT];
 
         $subNavigation = null;
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $subNavigation = $this->getDepartmentSubNavigation($productCategory);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
-            $exception     = [];
+            $exception     = $this->canEdit ? [ProductsTabsEnum::SALES] : [ProductsTabsEnum::SALES, ProductsTabsEnum::EDIT, ProductsTabsEnum::BULK_UNIT];
             $subNavigation = $this->getFamilySubNavigation($productCategory, $this->grandParent ?? $productCategory->shop, $request);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $subNavigation = $this->getSubDepartmentSubNavigation($productCategory);
@@ -431,14 +454,19 @@ class IndexProductsInProductCategory extends OrgAction
                     fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::INDEX_ORDERING->value))
                     : Inertia::optional(fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::INDEX_ORDERING->value))),
 
-                ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
-                    fn () => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))
-                    : Inertia::optional(fn () => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))),
+                ProductsTabsEnum::EDIT->value => $this->tab == ProductsTabsEnum::EDIT->value ?
+                    fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::EDIT->value))
+                    : Inertia::optional(fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::EDIT->value))),
+
+                ProductsTabsEnum::BULK_UNIT->value => $this->tab == ProductsTabsEnum::BULK_UNIT->value ?
+                    fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::BULK_UNIT->value))
+                    : Inertia::optional(fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::BULK_UNIT->value))),
 
             ]
         )
         ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::INDEX->value))
-        ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::SALES->value));
+        ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::EDIT->value))
+        ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::BULK_UNIT->value));
     }
 
 
@@ -570,7 +598,8 @@ class IndexProductsInProductCategory extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.products.index' =>
+            'grp.org.shops.show.catalogue.departments.show.products.index',
+            'grp.org.shops.show.catalogue.departments.show.products.sales' =>
             array_merge(
                 ShowDepartment::make()->getBreadcrumbs(
                     'grp.org.shops.show.catalogue.departments.show',
@@ -584,7 +613,8 @@ class IndexProductsInProductCategory extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.families.show.products.index' =>
+            'grp.org.shops.show.catalogue.departments.show.families.show.products.index',
+            'grp.org.shops.show.catalogue.departments.show.families.show.products.sales' =>
             array_merge(
                 ShowFamily::make()->getBreadcrumbs(
                     $productCategory,
@@ -600,7 +630,8 @@ class IndexProductsInProductCategory extends OrgAction
                 )
             ),
 
-            'grp.org.shops.show.catalogue.families.show.products.index' =>
+            'grp.org.shops.show.catalogue.families.show.products.index',
+            'grp.org.shops.show.catalogue.families.show.products.sales' =>
             array_merge(
                 ShowFamily::make()->getBreadcrumbs(
                     $productCategory,
@@ -616,11 +647,13 @@ class IndexProductsInProductCategory extends OrgAction
                 )
             ),
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.products.index',
-            'grp.org.shops.show.catalogue.sub_departments.show.products.index' =>
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.products.sales',
+            'grp.org.shops.show.catalogue.sub_departments.show.products.index',
+            'grp.org.shops.show.catalogue.sub_departments.show.products.sales' =>
             array_merge(
                 ShowSubDepartment::make()->getBreadcrumbs(
                     $productCategory,
-                    preg_replace('/\.products\.index$/', '', $routeName),
+                    preg_replace('/\.products\.(index|sales)$/', '', $routeName),
                     $routeParameters
                 ),
                 $headCrumb(
@@ -631,7 +664,8 @@ class IndexProductsInProductCategory extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.products.index' =>
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.products.index',
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.products.sales' =>
             array_merge(
                 ShowFamily::make()->getBreadcrumbs(
                     $productCategory,
@@ -646,7 +680,8 @@ class IndexProductsInProductCategory extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index' =>
+            'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index',
+            'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.sales' =>
             array_merge(
                 ShowFamily::make()->getBreadcrumbs(
                     $productCategory,

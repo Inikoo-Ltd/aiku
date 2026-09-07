@@ -52,6 +52,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_org_stock_audit_delta_type_addition
  * @property int $number_org_stock_audit_delta_type_subtraction
  * @property int $number_org_stock_audit_delta_type_no_change
+ * @property int $number_org_stocks_without_products
+ * @property int $number_org_stocks_replenishments_wholesale
+ * @property int $number_org_stocks_replenishments_dropshipping
+ * @property int $number_org_stocks_low_stock_audits
  * @property int $number_fulfilments
  * @property int $number_customers_interest_pallets_storage
  * @property int $number_customers_interest_items_storage
@@ -223,6 +227,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_return_delivery_notes_state_cancelled
  * @property int $number_locations_stock_slots_all_empty
  * @property int $number_locations_stock_slots_partial_empty
+ * @property int $number_org_stock_movements_type_production
+ * @property string|null $picking_seconds_per_sko median seconds spent picking one SKO
+ * @property string|null $packing_seconds_per_sko median seconds spent packing one SKO
+ * @property int $picking_packing_speed_sample_size delivery notes behind the two medians
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static Builder<static>|WarehouseStats newModelQuery()
  * @method static Builder<static>|WarehouseStats newQuery()

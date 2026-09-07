@@ -10,6 +10,8 @@ namespace App\Actions\HumanResources\Employee;
 
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
+use App\Actions\HumanResources\WorkSchedule\StoreWorkSchedule;
+use App\Actions\HumanResources\WorkSchedule\UpdateWorkSchedule;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateEmployees;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateEmployees;
@@ -18,6 +20,7 @@ use App\Actions\SysAdmin\User\UpdateUser;
 use App\Models\SysAdmin\User;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Traits\UI\WithProfile;
 use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
@@ -36,6 +39,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Rules\Password;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -47,6 +51,7 @@ class UpdateEmployee extends OrgAction
     use WithReorganisePositions;
     use WithNoStrictRules;
     use WithModelAddressActions;
+    use WithProfile;
 
     protected bool $asAction = false;
 
@@ -99,6 +104,21 @@ class UpdateEmployee extends OrgAction
             SyncEmployeeJobPositions::run($employee, $jobPositions);
         }
 
+        if (Arr::has($modelData, 'working_hours')) {
+            $workingHours = Arr::pull($modelData, 'working_hours');
+            $workSchedule = $employee->getDefaultWorkSchedule();
+
+            if ($workSchedule) {
+                UpdateWorkSchedule::make()->handle($workSchedule, ['working_hours' => $workingHours]);
+            } else {
+                StoreWorkSchedule::make()->action($employee, [
+                    'name' => __('Working hours'),
+                    'type' => 'default',
+                    'working_hours' => $workingHours,
+                ]);
+            }
+        }
+
         $identityDocuments     = null;
         $hasIdentityDocuments  = Arr::has($modelData, 'identity_documents');
         if ($hasIdentityDocuments) {
@@ -111,6 +131,9 @@ class UpdateEmployee extends OrgAction
         data_forget($modelData, 'password');
         data_forget($modelData, 'auth_type');
         data_forget($modelData, 'user_model_status');
+
+        $employee = $this->processProfileAvatar($modelData, $employee);
+        data_forget($modelData, 'image');
 
         $oldUserId = $employee->user_id;
         $oldState  = $employee->state;
@@ -160,6 +183,7 @@ class UpdateEmployee extends OrgAction
     public function rules(): array
     {
         $rules = [
+            'image'                                     => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
             'worker_number'                             => [
                 'sometimes',
                 'max:64',
@@ -226,6 +250,7 @@ class UpdateEmployee extends OrgAction
             'job_positions.*.scopes.warehouses.slug.*'  => ['sometimes', Rule::exists('warehouses', 'slug')->where('organisation_id', $this->organisation->id)],
             'job_positions.*.scopes.fulfilments.slug.*' => ['sometimes', Rule::exists('fulfilments', 'slug')->where('organisation_id', $this->organisation->id)],
             'job_positions.*.scopes.shops.slug.*'       => ['sometimes', Rule::exists('shops', 'slug')->where('organisation_id', $this->organisation->id)],
+            'job_positions.*.scopes.productions.slug.*' => ['sometimes', Rule::exists('productions', 'slug')->where('organisation_id', $this->organisation->id)],
             'email'                                     => ['sometimes', 'nullable', 'email'],
             'emergency_contact'                         => ['sometimes', 'nullable', 'array'],
             'emergency_contact.contact'                 => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -250,6 +275,7 @@ class UpdateEmployee extends OrgAction
             'identity_documents'                        => ['sometimes', 'nullable', 'array'],
             'identity_documents.*.type'                 => ['required', 'string', 'max:100'],
             'identity_documents.*.number'               => ['required', 'string', 'max:100'],
+            'working_hours'                              => ['sometimes', 'array'],
 
         ];
 

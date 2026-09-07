@@ -5,14 +5,23 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { OrgSupplierProduct } from "@/types/org-supplier-product"
+import { trans } from "laravel-vue-i18n"
 
 defineProps<{
   data: object
   tab?: string
 }>()
+
+function addToShoppingList(supplierProduct: OrgSupplierProduct & { units_per_carton?: number }) {
+  router.post(
+    route("grp.org.procurement.shopping_list.store", [route().params["organisation"], supplierProduct.slug]),
+    { quantity_units: supplierProduct.units_per_carton ?? 1 },
+    { preserveScroll: true }
+  )
+}
 
 function supplierProductRoute(supplierProduct: OrgSupplierProduct) {
   switch (route().current()) {
@@ -41,6 +50,11 @@ function supplierProductRoute(supplierProduct: OrgSupplierProduct) {
       <Link :href="supplierProductRoute(supplier_product)" class="primaryLink">
         {{ supplier_product["code"] }}
       </Link>
+    </template>
+    <template #cell(add)="{ item: supplier_product }">
+      <button type="button" class="secondaryLink" @click="addToShoppingList(supplier_product)">
+        {{ trans("Add to shopping list") }}
+      </button>
     </template>
   </Table>
 </template>

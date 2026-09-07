@@ -64,7 +64,7 @@ class IndexDeliveryNoteItemsStateUnassigned extends OrgAction
 
 
             $table
-                ->withLabelRecord([__('delivery note'),__('delivery notes')])
+                ->withLabelRecord([__("Part"), __("Parts")])
                 ->withEmptyState(
                     [
                         'title' => __("No items found"),

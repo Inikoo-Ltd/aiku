@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Web;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairWebpagesLastPublishedAt
 {
@@ -29,6 +30,7 @@ class RepairWebpagesLastPublishedAt
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $query = Webpage::query()
             ->when(
                 $command->option('webpage_id'),

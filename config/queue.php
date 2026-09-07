@@ -72,7 +72,25 @@ return [
             'driver'       => 'redis',
             'connection'   => 'horizon',
             'queue'        => env('REDIS_QUEUE', 'default'),
-            'retry_after'  => 160,
+            'retry_after'  => 3660,
+            'block_for'    => null,
+            'after_commit' => true,
+        ],
+
+        'redis-analytics'    => [
+            'driver'       => 'redis',
+            'connection'   => 'horizon',
+            'queue'        => 'analytics',
+            'retry_after'  => 660,
+            'block_for'    => null,
+            'after_commit' => true,
+        ],
+
+        'redis-aurora'       => [
+            'driver'       => 'redis',
+            'connection'   => 'horizon',
+            'queue'        => 'aurora',
+            'retry_after'  => 36060,
             'block_for'    => null,
             'after_commit' => true,
         ],
@@ -80,7 +98,7 @@ return [
         'redis-long-running' => [
             'driver'       => 'redis',
             'connection'   => 'horizon',
-            'queue'        => 'default-long',
+            'queue'        => 'long-running',
             'retry_after'  => 10850,
             'block_for'    => null,
             'after_commit' => true,

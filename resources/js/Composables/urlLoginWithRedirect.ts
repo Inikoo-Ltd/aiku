@@ -17,8 +17,11 @@ export function urlLoginWithRedirect(): string {
 
   // Build redirect only on the client where a window exists and not on auth pages
   if (typeof window !== 'undefined' && !isAuthRoute) {
-    const webpage_key = usePage()?.props?.webpage_id ? `ref=${usePage().props.webpage_id}` : ''
-    return `/app/login?${webpage_key}`
+    const webpageId = usePage()?.props?.webpage_id
+
+    if (webpageId) {
+      return `/app/login?ref=${webpageId}`
+    }
   }
 
   return '/app/login'

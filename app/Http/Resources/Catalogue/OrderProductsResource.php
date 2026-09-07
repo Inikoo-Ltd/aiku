@@ -35,6 +35,9 @@ use Illuminate\Support\Arr;
  * @property mixed $order_id
  * @property mixed $price
  * @property mixed $web_images
+ * @property mixed $units
+ * @property mixed $unit
+ * @property mixed $orgStocks
  */
 class OrderProductsResource extends JsonResource
 {
@@ -50,6 +53,14 @@ class OrderProductsResource extends JsonResource
             'historic_id'        => $this->current_historic_asset_id,
             'code'               => $this->code,
             'name'               => $this->name,
+            'units'              => trimDecimalZeros($this->units),
+            'unit'               => $this->unit,
+            'org_stocks'         => $this->orgStocks->map(fn ($orgStock) => [
+                'code'          => $orgStock->code,
+                'name'          => $orgStock->name,
+                'quantity'      => trimDecimalZeros($orgStock->pivot->quantity),
+                'units_per_sku' => $orgStock->packed_in,
+            ]),
             'image_thumbnail'    => $imageThumbnail,
             'state'              => $this->state,
             'available_quantity' => $this->available_quantity,

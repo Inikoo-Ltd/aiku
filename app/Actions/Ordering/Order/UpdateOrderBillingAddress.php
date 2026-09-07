@@ -17,6 +17,7 @@ use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrderBillingAddress extends OrgAction
 {
@@ -63,5 +64,11 @@ class UpdateOrderBillingAddress extends OrgAction
         return $this->handle($order, $this->validatedData);
     }
 
+    public function asController(Order $order, ActionRequest $request): Order
+    {
+        $this->order = $order;
+        $this->initialisationFromShop($order->shop, $request);
 
+        return $this->handle($order, $this->validatedData);
+    }
 }

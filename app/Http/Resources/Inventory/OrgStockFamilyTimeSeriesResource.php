@@ -16,22 +16,40 @@ class OrgStockFamilyTimeSeriesResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $frequency = request()->input('frequency', TimeSeriesFrequencyEnum::DAILY->value);
-        $frequencyEnum = TimeSeriesFrequencyEnum::tryFrom($frequency) ?? TimeSeriesFrequencyEnum::DAILY;
+        $frequency = request()->input('frequency', TimeSeriesFrequencyEnum::MONTHLY->value);
+        $frequencyEnum = TimeSeriesFrequencyEnum::tryFrom($frequency) ?? TimeSeriesFrequencyEnum::MONTHLY;
 
         return [
-            'id'                          => $this->id,
-            'period'                      => $this->formatPeriod($this->from, $this->to, $frequencyEnum),
-            'filter_date'                 => $this->formatFilterDate($this->from, $this->to),
-            'currency_code'               => $this->currency_code,
-            'from'                        => $this->from,
-            'to'                          => $this->to,
-            'sales_org_currency_external' => (float) $this->sales_org_currency_external,
-            'sales_grp_currency_external' => (float) $this->sales_grp_currency_external,
-            'invoices'                    => (int) $this->invoices,
-            'refunds'                     => (int) $this->refunds,
-            'orders'                      => (int) $this->orders,
-            'customers_invoiced'          => (int) $this->customers_invoiced,
+            'id'                                => $this->id,
+            'period'                            => $this->formatPeriod($this->from, $this->to, $frequencyEnum),
+            'filter_date'                       => $this->formatFilterDate($this->from, $this->to),
+            'currency_code'                     => $this->currency_code,
+            'from'                              => $this->from,
+            'to'                                => $this->to,
+            'sales_org_currency_external'       => (float) $this->sales_org_currency_external,
+            'sales_org_currency_external_ly'    => (float) ($this->sales_org_currency_external_ly ?? 0),
+            'sales_org_currency_external_delta' => $this->calculateDelta((float) $this->sales_org_currency_external, (float) ($this->sales_org_currency_external_ly ?? 0)),
+            'sales_grp_currency_external'       => (float) $this->sales_grp_currency_external,
+            'invoices'                          => (int) $this->invoices,
+            'refunds'                           => (int) $this->refunds,
+            'orders'                            => (int) $this->orders,
+            'customers_invoiced'                => (int) $this->customers_invoiced,
+        ];
+    }
+
+    private function calculateDelta(float $current, float $previous): ?array
+    {
+        if (!$previous || $previous == 0) {
+            return null;
+        }
+
+        $delta = (($current - $previous) / $previous) * 100;
+
+        return [
+            'value'       => $delta,
+            'formatted'   => number_format($delta, 1) . '%',
+            'is_positive' => $delta > 0,
+            'is_negative' => $delta < 0,
         ];
     }
 

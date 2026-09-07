@@ -153,6 +153,11 @@ class ProposeAllegroProduct
 
                 case 'STRING':
                 default:
+
+                    if (blank($value)) {
+                        continue 2;
+                    }
+
                     $maxLength = Arr::get($restrictions, 'maxLength', 255);
                     $entry['values'] = [Str::substr((string) $value, 0, $maxLength)];
                     break;
@@ -217,14 +222,13 @@ class ProposeAllegroProduct
             'description' => ['opis', 'opis produktu'],
             'capacity' => ['capacity', 'capacity (ml)'],
             'essential_oil_type' => ['essential oil type'],
-            'tariff_code' => ['tariff code', 'customs tariff code']
+            'tariff_code' => ['tariff code', 'customs tariff code'],
+            'name' => ['name', 'nazwa'],
         ];
 
         foreach ($keywordMap as $attribute => $keywords) {
-            foreach ($keywords as $keyword) {
-                if (str_contains($paramName, $keyword)) {
-                    return $attributeMap[$attribute] ?? null;
-                }
+            if (array_any($keywords, fn ($keyword) => str_contains($paramName, $keyword))) {
+                return $attributeMap[$attribute] ?? null;
             }
         }
 

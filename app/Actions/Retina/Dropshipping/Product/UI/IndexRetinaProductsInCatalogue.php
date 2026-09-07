@@ -60,6 +60,7 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
             }
         }
 
+        // Exclusive products are not part of the general catalogue, they have their own section.
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
 

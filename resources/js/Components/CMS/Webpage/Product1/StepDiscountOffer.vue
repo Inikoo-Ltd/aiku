@@ -26,7 +26,7 @@ const props = defineProps<{
         units?: number
     }
     currencyCode?: string | null
-    originalPrice?: number
+    originalPrice?: number | string
     unit?: string
     units?: number
     quantity?: number
@@ -74,12 +74,14 @@ watch(
 
 const formatPrice = (value: number) => locale.currencyFormat(props.currencyCode ?? null, value)
 
+const basePrice = computed<number>(() => Number(props.originalPrice ?? 0) || 0)
+
 const savedAmount = (step: StepDiscountStep): number => {
-    if (!props.originalPrice || props.originalPrice <= step.price) {
+    if (!basePrice.value || basePrice.value <= step.price) {
         return 0
     }
 
-    return props.originalPrice - step.price
+    return basePrice.value - step.price
 }
 
 const quantityLabel = (step: StepDiscountStep): string => {
@@ -169,10 +171,10 @@ const onSelectStep = (step: StepDiscountStep) => {
                         {{ formatPrice(step.price) }}
                     </div>
                     <div
-                        v-if="originalPrice && originalPrice > step.price"
+                        v-if="basePrice && basePrice > step.price"
                         class="text-sm text-gray-400 line-through"
                     >
-                        {{ formatPrice(originalPrice) }}
+                        {{ formatPrice(basePrice) }}
                     </div>
                     <div v-if="isPackedProduct" class="text-xs text-gray-400">
                         {{ formatPrice(step.price_per_unit) }}/{{ innerUnitLabel }}
@@ -184,10 +186,14 @@ const onSelectStep = (step: StepDiscountStep) => {
 </template>
 
 <style lang="scss" scoped>
+.step-discount {
+    --step-discount-color: #C48497;
+}
+
 .header-line {
     flex: 1;
     height: 1px;
-    background: color-mix(in srgb, var(--theme-color-4) 30%, #d1d5db);
+    background: color-mix(in srgb, var(--step-discount-color) 30%, #d1d5db);
 }
 
 .header-text {
@@ -196,18 +202,18 @@ const onSelectStep = (step: StepDiscountStep) => {
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--theme-color-4);
+    color: var(--step-discount-color);
 }
 
 .step-tier {
-    border-color: color-mix(in srgb, var(--theme-color-4) 25%, white);
-    background: color-mix(in srgb, var(--theme-color-4) 4%, white);
+    border-color: color-mix(in srgb, var(--step-discount-color) 25%, white);
+    background: color-mix(in srgb, var(--step-discount-color) 4%, white);
     transition: border-color 0.2s ease, background 0.2s ease;
     cursor: pointer;
 }
 
 .step-tier:hover:not(:disabled) {
-    border-color: color-mix(in srgb, var(--theme-color-4) 60%, white);
+    border-color: color-mix(in srgb, var(--step-discount-color) 60%, white);
 }
 
 .step-tier:disabled {
@@ -222,16 +228,16 @@ const onSelectStep = (step: StepDiscountStep) => {
     flex-shrink: 0;
     width: 20px;
     height: 20px;
-    color: var(--theme-color-4);
+    color: var(--step-discount-color);
 }
 
 .step-tier.is-popular {
-    border-color: color-mix(in srgb, var(--theme-color-4) 55%, white);
+    border-color: color-mix(in srgb, var(--step-discount-color) 55%, white);
 }
 
 .step-tier.is-active {
     border-width: 2px;
-    border-color: var(--theme-color-4);
+    border-color: var(--step-discount-color);
     background: white;
 }
 
@@ -249,7 +255,7 @@ const onSelectStep = (step: StepDiscountStep) => {
     letter-spacing: 0.05em;
     text-transform: uppercase;
     color: white;
-    background: var(--theme-color-4);
+    background: var(--step-discount-color);
     border-radius: 9999px;
 }
 
@@ -261,8 +267,8 @@ const onSelectStep = (step: StepDiscountStep) => {
     font-weight: 700;
     letter-spacing: 0.03em;
     text-transform: uppercase;
-    color: var(--theme-color-4);
-    background: color-mix(in srgb, var(--theme-color-4) 12%, white);
+    color: var(--step-discount-color);
+    background: color-mix(in srgb, var(--step-discount-color) 12%, white);
     border-radius: 9999px;
 }
 
@@ -274,11 +280,11 @@ const onSelectStep = (step: StepDiscountStep) => {
     width: 20px;
     height: 20px;
     border-radius: 9999px;
-    border: 2px solid color-mix(in srgb, var(--theme-color-4) 40%, #9ca3af);
+    border: 2px solid color-mix(in srgb, var(--step-discount-color) 40%, #9ca3af);
 }
 
 .radio-checked {
-    border-color: var(--theme-color-4);
+    border-color: var(--step-discount-color);
 }
 
 .radio-dot {
@@ -289,6 +295,6 @@ const onSelectStep = (step: StepDiscountStep) => {
 }
 
 .radio-checked .radio-dot {
-    background: var(--theme-color-4);
+    background: var(--step-discount-color);
 }
 </style>

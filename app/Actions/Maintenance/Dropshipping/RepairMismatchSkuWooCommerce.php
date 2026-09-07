@@ -17,6 +17,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMismatchSkuWooCommerce
 {
@@ -51,6 +52,7 @@ class RepairMismatchSkuWooCommerce
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $customerSalesChannelSlug = $command->argument('customerSalesChannel');
 
         if (! blank($customerSalesChannelSlug)) {

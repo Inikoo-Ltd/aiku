@@ -14,11 +14,13 @@ use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Enums\Dropshipping\EbayUserStepEnum;
 use App\Models\CRM\Customer;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -59,12 +61,13 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EbayUser withoutTrashed()
  * @mixin \Eloquent
  */
-class EbayUser extends Model
+class EbayUser extends Model implements Auditable
 {
     use InCustomer;
     use HasSlug;
     use WithEbayApiRequest;
     use SoftDeletes;
+    use HasHistory;
 
     protected $guarded = [];
 
@@ -106,4 +109,33 @@ class EbayUser extends Model
     {
         return $this->morphMany(DebugWebhooks::class, 'model');
     }
+
+    public function generateTags(): array
+    {
+        return ['crm', 'websites'];
+    }
+
+    /**
+     * Location keys that were once written locally without ever creating the matching inventory
+     * location on eBay. eBay answers "Location information not found" for every offer built with
+     * one, so they count as no key at all and the real location gets provisioned instead.
+     */
+    public const UNPROVISIONED_LOCATION_KEYS = [
+        'mainWarehouse',
+        'esWarehouse',
+        'deWarehouse',
+    ];
+
+    public function hasUsableLocationKey(): bool
+    {
+        return filled($this->location_key)
+            && !in_array($this->location_key, self::UNPROVISIONED_LOCATION_KEYS, true);
+    }
+
+    protected array $auditInclude = [
+        'name',
+        'status',
+        'state',
+        'step'
+    ];
 }

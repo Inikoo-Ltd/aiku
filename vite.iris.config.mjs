@@ -13,6 +13,7 @@ import path from "node:path";
 import fs from "node:fs";
 import tailwindcss from 'tailwindcss';
 import { analyzer } from 'vite-bundle-analyzer'
+import { codecov } from "./vite.codecov.mjs";
 
 /*
  * The lang/*.json files hold translations for every app (grp backoffice included).
@@ -72,8 +73,8 @@ const irisLangFilter = () => {
     };
 };
 
-export default defineConfig(
-  {
+export default defineConfig(({ isSsrBuild }) =>
+  ({
     cacheDir: "node_modules/.vite-iris",
     server : {
       cors : true,
@@ -102,7 +103,8 @@ export default defineConfig(
             }
           }),
       i18n(),
-      irisLangFilter()
+      irisLangFilter(),
+      codecov(isSsrBuild ? "iris-ssr" : "iris")
      // , analyzer()
     ],
     ssr    : {
@@ -155,4 +157,4 @@ export default defineConfig(
         }
       }
     }
-  });
+  }));

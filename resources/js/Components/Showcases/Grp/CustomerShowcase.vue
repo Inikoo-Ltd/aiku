@@ -21,7 +21,6 @@ import {
     faArrowAltFromTop,
     faArrowAltFromBottom,
     faReceipt,
-    faCopy,
     faChartLine,
     faExclamationTriangle,
     faShoppingCart,
@@ -47,6 +46,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue"
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import ModalRejected from "@/Components/Utils/ModalRejected.vue"
+import CopyButton from "@/Components/Utils/CopyButton.vue"
 import ButtonPrimeVue from "primevue/button"
 import { Link, router } from "@inertiajs/vue3"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -67,7 +67,7 @@ import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import UpcomingTransactionsPanel from "@/Components/CRM/UpcomingTransactionsPanel.vue"
 import { PDRNotes } from "@/types/Pallet"
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck, faGlobeEurope, faIslandTropical, faGift, faBadgePercent, faHistory, faPaperclip)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck, faGlobeEurope, faIslandTropical, faGift, faBadgePercent, faHistory, faPaperclip)
 
 interface Customer {
     slug: string
@@ -94,8 +94,6 @@ interface Customer {
     number_current_customer_clients: number | null
     address: Address
     contact_website?: string | null
-    eori?: string | null
-    ukims?: string | null
     is_dropshipping: boolean
     email_subscriptions?: {
         update_route: {
@@ -204,7 +202,8 @@ const props = defineProps<{
             color: string
             metadata: Record<string, unknown>
         }[]
-    }    
+    }
+    temporaryNote?: {}
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -285,24 +284,6 @@ const getStatusText = (status: string, valid: boolean) => {
     return trans("Pending")
 }
 
-// Function: Copy to clipboard
-const copyToClipboard = async (text: string, label: string) => {
-    try {
-        await navigator.clipboard.writeText(text)
-        notify({
-            title: trans("Copied!"),
-            text: trans(`:label copied to clipboard`, { label: label }),
-            type: "success"
-        })
-    } catch (error) {
-        notify({
-            title: trans("Failed"),
-            text: trans("Failed to copy to clipboard"),
-            type: "error"
-        })
-    }
-}
-
 const churnRiskLevel = computed(() => {
     const risk = props.data?.stats?.churn_risk_prediction ?? 0
     if (risk < 0.33) {
@@ -368,6 +349,41 @@ const onToggleGiftOptOut = async (optOut: boolean) => {
         })
     } finally {
         isLoadingGiftOptOut.value = false
+    }
+}
+
+// Section: Gold reward manual extension
+const isLoadingGrExtension = ref(false)
+const localGrExtendedUntil = ref(props.gr_data?.gr_extended_until ?? '')
+
+const onSaveGrExtension = async (value: string) => {
+    if (!props.gr_data?.route_gift_opt_out) return
+
+    try {
+        isLoadingGrExtension.value = true
+
+        await axios.patch(
+            route(props.gr_data.route_gift_opt_out.name, props.gr_data.route_gift_opt_out.parameters),
+            { gr_extended_until: value || null }
+        )
+
+        localGrExtendedUntil.value = value
+
+        notify({
+            title: trans("Updated"),
+            text: value ? trans("Gold reward extended until") + " " + value : trans("Gold reward extension removed"),
+            type: 'success'
+        })
+
+        router.reload()
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Please try again or contact administrator"),
+            type: 'error'
+        })
+    } finally {
+        isLoadingGrExtension.value = false
     }
 }
 
@@ -448,7 +464,7 @@ const submitNote = async () => {
             <div class="flex flex-col items-center text-center gap-2">
                 <h3 class="text-lg font-semibold text-gray-800">Pending Application</h3>
                 <p class="text-sm text-gray-600">
-                    This application is currently awaiting approval.
+                    {{ ctrans("This application is currently awaiting approval.") }}
                 </p>
             </div>
 
@@ -457,14 +473,13 @@ const submitNote = async () => {
                       :data="{ status: 'approved' }">
                     <ButtonPrimeVue class="fixed-width-btn" severity="success" size="small" variant="outlined">
                         <FontAwesomeIcon :icon="faCheck" @click="visible = false" />
-                        <span> Approve </span>
+                        <span> {{ ctrans("Approve") }} </span>
                     </ButtonPrimeVue>
                 </Link>
 
-                <ButtonPrimeVue class="fixed-width-btn" severity="danger" size="small" variant="outlined"
-                                @click="() => openRejectedModal(data.customer)">
+                <ButtonPrimeVue class="fixed-width-btn" severity="danger" size="small" variant="outlined" @click="() => openRejectedModal(data.customer)">
                     <FontAwesomeIcon :icon="faTimes" @click="visible = false" />
-                    <span> Reject </span>
+                    <span> {{ ctrans("Reject") }} </span>
                 </ButtonPrimeVue>
             </div>
         </div>
@@ -473,7 +488,7 @@ const submitNote = async () => {
     <!-- Quick Actions Bar -->
     <div class="px-4 pt-6 md:px-6 lg:px-8">
         <div class="flex flex-wrap items-center gap-3">
-            <BoxNote :noteData="data.internal_note" :updateRoute="data.update_route" :alternativeStyle="true" class="h-full">
+            <BoxNote v-if="data.shop.type !== 'external'" :noteData="data.internal_note" :updateRoute="data.update_route" :alternativeStyle="true" class="h-full">
                 <template #mainIcon>
                     <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" />
                     {{ trans("Add Note") }}
@@ -496,7 +511,7 @@ const submitNote = async () => {
                 {{ trans("Full Timeline") }}
             </button>
             <a
-                v-if="data.customer.email"
+                v-if="data.customer.email && data.shop.type !== 'external'"
                 :href="`mailto:${data.customer.email}`"
                 class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
             >
@@ -513,9 +528,10 @@ const submitNote = async () => {
             </button>
 
             <UpcomingTransactionsPanel
-                v-if="data.upcoming_transaction_route"
+                v-if="data.upcoming_transaction_route && data.shop.type !== 'external'"
                 :routes="data.upcoming_transaction_route"
-                :shopSlug="data.shop.slug"                
+                :shopSlug="data.shop.slug"
+                :temporaryNote="temporaryNote"
             />
         </div>
     </div>
@@ -557,6 +573,45 @@ const submitNote = async () => {
                             </dd>
                         </div>
 
+                        <!-- Field: Gold reward manual extension -->
+                        <div v-if="gr_data?.shop_has_gr" class="flex items-center w-full flex-none gap-x-4 px-6">
+                            <dt v-tooltip="trans('Manually extend gold reward membership until a given date')" class="flex-none">
+                                <FontAwesomeIcon icon="fas fa-medal" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="text-sm flex items-center gap-x-2">
+                                <span class="text-gray-500">{{ trans("GR extension") }}</span>
+                                <input
+                                    type="date"
+                                    v-model="localGrExtendedUntil"
+                                    class="text-xs border border-gray-300 rounded px-1 py-0.5"
+                                />
+                                <button
+                                    v-if="isLoadingGrExtension"
+                                    class="text-xs text-gray-400 cursor-not-allowed"
+                                    disabled
+                                >
+                                    <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
+                                </button>
+                                <template v-else>
+                                    <button
+                                        v-if="localGrExtendedUntil && localGrExtendedUntil !== (gr_data?.gr_extended_until ?? '')"
+                                        @click="onSaveGrExtension(localGrExtendedUntil)"
+                                        class="text-xs text-blue-500 underline hover:text-blue-700"
+                                    >
+                                        {{ trans("Save") }}
+                                    </button>
+                                    <button
+                                        v-if="gr_data?.gr_extended_until"
+                                        @click="onSaveGrExtension('')"
+                                        class="text-xs text-gray-400 underline hover:text-red-500"
+                                        v-tooltip="trans('Remove gold reward extension')"
+                                    >
+                                        {{ trans("Remove") }}
+                                    </button>
+                                </template>
+                            </dd>
+                        </div>
+
                         <!-- Field: Contact name -->
                         <div v-if="data?.customer?.contact_name"
                              class="flex items-center w-full flex-none gap-x-4 px-6">
@@ -565,11 +620,7 @@ const submitNote = async () => {
                                 <FontAwesomeIcon icon="fal fa-male" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">{{ data?.customer?.contact_name }}</dd>
-                            <button @click="copyToClipboard(data?.customer?.contact_name, 'Contact name')"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="data?.customer?.contact_name" />
                         </div>
 
                         <!-- Field: Company name -->
@@ -580,11 +631,7 @@ const submitNote = async () => {
                                 <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">{{ data?.customer?.company_name }}</dd>
-                            <button @click="copyToClipboard(data?.customer?.company_name, 'Company name')"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="data?.customer?.company_name" />
                         </div>
 
                         <!-- Field: Created at -->
@@ -596,11 +643,7 @@ const submitNote = async () => {
                             <dd class="text-gray-500">
                                 <time datetime="2023-01-31">{{ useFormatTime(data?.customer?.created_at) }}</time>
                             </dd>
-                            <button @click="copyToClipboard(useFormatTime(data?.customer?.created_at), 'Created at')"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="useFormatTime(data?.customer?.created_at)" />
                         </div>
 
                         <!-- Field: Email -->
@@ -612,11 +655,7 @@ const submitNote = async () => {
                             <dd class="text-gray-500">
                                 <a :href="`mailto:${data.customer.email}`">{{ data?.customer?.email }}</a>
                             </dd>
-                            <button @click="copyToClipboard(data?.customer?.email, 'Email')"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="data?.customer?.email" />
                         </div>
 
                         <!-- Field: Phone -->
@@ -628,11 +667,7 @@ const submitNote = async () => {
                             <dd class="text-gray-500">
                                 <a :href="`tel:${data.customer.phone}`">{{ data?.customer?.phone }}</a>
                             </dd>
-                            <button @click="copyToClipboard(data?.customer?.phone, 'Phone')"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="data?.customer?.phone" />
                         </div>
 
                         <!-- Field: Website -->
@@ -644,33 +679,7 @@ const submitNote = async () => {
                             <dd class="text-gray-500">
                                 <a :href="data.customer.contact_website.startsWith('http') ? data.customer.contact_website : `https://${data.customer.contact_website}`" target="_blank" rel="noopener noreferrer">{{ data?.customer?.contact_website }}</a>
                             </dd>
-                            <button @click="copyToClipboard(data?.customer?.contact_website, 'Website')"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
-                        </div>
-
-                        <div v-if="data?.customer?.eori" class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="'Economic Operators Registration and Identification (EORI) number'" class="flex-none">
-                                <span class="sr-only">EORI</span>
-                                <FontAwesomeIcon icon="fal fa-globe-europe" class="text-gray-400" fixed-width aria-hidden="true" />
-                            </dt>
-                            <dd class="text-gray-500">
-                                {{ data?.customer?.eori }}
-                                <span class="text-xs text-gray-400">EORI</span>
-                            </dd>
-                        </div>
-
-                        <div v-if="data?.customer?.ukims" class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="'UK Internal Market Scheme (UKIMS) number'" class="flex-none">
-                                <span class="sr-only">UKIMS</span>
-                                <FontAwesomeIcon icon="fal fa-island-tropical" class="text-gray-400" fixed-width aria-hidden="true" />
-                            </dt>
-                            <dd class="text-gray-500">
-                                {{ data?.customer?.ukims }}
-                                <span class="text-xs text-gray-400">UKIMS</span>
-                            </dd>
+                            <CopyButton :text="data?.customer?.contact_website" />
                         </div>
 
                         <!-- Field: Address -->
@@ -726,11 +735,8 @@ const submitNote = async () => {
                         </div>
                     </div>
 
-
-
-                    <!-- Field: Gift opt-out (shown when shop has GR gifts) -->
                     <div class="w-full flex gap-y-2 py-2 border-t">
-                        <div v-if="gr_data.shop_has_gr && gr_data.route_gift_opt_out" class="flex items-center w-full flex-none gap-x-4 px-6">
+                        <div v-if="gr_data.route_gift_opt_out" class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="localGiftOptedOut ? ctrans('Customer has opted out of eligible gifts and will not receive any') + '.' : ctrans('Customers will receive a gift if they are eligible and select the item. Customer can opted-out by themself in the basket page') + '.'" class="flex-none">
                                 <FontAwesomeIcon icon="fal fa-gift" :class="localGiftOptedOut ? 'text-gray-300' : 'text-gray-400'" fixed-width aria-hidden="true" />
                             </dt>
@@ -782,11 +788,7 @@ const submitNote = async () => {
                     <div class="space-y-2">
                         <div class="flex items-center gap-x-2">
                             <div class="text-gray-900 font-medium">{{ data.customer.tax_number.number }}</div>
-                            <button @click="copyToClipboard(data.customer.tax_number.number, 'Tax Number')"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="data.customer.tax_number.number" />
                             <span class="text-xs text-gray-400 ml-1">{{ trans("Tax number") }}</span>
                         </div>
                         <div class="p-3 bg-gray-50 rounded-lg border">
@@ -839,11 +841,7 @@ const submitNote = async () => {
                     <div class="space-y-2">
                         <div class="flex items-center gap-x-2">
                             <div class="text-gray-900 font-medium">{{ data.customer.identity_document_number?.number }}</div>
-                            <button @click="copyToClipboard(data.customer.identity_document_number?.number, data.customer.identity_document_number?.label)"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="data.customer.identity_document_number?.number" />
                             <span class="text-xs text-gray-400 ml-1">{{ data.customer.identity_document_number?.label }}</span>
                         </div>
                     </div>
@@ -861,11 +859,7 @@ const submitNote = async () => {
                     <div class="space-y-2">
                         <div class="flex items-center gap-x-2">
                             <div class="text-gray-900 font-medium">{{ data.customer.identity_document_number_alt?.number }}</div>
-                            <button @click="copyToClipboard(data.customer.identity_document_number_alt?.number, data.customer.identity_document_number_alt?.label)"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="trans('Copy to clipboard')">
-                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                            </button>
+                            <CopyButton :text="data.customer.identity_document_number_alt?.number" />
                             <span class="text-xs text-gray-400 ml-1">{{ data.customer.identity_document_number_alt?.label }}</span>
                         </div>
                     </div>
@@ -883,7 +877,6 @@ const submitNote = async () => {
                     {{ data?.customer?.fiscal_name }}
                     <span class="text-xs text-gray-400">{{trans('Fiscal name')}}</span>
                 </dd>
-
             </div>
 
             <!-- Offers Section -->
@@ -1119,7 +1112,8 @@ const submitNote = async () => {
 
             <!-- Email Subscriptions -->
             <EmailSubscription v-if="data?.customer?.email_subscriptions"
-                               :emailSubscriptions="data.customer.email_subscriptions" />
+                               :emailSubscriptions="data.customer.email_subscriptions"
+                               :showEditButton="data.shop.type !== 'external'" />
         </div>
     </div>
 

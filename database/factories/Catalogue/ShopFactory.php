@@ -17,7 +17,7 @@ class ShopFactory extends Factory
     public function definition(): array
     {
         return [
-            'code'                     => fake()->lexify(),
+            'code'                     => fake()->lexify('??????'),
             'name'                     => fake()->company(),
             'contact_name'             => fake()->name,
             'company_name'             => fake()->company,

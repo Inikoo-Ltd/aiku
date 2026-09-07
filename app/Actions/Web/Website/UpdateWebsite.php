@@ -87,6 +87,17 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.enable_chat", Arr::pull($modelData, "enable_chat"));
         }
 
+        if (Arr::has($modelData, "view_contact_options_panel")) {
+            data_set($modelData, "settings.view_contact_options_panel", Arr::pull($modelData, "view_contact_options_panel"));
+        }
+
+        if (Arr::has($modelData, "data_contact_options_panel")) {
+            $settings = $website->settings ?? [];
+            data_set($settings, "data_contact_options_panel", Arr::pull($modelData, "data_contact_options_panel"));
+            $website->settings = $settings;
+            $website->saveQuietly();
+        }
+
         if (Arr::has($modelData, "google_tag_id")) {
             data_set($modelData, "settings.google_tag_id", Arr::pull($modelData, "google_tag_id"));
         }
@@ -121,6 +132,10 @@ class UpdateWebsite extends OrgAction
 
         if (Arr::has($modelData, "iris_search_model")) {
             data_set($modelData, "settings.iris_search_model", Arr::pull($modelData, "iris_search_model"));
+        }
+
+        if (Arr::has($modelData, "sound_player_style")) {
+            data_set($modelData, "settings.sound_player_style", Arr::pull($modelData, "sound_player_style"));
         }
 
         if (Arr::has($modelData, "return_policy")) {
@@ -209,7 +224,7 @@ class UpdateWebsite extends OrgAction
                         ],
                         [
                             'column'    => 'status',
-                            'operation' => '=',
+                            'operator'  => '=',
                             'value'     => true
                         ],
                         [
@@ -254,6 +269,7 @@ class UpdateWebsite extends OrgAction
             'luigisbox_private_key'                      => ['sometimes', 'nullable', 'string'],
             'last_reindex_at'                            => ['sometimes', 'nullable', 'string'],
             'iris_search_model'                          => ['sometimes', 'string', Rule::in(['internal', 'luigi'])],
+            'sound_player_style'                         => ['sometimes', 'string', Rule::in(['rainbow', 'mono', 'wave', 'equalizer', 'minimal'])],
             'jira_help_desk_widget'                      => ['sometimes', 'nullable', 'string'],
             'return_policy'                              => ['sometimes', 'string'],
             'image'                                      => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
@@ -263,6 +279,11 @@ class UpdateWebsite extends OrgAction
             'script_website'                             => ['sometimes', 'nullable', 'string'],
             'llms_txt'                                   => ['sometimes', 'nullable', File::types(['txt'])->max(50)], // 50KB max
             'enable_chat'                                => ['sometimes', 'boolean'],
+            'view_contact_options_panel'                 => ['sometimes', 'boolean'],
+            'data_contact_options_panel'                 => ['sometimes', 'nullable', 'array'],
+            'data_contact_options_panel.*.icon'          => ['sometimes', 'nullable'],
+            'data_contact_options_panel.*.label'         => ['sometimes', 'nullable', 'string', 'max:255'],
+            'data_contact_options_panel.*.url'           => ['sometimes', 'nullable', 'string', 'max:2000'],
             'description_has_overview'                   => ['sometimes', 'boolean'],
             'welcome_message'                            => ['sometimes', 'nullable', 'string'],
             'company_name_label'                         => ['sometimes', 'nullable', 'string'],
@@ -296,7 +317,7 @@ class UpdateWebsite extends OrgAction
                         ],
                         [
                             'column'    => 'status',
-                            'operation' => '=',
+                            'operator'  => '=',
                             'value'     => true
                         ],
                         [

@@ -71,31 +71,37 @@ const defaultNoteTypeConfigs = {
     shipping: {
         bgColor: '#38bdf8',
         textColor: '#38bdf8',
-        title: 'Delivery Instructions',
+        title: "Shippings Label (From Customer)",
         disableTitle: false
     },
     customer: {
-        bgColor: '#ff7dbd',
-        textColor: '#ff7dbd',
-        title: 'Customer Notes',
-        disableTitle: false
-    },
-    internal: {
-        bgColor: '#fcf4a3',
-        textColor: '#fcf4a3',
-        title: 'Private Notes',
+        bgColor: '#6996F2',
+        textColor: '#6996F2',
+        title: "Customers Note",
         disableTitle: false
     },
     public: {
-        bgColor: '#94db84',
-        textColor: '#94db84',
-        title: 'Public Notes',
+        bgColor: '#d6d6d6',
+        textColor: '#d6d6d6',
+        title: "Public Note",
+        disableTitle: false
+    },
+    internal: {
+        bgColor: '#D8B4FE',
+        textColor: '#D8B4FE',
+        title: "CRMs Note (Private)",
+        disableTitle: false
+    },
+    warehouse: {
+        bgColor: '#FCD34D',
+        textColor: '#FCD34D',
+        title: "Warehouse Note (Private)",
         disableTitle: false
     },
     credit_transaction_note: {
         bgColor: '#b873f5',
         textColor: '#b873f5',
-        title: 'Transaction Notes',
+        title: "Credit Transaction Note",
         disableTitle: true
     }
 }

@@ -154,7 +154,7 @@ const imgAttrsFor = (image: any, index: number) => {
                 rel="noopener noreferrer"
                 class="block w-full h-full"
                 :type="image.link_data?.type"
-                :chanonical_url="image.link_data?.canonical_url"
+                :canonical_url="image.link_data?.canonical_url"
                 @start="() => idxSlideLoading = index"
                 @finish="() => idxSlideLoading = null"
             >

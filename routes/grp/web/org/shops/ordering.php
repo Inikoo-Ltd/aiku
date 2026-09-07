@@ -20,6 +20,7 @@ use App\Actions\Ordering\Invoice\UI\IndexInvoices;
 use App\Actions\Ordering\Order\DownloadOrderTransactionsTemplate;
 use App\Actions\Ordering\Order\PdfProformaInvoice;
 use App\Actions\Ordering\Order\UI\EditOrder;
+use App\Actions\Ordering\Order\UI\IndexOrderChannels;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Purge\UI\CreatePurge;
@@ -42,6 +43,7 @@ Route::post('/backlog/waiting_items/{deliveryNoteItem}/set-as-not-pick', SetWait
 
 
 Route::get('/orders/', IndexOrders::class)->name('orders.index');
+Route::get('/channels', [IndexOrderChannels::class, 'inShop'])->name('channels.index');
 Route::get('/invoices/', IndexInvoices::class)->name('invoices.index');
 Route::get('/checkout-abandonments', IndexCheckoutAbandonments::class)->name('checkout_abandonments.index');
 

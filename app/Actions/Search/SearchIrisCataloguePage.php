@@ -30,7 +30,7 @@ class SearchIrisCataloguePage extends IrisAction
     /**
      * @param array{q: string, categories?: array<int, int>, page?: int, per_page?: int, sort?: string|null} $modelData
      *
-     * @return array{results: array{products: array<int, array<string, mixed>>, total: int, page: int, last_page: int, per_page: int, facets: array<string, array<int, array<string, mixed>>>, collections: array<int, array<string, mixed>>}}
+     * @return array{results: array{orders: array<int, array<string, mixed>>, invoices: array<int, array<string, mixed>>, products: array<int, array<string, mixed>>, total: int, page: int, last_page: int, per_page: int, facets: array<string, array<int, array<string, mixed>>>, collections: array<int, array<string, mixed>>}}
      */
     public function handle(array $modelData): array
     {
@@ -45,11 +45,15 @@ class SearchIrisCataloguePage extends IrisAction
         $sort        = Arr::get($modelData, 'sort');
 
         ['ids' => $matchedIds, 'arm_counts' => $armCounts] = $this->matchedProductIds($query);
+        $orders   = $pageNumber === 1 ? $this->matchedCustomerDocuments($query, SearchIrisOrders::class) : [];
+        $invoices = $pageNumber === 1 ? $this->matchedCustomerDocuments($query, SearchIrisInvoices::class) : [];
 
         if (empty($matchedIds)) {
             return [
                 'arm_counts' => $armCounts,
                 'results'    => [
+                    'orders'      => $orders,
+                    'invoices'    => $invoices,
                     'products'    => [],
                     'total'       => 0,
                     'page'        => 1,
@@ -111,6 +115,8 @@ class SearchIrisCataloguePage extends IrisAction
         return [
             'arm_counts' => $armCounts,
             'results'    => [
+                'orders'      => $orders,
+                'invoices'    => $invoices,
                 'products'    => $products,
                 'total'       => $total,
                 'page'        => $pageNumber,
@@ -127,6 +133,22 @@ class SearchIrisCataloguePage extends IrisAction
     }
 
     /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function matchedCustomerDocuments(string $query, string $searchAction): array
+    {
+        $customerId = $this->signedInCustomerId();
+        if (!$customerId) {
+            return [];
+        }
+
+        return $searchAction::run($query, [
+            'shop_id'     => $this->shop->id,
+            'customer_id' => $customerId,
+        ]);
+    }
+
+    /**
      * Relevance-ordered product ids matching the query. Without an explicit take() the
      * Typesense engine runs a single request at its 250 per_page maximum; take(250) or more
      * would switch it to the paginated path capped by scout.typesense.max_total_results (100).
@@ -139,11 +161,69 @@ class SearchIrisCataloguePage extends IrisAction
 
         $hits = $this->rawHits($searchQuery);
         $ids  = array_column(Arr::pluck($hits, 'document'), 'id');
+        $ids  = array_values(array_unique(array_map('intval', array_filter($ids))));
+
+        $categoryHit = Arr::first($this->rawHits(
+            ProductCategory::search($query)->where('shop_id', $this->shop->id)->where('is_in_website', true)->take(1)
+        ));
 
         return [
-            'ids'        => array_values(array_unique(array_map('intval', array_filter($ids)))),
+            'ids'        => $this->withBestMatchCategoryProducts($query, $categoryHit, $hits, $ids),
             'arm_counts' => $this->armCounts($hits),
         ];
+    }
+
+    /**
+     * A query that is really a category ("jcg" -> the Healing Gongs family) can match none
+     * of that category's own products by text, only lookalike codes (JCGB-...). When a
+     * category is the strongest hit - exact code/name, or outscoring every product hit -
+     * its products lead the page, ahead of the direct hits (HELP-3002). Same rule as the
+     * search dropdown's best match in SearchIrisCatalogue.
+     *
+     * @param array<string, mixed>|null $categoryHit
+     * @param array<int, array<string, mixed>> $productHits
+     * @param array<int, int> $ids
+     *
+     * @return array<int, int>
+     */
+    public function withBestMatchCategoryProducts(string $query, ?array $categoryHit, array $productHits, array $ids): array
+    {
+        if (!$categoryHit) {
+            return $ids;
+        }
+
+        $document        = Arr::get($categoryHit, 'document', []);
+        $normalisedQuery = mb_strtolower(trim($query));
+        $isExactMatch    = in_array($normalisedQuery, [
+            mb_strtolower($document['code'] ?? ''),
+            mb_strtolower($document['name'] ?? ''),
+        ], true);
+
+        $topProductScore = (int) (Arr::first($productHits)['text_match'] ?? 0);
+        if (!$isExactMatch && (int) ($categoryHit['text_match'] ?? 0) <= $topProductScore) {
+            return $ids;
+        }
+
+        $column = match ($document['type'] ?? null) {
+            ProductCategoryTypeEnum::DEPARTMENT->value     => 'department_id',
+            ProductCategoryTypeEnum::SUB_DEPARTMENT->value => 'sub_department_id',
+            ProductCategoryTypeEnum::FAMILY->value         => 'family_id',
+            default                                        => null,
+        };
+        if (!$column) {
+            return $ids;
+        }
+
+        $categoryProductIds = Product::query()
+            ->where($column, (int) $document['id'])
+            ->where('shop_id', $this->shop->id)
+            ->where('is_in_website', true)
+            ->orderBy('code')
+            ->limit(250)
+            ->pluck('id')
+            ->all();
+
+        return array_values(array_unique(array_merge($categoryProductIds, $ids)));
     }
 
     /**

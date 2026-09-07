@@ -44,6 +44,17 @@ class RedoIntrastatExportTimeSeries implements ShouldBeUnique
         return $query->where('type', OrganisationTypeEnum::SHOP->value);
     }
 
+    protected function dateRangeSources(): array
+    {
+        return [
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('delivery_notes')->whereNotNull('dispatched_at'),
+                'key'   => 'organisation_id',
+                'date'  => 'dispatched_at',
+            ],
+        ];
+    }
+
     public function handle(?int $organisationId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$organisationId) {
@@ -57,14 +68,14 @@ class RedoIntrastatExportTimeSeries implements ShouldBeUnique
         }
 
         if (!$from || !$to) {
-            $dates = DB::connection('aiku_no_sticky')->table('delivery_notes')->where('organisation_id', $organisation->id)->whereNotNull('dispatched_at')->selectRaw('MIN(dispatched_at) as min_date, MAX(dispatched_at) as max_date')->first();
+            $dateRange = $this->getDateRange($organisation->id);
 
-            if (!$dates || !$dates->min_date || !$dates->max_date) {
+            if (!$dateRange['from'] || !$dateRange['to']) {
                 return;
             }
 
-            $from = $from ?? Carbon::parse($dates->min_date)->toDateString();
-            $to   = $to ?? Carbon::parse($dates->max_date)->toDateString();
+            $from = $from ?? Carbon::parse($dateRange['from'])->toDateString();
+            $to   = $to ?? Carbon::parse($dateRange['to'])->toDateString();
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {

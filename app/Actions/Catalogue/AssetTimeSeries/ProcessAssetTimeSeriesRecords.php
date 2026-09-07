@@ -103,7 +103,7 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
 
         $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $statsByPeriod, $processedPeriods)];
 
-        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['asset_time_series_id', 'period', 'frequency']);
+        $this->syncTimeSeriesRecords($timeSeries, $rows, ['asset_time_series_id', 'period', 'frequency'], $from, $to);
     }
 
     protected function periodsWithoutInvoicesRows(AssetTimeSeries $timeSeries, array $statsByPeriod, array $processedPeriods): array

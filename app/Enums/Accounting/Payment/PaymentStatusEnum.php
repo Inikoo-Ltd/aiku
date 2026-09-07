@@ -43,8 +43,8 @@ enum PaymentStatusEnum: string
             'fail'    => [
                 'tooltip' => __('Fail'),
                 'icon'    => 'fal fa-times',
-                'class'   => 'text-emerald-500',
-                'color'   => 'emerald',
+                'class'   => 'text-red-500',
+                'color'   => 'red',
                 'app'     => [
                     'name' => 'times',
                     'type' => 'font-awesome-5'

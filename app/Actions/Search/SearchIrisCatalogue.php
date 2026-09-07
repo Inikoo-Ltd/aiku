@@ -9,7 +9,6 @@ namespace App\Actions\Search;
 
 use App\Actions\IrisAction;
 use App\Actions\Web\Website\UpdateWebsiteSearchBoosts;
-use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -18,81 +17,59 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SearchIrisCatalogue extends IrisAction
 {
+    use WithIrisSearchEnrichedItems;
+
     public function handle(string $query): array
     {
-        $boosts = UpdateWebsiteSearchBoosts::activeBoostIds($this->website);
+        $boosts     = UpdateWebsiteSearchBoosts::activeBoostIds($this->website);
+        $customerId = $this->signedInCustomerId();
 
         $results = Search::run('catalogue', $query, [
-            'shop_id'       => $this->shop->id,
-            'is_in_website' => true,
-            'boosts'        => $boosts,
-            'language'      => $this->shop->language->code,
+            'shop_id'            => $this->shop->id,
+            'is_in_website'      => true,
+            'boosts'             => $boosts,
+            'language'           => $this->shop->language->code,
+            'orders_customer_id' => $customerId,
         ]);
 
         data_set($results, 'results.products', $this->enrichItems(Arr::get($results, 'results.products', []), Product::class, largeImage: true));
-        data_set($results, 'results.product_categories', $this->enrichItems(Arr::get($results, 'results.product_categories', []), ProductCategory::class));
+        data_set($results, 'results.product_categories', $this->enrichItems(Arr::get($results, 'results.product_categories', []), ProductCategory::class, largeImage: true));
         data_set($results, 'results.collections', $this->enrichItems(Arr::get($results, 'results.collections', []), Collection::class));
+
+        data_set($results, 'results.best_match', $this->bestMatch($query, Arr::get($results, 'results', [])));
 
         return $results;
     }
 
     /**
-     * Attach the storefront canonical url and an image to each search hit.
-     * Products use a larger 150x150 image; categories and collections keep the small thumbnail.
-     * Hits are filtered by is_in_website (live webpage + sellable) as a backstop for a
-     * stale Typesense index: the shared index also holds items not published on the
-     * storefront, which must not leak to the public.
+     * A family beats the top product in the Best Match spotlight when the query is
+     * its exact code or name ("jcg" must land on the JCG family, not a JCGB product),
+     * or when Typesense scores it above every product hit.
      *
-     * @param array<int, array<string, mixed>> $items
-     * @param class-string $modelClass
+     * @param array<string, array<int, array<string, mixed>>> $results
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>|null
      */
-    private function enrichItems(array $items, string $modelClass, bool $largeImage = false): array
+    protected function bestMatch(string $query, array $results): ?array
     {
-        $ids = array_filter(array_column($items, 'id'));
-        if (empty($ids)) {
-            return [];
+        $topCategory = Arr::first(Arr::get($results, 'product_categories', []));
+        if (!$topCategory) {
+            return null;
         }
 
-        $models = $modelClass::query()
-            ->whereIn('id', $ids)
-            ->with(['webpage' => fn ($query) => $query->where('website_id', $this->website->id)->where('state', WebpageStateEnum::LIVE)->with('shop')])
-            ->get()
-            ->keyBy('id');
+        $normalisedQuery = mb_strtolower(trim($query));
+        $isExactMatch    = in_array($normalisedQuery, [
+            mb_strtolower($topCategory['code'] ?? ''),
+            mb_strtolower($topCategory['name'] ?? ''),
+        ], true);
 
-        $showPrice = auth()->check();
+        $topProduct = Arr::first(Arr::get($results, 'products', []));
 
-        $enriched = [];
-        foreach ($items as $item) {
-            $model = $models->get($item['id']);
-            $url   = $model?->webpage?->getCanonicalUrl();
-            if (!$url) {
-                continue;
-            }
-
-            if (!$model->is_in_website) {
-                continue;
-            }
-
-            $image = $largeImage
-                ? $model->imageSources(150, 150)
-                : Arr::get($model->web_images ?? [], 'main.thumbnail');
-
-            $item['url']   = $url;
-            $item['image'] = $image ?: $item['image'] ?? null;
-            $item['stock'] = $model->available_quantity;
-            $item['units'] = $model->units;
-            $item['unit']  = $model->unit;
-
-            if ($showPrice) {
-                $item['price'] = $model->price;
-            }
-
-            $enriched[] = $item;
+        if ($isExactMatch || Arr::get($topCategory, 'score', 0) > Arr::get($topProduct ?? [], 'score', 0)) {
+            return array_merge($topCategory, ['type' => 'product_category']);
         }
 
-        return $enriched;
+        return null;
     }
 
     public function rules(): array

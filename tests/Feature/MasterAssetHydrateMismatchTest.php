@@ -50,7 +50,11 @@ beforeEach(function () {
         'type' => MasterProductCategoryTypeEnum::FAMILY,
     ]);
 
-    $this->shop->updateQuietly(['master_shop_id' => $this->masterShop->id]);
+    /* Reset the pricing opt-out too: the tests that switch it off share this file's shop, and a
+       leftover opt-out turns every later product into a reported rebellion. */
+    $shopSettings = $this->shop->settings;
+    data_set($shopSettings, 'catalog.follow_master_pricing', true);
+    $this->shop->updateQuietly(['master_shop_id' => $this->masterShop->id, 'settings' => $shopSettings]);
     $this->tradeUnitId = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition())->id;
 
     $this->masterAsset = StoreMasterAsset::make()->action($this->masterFamily, [
@@ -407,6 +411,11 @@ test('a big master queues the fan out and chains the mismatch hydration after it
 });
 
 test('killing a rebel writes an audit record naming the flags that changed', function () {
+    /* Product::$auditingDisabled is a process-wide static and app actions that disable it rarely
+       re-enable it, so whether it is on here depends on which files this worker ran before this
+       one. This test is about the audit, so it turns auditing on itself. */
+    Product::enableAuditing();
+
     $rebel = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 6, 12);
     $rebel->updateQuietly([
         'not_follow_master_trade_units' => true,
@@ -658,4 +667,93 @@ test('the missing product sweep skips inactive and not for sale masters, but tru
         ->and($codesQueued)->not->toContain($inactive->code)
         ->and($codesQueued)->not->toContain($markedOut->code)
         ->and($codesQueued)->not->toContain($notForSale->code);
+});
+
+test('the organisation sweep compares everything by default and only trusts the flag when asked', function () {
+    $drifted = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 6, 10);
+    $drifted->updateQuietly(['is_for_sale' => true]);
+    $this->masterAsset->updateQuietly(['is_for_sale' => true, 'mismatch_detected' => false]);
+
+    // Flag says clean, data says drifted: the default must not believe the flag.
+    $full = App\Actions\Masters\MasterAsset\FixOrganisationCompositionFromMasters::run(
+        $this->organisation,
+        dryRun: true
+    );
+
+    $flagged = App\Actions\Masters\MasterAsset\FixOrganisationCompositionFromMasters::run(
+        $this->organisation,
+        dryRun: true,
+        withUnits: true,
+        masterShop: null,
+        onlyFlagged: true
+    );
+
+    $mentions = fn (array $result) => collect($result['changes'])
+        ->contains(fn ($change) => str_starts_with($change, $this->masterAsset->code.' @ '.$this->shop->code));
+
+    expect($mentions($full))->toBeTrue()
+        ->and($mentions($flagged))->toBeFalse();
+});
+
+test('a warehouse packing that divides the picks is not an anomaly', function () {
+    $stocks = createStocks($this->group);
+    $stock  = $stocks[0];
+    [$orgStock] = createOrgStocks($this->organisation, [$stock]);
+
+    DB::table('master_asset_has_stocks')->updateOrInsert(
+        ['master_asset_id' => $this->masterAsset->id, 'stock_id' => $stock->id],
+        ['quantity' => 8, 'created_at' => now(), 'updated_at' => now()]
+    );
+    $this->masterAsset->tradeUnits()->updateExistingPivot($this->tradeUnitId, ['quantity' => 8]);
+    DB::table('model_has_trade_units')->insert([
+        'model_type'    => 'Stock',
+        'model_id'      => $stock->id,
+        'trade_unit_id' => $this->tradeUnitId,
+        'quantity'      => 1,
+        'created_at'    => now(),
+        'updated_at'    => now(),
+    ]);
+    $orgStock->tradeUnits()->sync([$this->tradeUnitId => ['quantity' => 4]]);
+
+    $product = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 8, 10);
+    DB::table('product_has_org_stocks')->updateOrInsert(
+        ['product_id' => $product->id, 'org_stock_id' => $orgStock->id],
+        ['quantity' => 2]
+    );
+
+    $anomalies = App\Actions\Masters\MasterAsset\GetMasterAssetAnomalies::run($this->masterAsset->refresh());
+
+    expect($anomalies)->not->toHaveKey($product->id);
+});
+
+test('flags a product picking the discontinued twin of the right stock', function () {
+    $stocks = createStocks($this->group);
+    $stock  = $stocks[0];
+    [$activeOrgStock] = createOrgStocks($this->organisation, [$stock]);
+    $activeOrgStock->update(['state' => App\Enums\Inventory\OrgStock\OrgStockStateEnum::ACTIVE]);
+
+    $deadOrgStock = App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action(
+        $this->organisation,
+        $stock,
+        array_merge(App\Models\Inventory\OrgStock::factory()->definition(), ['code' => 'DEAD-'.uniqid()]),
+    );
+    $deadOrgStock->update(['state' => App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED]);
+
+    DB::table('master_asset_has_stocks')->updateOrInsert(
+        ['master_asset_id' => $this->masterAsset->id, 'stock_id' => $stock->id],
+        ['quantity' => 3, 'created_at' => now(), 'updated_at' => now()]
+    );
+
+    $product = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 3, 10);
+    DB::table('product_has_org_stocks')->updateOrInsert(
+        ['product_id' => $product->id, 'org_stock_id' => $deadOrgStock->id],
+        ['quantity' => 3]
+    );
+
+    $anomalies = App\Actions\Masters\MasterAsset\GetMasterAssetAnomalies::run($this->masterAsset->refresh());
+
+    expect($anomalies)->toHaveKey($product->id)
+        ->and(implode(' | ', $anomalies[$product->id]['issues']))
+        ->toContain('discontinued SKU '.$deadOrgStock->code)
+        ->toContain($activeOrgStock->code);
 });

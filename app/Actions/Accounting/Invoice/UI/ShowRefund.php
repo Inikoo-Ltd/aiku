@@ -362,8 +362,8 @@ class ShowRefund extends OrgAction
                         : Inertia::optional(fn () => $this->getTransactionsInProcessCollection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value), $refund->is_tax_only)),
 
                     RefundInProcessTabsEnum::HISTORY->value => $this->tab == RefundInProcessTabsEnum::HISTORY->value ?
-                        fn () => HistoryResource::collection(IndexHistory::run($refund))
-                        : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($refund))),
+                        fn () => HistoryResource::collection(IndexHistory::run($refund, RefundInProcessTabsEnum::HISTORY->value))
+                        : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($refund, RefundInProcessTabsEnum::HISTORY->value))),
 
 
                 ]
@@ -384,8 +384,8 @@ class ShowRefund extends OrgAction
                         : Inertia::optional(fn () => PaymentsResource::collection(IndexPayments::run($refund))),
 
                     RefundTabsEnum::HISTORY->value => $this->tab == RefundTabsEnum::HISTORY->value ?
-                        fn () => HistoryResource::collection(IndexHistory::run($refund))
-                        : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($refund))),
+                        fn () => HistoryResource::collection(IndexHistory::run($refund, RefundTabsEnum::HISTORY->value))
+                        : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($refund, RefundTabsEnum::HISTORY->value))),
 
                     'invoiceExportOptions'          => $exportInvoiceOptions
                 ]

@@ -13,10 +13,10 @@ use Illuminate\Support\Str;
 
 trait WithWooCommerceAuthorizationToken
 {
-    public function storeWooAuthorizationToken(array $payload): string
+    public function storeWooAuthorizationToken(array $payload, int $ttlSeconds = 3600): string
     {
         $token = Str::random(40);
-        Cache::put($this->getWooAuthorizationTokenCacheKey($token), $payload, 3600);
+        Cache::put($this->getWooAuthorizationTokenCacheKey($token), $payload, $ttlSeconds);
 
         return $token;
     }

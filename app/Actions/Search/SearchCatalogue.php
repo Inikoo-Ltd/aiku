@@ -58,22 +58,32 @@ class SearchCatalogue
             $hits = $this->scoutSearch($query, $options);
         }
 
-        $mapCatalogueItem = static fn (array $document) => [
-            'id'    => (int)$document['id'],
-            'code'  => $document['code'] ?? null,
-            'name'  => $document['name'] ?? null,
-            'image' => json_decode($document['image'] ?? 'null', true),
+        $mapCatalogueItem = static fn (array $hit) => [
+            'id'    => (int)$hit['document']['id'],
+            'code'  => $hit['document']['code'] ?? null,
+            'name'  => $hit['document']['name'] ?? null,
+            'state' => $hit['document']['state'] ?? null,
+            'image' => json_decode($hit['document']['image'] ?? 'null', true),
+            'score' => (int)($hit['text_match'] ?? 0),
         ];
+
+        $results = array_map(
+            static fn (array $collectionHits) => array_map($mapCatalogueItem, $collectionHits),
+            $hits
+        );
+
+        if (!empty($results['products'])) {
+            $availableQuantities = Product::whereIn('id', array_column($results['products'], 'id'))
+                ->pluck('available_quantity', 'id');
+            foreach ($results['products'] as &$product) {
+                $product['available_quantity'] = $availableQuantities[$product['id']] ?? null;
+            }
+            unset($product);
+        }
 
         return [
             'scope'       => 'catalogue',
-            'results'     => array_map(
-                static fn (array $collectionHits) => array_map(
-                    $mapCatalogueItem,
-                    Arr::pluck($collectionHits, 'document')
-                ),
-                $hits
-            ),
+            'results'     => $results,
             'arm_counts'  => $this->sumArmCounts(array_map(
                 fn (array $collectionHits) => $this->armCounts($collectionHits),
                 $hits
@@ -89,6 +99,7 @@ class SearchCatalogue
     private function multiSearch(string $query, array $options): array
     {
         $searches = [];
+
         foreach (self::SEARCH_TARGETS as [$modelClass, $boostType, $limit]) {
             $filters = [];
             if ($shopId = Arr::get($options, 'shop_id')) {

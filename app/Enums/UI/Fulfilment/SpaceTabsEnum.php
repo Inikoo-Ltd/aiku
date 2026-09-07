@@ -18,6 +18,7 @@ enum SpaceTabsEnum: string
     use HasTabs;
 
     case SHOWCASE                       = 'showcase';
+    case HISTORY                        = 'history';
 
     public function blueprint(): array
     {
@@ -25,6 +26,12 @@ enum SpaceTabsEnum: string
             SpaceTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
                 'icon'  => 'fas fa-info-circle',
+            ],
+            SpaceTabsEnum::HISTORY => [
+                'title' => __('History'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
         };
     }

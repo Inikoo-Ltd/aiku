@@ -313,7 +313,7 @@ const submitCloneFromMaster = async () => {
             </Dialog>
         </template>
     </PageHeading>
-    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+    <Tabs v-if="Object.keys(tabs.navigation ?? {}).length" :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
     <!-- <pre>{{ selectedFamiliesId }}</pre> -->
     <component

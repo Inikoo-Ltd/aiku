@@ -36,7 +36,12 @@ trait WithMasterFamilySubNavigation
             )
         ];
 
-        if (in_array(request()->route()->getName(), ["grp.masters.master_shops.show.master_families.show", "grp.masters.master_shops.show.master_families.families", "grp.masters.master_shops.show.master_families.master_products.index"])) {
+        $routeSales = [
+            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.sales',
+            'parameters' => request()->route()->originalParameters()
+        ];
+
+        if (in_array(request()->route()->getName(), ["grp.masters.master_shops.show.master_families.show", "grp.masters.master_shops.show.master_families.families", "grp.masters.master_shops.show.master_families.master_products.index", "grp.masters.master_shops.show.master_families.master_products.index.filter_in_variant", "grp.masters.master_shops.show.master_families.master_products.sales"])) {
             $routeFamily = [
                 'name'       => 'grp.masters.master_shops.show.master_families.show',
                 'parameters' => request()->route()->originalParameters()
@@ -56,7 +61,12 @@ trait WithMasterFamilySubNavigation
                     ]
                 )
             ];
-        } elseif (in_array(request()->route()->getName(), ["grp.masters.master_shops.show.master_departments.show.master_families.show", "grp.masters.master_shops.show.master_departments.show.master_families.families", "grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index"])) {
+
+            $routeSales = [
+                'name'       => 'grp.masters.master_shops.show.master_families.master_products.sales',
+                'parameters' => request()->route()->originalParameters()
+            ];
+        } elseif (in_array(request()->route()->getName(), ["grp.masters.master_shops.show.master_departments.show.master_families.show", "grp.masters.master_shops.show.master_departments.show.master_families.families", "grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index", "grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.sales"])) {
             $routeFamily = [
                 'name'       => 'grp.masters.master_shops.show.master_departments.show.master_families.show',
                 'parameters' => request()->route()->originalParameters()
@@ -76,7 +86,12 @@ trait WithMasterFamilySubNavigation
                     ]
                 )
             ];
-        } elseif (in_array(request()->route()->getName(), ["grp.masters.master_shops.show.master_sub_departments.master_families.show", "grp.masters.master_shops.show.master_sub_departments.master_families.families", "grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index"])) {
+
+            $routeSales = [
+                'name'       => 'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.sales',
+                'parameters' => request()->route()->originalParameters()
+            ];
+        } elseif (in_array(request()->route()->getName(), ["grp.masters.master_shops.show.master_sub_departments.master_families.show", "grp.masters.master_shops.show.master_sub_departments.master_families.families", "grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index", "grp.masters.master_shops.show.master_sub_departments.master_families.master_products.sales"])) {
             $routeFamily = [
                 'name'       => 'grp.masters.master_shops.show.master_sub_departments.master_families.show',
                 'parameters' => request()->route()->originalParameters()
@@ -96,7 +111,17 @@ trait WithMasterFamilySubNavigation
                     ]
                 )
             ];
-        } elseif (in_array(request()->route()->getName(), ["grp.masters.master_shops.show.master_family.mismatch_detected.show", "grp.masters.master_shops.show.master_family.mismatch_detected.families", "grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index"])) {
+        } elseif (in_array(request()->route()->getName(), [
+            "grp.masters.master_shops.show.master_family.mismatch_detected.show",
+            "grp.masters.master_shops.show.master_family.mismatch_detected.families",
+            "grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index"
+        ])) {
+
+            $routeSales = [
+                'name'       => 'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.sales',
+                'parameters' => request()->route()->originalParameters()
+            ];
+        } elseif (in_array(request()->route()->getName(), ["grp.masters.master_shops.show.master_family.mismatch_detected.show", "grp.masters.master_shops.show.master_family.mismatch_detected.families", "grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index", "grp.masters.master_shops.show.master_family.mismatch_detected.master_products.sales"])) {
             $routeFamily = [
                 'name'       => 'grp.masters.master_shops.show.master_family.mismatch_detected.show',
                 'parameters' => request()->route()->originalParameters()
@@ -115,6 +140,35 @@ trait WithMasterFamilySubNavigation
                         'index_elements[status]' => 'active'
                     ]
                 )
+            ];
+        } elseif (in_array(request()->route()->getName(), [
+            "grp.masters.master_shops.show.master_family.missing_image.show",
+            "grp.masters.master_shops.show.master_family.missing_image.families",
+            "grp.masters.master_shops.show.master_family.missing_image.master_products.index"
+        ])) {
+            $routeFamily = [
+                'name'       => 'grp.masters.master_shops.show.master_family.missing_image.show',
+                'parameters' => request()->route()->originalParameters()
+            ];
+
+            $routeFamilies = [
+                'name'       => 'grp.masters.master_shops.show.master_family.missing_image.families',
+                'parameters' => request()->route()->originalParameters()
+            ];
+
+            $routeProducts = [
+                'name'       => 'grp.masters.master_shops.show.master_family.missing_image.master_products.index',
+                'parameters' => array_merge(
+                    request()->route()->originalParameters(),
+                    [
+                        'index_elements[status]' => 'active'
+                    ]
+                )
+            ];
+
+            $routeSales = [
+                'name'       => 'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.sales',
+                'parameters' => request()->route()->originalParameters()
             ];
         }
 
@@ -144,6 +198,14 @@ trait WithMasterFamilySubNavigation
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-cube'],
                     'tooltip' => __('Products')
+                ]
+            ],
+            [
+                'label'    => __('Sales'),
+                'route'    => $routeSales,
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-money-bill-wave'],
+                    'tooltip' => __('Master products sales')
                 ]
             ],
         ];

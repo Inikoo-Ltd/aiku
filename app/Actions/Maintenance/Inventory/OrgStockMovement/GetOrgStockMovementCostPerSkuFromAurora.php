@@ -12,6 +12,7 @@
 namespace App\Actions\Maintenance\Inventory\OrgStockMovement;
 
 use App\Actions\Traits\WithOrganisationSource;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Models\Inventory\OrgStockMovement;
 use App\Models\SysAdmin\Organisation;
 use App\Transfers\Aurora\WithAuroraParsers;
@@ -19,6 +20,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class GetOrgStockMovementCostPerSkuFromAurora
 {
@@ -38,6 +40,7 @@ class GetOrgStockMovementCostPerSkuFromAurora
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $organisation       = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
         $organisationSource = $this->getOrganisationSource($organisation);
         $organisationSource->initialisation($organisation);
@@ -71,7 +74,10 @@ class GetOrgStockMovementCostPerSkuFromAurora
                         $costPerSKU = 0;
                     }
                     if ($costPerSKU > 0) {
-                        $orgStockMovement->update(['cost_per_sku' => $costPerSKU]);
+                        $orgStockMovement->update([
+                            'cost_per_sku' => $costPerSKU,
+                            'cost_status'  => OrgStockMovementCostStatusEnum::COSTED,
+                        ]);
                     }
                 }
             }

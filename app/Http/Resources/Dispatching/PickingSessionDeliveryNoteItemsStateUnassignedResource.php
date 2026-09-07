@@ -18,6 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $quantity_picked
  * @property mixed $org_stock_code
  * @property mixed $org_stock_name
+ * @property mixed $barcode
  * @property mixed $is_handled
  * @property mixed $quantity_packed
  * @property mixed $quantity_not_picked
@@ -65,6 +66,7 @@ class PickingSessionDeliveryNoteItemsStateUnassignedResource extends JsonResourc
             'org_stock_slug'                    => $this->org_stock_slug,
             'org_stock_code'                    => $this->org_stock_code,
             'org_stock_name'                    => $this->org_stock_name,
+            'barcode'                           => $this->barcode,
             'delivery_note_reference'           => $this->delivery_note_reference,
             'delivery_note_slug'                => $this->delivery_note_slug,
             'delivery_note_is_premium_dispatch' => $this->delivery_note_is_premium_dispatch,

@@ -9,10 +9,10 @@
 namespace App\Actions\Web\Webpage\Iris;
 
 use App\Actions\Web\RefreshGrpAssetUrls;
+use App\Actions\Web\Webpage\Traits\WithIrisBlogBreadcrumbs;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -29,6 +29,7 @@ class ShowIrisWebpage
 {
     use AsAction;
     use WithIrisGetWebpageWebBlocks;
+    use WithIrisBlogBreadcrumbs;
 
 
     public function getCanonicalUrl($webpageID): ?string
@@ -174,6 +175,13 @@ class ShowIrisWebpage
             }
         }
 
+        // Products sold to named customers only never appear on the public site. Their customers
+        // reach them through retina, which is never cached, so the answer here is the same for
+        // everyone and this 404 is safe to cache.
+        if ($this->getExclusiveProduct($webpageID)) {
+            abort(404, 'Not found');
+        }
+
         if (config('iris.cache.webpage.ttl') == 0) {
             $webpageData = $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
         } else {
@@ -188,6 +196,22 @@ class ShowIrisWebpage
         }
 
         return $webpageData;
+    }
+
+    /**
+     * The product behind this webpage when it is sold to named customers only, otherwise null.
+     */
+    public function getExclusiveProduct(int $webpageID): ?Product
+    {
+        $webpage = DB::table('webpages')->where('id', $webpageID)->select('model_type', 'model_id')->first();
+
+        if (!$webpage || $webpage->model_type != 'Product' || !$webpage->model_id) {
+            return null;
+        }
+
+        $product = Product::find($webpage->model_id);
+
+        return $product && $product->isExclusive() ? $product : null;
     }
 
 
@@ -423,34 +447,7 @@ class ShowIrisWebpage
 
     private function getIrisBlogBreadcrumbs(Webpage $webpage): array
     {
-        $breadcrumbs = [
-            [
-                'type'   => 'simple',
-                'simple' => [
-                    'icon' => 'fal fa-home',
-                    'url'  => '/'
-                ]
-            ],
-            [
-                'type'   => 'simple',
-                'simple' => [
-                    'short_label' => __('blog'),
-                    'label'       => __('Blog'),
-                    'url'         => '/blog'
-                ]
-            ],
-        ];
-
-        if ($webpage->sub_type && $webpage->sub_type != WebpageSubTypeEnum::BLOG) {
-            $subTypeLabel  = Arr::get(WebpageSubTypeEnum::labels(), $webpage->sub_type->value, $webpage->sub_type->value);
-            $breadcrumbs[] = [
-                'type'   => 'simple',
-                'simple' => [
-                    'short_label' => $subTypeLabel,
-                    'label'       => $subTypeLabel,
-                ]
-            ];
-        }
+        $breadcrumbs = $this->getIrisBlogDashboardBreadcrumbs($webpage->getBlogCategory());
 
         $breadcrumbs[] = [
             'type'   => 'simple',

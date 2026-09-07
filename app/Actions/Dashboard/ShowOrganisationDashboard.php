@@ -19,8 +19,12 @@ use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\OrganisationDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Actions\SupplyChain\Agent\UI\GetAgentCleanHandoverScore;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Enums\UI\Organisation\OrgDashboardIntervalTabsEnum;
+use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -35,6 +39,11 @@ class ShowOrganisationDashboard extends OrgAction
     use WithDashboardTableTabResolution;
     use WithTabsBox;
     use WithPerformanceDateResolution;
+
+    private function canViewSales(Organisation $organisation, User $user): bool
+    {
+        return $user->authTo(['accounting.'.$organisation->id.'.view', 'org-supervisor.'.$organisation->id, 'shops-view.'.$organisation->id]);
+    }
 
     public function authorize(ActionRequest $request): bool
     {
@@ -100,11 +109,28 @@ class ShowOrganisationDashboard extends OrgAction
         return Inertia::render(
             'Dashboard/OrganisationDashboard',
             [
-                'title'       => __('Dashboard').' '.$organisation->name,
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters(), __('Dashboard')),
-                'dashboard'   => $dashboard
+                'title'         => __('Dashboard').' '.$organisation->name,
+                'breadcrumbs'   => $this->getBreadcrumbs($request->route()->originalParameters(), __('Dashboard')),
+                'dashboard'     => $organisation->type === OrganisationTypeEnum::AGENT || !$this->canViewSales($organisation, $request->user()) ? ['super_blocks' => []] : $dashboard,
+                'cleanHandover' => $this->getCleanHandover($organisation, $request->user()),
             ]
         );
+    }
+
+    private function getCleanHandover(Organisation $organisation, User $user): ?array
+    {
+        if ($organisation->type !== OrganisationTypeEnum::AGENT) {
+            return null;
+        }
+
+        $agent = Agent::where('organisation_id', $organisation->id)->first();
+        if (!$agent) {
+            return null;
+        }
+
+        $score = GetAgentCleanHandoverScore::run($agent);
+
+        return $user->hasGroupAccess() ? $score : Arr::except($score, 'hygiene');
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): Response

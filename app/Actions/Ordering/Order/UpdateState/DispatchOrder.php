@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order\UpdateState;
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToSubscribers;
 use App\Actions\Dropshipping\Allegro\Order\FulfilOrderToAllegro;
+use App\Actions\Dropshipping\Wix\Order\FulfilOrderToWix;
 use App\Actions\Dropshipping\Ebay\Orders\FulfillOrderToEbay;
 use App\Actions\Dropshipping\Magento\Orders\FulfillOrderToMagento;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
@@ -24,9 +25,12 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -38,18 +42,18 @@ class DispatchOrder extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order, ?DeliveryNote $deliveryNote = null): Order
+    public function handle(Order $order, ?DeliveryNote $deliveryNote = null, ?string $dispatchedAt = null, bool $repair = false): Order
     {
         $oldState = $order->state;
 
-        $date = now();
+        $date = $dispatchedAt ? Carbon::parse($dispatchedAt) : now();
 
         $data = [
             'state'         => OrderStateEnum::DISPATCHED,
             'dispatched_at' => $date
         ];
 
-        $order = DB::transaction(function () use ($order, $data, $date, $deliveryNote) {
+        $order = DB::transaction(function () use ($order, $data, $date, $deliveryNote, $repair) {
             /** @var Transaction $transaction */
             foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
                 $dataToUpdate = [
@@ -62,9 +66,22 @@ class DispatchOrder extends OrgAction
                 $transaction->update($dataToUpdate);
             }
 
+            foreach ($order->transactions()->where('model_type', 'Service')->get() as $transaction) {
+                $transaction->update([
+                    'state'               => TransactionStateEnum::DISPATCHED,
+                    'dispatched_at'       => $date,
+                    'quantity_dispatched' => $transaction->quantity_ordered,
+                ]);
+            }
+
+            PartnerShoppingListItem::whereIn('transaction_id', $order->transactions()->select('id'))
+                ->whereNull('partner_organisation_id')
+                ->where('state', ShoppingListItemStateEnum::OPEN)
+                ->update(['state' => ShoppingListItemStateEnum::ORDERED]);
+
             $this->update($order, $data);
 
-            if ($order->shop->masterShop) {
+            if ($order->shop->masterShop && !$repair) {
                 $order->shop->masterShop->orderingStats->update(
                     [
                         'last_order_dispatched_at' => now()
@@ -75,7 +92,7 @@ class DispatchOrder extends OrgAction
 
             $order->refresh();
 
-            if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            if ($order->shop->type == ShopTypeEnum::DROPSHIPPING && !$repair) {
                 if ($order->customerSalesChannel?->user && app()->isProduction()) {
                     match ($order->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
@@ -85,6 +102,7 @@ class DispatchOrder extends OrgAction
                         //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
                         PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order, $deliveryNote),
                         PlatformTypeEnum::ALLEGRO => FulfilOrderToAllegro::run($order),
+                        PlatformTypeEnum::WIX => FulfilOrderToWix::run($order),
                         default => null,
                     };
                 } elseif ($order->customerSalesChannel?->platform?->type !== PlatformTypeEnum::MANUAL) {
@@ -101,8 +119,10 @@ class DispatchOrder extends OrgAction
         $this->orderHandlingHydrators($order, $oldState);
         $this->orderHandlingHydrators($order, OrderStateEnum::DISPATCHED);
 
-        SendDispatchedOrderEmailToSubscribers::dispatch($order);
-        SendDispatchedOrderEmailToCustomer::dispatch($order);
+        if (!$repair) {
+            SendDispatchedOrderEmailToSubscribers::dispatch($order);
+            SendDispatchedOrderEmailToCustomer::dispatch($order);
+        }
 
         return $order;
     }
@@ -110,9 +130,9 @@ class DispatchOrder extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Order $order, DeliveryNote $deliveryNote): Order
+    public function action(Order $order, ?DeliveryNote $deliveryNote, ?string $dispatchedAt = null, bool $repair = false): Order
     {
-        return $this->handle($order, $deliveryNote);
+        return $this->handle($order, $deliveryNote, $dispatchedAt, $repair);
     }
 
     /**

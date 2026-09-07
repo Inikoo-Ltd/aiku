@@ -644,6 +644,16 @@ class GetShopNavigation
                             ],
                         ],
                         [
+                            "label"   => __("Channels"),
+                            "tooltip" => __("Orders by platform and sales channel"),
+                            "icon"    => ["fal", "fa-code-branch"],
+                            'root'    => 'grp.org.shops.show.ordering.channels.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.ordering.channels.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
                             "label"   => __("Invoices"),
                             "tooltip" => __("Invoices"),
                             "icon"    => ["fal", "fa-file-invoice-dollar"],

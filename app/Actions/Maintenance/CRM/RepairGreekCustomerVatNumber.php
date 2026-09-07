@@ -15,6 +15,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\TaxNumber;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairGreekCustomerVatNumber
 {
@@ -34,6 +35,7 @@ class RepairGreekCustomerVatNumber
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
         $query     = TaxNumber::where('country_id', 39)->where('owner_type', 'Customer')->get();
         foreach ($query as $taxNumber) {

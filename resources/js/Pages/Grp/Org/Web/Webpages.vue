@@ -19,7 +19,7 @@ import { trans } from 'laravel-vue-i18n'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { get } from 'lodash-es'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import { ref, watch } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import { ulid } from 'ulid'
@@ -69,7 +69,8 @@ const onSubmitCreateWebpageProduct = (closedPopover: Function) => {
     )
 }
 
-const selectedWebpages = ref<object[]>([])
+const selectedWebpages = reactive(new Map<string, { id: string, code: string, title: string }>())
+const selectedWebpagesList = computed(() => [...selectedWebpages.values()])
 const redirectUrl = ref<string|null>(null)
 const key = ref(ulid())
 const processingBulkDelete = ref(false)
@@ -147,10 +148,10 @@ const processingBulkDelete = ref(false)
 
         <template #button-bulk-offline>
             <ModalConfirmation
-                v-if="selectedWebpages.length && routes_list.bulk_offline"
+                v-if="selectedWebpages.size && routes_list.bulk_offline"
                 :noLabel="ctrans('Cancel')"
                 :body="{
-                    webpages: selectedWebpages,
+                    webpages: selectedWebpagesList,
                     redirect_id: redirectUrl
                 }"
                 :modalClass="'text-pretty scrollbar-none'"
@@ -161,7 +162,7 @@ const processingBulkDelete = ref(false)
                 :routeYes="routes_list.bulk_offline"
                 @finishedProcess="() => {
                     key = ulid();
-                    selectedWebpages = [];
+                    selectedWebpages.clear();
                     processingBulkDelete = false;
                     redirectUrl = null;
                 }"
@@ -184,7 +185,7 @@ const processingBulkDelete = ref(false)
                         {{ ctrans("Are you sure you want to do this? This would set all of these pages as offline and redirect them.") }}    
                     </div>
                     <div class="grid text-sm max-h-[10rem] overflow-x-hidden mt-2 mb-3" style="scrollbar-width: thin;">
-                        <div v-for="webpage in selectedWebpages" class="grid grid-cols-8">
+                        <div v-for="webpage in selectedWebpagesList" :key="webpage.id" class="grid grid-cols-8">
                             <span class="flex" :class="webpage.title ? 'col-span-3' : 'col-span-8'">
                                 <span>
                                     • {{ webpage.code }}
@@ -207,7 +208,7 @@ const processingBulkDelete = ref(false)
                             :fetchRoute="{
                                 ...routes_list.fetch_live_webpages,
                                 body: {
-                                    excluded_list: selectedWebpages   
+                                    excluded_list: selectedWebpagesList
                                 }
                             }"
                             :placeholder="trans('Select Redirect')"
@@ -236,7 +237,7 @@ const processingBulkDelete = ref(false)
                     <Button
                         :style="'negative'"
                         :icon="faSkull"
-                        :label="ctrans('Set as Offline')"
+                        :label="ctrans('Set :selectedCount as Offline', { selectedCount: selectedWebpages.size })"
                         @click="changeModel"
                     />
                 </template>
@@ -258,9 +259,9 @@ const processingBulkDelete = ref(false)
         </template>
     </PageHeading>
     
-    <TableWebpages 
-        :data="data" 
-        v-model:selectedWebpages="selectedWebpages"
+    <TableWebpages
+        :data="data"
+        :selectedWebpages="selectedWebpages"
         :key="key"
     />
 </template>

@@ -12,6 +12,7 @@ use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Helpers\Address;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairCustomerCountryCodeMismatch
 {
@@ -53,6 +54,7 @@ class RepairCustomerCountryCodeMismatch
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         Address::orderBy('created_at', 'desc')->chunk(1000, function ($addresses) use ($command) {
             foreach ($addresses as $address) {
                 $this->handle($address, $command);

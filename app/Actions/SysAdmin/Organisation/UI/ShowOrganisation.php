@@ -69,8 +69,8 @@ class ShowOrganisation extends OrgAction
                     : Inertia::optional(fn () => OrganisationResource::make($organisation)),
 
                 OrgTabsEnum::HISTORY->value => $this->tab == OrgTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($organisation))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($organisation)))
+                    fn () => HistoryResource::collection(IndexHistory::run($organisation, OrgTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($organisation, OrgTabsEnum::HISTORY->value)))
 
 
             ]

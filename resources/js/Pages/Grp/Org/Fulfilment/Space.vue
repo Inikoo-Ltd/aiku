@@ -11,6 +11,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import { capitalize } from "@/Composables/capitalize"
 import TablePurgedOrders from '@/Components/Tables/Grp/Org/Ordering/TablePurgedOrders.vue'
 import SpaceShowcase from '@/Components/Fulfilment/SpaceShowcase.vue'
+import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import { faInfoCircle } from '@fas'
 library.add( faInfoCircle)
 
@@ -24,6 +25,7 @@ const props = defineProps<{
         navigation: {}
     }
     showcase?: {},
+    history?: {},
 
 }>()
 
@@ -32,7 +34,8 @@ const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
     const components: Component = {
-        showcase: SpaceShowcase
+        showcase: SpaceShowcase,
+        history: TableHistories
     }
     return components[currentTab.value]
 

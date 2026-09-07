@@ -39,7 +39,7 @@ class CloneMasterAssetImagesFromTradeUnits implements ShouldBeUnique
         foreach ($tradeUnit->images as $image) {
             $images[$image->id] = [
                 'is_public'  => true,
-                'scope'      => 'photo',
+                'scope'      => $image->pivot->scope === 'audio' ? 'audio' : 'photo',
                 'sub_scope'  => $image->pivot->sub_scope,
                 'caption'    => $image->pivot->caption,
                 'group_id'   => $masterAsset->group_id,
@@ -71,6 +71,7 @@ class CloneMasterAssetImagesFromTradeUnits implements ShouldBeUnique
             'art3_image_id'            => $tradeUnit->art3_image_id,
             'art4_image_id'            => $tradeUnit->art4_image_id,
             'art5_image_id'            => $tradeUnit->art5_image_id,
+            'audio_id'                 => $tradeUnit->audio_id,
             'video_url'                => $tradeUnit->video_url,
         ]);
     }

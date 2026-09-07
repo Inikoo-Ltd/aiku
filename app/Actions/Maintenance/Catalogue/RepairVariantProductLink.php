@@ -14,6 +14,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Masters\MasterVariant;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairVariantProductLink
 {
@@ -35,6 +36,7 @@ class RepairVariantProductLink
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $command->info('Repairing Variant wrong Product Link');
 
         $query = MasterVariant::query();

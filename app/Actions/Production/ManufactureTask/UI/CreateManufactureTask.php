@@ -42,7 +42,7 @@ class CreateManufactureTask extends OrgAction
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.index',
+                                'name'       => 'grp.org.productions.show.operations.manufacture_tasks.index',
                                 'parameters' => $request->route()->originalParameters()
                             ],
                         ]
@@ -51,7 +51,7 @@ class CreateManufactureTask extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Create raw material'),
+                            'title'  => __('Create manufacture task'),
                             'fields' => [
                                 'code' => [
                                     'type'     => 'input',
@@ -88,6 +88,13 @@ class CreateManufactureTask extends OrgAction
                                     'label'    => __('task work cost'),
                                     'value'    => '',
                                     'required' => true
+                                ],
+                                'is_piece_rate' => [
+                                    'type'        => 'toggle',
+                                    'label'       => __('Paid by piece rate'),
+                                    'information' => __('Turn off for salaried work such as preparing mixes. Sessions are still recorded, but payroll and rewards count them at zero.'),
+                                    'value'       => true,
+                                    'required'    => true
                                 ],
                                 'status' => [
                                     'type'     => 'toggle',

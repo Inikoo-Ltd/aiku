@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\OrgSupplier;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgSupplierProducts\SyncOrgSupplierProducts;
 use App\Models\SupplyChain\Supplier;
 
 class StoreOrgSupplierFromSupplierInAgent extends OrgAction
@@ -23,13 +24,15 @@ class StoreOrgSupplierFromSupplierInAgent extends OrgAction
         }
 
         foreach ($supplier->agent->orgAgents as $orgAgent) {
-            StoreOrgSupplier::make()->action(
+            $orgSupplier = StoreOrgSupplier::make()->action(
                 $orgAgent,
                 $supplier,
                 $modelData,
                 hydratorsDelay: $this->hydratorsDelay,
                 strict: $this->strict
             );
+
+            SyncOrgSupplierProducts::run($orgSupplier, $this->hydratorsDelay);
         }
     }
 

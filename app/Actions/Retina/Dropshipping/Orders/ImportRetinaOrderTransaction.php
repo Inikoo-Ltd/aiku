@@ -32,7 +32,7 @@ class ImportRetinaOrderTransaction extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return true;
+        return $request->route()->parameter('order')->customer_id === $request->user()->customer_id;
     }
 
     public function rules(): array

@@ -15,7 +15,6 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -28,6 +27,8 @@ use Lorisleiva\Actions\ActionRequest;
 class PackDeliveryNoteItemByScan extends OrgAction
 {
     use WithDeliveryNoteItemUI;
+    use WithScannedDeliveryNoteItemMatching;
+    use WithDeliveryNoteItemPickingCounts;
 
     protected User $user;
 
@@ -41,6 +42,10 @@ class PackDeliveryNoteItemByScan extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         if (!data_get($this->organisation->settings, 'orders.allow_scan_to_pack', false)) {
+            return false;
+        }
+
+        if (!$this->isScannableDeliveryNote($this->deliveryNote)) {
             return false;
         }
 
@@ -67,7 +72,7 @@ class PackDeliveryNoteItemByScan extends OrgAction
             );
         }
 
-        $deliveryNoteItems = $deliveryNote->deliveryNoteItems()->with(['orgStock', 'packings'])->get();
+        $deliveryNoteItems = $deliveryNote->deliveryNoteItems()->with(['orgStock', 'packings', 'shop'])->get();
         $matchedItems      = $this->matchItems($deliveryNoteItems, $scanned);
 
         // The 'pack the rest' button targets the exact item that was just scanned, so a delivery note
@@ -134,70 +139,16 @@ class PackDeliveryNoteItemByScan extends OrgAction
 
         $message = $remainingAfter > 0
             ? __('Packed :quantity x :code, :remaining still to pack', [
-                'quantity'  => $quantityToPack,
+                'quantity'  => $this->formatScanQuantity($itemToPack, $quantityToPack),
                 'code'      => $itemToPack->orgStock?->code ?? $scanned,
-                'remaining' => $remainingAfter,
+                'remaining' => $this->formatScanQuantity($itemToPack, $remainingAfter),
             ])
             : __('Packed :quantity x :code', [
-                'quantity' => $quantityToPack,
+                'quantity' => $this->formatScanQuantity($itemToPack, $quantityToPack),
                 'code'     => $itemToPack->orgStock?->code ?? $scanned,
             ]);
 
         return $this->outcome($deliveryNote, 'packed', $message, $scanned, $itemToPack, $tab);
-    }
-
-    /**
-     * Items are matched on the org stock code and its own barcode first, which is what warehouse
-     * labels carry, then on the EAN of any trade unit behind the org stock, which is what supplier
-     * packaging carries.
-     *
-     * @param  Collection<int, DeliveryNoteItem>  $deliveryNoteItems
-     *
-     * @return Collection<int, DeliveryNoteItem>
-     */
-    protected function matchItems(Collection $deliveryNoteItems, string $scanned): Collection
-    {
-        if ($scanned === '') {
-            return collect();
-        }
-
-        $matchedByCode = $deliveryNoteItems->filter(
-            fn (DeliveryNoteItem $item) => strcasecmp(trim((string)$item->orgStock?->code), $scanned) === 0
-                || strcasecmp(trim((string)$item->orgStock?->barcode), $scanned) === 0
-        );
-
-        if ($matchedByCode->isNotEmpty()) {
-            return $matchedByCode->values();
-        }
-
-        $orgStockIds = $deliveryNoteItems->pluck('org_stock_id')->filter()->unique()->all();
-
-        if (!$orgStockIds) {
-            return collect();
-        }
-
-        $matchedOrgStockIds = DB::table('model_has_trade_units')
-            ->join('trade_units', 'trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
-            ->leftJoin('barcodes', 'barcodes.id', '=', 'trade_units.barcode_id')
-            ->leftJoin('model_has_barcodes', function ($join) {
-                $join->on('model_has_barcodes.model_id', '=', 'trade_units.id')
-                    ->where('model_has_barcodes.model_type', '=', 'TradeUnit');
-            })
-            ->leftJoin('barcodes as attached_barcodes', 'attached_barcodes.id', '=', 'model_has_barcodes.barcode_id')
-            ->where('model_has_trade_units.model_type', 'OrgStock')
-            ->whereIn('model_has_trade_units.model_id', $orgStockIds)
-            ->where(function ($query) use ($scanned) {
-                $query->where('barcodes.number', $scanned)
-                    ->orWhere('attached_barcodes.number', $scanned);
-            })
-            ->pluck('model_has_trade_units.model_id')
-            ->all();
-
-        if (!$matchedOrgStockIds) {
-            return collect();
-        }
-
-        return $deliveryNoteItems->whereIn('org_stock_id', $matchedOrgStockIds)->values();
     }
 
     /**
@@ -216,7 +167,7 @@ class PackDeliveryNoteItemByScan extends OrgAction
         ?string $tab = null,
         ?Collection $knownItems = null
     ): array {
-        $row = null;
+        $row     = null;
 
         if ($deliveryNoteItem && $status === 'packed') {
             $row = FetchDeliveryNoteItemRow::run($deliveryNoteItem, $tab);
@@ -228,16 +179,20 @@ class PackDeliveryNoteItemByScan extends OrgAction
             'message'             => $message,
             'scanned'             => $scanned,
             'item'                => $deliveryNoteItem ? [
-                'id'               => $deliveryNoteItem->id,
-                'code'             => $deliveryNoteItem->orgStock?->code,
-                'name'             => $deliveryNoteItem->orgStock?->name,
-                'quantity_picked'  => (float)$deliveryNoteItem->quantity_picked,
-                'quantity_packed'  => (float)$deliveryNoteItem->quantity_packed,
-                'quantity_to_pack' => UpdateDeliveryNoteItemPacking::quantityLeftToPack($deliveryNoteItem),
+                'id'                     => $deliveryNoteItem->id,
+                'code'                   => $deliveryNoteItem->orgStock?->code,
+                'name'                   => $deliveryNoteItem->orgStock?->name,
+                'packed_in'              => (int)($deliveryNoteItem->orgStock?->packed_in ?? 1),
+                'quantity_picked'        => (float)$deliveryNoteItem->quantity_picked,
+                'quantity_packed'        => (float)$deliveryNoteItem->quantity_packed,
+                'quantity_to_pack'       => UpdateDeliveryNoteItemPacking::quantityLeftToPack($deliveryNoteItem),
+                'quantity_to_pack_label' => $this->formatScanQuantity($deliveryNoteItem, UpdateDeliveryNoteItemPacking::quantityLeftToPack($deliveryNoteItem)),
+                'quantity_to_pack_fractional' => $this->scanQuantityFraction($deliveryNoteItem, UpdateDeliveryNoteItemPacking::quantityLeftToPack($deliveryNoteItem)),
             ] : null,
             'row'                 => $row,
             'delivery_note_state' => $deliveryNote->state->value,
             'remaining_to_pack'   => $this->countRemainingToPack($deliveryNote, $knownItems),
+            'counts'              => static::packingCounts($deliveryNote),
         ];
     }
 

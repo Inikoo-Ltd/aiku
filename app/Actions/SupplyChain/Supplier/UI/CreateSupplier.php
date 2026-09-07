@@ -18,6 +18,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -27,6 +28,21 @@ class CreateSupplier extends OrgAction
     use WithSupplyChainEditAuthorisation;
 
     private const INCOTERMS = ['EXW', 'FCA', 'FAS', 'FOB', 'CFR', 'CIF', 'CPT', 'CIP', 'DAP', 'DPU', 'DDP'];
+
+    private ?Agent $agent = null;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if ($this->agent && $request->user()->authTo("procurement.{$this->agent->organisation_id}.edit")) {
+            return true;
+        }
+
+        return $request->user()->authTo('supply-chain.edit');
+    }
 
     public function handle(Group|Agent $parent, ActionRequest $request): Response
     {
@@ -56,7 +72,7 @@ class CreateSupplier extends OrgAction
                     ],
                 ],
                 'formData'    => [
-                    'blueprint' => $this->getBlueprint(),
+                    'blueprint' => $this->getBlueprint($parent),
                     'route'     => $this->getStoreRoute($parent),
                 ],
             ]
@@ -73,15 +89,28 @@ class CreateSupplier extends OrgAction
 
     public function inAgent(Agent $agent, ActionRequest $request): Response
     {
+        $this->agent = $agent;
         $this->initialisationFromGroup($agent->group, $request);
 
         return $this->handle($agent, $request);
     }
 
-    protected function getBlueprint(): array
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): Response
     {
-        return [
-            [
+        $agent = Agent::where('organisation_id', $organisation->id)->firstOrFail();
+
+        $this->agent = $agent;
+        $this->initialisationFromGroup($agent->group, $request);
+
+        return $this->handle($agent, $request);
+    }
+
+    protected function getBlueprint(Group|Agent $parent): array
+    {
+        $isInAgent = $parent instanceof Agent;
+
+        return array_values(array_filter([
+            $isInAgent ? null : [
                 'title'  => __('Type'),
                 'icon'   => 'fal fa-truck',
                 'fields' => [
@@ -97,7 +126,7 @@ class CreateSupplier extends OrgAction
                     ],
                 ],
             ],
-            [
+            $isInAgent ? null : [
                 'title'  => __('Delivery Terms'),
                 'icon'   => 'fal fa-ship',
                 'fields' => [
@@ -172,10 +201,11 @@ class CreateSupplier extends OrgAction
                         'value' => '',
                     ],
                     'address'         => [
-                        'type'    => 'address',
-                        'label'   => __('Address'),
-                        'value'   => AddressFormFieldsResource::make(new Address(['country_id' => group()->country_id]))->getArray(),
-                        'options' => [
+                        'type'     => 'address',
+                        'label'    => __('Address'),
+                        'value'    => AddressFormFieldsResource::make(new Address(['country_id' => group()->country_id]))->getArray(),
+                        'required' => true,
+                        'options'  => [
                             'countriesAddressData' => GetAddressData::run(),
                         ],
                     ],
@@ -234,7 +264,7 @@ class CreateSupplier extends OrgAction
                     ],
                 ],
             ],
-            [
+            $isInAgent ? null : [
                 'title'  => __("Purchase Order Settings"),
                 'icon'   => 'fal fa-file-invoice-dollar',
                 'fields' => [
@@ -263,7 +293,7 @@ class CreateSupplier extends OrgAction
                     ],
                 ],
             ],
-        ];
+        ]));
     }
 
     protected function getStoreRoute(Group|Agent $parent): array

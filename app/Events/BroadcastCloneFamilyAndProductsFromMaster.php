@@ -11,7 +11,6 @@ namespace App\Events;
 
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\User;
-use App\Models\Web\Website;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
@@ -62,7 +61,7 @@ class BroadcastCloneFamilyAndProductsFromMaster implements ShouldBroadcastNow
 
         $sentData = [
             'master_family'      =>  $this->masterFamily->code,
-            
+
             'family_progress'    =>  $familyProgress,
             'pending_families'   =>  $this->pendingFamilies,
             'done_families'      =>  $this->doneFamilies,

@@ -15,6 +15,7 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockFamily;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairOrgSockWithNoFamily
 {
@@ -66,6 +67,7 @@ class RepairOrgSockWithNoFamily
      */
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $dryRun         = (bool)$command->option('dry-run');
 
 

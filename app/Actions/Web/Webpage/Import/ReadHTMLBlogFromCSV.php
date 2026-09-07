@@ -53,4 +53,3 @@ class ReadHTMLBlogFromCSV
         return 0;
     }
 }
-

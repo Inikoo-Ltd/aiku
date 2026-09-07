@@ -17,6 +17,7 @@ import Timeline from "@/Components/Utils/Timeline.vue"
 import Popover from "@/Components/Popover.vue"
 import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable, Dialog } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { trans } from "laravel-vue-i18n"
@@ -28,6 +29,7 @@ import { Tabs as TSTabs } from "@/types/Tabs"
 import "@vuepic/vue-datepicker/dist/main.css"
 import "@/Composables/Icon/PalletDeliveryStateEnum"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
+import OrderMarketingJourney from "@/Components/Showcases/Grp/OrderMarketingJourney.vue"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import { Timeline as TSTimeline } from "@/types/Timeline"
 import axios from "axios"
@@ -70,6 +72,7 @@ import {
     faReceipt,
     faTrash,
     faPercentage,
+    faSackDollar,
     faUndo as falUndo
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
@@ -100,7 +103,15 @@ import { Icon as IconTS } from "@/types/Utils/Icon"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
 import { ctrans } from "@/Composables/useTrans"
 
-library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt)
+library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar)
+
+interface OrderCharge {
+    name: string
+    label: string
+    description: string
+    amount: number
+    currency_code: string
+}
 
 interface UploadSection {
     title: {
@@ -118,8 +129,8 @@ interface UploadSection {
 const props = defineProps<{
     title: string
     tabs: TSTabs
-
     products?: TableTS
+    marketing?: InstanceType<typeof OrderMarketingJourney>['$props']['data']
     shop_type: 'b2b' | 'dropshipping'
     data?: {
         data: {
@@ -131,7 +142,14 @@ const props = defineProps<{
         }
     }
 
+    charges?: {
+        premium_dispatch: OrderCharge | null
+        extra_packing: OrderCharge | null
+        insurance: OrderCharge | null
+    }
+
     pageHead: PageHeadingTypes
+    staff_chat?: { context_type: string; context_id: number; audiences: { key: string; label: string }[] }
     alert?: {
         status: string
         title?: string
@@ -163,6 +181,10 @@ const props = defineProps<{
         address_modal_title: string
     }
     box_stats: {
+        recipient?: {
+            contact_name: string | null
+            company_name: string | null
+        }
         customer: {
             reference: string
             contact_name: string
@@ -205,6 +227,10 @@ const props = defineProps<{
                 paid_amount: number
                 pay_amount: number
             }
+            not_picked?: {
+                amount: number
+                expected_return: number
+            } | null
             excesses_payment?: {
                 amount: number
                 route_to_add_balance?: routeType
@@ -235,6 +261,7 @@ const props = defineProps<{
         products_list: routeType
         delivery_note: routeType
         rollback_dispatch: routeType
+        redispatch?: routeType
     }
     // nonProductItems: {}
     transactions?: {}
@@ -266,6 +293,7 @@ const props = defineProps<{
     invoices?: {}
     attachmentRoutes?: {}
     address_update_route?: routeType
+    billing_address_update_route?: routeType
     addresses?: {}
     contact_address?: Address | null
     upload_excel: UploadSection
@@ -286,11 +314,13 @@ const props = defineProps<{
         icon: string
     }
     is_faire_order: boolean
+    allow_order_modification: boolean
 }>()
 
 
 const isModalUploadOpen = ref(false)
 const isModalProductListOpen = ref(false)
+const currentModalItemType = ref('product')
 const locale = inject("locale", aikuLocaleStructure)
 const confirm = useConfirm();
 const currentTab = ref(props.tabs?.current)
@@ -299,6 +329,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         transactions: OrderProductTable,
+        marketing: OrderMarketingJourney,
         returns: TableDeliveryNotes,
         delivery_notes: TableDeliveryNotes,
         attachments: TableAttachments,
@@ -315,6 +346,7 @@ const component = computed(() => {
 
 const isLoadingButton = ref<string | boolean>(false)
 const isModalAddress = ref<boolean>(false)
+const isModalBillingAddress = ref<boolean>(false)
 
 // Tabs: Products
 const formProducts = useForm({ historicAssetId: null, quantity_ordered: 1 })
@@ -479,8 +511,9 @@ const onSubmitNote = async (closePopup: Function) => {
     }
 }
 
-const openModal = (action: any) => {
+const openModal = (action: any, itemType: string = 'product') => {
     currentAction.value = action
+    currentModalItemType.value = itemType
     isModalProductListOpen.value = true
 }
 
@@ -518,19 +551,64 @@ const generateRouteDeliveryNote = (slug: string) => {
 }
 
 const cancelLoading = ref(false)
-const confirm2 = (action) => {
+const isModalCancelOrder = ref(false)
+const cancelOrderAction = ref<any>(null)
+const cancelOrderData = ref<{ cancellation_reason: string | null, cancellation_notes: string }>({
+    cancellation_reason: null,
+    cancellation_notes: ''
+})
+
+const openCancelOrderModal = (action) => {
+    cancelOrderAction.value = action
+    cancelOrderData.value = { cancellation_reason: null, cancellation_notes: '' }
+    isModalCancelOrder.value = true
+}
+
+const onSubmitCancelOrder = () => {
+    const action = cancelOrderAction.value
+    if (!action) return
+
+    router[action.route.method](
+        route(action.route.name, action.route.parameters),
+        { ...cancelOrderData.value },
+        {
+            onStart: () => {
+                cancelLoading.value = true
+            },
+            onFinish: () => {
+                cancelLoading.value = false
+            },
+            onSuccess: () => {
+                isModalCancelOrder.value = false
+                notify({
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully cancel order"),
+                    type: "success",
+                })
+            },
+            onError: () => {
+                notify({
+                    title: ctrans("Error"),
+                    text: ctrans("Failed to cancel order"),
+                    type: "error",
+                })
+            }
+        }
+    )
+}
+
+const invoiceOnlyLoading = ref(false)
+const confirmInvoiceOnly = (action) => {
     confirm.require({
-        message: ctrans('Do you want to cancel this order?'),
-        header: ctrans('Cancel Order'),
-        rejectLabel: ctrans('Cancel'),
+        message: ctrans('Generate the invoice and dispatch this order? It only contains services, no goods will be sent to the warehouse.'),
+        header: ctrans('Invoice order'),
         rejectProps: {
             label: ctrans('No'),
             severity: 'secondary',
             outlined: true
         },
         acceptProps: {
-            label: ctrans('Yes'),
-            severity: 'danger'
+            label: ctrans('Yes, invoice')
         },
         accept: () => {
             router[action.route.method](
@@ -538,30 +616,21 @@ const confirm2 = (action) => {
                 {},
                 {
                     onStart: () => {
-                        cancelLoading.value = true
+                        invoiceOnlyLoading.value = true
                     },
                     onFinish: () => {
-                        cancelLoading.value = true
+                        invoiceOnlyLoading.value = false
                     },
-                    onSuccess: () => {
-                        notify({
-                            title: ctrans("Success"),
-                            text: ctrans("Successfully cancel order"),
-                            type: "success",
-                        })
-                    },
-                    onError: (e) => {
-                        console.log(e);
+                    onError: () => {
                         notify({
                             title: ctrans("Error"),
-                            text: ctrans("Failed to cancel order"),
+                            text: ctrans("Failed to invoice order"),
                             type: "error",
                         })
                     }
                 }
             )
         },
-
     });
 };
 
@@ -588,6 +657,31 @@ const updateCollection = async (e: Event) => {
             type: "error",
         })
     }
+}
+
+const recipientForm = ref({
+    contact_name: props.box_stats?.recipient?.contact_name ?? '',
+    company_name: props.box_stats?.recipient?.company_name ?? '',
+})
+const isRecipientDifferentFromCustomer = computed(() =>
+    !!props.box_stats?.recipient && (
+        (props.box_stats.recipient.contact_name ?? '') !== (props.box_stats.customer?.contact_name ?? '') ||
+        (props.box_stats.recipient.company_name ?? '') !== (props.box_stats.customer?.company_name ?? '')
+    )
+)
+const canEditRecipient = computed(() => !props.readonly && props.data?.data?.state !== 'dispatched')
+const saveRecipient = () => {
+    if (recipientForm.value.contact_name === (props.box_stats?.recipient?.contact_name ?? '')
+        && recipientForm.value.company_name === (props.box_stats?.recipient?.company_name ?? '')) {
+        return
+    }
+    router.patch(route(props.routes.updateOrderRoute.name, props.routes.updateOrderRoute.parameters), {
+        contact_name: recipientForm.value.contact_name || null,
+        company_name: recipientForm.value.company_name || null,
+    }, {
+        preserveScroll: true,
+        onError: () => notify({ title: ctrans("Something went wrong."), text: ctrans("Failed to update recipient"), type: "error" }),
+    })
 }
 
 const updateShippingExternal = async (e: boolean) => {
@@ -667,6 +761,33 @@ const updateCollectionNotes = () => {
     )
 }
 // end: collection feature
+
+const onRedispatch = () => {
+    if (!props.routes.redispatch) {
+        return
+    }
+
+    router.patch(
+        route(props.routes.redispatch.name, props.routes.redispatch.parameters),
+        {},
+        {
+            preserveScroll: true,
+            onStart: () => {
+                isLoadingButton.value = 'redispatch'
+            },
+            onFinish: () => {
+                isLoadingButton.value = false
+            },
+            onError: () => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to dispatch the order"),
+                    type: "error",
+                })
+            },
+        }
+    )
+}
 
 const replacementLoading = ref<boolean>(false)
 const onCreateReplacement = (action: any) => {
@@ -752,6 +873,102 @@ const labelToBePaid = (toBePaidValue: string) => {
     }
 
     return ''
+}
+
+// Section: Order charges (priority dispatch, extra packing, insurance)
+const isChargeEditable = computed(() => !['finalised', 'dispatched', 'cancelled'].includes(props.data?.data?.state || ''))
+
+const isOrderAmountsProvisional = computed(() => ['in_warehouse', 'handling', 'handling_blocked'].includes(props.data?.data?.state || ''))
+
+const isLoadingPriorityDispatch = ref(false)
+const isLoadingExtraPacking = ref(false)
+const isLoadingInsurance = ref(false)
+
+const chargeToggles = ref({
+    is_premium_dispatch: props.data?.data?.is_premium_dispatch ?? false,
+    has_extra_packing: props.data?.data?.has_extra_packing ?? false,
+    has_insurance: props.data?.data?.has_insurance ?? false,
+})
+
+watch(() => props.data?.data, (orderData) => {
+    chargeToggles.value.is_premium_dispatch = orderData?.is_premium_dispatch ?? false
+    chargeToggles.value.has_extra_packing = orderData?.has_extra_packing ?? false
+    chargeToggles.value.has_insurance = orderData?.has_insurance ?? false
+}, { deep: true })
+
+const updateOrderCharge = (
+    routeName: string,
+    field: keyof typeof chargeToggles.value,
+    val: boolean,
+    loadingRef: typeof isLoadingPriorityDispatch,
+    successText: string,
+    errorText: string
+) => {
+    const previousValue = chargeToggles.value[field]
+    chargeToggles.value[field] = val
+
+    router.patch(
+        route(routeName, { order: props.data?.data?.id }),
+        { [field]: val },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                loadingRef.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: ctrans("Success"),
+                    text: successText,
+                    type: "success"
+                })
+            },
+            onError: () => {
+                chargeToggles.value[field] = previousValue
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: errorText,
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                loadingRef.value = false
+            },
+        }
+    )
+}
+
+const onChangePriorityDispatch = (val: boolean) => {
+    updateOrderCharge(
+        'grp.models.order.update_premium_dispatch',
+        'is_premium_dispatch',
+        val,
+        isLoadingPriorityDispatch,
+        val ? ctrans("The order is changed to priority dispatch!") : ctrans("The order is no longer on priority dispatch."),
+        ctrans("Failed to update priority dispatch, try again.")
+    )
+}
+
+const onChangeExtraPacking = (val: boolean) => {
+    updateOrderCharge(
+        'grp.models.order.update_extra_packing',
+        'has_extra_packing',
+        val,
+        isLoadingExtraPacking,
+        val ? ctrans("The order is changed to extra packing!") : ctrans("The order is no longer on extra packing."),
+        ctrans("Failed to update extra packing, try again.")
+    )
+}
+
+const onChangeInsurance = (val: boolean) => {
+    updateOrderCharge(
+        'grp.models.order.update_insurance',
+        'has_insurance',
+        val,
+        isLoadingInsurance,
+        val ? ctrans("The order has insurance!") : ctrans("The order no longer has insurance."),
+        ctrans("Failed to update insurance, try again.")
+    )
 }
 
 // Section: change shipping price (in Summary)
@@ -860,6 +1077,33 @@ const setShippingToAuto = (fieldSummary) => {
             },
             onFinish: () => {
                 isLoadingShippingManual.value = false
+            },
+        }
+    )
+}
+
+const isLoadingChangeShipper = ref(false)
+const setOrderShipper = (shipperId: number) => {
+    router.patch(
+        route(props.routes.updateOrderRoute.name, props.routes.updateOrderRoute.parameters),
+        {
+            shipper_id: shipperId
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingChangeShipper.value = true
+            },
+            onError: errors => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: errors?.message || ctrans("Failed to change shipper"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingChangeShipper.value = false
             },
         }
     )
@@ -1267,7 +1511,7 @@ const recalculateVat = async () => {
 
 // Section: Get shipment from Faire/Tiktok
 const getShipmentFromPlatform = (deliveryNote: {}) => {
-    
+
     const faire = {
         label: ctrans('Get shipment from Faire'),
         routeShipment: {
@@ -1287,7 +1531,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             }
         }
     }
-    
+
     if (props.external_shop?.engine_value === 'faire') {
         return faire
     } else if (props.external_shop?.engine_value === 'tiktok') {
@@ -1310,7 +1554,22 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
     <PageHeading :data="pageHead">
         <template #button-add-product="{ action }">
             <div class="relative">
-                <Button v-if="!is_shop_external" :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action)"
+                <Button v-if="!is_shop_external" :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action, 'product')"
+                    :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
+            </div>
+        </template>
+
+        <template #button-invoice-only="{ action }">
+            <div class="relative">
+                <Button :style="action.style" :label="action.label" :icon="action.icon" :loading="invoiceOnlyLoading"
+                    @click="() => confirmInvoiceOnly(action)" :key="`ActionButton${action.label}${action.style}`"
+                    :tooltip="action.tooltip" />
+            </div>
+        </template>
+
+        <template #button-add-service="{ action }">
+            <div class="relative">
+                <Button v-if="!is_shop_external" :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action, 'service')"
                     :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
             </div>
         </template>
@@ -1318,7 +1577,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         <template #button-cancel="{ action }">
             <div class="relative" v-if="!is_faire_order">
                 <Button :style="action.style" :label="action.label" :icon="action.icon" :loading="cancelLoading"
-                    @click="() => confirm2(action)" :key="`ActionButton${action.label}${action.style}`"
+                    @click="() => openCancelOrderModal(action)" :key="`ActionButton${action.label}${action.style}`"
                     :tooltip="action.tooltip" />
             </div>
             <div class="relative" v-else>
@@ -1340,6 +1599,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
 
         <template #other>
+            <StaffChatContextButtons v-if="staff_chat" :context="staff_chat" class="mr-2" />
             <div v-if="(!props.readonly || isShowProforma) && !is_shop_external" class="flex">
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
@@ -1444,6 +1704,15 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     </template>
                 </ModalConfirmationDelete>
 
+                <!-- Button: Dispatch -->
+                <Button v-if="routes.redispatch" @click="onRedispatch"
+                    type="save"
+                    :loading="isLoadingButton === 'redispatch'"
+                    :tooltip="ctrans('Dispatch the order')"
+                    :label="ctrans('Dispatch')"
+                    icon="fal fa-truck"
+                    full />
+
                 <!-- Button: Proforma Invoice -->
                 <Button
                     v-if="proforma_invoice && !props.box_stats?.invoices?.length && !(['dispatched', 'cancelled'].includes(props.data?.data?.state))"
@@ -1507,6 +1776,12 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
     <!-- Section: Pallet Warning -->
     <div v-if="alert?.status" class="p-2 pb-0">
         <AlertMessage :alert />
+    </div>
+
+    <!-- Section: API order held for payment -->
+    <div v-if="pageHead.api_order?.held_unpaid" class="mx-2 mt-2 rounded-md border border-orange-300 bg-orange-50 px-3 py-2 text-sm text-orange-800">
+        <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />
+        {{ pageHead.api_order.held_message }}
     </div>
 
     <!-- Section: Box Note -->
@@ -1620,12 +1895,17 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             <FontAwesomeIcon icon="fal fa-dollar-sign" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
                         </dt>
-                        <dd class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 rounded min-w-52" 
+                        <dd class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 rounded min-w-52"
                             :class="is_forbidden_billing ? 'bg-red-50 ring-red-300' : 'ring-gray-300'"
                         >
                             <div v-html="box_stats?.customer.addresses.billing.formatted_address"></div>
                             <div v-if="is_forbidden_billing" v-tooltip="ctrans('This billing address was banned (listed in Shop settings)')" class="absolute top-2 right-2">
                                 <FontAwesomeIcon icon='fal fa-exclamation-triangle' class='text-red-500' fixed-width aria-hidden='true' />
+                            </div>
+                            <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched' && billing_address_update_route"
+                                @click="() => isModalBillingAddress = true"
+                                class="w-fit pr-4 cursor-pointer underline text-gray-500 hover:text-blue-700 whitespace-nowrap">
+                                <span>{{ ctrans("Edit") }}</span>
                             </div>
                         </dd>
                     </dl>
@@ -1680,6 +1960,18 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             </div>
                         </div>
 
+                        <!-- Field: Recipient (only when it differs from the customer) -->
+                        <dl v-if="!isCollection && isRecipientDifferentFromCustomer" class="mt-2 flex items-center w-full gap-x-2">
+                            <dt v-tooltip="ctrans('Recipient on delivery label')" class="flex-none">
+                                <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="text-sm text-gray-500">
+                                {{ box_stats?.recipient?.contact_name || '-' }}
+                                <span v-if="box_stats?.recipient?.company_name">({{ box_stats?.recipient?.company_name }})</span>
+                            </dd>
+                            <CopyButton :text="[box_stats?.recipient?.contact_name, box_stats?.recipient?.company_name].filter(Boolean).join(', ')" />
+                        </dl>
+
                         <!-- Field: Shipping Address -->
                         <dl v-if="box_stats?.customer?.addresses?.delivery?.formatted_address !== box_stats?.customer?.addresses?.billing?.formatted_address && !isCollection"
                             class="mt-2 pt-1 flex items-start w-full flex-none gap-x-2">
@@ -1715,10 +2007,15 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             <dd
                                 class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                                 <div v-html="box_stats?.customer?.addresses?.delivery?.formatted_address"></div>
-                                <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
-                                    @click="() => isModalAddress = true"
-                                    class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-                                    <span>{{ ctrans("Edit") }}</span>
+                                <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'" class="flex gap-x-3">
+                                    <div @click="() => isModalAddress = true"
+                                        class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                                        <span>{{ ctrans("Edit") }}</span>
+                                    </div>
+                                    <div v-if="billing_address_update_route" @click="() => isModalBillingAddress = true"
+                                        class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                                        <span>{{ ctrans("Edit billing address") }}</span>
+                                    </div>
                                 </div>
                             </dd>
                             <CopyButton
@@ -1763,6 +2060,15 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width
                                     aria-hidden="true" />
                                 {{ ctrans("Order cancelled, payments returned to balance") }}
+
+                                <div v-if="data.data?.cancellation?.label || data.data?.cancellation?.notes"
+                                    class="mt-1 pt-1 border-t border-yellow-500/50 text-sm">
+                                    <span class="font-medium">{{ ctrans("Reason") }}:</span>
+                                    <span v-if="data.data?.cancellation?.label">{{ data.data.cancellation.label }}</span>
+                                    <span v-if="data.data?.cancellation?.notes" class="italic">
+                                        {{ data.data.cancellation.notes }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
@@ -1770,17 +2076,31 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             class="w-full">
                             <!-- Section: pay with balance (if order Submit without paid) -->
                             <div class="w-full rounded-md shadow pxb-2 isolate border" :class="[
-                                Number(box_stats.products.payment.pay_amount) <= 0 ? 'border-green-300' : 'border-red-500',
+                                Number(box_stats.products.payment.pay_amount) <= 0 ? 'border-green-300' : isOrderAmountsProvisional ? 'border-gray-300' : 'border-red-500',
                             ]">
                                 <NeedToPayV2 :totalAmount="box_stats.products.payment.total_amount"
                                     :paidAmount="box_stats.products.payment.paid_amount"
                                     :payAmount="box_stats.products.payment.pay_amount"
+                                    :writeOff="box_stats.products.payment.write_off"
                                     :balance="box_stats?.customer?.balance" :payments="payments_data"
                                     :currencyCode="currency.code" :toBePaidBy="data?.data?.to_be_paid_by"
-                                    :order="data?.data" :handleTabUpdate="handleTabUpdate">
+                                    :order="data?.data" :handleTabUpdate="handleTabUpdate"
+                                    :provisional="isOrderAmountsProvisional">
                                     <template #default>
                                     </template>
                                 </NeedToPayV2>
+
+                                <div v-if="box_stats.products.not_picked?.amount > 0"
+                                    class="mt-2 pt-2 border-t-2 border-yellow-500 text-xs text-yellow-700 px-2.5 pb-2">
+                                    <div class="flex justify-between">
+                                        <span>{{ ctrans("Marked out of stock so far") }}</span>
+                                        <strong>{{ locale.currencyFormat(currency.code, Number(box_stats.products.not_picked.amount)) }}</strong>
+                                    </div>
+                                    <div v-if="box_stats.products.not_picked.expected_return > 0" class="flex justify-between">
+                                        <span>{{ ctrans("Expected back to balance when picking finishes") }}</span>
+                                        <strong>{{ locale.currencyFormat(currency.code, Number(box_stats.products.not_picked.expected_return)) }}</strong>
+                                    </div>
+                                </div>
 
 
 
@@ -1809,9 +2129,9 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     <Button @click="() => onClickPayRefund()" :label="ctrans('Refund money')"
                                         type="secondary" size="xxs" />
                                 </div>
-                                
 
-                                <div v-if="Number(box_stats.products.payment.pay_amount) > 0"
+
+                                <div v-if="Number(box_stats.products.payment.pay_amount) > 0 && !isOrderAmountsProvisional"
                                     class="my-2 xpt-2 xborder-t border-gray-300 text-xxs">
                                     <div v-if="data?.data?.to_be_paid_by?.value"
                                         class="mx-auto w-fit flex items-center">
@@ -1974,6 +2294,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                         :shipping_fields_update_route="note.shipping_fields_update_route"
                                         :shipments="note.shipments"
                                         :shipments_routes="note.shipments_routes"
+                                        :shipper_directive="note.shipper_directive"
                                         :address="note.shipping_fields.address"
                                         :currencyCode="box_stats?.currency?.data.code"
                                         :external_shop="box_stats?.external_shop"
@@ -2046,7 +2367,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     <div class="font-semibold xmb-2 text-base">
                         {{ ctrans("Summary") }}
                     </div>
-                    
+
                     <div class="flex flex-col sm:flex-row items-center gap-2">
                         <div v-if="props.box_stats?.voucher"
                             class="flex items-center gap-x-1.5 rounded bg-indigo-50 px-2 py-1 text-xs text-indigo-700">
@@ -2174,7 +2495,55 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         </Modal>
                     </div>
 
+                    <!-- Section: Order charges (priority dispatch, extra packing, insurance) -->
+                    <div v-if="charges?.premium_dispatch || charges?.extra_packing || charges?.insurance"
+                        class="border-b border-gray-300 mb-2 pb-2 space-y-1.5 pr-2">
+                        <div v-for="charge in [
+                                { key: 'premium_dispatch', data: charges?.premium_dispatch, active: chargeToggles.is_premium_dispatch, loading: isLoadingPriorityDispatch, onChange: onChangePriorityDispatch },
+                                { key: 'extra_packing', data: charges?.extra_packing, active: chargeToggles.has_extra_packing, loading: isLoadingExtraPacking, onChange: onChangeExtraPacking },
+                                { key: 'insurance', data: charges?.insurance, active: chargeToggles.has_insurance, loading: isLoadingInsurance, onChange: onChangeInsurance },
+                            ]"
+                            :key="charge.key">
+                            <dl v-if="charge.data" class="flex items-center justify-between gap-x-2">
+                                <dt class="flex items-center gap-x-1.5 text-gray-500">
+                                    <InformationIcon v-if="charge.data.description" :information="charge.data.description" />
+                                    <span>{{ charge.data.label ?? charge.data.name }}</span>
+                                    <span class="text-gray-400" :class="charge.active ? '' : 'opacity-60'">({{ locale.currencyFormat(charge.data.currency_code, charge.data.amount) }})</span>
+                                </dt>
+                                <dd class="flex items-center">
+                                    <Toggle
+                                        :modelValue="charge.active"
+                                        :disabled="charge.loading || !isChargeEditable"
+                                        :loading="charge.loading"
+                                        @update:modelValue="(e: boolean) => charge.onChange(e)"
+                                        size="md"
+                                    />
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+
                     <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code">
+                        <template #cell_items_margin_1="{ fieldSummary }">
+                            <dt class="col-span-3 flex flex-col">
+                                <div class="flex items-center leading-none" :class="fieldSummary.label_class">
+                                    <span>{{ fieldSummary.label }}</span>
+                                </div>
+                                <span v-if="fieldSummary.margin" class="text-xs text-gray-400 flex items-center gap-1">
+                                    <span
+                                        :class="{ 'text-red-600': fieldSummary.margin.status === 'danger', 'text-amber-600': fieldSummary.margin.status === 'warning' }"
+                                        v-tooltip="fieldSummary.margin.thin">{{ fieldSummary.margin.margin_label }}</span>
+                                    <span>·</span>
+                                    <span v-tooltip="fieldSummary.margin.tooltip" class="flex items-center gap-0.5 cursor-help">
+                                        <FontAwesomeIcon icon="fal fa-sack-dollar" fixed-width aria-hidden="true" />
+                                        {{ fieldSummary.margin.profit_label }}
+                                    </span>
+                                    <span v-if="fieldSummary.margin.below" class="text-red-600">— {{ fieldSummary.margin.below }}</span>
+                                    <span v-if="fieldSummary.margin.without_cost" class="text-yellow-600">— {{ fieldSummary.margin.without_cost }}</span>
+                                </span>
+                            </dt>
+                        </template>
+
                         <template #cell_charges_1="{ fieldSummary }">
                             <dt class="col-span-3 flex flex-col">
                                 <div class="flex items-center leading-none" :class="fieldSummary.label_class">
@@ -2226,6 +2595,22 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information"
                                     class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
 
+                                <!-- Shipper selection (multi-shipper) -->
+                                <div v-if="fieldSummary.data?.shipper || fieldSummary.data?.shipping_options"
+                                    class="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                                    <select
+                                        v-if="routes.updateOrderRoute?.name && fieldSummary.data?.shipping_options?.length"
+                                        :value="fieldSummary.data?.shipper?.id"
+                                        :disabled="isLoadingChangeShipper"
+                                        @change="(e) => setOrderShipper(Number((e.target as HTMLSelectElement).value))"
+                                        class="text-xs border-none bg-transparent focus:ring-0 py-0 pr-6 cursor-pointer">
+                                        <option v-for="option in fieldSummary.data.shipping_options" :key="option.shipper_id"
+                                            :value="option.shipper_id">
+                                            {{ option.name }}
+                                        </option>
+                                    </select>
+                                    <span v-else-if="fieldSummary.data?.shipper">{{ fieldSummary.data.shipper.name }}</span>
+                                </div>
 
                                 <!-- Popover: Select shipping price method -->
                                 <PopoverPrimevue  ref="_shipping_price_method">
@@ -2314,8 +2699,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                                 'w-20 !px-1.5 !py-0 !text-sm !rounded !text-right',
                                                 ['dispatched'].some((item) => item == props.state) ? '!text-gray-500 !border-none' : ''
                                             ]"
-                                            :invalid="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null" 
-                                            :min="0" 
+                                            :invalid="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null"
+                                            :min="0"
                                             :readonly="['dispatched'].some((item) => item == props.state)"
                                         />
                                     </div>
@@ -2328,8 +2713,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         </BoxStatPallet>
     </div>
 
-    <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
-        @update:tab="handleTabUpdate" />
+    <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
             :updateRoute="routes.updateOrderRoute" :state="data?.data?.state" :modifyRoute="routes.modify"
@@ -2338,14 +2722,24 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             @update:tab="handleTabUpdate" :ref="(e) => _refComponents = e"
             :routesProductsListModification="routes.products_list_modification"
             :is_shop_external
+            :allow_order_modification
         />
     </div>
 
-    <ModalProductList v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction"
-        :current="currentTab" v-model:currentTab="currentTab" :typeModel="'order'" />
+    <ModalProductList v-model="isModalProductListOpen" :fetchRoute="currentModalItemType === 'service' ? routes.services_list : routes.products_list" :action="currentAction"
+        :current="currentTab" v-model:currentTab="currentTab" :typeModel="currentModalItemType === 'service' ? 'service' : 'order'" />
 
     <!-- Section: address edit -->
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)" width="w-full max-w-xl">
+        <div v-if="canEditRecipient" class="mb-4">
+            <div class="text-sm font-semibold mb-1">{{ ctrans("Recipient on delivery label") }}</div>
+            <div class="grid grid-cols-2 gap-x-2">
+                <input v-model="recipientForm.contact_name" @blur="saveRecipient" type="text" :placeholder="ctrans('Contact name')"
+                    class="w-full text-sm border border-gray-300 rounded px-2 py-1" />
+                <input v-model="recipientForm.company_name" @blur="saveRecipient" type="text" :placeholder="ctrans('Company name')"
+                    class="w-full text-sm border border-gray-300 rounded px-2 py-1" />
+            </div>
+        </div>
         <AddressEditModal v-if="props.shop_type === 'b2b'" :addresses="delivery_address_management.addresses"
             :address="box_stats?.customer.addresses.delivery"
             :updateRoute="delivery_address_management.address_update_route" @submitted="() => (isModalAddress = false)"
@@ -2369,6 +2763,14 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             @onDone="() => (isModalAddress = false)" />
     </Modal>
 
+
+    <!-- Section: billing address edit -->
+    <Modal :isOpen="isModalBillingAddress" @onClose="() => (isModalBillingAddress = false)" width="w-full max-w-xl">
+        <AddressEditModal v-if="billing_address_update_route" :addresses="delivery_address_management.addresses"
+            :address="box_stats?.customer.addresses.billing" :title="ctrans('Billing address')"
+            :updateRoute="billing_address_update_route" @submitted="() => (isModalBillingAddress = false)"
+            closeButton />
+    </Modal>
 
     <!-- Modal: Add Voucher -->
     <Modal :isOpen="isOpenModalAddVoucher" @onClose="isOpenModalAddVoucher = false" width="w-full max-w-md">
@@ -2522,6 +2924,48 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">
                         *{{ errorPaymentMethod }}</p>
                 </Transition>
+            </div>
+        </div>
+    </Modal>
+
+    <Modal :isOpen="isModalCancelOrder" @onClose="isModalCancelOrder = false" width="w-[600px]">
+        <div class="isolate bg-white px-6 lg:px-8">
+            <div class="mx-auto max-w-2xl text-center">
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
+                    {{ ctrans("Cancel Order") }}
+                </h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    {{ ctrans("The reason will be shown to the customer in the credit balance notification.") }}
+                </p>
+            </div>
+
+            <div class="mt-7 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium leading-6">
+                        <span class="text-red-500">*</span> {{ ctrans("Reason for cancelling") }}
+                    </label>
+                    <div class="mt-1">
+                        <PureMultiselect v-model="cancelOrderData.cancellation_reason"
+                            :options="cancelOrderAction?.cancellation_reasons ?? []"
+                            :placeholder="ctrans('Select a reason')" required caret />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium leading-6">
+                        {{ ctrans("Details") }}
+                    </label>
+                    <div class="mt-1">
+                        <PureTextarea v-model="cancelOrderData.cancellation_notes" rows="3" full
+                            :placeholder="ctrans('Add more detail for the customer, e.g. which item is out of stock')" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 mb-4 flex justify-end gap-x-2">
+                <Button type="tertiary" :label="ctrans('No')" @click="isModalCancelOrder = false" />
+                <Button :label="ctrans('Yes, cancel order')" :disabled="!cancelOrderData.cancellation_reason"
+                    :loading="cancelLoading" @click="onSubmitCancelOrder" />
             </div>
         </div>
     </Modal>

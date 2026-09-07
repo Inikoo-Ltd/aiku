@@ -30,7 +30,9 @@ class LocationHydratePallets implements ShouldBeUnique
     public function handle(Location $location): void
     {
         $stats = [
-            'number_pallets' => Pallet::where('location_id', $location->id)->count()
+            'number_pallets' => Pallet::where('location_id', $location->id)
+                ->whereIn('status', PalletStatusEnum::occupyingLocation())
+                ->count()
         ];
 
         $stats = array_merge($stats, $this->getEnumStats(

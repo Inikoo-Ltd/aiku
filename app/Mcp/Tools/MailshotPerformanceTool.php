@@ -16,7 +16,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Performance metrics of a shop\'s mailshots: sent, delivered, opened, clicked, unsubscribed with engagement rates.')]
+#[Description('Engagement metrics of a shop\'s mailshots: sent, delivered, opened, clicked, unsubscribed with open and click rates. For what the mailshots earned (attributed revenue, customers, cost) use EmailMarketingPerformanceTool.')]
 #[IsReadOnly]
 class MailshotPerformanceTool extends AikuTool
 {

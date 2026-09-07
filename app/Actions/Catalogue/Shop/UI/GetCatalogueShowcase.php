@@ -2,6 +2,7 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use Illuminate\Support\Facades\DB;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -33,14 +34,18 @@ class GetCatalogueShowcase
                     $this->buildSubDepartmentsStat($shop, $orgSlug, $shopSlug),
                     $this->buildFamiliesStat($shop, $orgSlug, $shopSlug),
                     $this->buildCollectionsStat($shop, $orgSlug, $shopSlug),
+                    $this->buildExclusiveProductsStat($shop, $orgSlug, $shopSlug),
                 ],
                 $stats,
             );
 
             $stats['additionalStatBox'] = [
-                $this->buildStrayFamiliesStat($orgSlug, $shopSlug),
+                $this->buildStrayFamiliesStat($shop, $orgSlug, $shopSlug),
+                $this->buildFamiliesWithMissingImageStat($shop, $orgSlug, $shopSlug),
                 $this->buildOrphanProductsStat($shop, $orgSlug, $shopSlug),
                 $this->buildRRPViolationStat($shop, $orgSlug, $shopSlug),
+                $this->buildProductsWithMissingImageStat($shop, $orgSlug, $shopSlug),
+                $this->buildProductsWithMismatchFamilyStat($shop, $orgSlug, $shopSlug),
                 $this->buildOutOfStockStat($shop, $orgSlug, $shopSlug),
                 $this->buildMissingDescriptionProductsStat($shop, $orgSlug, $shopSlug),
                 $this->buildProductsNotOnlineStat($shop, $orgSlug, $shopSlug),
@@ -67,6 +72,48 @@ class GetCatalogueShowcase
                 ],
             ],
             'stats' => $stats,
+        ];
+    }
+
+    /**
+     * Products sold to named customers only. They are kept out of the catalogue product index and
+     * off the public site, so this is the way in to them.
+     */
+    private function buildExclusiveProductsStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        $numberExclusiveProducts = DB::table('products')
+            ->where('products.shop_id', $shop->id)
+            ->whereNull('products.deleted_at')
+            ->where('products.is_main', true)
+            ->whereExists(fn ($query) => $query->from('product_has_exclusive_customers')
+                ->whereColumn('product_has_exclusive_customers.product_id', 'products.id'))
+            ->count();
+
+        $numberCustomers = DB::table('customers')
+            ->where('shop_id', $shop->id)
+            ->where('number_exclusive_products', '>', 0)
+            ->count();
+
+        return [
+            'label' => __('Exclusive Products'),
+            'route' => [
+                'name'       => 'grp.org.shops.show.catalogue.exclusive_products.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'  => 'fal fa-gem',
+            'color' => '#a78bfa',
+            'value' => $numberExclusiveProducts,
+            'metas' => [
+                [
+                    'icon'    => ['icon' => 'fal fa-users', 'class' => ''],
+                    'count'   => $numberCustomers,
+                    'tooltip' => __('customers'),
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.catalogue.exclusive_products.customers.index',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+                    ],
+                ],
+            ],
         ];
     }
 
@@ -369,7 +416,7 @@ class GetCatalogueShowcase
         ];
     }
 
-    private function buildStrayFamiliesStat(string $orgSlug, string $shopSlug): array
+    private function buildStrayFamiliesStat(Shop $shop, string $orgSlug, string $shopSlug): array
     {
         return [
             'label'           => __('Stray Families'),
@@ -380,7 +427,52 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-folder',
             'backgroundColor' => '#ff000011',
-            'value'           => app()->make(Shop::class)->stats->number_families_no_department ?? 0,
+            'value'           => $shop->stats->number_families_no_department,
+        ];
+    }
+
+    private function buildFamiliesWithMissingImageStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label'           => __('Families with Missing Image'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.org.shops.show.catalogue.families.no_image.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'            => 'fal fa-folder',
+            'backgroundColor' => '#ff000011',
+            'value'           => $shop->stats->number_families_no_images,
+        ];
+    }
+
+    private function buildProductsWithMissingImageStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label'           => __('Products with Missing Image'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.org.shops.show.catalogue.products.no_image_product.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'            => 'fal fa-cube',
+            'backgroundColor' => '#ff000011',
+            'value'           => $shop->stats->number_products_no_images,
+        ];
+    }
+
+    private function buildProductsWithMismatchFamilyStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label'           => __('Products with Mismatched Family'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.org.shops.show.catalogue.products.mismatched_families.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'            => 'fal fa-cube',
+            'backgroundColor' => '#ff000011',
+            'value'           => $shop->stats->number_products_mismatch_family,
         ];
     }
 
@@ -419,7 +511,7 @@ class GetCatalogueShowcase
                     'name'       => 'grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.index',
                     'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
                 ],
-                'count' => $shop->stats->number_current_sub_departments,
+                'count' => $shop->stats->pending_back_in_stock_products_count,
             ],
         ];
     }
@@ -443,12 +535,7 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-align-left',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->products()
-                ->where('is_main', true)
-                ->whereIn('state', [ProductStateEnum::IN_PROCESS, ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])
-                ->where(function ($q) {
-                    $q->whereNull('description')->orWhere('description', '');
-                })->count(),
+            'value'           => $shop->stats->number_products_no_description,
         ];
     }
 
@@ -478,13 +565,7 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-globe',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->products() // Todo: make stats
-                ->where('is_main', true)
-                ->whereNull('exclusive_for_customer_id')
-                ->where('is_for_sale', true)
-                ->whereIn('state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING, ProductStateEnum::IN_PROCESS])
-                ->where('has_live_webpage', false)
-                ->count(),
+            'value'           => $shop->stats->number_products_not_online,
         ];
     }
 }

@@ -87,6 +87,20 @@ const props = defineProps<{
             name: string | null
             route: routeType
         }[]
+        composition: {
+            code: string
+            name: string | null
+            slug: string
+            quantity: number
+            route: routeType
+            org_stocks: {
+                code: string
+                slug: string
+                quantity: number
+                organisation: { code: string; slug: string }
+                route: routeType
+            }[]
+        }[]
         parties: {
             label: string
             icon: string
@@ -100,6 +114,16 @@ const props = defineProps<{
             code: string
             state: string
             is_available: boolean
+        }
+        supplierProductInfo?: {
+            minimum_carton_order?: number
+            delivery_time?: number
+            unit_expense?: number
+            extra_costs?: number
+            barcode?: string
+            net_weight?: number
+            gross_weight?: number
+            marketing_dimensions?: Record<string, any>
         }
         stats: {
             label: string
@@ -137,6 +161,47 @@ const packagingRows = computed(() => [
         value: props.data.packaging.cbm ? `${locale.number(props.data.packaging.cbm)} m³` : "-",
     },
 ])
+
+const supplyingRows = computed(() => {
+    const info = props.data.supplierProductInfo
+
+    if (!info) {
+        return []
+    }
+
+    return [
+        {
+            key: "minimum_carton_order",
+            label: trans("Minimum order"),
+            value: info.minimum_carton_order ? trans(":count cartons", { count: info.minimum_carton_order }) : null,
+        },
+        {
+            key: "delivery_time",
+            label: trans("Delivery time"),
+            value: info.delivery_time ? trans(":days days", { days: info.delivery_time }) : null,
+        },
+        {
+            key: "unit_expense",
+            label: trans("Unit expense"),
+            value: info.unit_expense ? money(info.unit_expense) : null,
+        },
+        {
+            key: "barcode",
+            label: trans("Barcode"),
+            value: info.barcode,
+        },
+        {
+            key: "net_weight",
+            label: trans("Net weight"),
+            value: info.net_weight ? `${locale.number(info.net_weight)} g` : null,
+        },
+        {
+            key: "gross_weight",
+            label: trans("Gross weight"),
+            value: info.gross_weight ? `${locale.number(info.gross_weight)} g` : null,
+        },
+    ].filter((row) => row.value)
+})
 
 const availabilityBadge = (isAvailable: boolean) =>
     isAvailable
@@ -224,6 +289,19 @@ const availabilityBadge = (isAvailable: boolean) =>
                 </div>
             </dl>
 
+            <template v-if="supplyingRows.length">
+                <h3 class="mb-3 mt-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    <Icon :data="{ icon: 'fal fa-truck-container' }" />
+                    {{ trans("Supplying") }}
+                </h3>
+                <dl class="divide-y divide-gray-100">
+                    <div v-for="row in supplyingRows" :key="row.key" class="flex items-baseline justify-between py-2">
+                        <dt class="text-sm text-gray-500">{{ row.label }}</dt>
+                        <dd class="text-sm tabular-nums text-gray-700">{{ row.value }}</dd>
+                    </div>
+                </dl>
+            </template>
+
             <template v-if="data.parties.length">
                 <h3 class="mb-3 mt-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
                     <Icon :data="{ icon: 'fal fa-person-dolly' }" />
@@ -262,6 +340,31 @@ const availabilityBadge = (isAvailable: boolean) =>
                     </div>
                     <ProductUnitLabel :units="tradeUnit.units" :unit="tradeUnit.unit ?? undefined" />
                 </Link>
+            </div>
+        </section>
+
+        <!-- Same triangle as the master product composition page, read-only here -->
+        <section v-if="data.composition.length" class="md:col-span-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                <Icon :data="{ icon: 'fal fa-cubes' }" />
+                {{ trans("Composition") }}
+            </h3>
+            <div class="flex flex-col gap-4">
+                <div v-for="tradeUnit in data.composition" :key="tradeUnit.slug">
+                    <Link :href="route(tradeUnit.route.name, tradeUnit.route.parameters)"
+                        class="text-sm font-medium text-gray-700 hover:text-indigo-600">
+                        {{ tradeUnit.code }} <span class="text-gray-400 font-normal">{{ tradeUnit.name }}</span>
+                    </Link>
+                    <div v-if="tradeUnit.org_stocks.length" class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        <Link v-for="orgStock in tradeUnit.org_stocks" :key="orgStock.slug"
+                            :href="route(orgStock.route.name, orgStock.route.parameters)"
+                            class="flex items-baseline justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2 text-xs transition hover:border-gray-300 hover:bg-gray-50">
+                            <span class="truncate text-gray-700">{{ orgStock.code }}</span>
+                            <span class="shrink-0 text-gray-400">{{ orgStock.organisation.code }}</span>
+                        </Link>
+                    </div>
+                    <p v-else class="mt-1 text-xs text-gray-400">{{ trans("No org stock linked") }}</p>
+                </div>
             </div>
         </section>
 

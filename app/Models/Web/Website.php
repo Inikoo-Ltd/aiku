@@ -320,7 +320,7 @@ class Website extends Model implements Auditable, HasMedia
         return $this->belongsTo(Media::class, 'favicon_id');
     }
 
-    public function imageSources($width = 0, $height = 0)
+    public function imageSources($width = 800, $height = 800)
     {
         if ($this->logo) {
             $avatarThumbnail = $this->logo->getImage()->resize($width, $height);

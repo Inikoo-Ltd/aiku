@@ -4,6 +4,7 @@ namespace App\Actions\Retina\Dropshipping\Orders\Transaction;
 
 use App\Actions\Iris\Basket\StoreEcomOrder;
 use App\Actions\Traits\InteractsWithOrderInBasket;
+use App\Actions\Traits\WithCustomerPurchasableProduct;
 use App\Actions\IrisAction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
@@ -17,12 +18,16 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreRetinaEcomBasketTransaction extends IrisAction
 {
     use InteractsWithOrderInBasket;
+    use WithCustomerPurchasableProduct;
 
     /**
+     * @throws \Illuminate\Validation\ValidationException
      * @throws \Throwable
      */
     public function handle(Customer $customer, Product $product, array $modelData): Transaction
     {
+        $this->ensureProductIsPurchasableByCustomer($product);
+
         $order = $this->getOrderInBasket($customer);
 
         if (!$order) {
@@ -88,6 +93,7 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
             'department_id'     => $product?->department_id,
             'sub_department_id' => $product?->sub_department_id,
             'family_id'         => $product?->family_id,
+            'is_golden_product' => (bool)$product?->is_golden_product,
         ];
     }
 }

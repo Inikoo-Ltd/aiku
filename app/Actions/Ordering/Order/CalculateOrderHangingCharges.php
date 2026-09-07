@@ -27,7 +27,7 @@ class CalculateOrderHangingCharges
 
     public function handle(Order $order): Order
     {
-        if ($order->shipping_engine == OrderChargesEngineEnum::MANUAL) {
+        if ($order->charges_engine == OrderChargesEngineEnum::MANUAL) {
             return $order;
         }
 
@@ -68,11 +68,13 @@ class CalculateOrderHangingCharges
         if (!$charge) {
             return false;
         }
-        if (Arr::get($charge->settings, 'rule_subject') == 'Order Items Net Amount') {
-            return $this->match($order->goods_amount, Arr::get($charge->settings, 'rules'));
+
+        $rules = Arr::get($charge->settings, 'rules');
+        if (blank($rules)) {
+            return false;
         }
 
-        return false;
+        return $this->match($order->goods_amount, $rules);
     }
 
 

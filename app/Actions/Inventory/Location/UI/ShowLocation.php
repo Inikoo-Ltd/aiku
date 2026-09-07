@@ -129,8 +129,8 @@ class ShowLocation extends OrgAction
                     : Inertia::optional(fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($location, LocationTabsEnum::STOCK_MOVEMENTS->value))),
 
                 LocationTabsEnum::HISTORY->value => $this->tab == LocationTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($location))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($location)))
+                    fn () => HistoryResource::collection(IndexHistory::run($location, LocationTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($location, LocationTabsEnum::HISTORY->value)))
             ]
         )
         ->table(IndexHistory::make()->tableStructure(prefix: LocationTabsEnum::HISTORY->value))

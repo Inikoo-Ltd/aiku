@@ -14,6 +14,7 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use App\Models\Catalogue\Collection as MyCollection;
 use Illuminate\Database\Eloquent\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairCatalogueModelsWebpages
 {
@@ -24,6 +25,7 @@ class RepairCatalogueModelsWebpages
 
     public function asCommand(): void
     {
+        Nightwatch::dontSample();
         Product::orderBy('id')->chunk(1000, function (Collection $products) {
             foreach ($products as $product) {
                 $webpage = Webpage::where('model_type', 'Product')

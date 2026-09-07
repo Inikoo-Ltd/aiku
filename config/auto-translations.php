@@ -90,5 +90,12 @@ return [
             'max_tokens'   => (int)env('CHATGPT_MAX_TOKENS', 16384),
             'http_timeout' => (int)env('CHATGPT_HTTP_TIMEOUT', 500),
         ],
+        'gpt-4o' => [
+            'class'        => ChatGPT5Driver::class,
+            'api_key'      => env('CHATGPT_TRANSLATIONS_API_KEY'),
+            'model'        => 'gpt-4o',
+            'max_tokens'   => (int)env('CHATGPT_MAX_TOKENS', 16384),
+            'http_timeout' => (int)env('CHATGPT_HTTP_TIMEOUT', 900),
+        ],
     ],
 ];

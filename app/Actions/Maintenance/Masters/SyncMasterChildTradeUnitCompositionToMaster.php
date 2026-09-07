@@ -15,6 +15,7 @@ use Generator;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 /**
  * Brings a child product's bill of materials back onto its master's pack size.
@@ -256,6 +257,7 @@ class SyncMasterChildTradeUnitCompositionToMaster
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $masterShop = MasterShop::where('slug', $command->argument('master_shop'))->firstOrFail();
         $shopCode   = $command->option('shop');
         $fix        = (bool) $command->option('fix');

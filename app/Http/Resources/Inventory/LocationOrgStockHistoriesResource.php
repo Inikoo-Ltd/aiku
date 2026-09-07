@@ -23,7 +23,9 @@ class LocationOrgStockHistoriesResource extends JsonResource
             'stock_slug'                   => $this->stock_slug,
             'location_code'                => $this->location_code,
             'quantity_in_locations'        => $this->quantity_in_locations,
-            'org_stock_value'              => $this->org_stock_value,
+            'org_stock_lpp_value'              => $this->org_stock_lpp_value,
+            'org_stock_wac_value'              => $this->org_stock_wac_value ?? null,
+            'org_stock_fifo_value'             => $this->org_stock_fifo_value ?? null,
             'currency_code'                => $this->currency_code,
         ];
     }

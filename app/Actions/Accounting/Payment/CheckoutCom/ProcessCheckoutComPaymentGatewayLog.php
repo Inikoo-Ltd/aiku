@@ -116,7 +116,9 @@ class ProcessCheckoutComPaymentGatewayLog
             return $this->markProcessed($paymentGatewayLog, PaymentGatewayLogStatusEnum::FAIL);
         }
 
-        $existingPayment = Payment::where('reference', $paymentGatewayLog->gateway_payment_id)->first();
+        $existingPayment = Payment::where('reference', $paymentGatewayLog->gateway_payment_id)
+            ->where('status', '!=', PaymentStatusEnum::FAIL)
+            ->first();
         if ($existingPayment) {
             return $this->markProcessed($paymentGatewayLog, PaymentGatewayLogStatusEnum::OK, $existingPayment->id);
         }
@@ -217,6 +219,14 @@ class ProcessCheckoutComPaymentGatewayLog
             return $this->markProcessed($paymentGatewayLog, PaymentGatewayLogStatusEnum::FAIL, $paidPayment->id);
         }
 
+        $paymentAccountShop = $order->shop->paymentAccountShops()
+            ->where('type', PaymentAccountTypeEnum::CHECKOUT)
+            ->where('state', PaymentAccountShopStateEnum::ACTIVE)
+            ->first();
+        if ($paymentAccountShop) {
+            StoreFailedCheckoutComPayment::run($order->customer, $paymentAccountShop, Arr::get($paymentGatewayLog->payload, 'data', []), $paymentGatewayLog->type);
+        }
+
         return $this->markProcessed($paymentGatewayLog, PaymentGatewayLogStatusEnum::NA);
     }
 
@@ -274,6 +284,7 @@ class ProcessCheckoutComPaymentGatewayLog
 
         $existingPayment = Payment::where('payment_account_shop_id', $paymentAccountShop->id)
             ->where('reference', $paymentGatewayLog->gateway_payment_id)
+            ->where('status', '!=', PaymentStatusEnum::FAIL)
             ->first();
 
         if ($existingPayment) {
@@ -314,7 +325,8 @@ class ProcessCheckoutComPaymentGatewayLog
         if ($topUpPaymentApiPoint->state == TopUpPaymentApiPointStateEnum::IN_PROCESS) {
             TopUpPaymentFailure::make()->processFailure(
                 $topUpPaymentApiPoint,
-                Arr::get($paymentGatewayLog->payload, 'data', [])
+                Arr::get($paymentGatewayLog->payload, 'data', []),
+                $paymentGatewayLog->type
             );
 
             return $this->markProcessed($paymentGatewayLog, PaymentGatewayLogStatusEnum::OK);
@@ -347,6 +359,7 @@ class ProcessCheckoutComPaymentGatewayLog
 
         $existingPayment = Payment::where('payment_account_shop_id', $paymentAccountShop->id)
             ->where('reference', $paymentGatewayLog->gateway_payment_id)
+            ->where('status', '!=', PaymentStatusEnum::FAIL)
             ->first();
 
         if ($existingPayment) {
@@ -387,7 +400,8 @@ class ProcessCheckoutComPaymentGatewayLog
         if ($orderPaymentApiPoint->state == OrderPaymentApiPointStateEnum::IN_PROCESS) {
             CheckoutComOrderPaymentFailure::make()->processFailure(
                 $orderPaymentApiPoint,
-                Arr::get($paymentGatewayLog->payload, 'data', [])
+                Arr::get($paymentGatewayLog->payload, 'data', []),
+                $paymentGatewayLog->type
             );
 
             return $this->markProcessed($paymentGatewayLog, PaymentGatewayLogStatusEnum::OK);
@@ -403,6 +417,16 @@ class ProcessCheckoutComPaymentGatewayLog
             );
 
             return $this->markProcessed($paymentGatewayLog, PaymentGatewayLogStatusEnum::FAIL, $paidPayment->id);
+        }
+
+        /** The customer already retried and paid with another attempt: this decline still counts as a failed attempt */
+        $paymentAccountShop = PaymentAccountShop::find(Arr::get($orderPaymentApiPoint->data, 'payment_methods.checkout'));
+        $customer           = $orderPaymentApiPoint->order?->customer;
+        if ($paymentAccountShop && $customer) {
+            StoreFailedCheckoutComPayment::run($customer, $paymentAccountShop, Arr::get($paymentGatewayLog->payload, 'data', []), $paymentGatewayLog->type, [
+                'type' => class_basename($orderPaymentApiPoint),
+                'id'   => $orderPaymentApiPoint->id,
+            ]);
         }
 
         return $this->markProcessed($paymentGatewayLog, PaymentGatewayLogStatusEnum::NA);

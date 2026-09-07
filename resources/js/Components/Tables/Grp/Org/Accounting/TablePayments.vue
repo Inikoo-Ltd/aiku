@@ -12,6 +12,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { trans } from "laravel-vue-i18n"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
+import { paymentProviderLogo } from "@/Composables/usePaymentProviderLogo"
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck, faExclamation, faFileCheck, faFileTimes, faHandshakeAltSlash, faHourglassHalf, faSeedling, faSpinner, faTimes } from "@fal"
@@ -57,6 +58,14 @@ const cancelConfirmationText = (item) => {
 				<template v-else>
 					{{ formatReference(payment) }}
 				</template>
+			</div>
+		</template>
+
+		<template #cell(method)="{ item }">
+			<div class="flex items-center gap-1.5">
+				<span>{{ item.method_label || item.method || '-' }}</span>
+				<span v-if="item.is_mit" v-tooltip="trans('Automatic charge from saved card (MIT)')" class="rounded bg-violet-100 px-1 text-xs font-medium text-violet-700">MIT</span>
+				<img v-if="item.payment_account_type !== item.method && paymentProviderLogo(item.payment_account_type)" :src="paymentProviderLogo(item.payment_account_type)" :alt="item.payment_account_name" :title="item.payment_account_name" class="h-3 w-auto max-w-16 opacity-70" />
 			</div>
 		</template>
 

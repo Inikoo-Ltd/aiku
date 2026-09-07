@@ -169,6 +169,9 @@ class Payment extends Model implements Auditable
         'status',
         'state',
         'amount',
+        'payment_account_id',
+        'with_refund',
+        'total_refund',
     ];
 
     protected static function booted(): void
@@ -229,5 +232,49 @@ class Payment extends Model implements Auditable
     public function originalPayment(): BelongsTo
     {
         return $this->belongsTo(Payment::class, 'original_payment_id');
+    }
+
+    /**
+     * Staff-facing name of what the customer actually paid with: "Card · Visa", "Apple Pay",
+     * "Klarna". The provider (checkout.com, Braintree) is shown next to it as a logo, not words.
+     */
+    public static function methodLabel(?string $method, ?string $subMethod = null): string
+    {
+        $method = strtolower(trim((string) $method));
+
+        if ($method === '') {
+            return '';
+        }
+
+        return self::methodName($method).($subMethod ? ' · '.self::methodName($subMethod) : '');
+    }
+
+    private static function methodName(string $method): string
+    {
+        return match (strtolower(trim($method))) {
+            'card'             => 'Card',
+            'visa'             => 'Visa',
+            'mastercard'       => 'Mastercard',
+            'american express',
+            'amex'             => 'American Express',
+            'applepay'         => 'Apple Pay',
+            'googlepay'        => 'Google Pay',
+            'klarna'           => 'Klarna',
+            'paypal'           => 'PayPal',
+            'ideal'            => 'iDEAL',
+            'sofort'           => 'Sofort',
+            'p24'              => 'Przelewy24',
+            'eps'              => 'EPS',
+            'bancontact'       => 'Bancontact',
+            'multibanco'       => 'Multibanco',
+            'mbway'            => 'MB WAY',
+            'blik'             => 'BLIK',
+            'swish'            => 'Swish',
+            'account'          => 'Accounts (customer credits)',
+            'checkout'         => 'Checkout.com',
+            'braintree'        => 'Braintree',
+            'cash_on_delivery' => 'Cash on delivery',
+            default            => ucwords(str_replace('_', ' ', $method)),
+        };
     }
 }

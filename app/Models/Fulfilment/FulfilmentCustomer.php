@@ -239,7 +239,7 @@ class FulfilmentCustomer extends Model implements HasMedia
 
     public function rentalAgreement(): HasOne
     {
-        return $this->hasOne(RentalAgreement::class);
+        return $this->hasOne(RentalAgreement::class)->latestOfMany();
     }
 
     public function rentalAgreementClauses(): HasMany

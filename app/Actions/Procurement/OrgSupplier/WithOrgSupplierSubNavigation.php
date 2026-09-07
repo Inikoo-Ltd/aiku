@@ -13,6 +13,22 @@ use App\Models\Procurement\OrgSupplier;
 
 trait WithOrgSupplierSubNavigation
 {
+    protected function getOrgSupplierPurchaseOrderAction(OrgSupplier $orgSupplier): array
+    {
+        return [
+            'label' => __('Purchase Order'),
+            'type'  => 'button',
+            'style' => 'create',
+            'route' => [
+                'method'     => 'post',
+                'name'       => 'grp.models.org-supplier.purchase-order.store',
+                'parameters' => [
+                    'orgSupplier' => $orgSupplier->id,
+                ],
+            ],
+        ];
+    }
+
     protected function getOrgSupplierNavigation(OrgSupplier $parent): array
     {
         $routeParameters = [$parent->organisation->slug, $parent->slug];
@@ -40,8 +56,32 @@ trait WithOrgSupplierSubNavigation
                     'icon'    => ['fal', 'fa-box-usd'],
                     'tooltip' => __('Products'),
                 ],
-                'number'   => $parent->stats->number_org_supplier_products,
+                'number'   => $parent->stats->number_current_org_supplier_products,
             ],
+            ...($parent->org_agent_id ? [] : [
+                [
+                    'label'    => __('Shopping'),
+                    'route'    => [
+                        'name'       => 'grp.org.procurement.org_suppliers.show.shopping.dashboard',
+                        'parameters' => $routeParameters,
+                    ],
+                    'leftIcon' => [
+                        'icon'    => ['fal', 'fa-shopping-basket'],
+                        'tooltip' => __('Shopping'),
+                    ],
+                ],
+                [
+                    'label'    => __('Shopping List'),
+                    'route'    => [
+                        'name'       => 'grp.org.procurement.org_suppliers.show.shopping_list.index',
+                        'parameters' => $routeParameters,
+                    ],
+                    'leftIcon' => [
+                        'icon'    => ['fal', 'fa-list'],
+                        'tooltip' => __('Shopping List'),
+                    ],
+                ],
+            ]),
             [
                 'label'    => __('Purchase Orders'),
                 'route'    => [

@@ -85,8 +85,8 @@ class ShowGuest extends OrgAction
                     fn () => GetGuestShowcase::run($guest)
                     : Inertia::optional(fn () => GetGuestShowcase::run($guest)),
                 GuestTabsEnum::HISTORY->value  => $this->tab == GuestTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($guest))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($guest)))
+                    fn () => HistoryResource::collection(IndexHistory::run($guest, GuestTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($guest, GuestTabsEnum::HISTORY->value)))
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: GuestTabsEnum::HISTORY->value));
     }

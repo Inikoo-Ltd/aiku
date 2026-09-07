@@ -9,13 +9,15 @@
 namespace App\Actions\Production\JobOrderItem;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItem\JobOrderItemStateEnum;
 use App\Enums\Production\JobOrderItem\JobOrderItemStatusEnum;
 use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItem;
-use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -32,7 +34,7 @@ class StoreJobOrderItem extends OrgAction
                 data_set(
                     $modelData,
                     'reference',
-                    Str::random(10) //TODO: make a reference generator for Job Order Item
+                    $jobOrder->reference.'-'.($jobOrder->jobOrderItems()->count() + 1)
                 );
             }
         }
@@ -49,6 +51,10 @@ class StoreJobOrderItem extends OrgAction
         }
         $jobOrderItem->refresh();
 
+        if (!in_array($jobOrder->state, [JobOrderStateEnum::RECEIVED, JobOrderStateEnum::NOT_RECEIVED])) {
+            GenerateJobOrderItemTasks::run($jobOrderItem);
+        }
+
         return $jobOrderItem;
     }
 
@@ -58,7 +64,12 @@ class StoreJobOrderItem extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("productions-view.{$this->organisation->id}");
+        return $request->user()->authTo([
+            'org-supervisor.'.$this->organisation->id,
+            'productions-view.'.$this->organisation->id,
+            "productions_operations.{$this->production->id}.view",
+            "productions_operations.{$this->production->id}.orchestrate",
+        ]);
     }
 
 
@@ -78,15 +89,21 @@ class StoreJobOrderItem extends OrgAction
             'quantity'           => ['required', 'integer', 'min:1'],
             'created_at'         => ['sometimes', 'date'],
             'received_at'        => ['sometimes', 'nullable', 'date'],
+            'source_id'          => ['sometimes', 'nullable', 'string'],
         ];
     }
 
 
-    public function asController(Organisation $organisation, JobOrder $jobOrder, ActionRequest $request): JobOrderItem
+    public function asController(JobOrder $jobOrder, ActionRequest $request): JobOrderItem
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisationFromProduction($jobOrder->production, $request);
 
         return $this->handle($jobOrder, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return Redirect::back();
     }
 
 

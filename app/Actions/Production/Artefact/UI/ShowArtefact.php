@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\Artefact\UI;
 
+use App\Actions\Production\Artisan\GetArtisanAssignmentProps;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Actions\OrgAction;
@@ -15,7 +16,6 @@ use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\UI\Production\ArtefactTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Production\ArtefactResource;
-use App\Http\Resources\Production\ManufactureTasksResource;
 use App\Models\Production\Artefact;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
@@ -94,6 +94,18 @@ class ShowArtefact extends OrgAction
                         // $this->canDelete ? $this->getDeleteActionIcon($request) : null,
                         [
                             'type'    => 'button',
+                            'style'   => $artefact->rawMaterial ? 'tertiary' : 'secondary',
+                            'icon'    => 'fal fa-blender-phone',
+                            'label'   => $artefact->rawMaterial ? __('Mix') : __('Mark as mix'),
+                            'tooltip' => $artefact->rawMaterial ? __('This artefact is a mix prepared in-house. Click to unmark.') : __('Mark as a mix prepared in-house, it then shows on the Mixes board when needed'),
+                            'route'   => [
+                                'method'     => 'post',
+                                'name'       => 'grp.org.productions.show.crafts.artefacts.mix',
+                                'parameters' => array_merge($request->route()->originalParameters(), ['is_mix' => !$artefact->rawMaterial]),
+                            ],
+                        ],
+                        [
+                            'type'    => 'button',
                         'tooltip'     => __('Edit'),
                         'icon'        => 'fal fa-pencil',
                         'style'       => 'secondary',
@@ -119,6 +131,7 @@ class ShowArtefact extends OrgAction
                     //     ]
                     // ]
                 ],
+                'artisans'                             => GetArtisanAssignmentProps::run($artefact, $this->canEdit),
                 'tabs'                                 => [
                     'current'    => $this->tab,
                     'navigation' => ArtefactTabsEnum::navigation()
@@ -128,8 +141,12 @@ class ShowArtefact extends OrgAction
                     : Inertia::optional(fn () => GetArtefactShowcase::run($artefact)),
 
                 ArtefactTabsEnum::MANUFACTURE_TASKS->value => $this->tab == ArtefactTabsEnum::MANUFACTURE_TASKS->value
-                    ? fn () => ManufactureTasksResource::collection(GetArtefactManufactureTasks::run($artefact, $request))
-                    : Inertia::optional(fn () => ManufactureTasksResource::collection(GetArtefactManufactureTasks::run($artefact, $request))),
+                    ? fn () => GetArtefactManufactureTasks::run($artefact)
+                    : Inertia::optional(fn () => GetArtefactManufactureTasks::run($artefact)),
+
+                ArtefactTabsEnum::COMPLIANCE->value => $this->tab == ArtefactTabsEnum::COMPLIANCE->value
+                    ? fn () => GetArtefactCompliance::run($artefact)
+                    : Inertia::optional(fn () => GetArtefactCompliance::run($artefact)),
 
                 // ArtefactTabsEnum::LOCATIONS->value => $this->tab == ArtefactTabsEnum::LOCATIONS->value
                 //     ?
@@ -147,8 +164,8 @@ class ShowArtefact extends OrgAction
                 //     )),
 
                 ArtefactTabsEnum::HISTORY->value => $this->tab == ArtefactTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($artefact))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($artefact)))
+                    fn () => HistoryResource::collection(IndexHistory::run($artefact, ArtefactTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($artefact, ArtefactTabsEnum::HISTORY->value)))
 
             ]
             // )->table(

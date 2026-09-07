@@ -40,6 +40,39 @@ trait WithAnalyticsSubNavigations
                     "tooltip" => __("Suspended Users"),
                 ],
             ],
+            [
+                "label"    => __("Search"),
+                "route"     => [
+                    "name"       => "grp.sysadmin.analytics.search_logs.index",
+                    "parameters" => [],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-search"],
+                    "tooltip" => __("Search"),
+                ],
+            ],
+            [
+                "label"    => __("Scheduled Tasks"),
+                "route"     => [
+                    "name"       => "grp.sysadmin.analytics.scheduled_tasks.index",
+                    "parameters" => [],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-clock"],
+                    "tooltip" => __("Scheduled Tasks"),
+                ],
+            ],
+            [
+                "label"    => __("Changelogs"),
+                "route"     => [
+                    "name"       => "grp.sysadmin.analytics.changelogs.index",
+                    "parameters" => [],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-history"],
+                    "tooltip" => __("Changelogs"),
+                ],
+            ],
         ];
     }
 }

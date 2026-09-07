@@ -61,14 +61,45 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
             $availableQuantity = 50; // Based on discuss with tomas we agree to limit 50 only
         }
 
-        $ebayUser->updateOffer($offerId, [
+        $offerData = [
             'category_id' => $categoryId,
             'quantity' => $availableQuantity,
-            'price' => $portfolio->customer_price,
-            'currency' => $portfolio->shop->currency->code
-        ]);
+        ];
+
+        if (
+            !Arr::get($portfolio->customerSalesChannel->settings, 'do_not_update_prices')
+            && Arr::get($portfolio->settings, 'pricing.type') !== 'not_follow'
+        ) {
+            $offerData['price'] = $portfolio->customer_price;
+            $offerData['currency'] = $portfolio->shop->currency->code;
+        }
+
+        $ebayUser->updateOffer($offerId, $offerData);
 
         if (! Arr::has($listing, 'offers.0.listing.listingId')) {
+            if (Arr::get($portfolio->customerSalesChannel->settings, 'upload_as_draft')) {
+                UpdatePortfolio::make()->action($portfolio, [
+                    'platform_product_id' => $offerId,
+                    'upload_warning'      => null,
+                    'errors_response'     => null,
+                    'data'                => ['is_platform_draft' => true]
+                ]);
+
+                $portfolio->update([
+                    'has_valid_platform_product_id' => true,
+                    'exist_in_platform'             => true,
+                    'platform_status'               => false
+                ]);
+
+                UpdatePlatformPortfolioLog::dispatch($logs, [
+                    'status' => PlatformPortfolioLogsStatusEnum::OK
+                ]);
+
+                UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio->refresh());
+
+                return;
+            }
+
             $publishedOffer = $ebayUser->publishListing($offerId);
         } else {
             $publishedOffer = Arr::get($listing, 'offers.0.listing');
@@ -82,7 +113,8 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
         if (Arr::get($publishedOffer, 'listingId')) {
             UpdatePortfolio::make()->action($portfolio, [
                 'upload_warning'  => null,
-                'errors_response' => null
+                'errors_response' => null,
+                'data'            => ['is_platform_draft' => false]
             ]);
 
             UpdatePlatformPortfolioLog::dispatch($logs, [

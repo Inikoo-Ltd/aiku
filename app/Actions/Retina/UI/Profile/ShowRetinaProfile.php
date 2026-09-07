@@ -38,7 +38,8 @@ class ShowRetinaProfile extends RetinaAction
             'email'        => [
                 'type'  => 'input',
                 'label' => __('Email'),
-                'value' => $customer->email
+                'value' => $webUser->email,
+                'information' => __('This is the email you use to log in.'),
             ],
             'about'        => [
                 'type'  => 'textarea',
@@ -97,7 +98,10 @@ class ShowRetinaProfile extends RetinaAction
                     'email'           => [
                         'type'  => 'input',
                         'label' => __('Email'),
-                        'value' => $customer->email
+                        'value' => $customer->email,
+                        'information_warning' => [
+                            ['description' => __('Changing this email will also change the email you use to log in.')]
+                        ],
                     ],
                     'phone'           => [
                         'type'  => 'phone',

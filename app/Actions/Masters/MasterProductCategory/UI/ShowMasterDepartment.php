@@ -173,8 +173,8 @@ class ShowMasterDepartment extends OrgAction
                     : Inertia::optional(fn () => GetMasterProductCategoryImages::run($masterDepartment)),
 
                 MasterDepartmentTabsEnum::HISTORY->value => $this->tab == MasterDepartmentTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))),
+                    fn () => HistoryResource::collection(IndexHistory::run($masterDepartment, MasterDepartmentTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($masterDepartment, MasterDepartmentTabsEnum::HISTORY->value))),
 
 
             ]
@@ -260,15 +260,18 @@ class ShowMasterDepartment extends OrgAction
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.index',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
             'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.sales',
             'grp.masters.master_shops.show.master_departments.show.master_families.index',
             'grp.masters.master_shops.show.master_departments.show.master_families.show',
             'grp.masters.master_shops.show.master_departments.show.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_products.sales',
             'grp.masters.master_shops.show.master_departments.show.master_products.show',
             'grp.masters.master_shops.show.master_departments.show.master_collections.index',
             'grp.masters.master_shops.show.master_departments.show.master_collections.show',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.sales',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.edit' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent),

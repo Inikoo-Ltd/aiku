@@ -14,6 +14,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithAttachMediaToModel;
+use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -28,6 +29,7 @@ class StoreMasterProductFromTradeUnits extends OrgAction
     use WithNoStrictRules;
     use WithMastersEditAuthorisation;
     use WithAttachMediaToModel;
+    use WithMasterAssetTradeUnits;
 
     /**
      * @var \App\Models\Masters\MasterProductCategory
@@ -45,14 +47,13 @@ class StoreMasterProductFromTradeUnits extends OrgAction
 
         $hasOneTradeUnit = count($tradeUnits) == 1;
 
-        $qtyFinal = 1;
-
-        if ($hasOneTradeUnit) {
-            $arrKeyFirst = array_key_first($tradeUnits);
-            $qtyFinal = $tradeUnits[$arrKeyFirst]['quantity'];
+        if (!Arr::get($modelData, 'has_independent_units', false)) {
+            data_set(
+                $modelData,
+                'units',
+                $this->getUnitsFromTradeUnits($tradeUnits)['units'] ?? Arr::get($modelData, 'units', 1)
+            );
         }
-
-        data_set($modelData, 'units', $qtyFinal);
 
         if (!Arr::has($modelData, 'unit') && $hasOneTradeUnit) {
             data_set($modelData, 'unit', Arr::get($tradeUnits, '0.type'));
@@ -130,15 +131,15 @@ class StoreMasterProductFromTradeUnits extends OrgAction
 
         if ($this->get('master_prices')) {
             $this->set('master_prices', collect($this->get('master_prices'))->map(fn ($item) => [
-                'value'         => $item['value'],
-                'independent'   => filter_var($item['independent'], FILTER_VALIDATE_BOOLEAN),
+                'value'         => Arr::get($item, 'value'),
+                'independent'   => filter_var(Arr::get($item, 'independent'), FILTER_VALIDATE_BOOLEAN),
             ])->toArray());
         }
 
         if ($this->get('master_rrps')) {
             $this->set('master_rrps', collect($this->get('master_rrps'))->map(fn ($item) => [
-                'value'         => $item['value'],
-                'independent'   => filter_var($item['independent'], FILTER_VALIDATE_BOOLEAN),
+                'value'         => Arr::get($item, 'value'),
+                'independent'   => filter_var(Arr::get($item, 'independent'), FILTER_VALIDATE_BOOLEAN),
             ])->toArray());
         }
     }
@@ -185,12 +186,12 @@ class StoreMasterProductFromTradeUnits extends OrgAction
             'shop_products.*.price'  => [
                 'required',
                 'numeric',
-                'min:0.01'
+                'min:0'
             ],
             'shop_products.*.rrp'    => [
                 'required',
                 'numeric',
-                'min:0.01'
+                'min:0'
             ],
             'shop_products.*.create_in_shop'    => [
                 'required',
@@ -199,16 +200,16 @@ class StoreMasterProductFromTradeUnits extends OrgAction
             'image'                  => ["sometimes", "mimes:jpg,png,jpeg,gif", "max:50000"],
             'gross_weight'           => ['sometimes', 'numeric', 'min:0'],
             'marketing_dimensions'   => ['sometimes'],
-            'masterShop'             => ['required'],
+            'masterShop'             => ['sometimes'],
             'is_minion_variant'      => ['required', 'boolean'],
             'is_for_sale'            => ['required', 'boolean'],
             // Master Prices
             'master_prices'                => ['sometimes', 'array'],
-            'master_prices.*.value'        => ['sometimes', 'numeric', 'gt:0'],
+            'master_prices.*.value'        => ['sometimes', 'nullable', 'numeric', 'gte:0'],
             'master_prices.*.independent'  => ['sometimes', 'boolean'],
             // Master RRPs | This is per unit btw
             'master_rrps'                   => ['sometimes', 'array'],
-            'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
+            'master_rrps.*.value'           => ['sometimes', 'nullable', 'numeric', 'gte:0'],
             'master_rrps.*.independent'     => ['sometimes', 'boolean'],
         ];
     }

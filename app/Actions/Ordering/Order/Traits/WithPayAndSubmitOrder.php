@@ -22,6 +22,14 @@ trait WithPayAndSubmitOrder
 
     public function payAndSubmitOrder(Order $order)
     {
+        /** A channel order whose line items all failed to resolve must stay in basket state,
+         * visible and unpaid, instead of submitting empty. */
+        if ($order->transactions()->count() === 0) {
+            Sentry::captureMessage('Channel order '.$order->reference.' ('.$order->id.') has no transactions after import, submit skipped');
+
+            return $order;
+        }
+
         $isForbidden = $this->isForbidden($order);
 
         // If forbidden, do not allow payment. So that it stucks at submit order only, and not in warehouse

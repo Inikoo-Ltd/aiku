@@ -16,6 +16,7 @@ use App\Models\Masters\MasterAsset;
 use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMasterProductParents extends OrgAction
 {
@@ -67,6 +68,7 @@ class RepairMasterProductParents extends OrgAction
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         if ($command->argument('masterAsset')) {
             $masterAsset = MasterAsset::where('slug', $command->argument('masterAsset'))->firstOrFail();
             $command->info("Fixing master product parents for $masterAsset->code");

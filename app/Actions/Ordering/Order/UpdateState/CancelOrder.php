@@ -11,8 +11,10 @@ namespace App\Actions\Ordering\Order\UpdateState;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
+use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
 use App\Actions\Dropshipping\Allegro\Order\CancelFulfillOrderAllegro;
+use App\Actions\Dropshipping\Wix\Order\CancelFulfillOrderWix;
 use App\Actions\Dropshipping\Shopify\Fulfilment\CloseFulfillOrderToShopify;
 use App\Actions\Dropshipping\Tiktok\Order\CancelFulfillOrderTiktok;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
@@ -28,13 +30,16 @@ use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -51,20 +56,33 @@ class CancelOrder extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order): Order
+    public function handle(Order $order, array $modelData = []): Order
     {
         $oldState = $order->state;
 
-        $modelData = [
+        $date = now();
+
+        $reason = $this->getCancellationReason($modelData);
+        $notes  = trim((string)Arr::get($modelData, 'cancellation_notes'));
+
+        $orderData = [
             'state' => OrderStateEnum::CANCELLED,
         ];
 
-        $date = now();
-
         if ($order->cancelled_at == null) {
-            data_set($modelData, 'cancelled_at', $date);
+            data_set($orderData, 'cancelled_at', $date);
         }
-        $this->update($order, $modelData);
+
+        if ($reason || $notes !== '') {
+            data_set($orderData, 'data', array_merge((array)$order->data, [
+                'cancellation' => [
+                    'reason' => $reason?->value,
+                    'notes'  => $notes !== '' ? $notes : null,
+                ],
+            ]));
+        }
+
+        $this->update($order, $orderData);
 
         $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
 
@@ -83,8 +101,8 @@ class CancelOrder extends OrgAction
             StoreCreditTransaction::make()->action($order->customer, [
                 'amount' => $order->payment_amount,
                 'type'   => CreditTransactionTypeEnum::MONEY_BACK,
-                'reason' => CreditTransactionReasonEnum::MONEY_BACK,
-                'notes'  => "Order #$order->reference cancelled. Money returned as store credit.",
+                'reason' => CreditTransactionReasonEnum::ORDER_CANCELLED,
+                'notes'  => $this->getCreditTransactionNotes($order, $reason, $notes),
             ]);
 
 
@@ -118,12 +136,13 @@ class CancelOrder extends OrgAction
             CustomerHydrateBasket::run($order->customer_id);
         }
 
-        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
+        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING && app()->isProduction()) {
             if ($order->customerSalesChannel?->user) {
                 match ($order->customerSalesChannel->platform->type) {
                     PlatformTypeEnum::SHOPIFY => CloseFulfillOrderToShopify::run($order),
                     PlatformTypeEnum::TIKTOK => CancelFulfillOrderTiktok::run($order),
                     PlatformTypeEnum::ALLEGRO => CancelFulfillOrderAllegro::run($order),
+                    PlatformTypeEnum::WIX => CancelFulfillOrderWix::run($order),
                     default => null,
                 };
             } elseif ($order->customerSalesChannel?->platform?->type !== PlatformTypeEnum::MANUAL) {
@@ -138,7 +157,65 @@ class CancelOrder extends OrgAction
         $this->orderHandlingHydrators($order, $oldState);
         $this->orderHandlingHydrators($order, OrderStateEnum::CANCELLED);
 
+        $this->refreshTrafficSourceStats($order);
+
         return $order;
+    }
+
+    /**
+     * TrafficSourceHydrateCustomers re-sums the orders and invoices of every customer a traffic source
+     * is credited with, and cancelling this order changes this customer's totals, so every source
+     * crediting either the order or the customer holds a stale figure until it is rehydrated.
+     *
+     * The pivot attribution rows themselves are preserved as an audit trail of what originally
+     * acquired the order.
+     *
+     * ponytail: the extra delay keeps this from reading the customer's rollups before the order
+     * hydrators above have written them. Chain it after CustomerHydrateOrderStats if queue depth ever
+     * makes a fixed offset unreliable.
+     */
+    private function refreshTrafficSourceStats(Order $order): void
+    {
+        $trafficSources = $order->trafficSources
+            ->merge($order->customer?->trafficSources ?? [])
+            ->unique('id');
+
+        foreach ($trafficSources as $trafficSource) {
+            TrafficSourceHydrateCustomers::dispatch($trafficSource)->delay($this->hydratorsDelay + 120);
+        }
+    }
+
+    private function getCancellationReason(array $modelData): ?OrderCancellationReasonEnum
+    {
+        $reason = Arr::get($modelData, 'cancellation_reason');
+
+        if ($reason instanceof OrderCancellationReasonEnum) {
+            return $reason;
+        }
+
+        return OrderCancellationReasonEnum::tryFrom((string)$reason);
+    }
+
+    private function getCreditTransactionNotes(Order $order, ?OrderCancellationReasonEnum $reason, string $notes): string
+    {
+        $explanation = rtrim(
+            collect([$reason?->label(), $notes])->filter()->implode('. '),
+            " \t\n."
+        );
+
+        if ($explanation === '') {
+            return "Order #$order->reference cancelled. Money returned as store credit.";
+        }
+
+        return "Order #$order->reference cancelled: $explanation. Money returned as store credit.";
+    }
+
+    public function rules(): array
+    {
+        return [
+            'cancellation_reason' => ['sometimes', 'nullable', Rule::enum(OrderCancellationReasonEnum::class)],
+            'cancellation_notes'  => ['sometimes', 'nullable', 'string', 'max:4000'],
+        ];
     }
 
     public function afterValidator(Validator $validator): void
@@ -163,13 +240,13 @@ class CancelOrder extends OrgAction
         }
     }
 
-    public function action(Order $order): Order
+    public function action(Order $order, array $modelData = []): Order
     {
         $this->asAction = true;
         $this->order    = $order;
-        $this->initialisationFromShop($order->shop, []);
+        $this->initialisationFromShop($order->shop, $modelData);
 
-        return $this->handle($order);
+        return $this->handle($order, $this->validatedData);
     }
 
     public function asController(Order $order, ActionRequest $request): Order
@@ -177,6 +254,6 @@ class CancelOrder extends OrgAction
         $this->order = $order;
         $this->initialisationFromShop($order->shop, $request);
 
-        return $this->handle($order);
+        return $this->handle($order, $this->validatedData);
     }
 }

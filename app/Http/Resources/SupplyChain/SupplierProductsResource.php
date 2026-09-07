@@ -15,25 +15,30 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $code
  * @property string $name
  * @property string $slug
+ * @property mixed $agent_slug
+ * @property mixed $supplier_slug
+ * @property string $description
+ * @property mixed $cost
+ * @property string $currency_code
  * @property string $created_at
  * @property string $updated_at
- * @property string $description
  */
 class SupplierProductsResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            "id"    => $this->id,
+            'id'            => $this->id,
             'code'          => $this->code,
             'name'          => $this->name,
             'slug'          => $this->slug,
             'agent_slug'    => $this->whenHas('agent_slug'),
             'supplier_slug' => $this->whenHas('supplier_slug'),
             'description'   => $this->description,
+            'cost'          => $this->cost,
+            'currency_code' => $this->currency_code,
             'created_at'    => $this->created_at,
             'updated_at'    => $this->updated_at,
-
         ];
     }
 }

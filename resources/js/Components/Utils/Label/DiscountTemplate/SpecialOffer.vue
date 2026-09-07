@@ -11,6 +11,7 @@ library.add(faInfoCircle)
 
 const props = withDefaults(defineProps<{
     offer?: {
+        type?: string
         label?: string
         percentage_off?: string | number
         duration_label?: string
@@ -33,7 +34,6 @@ const maxDiscountLabel = computed(() => {
 
     return (val * 100).toFixed(2).replace(/\.00$/, "")
 })
-console.log('haloo',props)
 </script>
 
 <template>
@@ -73,7 +73,7 @@ console.log('haloo',props)
 <style scoped>
 .special-offer {
     @apply relative inline-flex items-stretch w-fit overflow-hidden rounded-lg shadow-md text-white mb-2;
-    background-color: #E87928;
+    background-color: #A80000;
 }
 
 .special-offer__title {

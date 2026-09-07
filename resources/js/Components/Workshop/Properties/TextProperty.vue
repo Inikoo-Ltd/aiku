@@ -65,9 +65,9 @@ const textTransformOptions = [
 </script>
 
 <template>
-    <div class="flex flex-col pt-1 pb-3">
-        <div class="pb-2">
-            <div class="px-3 flex justify-between items-center mb-2">
+    <div class="flex flex-col pt-1 pb-1.5">
+        <div class="pb-1">
+            <div class="px-2 flex justify-between items-center mb-1.5">
                 <div class="text-xs">{{ trans('Text Color') }}</div>
                 <ColorPicker :color="get(localModel, 'color', null)" @changeColor="(newColor) => {
                     const finalColor = newColor ? `rgba(${newColor.rgba.r}, ${newColor.rgba.g}, ${newColor.rgba.b}, ${newColor.rgba.a})` : null
@@ -94,8 +94,8 @@ const textTransformOptions = [
 
             </div>
 
-            <div class="px-3 items-center mb-2">
-                <div class="text-xs mb-2">{{ trans('Font') }}</div>
+            <div class="px-2 items-center mb-1.5">
+                <div class="text-xs mb-1">{{ trans('Font') }}</div>
                 <div class="col-span-4">
                     <PureMultiselect v-model="localModel.fontFamily"
                         @update:modelValue="(e) => (set(localModel, 'fontFamily', e), emits('update:modelValue', localModel))"
@@ -120,7 +120,7 @@ const textTransformOptions = [
 
 
             <!-- Section: Font style (normal, italic, oblique) -->
-            <div class="px-3 items-center mb-3">
+            <div class="px-2 items-center mb-1.5">
                 <div class="text-xs mb-1">{{ trans('Font Style') }}</div>
                 <div class="col-span-4">
                     <PureMultiselect
@@ -144,7 +144,7 @@ const textTransformOptions = [
             </div>
 
             <!-- Section: Font Decoration (underline, line-through) -->
-            <div class="px-3 items-center mb-3">
+            <div class="px-2 items-center mb-1.5">
                 <div class="text-xs mb-1">{{ trans('Text Decoration') }}</div>
                 <div class="col-span-4">
                     <PureMultiselect
@@ -170,7 +170,7 @@ const textTransformOptions = [
             </div>
 
             <!-- Section: Font Transform (uppercase, lowercase, capitalize) -->
-            <div class="px-3 items-center mb-3">
+            <div class="px-2 items-center mb-1.5">
                 <div class="text-xs mb-1">{{ trans('Text Transform') }}</div>
                 <div class="col-span-4">
                     <PureMultiselect
@@ -196,8 +196,8 @@ const textTransformOptions = [
             </div>
 
             <!-- Section: Font size -->
-            <div class="px-3 items-center">
-                <div class="text-xs mb-2">{{ trans('Font size') }}</div>
+            <div class="px-2 items-center">
+                <div class="text-xs mb-1">{{ trans('Font size') }}</div>
                 <div class="col-span-4">
                     <PureInputNumber
                         v-model="localModel.fontSize"

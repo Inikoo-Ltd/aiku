@@ -30,7 +30,7 @@ trait WithPreparePositionsForValidation
                     ];
                 } else {
                     $newData[] = match (Arr::get(explode('-', $jobPositionCode), 0)) {
-                        'wah', 'dist', 'ful', 'web', 'mrk', 'cus', 'shk', 'ppc' => [
+                        'wah', 'dist', 'ful', 'web', 'mrk', 'cus', 'shk', 'ppc', 'prod' => [
                             'code'   => $jobPositionCode,
                             'scopes' => array_map(function ($scope) {
                                 return [

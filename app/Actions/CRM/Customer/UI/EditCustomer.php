@@ -8,6 +8,8 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Models\HumanResources\Employee;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
@@ -19,6 +21,7 @@ use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -30,6 +33,26 @@ class EditCustomer extends OrgAction
     public function handle(Customer $customer): Customer
     {
         return $customer;
+    }
+
+    /** @return array<int, array{description: string}> */
+    private function getEmailChangeWarnings(Customer $customer): array
+    {
+        $webUsers = $customer->webUsers()->get(['username', 'email']);
+        if ($webUsers->isEmpty()) {
+            return [];
+        }
+
+        $matchingWebUser = $webUsers->firstWhere('email', $customer->email);
+        if ($matchingWebUser) {
+            return [
+                ['description' => __('Changing this email will also update the login email of web user :username.', ['username' => $matchingWebUser->username])]
+            ];
+        }
+
+        return [
+            ['description' => __('This customer has :count web user(s) with different login emails; changing this email will not affect them.', ['count' => $webUsers->count()])]
+        ];
     }
 
 
@@ -60,6 +83,12 @@ class EditCustomer extends OrgAction
                     'type'  => 'input',
                     'label' => __('Company'),
                     'value' => $customer->company_name
+                ],
+                'email'                    => [
+                    'type'  => 'input',
+                    'label' => __('Email'),
+                    'value' => $customer->email,
+                    'information_warning' => $this->getEmailChangeWarnings($customer),
                 ],
                 'phone'                    => [
                     'type'  => 'phone',
@@ -93,20 +122,14 @@ class EditCustomer extends OrgAction
                     ],
                 ],
                 'tax_number'               => [
-                    'type'    => 'tax_number',
-                    'label'   => __('Tax number'),
-                    'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
-                    'country' => $customer->address->country_code,
-                ],
-                'eori'                     => [
-                    'type'  => 'input',
-                    'label' => 'EORI',
-                    'value' => $customer->eori
-                ],
-                'ukims'                    => [
-                    'type'  => 'input',
-                    'label' => 'UKIMS',
-                    'value' => $customer->ukims
+                    'type'                  => 'tax_number',
+                    'label'                 => __('Tax number'),
+                    'value'                 => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
+                    'mark_as_valid_button'  => [
+                        'show'      => true,
+                        'cus_id'    => $customer->id,
+                    ],
+                    'country'               => $customer->address->country_code,
                 ],
                 'is_re'                    => [
                     'type'   => 'toggle',
@@ -227,14 +250,40 @@ class EditCustomer extends OrgAction
             ]
         ];
 
-        $blueprint   = [];
-        $blueprint[] = $contact;
-        $blueprint[] = $identification;
-        if (!$isExternal) {
-            $blueprint[] = $accounting;
-            $blueprint[] = $tags;
+        $staff = [
+            'title'  => __('Staff'),
+            'label'  => __('Staff'),
+            'fields' => [
+                'as_employee_id' => [
+                    'type'        => 'select',
+                    'label'       => __('Employee behind this account'),
+                    'placeholder' => __('Not an employee'),
+                    'searchable'  => true,
+                    'value'       => $customer->as_employee_id,
+                    'options'     => Employee::where('organisation_id', $this->organisation->id)
+                        ->whereIn('state', [EmployeeStateEnum::HIRED, EmployeeStateEnum::WORKING, EmployeeStateEnum::LEAVING])
+                        ->orderBy('contact_name')
+                        ->get(['id', 'contact_name'])
+                        ->map(fn (Employee $employee) => ['value' => $employee->id, 'label' => $employee->contact_name])
+                        ->all(),
+                    'information' => $customer->is_staff
+                        ? __('Staff account: excluded from customer analytics')
+                        : __('Linking an employee marks the account as staff. Company email addresses and partner accounts are detected on their own.'),
+                ],
+            ]
+        ];
+
+        if ($isExternal) {
+            $blueprint = [
+                [
+                    'title'  => __('Tax number'),
+                    'label'  => __('Tax number'),
+                    'fields' => Arr::only($contact['fields'], ['tax_number']),
+                ]
+            ];
+        } else {
+            $blueprint = [$contact, $identification, $accounting, $tags, $vip, $staff];
         }
-        $blueprint[] = $vip;
 
         return Inertia::render(
             'EditModel',

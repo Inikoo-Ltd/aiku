@@ -9,7 +9,7 @@ class LostAndFoundStockFactory extends Factory
     public function definition(): array
     {
         return [
-            'code'        => fake()->lexify(),
+            'code'        => fake()->lexify('??????'),
             'quantity'    => 4,
             'stock_value' => rand(100, 1000)
         ];

@@ -13,12 +13,9 @@ use App\Actions\CRM\WebUser\LogWebUserFailLogin;
 use App\Actions\CRM\WebUser\LogWebUserLogin;
 use App\Actions\Dropshipping\Tiktok\User\ProcessUnregisterCustomerTiktokUser;
 use App\Actions\Traits\WithLogin;
-use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
+use App\Actions\Traits\WithRetinaAuthRedirect;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
-use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\CRM\WebUser;
-use App\Models\Web\Webpage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
@@ -33,6 +30,7 @@ class RetinaLogin
 {
     use AsController;
     use WithLogin;
+    use WithRetinaAuthRedirect;
 
     /**
      * @throws \Illuminate\Validation\ValidationException
@@ -157,22 +155,7 @@ class RetinaLogin
             app()->setLocale($language->code);
         }
 
-        $retinaHome  = '';
-        $webpage_key = request()->input('ref');
-        if ($webpage_key && is_numeric($webpage_key)) {
-            $webpage = Webpage::where('id', $webpage_key)->where('website_id', $request->input('website')->id)
-                ->where('state', WebpageStateEnum::LIVE)->first();
-            if ($webpage) {
-                $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($webpage->canonical_url);
-            }
-        } else {
-            $landingPage = Webpage::where('type', WebpageTypeEnum::LANDING_PAGE)->where('state', WebpageStateEnum::LIVE)->where('website_id', $request->input('website')->id)->first();
-            $storeFront = Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('state', WebpageStateEnum::LIVE)->where('website_id', $request->input('website')->id)->first();
-            $webpage = $landingPage ?? $storeFront ?? null;
-            if ($webpage) {
-                $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($webpage->canonical_url);
-            }
-        }
+        $retinaHome = $this->getRetinaLoginRedirectUrl($request->input('website'), request()->input('ref'));
 
         return [$retinaHome];
     }

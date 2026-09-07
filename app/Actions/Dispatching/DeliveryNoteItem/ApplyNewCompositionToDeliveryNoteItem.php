@@ -6,6 +6,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateCompositionDirtyItems;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseManagementEditAuthorisation;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -23,7 +24,8 @@ class ApplyNewCompositionToDeliveryNoteItem extends OrgAction
 
     public function handle(DeliveryNoteItem $deliveryNoteItem): DeliveryNoteItem
     {
-        if (!in_array($deliveryNoteItem->state, SyncDeliveryNoteItemsRequiredPickQuantity::SYNCED_STATES)) {
+        if (!in_array($deliveryNoteItem->state, SyncDeliveryNoteItemsRequiredPickQuantity::SYNCED_STATES)
+            || SyncDeliveryNoteItemsRequiredPickQuantity::make()->hasPhysicalWork($deliveryNoteItem)) {
             throw new HttpException(422, __('Roll back the picking first: this item is :state and its physical work still stands.', ['state' => $deliveryNoteItem->state->value]));
         }
 
@@ -42,6 +44,8 @@ class ApplyNewCompositionToDeliveryNoteItem extends OrgAction
             'composition_dirty_at'                => null,
             'composition_dirty_quantity_required' => null,
         ]);
+
+        DeliveryNoteHydrateCompositionDirtyItems::run($deliveryNoteItem->delivery_note_id);
 
         return $deliveryNoteItem;
     }

@@ -7,18 +7,24 @@
  *
  * Public (unauthenticated) kiosk routes.
  *
- * These are deliberately outside the auth/two_fa group so a wall tablet can display the
- * rotating clocking QR code without keeping an admin session open on a shared device.
- * Access is gated by the unguessable per machine clocking_machines.kiosk_token.
- * The QR itself is not a credential: the scanning employee still authenticates on their
- * own device when posting to grp.models.clocking-machine.qr.validate.
+ * These are deliberately outside the auth/two_fa group so a wall tablet can show the
+ * PIN entry screen and let an employee clock in/out directly, without keeping an admin
+ * session open on a shared device. Access is gated by the unguessable per machine
+ * clocking_machines.kiosk_token.
  */
 
-use App\Actions\HumanResources\ClockingMachine\GenerateKioskQrCode;
 use App\Actions\HumanResources\ClockingMachine\UI\ShowClockingKiosk;
+use App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskBarcode;
+use App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskCameraQr;
+use App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('throttle:kiosk')->prefix('clocking-kiosk')->group(function () {
     Route::get('{kioskToken}', ShowClockingKiosk::class)->name('show');
-    Route::get('{kioskToken}/qr', GenerateKioskQrCode::class)->name('qr');
+
+    Route::middleware('throttle:kiosk-submit')->group(function () {
+        Route::post('{kioskToken}/pin', ValidateClockingKioskPin::class)->name('pin.submit');
+        Route::post('{kioskToken}/barcode', ValidateClockingKioskBarcode::class)->name('barcode.submit');
+        Route::post('{kioskToken}/camera-qr', ValidateClockingKioskCameraQr::class)->name('camera-qr.submit');
+    });
 });

@@ -14,6 +14,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Country;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairShopForbiddenCountries
 {
@@ -51,6 +52,7 @@ class RepairShopForbiddenCountries
 
     public function asCommand(Command $command)
     {
+        Nightwatch::dontSample();
         $shopId = $command->option('shop_id');
         $shops  = Shop::when(
             $shopId,

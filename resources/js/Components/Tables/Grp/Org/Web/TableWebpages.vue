@@ -10,12 +10,13 @@ import Table from '@/Components/Table/Table.vue';
 import { Webpage } from "@/types/webpage";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
-    faSignIn, faHome, faNewspaper, faBrowser, faUfoBeam, faExternalLink, faSquare
+    faSignIn, faHome, faNewspaper, faBrowser, faUfoBeam, faExternalLink
 } from '@fal'
-import { faCheckSquare } from '@fas'
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from '@/Components/Icon.vue';
-import { computed } from 'vue';
+import TableRowSelectCheckbox from '@/Components/Table/TableRowSelectCheckbox.vue';
+import TableSelectAllCheckbox from '@/Components/Table/TableSelectAllCheckbox.vue';
+import { computed, reactive } from 'vue';
 import { toLower, upperFirst } from 'lodash-es';
 
 library.add(
@@ -25,14 +26,18 @@ library.add(
 const props = defineProps<{
     data: object
     tab?: string
+    selectedWebpages?: Map<string, SelectedWebpage>
 }>()
 
 const openWebsite = (href: string) => {
     window.open(href, '_blank')
 }
+
+const routeCurrent = route().current()
+const routeParams = route().params as Record<string, string>
 function resolveWebpageRoute(webpage: Webpage) {
 
-    switch (route().current()) {
+    switch (routeCurrent) {
 
         case 'grp.org.fulfilments.show.web.webpages.index.type.info':
         case 'grp.org.fulfilments.show.web.webpages.index.type.content':
@@ -40,9 +45,9 @@ function resolveWebpageRoute(webpage: Webpage) {
             return route(
                 'grp.org.fulfilments.show.web.webpages.show',
                 [
-                    route().params['organisation'],
-                    route().params['fulfilment'],
-                    route().params['website'],
+                    routeParams.organisation,
+                    routeParams.fulfilment,
+                    routeParams.website,
                     webpage.slug
                 ]);
                 
@@ -52,9 +57,9 @@ function resolveWebpageRoute(webpage: Webpage) {
             return route(
                 'grp.org.shops.show.web.webpages.show',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.website,
                     webpage.slug
                 ]);
 
@@ -72,45 +77,45 @@ function resolveWebpageRoute(webpage: Webpage) {
             return route(
                 'grp.org.shops.show.web.webpages.show',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.website,
                     webpage.slug
                 ]);
         case 'grp.org.shops.show.web.webpages.index.type.checkout':
             return route(
                 'grp.org.shops.show.web.webpages.show',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.website,
                     webpage.slug
                 ]);
         case 'grp.org.shops.show.web.webpages.index.type.catalogue':
             return route(
                 'grp.org.shops.show.web.webpages.show',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.website,
                     webpage.slug
                 ]);
         case 'grp.org.shops.show.web.webpages.index.type.small-print':
             return route(
                 'grp.org.shops.show.web.webpages.show',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['shop'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
         case 'grp.org.shops.show.web.blogs.index':
             return route(
                 'grp.org.shops.show.web.blogs.show',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['shop'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
 
@@ -118,9 +123,9 @@ function resolveWebpageRoute(webpage: Webpage) {
             return route(
                 'grp.org.fulfilments.show.web.webpages.show',
                 [
-                    route().params['organisation'],
-                    route().params['fulfilment'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['fulfilment'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
 
@@ -130,16 +135,16 @@ function resolveWebpageRoute(webpage: Webpage) {
 }
 
 function resolveSubDepartmentsRoute(webpage: Webpage) {
-    switch (route().current()) {
+    switch (routeCurrent) {
 
         case 'grp.org.shops.show.web.webpages.index.sub_type.department':
         case 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview':
             return route(
                 'grp.org.shops.show.web.webpages.index.sub_type.department.sub_departments',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['shop'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
 
@@ -149,16 +154,16 @@ function resolveSubDepartmentsRoute(webpage: Webpage) {
 }
 
 function resolveFamiliesRoute(webpage: Webpage) {
-    switch (route().current()) {
+    switch (routeCurrent) {
 
         case 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview':
         case 'grp.org.shops.show.web.webpages.index.sub_type.department':
             return route(
                 'grp.org.shops.show.web.webpages.index.sub_type.department.families',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['shop'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
         case 'grp.org.shops.show.web.webpages.index.sub_type.sub_department':
@@ -166,9 +171,9 @@ function resolveFamiliesRoute(webpage: Webpage) {
             return route(
                 'grp.org.shops.show.web.webpages.index.sub_type.sub_department.families',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['shop'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
 
@@ -178,16 +183,16 @@ function resolveFamiliesRoute(webpage: Webpage) {
 }
 
 function resolveProductsRoute(webpage: Webpage) {
-    switch (route().current()) {
+    switch (routeCurrent) {
 
         case 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview':
         case 'grp.org.shops.show.web.webpages.index.sub_type.department':
             return route(
                 'grp.org.shops.show.web.webpages.index.sub_type.department.products',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['shop'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
         case 'grp.org.shops.show.web.webpages.index.sub_type.sub_department':
@@ -195,9 +200,9 @@ function resolveProductsRoute(webpage: Webpage) {
             return route(
                 'grp.org.shops.show.web.webpages.index.sub_type.sub_department.products',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['shop'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
         case 'grp.org.shops.show.web.webpages.index.sub_type.family':
@@ -206,9 +211,9 @@ function resolveProductsRoute(webpage: Webpage) {
             return route(
                 'grp.org.shops.show.web.webpages.index.sub_type.family.products',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['shop'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
         default: 
@@ -247,11 +252,15 @@ const subDepartmentsRoute = memoizeRouteResolver(resolveSubDepartmentsRoute)
 const familiesRoute = memoizeRouteResolver(resolveFamiliesRoute)
 const productsRoute = memoizeRouteResolver(resolveProductsRoute)
 
-const selectedWebpages = defineModel<SelectedWebpage[]>('selectedWebpages');
+/**
+ * The selection is a Map shared with the parent page rather than an array prop: mutating it in place
+ * keeps this component out of the update, so only the clicked checkbox re-renders instead of every row.
+ */
+const selection = props.selectedWebpages ?? reactive(new Map<string, SelectedWebpage>())
 
 const webpageRows = computed<WebpageRow[]>(() => (props.data as { data?: WebpageRow[] })?.data ?? [])
 
-const selectedWebpageIds = computed(() => new Set((selectedWebpages.value ?? []).map(item => item.id)))
+const webpageRowIds = computed(() => webpageRows.value.map(row => row.id))
 
 const toSelectedWebpage = (webpage: WebpageRow): SelectedWebpage => ({
     id: webpage.id,
@@ -259,40 +268,13 @@ const toSelectedWebpage = (webpage: WebpageRow): SelectedWebpage => ({
     title: webpage.title,
 })
 
-const onChangeChecked = (checked: boolean, selectedItem: WebpageRow) => {
-    if (!selectedWebpages.value) return
-
-    if (checked) {
-        if (!selectedWebpageIds.value.has(selectedItem.id)) {
-            selectedWebpages.value = [...selectedWebpages.value, toSelectedWebpage(selectedItem)]
+const onCheckedAll = (selectAll: boolean) => {
+    for (const row of webpageRows.value) {
+        if (selectAll) {
+            selection.set(row.id, toSelectedWebpage(row))
+        } else {
+            selection.delete(row.id)
         }
-    } else {
-        selectedWebpages.value = selectedWebpages.value.filter(item => item.id != selectedItem.id)
-    }
-}
-
-const isWebpageChecked = (webpage: WebpageRow) => {
-    return selectedWebpageIds.value.has(webpage.id)
-}
-
-const isAllWebpagesChecked = computed(() => {
-    const ids = selectedWebpageIds.value
-
-    return webpageRows.value.length > 0 && webpageRows.value.every(row => ids.has(row.id))
-})
-
-const onCheckedAll = ({ data, allChecked }: { data: WebpageRow[], allChecked: boolean }) => {
-    if (!selectedWebpages.value) return
-
-    if (allChecked) {
-        const ids = selectedWebpageIds.value
-        const newItems = data.filter(row => !ids.has(row.id)).map(row => toSelectedWebpage(row))
-
-        selectedWebpages.value = [...selectedWebpages.value, ...newItems]
-    } else {
-        const rowIds = new Set(data.map(row => row.id))
-
-        selectedWebpages.value = selectedWebpages.value.filter(item => !rowIds.has(item.id))
     }
 }
 
@@ -300,42 +282,23 @@ const onCheckedAll = ({ data, allChecked }: { data: WebpageRow[], allChecked: bo
 
 
 <template>
-    <Table 
+    <Table
         :resource="data"
         :isCheckBox="true"
-        :isChecked="isWebpageChecked"
         checkboxKey='id'
         :name="tab"
         class="mt-5"
     >
         <template #header-checkbox>
-            <div @click="onCheckedAll({ data: webpageRows, allChecked: !isAllWebpagesChecked })" class="py-1.5 cursor-pointer">
-                <FontAwesomeIcon
-                    :icon="isAllWebpagesChecked ? faCheckSquare : faSquare"
-                    :class="isAllWebpagesChecked ? 'text-green-500' : 'text-gray-500 hover:text-gray-700'"
-                    class="mx-auto block h-5 my-auto"
-                    fixed-width
-                    aria-hidden="true"
-                />
-            </div>
+            <TableSelectAllCheckbox :rowKeys="webpageRowIds" :selection="selection" @toggle="onCheckedAll" />
         </template>
 
         <template #checkbox="{ data: webpage }">
-            <FontAwesomeIcon
-                v-if="isWebpageChecked(webpage)"
-                @click="onChangeChecked(false, webpage)"
-                :icon="faCheckSquare"
-                class="text-green-500 p-2 cursor-pointer text-lg mx-auto block"
-                fixed-width
-                aria-hidden="true"
-            />
-            <FontAwesomeIcon
-                v-else
-                @click="onChangeChecked(true, webpage)"
-                :icon="faSquare"
-                class="text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block"
-                fixed-width
-                aria-hidden="true"
+            <TableRowSelectCheckbox
+                :rowKey="webpage.id"
+                :rowValue="toSelectedWebpage(webpage)"
+                :selection="selection"
+                highlightRow
             />
         </template>
 

@@ -13,7 +13,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import Icon from "@/Components/Icon.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import DatePicker from '@vuepic/vue-datepicker'
-import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faCalendar, faCalendarAlt, faInfoCircle } from "@fal"
+import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faCalendar, faCalendarAlt, faInfoCircle, faGlobe } from "@fal"
 import { faShieldAlt, faStar, faHighlighter, faPennant, faCertificate } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
@@ -83,6 +83,8 @@ function orderRoute(order: Order) {
         case "grp.org.shops.show.catalogue.products.discontinued_products.show":
         case "grp.org.shops.show.catalogue.products.in_process_products.show":
         case "grp.org.shops.show.catalogue.products.not_online_products.show":
+        case "grp.org.shops.show.catalogue.products.mismatched_families.show":
+        case "grp.org.shops.show.catalogue.products.no_image_product.show":
         case "grp.org.shops.show.catalogue.products.current_products.show":
         case "grp.org.shops.show.catalogue.products.orphan_products.show":
         case "grp.org.shops.show.catalogue.products.all_products.show":
@@ -92,6 +94,18 @@ function orderRoute(order: Order) {
                 "grp.org.shops.show.ordering.orders.show",
                 [order.organisation_slug, order.shop_slug, order.slug])
 
+        case "grp.org.shops.show.marketing.traffic_sources.show":
+            return route(
+                "grp.org.shops.show.ordering.orders.show",
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, order.slug])
+        case "grp.org.marketing.channels.show":
+            return route(
+                "grp.org.shops.show.ordering.orders.show",
+                [(route().params as RouteParams).organisation, order.shop_slug, order.slug])
+        case "grp.marketing.channels.show":
+            return route(
+                "grp.org.shops.show.ordering.orders.show",
+                [order.organisation_slug, order.shop_slug, order.slug])
         case "grp.org.shops.show.crm.show.orders.index":
             return route(
                 "grp.org.shops.show.crm.show.orders.show",
@@ -140,9 +154,15 @@ function customerRoute(order: Order) {
         case "grp.overview.ordering.orders_in_basket.index":
         case "grp.org.overview.ordering.backlog":
         case "grp.overview.ordering.backlog":
+        case "grp.marketing.channels.show":
             return route(
                 "grp.org.shops.show.crm.customers.show",
                 [order.organisation_slug, order.shop_slug, order.customer_slug]
+            )
+        case "grp.org.marketing.channels.show":
+            return route(
+                "grp.org.shops.show.crm.customers.show",
+                [(route().params as RouteParams).organisation, order.shop_slug, order.customer_slug]
             )
         default:
             return route(
@@ -230,6 +250,7 @@ const setNewMarkerDate = (newVal: Date) => {
 
         <template #cell(state)="{ item: order }">
             <Icon :data="order.state_icon" />
+            <FontAwesomeIcon v-if="order.is_export" v-tooltip="trans('Export')" :icon="faGlobe" class="ml-1 text-indigo-500" fixed-width />
         </template>
 
 
@@ -261,6 +282,10 @@ const setNewMarkerDate = (newVal: Date) => {
                 </Link>
 
                 <img v-if="order?.platform" :src="order?.platform" class="w-4" alt="platform" />
+
+                <span v-if="order.sales_channel_type === 'api'"
+                    v-tooltip="trans('Placed automatically through the customer API')"
+                    class="rounded bg-orange-100 border border-orange-300 px-1 text-xs font-semibold text-orange-700 leading-tight">API</span>
 
                 <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star"
                                  class="text-yellow-500" fixed-width aria-hidden="true" />

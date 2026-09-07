@@ -34,7 +34,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ctrans } from "@/Composables/useTrans";
 import { router } from "@inertiajs/vue3";
 import { notify } from "@kyvg/vue3-notification"
-import { set } from "lodash-es"
+import { clearIrisSession } from "@/Composables/clearIrisSession"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { faUserPlus } from "@far";
 import GoldReward from "@/Components/Utils/GoldReward.vue"
@@ -87,6 +87,7 @@ const isLoggedIn = computed(() => layout?.iris?.is_logged_in || false)
 const displayUsername = computed(() => layout?.user?.username?.split('@')[0] || '')
 const loadingRedirect = ref(false)
 const isLoadingLogout = ref(false)
+let restoreIrisSession: (() => void) | null = null
 
 const onClickLogout = () => {
 	router.post(
@@ -96,18 +97,10 @@ const onClickLogout = () => {
 			preserveScroll: true,
 			onStart: () => {
 				isLoadingLogout.value = true
-			},
-			onSuccess: () => {
-				set(layout, ['iris', 'is_logged_in'], false)
-				if (typeof window !== "undefined") {
-					const storageIris = JSON.parse(localStorage.getItem('iris') || '{}')
-					localStorage.setItem('iris', JSON.stringify({
-						...storageIris,
-						is_logged_in: false
-					}))
-				}
+				restoreIrisSession = clearIrisSession(layout)
 			},
 			onError: () => {
+				restoreIrisSession?.()
 				notify({
 					title: ctrans("Something went wrong"),
 					text: ctrans("Failed to logout"),
@@ -166,9 +159,11 @@ const onClickLogout = () => {
 				<!-- My Interest -->
 				<LinkIris v-if="isLoggedIn" href="/app/interest/favourites" :type="'internal'"
 					v-slot="{ isLoading } = { isLoading: false }">
-					<button class="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors"
-						v-tooltip="ctrans('My Interest')">
-						<FontAwesomeIcon :icon="faHeart" class="text-[20px]" />
+					<button
+						class="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors disabled:opacity-60 disabled:cursor-wait"
+						:disabled="isLoading" v-tooltip="ctrans('My Interest')">
+						<LoadingIcon v-if="isLoading" class="text-[20px]" />
+						<FontAwesomeIcon v-else :icon="faHeart" class="text-[20px]" />
 						<span class="text-sm font-medium">
 							{{ ctrans('My Interests') }}
 						</span>
@@ -179,12 +174,14 @@ const onClickLogout = () => {
 				<!-- Cart -->
 				<LinkIris v-if="isLoggedIn" href="/app/basket" :type="'internal'"
 					v-slot="{ isLoading } = { isLoading: false }">
-					<button class="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-						v-tooltip="ctrans('Cart count and amount')">
+					<button
+						class="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-60 disabled:cursor-wait"
+						:disabled="isLoading" v-tooltip="ctrans('Cart count and amount')">
 						<span class="button whitespace-nowrap"
 							v-html="textReplaceVariables(`({{ cart_count }})`, layout.iris_variables)">
 						</span>
-						<FontAwesomeIcon :icon="faShoppingCart" class="text-[20px]" />
+						<LoadingIcon v-if="isLoading" class="text-[20px]" />
+						<FontAwesomeIcon v-else :icon="faShoppingCart" class="text-[20px]" />
 						<span class="button whitespace-nowrap"
 							v-html="textReplaceVariables(`{{ cart_products_amount }}`, layout.iris_variables)">
 						</span>
@@ -197,11 +194,14 @@ const onClickLogout = () => {
 				<!-- Logged In -->
 				<template v-if="isLoggedIn">
 					<div class="flex items-center gap-3">
-						<a href="/app/dashboard">
-							<div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100">
-								<FontAwesomeIcon :icon="faUser" class="text-lg text-gray-500" />
+						<LinkIris href="/app/dashboard" :type="'internal'"
+							v-slot="{ isLoading } = { isLoading: false }">
+							<div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100"
+								:class="{ 'cursor-wait': isLoading }">
+								<LoadingIcon v-if="isLoading" class="text-lg text-gray-500" />
+								<FontAwesomeIcon v-else :icon="faUser" class="text-lg text-gray-500" />
 							</div>
-						</a>
+						</LinkIris>
 
 						<div class="leading-tight">
 							<div class="flex items-center gap-2 text-sm font-medium">
@@ -263,9 +263,10 @@ const onClickLogout = () => {
 					</div>
 
 					<button v-tooltip="ctrans('Logout')"
-						class="flex items-center justify-center text-[20px] text-gray-600 bg-gray-100 rounded-full hover:text-gray-900"
-						@click="onClickLogout">
-						<FontAwesomeIcon :icon="faSignOutAlt" />
+						class="flex items-center justify-center text-[20px] text-gray-600 bg-gray-100 rounded-full hover:text-gray-900 disabled:opacity-60 disabled:cursor-wait"
+						:disabled="isLoadingLogout" @click="onClickLogout">
+						<LoadingIcon v-if="isLoadingLogout" />
+						<FontAwesomeIcon v-else :icon="faSignOutAlt" />
 					</button>
 				</template>
 
@@ -281,7 +282,8 @@ const onClickLogout = () => {
 
 						<!-- Register -->
 						<LinkIris href="/app/register" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
-							<Button :label="ctrans('Register')" :icon="faUserPlus" type="secondary"></Button>
+							<Button :label="ctrans('Register')" :icon="faUserPlus" type="secondary"
+								:loading="isLoading"></Button>
 						</LinkIris>
 					</div>
 				</template>

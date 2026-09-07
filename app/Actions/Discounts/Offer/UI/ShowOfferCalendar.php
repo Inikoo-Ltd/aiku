@@ -18,6 +18,17 @@ class ShowOfferCalendar
 {
     use AsAction;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        $organisation = $request->route('organisation');
+        if (!$organisation instanceof Organisation) {
+            $organisation = Organisation::where('slug', $organisation ?: $request->query('organisation'))->where('group_id', group()->id)->first();
+        }
+
+        return $organisation
+            && $request->user()->authTo(['accounting.'.$organisation->id.'.view', 'org-supervisor.'.$organisation->id, 'shops-view.'.$organisation->id]);
+    }
+
     public function handle(ActionRequest $request): Response
     {
         $year = (int) $request->input('year', now()->year);

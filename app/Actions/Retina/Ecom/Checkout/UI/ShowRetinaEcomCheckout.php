@@ -11,6 +11,7 @@
 namespace App\Actions\Retina\Ecom\Checkout\UI;
 
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
 use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
 use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
@@ -47,6 +48,18 @@ class ShowRetinaEcomCheckout extends RetinaAction
             }
 
             $order = FixMiscalculatedTransactionAmounts::run($order, true);
+
+            /**
+             * Volume discounts count what the customer ordered over a rolling interval, so a
+             * basket's tiers drift with the calendar even when nothing in it changes. The card is
+             * charged the stored total, and SubmitOrder recalculates it - a basket left for days
+             * was charged the price of the day it was last touched and then submitted at today's,
+             * leaving it short paid. Priced here, at the moment the amount to pay is derived.
+             * ponytail: still a window between this page and submit, minutes instead of days.
+             */
+            CalculateOrderTotalAmounts::make()->handle($order, forceRecalculate: true);
+            $order->refresh();
+
             $paymentMethods = GetRetinaPaymentMethods::run($order, $orderPaymentApiPoint);
         }
 

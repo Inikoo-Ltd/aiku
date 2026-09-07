@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteFixedAddress;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
+use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
@@ -41,7 +42,22 @@ class UpdateOrderDeliveryAddress extends OrgAction
         data_set($modelData, 'type', 'delivery');
 
         $order = UpdateOrderFixedAddress::make()->action($order, $modelData);
-        $order = CalculateOrderShipping::run($order);
+
+        $customer = $order->customer;
+
+        $taxCategory = GetTaxCategory::run(
+            country: $order->organisation->country,
+            taxNumber: $customer->taxNumber,
+            billingAddress: $order->billingAddress,
+            deliveryAddress: $order->deliveryAddress,
+            isRe: $order->is_re,
+        );
+
+        $order->update([
+            'tax_category_id' => $taxCategory->id,
+        ]);
+
+        CalculateOrderTotalAmounts::run($order, calculateDiscounts: false);
 
         if (Arr::get($modelData, 'update_parent')) {
             $addressData = Arr::only(

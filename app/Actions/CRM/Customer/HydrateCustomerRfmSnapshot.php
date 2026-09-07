@@ -2,7 +2,8 @@
 
 namespace App\Actions\CRM\Customer;
 
-use App\Models\CRM\CustomerRfmSnapshot;
+use App\Enums\CRM\Customer\CustomerRfmSegmentEnum;
+use App\Models\CRM\Customer;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -14,16 +15,17 @@ class HydrateCustomerRfmSnapshot
 
     public function handle(): void
     {
-        $now = now();
-        $today = $now->toDateString();
+        $now        = now();
+        $morphClass = (new Customer())->getMorphClass();
 
         $results = DB::table('customers as c')
-            ->join('model_has_tags as mht', function ($join) {
+            ->join('model_has_tags as mht', function ($join) use ($morphClass) {
                 $join->on('c.id', '=', 'mht.model_id')
-                    ->where('mht.model_type', '=', 'Customer');
+                    ->where('mht.model_type', '=', $morphClass);
             })
             ->join('tags as t', 't.id', '=', 'mht.tag_id')
-            ->whereIn(DB::raw("t.data->>'type'"), ['recency','frequency','monetary'])
+            ->whereNull('c.deleted_at')
+            ->whereIn(DB::raw("t.data->>'type'"), CustomerRfmSegmentEnum::types())
             ->select('c.shop_id', 't.name as tag_name', DB::raw('count(distinct c.id) as customer_count'))
             ->groupBy('c.shop_id', 't.name')
             ->get();
@@ -34,17 +36,7 @@ class HydrateCustomerRfmSnapshot
         }
 
         foreach ($shops as $shopId => $summary) {
-            $exists = CustomerRfmSnapshot::where('shop_id', $shopId)
-                ->whereDate('snapshot_date', $today)
-                ->exists();
-
-            if (!$exists) {
-                CustomerRfmSnapshot::create([
-                    'shop_id' => $shopId,
-                    'tags_summary' => $summary,
-                    'snapshot_date' => $now,
-                ]);
-            }
+            StoreCustomerRfmSnapshot::run($shopId, $summary, $now);
         }
     }
 }

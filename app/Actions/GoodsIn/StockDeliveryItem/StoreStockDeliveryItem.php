@@ -52,6 +52,7 @@ class StoreStockDeliveryItem extends OrgAction
             $rules['state']                 = ['sometimes', 'required', Rule::enum(StockDeliveryItemStateEnum::class)];
             $rules['unit_quantity_checked'] = ['sometimes', 'numeric', 'gte:0'];
             $rules['unit_quantity_placed']  = ['sometimes', 'numeric', 'gte:0'];
+            $rules['net_amount']            = ['sometimes', 'numeric'];
             $rules                          = $this->noStrictStoreRules($rules);
         }
 

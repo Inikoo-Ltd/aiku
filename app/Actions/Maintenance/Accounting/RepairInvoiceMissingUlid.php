@@ -14,6 +14,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairInvoiceMissingUlid
 {
@@ -31,6 +32,7 @@ class RepairInvoiceMissingUlid
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $count = Invoice::whereNull('ulid')->count();
 
         ProgressBar::setFormatDefinition(

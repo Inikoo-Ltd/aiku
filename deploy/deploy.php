@@ -25,6 +25,14 @@ set('ssh_arguments', [
 
 set('update_code_strategy', 'clone');
 
+if ($gitHttpAuth = getenv('GIT_HTTP_AUTH')) {
+    set('env', [
+        'GIT_CONFIG_COUNT' => '1',
+        'GIT_CONFIG_KEY_0' => 'http.https://github.com/.extraheader',
+        'GIT_CONFIG_VALUE_0' => "AUTHORIZATION: basic $gitHttpAuth",
+    ]);
+}
+
 set('bin/php', function () {
     return '/usr/bin/php8.4';
 });
@@ -75,6 +83,11 @@ task('deploy:migrate', function () {
     artisan('migrate --force', ['skipIfNoEnv', 'showOutput'])();
 });
 
+desc('Stop active cache warming crawls early in deployment');
+task('deploy:stop-crawls', function () {
+    artisan('crawl:stop', ['skipIfNoEnv', 'showOutput'])();
+})->select('env=prod')->once();
+
 
 desc('Modified npm:install');
 task('npm:my_install', function () {
@@ -103,7 +116,7 @@ task('deploy:build', function () {
         }
     }
     if ($frontEndChanged) {
-        run("cd {{release_path}} && {{bin/npm}} run build");
+        run("cd {{release_path}} && NODE_OPTIONS=--max-old-space-size=8192 {{bin/npm}} run build");
         run(
             'for dir in retina iris grp pupil aiku-public; do '
             .'if [ -d {{previous_release}}/public/$dir/assets ]; then '
@@ -150,6 +163,37 @@ task('deploy:restart-owl', function () {
     // in the deploy signals it, so without this it runs stale until it happens to
     // die. Non-fatal like the other supervisorctl calls — a box where the program
     // is not installed must not fail the deploy.
+    //
+    // Gated on the agent's own code and config, because the restart is not free:
+    // it closes the listener on 127.0.0.1:2407, and every process shipping
+    // telemetry in that window logs a MultiIngest connection-refused and drops its
+    // batch. Nothing crashes (MultiIngest swallows transport failures on every path
+    // but ping()), but the telemetry is gone. Nothing else in the deploy reaches
+    // the daemon: it boots Laravel once at startup and its runtime is its own
+    // classes over raw PDO, so an unchanged package plus an unchanged config means
+    // an unchanged process. Its own VersionDriftWatcher warns if this ever misses.
+    $checksum = function (string $path): string {
+        $cmd = 'find '.$path.'/vendor/nightowl/agent '.$path.'/config/nightowl.php'
+            .' -type f -exec sha1sum {} + 2>/dev/null | cut -d" " -f1 | sort | sha1sum';
+
+        try {
+            return trim(run("bash -c '".$cmd."'"));
+        } catch (\Throwable $e) {
+            writeln('Error computing NightOwl agent checksum: '.$e->getMessage());
+
+            return '';
+        }
+    };
+
+    $current  = $checksum('{{release_path}}');
+    $previous = has('previous_release') ? $checksum('{{previous_release}}') : '';
+
+    if ($current !== '' && $current === $previous) {
+        writeln('NightOwl agent unchanged. Skipping restart.');
+
+        return;
+    }
+
     run("bash -c 'sudo /usr/bin/supervisorctl restart aiku-owl || true'");
 });
 
@@ -393,7 +437,11 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
     }
 })->select('env=prod|staging');
 
-set('keep_releases', 25);
+set('keep_releases', function () {
+    // helio's horizon workers run with --max-time=0 and stay pinned to the release
+    // they started in, so 2 was deleting a release that was still live.
+    return currentHost()->getAlias() === 'aiku_helio' ? 4 : 20;
+});
 
 set('shared_dirs', ['storage', 'private', 'local_storage']);
 set('shared_files', [
@@ -458,12 +506,37 @@ task('deploy:translations:setup-guess-language', function () {
 });
 
 
+desc('Index engineering notes into Typesense');
+task('deploy:aiku-public:index-notes', function () {
+    try {
+        artisan('aiku-public:index-notes', ['skipIfNoEnv', 'showOutput'])();
+    } catch (\Throwable $e) {
+        writeln('<comment>aiku-public:index-notes skipped: '.$e->getMessage().'</comment>');
+    }
+});
+
+desc('Submit public URLs to IndexNow');
+task('deploy:aiku-public:indexnow', function () {
+    try {
+        artisan('aiku-public:indexnow', ['skipIfNoEnv', 'showOutput'])();
+    } catch (\Throwable $e) {
+        writeln('<comment>aiku-public:indexnow skipped: '.$e->getMessage().'</comment>');
+    }
+});
+
+
+desc('Strip node_modules from all but the 5 newest releases');
+task('deploy:prune-node-modules', function () {
+    run("ls -1t {{deploy_path}}/releases | tail -n +6 | while read r; do rm -rf \"{{deploy_path}}/releases/\$r/node_modules\"; done");
+});
+
 desc('Deploys your project');
 task('deploy', [
     'deploy:unlock',
     'debug:writable',
     'deploy:prepare',
     'deploy:vendors',
+    'deploy:stop-crawls',
     'deploy:set-release',
     'artisan:storage:link',
     'artisan:config:cache',
@@ -475,6 +548,7 @@ task('deploy', [
     'deploy:build',
     'deploy:save-ssr-checksums',
     'deploy:publish',
+    'deploy:prune-node-modules',
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
     'deploy:restart-owl',
@@ -484,4 +558,36 @@ task('deploy', [
     'deploy:refresh-vue',
     'deploy:flush-varnish',
     'deploy:translations:setup-guess-language',
+    'deploy:aiku-public:index-notes',
+    'deploy:aiku-public:indexnow',
 ]);
+
+// ponytail: same as the stock cleanup, plus two things it lacks. A release is
+// skipped while any process still has its cwd inside it -- horizon workers and
+// crons keep running from the release they started in, and rm there deletes the
+// shared-storage symlink, which the live app instantly recreates as a real
+// directory (ENOTEMPTY, and feeds written into a dead release). And a release
+// that cannot be removed warns instead of failing the whole deploy at its last
+// task.
+task('deploy:cleanup', function () {
+    run('cd {{deploy_path}} && if [ -e release ]; then rm release; fi');
+
+    $keep = (int) get('keep_releases');
+    if ($keep <= 0) {
+        return;
+    }
+
+    foreach (array_slice(get('releases_list'), $keep) as $release) {
+        $path = '{{deploy_path}}/releases/'.$release;
+        $busy = trim(run("bash -c 'ls -l /proc/*/cwd 2>/dev/null | grep -c \"$(readlink -f $path)\"' || true"));
+        // ponytail: Inertia SSR (node/bun) has cwd / but lazy-loads chunks from the release
+        // named on its command line; [r] keeps pgrep from matching this very shell.
+        $ssrBusy = trim(run("bash -c 'pgrep -fc \"[r]eleases/$release/bootstrap/ssr/\"' || true"));
+        if (($busy !== '0' && $busy !== '') || ($ssrBusy !== '0' && $ssrBusy !== '')) {
+            writeln("<comment>Keeping release $release: $busy process(es) still running from it.</comment>");
+            continue;
+        }
+
+        run("rm -rf $path || echo 'could not remove release $release'");
+    }
+});

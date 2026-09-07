@@ -2,15 +2,20 @@
 
 namespace App\Models\Web;
 
+use App\Enums\Announcement\AnnouncementPositionEnum;
 use App\Enums\Announcement\AnnouncementStateEnum;
 use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Snapshot;
 use App\Models\Traits\HasImage;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Spatie\MediaLibrary\HasMedia;
 
 /**
@@ -36,6 +41,8 @@ use Spatie\MediaLibrary\HasMedia;
  * @property \Illuminate\Support\Carbon|null $schedule_at
  * @property \Illuminate\Support\Carbon|null $schedule_finish_at
  * @property AnnouncementStatusEnum $status
+ * @property int|null $paused_by_announcement_id
+ * @property \Illuminate\Support\Carbon|null $paused_until
  * @property array<array-key, mixed> $settings
  * @property string|null $compiled_layout
  * @property string|null $text
@@ -78,6 +85,7 @@ class Announcement extends Model implements HasMedia
         "closed_at"            => "datetime",
         "schedule_at"          => "datetime",
         "schedule_finish_at"   => "datetime",
+        "paused_until"         => "datetime",
         'state'                => AnnouncementStateEnum::class,
         'status'               => AnnouncementStatusEnum::class
     ];
@@ -89,22 +97,55 @@ class Announcement extends Model implements HasMedia
         'published_settings'     => '{}'
     ];
 
+    public function getPosition(): string
+    {
+        return $this->settings['position'] ?? AnnouncementPositionEnum::TOP_BAR->value;
+    }
+
+    /**
+     * Active announcements of the same website sharing this position whose live window overlaps
+     * the given one. A null $until means the window never ends.
+     */
+    public function scopeClashingWith(Builder $query, int $websiteId, string $position, Carbon $from, ?Carbon $until): Builder
+    {
+        $query
+            ->where('website_id', $websiteId)
+            ->where('status', AnnouncementStatusEnum::ACTIVE)
+            ->whereRaw("coalesce(settings->>'position', 'top-bar') = ?", [$position])
+            ->where(
+                fn ($query) => $query
+                    ->whereNull('schedule_finish_at')
+                    ->orWhere('schedule_finish_at', '>', $from)
+            );
+
+        if ($until) {
+            $query->whereRaw('coalesce(schedule_at, live_at, created_at) < ?', [$until]);
+        }
+
+        return $query;
+    }
+
+    public function pausedBy(): BelongsTo
+    {
+        return $this->belongsTo(Announcement::class, 'paused_by_announcement_id');
+    }
+
+    public function pausedAnnouncements(): HasMany
+    {
+        return $this->hasMany(Announcement::class, 'paused_by_announcement_id');
+    }
+
     public function extractSettings(array $data): array
     {
         $showPages = [];
         $hidePages = [];
 
-        if (blank($data)) {
-            return [
-                'show_pages' => [],
-                'hide_pages' => [],
-            ];
-        }
+        $targetType = Arr::get($data, 'target_pages.type');
 
-        if ($data['target_pages']['type'] === 'all') {
+        if ($targetType === 'all') {
             $showPages = ['all'];
-        } elseif ($data['target_pages']['type'] === 'specific') {
-            foreach ($data['target_pages']['specific'] as $page) {
+        } elseif ($targetType === 'specific') {
+            foreach (Arr::get($data, 'target_pages.specific', []) as $page) {
                 if ($page['will'] === 'show') {
                     $showPages[] = $page['url'];
                 } elseif ($page['will'] === 'hide') {

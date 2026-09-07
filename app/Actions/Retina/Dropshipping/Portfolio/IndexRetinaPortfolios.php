@@ -197,6 +197,7 @@ class IndexRetinaPortfolios extends RetinaAction
         // Button: Brave mode
         $bulkUploadRoute = false;
         $bulkAllRoute    = false;
+        $bulkMatchRoute  = false;
         if ($platformUser) {
             $bulkUploadRoute = match ($this->customerSalesChannel->platform->type) {
                 PlatformTypeEnum::SHOPIFY => [
@@ -241,6 +242,12 @@ class IndexRetinaPortfolios extends RetinaAction
                         'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
                 ],
+                PlatformTypeEnum::WIX => [
+                    'name'       => 'retina.models.dropshipping.wix.batch_upload',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
                 default => false
             };
 
@@ -275,30 +282,77 @@ class IndexRetinaPortfolios extends RetinaAction
                         'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
                 ],
+                PlatformTypeEnum::WIX => [
+                    'name'       => 'retina.models.dropshipping.wix.batch_all',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
+                default => false
+            };
+
+            $bulkMatchRoute = match ($this->customerSalesChannel->platform->type) {
+                PlatformTypeEnum::SHOPIFY,
+                PlatformTypeEnum::WOOCOMMERCE,
+                PlatformTypeEnum::EBAY,
+                PlatformTypeEnum::TIKTOK,
+                PlatformTypeEnum::WIX,
+                PlatformTypeEnum::ALLEGRO => [
+                    'name'       => 'retina.models.dropshipping.platform.batch_match',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
                 default => false
             };
         }
 
         $actions = [];
-        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $actions = [
-                [
+        if (in_array($this->customerSalesChannel->platform->type, [
+            PlatformTypeEnum::SHOPIFY,
+            PlatformTypeEnum::WOOCOMMERCE,
+            PlatformTypeEnum::EBAY,
+            PlatformTypeEnum::TIKTOK,
+            PlatformTypeEnum::WIX
+        ]) && $this->customerSalesChannel->user) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'tertiary',
+                'tooltip' => __('Push current stock levels of these products to this channel only'),
+                'label'   => __('Update Stock'),
+                'icon'    => ['fas', 'fa-sync-alt'],
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'retina.models.customer_sales_channel.sync_portfolios_manual',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
+            ];
+        }
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::EBAY) {
+            $countDraftPortfolios = $this->customerSalesChannel->portfolios()
+                ->where('portfolios.status', true)
+                ->where('data->is_platform_draft', true)
+                ->count();
+
+            if ($countDraftPortfolios > 0) {
+                $actions[] = [
                     'type'    => 'button',
-                    'style'   => 'tertiary',
-                    'tooltip' => __('This will automatically synced every day at 3:00 UTC'),
-                    'label'   => __('Re-Sync'),
-                    'icon'    => ['fal', 'fa-tachometer-alt'],
+                    'style'   => 'primary',
+                    'tooltip' => __('Publish all draft listings on eBay so they go live'),
+                    'label'   => trans_choice('Publish :count draft|Publish :count drafts', $countDraftPortfolios, ['count' => $countDraftPortfolios]),
+                    'icon'    => ['fal', 'fa-upload'],
                     'route'   => [
                         'method'     => 'post',
-                        'name'       => 'retina.models.customer_sales_channel.portfolio_shopify_sync',
+                        'name'       => 'retina.models.dropshipping.ebay.publish_drafts',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]
                     ],
-                ]
-            ];
+                ];
+            }
         }
-
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $countProductsNotSync = 0;
         } else {
@@ -372,6 +426,7 @@ class IndexRetinaPortfolios extends RetinaAction
                         ]
                     ],
                     'batch_all'                   => $bulkAllRoute,
+                    'batch_match'                 => $bulkMatchRoute,
                     'fetch_products'              => match ($this->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::WOOCOMMERCE => [
                             'name' => 'retina.json.dropshipping.customer_sales_channel.woo_products'
@@ -387,6 +442,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         ],
                         PlatformTypeEnum::ALLEGRO => [
                             'name' => 'retina.json.dropshipping.customer_sales_channel.allegro_products'
+                        ],
+                        PlatformTypeEnum::WIX => [
+                            'name' => 'retina.json.dropshipping.customer_sales_channel.wix_products'
                         ],
                         default => false
                     },
@@ -406,6 +464,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         PlatformTypeEnum::ALLEGRO => [
                             'name' => 'retina.models.portfolio.store_new_allegro_product'
                         ],
+                        PlatformTypeEnum::WIX => [
+                            'name' => 'retina.models.portfolio.store_new_wix_product'
+                        ],
                         default => false
                     },
                     'single_match'                => match ($this->customerSalesChannel->platform->type) {
@@ -423,6 +484,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         ],
                         PlatformTypeEnum::ALLEGRO => [
                             'name' => 'retina.models.portfolio.match_to_existing_allegro_product'
+                        ],
+                        PlatformTypeEnum::WIX => [
+                            'name' => 'retina.models.portfolio.match_to_existing_wix_product'
                         ],
                         default => false
                     },

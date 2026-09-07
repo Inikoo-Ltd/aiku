@@ -69,7 +69,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $tax_category_id
  * @property numeric|null $grp_exchange
  * @property numeric|null $org_exchange
- * @property string $data
+ * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $fetched_at
@@ -142,6 +142,7 @@ class Transaction extends Model
     ];
 
     protected $casts = [
+        'data'                  => 'array',
         'offers_data'           => 'array',
         'submitted_offers_data' => 'array',
     ];
@@ -152,6 +153,11 @@ class Transaction extends Model
     public function model(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function partnerShoppingListItems(): HasMany
+    {
+        return $this->hasMany(\App\Models\Procurement\PartnerShoppingListItem::class);
     }
 
     public function deliveryNoteItems(): HasMany

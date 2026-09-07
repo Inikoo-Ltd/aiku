@@ -58,8 +58,10 @@ const getUrlFetch = (additionalParams: {}) => {
 const optionsList = ref<any[]>([])
 const optionsMeta = ref<Meta | null>(null)
 const optionsLinks = ref<Links | null>(null)
+let fetchSequence = 0
 const fetchProductList = async (url) => {
     isComponentLoading.value = 'fetchProduct'
+    const sequence = ++fetchSequence
 
     const urlToFetch = url || route(props.fetchRoute.name, props.fetchRoute.parameters)
 
@@ -71,6 +73,10 @@ const fetchProductList = async (url) => {
             xxx = await axios.get(urlToFetch);
         }
 
+
+        if (sequence !== fetchSequence) {
+            return
+        }
 
         if (xxx?.data?.data) {
             const raw = xxx.data.data
@@ -89,6 +95,9 @@ const fetchProductList = async (url) => {
 
         emits('optionsList', optionsList.value)
     } catch (error) {
+        if (sequence !== fetchSequence) {
+            return
+        }
         console.log(error)
         notify({
             title: trans('Something went wrong.'),
@@ -96,7 +105,9 @@ const fetchProductList = async (url) => {
             type: 'error',
         })
     }
-    isComponentLoading.value = false
+    if (sequence === fetchSequence) {
+        isComponentLoading.value = false
+    }
 }
 
 const onSearchQuery = debounce(async (query: string) => {

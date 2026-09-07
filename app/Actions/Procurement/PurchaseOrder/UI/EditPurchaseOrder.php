@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\InertiaAction;
 use App\Models\Procurement\PurchaseOrder;
 use Inertia\Inertia;
@@ -16,15 +17,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditPurchaseOrder extends InertiaAction
 {
+    use WithProcurementAuthorisation;
     public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
         return $purchaseOrder;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo('procurement.edit');
-        return $request->user()->authTo("procurement.view");
     }
 
     public function asController(PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
@@ -69,13 +65,34 @@ class EditPurchaseOrder extends InertiaAction
                                     'value' => $purchaseOrder->number
                                 ],
                             ]
+                        ],
+                        [
+                            'title'  => __('Payments'),
+                            'icon'   => 'fal fa-money-bill',
+                            'fields' => [
+                                'deposit_amount' => [
+                                    'type'  => 'input',
+                                    'label' => __('Deposit amount'),
+                                    'value' => $purchaseOrder->deposit_amount,
+                                ],
+                                'deposit_paid_at' => [
+                                    'type'  => 'date',
+                                    'label' => __('Deposit paid'),
+                                    'value' => $purchaseOrder->deposit_paid_at,
+                                ],
+                                'balance_paid_at' => [
+                                    'type'  => 'date',
+                                    'label' => __('Balance paid'),
+                                    'value' => $purchaseOrder->balance_paid_at,
+                                ],
+                            ]
                         ]
 
                     ],
                     'args' => [
                         'updateRoute' => [
                             'name'      => 'grp.models.purchase-order.update',
-                            'parameters' => $purchaseOrder->slug
+                            'parameters' => $purchaseOrder->id
 
                         ],
                     ]

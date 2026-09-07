@@ -56,7 +56,7 @@ class FetchCurrencyExchangeCurrencyBeacon
         }
 
 
-        $response = Http::get($url, $parameters);
+        $response = Http::timeout(3)->get($url, $parameters);
         if ($response->status() != 200) {
             return [
                 'status'   => 'error',

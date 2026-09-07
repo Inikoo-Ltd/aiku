@@ -19,7 +19,6 @@ import TableClockings from "@/Components/Tables/Grp/Org/HumanResources/TableCloc
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faVoteYea, faArrowsH } from '@fal'
-import { format, parseISO } from 'date-fns'
 import { useSecondsToMS, useHMAP } from '@/Composables/useFormatTime'
 import { trans } from 'laravel-vue-i18n'
 
@@ -36,16 +35,41 @@ const props = defineProps<{
     time_trackers?: {}
     clockings?: {}
     timesheet: {
-        work_start_at?: string    
+        id?: number
+        date?: string
+        store_clocking_route?: string
+        work_start_at?: string
         work_end_at?: string
         work_duration?: string
         breaks_duration?: string
         total_duration?: number
+        paid_duration?: number
+        unpaid_overtime_duration?: number
+        paid_overtime_duration?: number
         overtime?: number
         about?: string
+        scheduled_hours?: {
+            source: "employee" | "organisation" | null
+            start_time: string | null
+            end_time: string | null
+            breaks: { name: string | null; start_time: string | null; end_time: string | null }[]
+        }
     }
 
 }>()
+
+const formatHM = (value: string | null | undefined): string => value ? value.slice(0, 5) : "-"
+const duration = (seconds: number | undefined): string => seconds ? useSecondsToMS(seconds) : "-"
+
+const summary = computed(() => [
+    { label: trans('Start'), value: useHMAP(props.timesheet.work_start_at) || '-' },
+    { label: trans('End'), value: useHMAP(props.timesheet.work_end_at) || '-' },
+    { label: trans('Breaks'), value: duration(props.timesheet.breaks_duration as unknown as number) },
+    { label: trans('Total worktime'), value: duration(props.timesheet.total_duration) },
+    { label: trans('Paid time'), value: duration(props.timesheet.paid_duration) },
+    { label: trans('Unpaid overtime'), value: duration(props.timesheet.unpaid_overtime_duration) },
+    { label: trans('Paid overtime'), value: duration(props.timesheet.paid_overtime_duration) },
+])
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -60,6 +84,17 @@ const component = computed(() => {
     return components[currentTab.value]
 })
 
+const extraProps = computed(() => {
+    if (currentTab.value === 'clockings' || currentTab.value === 'time_trackers') {
+        return {
+            storeClockingRoute: props.timesheet.store_clocking_route,
+            timesheetDate: props.timesheet.date,
+        }
+    }
+
+    return {}
+})
+
 </script>
 
 
@@ -67,55 +102,32 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
 
-    <div class="grid grid-cols-2 divide-x divide-gray-200 px-3 py-5">
-        <div>
-            
-        </div>
-
-        <div class="px-5 py-1">
-            <div class="px-4 sm:px-0">
-                <h3 class="text-lg font-semibold">Review Time</h3>
-                <p class="mt-1 max-w-2xl text-sm  text-gray-500">The detail of employee's worktime in a day</p>
+    <div class="px-4 pt-4 space-y-3">
+        <dl class="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
+            <div v-for="item in summary" :key="item.label" class="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-gray-100">
+                <dd class="text-xl font-bold tabular-nums tracking-tight text-gray-800">{{ item.value }}</dd>
+                <dt class="mt-0.5 truncate text-sm text-gray-500">{{ item.label }}</dt>
             </div>
-            
-            <div class="mt-4 border-t border-gray-100">
-                <dl class="divide-y divide-gray-100">
-                    <div class="bg-gray-50 px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
-                        <dt class="text-sm text-gray-500">Start</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ useHMAP(timesheet.work_start_at) }}</dd>
-                    </div>
-                    <div class="bg-white px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
-                        <dt class="text-sm text-gray-500">End</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ useHMAP(timesheet.work_end_at) || '-'}}</dd>
-                    </div>
-                    <div class="bg-gray-50 px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
-                        <dt class="text-sm text-gray-500">Breaks</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ timesheet.breaks_duration || '-'}}</dd>
-                    </div>
-                    <div class="bg-white px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
-                        <dt class="text-sm text-gray-500">Total worktime</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ useSecondsToMS(timesheet.total_duration) }}</dd>
-                    </div>
-                    <div class="bg-gray-50 px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
-                        <dt class="text-sm text-gray-500">Overtime</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ timesheet.overtime ? useSecondsToMS(timesheet.overtime) : '-'}}</dd>
-                    </div>
+        </dl>
 
-                    <div class="bg-white px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
-                        <dt class="text-sm text-gray-500">About</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">
-                            <span v-if="timesheet.about">{{ timesheet.about }}</span>
-                            <span v-else class="text-gray-400 italic font-light">{{ trans('No note.') }}</span>
-                        </dd>
-                    </div>
-                    
-                </dl>
+        <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500">
+            <div v-if="timesheet.scheduled_hours?.source">
+                <span class="font-medium text-gray-700">{{ trans('Scheduled') }}:</span>
+                <template v-if="timesheet.scheduled_hours.start_time || timesheet.scheduled_hours.end_time">
+                    {{ formatHM(timesheet.scheduled_hours.start_time) }} – {{ formatHM(timesheet.scheduled_hours.end_time) }}
+                    <span v-for="(brk, index) in timesheet.scheduled_hours.breaks" :key="index" class="text-gray-400">
+                        · {{ brk.name || trans('Break') }} {{ formatHM(brk.start_time) }}–{{ formatHM(brk.end_time) }}
+                    </span>
+                </template>
+                <span v-else class="italic">{{ trans('Not a working day') }}</span>
+                <span class="text-xs text-gray-400">({{ timesheet.scheduled_hours.source === 'organisation' ? trans('organisation default') : trans('employee schedule') }})</span>
+            </div>
+            <div v-if="timesheet.about">
+                <span class="font-medium text-gray-700">{{ trans('Note') }}:</span> {{ timesheet.about }}
             </div>
         </div>
     </div>
 
-    <hr class="border-t border-gray-200">
-
-    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
+    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" class="mt-4" />
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" v-bind="extraProps"></component>
 </template>

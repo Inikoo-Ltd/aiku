@@ -225,8 +225,8 @@ class ShowRecurringBill extends OrgAction
                     : Inertia::optional(fn () => PalletReturnsResource::collection(IndexPalletReturns::run($recurringBill, RecurringBillTabsEnum::PALLET_RETURNS->value))),
 
                 RecurringBillTabsEnum::HISTORY->value => $this->tab == RecurringBillTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($recurringBill))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($recurringBill)))
+                    fn () => HistoryResource::collection(IndexHistory::run($recurringBill, RecurringBillTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($recurringBill, RecurringBillTabsEnum::HISTORY->value)))
             ]
         )->table(
             IndexRecurringBillTransactions::make()->tableStructure(

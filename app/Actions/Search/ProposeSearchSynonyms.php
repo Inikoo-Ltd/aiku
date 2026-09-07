@@ -7,6 +7,8 @@
 
 namespace App\Actions\Search;
 
+use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
+use App\Exceptions\AICreditException;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -18,6 +20,7 @@ class ProposeSearchSynonyms
 {
     use AsAction;
     use WithTypesenseApi;
+    use WithAICreditErrorHandler;
 
     public string $commandSignature = 'search:propose-synonyms {--days=7}';
 
@@ -217,14 +220,19 @@ class ProposeSearchSynonyms
 
         for ($attempt = 0; $attempt < 3; $attempt++) {
             try {
-                $content = Http::withToken(config('services.openai.api_key'))
+                $response = Http::withToken(config('services.openai.api_key'))
                     ->timeout(300)
                     ->post('https://api.openai.com/v1/chat/completions', [
                         'model'            => 'gpt-5-nano',
                         'reasoning_effort' => 'low',
                         'messages'         => [['role' => 'user', 'content' => $prompt]],
-                    ])
-                    ->json('choices.0.message.content') ?? '';
+                    ]);
+
+                if ($this->isAICreditResponse($response)) {
+                    throw new AICreditException($this->aiCreditErrorMessage());
+                }
+
+                $content = $response->json('choices.0.message.content') ?? '';
 
                 $start = strpos($content, '[');
                 $end   = strrpos($content, ']');
@@ -236,6 +244,8 @@ class ProposeSearchSynonyms
                 if (is_array($items)) {
                     return $items;
                 }
+            } catch (AICreditException $e) {
+                throw $e;
             } catch (Throwable) {
                 sleep(3);
             }

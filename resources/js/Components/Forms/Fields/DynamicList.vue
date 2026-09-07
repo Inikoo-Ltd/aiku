@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, watchEffect } from "vue"
+import { computed, reactive, watchEffect } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { faPlus, faTrash } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -50,9 +50,19 @@ const rows = reactive<RowData[]>(
     })
 )
 
+const isBlankRow = (row: RowData) => fields.every((f) => !String(row[f.key] ?? "").trim())
+
+const filledRows = computed(() => rows.filter((row) => !isBlankRow(row)))
+
 watchEffect(() => {
-    props.form[props.fieldName] = rows.map(({ _key: _, ...d }) => ({ ...d }))
+    props.form[props.fieldName] = filledRows.value.map(({ _key: _, ...d }) => ({ ...d }))
 })
+
+const errorFor = (row: RowData, fieldKey: string) => {
+    const index = filledRows.value.findIndex((r) => r._key === row._key)
+    if (index === -1) return undefined
+    return props.form?.errors?.[`${props.fieldName}.${index}.${fieldKey}`]
+}
 
 const addRow = () => rows.push(toEmptyRow())
 
@@ -103,7 +113,13 @@ const removeRow = (key: number) => {
                     v-model="row[field.key]"
                     type="text"
                     :placeholder="field.placeholder ? trans(field.placeholder) : field.key"
-                    class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                    class="block w-full rounded-md px-3 py-2 text-sm border"
+                    :class="errorFor(row, field.key)
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                        : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'" />
+                <p v-if="errorFor(row, field.key)" class="mt-1 text-sm text-red-600">
+                    {{ errorFor(row, field.key) }}
+                </p>
             </div>
             <button
                 type="button"

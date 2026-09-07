@@ -16,6 +16,7 @@ use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\TiktokUser;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -29,7 +30,7 @@ class AuthenticateTiktokAccount extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(array $modelData): TiktokUser|array|string|null
+    public function handle(array $modelData): RedirectResponse|string
     {
         try {
             $platform = Platform::where('type', PlatformTypeEnum::TIKTOK->value)->first();
@@ -62,9 +63,16 @@ class AuthenticateTiktokAccount extends OrgAction
                         'platform_id' => $platform->id
                     ];
 
-                    $tiktokUser = TiktokUser::where('customer_id', $customer?->id)
+                    $tiktokUser = TiktokUser::withTrashed()
+                        ->where('customer_id', $customer?->id)
                         ->where('tiktok_id', $userData['tiktok_id'])
+                        ->orderByRaw('deleted_at is null desc')
+                        ->orderByDesc('id')
                         ->first();
+
+                    if ($tiktokUser?->trashed()) {
+                        $tiktokUser = $customer?->id ? ReconnectTiktokUser::run($tiktokUser) : null;
+                    }
 
                     if (!$tiktokUser && $customer?->id) {
                         $tiktokUser = StoreTiktokUser::make()->action($customer, $userData);
@@ -134,6 +142,10 @@ class AuthenticateTiktokAccount extends OrgAction
     }
     public function getAccessTokenViaRefreshToken(TiktokUser $tiktokUser): void
     {
+        if ($tiktokUser->refresh_token_expire_in && now()->timestamp >= (int) $tiktokUser->refresh_token_expire_in) {
+            return;
+        }
+
         $response = Http::get(config('services.tiktok.auth_url')."/api/v2/token/refresh", [
             'app_key' => config('services.tiktok.client_id'),
             'app_secret' => config('services.tiktok.client_secret'),
@@ -141,8 +153,20 @@ class AuthenticateTiktokAccount extends OrgAction
             'grant_type' => 'refresh_token'
         ]);
 
+        $accessToken = Arr::get($response->json(), 'data.access_token');
+
+        if (blank($accessToken)) {
+            Log::warning('TikTok token refresh failed, keeping the current tokens', [
+                'tiktok_user_id' => $tiktokUser->id,
+                'status'         => $response->status(),
+                'message'        => Arr::get($response->json(), 'message')
+            ]);
+
+            return;
+        }
+
         UpdateTiktokUser::run($tiktokUser, [
-            'access_token' => Arr::get($response->json(), 'data.access_token'),
+            'access_token' => $accessToken,
             'access_token_expire_in' => Arr::get($response->json(), 'data.access_token_expire_in'),
             'refresh_token' => Arr::get($response->json(), 'data.refresh_token'),
             'refresh_token_expire_in' => Arr::get($response->json(), 'data.refresh_token_expire_in')
@@ -158,7 +182,7 @@ class AuthenticateTiktokAccount extends OrgAction
         $this->getAccessTokenViaRefreshToken($tiktokUser);
     }
 
-    public function asController(ActionRequest $request): TiktokUser|array|string|null
+    public function asController(ActionRequest $request): RedirectResponse|string
     {
         $this->fillFromRequest($request);
         $validatedData = $this->validateAttributes();

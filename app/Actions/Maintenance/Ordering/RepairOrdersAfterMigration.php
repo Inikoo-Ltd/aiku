@@ -14,6 +14,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairOrdersAfterMigration
 {
@@ -58,6 +59,7 @@ class RepairOrdersAfterMigration
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
 
         $shopsId = Shop::where('is_aiku', true)->pluck('id');
 

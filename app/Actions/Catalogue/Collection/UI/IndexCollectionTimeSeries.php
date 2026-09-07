@@ -20,8 +20,8 @@ class IndexCollectionTimeSeries extends OrgAction
 {
     public function handle(Collection $collection, string|null $prefix): LengthAwarePaginator
     {
-        $frequency = request()->input('frequency', TimeSeriesFrequencyEnum::DAILY->value);
-        $frequencyEnum = TimeSeriesFrequencyEnum::tryFrom($frequency) ?? TimeSeriesFrequencyEnum::DAILY;
+        $frequency = request()->input('frequency', TimeSeriesFrequencyEnum::MONTHLY->value);
+        $frequencyEnum = TimeSeriesFrequencyEnum::tryFrom($frequency) ?? TimeSeriesFrequencyEnum::MONTHLY;
 
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
@@ -49,6 +49,7 @@ class IndexCollectionTimeSeries extends OrgAction
                 'orders',
                 'customers_invoiced',
             ])
+            ->selectRaw('? as currency_code', [$collection->shop->currency->code])
             ->defaultSort('-from')
             ->allowedSorts(['from', 'to', 'sales_external', 'invoices', 'refunds', 'customers_invoiced'])
             ->allowedFilters([])

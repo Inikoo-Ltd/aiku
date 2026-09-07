@@ -14,20 +14,26 @@ enum ClockingMachineTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case BIOMETRIC  = 'biometric';
-    case STATIC_NFC = 'static-nfc';
-    case MOBILE_APP = 'mobile-app';
-    case LEGACY     = 'legacy';
-    case QR_CODE    = 'qr-code';
+    case BIOMETRIC       = 'biometric';
+    case STATIC_NFC      = 'static-nfc';
+    case MOBILE_APP      = 'mobile-app';
+    case LEGACY          = 'legacy';
+    case QR_CODE         = 'qr-code';
+    case PIN             = 'pin';
+    case BARCODE_SCANNER = 'barcode-scanner';
+    case CAMERA_QR       = 'camera-qr';
 
     public static function labels(): array
     {
         return [
-            'biometric'      => __('Biometric'),
-            'static-nfc'     => __('Static NFC'),
-            'mobile-app'     => __('Mobile App').' (Han)',
-            'legacy'         => __('Legacy'),
-            'qr-code'        => __('QR Code'),
+            'biometric'       => __('Biometric'),
+            'static-nfc'      => __('Static NFC'),
+            'mobile-app'      => __('Mobile App').' (Han)',
+            'legacy'          => __('Legacy'),
+            'qr-code'         => __('QR Code'),
+            'pin'             => __('PIN'),
+            'barcode-scanner' => __('Barcode Scanner'),
+            'camera-qr'       => __('Camera QR Scanner'),
         ];
     }
 

@@ -13,6 +13,7 @@ namespace App\Actions\Api\Retina\Fulfilment\SKU;
 use App\Actions\Api\Retina\Fulfilment\Resource\SKUsApiResource;
 use App\Actions\RetinaApiAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\PalletStoredItem;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -22,13 +23,16 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetSKUs extends RetinaApiAction
 {
-    public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerSalesChannel, Portfolio $portfolio, array $modelData): LengthAwarePaginator
     {
         $queryBuilder = QueryBuilder::for(PalletStoredItem::class)
             ->leftJoin('stored_items', 'pallet_stored_items.stored_item_id', '=', 'stored_items.id')
+            ->leftJoin('portfolios', 'portfolios.item_id', '=', 'stored_items.id')
             ->leftJoin('pallets', 'pallet_stored_items.pallet_id', '=', 'pallets.id');
 
         $queryBuilder->where('pallets.fulfilment_customer_id', $customerSalesChannel->customer->fulfilmentCustomer->id);
+        $queryBuilder->where('portfolios.item_type', 'StoredItem');
+        $queryBuilder->where('portfolios.id', $portfolio->id);
 
 
         if (Arr::get($modelData, 'reference')) {
@@ -61,13 +65,12 @@ class GetSKUs extends RetinaApiAction
         });
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function asController(Portfolio $portfolio, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromFulfilment($request);
 
-        return $this->handle($this->customerSalesChannel, $this->validateAttributes());
+        return $this->handle($this->customerSalesChannel, $portfolio, $this->validateAttributes());
     }
-
 
     public function jsonResponse(LengthAwarePaginator $palletStoredItems): AnonymousResourceCollection
     {

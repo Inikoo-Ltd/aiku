@@ -1,0 +1,32 @@
+{
+	"slug": "sub-departments-4",
+	"code": "sub-departments-4",
+	"name": "Sub-Departments-4",
+	"scope": "webpage",
+	"category": "sub_department",
+	"website_type" : ["b2b","b2c","dropshipping"],
+	"icon": ["fal", "building"],
+	"is_in_test" : false,
+	"fixed": true,
+	"data": {
+		"fieldValue": {
+			"text": {
+				"value": "<h2 class=\"text-xl font-bold text-[#1d2d44] sm:text-2xl\">Browse By Category:</h2>",
+				"visible": true
+			},
+			"button_label": "Browse Now",
+			"settings": {
+				"per_row": {
+					"desktop": 2,
+					"tablet": 2,
+					"mobile": 1
+				}
+			},
+			"card": {
+				"container": {
+					"properties": {}
+				}
+			}
+		}
+	}
+}

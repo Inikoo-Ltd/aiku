@@ -37,6 +37,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric $on_the_way_po_value
  * @property int $on_the_way_po_count
  * @property float|null $week_of_cover
+ * @property numeric $stock_commercial_value
  * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilyStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilyStats newQuery()

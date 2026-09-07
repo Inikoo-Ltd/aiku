@@ -88,15 +88,29 @@ trait WithMasterProductSubNavigation
                     'tooltip' => __('Composition & packing')
                 ]
             ],
+            [
+                'label'    => __('Sales'),
+                'route'    => [
+                    'name'       => 'grp.masters.master_shops.show.master_products.show.sales',
+                    'parameters' => [
+                        'masterShop'    => $masterShop->slug,
+                        'masterProduct' => $masterProduct->slug
+                    ]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-money-bill-wave'],
+                    'tooltip' => __('Products in shop sales')
+                ]
+            ]
         ];
     }
 
-    private function getMasterProductRoute(bool $isProductRoute, string $currentRoute)
+    private function getMasterProductRoute(bool $isProductRoute, string $currentRoute): string
     {
         return !$isProductRoute ? $currentRoute : preg_replace("/products$/", "show", $currentRoute);
     }
 
-    private function getProductInShopRoute(bool $isProductRoute, string $currentRoute)
+    private function getProductInShopRoute(bool $isProductRoute, string $currentRoute): string
     {
         return $isProductRoute ? $currentRoute : preg_replace("/show$/", "products", $currentRoute);
     }

@@ -12,18 +12,18 @@ namespace App\Actions\Catalogue\Variant;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\OrgAction;
 use App\Actions\Catalogue\Variant\Traits\WithVariantDataPreparation;
-use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
-use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\VariantsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Variant;
 use App\Models\Masters\MasterVariant;
+use App\Models\Web\Redirect;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -93,15 +93,20 @@ class UpdateVariant extends OrgAction
                 }
 
                 foreach ($productsInVariant as $product) {
-                    if ($product->id == $leader->id) continue; // Skip if leader
+                    if ($product->id == $leader->id) {
+                        continue;
+                    } // Skip if leader
 
                     if ($product->webpage()->exists()) {
-                        UpdateWebpage::make()->action($product->webpage()->first(), [
+                        $webpage = $product->webpage()->first();
+
+                        UpdateWebpage::make()->action($webpage, [
                              'state_data' => [
                                  'state'                 => WebpageStateEnum::CLOSED->value,
                                  'redirect_webpage_id'   => $leader->webpage->id,
                              ]
                         ]);
+
                     } else {
                         $webpage = $product->webpage()->first();
                         if ($redirect = $webpage?->redirectedTo) {
@@ -113,10 +118,18 @@ class UpdateVariant extends OrgAction
                                 'to_webpage_id' => $leader->webpage->id,
                             ]);
                         } else {
-                            StoreRedirectFromWebsite::make()->action($website, [
-                                'from_url'     => strtolower($product->code),
-                                'to_url'       => $leader->webpage->id,
-                            ]);
+                            $redirect = Redirect::where('from_path', strtolower($product->code))->where('shop_id', $leader->shop_id)->first();
+
+                            if ($redirect) {
+                                UpdateRedirect::make()->action($redirect, [
+                                    'to_webpage_id' => $leader->webpage->id,
+                                ]);
+                            } else {
+                                StoreRedirectFromWebsite::make()->action($website, [
+                                    'from_url'     => strtolower($product->code),
+                                    'to_url'       => $leader->webpage->id,
+                                ]);
+                            }
                         }
                     }
                 }
@@ -147,11 +160,18 @@ class UpdateVariant extends OrgAction
             return $variant;
         });
 
+        $leader = $variant->leaderProduct;
+
         return $variant;
     }
 
     public function prepareForValidation(): void
     {
+        if (!$this->asAction) {
+            $this->data = $this->variants;
+            unset($this->variants);
+        }
+
         $this->prepareForVariantUpdate();
     }
 
@@ -208,5 +228,10 @@ class UpdateVariant extends OrgAction
     public function jsonResponse(Variant $variant): VariantsResource
     {
         return new VariantsResource($variant);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 }

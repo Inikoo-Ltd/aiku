@@ -20,6 +20,7 @@ library.add(faInfoCircle);
 const goNext = inject("goNext");
 const closeCreateEbayModal = inject("closeCreateEbayModal");
 const ebayId = inject("ebayId");
+const customerSalesChannelId = inject("customerSalesChannelId");
 
 const isLoadingStep = ref(false)
 const errors = ref({})
@@ -53,6 +54,9 @@ const submitForm = async () => {
         const {data} = await axios.get(route('retina.dropshipping.customer_sales_channels.ebay.auth_check', {
             ebayUser: ebayId.value
         }));
+        if (data?.customer_sales_channel_id) {
+            customerSalesChannelId.value = data.customer_sales_channel_id
+        }
         goNext();
         isLoadingStep.value = false
     } catch (err) {

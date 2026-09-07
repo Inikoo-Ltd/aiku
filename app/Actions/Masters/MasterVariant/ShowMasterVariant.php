@@ -10,13 +10,18 @@
 namespace App\Actions\Masters\MasterVariant;
 
 use App\Actions\Catalogue\Variant\IndexVariantInMasterVariant;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInMasterVariant;
+use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsPricing;
+use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterVariantTabsEnum;
 use App\Http\Resources\Catalogue\VariantsResource;
 use App\Http\Resources\Masters\MasterProductVariantResource;
+use App\Http\Resources\Masters\MasterProductsPricingResource;
+use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -86,6 +91,31 @@ class ShowMasterVariant extends OrgAction
     public function handle(MasterVariant $masterVariant): Response
     {
         $masterProductInVariant = MasterProductVariantResource::collection(MasterAsset::whereIn('id', data_get($masterVariant->data, 'products.*.product.id', []))->get());
+        $masterShop             = $masterVariant->masterFamily->masterShop;
+
+        $pricingSupportCache = null;
+        $pricingSupportProps = function () use ($masterShop, &$pricingSupportCache): array {
+            if ($pricingSupportCache !== null) {
+                return $pricingSupportCache;
+            }
+            $currenciesRate = GetMasterShopCurrenciesRate::run($masterShop);
+
+            return $pricingSupportCache = [
+                'pricingCurrencies' => $currenciesRate,
+                'pricingCostRates'  => $currenciesRate
+                    ->keys()
+                    ->mapWithKeys(function (string $currencyCode) use ($masterShop) {
+                        $currency = Currency::where('code', $currencyCode)->first();
+
+                        return [
+                            $currencyCode => $currency
+                                ? GetCurrencyExchange::run($masterShop->group->currency, $currency)
+                                : null
+                        ];
+                    }),
+            ];
+        };
+
         return Inertia::render(
             'Masters/MasterVariant',
             [
@@ -117,6 +147,17 @@ class ShowMasterVariant extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => MasterVariantTabsEnum::navigation()
                 ],
+                'masterProductCategoryId' => $masterVariant->masterFamily->id,
+                'pricingMajorCurrencies'  => collect($masterShop->price_exchanges ?? [])
+                    ->filter(fn (array $exchangeData) => $exchangeData['is_major'] ?? false)
+                    ->keys()
+                    ->values(),
+                'pricingCurrencies'       => $this->tab === MasterVariantTabsEnum::PRICING->value
+                    ? $pricingSupportProps()['pricingCurrencies']
+                    : Inertia::optional(fn () => $pricingSupportProps()['pricingCurrencies']),
+                'pricingCostRates'        => $this->tab === MasterVariantTabsEnum::PRICING->value
+                    ? $pricingSupportProps()['pricingCostRates']
+                    : Inertia::optional(fn () => $pricingSupportProps()['pricingCostRates']),
                 MasterVariantTabsEnum::SHOWCASE->value =>
                     $this->tab === MasterVariantTabsEnum::SHOWCASE->value ? [
                         'master_variant'            => $masterVariant,
@@ -131,10 +172,14 @@ class ShowMasterVariant extends OrgAction
                 MasterVariantTabsEnum::VARIANTS->value =>
                     $this->tab === MasterVariantTabsEnum::VARIANTS->value ? VariantsResource::collection(IndexVariantInMasterVariant::run($masterVariant, MasterVariantTabsEnum::VARIANTS->value))
                     : Inertia::optional(fn () => VariantsResource::collection(IndexVariantInMasterVariant::run($masterVariant, MasterVariantTabsEnum::VARIANTS->value))),
+                MasterVariantTabsEnum::PRICING->value =>
+                    $this->tab === MasterVariantTabsEnum::PRICING->value ? MasterProductsPricingResource::collection(IndexMasterProductsPricing::run($masterVariant, MasterVariantTabsEnum::PRICING->value))
+                    : Inertia::optional(fn () => MasterProductsPricingResource::collection(IndexMasterProductsPricing::run($masterVariant, MasterVariantTabsEnum::PRICING->value))),
             ]
         )
         ->table(IndexVariantInMasterVariant::make()->tableStructure(masterVariant: $masterVariant, prefix: MasterVariantTabsEnum::VARIANTS->value))
-        ->table(IndexMasterProductsInMasterVariant::make()->tableStructure(masterVariant: $masterVariant, prefix: MasterVariantTabsEnum::PRODUCTS->value));
+        ->table(IndexMasterProductsInMasterVariant::make()->tableStructure(masterVariant: $masterVariant, prefix: MasterVariantTabsEnum::PRODUCTS->value))
+        ->table(IndexMasterProductsPricing::make()->tableStructure($masterVariant, prefix: MasterVariantTabsEnum::PRICING->value));
     }
 
 

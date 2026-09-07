@@ -13,6 +13,10 @@ use App\Exceptions\Dropshipping\Ebay\EbayApiException;
 use App\Models\Catalogue\Product;
 use Exception;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -20,6 +24,10 @@ use Illuminate\Support\Str;
 trait WithEbayApiRequest
 {
     public int $timeOut = 30;
+
+    public const int NEW_CONDITION_ID = 1000;
+
+    public const int OFFER_LOOKUP_CHUNK = 25;
 
     public function setTimeout(int $timeOut): void
     {
@@ -207,9 +215,6 @@ trait WithEbayApiRequest
                         $product->attributes['style'] ??
                         ['Not Specified'];
                     break;
-                case 'Brand':
-                    $attributes['Brand'] = [$brand?->name ?? 'Ancient Wisdom'];
-                    break;
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
                     break;
@@ -234,7 +239,8 @@ trait WithEbayApiRequest
             }
         }
 
-        // Use this as default value and always included
+        $attributes['Brand'] = [$brand?->name ?? 'Ancient Wisdom'];
+
         if ($product->country_of_origin) {
             $attributes['Country/Region of Manufacture'] = [$product->country_of_origin];
         }
@@ -252,8 +258,7 @@ trait WithEbayApiRequest
 
     public function getDefaultValueForAspect($aspect)
     {
-        // Return the first recommended value or "Not Specified"
-        return $aspect['aspectValues'][0]['localizedValue'] ?? ['Not Specified'];
+        return Arr::get($aspect, 'aspectValues.0.localizedValue') ?? 'Not Specified';
     }
 
     public function parseMissingAspects($errorMessage)
@@ -309,9 +314,23 @@ trait WithEbayApiRequest
         try {
             $endpoint = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_item_aspects_for_category";
 
-            return $this->makeEbayRequest('get', $endpoint, [
+            $response = $this->makeEbayRequest('get', $endpoint, [
                 'category_id' => $categoryId
             ]);
+
+            // makeEbayRequest hands back eBay's error body rather than throwing, so a failure
+            // here would otherwise pass silently and strip every aspect from the listing.
+            if (!is_array($response) || !array_key_exists('aspects', $response)) {
+                \Log::error('eBay category aspects unavailable, listing will carry no category aspects', [
+                    'category_id'      => $categoryId,
+                    'category_tree_id' => $categoryTree,
+                    'response'         => $response
+                ]);
+
+                return ['aspects' => []];
+            }
+
+            return $response;
         } catch (\Exception $e) {
             \Log::error('Failed to get eBay category aspects', [
                 'category_id' => $categoryId,
@@ -334,6 +353,61 @@ trait WithEbayApiRequest
                 'cardinality' => $aspect['aspectConstraint']['itemToAspectCardinality']
             ];
         })->values();
+    }
+
+    /**
+     * Item conditions eBay accepts for a category, as returned by the Sell Metadata API
+     *
+     * @return array<int, array{conditionId: string, conditionDescription: string}>
+     */
+    public function getItemConditionsForCategory(string $categoryId): array
+    {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+        $cacheKey      = 'ebay_item_conditions_'.$marketplaceId.'_'.$categoryId;
+
+        $cachedConditions = Cache::get($cacheKey);
+        if (is_array($cachedConditions)) {
+            return $cachedConditions;
+        }
+
+        try {
+            $endpoint = "/sell/metadata/v1/marketplace/$marketplaceId/get_item_condition_policies";
+
+            $response = $this->makeEbayRequest('get', $endpoint, [], [
+                'filter' => 'categoryIds:{'.$categoryId.'}'
+            ]);
+        } catch (Exception $e) {
+            Log::error('Get Item Condition Policies Error: '.$e->getMessage());
+
+            return [];
+        }
+
+        $conditions = Arr::get($response, 'itemConditionPolicies.0.itemConditions');
+
+        if (!is_array($conditions)) {
+            return [];
+        }
+
+        Cache::put($cacheKey, $conditions, now()->addWeek());
+
+        return $conditions;
+    }
+
+    /**
+     * Categories restrict which item conditions they take, and everything uploaded from Aiku is new.
+     * An unreadable policy is treated as accepting it, so a metadata outage does not stop uploads.
+     */
+    public function categoryAcceptsNewCondition(string $categoryId): bool
+    {
+        $conditions = $this->getItemConditionsForCategory($categoryId);
+
+        if (blank($conditions)) {
+            return true;
+        }
+
+        return collect($conditions)->contains(
+            fn ($condition) => (int) Arr::get($condition, 'conditionId') === self::NEW_CONDITION_ID
+        );
     }
 
     public function getServicesWithCarrierInfo(): array
@@ -526,6 +600,76 @@ trait WithEbayApiRequest
         ];
     }
 
+    /**
+     * @return array{service_code: string, service_name: string, carrier_code: string, carrier_name: string}
+     */
+    public function getDefaultCarrierForMarketplace(?string $marketplaceId): array
+    {
+        $carriers = $this->defaultCarrier();
+
+        return $carriers[$marketplaceId] ?? $carriers['EBAY_GB'];
+    }
+
+    protected function firstFilledValue(array $values, mixed $fallback): mixed
+    {
+        foreach ($values as $value) {
+            if (filled($value)) {
+                return $value;
+            }
+        }
+
+        return $fallback;
+    }
+
+    public function getMissingListingPolicy(): ?string
+    {
+        $requiredListingPolicies = [
+            'postage policy'   => $this->fulfillment_policy_id,
+            'payment policy'   => $this->payment_policy_id,
+            'return policy'    => $this->return_policy_id,
+            'inventory location' => $this->location_key,
+        ];
+
+        foreach ($requiredListingPolicies as $name => $value) {
+            if (blank($value)) {
+                return $name;
+            }
+        }
+
+        return null;
+    }
+
+    public function getUsableFulfilmentPolicyIds(): Collection
+    {
+        $policies = Arr::get($this->getFulfilmentPolicies(), 'fulfillmentPolicies', []);
+
+        return collect($policies)
+            ->filter(function ($policy) {
+                $coversListingCategory = collect(Arr::get($policy, 'categoryTypes', []))
+                    ->contains(fn ($categoryType) => Arr::get($categoryType, 'name') === 'ALL_EXCLUDING_MOTORS_VEHICLES');
+
+                $hasShippingService = collect(Arr::get($policy, 'shippingOptions', []))
+                    ->flatMap(fn ($shippingOption) => Arr::get($shippingOption, 'shippingServices', []))
+                    ->contains(fn ($shippingService) => filled(Arr::get($shippingService, 'shippingServiceCode')));
+
+                return $coversListingCategory && $hasShippingService;
+            })
+            ->map(fn ($policy) => Arr::get($policy, 'fulfillmentPolicyId'))
+            ->filter()
+            ->values();
+    }
+
+    public function getUsableFulfilmentPolicyId(?string $preferredPolicyId = null): ?string
+    {
+        $usablePolicyIds = $this->getUsableFulfilmentPolicyIds();
+
+        if ($preferredPolicyId && $usablePolicyIds->contains($preferredPolicyId)) {
+            return $preferredPolicyId;
+        }
+
+        return $usablePolicyIds->first();
+    }
+
     public function getServicesForOptions(): array
     {
         return array_map(function ($service) {
@@ -653,6 +797,8 @@ trait WithEbayApiRequest
      *
      * @throws \Exception
      */
+    public bool $ebayAuthRevoked = false;
+
     public function refreshEbayToken()
     {
         $config = $this->getEbayConfig();
@@ -702,6 +848,10 @@ trait WithEbayApiRequest
                 ]);
 
                 return $tokenData;
+            }
+
+            if ($response->status() === 400 && Arr::get($response->json(), 'error') === 'invalid_grant') {
+                $this->ebayAuthRevoked = true;
             }
         } catch (Exception $e) {
             Log::error('eBay Token Refresh Error: '.$e->getMessage());
@@ -964,6 +1114,10 @@ trait WithEbayApiRequest
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
         $currency      = Arr::get($this->getEbayConfig(), 'currency');
 
+        if ($missingListingPolicy = $this->getMissingListingPolicy()) {
+            return ['error' => 'The eBay channel has no '.$missingListingPolicy.', reconnect the channel or run ebay:check before uploading.'];
+        }
+
         $data = [
             "sku"                 => Arr::get($offerData, 'sku'),
             "marketplaceId"       => $marketplaceId,
@@ -1042,6 +1196,80 @@ trait WithEbayApiRequest
 
             return ['error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * eBay only serves offers one SKU at a time, so a whole page of SKUs is looked up
+     * concurrently rather than in a chain of round trips.
+     *
+     * @param  array<int, string>  $skus
+     * @return array<string, array> offers keyed by SKU, SKUs without an offer are left out
+     */
+    public function getOffersForSkus(array $skus): array
+    {
+        if (blank($skus)) {
+            return [];
+        }
+
+        try {
+            $token       = $this->getEbayAccessToken();
+            $offersBySku = [];
+            $retried     = false;
+
+            foreach (array_chunk(array_values(array_unique($skus)), self::OFFER_LOOKUP_CHUNK) as $chunk) {
+                $responses = $this->poolOfferRequests($chunk, $token);
+
+                $unauthorised = collect($responses)->contains(
+                    fn ($response) => $response instanceof Response && $response->status() === 401
+                );
+
+                if ($unauthorised && !$retried) {
+                    $retried   = true;
+                    $token     = Arr::get($this->refreshEbayToken(), 'access_token');
+                    $responses = $this->poolOfferRequests($chunk, $token);
+                }
+
+                foreach ($chunk as $sku) {
+                    $response = $responses[$sku] ?? null;
+
+                    if (!$response instanceof Response || !$response->successful()) {
+                        continue;
+                    }
+
+                    $offers = Arr::get($response->json(), 'offers', []);
+
+                    if (filled($offers)) {
+                        $offersBySku[$sku] = $offers;
+                    }
+                }
+            }
+
+            return $offersBySku;
+        } catch (Exception $e) {
+            Log::error('Get eBay Offers For Skus Error: '.$e->getMessage());
+
+            return [];
+        }
+    }
+
+    /**
+     * @param  array<int, string>  $skus
+     */
+    private function poolOfferRequests(array $skus, ?string $token): array
+    {
+        $url           = $this->getEbayBaseUrl().'/sell/inventory/v1/offer';
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
+        return Http::pool(fn (Pool $pool) => array_map(
+            fn ($sku) => $pool->as($sku)
+                ->withHeaders([
+                    'Authorization'           => 'Bearer '.$token,
+                    'Accept'                  => 'application/json',
+                    'X-EBAY-C-MARKETPLACE-ID' => $marketplaceId
+                ])
+                ->get($url, ['sku' => $sku]),
+            $skus
+        ));
     }
 
     /**
@@ -1235,11 +1463,14 @@ trait WithEbayApiRequest
             $endpoint = "/sell/fulfillment/v1/order/$orderId/shipping_fulfillment";
 
             $fulfillment = [
-                'lineItems'           => $fulfillmentData['line_items'],
-                'shippedDate'         => now()->toISOString(),
-                'shippingCarrierCode' => $fulfillmentData['carrier_code'] ?? 'USPS',
-                'trackingNumber'      => $fulfillmentData['tracking_number'] ?? null
+                'lineItems'   => $fulfillmentData['line_items'],
+                'shippedDate' => now()->toISOString(),
             ];
+
+            if (filled(Arr::get($fulfillmentData, 'tracking_number'))) {
+                $fulfillment['trackingNumber']      = $fulfillmentData['tracking_number'];
+                $fulfillment['shippingCarrierCode'] = Arr::get($fulfillmentData, 'carrier_code') ?: 'Other';
+            }
 
             return $this->makeEbayRequest('post', $endpoint, $fulfillment);
         } catch (Exception $e) {
@@ -1361,7 +1592,10 @@ trait WithEbayApiRequest
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
         $currency      = Arr::get($this->getEbayConfig(), 'currency');
 
-        $default = $this->defaultCarrier()[$marketplaceId];
+        $default = $this->getDefaultCarrierForMarketplace($marketplaceId);
+
+        $price           = $this->firstFilledValue([Arr::get($attributes, 'price')], 1);
+        $maxDispatchTime = $this->firstFilledValue([Arr::get($attributes, 'max_dispatch_time')], 1);
 
         $data = [
             "categoryTypes"   => [
@@ -1373,7 +1607,7 @@ trait WithEbayApiRequest
             "name"            => "Shipping-".$this->customerSalesChannel?->slug,
             "handlingTime"    => [
                 "unit"  => "DAY",
-                "value" => Arr::get($attributes, 'max_dispatch_time', 1)
+                "value" => (int) $maxDispatchTime
             ],
             "shippingOptions" => [
                 [
@@ -1382,13 +1616,13 @@ trait WithEbayApiRequest
                     "shippingServices" => [
                         [
                             "buyerResponsibleForShipping" => "false",
-                            "freeShipping"                => "false",
+                            "freeShipping"                => (float) $price === 0.0 ? "true" : "false",
                             "shippingCost"                => [
                                 'currency' => $currency,
-                                'value'    => Arr::get($attributes, 'price', 1)
+                                'value'    => (string) $price
                             ],
-                            "shippingCarrierCode"         => Arr::get($attributes, 'carrier_code', $default['carrier_code']),
-                            "shippingServiceCode"         => Arr::get($attributes, 'service_code', $default['service_code'])
+                            "shippingCarrierCode"         => $this->firstFilledValue([Arr::get($attributes, 'carrier_code')], $default['carrier_code']),
+                            "shippingServiceCode"         => $this->firstFilledValue([Arr::get($attributes, 'service_code')], $default['service_code'])
                         ]
                     ]
                 ]
@@ -1414,10 +1648,15 @@ trait WithEbayApiRequest
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
         $currency      = Arr::get($this->getEbayConfig(), 'currency');
 
-        $defaults   = Arr::get($this->settings, 'shipping');
-        $attributes = Arr::get($attributes, 'settings.shipping');
+        $defaults   = Arr::get($this->settings, 'shipping', []);
+        $attributes = Arr::get($attributes, 'settings.shipping', []);
 
-        $price = Arr::get($attributes, 'price', Arr::get($defaults, 'price'));
+        $default = $this->getDefaultCarrierForMarketplace($marketplaceId);
+
+        $price           = $this->firstFilledValue([Arr::get($attributes, 'price'), Arr::get($defaults, 'price')], 0);
+        $maxDispatchTime = $this->firstFilledValue([Arr::get($attributes, 'max_dispatch_time'), Arr::get($defaults, 'max_dispatch_time')], 1);
+        $carrierCode     = $this->firstFilledValue([Arr::get($attributes, 'carrier_code'), Arr::get($defaults, 'carrier_code')], $default['carrier_code']);
+        $serviceCode     = $this->firstFilledValue([Arr::get($attributes, 'service_code'), Arr::get($defaults, 'service_code')], $default['service_code']);
 
         $data = [
             "categoryTypes"   => [
@@ -1430,7 +1669,7 @@ trait WithEbayApiRequest
             "globalShipping"  => false,
             "handlingTime"    => [
                 "unit"  => "DAY",
-                "value" => Arr::get($attributes, 'max_dispatch_time', Arr::get($defaults, 'max_dispatch_time'))
+                "value" => (int) $maxDispatchTime
             ],
             "shippingOptions" => [
                 [
@@ -1439,13 +1678,13 @@ trait WithEbayApiRequest
                     "shippingServices" => [
                         [
                             "buyerResponsibleForShipping" => "false",
-                            "freeShipping"                => $price === 0 ? "true" : "false",
+                            "freeShipping"                => (float) $price === 0.0 ? "true" : "false",
                             "shippingCost"                => [
                                 'currency' => $currency,
-                                'value'    => $price
+                                'value'    => (string) $price
                             ],
-                            "shippingCarrierCode"         => Arr::get($attributes, 'carrier_code', Arr::get($defaults, 'carrier_code')),
-                            "shippingServiceCode"         => Arr::get($attributes, 'service_code', Arr::get($defaults, 'service_code'))
+                            "shippingCarrierCode"         => $carrierCode,
+                            "shippingServiceCode"         => $serviceCode
                         ]
                     ]
                 ]
@@ -1652,7 +1891,7 @@ trait WithEbayApiRequest
     public function getInventoryLocations()
     {
         try {
-            $endpoint = "/sell/inventory/v1/location?limit=20&offset=0";
+            $endpoint = "/sell/inventory/v1/location?limit=100&offset=0";
 
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {
@@ -1700,12 +1939,11 @@ trait WithEbayApiRequest
     public function getCategorySuggestions($keyword)
     {
         try {
-            $encodedKeyword = urlencode($keyword);
-            $categoryTree   = $this->getCategoryTreeId();
-            $endpoint       = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_category_suggestions";
+            $categoryTree = $this->getCategoryTreeId();
+            $endpoint     = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_category_suggestions";
 
             return $this->makeEbayRequest('get', $endpoint, [], [
-                'q' => $encodedKeyword
+                'q' => $keyword
             ]);
         } catch (Exception $e) {
             Log::error('Get Category Suggestions Error: '.$e->getMessage());
@@ -1756,8 +1994,12 @@ trait WithEbayApiRequest
     public function getUser($data = [], $queryParams = [])
     {
         try {
+            $config = $this->getEbayConfig();
+
+            $baseUrl = $config['sandbox'] ? "https://apiz.sandbox.ebay.com" : "https://apiz.ebay.com";
+
             $token = $this->getEbayAccessToken();
-            $url   = "https://apiz.ebay.com/commerce/identity/v1/user/";
+            $url   = $baseUrl . "/commerce/identity/v1/user/";
 
             $response = Http::withHeaders([
                 'Authorization'    => 'Bearer '.$token,

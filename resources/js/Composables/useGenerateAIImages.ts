@@ -34,6 +34,16 @@ export function useGenerateAIImages({
         echoChannel = window.Echo.private(echoChannelName)
 
         echoChannel.listen('.action-progress', (media: any) => {
+            if (media?.status === 'failed') {
+                aiGenerateImagesError.value =
+                    media?.message
+                    || trans('The OpenAI service is currently unreachable, please try again later.')
+                showGenerateProgressModal.value = false
+                stopEchoListener()
+                notify({ title: trans('Error'), text: aiGenerateImagesError.value, type: 'error' })
+                return
+            }
+
             if (!media?.id) return
             onImageGenerated(media)
             showGenerateProgressModal.value = false
@@ -75,10 +85,13 @@ export function useGenerateAIImages({
                 }
                 notify({ title: trans('AI Image Generated'), type: 'success' })
             }
-        } catch (e) {
-            aiGenerateImagesError.value = trans('The OpenAI service is currently unreachable, please try again later.')
+        } catch (e: any) {
+            aiGenerateImagesError.value =
+                e?.response?.data?.message
+                || trans('The OpenAI service is currently unreachable, please try again later.')
             showGenerateProgressModal.value = false
             stopEchoListener()
+            notify({ title: trans('Error'), text: aiGenerateImagesError.value, type: 'error' })
         } finally {
             isGeneratingAI.value = false
         }

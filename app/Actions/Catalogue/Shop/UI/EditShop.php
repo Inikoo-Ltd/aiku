@@ -29,6 +29,7 @@ use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\SerialReference;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Support\Forms\SesConfigurationBlueprint;
 use Exception;
 use Illuminate\Support\Arr;
@@ -99,6 +100,8 @@ class EditShop extends OrgAction
         $isExternal = $shop->type === ShopTypeEnum::EXTERNAL;
 
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
+
+        $viewContactOptionsPanel = (bool) Arr::get($shop->settings, 'chat.view_contact_options_panel', false);
 
         $allowedBlueprintLabels = [
             __('Faire Settings'),
@@ -185,8 +188,45 @@ class EditShop extends OrgAction
                             'label' => __('VAT number'),
                             'value' => $shop->data['vat_number'] ?? '',
                         ],
-
                     ]
+                ],
+                [
+                    'label' => __('Staff chat'),
+                    'icon' => 'fal fa-comments',
+                    'fields' => [
+                        'staff_chat_crm_user_ids' => [
+                            'type' => 'multiselect-tags',
+                            'label' => __('Ask CRM goes to'),
+                            'options' => User::where('group_id', $shop->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])->map(fn ($user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                            'labelProp' => 'name',
+                            'valueProp' => 'id',
+                            'value' => Arr::get($shop->settings, 'staff_chat.crm_user_ids', []),
+                        ],
+                        'staff_chat_crm_backup_user_ids' => [
+                            'type' => 'multiselect-tags',
+                            'label' => __('Ask CRM backup'),
+                            'options' => User::where('group_id', $shop->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])->map(fn ($user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                            'labelProp' => 'name',
+                            'valueProp' => 'id',
+                            'value' => Arr::get($shop->settings, 'staff_chat.crm_backup_user_ids', []),
+                        ],
+                        'staff_chat_warehouse_user_ids' => [
+                            'type' => 'multiselect-tags',
+                            'label' => __('Ask warehouse goes to'),
+                            'options' => User::where('group_id', $shop->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])->map(fn ($user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                            'labelProp' => 'name',
+                            'valueProp' => 'id',
+                            'value' => Arr::get($shop->settings, 'staff_chat.warehouse_user_ids', []),
+                        ],
+                        'staff_chat_warehouse_backup_user_ids' => [
+                            'type' => 'multiselect-tags',
+                            'label' => __('Ask warehouse backup'),
+                            'options' => User::where('group_id', $shop->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])->map(fn ($user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                            'labelProp' => 'name',
+                            'valueProp' => 'id',
+                            'value' => Arr::get($shop->settings, 'staff_chat.warehouse_backup_user_ids', []),
+                        ],
+                    ],
                 ],
                 [
                     'label'  => __('Properties'),
@@ -371,6 +411,24 @@ class EditShop extends OrgAction
                     ],
                 ],
                 [
+                    'label'  => __('Payments'),
+                    'icon'   => 'fal fa-coins',
+                    'fields' => [
+                        'payment_settlement_tolerance' => [
+                            'type'        => 'input_number',
+                            'bind'        => [
+                                'step'              => '0.01',
+                                'maxFractionDigits' => 2,
+                                'min'               => 0,
+                                'max'               => 1
+                            ],
+                            'label'       => __('Settlement tolerance'),
+                            'information' => __('Orders and invoices short by up to this amount are treated as paid, so tiny differences are not chased. Maximum 1.'),
+                            'value'       => paymentSettlementTolerance($shop),
+                        ],
+                    ],
+                ],
+                [
                     'label'  => __('Invoice numbers'),
                     'icon'   => 'fal fa-file-invoice',
                     'fields' => [
@@ -476,13 +534,16 @@ class EditShop extends OrgAction
                                     ['label' => __('Hide Payment Status'), 'key' => 'hide_payment_status'],
                                     ['label' => __('CPNP'), 'key' => 'cpnp'],
                                     ['label' => __('Group by Tariff Code'), 'key' => 'group_by_tariff_code'],
+                                    ['label' => __('Export invoice: one line per tariff code & origin'), 'key' => 'export_by_tariff_code'],
                                     ['label' => __('Show Dispatch Totals (SKO & Units)'), 'key' => 'show_dispatch_totals'],
+                                    ['label' => __('Out of stock items in a separate block'), 'key' => 'separate_out_of_stock'],
+                                    ['label' => __('Discounts'), 'key' => 'show_discounts'],
                                 ];
 
                                 return array_map(fn ($col) => [
                                     'label' => $col['label'],
                                     'key'   => $col['key'],
-                                    'value' => (bool)Arr::get($savedColumns, $col['key'], false),
+                                    'value' => (bool)Arr::get($savedColumns, $col['key'], in_array($col['key'], ['separate_out_of_stock', 'show_discounts'])),
                                 ], $columns);
                             })(),
                         ],
@@ -644,6 +705,20 @@ class EditShop extends OrgAction
                             'information' => __('Slack channels where chat conversations will be shared. Press Enter to add each channel.'),
                             'value'       => Arr::get($shop->settings, 'chat.slack_channels') ?? [],
                         ],
+                        'view_contact_options_panel' => [
+                            'type'        => 'toggle',
+                            'label'       => __('View Contact Options Panel'),
+                            'information' => __('If active, will display the contact options panel on the shop website'),
+                            'value'       => $viewContactOptionsPanel,
+                        ],
+                        ...$viewContactOptionsPanel ? [
+                            'data_contact_options_panel' => [
+                                'type'        => 'contact_options_panel',
+                                'label'       => __('Contact Options Panel'),
+                                'information' => __('display the contact options panel on the shop website'),
+                                'value'       => Arr::get($shop->settings, 'chat.data_contact_options_panel') ?? [],
+                            ],
+                        ] : [],
                     ],
                 ],
                 [
@@ -685,6 +760,31 @@ class EditShop extends OrgAction
                             'type'  => 'input',
                             'label' => __('User List ID'),
                             'value' => Arr::get($shop->settings, 'google_ads.user_list_id', ''),
+                        ],
+                    ],
+                ],
+                [
+                    'label'       => __('Meta Ads'),
+                    'icon'        => 'fa-brands fa-facebook',
+                    'information' => __('Aiku pulls this shop\'s Facebook and Instagram spend nightly. Leave the token empty to use the system user token configured for the whole installation.'),
+                    'fields'      => [
+                        'meta_ads_ad_account_id'        => [
+                            'type'        => 'input',
+                            'label'       => __('Ad Account ID'),
+                            'placeholder' => __('Digits only, without the act_ prefix'),
+                            'value'       => Arr::get($shop->settings, 'meta_ads.ad_account_id', ''),
+                        ],
+                        'meta_ads_access_token'         => [
+                            'type'        => 'input',
+                            'label'       => __('Access Token'),
+                            'placeholder' => __('Only when this ad account belongs to another business manager'),
+                            'value'       => Arr::get($shop->settings, 'meta_ads.access_token', ''),
+                        ],
+                        'meta_ads_campaign_name_prefix' => [
+                            'type'        => 'input',
+                            'label'       => __('Campaign Name Prefix'),
+                            'placeholder' => __('Only when the ad account also advertises another shop'),
+                            'value'       => Arr::get($shop->settings, 'meta_ads.campaign_name_prefix', ''),
                         ],
                     ],
                 ],

@@ -29,13 +29,13 @@ use Illuminate\Support\Carbon;
  * @property int $current_chat_count
  * @property array<array-key, mixed>|null $specialization
  * @property bool $auto_accept
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  * @property int|null $language_id
  * @property ChatAgentPresenceStatusEnum $presence_status
- * @property \Illuminate\Support\Carbon|null $last_heartbeat_at
- * @property \Illuminate\Support\Carbon|null $last_activity_at
+ * @property Carbon|null $last_heartbeat_at
+ * @property Carbon|null $last_activity_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Chat\ChatAssignment> $assignments
  * @property-read Language|null $language
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Organisation> $organisations
@@ -138,6 +138,7 @@ class ChatAgent extends Model
     {
         return $this->belongsToMany(Shop::class, 'shop_has_chat_agents')
             ->withPivot(['organisation_id'])
+            ->wherePivotNull('deleted_at')
             ->withTimestamps();
     }
 
@@ -145,6 +146,7 @@ class ChatAgent extends Model
     {
         return $this->belongsToMany(Organisation::class, 'shop_has_chat_agents')
             ->withPivot(['shop_id'])
+            ->wherePivotNull('deleted_at')
             ->withTimestamps();
     }
 

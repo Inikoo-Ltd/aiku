@@ -58,6 +58,11 @@ const props = defineProps<{
 		deleteAccountRoute: routeType
 	}
 	allegroAuth: {
+        isActive: boolean
+		url: string
+	}
+	wixAuth: {
+		isActive: boolean
 		url: string
 	}
 	type_manual: {
@@ -95,6 +100,7 @@ const props = defineProps<{
 		amazon: number
 		magento: number
 		allegro: number
+		wix: number
 	}
 }>()
 
@@ -266,6 +272,11 @@ onMounted(() => {
 
 	if (route().params?.["continueEbayRegistration"]) {
 		openCreateEbayModal()
+	}
+
+	if (route().params?.["shop"]) {
+		websiteInput.value = route().params["shop"]
+		isModalOpen.value = "shopify"
 	}
 })
 
@@ -620,6 +631,7 @@ provide("goNext", goNext)
 
 			<!-- Section: Allegro -->
 			<div
+                v-if="allegroAuth.isActive"
 				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
 				<div
 					class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
@@ -646,6 +658,34 @@ provide("goNext", goNext)
 							full
 							xclick="() => (isModalAllegro = true)"
 						/>
+					</a>
+				</div>
+			</div>
+
+			<!-- Section: Wix -->
+			<div
+				v-if="wixAuth?.isActive"
+				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+				<div
+					class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+					<img
+						src="/assets/channel_logo/wix.svg"
+						alt=""
+						class="h-4 filter" />
+
+					<div class="flex flex-col">
+						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
+							Wix
+						</div>
+						<div class="text-xs text-gray-500 text-center sm:text-left">
+							{{ total_channels?.wix ?? 0 }} {{ trans("Channels") }}
+						</div>
+					</div>
+				</div>
+
+				<div class="w-full flex justify-end">
+					<a :href="props.wixAuth?.url" :target="'_blank'" class="w-full">
+						<Button :label="trans('Connect')" type="primary" full />
 					</a>
 				</div>
 			</div>

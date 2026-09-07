@@ -8,6 +8,8 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Image as ImgTS } from '@/types/Image'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { searchRoute } from '@/Iris/Composables/useSearchRoute'
+import { useFormatTime } from '@/Composables/useFormatTime'
+import GoldenProductBadge from '@/Components/CMS/Webpage/Products/GoldenProductBadge.vue'
 
 // Mobile twin of SearchResultCatalogue: one thumb-friendly scrolling list instead of
 // desktop's three columns. Chips for categories/collections, large tappable product rows.
@@ -25,6 +27,7 @@ const props = defineProps<{
             stock?: number | null
             units?: number | string | null
             unit?: string | null
+            is_golden_product?: boolean
             url?: string
         }[]
         product_categories: {
@@ -41,6 +44,33 @@ const props = defineProps<{
             name: string
             image: ImgTS
             url?: string
+        }[]
+        best_match?: {
+            type: string
+            id: number
+            code: string
+            name: string
+            image: ImgTS
+            url?: string
+        } | null
+        orders?: {
+            id: number
+            code: string
+            customer_reference?: string | null
+            state: string
+            state_label?: string | null
+            state_icon?: { icon?: string; color?: string; tooltip?: string } | null
+            date?: string
+            total_amount?: number | string | null
+            url: string
+        }[]
+        invoices?: {
+            id: number
+            code: string
+            type: string
+            date?: string
+            total_amount?: number | string | null
+            url: string
         }[]
     } | null
     isLoading: boolean
@@ -69,7 +99,13 @@ const formatPrice = (price?: number | string | null) => {
     return locale.currencyFormat(currency?.code, Number(price))
 }
 
-const products = computed(() => props.results?.products?.slice(0, 11) ?? [])
+// A family sent as best_match leads the list as a spotlight card; products then all render small
+const bestFamily = computed(() => props.results?.best_match?.type === 'product_category' ? props.results.best_match : null)
+const products = computed(() => props.results?.products?.slice(0, bestFamily.value ? 10 : 11) ?? [])
+
+// Only sent by SearchIrisCatalogue when a customer is signed in, and only their own documents
+const orders = computed(() => props.results?.orders ?? [])
+const invoices = computed(() => props.results?.invoices ?? [])
 
 // Categories and collections share one chip strip, capped to keep it scannable
 const chips = computed(() => [
@@ -143,6 +179,45 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
         </template>
 
         <template v-else>
+            <!-- Your orders: only present for a signed in customer -->
+            <div v-if="orders.length" class="px-4 pt-4 space-y-2">
+                <p class="text-base font-bold text-[var(--theme-color-0)]">{{ ctrans('Your orders') }}</p>
+                <LinkIris
+                    v-for="order in orders"
+                    :key="order.id"
+                    :href="order.url"
+                    class="block rounded-md border border-gray-200 bg-white px-3 py-2.5"
+                    @click="() => { recordClick(order.url); model = false }"
+                >
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-sm font-semibold text-slate-800 truncate" v-html="highlightMatch(order.code)" />
+                        <span v-if="order.state_label" class="text-xs text-gray-500 whitespace-nowrap">{{ order.state_label }}</span>
+                    </div>
+                    <div class="mt-0.5 flex items-center justify-between gap-2 text-xs text-gray-500">
+                        <span class="truncate" v-html="order.customer_reference ? highlightMatch(order.customer_reference) : useFormatTime(order.date, { formatTime: 'mdy' })" />
+                        <span v-if="formatPrice(order.total_amount)" class="whitespace-nowrap font-semibold text-[var(--theme-color-0)]">{{ formatPrice(order.total_amount) }}</span>
+                    </div>
+                </LinkIris>
+            </div>
+
+            <!-- Your invoices: only present for a signed in customer -->
+            <div v-if="invoices.length" class="px-4 pt-4 space-y-2">
+                <p class="text-base font-bold text-[var(--theme-color-0)]">{{ ctrans('Your invoices') }}</p>
+                <LinkIris
+                    v-for="invoice in invoices"
+                    :key="invoice.id"
+                    :href="invoice.url"
+                    class="block rounded-md border border-gray-200 bg-white px-3 py-2.5"
+                    @click="() => { recordClick(invoice.url); model = false }"
+                >
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-sm font-semibold text-slate-800 truncate" v-html="highlightMatch(invoice.code)" />
+                        <span v-if="formatPrice(invoice.total_amount)" class="whitespace-nowrap text-xs font-semibold text-[var(--theme-color-0)]">{{ formatPrice(invoice.total_amount) }}</span>
+                    </div>
+                    <div class="mt-0.5 text-xs text-gray-500">{{ useFormatTime(invoice.date, { formatTime: 'mdy' }) }}</div>
+                </LinkIris>
+            </div>
+
             <!-- Categories & collections as a horizontally scrollable chip strip -->
             <div v-if="chips.length" class="shrink-0 flex gap-2 px-4 pt-4 pb-2 overflow-x-auto no-scrollbar">
                 <LinkIris
@@ -152,12 +227,30 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                     class="shrink-0 max-w-[60vw] truncate rounded-full border border-[var(--theme-color-0)] text-[var(--theme-color-0)] text-sm px-4 py-1.5 active:bg-[color-mix(in_srgb,var(--theme-color-0)_15%,transparent)]"
                     @click="() => recordClick(chip.url)"
                     @success="() => model = false"
-                    v-html="highlightMatch(chip.name)"
-                />
+                >
+                    <span class="mr-1" v-html="highlightMatch(chip.name)" />
+                    <span class="text-xs opacity-60" v-html="highlightMatch(chip.code)" />
+                </LinkIris>
             </div>
 
             <!-- Products: large tappable rows, best match leads -->
-            <div v-if="products.length" class="px-2 py-1">
+            <div v-if="bestFamily || products.length" class="px-2 py-1">
+                <LinkIris
+                    v-if="bestFamily"
+                    :href="bestFamily.url"
+                    class="group flex items-center gap-3 min-w-0 rounded-md px-2 py-2.5 active:bg-[color-mix(in_srgb,var(--theme-color-0)_10%,var(--theme-color-1))]"
+                    @click="() => recordClick(bestFamily.url)"
+                    @success="() => model = false"
+                >
+                    <div class="w-20 h-20 bg-gray-50 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        <Image v-if="bestFamily.image" :src="bestFamily.image" class="w-full h-full object-cover" />
+                        <span v-else class="text-[10px] text-gray-300 font-bold uppercase">{{ bestFamily.code?.slice(0, 3) }}</span>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-base font-semibold text-slate-800 leading-snug line-clamp-2" v-html="highlightMatch(bestFamily.name)" />
+                        <p class="text-sm mt-0.5"><span class="text-xs text-gray-400" v-html="highlightMatch(bestFamily.code)" /></p>
+                    </div>
+                </LinkIris>
                 <LinkIris
                     v-for="(product, index) in products"
                     :key="product.id"
@@ -167,21 +260,25 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                     @success="() => model = false"
                 >
                     <div
-                        class="bg-gray-50 overflow-hidden flex-shrink-0 flex items-center justify-center"
-                        :class="index === 0 ? 'w-20 h-20' : 'w-14 h-14'"
+                        class="relative bg-gray-50 overflow-hidden flex-shrink-0 flex items-center justify-center"
+                        :class="index === 0 && !bestFamily ? 'w-20 h-20' : 'w-14 h-14'"
                     >
                         <Image v-if="product.image" :src="product.image" class="w-full h-full object-cover" :class="{ 'grayscale opacity-60': product.stock === 0 }" />
                         <span v-else class="text-[10px] text-gray-300 font-bold uppercase">{{ product.code?.slice(0, 3) }}</span>
+                        <GoldenProductBadge v-if="product.is_golden_product" class="absolute left-0.5 top-0.5 z-10 origin-top-left scale-[0.62]" />
                     </div>
 
                     <div class="min-w-0 flex-1">
                         <p
                             class="text-slate-800 leading-snug line-clamp-2"
-                            :class="index === 0 ? 'text-base font-semibold' : 'text-sm font-medium'"
+                            :class="index === 0 && !bestFamily ? 'text-base font-semibold' : 'text-sm font-medium'"
                             v-html="highlightMatch(getProductName(product))"
                         />
-                        <p v-if="getProductPrice(product)" class="text-sm font-bold mt-0.5 text-[var(--theme-color-0)]">
-                            <span>{{ formatPrice(Number(product.price)) }}</span> <span v-if="Number(product.units) !== 1" class="font-normal opacity-80">({{ getProductPrice(product) }})</span>
+                        <p class="text-sm mt-0.5 truncate">
+                            <span class="text-xs text-gray-400 mr-1" v-html="highlightMatch(product.code)" />
+                            <span v-if="getProductPrice(product)" class="font-bold text-[var(--theme-color-0)]">
+                                {{ formatPrice(Number(product.price)) }} <span v-if="Number(product.units) !== 1" class="font-normal opacity-80">({{ getProductPrice(product) }})</span>
+                            </span>
                         </p>
                     </div>
                 </LinkIris>

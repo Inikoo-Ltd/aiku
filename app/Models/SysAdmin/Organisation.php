@@ -29,6 +29,7 @@ use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\PreferredShipping;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -482,6 +483,11 @@ class Organisation extends Model implements HasMedia, Auditable
         return $this->hasMany(Shop::class)->where('state', ShopStateEnum::OPEN);
     }
 
+    public function preferredShippings(): HasMany
+    {
+        return $this->hasMany(PreferredShipping::class)->whereNull('shop_id');
+    }
+
     public function orderFromActiveShops(): Builder
     {
         return Order::whereIn('shop_id', $this->activeShops()->get()->pluck('id'));
@@ -902,6 +908,11 @@ class Organisation extends Model implements HasMedia, Auditable
     public function getDefaultWorkSchedule(): ?WorkSchedule
     {
         return $this->workSchedules()->where('type', 'default')->where('is_active', true)->first();
+    }
+
+    public function hasFulfilmentGate(): bool
+    {
+        return (bool) ($this->settings['fulfilment_gate'] ?? false);
     }
 
     public function getDefaultAnnualLeaveDays(): int

@@ -15,6 +15,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetSupplierShowcase
 {
     use AsObject;
+    use WithSupplierInfo;
 
     public function handle(Supplier $supplier): array
     {
@@ -29,23 +30,38 @@ class GetSupplierShowcase
                 'phone'      => $supplier->phone,
                 'currency'   => $supplier->currency,
                 'address'    => AddressResource::make($supplier->address)->getArray(),
-                'image_id'   => $supplier->image_id,
+                'photo'      => $supplier->imageSources(320, 320),
+                'supplierInfo' => $this->supplierInfo($supplier),
             ],
             'stats'       => [
                 [
                     'label' => __('Products'),
                     'icon'  => 'fal fa-box-usd',
                     'count' => $supplier->stats->number_supplier_products,
+                    'route' => [
+                        'name'       => 'grp.supply-chain.suppliers.supplier_products.index',
+                        'parameters' => [$supplier->slug],
+                    ],
                 ],
                 [
                     'label' => __('Purchase Orders'),
                     'icon'  => 'fal fa-clipboard-list',
                     'count' => $supplier->stats->number_purchase_orders,
+                    'route' => [
+                        'name'       => $supplier->agent_id
+                            ? 'grp.supply-chain.suppliers.agent_supplier_purchase_orders.index'
+                            : 'grp.supply-chain.suppliers.purchase_orders.index',
+                        'parameters' => [$supplier->slug],
+                    ],
                 ],
                 [
                     'label' => __('Deliveries'),
                     'icon'  => 'fal fa-truck-container',
                     'count' => $supplier->stats->number_stock_deliveries,
+                    'route' => [
+                        'name'       => 'grp.supply-chain.suppliers.stock_deliveries.index',
+                        'parameters' => [$supplier->slug],
+                    ],
                 ],
             ],
         ];

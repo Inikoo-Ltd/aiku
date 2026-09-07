@@ -236,8 +236,8 @@ class ShowFulfilmentCustomer extends OrgAction
 
 
                 FulfilmentCustomerTabsEnum::HISTORY->value => $this->tab == FulfilmentCustomerTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($fulfilmentCustomer->customer))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($fulfilmentCustomer->customer))),
+                    fn () => HistoryResource::collection(IndexHistory::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::HISTORY->value))),
 
                 FulfilmentCustomerTabsEnum::ATTACHMENTS->value => $this->tab == FulfilmentCustomerTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::ATTACHMENTS->value))

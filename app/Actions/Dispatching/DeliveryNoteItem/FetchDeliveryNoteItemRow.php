@@ -14,6 +14,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateUnass
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateUnassignedResource;
@@ -38,7 +39,13 @@ class FetchDeliveryNoteItemRow extends OrgAction
             $items    = IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote, null, deliveryNoteItemId: $deliveryNoteItem->id);
             $resource = DeliveryNoteItemsStateUnassignedResource::class;
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
-            $items    = IndexDeliveryNoteItemsStateHandling::run($deliveryNote, null, deliveryNoteItemId: $deliveryNoteItem->id);
+            $isHandled = match ($tab) {
+                DeliveryNoteTabsEnum::PICKING_TODO_ITEMS->value => false,
+                DeliveryNoteTabsEnum::PICKING_DONE_ITEMS->value => true,
+                default                                         => null,
+            };
+
+            $items    = IndexDeliveryNoteItemsStateHandling::run($deliveryNote, null, deliveryNoteItemId: $deliveryNoteItem->id, isHandled: $isHandled);
             $resource = DeliveryNoteItemsStateHandlingResource::class;
         } else {
             $stateFilter = match ($tab) {

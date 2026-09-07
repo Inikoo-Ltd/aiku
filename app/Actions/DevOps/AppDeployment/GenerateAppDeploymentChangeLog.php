@@ -9,6 +9,7 @@
 namespace App\Actions\DevOps\AppDeployment;
 
 use App\Actions\Helpers\AI\AskToAi;
+use App\Actions\Helpers\Ticket\LinkTicketsToAppDeployment;
 use App\Models\DevOps\AppDeployment;
 use App\Models\DevOps\Committer;
 use Illuminate\Support\Facades\Http;
@@ -40,6 +41,7 @@ class GenerateAppDeploymentChangeLog
         if ($commits === []) {
             return;
         }
+        LinkTicketsToAppDeployment::run($appDeployment, $commits);
 
         $appDeployment->update([
             'committers' => $this->saveCommitters($commits),

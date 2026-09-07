@@ -4,7 +4,6 @@ namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
-use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Dispatching\Picking;
@@ -33,19 +32,25 @@ class SplitPicking extends OrgAction
             $newMovement = null;
 
             if ($originalMovement !== null) {
+                $originalQuantity = (float) $originalMovement->quantity;
+                $perUnitCost      = $originalQuantity != 0.0 ? abs((float) $originalMovement->org_amount / $originalQuantity) : 0.0;
+                $grpRatio         = (float) $originalMovement->org_amount != 0.0 ? (float) $originalMovement->grp_amount / (float) $originalMovement->org_amount : 1.0;
+
                 $originalMovement->update([
-                    'quantity' => -$newOriginalQty,
-                    'org_amount' => -$newOriginalQty * $picking->orgStock->value_in_locations,
-                    'grp_amount' => -$newOriginalQty * $picking->orgStock->value_in_locations * GetCurrencyExchange::run($picking->orgStock->organisation->currency, $picking->orgStock->group->currency),
+                    'quantity'   => -$newOriginalQty,
+                    'org_amount' => round(-$newOriginalQty * $perUnitCost, 3),
+                    'grp_amount' => round(-$newOriginalQty * $perUnitCost * $grpRatio, 3),
                 ]);
 
                 $newMovement = StoreOrgStockMovement::run(
                     $picking->orgStock,
                     $picking->location,
                     [
-                        'quantity' => -$splitQuantity,
-                        'type'     => OrgStockMovementTypeEnum::PICKED,
-                        'user_id'  => $this->user?->id,
+                        'quantity'   => -$splitQuantity,
+                        'org_amount' => round(-$splitQuantity * $perUnitCost, 3),
+                        'grp_amount' => round(-$splitQuantity * $perUnitCost * $grpRatio, 3),
+                        'type'       => OrgStockMovementTypeEnum::PICKED,
+                        'user_id'    => $this->user?->id,
                     ]
                 );
             }

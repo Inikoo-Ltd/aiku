@@ -11,6 +11,7 @@ namespace App\Actions\Fulfilment\Pallet\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisation;
 use App\Actions\UI\Fulfilment\ShowWarehouseFulfilmentDashboard;
+use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Http\Resources\Fulfilment\PalletsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Fulfilment\Pallet;
@@ -57,7 +58,7 @@ class IndexPalletsInWarehouse extends OrgAction
             $query->where('pallets.warehouse_id', $parent->id);
         }
 
-        $query->whereIn('pallets.status', ['receiving', 'storing', 'returning']);
+        $query->whereIn('pallets.status', PalletStatusEnum::occupyingLocation());
 
 
         $query->defaultSort('pallets.id')

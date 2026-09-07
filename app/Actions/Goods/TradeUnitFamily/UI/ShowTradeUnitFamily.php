@@ -10,12 +10,14 @@ namespace App\Actions\Goods\TradeUnitFamily\UI;
 
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInTradeUnitFamily;
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Actions\Traits\HasBucketAttachment;
 use App\Enums\UI\SupplyChain\TradeUnitFamilyTabsEnum;
 use App\Http\Resources\Goods\TradeUnitFamilyResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Goods\TradeUnitFamily;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -113,8 +115,13 @@ class ShowTradeUnitFamily extends OrgAction
                 TradeUnitFamilyTabsEnum::ATTACHMENTS->value => $this->tab == TradeUnitFamilyTabsEnum::ATTACHMENTS->value ?
                 fn () => $this->getAttachments($tradeUnitFamily)
                 : Inertia::optional(fn () => $this->getAttachments($tradeUnitFamily)),
+
+                TradeUnitFamilyTabsEnum::HISTORY->value => $this->tab == TradeUnitFamilyTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($tradeUnitFamily, TradeUnitFamilyTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($tradeUnitFamily, TradeUnitFamilyTabsEnum::HISTORY->value))),
             ]
-        )->table(IndexTradeUnitsInTradeUnitFamily::make()->tableStructure(prefix: TradeUnitFamilyTabsEnum::TRADE_UNITS->value));
+        )->table(IndexTradeUnitsInTradeUnitFamily::make()->tableStructure(prefix: TradeUnitFamilyTabsEnum::TRADE_UNITS->value))
+            ->table(IndexHistory::make()->tableStructure(TradeUnitFamilyTabsEnum::HISTORY->value));
     }
 
     public function getAttachments(TradeUnitFamily $tradeUnitFamily): array
@@ -216,7 +223,7 @@ class ShowTradeUnitFamily extends OrgAction
 
 
         return match ($routeName) {
-            'grp.trade_units.families.show', => [
+            'grp.trade_units.families.show' => [
                 'label' => $tradeUnitFamily->name,
                 'route' => [
                     'name'       => $routeName,

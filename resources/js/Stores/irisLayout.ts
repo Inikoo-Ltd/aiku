@@ -76,7 +76,7 @@ export const useIrisLayoutStore = defineStore("irisLayout", () => {
 	const outboxes = ref(null)
 	const isSidebarLoaded = ref(false)
 
-	const { family_page, family_quantity_ordered } = useFamilyPageBasket()
+	const { family_page, family_quantity_ordered, family_has_golden_product } = useFamilyPageBasket()
 
 	const rightbasket = ref<{ show: boolean; products: RightBasketProduct[] }>({
         show: false,
@@ -126,6 +126,7 @@ export const useIrisLayoutStore = defineStore("irisLayout", () => {
 		rightbasket,
 		family_page,
 		family_quantity_ordered,
+		family_has_golden_product,
 		// category_quantity_ordered,
 	}
 })

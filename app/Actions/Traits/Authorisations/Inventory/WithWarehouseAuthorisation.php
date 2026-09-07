@@ -19,6 +19,7 @@ trait WithWarehouseAuthorisation
         }
 
         $this->canEdit = $request->user()->authTo([
+            'inventory.'.$this->organisation->id.'.edit',
             "supervisor-locations.".$this->warehouse->id,
             'locations.'.$this->warehouse->id.'.edit',
         ]);
@@ -26,6 +27,7 @@ trait WithWarehouseAuthorisation
         $this->canDelete = $this->canEdit;
 
         return $request->user()->authTo([
+            'inventory.'.$this->organisation->id.'.view',
             "supervisor-incoming.".$this->warehouse->id,
             "supervisor-locations.".$this->warehouse->id,
             'locations.'.$this->warehouse->id.'.view',

@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\Invoice;
 use App\Actions\Accounting\Payment\PastPay\FinalizeOrderWithPastpay;
 use App\Actions\CRM\Customer\MatchCustomerProspects;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
+use App\Actions\CRM\TrafficSource\Hydrator\RefreshCustomerTrafficSourceStats;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\UpdateOrder;
@@ -96,6 +97,10 @@ class StoreInvoice extends OrgAction
         data_set($modelData, 'identity_document_number', $customer->identity_document_number, false);
         data_set($modelData, 'identity_document_number_alt', $customer->identity_document_number_alt, false);
         data_set($modelData, 'fiscal_name', $customer->fiscal_name, false);
+
+        data_set($modelData, 'is_vip', $customer->is_vip, false);
+        data_set($modelData, 'as_organisation_id', $customer->as_organisation_id, false);
+        data_set($modelData, 'as_employee_id', $customer->as_employee_id, false);
 
 
         $taxNumber = $customer->taxNumber;
@@ -225,10 +230,16 @@ class StoreInvoice extends OrgAction
         $invoice = CategoriseInvoice::run($invoice);
 
         if ($invoice->type == InvoiceTypeEnum::INVOICE) {
-            UpdateCustomerLastInvoicedDate::run($invoice->customer, $this->strict ? null : now());
+            UpdateCustomerLastInvoicedDate::run($invoice->customer);
         }
 
         RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
+
+        /* Revenue only becomes real when it is invoiced, and nothing else refreshes the channel
+           rollups at that moment: a touch attaching refreshes them, an order submit refreshes them, a
+           cancellation refreshes them - raising the invoice did not, so a channel's revenue on the
+           traffic sources listing stayed at whatever it was when its last touch landed. */
+        RefreshCustomerTrafficSourceStats::dispatch($invoice->customer)->delay($this->hydratorsDelay + 120);
 
         if ($invoice->customer && $invoice->shop->is_aiku) {
             MatchCustomerProspects::dispatch($invoice->customer);

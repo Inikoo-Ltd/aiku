@@ -112,8 +112,10 @@ function webUserEditRoute(webUser: WebUser) {
                     <Button :style="'edit'" size="xs" v-tooltip="'Edit'" />
                 </Link>
                 <ModalConfirmationDelete
+                        v-if="webUser.delete_route"
                         :routeDelete="webUser.delete_route"
-                        :title="trans('Are you sure you want to delete this web user?')"
+                        :title="trans('Delete this login?')"
+                        :description="trans('The customer will no longer be able to log in with it. This can not be undone. Their orders are not affected.')"
                         isFullLoading
                     >
                         <template #default="{ isOpenModal, changeModel }">

@@ -17,6 +17,7 @@ use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Fulfilment\RecurringBill;
+use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
@@ -33,6 +34,18 @@ class ConsolidateRecurringBill extends OrgAction
     public function handle(RecurringBill $recurringBill): Invoice
     {
         return DB::transaction(function () use ($recurringBill) {
+            $recurringBill = RecurringBill::lockForUpdate()->findOrFail($recurringBill->id);
+
+            if ($recurringBill->status != RecurringBillStatusEnum::CURRENT) {
+                $alreadyConsolidatedInvoice = $recurringBill->invoices;
+
+                if (!$alreadyConsolidatedInvoice) {
+                    throw new Exception("Recurring bill $recurringBill->reference is {$recurringBill->status->value} and has no invoice, it can not be consolidated");
+                }
+
+                return $alreadyConsolidatedInvoice;
+            }
+
             $recurringBill = $this->update($recurringBill, [
                 'status'   => RecurringBillStatusEnum::FORMER,
                 'end_date' => now()
@@ -65,12 +78,14 @@ class ConsolidateRecurringBill extends OrgAction
                 }
             }
 
-            $this->update($recurringBill->fulfilmentCustomer, [
-                'current_recurring_bill_id'  => null,
-                'previous_recurring_bill_id' => $recurringBill->id
-            ]);
+            if ($recurringBill->fulfilmentCustomer->current_recurring_bill_id == $recurringBill->id) {
+                $this->update($recurringBill->fulfilmentCustomer, [
+                    'current_recurring_bill_id'  => null,
+                    'previous_recurring_bill_id' => $recurringBill->id
+                ]);
 
-            CreateNextRecurringBillPostConsolidation::run($recurringBill);
+                CreateNextRecurringBillPostConsolidation::run($recurringBill);
+            }
 
             return $invoice;
         });

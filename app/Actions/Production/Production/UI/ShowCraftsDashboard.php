@@ -86,6 +86,56 @@ class ShowCraftsDashboard extends OrgAction
 
 
                 ],
+                'stats' => [
+                    [
+                        'name'  => __('Raw materials'),
+                        'stat'  => $production->stats->number_raw_materials,
+                        'color' => 'teal',
+                        'icon'  => ['fal', 'fa-network-wired'],
+                        'route' => [
+                            'name'       => 'grp.org.productions.show.crafts.raw_materials.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ],
+                    ],
+                    [
+                        'name'  => __('Artefacts'),
+                        'stat'  => $production->stats->number_artefacts,
+                        'color' => 'indigo',
+                        'icon'  => ['fal', 'fa-hamsa'],
+                        'route' => [
+                            'name'       => 'grp.org.productions.show.crafts.artefacts.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ],
+                    ],
+                ],
+                'statsBoxNegativeTitle' => __('Artefact problems'),
+                'statsBoxNegative' => [
+                    [
+                        'label' => __('Without recipe'),
+                        'icon'  => 'fal fa-exclamation-triangle',
+                        'value' => $production->artefacts()->whereDoesntHave('manufactureTasks')->count(),
+                        'route' => [
+                            'name'       => 'grp.org.productions.show.crafts.artefacts.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ],
+                    ],
+                    [
+                        'label' => __('Compliance problems'),
+                        'icon'  => 'fal fa-clipboard-check',
+                        'value' => $production->artefacts()->whereHas('complianceItems', function ($query) {
+                            $query->where('is_required', true)
+                                ->where(function ($query) {
+                                    $query->whereNull('reference')
+                                        ->orWhere('reference', '')
+                                        ->orWhere('valid_until', '<', now());
+                                });
+                        })->count(),
+                        'route' => [
+                            'name'       => 'grp.org.productions.show.crafts.artefacts.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ],
+                    ],
+                ],
                 'tabs'                             => [
 
                     'current'    => $this->tab,
@@ -101,8 +151,8 @@ class ShowCraftsDashboard extends OrgAction
 
 
                 ProductionTabsEnum::HISTORY->value => $this->tab == ProductionTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($production))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($production)))
+                    fn () => HistoryResource::collection(IndexHistory::run($production, ProductionTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($production, ProductionTabsEnum::HISTORY->value)))
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: ProductionTabsEnum::HISTORY->value));

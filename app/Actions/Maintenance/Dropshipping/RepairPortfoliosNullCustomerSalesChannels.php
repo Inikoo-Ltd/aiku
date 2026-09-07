@@ -15,6 +15,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairPortfoliosNullCustomerSalesChannels
 {
@@ -48,6 +49,7 @@ class RepairPortfoliosNullCustomerSalesChannels
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $count = Portfolio::whereNull('customer_sales_channel_id')->whereNotNull('platform_id')->count();
 
         $bar = $command->getOutput()->createProgressBar($count);

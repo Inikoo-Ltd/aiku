@@ -10,11 +10,13 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
+use App\Actions\Dropshipping\Wix\User\CheckWixChannel;
 use App\Actions\Dropshipping\WooCommerce\CheckWooChannel;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
 
 class CheckCustomerSalesChannel extends OrgAction
@@ -30,6 +32,7 @@ class CheckCustomerSalesChannel extends OrgAction
             PlatformTypeEnum::EBAY => CheckEbayChannel::run($customerSalesChannel->user),
             PlatformTypeEnum::SHOPIFY => CheckShopifyChannel::run($customerSalesChannel),
             PlatformTypeEnum::WOOCOMMERCE => CheckWooChannel::run($customerSalesChannel->user),
+            PlatformTypeEnum::WIX => CheckWixChannel::run($customerSalesChannel->user),
             default => $customerSalesChannel
         };
     }
@@ -53,5 +56,42 @@ class CheckCustomerSalesChannel extends OrgAction
         return $this->handle($customerSalesChannel);
     }
 
+    public string $commandSignature = 'customer-sales-channel:check';
 
+    public function asCommand(Command $command): int
+    {
+        $success = 0;
+        $failed  = 0;
+        $lostAccount  = 0;
+
+        CustomerSalesChannel::where('platform_status', false)
+            ->whereNull('closed_at')
+            ->whereNotNull('platform_user_id')
+            ->chunkById(50, function ($inactiveCustomerSalesChannels) use (&$success, &$failed, &$lostAccount) {
+                foreach ($inactiveCustomerSalesChannels as $customerSalesChannel) {
+
+                    if (!$customerSalesChannel->user) {
+                        $lostAccount++;
+                        continue;
+                    }
+
+                    $result = $this->handle($customerSalesChannel);
+
+                    $result->refresh();
+                    if ($result->platform_status) {
+                        $success++;
+                    } else {
+                        $failed++;
+                    }
+                }
+            });
+
+        $command->table(['Status', 'Count'], [
+            ['Inactive', $failed],
+            ['Active', $success],
+            ['Lost Account', $lostAccount]
+        ]);
+
+        return 0;
+    }
 }

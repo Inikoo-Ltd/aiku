@@ -33,7 +33,7 @@ class UpdateEbayUserData extends OrgAction
      */
     public function handle(EbayUser $ebayUser): EbayUser
     {
-        if ($ebayUser->fulfillment_policy_id && $ebayUser->return_policy_id && $ebayUser->payment_policy_id && $ebayUser->location_key) {
+        if ($ebayUser->fulfillment_policy_id && $ebayUser->return_policy_id && $ebayUser->payment_policy_id && $ebayUser->hasUsableLocationKey()) {
             return $ebayUser;
         }
 
@@ -41,18 +41,18 @@ class UpdateEbayUserData extends OrgAction
         $shop = $ebayUser->customer?->shop;
 
         $ebayUser->createOptInProgram();
-        $ebayUser->createFulfilmentPolicy([]);
-        $ebayUser->createPaymentPolicy();
-        $ebayUser->createReturnPolicy();
 
-        $fulfilmentPolicies = $ebayUser->getFulfilmentPolicies();
-        $fulfilmentPolicyId = Arr::get($fulfilmentPolicies, 'fulfillmentPolicies.0.fulfillmentPolicyId');
+        $fulfilmentPolicyId = $this->storedPolicyStillOnEbay($ebayUser->fulfillment_policy_id, fn () => $ebayUser->getUsableFulfilmentPolicyIds()->all())
+            ?? Arr::get($ebayUser->createFulfilmentPolicy([]), 'fulfillmentPolicyId')
+            ?? $ebayUser->getUsableFulfilmentPolicyId();
 
-        $paymentPolicies = $ebayUser->getPaymentPolicies();
-        $paymentPolicyId = Arr::get($paymentPolicies, 'paymentPolicies.0.paymentPolicyId');
+        $paymentPolicyId = $this->storedPolicyStillOnEbay($ebayUser->payment_policy_id, fn () => Arr::pluck(Arr::get($ebayUser->getPaymentPolicies(), 'paymentPolicies', []), 'paymentPolicyId'))
+            ?? Arr::get($ebayUser->createPaymentPolicy(), 'paymentPolicyId')
+            ?? Arr::get($ebayUser->getPaymentPolicies(), 'paymentPolicies.0.paymentPolicyId');
 
-        $returnPolicies = $ebayUser->getReturnPolicies();
-        $returnPolicyId = Arr::get($returnPolicies, 'returnPolicies.0.returnPolicyId');
+        $returnPolicyId = $this->storedPolicyStillOnEbay($ebayUser->return_policy_id, fn () => Arr::pluck(Arr::get($ebayUser->getReturnPolicies(), 'returnPolicies', []), 'returnPolicyId'))
+            ?? Arr::get($ebayUser->createReturnPolicy(), 'returnPolicyId')
+            ?? Arr::get($ebayUser->getReturnPolicies(), 'returnPolicies.0.returnPolicyId');
 
         $country = Country::find(Arr::get($shop?->settings, 'ebay.warehouse_country'));
 
@@ -63,14 +63,66 @@ class UpdateEbayUserData extends OrgAction
             'country' => $country->code
         ];
 
-        $ebayUser->createInventoryLocation($defaultLocationData);
-
         return UpdateEbayUser::run($ebayUser, [
             'fulfillment_policy_id' => $fulfilmentPolicyId,
             'payment_policy_id' => $paymentPolicyId,
             'return_policy_id' => $returnPolicyId,
-            'location_key' => Arr::get($defaultLocationData, 'locationKey'),
+            'location_key' => $this->provisionLocationKey($ebayUser, $defaultLocationData),
         ]);
+    }
+
+    /**
+     * A policy the seller customised through the channel page lives on its id, so re-provisioning must not
+     * replace it. The id is only kept when eBay still lists it, otherwise the policy is created as before.
+     *
+     * @param  callable(): array<int, string>  $policyIdsOnEbay
+     */
+    private function storedPolicyStillOnEbay(?string $storedPolicyId, callable $policyIdsOnEbay): ?string
+    {
+        if (blank($storedPolicyId)) {
+            return null;
+        }
+
+        return in_array($storedPolicyId, $policyIdsOnEbay(), true) ? $storedPolicyId : null;
+    }
+
+    /**
+     * A key is only written when eBay accepted the location or already has it. A refusal never wipes a key
+     * that was usable before, since an outage on eBay's side is not evidence the location is gone.
+     */
+    private function provisionLocationKey(EbayUser $ebayUser, array $locationData): ?string
+    {
+        $locationKey = Arr::get($locationData, 'locationKey');
+        $response    = $ebayUser->createInventoryLocation($locationData);
+
+        if (!is_array($response) || !Arr::hasAny($response, ['error', 'errors'])) {
+            return $locationKey;
+        }
+
+        if ($this->saysLocationAlreadyExists($response) || $this->hasLocationOnEbay($ebayUser, $locationKey)) {
+            return $locationKey;
+        }
+
+        return $ebayUser->hasUsableLocationKey() ? $ebayUser->location_key : null;
+    }
+
+    private function saysLocationAlreadyExists(array $response): bool
+    {
+        return collect(Arr::get($response, 'errors', []))
+            ->contains(fn ($error) => str_contains(strtolower((string) Arr::get($error, 'message')), 'already exist'));
+    }
+
+    private function hasLocationOnEbay(EbayUser $ebayUser, string $locationKey): bool
+    {
+        $locations = $ebayUser->getInventoryLocations();
+
+        if (!is_array($locations) || Arr::hasAny($locations, ['error', 'errors'])) {
+            return false;
+        }
+
+        return collect(Arr::get($locations, 'locations', []))
+            ->pluck('merchantLocationKey')
+            ->contains($locationKey);
     }
 
     public function asCommand(Command $command): void

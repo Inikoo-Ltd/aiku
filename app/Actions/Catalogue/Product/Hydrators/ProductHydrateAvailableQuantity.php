@@ -99,7 +99,8 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         if (in_array($product->status, [
             ProductStatusEnum::FOR_SALE,
             ProductStatusEnum::OUT_OF_STOCK,
-            ProductStatusEnum::COMING_SOON
+            ProductStatusEnum::COMING_SOON,
+            ProductStatusEnum::NOT_FOR_SALE
         ])) {
             if ($availableQuantity == 0) {
                 $status = ProductStatusEnum::OUT_OF_STOCK;
@@ -123,7 +124,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         return UpdateProduct::run($product, $dataToUpdate);
     }
 
-    public string $commandSignature = 'product:hydrate-available-quantity {id?}';
+    public string $commandSignature = 'product:hydrate-available-quantity {id?} {--shop=* : Shop slugs, all aiku shops when omitted}';
 
     public function asCommand(Command $command): void
     {
@@ -142,7 +143,11 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         $chunkSize = 100; // Process 100 products at a time to save memory
         $count     = 0;
 
-        $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
+        $shopsQuery = Shop::where('is_aiku', true);
+        if ($shopSlugs = $command->option('shop')) {
+            $shopsQuery->whereIn('slug', $shopSlugs);
+        }
+        $aikuShops = $shopsQuery->pluck('id')->toArray();
 
         // Get total count for progress bar
         $total = Product::whereIn('shop_id', $aikuShops)->count();

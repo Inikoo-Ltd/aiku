@@ -8,7 +8,6 @@
 
 namespace App\Actions\Fulfilment\FulfilmentCustomer\Hydrators;
 
-use App\Enums\Fulfilment\FulfilmentCustomer\FulfilmentCustomerStatusEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -19,10 +18,7 @@ class FulfilmentCustomersHydrateStatus
 
     public function handle(): void
     {
-        foreach (
-            FulfilmentCustomer::where('status', '!=', FulfilmentCustomerStatusEnum::LOST)
-                ->get() as $fulfilmentCustomer
-        ) {
+        foreach (FulfilmentCustomer::get() as $fulfilmentCustomer) {
             FulfilmentCustomerHydrateStatus::run($fulfilmentCustomer);
         }
     }

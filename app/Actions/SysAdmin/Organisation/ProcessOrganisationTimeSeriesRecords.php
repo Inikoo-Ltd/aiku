@@ -97,7 +97,7 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
 
         $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $metricsByPeriod, $processedPeriods)];
 
-        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['organisation_time_series_id', 'period', 'frequency']);
+        $this->syncTimeSeriesRecords($timeSeries, $rows, ['organisation_time_series_id', 'period', 'frequency'], $from, $to);
     }
 
     protected function periodsWithoutInvoicesRows(OrganisationTimeSeries $timeSeries, array $metricsByPeriod, array $processedPeriods): array

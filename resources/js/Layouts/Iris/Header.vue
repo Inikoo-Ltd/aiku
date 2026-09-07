@@ -7,8 +7,8 @@ import { trans } from "laravel-vue-i18n";
 import axios from "axios";
 import MobileHeader from "@/Components/CMS/Website/Headers/MobileHeader.vue";
 import { getStyles } from "@/Composables/styles";
-import { set } from "lodash-es"
 import { router } from "@inertiajs/vue3"
+import { clearIrisSession } from "@/Composables/clearIrisSession"
 
 const props = defineProps<{
   data: {
@@ -35,6 +35,7 @@ const isLoggedIn = computed(() => {
 provide("isPreviewLoggedIn", isLoggedIn);
 
 const isLoadingLogout = ref(false)
+let restoreIrisSession: (() => void) | null = null
 const onClickLogout = () => {
     router.post(
         '/app/logout',
@@ -44,20 +45,12 @@ const onClickLogout = () => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingLogout.value = true
-            },
-            onSuccess: () => {
-                set(layout, ['iris', 'is_logged_in'], false)
-                if (typeof window !== "undefined") {
-                    let storageIris = JSON.parse(localStorage.getItem('iris') || '{}')  // Get layout from localStorage
-                    localStorage.setItem('iris', JSON.stringify({
-                        ...storageIris,
-                        is_logged_in: false
-                    }))
-                }
+                restoreIrisSession = clearIrisSession(layout)
             },
             onError: errors => {
+                restoreIrisSession?.()
                 notify({
                     title: trans("Something went wrong"),
                     text: trans("Failed to logout"),

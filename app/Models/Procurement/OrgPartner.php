@@ -8,11 +8,13 @@
 
 namespace App\Models\Procurement;
 
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -42,10 +44,12 @@ class OrgPartner extends Model
 
     protected $casts = [
         'sources'           => 'array',
+        'data'              => 'array',
     ];
 
     protected $attributes = [
         'sources' => '{}',
+        'data'    => '{}',
     ];
 
 
@@ -68,10 +72,28 @@ class OrgPartner extends Model
         return $this->morphMany(StockDelivery::class, 'parent');
     }
 
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\CRM\Customer::class);
+    }
+
     public function partner(): BelongsTo
     {
         return $this->belongsTo(Organisation::class, 'partner_id');
     }
 
+    public function shoppingListItems(): HasMany
+    {
+        return $this->hasMany(PartnerShoppingListItem::class);
+    }
+
+    /**
+     * Every money figure shown for partner shopping is in the buying organisation's currency;
+     * partner-side amounts (seller shop prices, stock delivery costs) are stored in the partner's.
+     */
+    public function exchangeToOrgCurrency(): float
+    {
+        return GetCurrencyExchange::run($this->partner->currency, $this->organisation->currency) ?? 1;
+    }
 
 }

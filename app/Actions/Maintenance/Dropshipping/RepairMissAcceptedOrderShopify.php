@@ -16,6 +16,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMissAcceptedOrderShopify
 {
@@ -56,6 +57,7 @@ class RepairMissAcceptedOrderShopify
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $customerSalesChannelSlug = $command->argument('customerSalesChannel');
 
         if (!blank($customerSalesChannelSlug)) {

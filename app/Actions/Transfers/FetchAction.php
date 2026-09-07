@@ -87,18 +87,53 @@ class FetchAction implements ShouldBeUnique
         return null;
     }
 
+    protected int $fetchPageSize = 10000;
+
+    /*
+     * Keyset pagination on the source key column. handle() mutates columns the
+     * --only_new style filters depend on (aiku_id etc.), so OFFSET based chunk()
+     * silently skips rows as earlier pages drop out of the filtered set.
+     */
     public function fetchAll(SourceOrganisationService $organisationSource, ?Command $command = null): void
     {
-        $this->getModelsQuery()->chunk(10000, function ($chunkedData) use ($command, $organisationSource) {
-            foreach ($chunkedData as $auroraData) {
-                if ($command && $command->getOutput()->isDebug()) {
-                    $command->line("Fetching: ".$auroraData->{'source_id'});
+        $sourceKeyColumn = $this->getSourceKeyColumn();
+        $lastKey         = null;
+        do {
+            $query = $this->getModelsQuery();
+
+            if ($query->limit !== null && $query->limit < $this->fetchPageSize) {
+                $sourceIds = $query->pluck('source_id');
+            } else {
+                if ($lastKey !== null) {
+                    $query->where($sourceKeyColumn, $this->orderDesc ? '<' : '>', $lastKey);
                 }
-                $model = $this->handle($organisationSource, $auroraData->{'source_id'});
+                $sourceIds = $query->reorder($sourceKeyColumn, $this->orderDesc ? 'desc' : 'asc')
+                    ->limit($this->fetchPageSize)
+                    ->pluck('source_id');
+            }
+
+            foreach ($sourceIds as $sourceId) {
+                if ($command && $command->getOutput()->isDebug()) {
+                    $command->line("Fetching: ".$sourceId);
+                }
+                $model = $this->handle($organisationSource, $sourceId);
                 unset($model);
                 $this->progressBar?->advance();
             }
-        });
+
+            $lastKey = $sourceIds->last() ?? $lastKey;
+        } while ($sourceIds->count() == $this->fetchPageSize);
+    }
+
+    protected function getSourceKeyColumn(): string
+    {
+        foreach ($this->getModelsQuery()->columns ?? [] as $column) {
+            if (is_string($column) && preg_match('/^(.+?)\s+as\s+source_id$/i', $column, $matches)) {
+                return $matches[1];
+            }
+        }
+
+        throw new Exception(static::class.' getModelsQuery() must select "<key column> as source_id"');
     }
 
     public function count(): ?int

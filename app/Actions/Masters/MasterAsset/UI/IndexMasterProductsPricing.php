@@ -15,6 +15,7 @@ use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Masters\MasterVariant;
 use App\Services\QueryBuilder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +31,7 @@ class IndexMasterProductsPricing extends OrgAction
     use AsObject;
     use WithMastersAuthorisation;
 
-    public function handle(MasterProductCategory $parent, $prefix = null): LengthAwarePaginator
+    public function handle(MasterProductCategory|MasterVariant $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -47,15 +48,20 @@ class IndexMasterProductsPricing extends OrgAction
             ->leftJoin('groups', 'master_assets.group_id', '=', 'groups.id')
             ->leftJoin('currencies', 'groups.currency_id', '=', 'currencies.id')
             ->leftJoin('master_asset_stats', 'master_asset_stats.master_asset_id', '=', 'master_assets.id')
-            ->where('master_assets.status', true)
-            ->where('master_assets.is_main', true)
-            ->where(
-                match ($parent->type) {
-                    MasterProductCategoryTypeEnum::FAMILY     => 'master_assets.master_family_id',
-                    MasterProductCategoryTypeEnum::DEPARTMENT => 'master_assets.master_department_id',
-                    default                                   => 'master_assets.master_sub_department_id',
-                },
-                $parent->id
+            ->when(
+                $parent instanceof MasterVariant,
+                fn ($query) => $query->where('master_assets.master_variant_id', $parent->id),
+                fn ($query) => $query
+                    ->where('master_assets.status', true)
+                    ->where('master_assets.is_main', true)
+                    ->where(
+                        match ($parent->type) {
+                            MasterProductCategoryTypeEnum::FAMILY     => 'master_assets.master_family_id',
+                            MasterProductCategoryTypeEnum::DEPARTMENT => 'master_assets.master_department_id',
+                            default                                   => 'master_assets.master_sub_department_id',
+                        },
+                        $parent->id
+                    )
             )
             ->select([
                 'master_assets.id',
@@ -133,7 +139,7 @@ class IndexMasterProductsPricing extends OrgAction
         return $masterAssets;
     }
 
-    public function tableStructure(MasterProductCategory $parent, $prefix = null): \Closure
+    public function tableStructure(MasterProductCategory|MasterVariant $parent, $prefix = null): \Closure
     {
         return function (InertiaTable $table) use ($parent, $prefix) {
             if ($prefix) {
@@ -147,7 +153,7 @@ class IndexMasterProductsPricing extends OrgAction
                 ->withEmptyState(
                     [
                         'title' => __('No master products found'),
-                        'count' => $parent->stats->number_current_master_assets,
+                        'count' => $parent instanceof MasterVariant ? null : $parent->stats->number_current_master_assets,
                     ],
                 )
                 ->column(key: 'code', label: __('Code'), sortable: true, searchable: true)

@@ -88,6 +88,7 @@ class ShowOrgSupplier extends OrgAction
                     'model'         => __('Supplier'),
                     'subNavigation' => $this->getOrgSupplierNavigation($orgSupplier),
                     'actions'       => [
+                        $this->getOrgSupplierPurchaseOrderAction($orgSupplier),
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -117,8 +118,8 @@ class ShowOrgSupplier extends OrgAction
                     : Inertia::optional(fn () => GetOrgSupplierShowcase::run($orgSupplier)),
 
                 SupplierTabsEnum::HISTORY->value => $this->tab == SupplierTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($orgSupplier))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgSupplier))),
+                    fn () => HistoryResource::collection(IndexHistory::run($orgSupplier, SupplierTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgSupplier, SupplierTabsEnum::HISTORY->value))),
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value));
     }
@@ -199,56 +200,47 @@ class ShowOrgSupplier extends OrgAction
     {
         $previous = $this->siblings($orgSupplier)->where('slug', '<', $orgSupplier->slug)->orderBy('slug', 'desc')->first();
 
-        return $this->getNavigation($previous, $request->route()->getName());
+        return $this->getNavigation($previous, $request);
     }
 
     public function getNext(OrgSupplier $orgSupplier, ActionRequest $request): ?array
     {
         $next = $this->siblings($orgSupplier)->where('slug', '>', $orgSupplier->slug)->orderBy('slug')->first();
 
-        return $this->getNavigation($next, $request->route()->getName());
+        return $this->getNavigation($next, $request);
     }
 
     private function siblings(OrgSupplier $orgSupplier): Builder
     {
         $query = OrgSupplier::where('organisation_id', $orgSupplier->organisation_id)->whereHas('supplier');
 
-        if ($this->parent instanceof OrgAgent) {
+        if (isset($this->parent) && $this->parent instanceof OrgAgent) {
             $query->where('org_agent_id', $this->parent->id);
+        } elseif ($orgSupplier->org_agent_id) {
+            $query->where('org_agent_id', $orgSupplier->org_agent_id);
+        } else {
+            $query->whereNull('org_agent_id');
         }
 
         return $query;
     }
 
-    private function getNavigation(?OrgSupplier $orgSupplier, string $routeName): ?array
+    private function getNavigation(?OrgSupplier $orgSupplier, ActionRequest $request): ?array
     {
         if (!$orgSupplier) {
             return null;
         }
 
-        return match ($routeName) {
-            'grp.org.procurement.org_suppliers.show' => [
-                'label' => $orgSupplier->supplier->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $orgSupplier->organisation->slug,
-                        'orgSupplier'  => $orgSupplier->slug,
-                    ],
-                ],
+        return [
+            'label' => $orgSupplier->supplier->name,
+            'route' => [
+                'name'       => $request->route()->getName(),
+                'parameters' => array_merge(
+                    $request->route()->originalParameters(),
+                    ['orgSupplier' => $orgSupplier->slug]
+                ),
             ],
-            'grp.org.procurement.org_agents.show.suppliers.show' => [
-                'label' => $orgSupplier->supplier->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $orgSupplier->organisation->slug,
-                        'orgAgent'     => $this->parent->slug,
-                        'orgSupplier'  => $orgSupplier->slug,
-                    ],
-                ],
-            ],
-            default => null,
-        };
+        ];
     }
+
 }

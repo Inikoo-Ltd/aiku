@@ -10,6 +10,7 @@ namespace App\Actions\UI\HumanResources;
 
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\GetStaffChatAnalytics;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Leave\LeaveCategoryEnum;
@@ -59,6 +60,19 @@ class ShowHumanResourcesDashboard extends OrgAction
         $lateCount       = $attendance->where('is_late', true)->count();
         $workingCount    = $this->organisation->humanResourcesStats->number_employees_state_working;
         $absentCount     = max(0, $workingCount - $presentCount - $onLeaveCount);
+        $staffChatInsights = GetStaffChatAnalytics::run($this->organisation->group, 30, $this->organisation);
+
+        $show = in_array($request->input('show'), ['present', 'annual', 'sick', 'late', 'absent'], true) ? $request->input('show') : null;
+        $showRoute = fn (string $show): array => [
+            'name'       => 'grp.org.hr.dashboard',
+            'parameters' => array_merge($routeParameters, array_filter(['show' => $show, 'date' => $isToday ? null : $attendanceDate->toDateString()])),
+        ];
+        $people = match ($show) {
+            'annual' => $this->getPeopleOnLeave($attendanceDate, [LeaveCategoryEnum::ANNUAL->value]),
+            'sick'   => $this->getPeopleOnLeave($attendanceDate, [LeaveCategoryEnum::MEDICAL->value]),
+            'absent' => $this->getAbsentPeople($attendanceDate),
+            default  => [],
+        };
 
         return Inertia::render(
             'Org/HumanResources/HumanResourcesDashboard',
@@ -138,33 +152,53 @@ class ShowHumanResourcesDashboard extends OrgAction
                             'parameters' => $routeParameters
                         ]
                     ],
+                    [
+                        'name'  => __('Staff chat'),
+                        'stat'  => $staffChatInsights['messages'],
+                        'color' => 'sky',
+                        'icon'  => ['fal', 'fa-comments-alt'],
+                        'route' => [
+                            'name'       => 'grp.org.hr.staff_chat.index',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
                 ],
                 'attendanceStats' => [
                     [
+                        'key'   => 'present',
+                        'route' => $showRoute('present'),
                         'name'  => $isToday ? __('Present today') : __('Present'),
                         'stat'  => $presentCount,
                         'color' => 'green',
                         'icon'  => ['fal', 'fa-user-check'],
                     ],
                     [
+                        'key'   => 'annual',
+                        'route' => $showRoute('annual'),
                         'name'  => $isToday ? __('Annual leave today') : __('Annual leave'),
                         'stat'  => $annualLeaveCount,
                         'color' => 'blue',
                         'icon'  => ['fal', 'fa-umbrella-beach'],
                     ],
                     [
+                        'key'   => 'sick',
+                        'route' => $showRoute('sick'),
                         'name'  => $isToday ? __('Sick leave today') : __('Sick leave'),
                         'stat'  => $sickLeaveCount,
                         'color' => 'teal',
                         'icon'  => ['fal', 'fa-notes-medical'],
                     ],
                     [
+                        'key'   => 'late',
+                        'route' => $showRoute('late'),
                         'name'  => $isToday ? __('Late today') : __('Late'),
                         'stat'  => $lateCount,
                         'color' => 'amber',
                         'icon'  => ['fal', 'fa-clock'],
                     ],
                     [
+                        'key'   => 'absent',
+                        'route' => $showRoute('absent'),
                         'name'  => $isToday ? __('Absent today') : __('Absent'),
                         'stat'  => $absentCount,
                         'color' => 'red',
@@ -173,7 +207,7 @@ class ShowHumanResourcesDashboard extends OrgAction
                 ],
                 'quickActions'  => [
                     [
-                        'label' => __('Create employee'),
+                        'label' => __('New employee'),
                         'icon'  => ['fal', 'fa-user-plus'],
                         'route' => [
                             'name'       => 'grp.org.hr.employees.create',
@@ -181,23 +215,35 @@ class ShowHumanResourcesDashboard extends OrgAction
                         ],
                     ],
                     [
-                        'label' => __('Create clocking machine'),
-                        'icon'  => ['fal', 'fa-chess-clock'],
+                        'label' => __('Record leave'),
+                        'hint'  => __('sick, annual…'),
+                        'icon'  => ['fal', 'fa-notes-medical'],
                         'route' => [
-                            'name'       => 'grp.org.hr.clocking_machines.index',
+                            'name'       => 'grp.org.hr.leaves.index',
+                            'parameters' => array_merge($routeParameters, ['record' => 1]),
+                        ],
+                    ],
+                    [
+                        'label' => __('Leave requests'),
+                        'icon'  => ['fal', 'fa-calendar-minus'],
+                        'route' => [
+                            'name'       => 'grp.org.hr.leaves.index',
                             'parameters' => $routeParameters,
                         ],
                     ],
                     [
-                        'label' => __('Create working place'),
-                        'icon'  => ['fal', 'fa-building'],
+                        'label' => __('Leave calendar'),
+                        'icon'  => ['fal', 'fa-calendar-alt'],
                         'route' => [
-                            'name'       => 'grp.org.hr.workplaces.create',
+                            'name'       => 'grp.org.hr.leaves.dashboard',
                             'parameters' => $routeParameters,
                         ],
                     ],
                 ],
                 'attendance'    => $attendance->values()->all(),
+                'show'          => $show,
+                'showRoute'     => $showRoute(''),
+                'people'        => $people,
                 'attendanceDate' => [
                     'date'      => $attendanceDate->toDateString(),
                     'label'     => $attendanceDate->isoFormat('ddd, Do MMM YY'),
@@ -258,9 +304,7 @@ class ShowHumanResourcesDashboard extends OrgAction
             return [
                 'id'          => $leave->id,
                 'name'        => $leave->employee?->contact_name ?: $leave->employee_name,
-                'avatar'      => $leave->employee
-                    ? $this->getAvatar($leave->employee)
-                    : 'https://api.dicebear.com/7.x/avataaars/svg?seed='.rawurlencode((string)$leave->employee_name),
+                'avatar'      => $leave->employee ? $this->getAvatar($leave->employee) : null,
                 'type_name'   => $this->resolveLeaveTypeName($leave),
                 'type_color'  => $this->leaveColorHex($leave->leaveType?->color),
                 'date_label'  => $this->formatLeaveRange($leave),
@@ -457,6 +501,73 @@ class ShowHumanResourcesDashboard extends OrgAction
             });
     }
 
+    /**
+     * @param array<int, string> $categories
+     * @return array<int, array<string, mixed>>
+     */
+    private function getPeopleOnLeave(Carbon $date, array $categories): array
+    {
+        return Leave::query()
+            ->join('leave_types', 'leaves.leave_type_id', '=', 'leave_types.id')
+            ->where('leaves.organisation_id', $this->organisation->id)
+            ->where('leaves.status', LeaveStatusEnum::APPROVED)
+            ->whereDate('leaves.start_date', '<=', $date->toDateString())
+            ->whereDate('leaves.end_date', '>=', $date->toDateString())
+            ->whereIn('leave_types.category', $categories)
+            ->with(['employee.image', 'leaveType'])
+            ->orderBy('leaves.start_date')
+            ->get(['leaves.*'])
+            ->filter(fn (Leave $leave): bool => $leave->employee !== null)
+            ->unique('employee_id')
+            ->map(fn (Leave $leave): array => $this->personRow($leave->employee, $this->resolveLeaveTypeName($leave).' · '.$this->formatLeaveRange($leave)))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function getAbsentPeople(Carbon $date): array
+    {
+        $onLeaveIds = Leave::where('organisation_id', $this->organisation->id)
+            ->where('status', LeaveStatusEnum::APPROVED)
+            ->whereDate('start_date', '<=', $date->toDateString())
+            ->whereDate('end_date', '>=', $date->toDateString())
+            ->pluck('employee_id');
+
+        $presentIds = Timesheet::where('organisation_id', $this->organisation->id)
+            ->where('subject_type', 'Employee')
+            ->whereDate('date', $date->toDateString())
+            ->pluck('subject_id');
+
+        return $this->organisation->employees()
+            ->where('state', EmployeeStateEnum::WORKING->value)
+            ->whereNotIn('id', $onLeaveIds->merge($presentIds))
+            ->with('image')
+            ->orderBy('contact_name')
+            ->get()
+            ->map(fn (Employee $employee): array => $this->personRow($employee, null))
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function personRow(Employee $employee, ?string $detail): array
+    {
+        return [
+            'id'        => $employee->id,
+            'name'      => $employee->contact_name ?: ($employee->alias ?: $employee->slug),
+            'job_title' => $employee->job_title,
+            'avatar'    => $this->getAvatar($employee),
+            'detail'    => $detail,
+            'route'     => [
+                'name'       => 'grp.org.hr.employees.show',
+                'parameters' => ['organisation' => $this->organisation->slug, 'employee' => $employee->slug],
+            ],
+        ];
+    }
+
     private function getOnLeaveCount(Carbon $date): int
     {
         return Leave::where('organisation_id', $this->organisation->id)
@@ -508,13 +619,10 @@ class ShowHumanResourcesDashboard extends OrgAction
         })->values()->all();
     }
 
-    private function getAvatar(Employee $employee): string
+    private function getAvatar(Employee $employee): ?string
     {
-        return Arr::get(
-            $employee->imageSources(120, 120),
-            'original',
-            'https://api.dicebear.com/7.x/avataaars/svg?seed='.rawurlencode((string)$employee->slug)
-        );
+        return Arr::get($employee->imageSources(120, 120), 'original')
+            ?? Arr::get($employee->getUser()?->imageSources(120, 120), 'original');
     }
 
 

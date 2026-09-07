@@ -184,18 +184,13 @@ class FetchAuroraStocks extends FetchAuroraAction
             //$this->processFetchAttachments($tradeUnit, 'Part', $stockData['stock']['source_id']);
 
 
-            if ($isPrincipal) {
-                $stock->supplierProducts()->syncWithoutDetaching($stockData['supplier_products']);
-            } else {
-                foreach ($stockData['supplier_products'] as $supplierProductId => $supplierProductData) {
-                    if (!$stock->supplierProducts()->where('supplier_product_id', $supplierProductId)->exists()) {
-                        $stock->supplierProducts()->attach(
-                            $supplierProductId,
-                            [
-                                'available' => $supplierProductData['available']
-                            ]
-                        );
-                    }
+            // Attach-only: syncWithoutDetaching also UPDATEs pivot rows that already
+            // exist (priority/status/available), which reverts supplier links staff
+            // edit in aiku. A link Aurora sends that aiku has never seen may be added,
+            // an existing one is never touched.
+            foreach ($stockData['supplier_products'] as $supplierProductId => $supplierProductData) {
+                if (!$stock->supplierProducts()->where('supplier_product_id', $supplierProductId)->exists()) {
+                    $stock->supplierProducts()->attach($supplierProductId, $supplierProductData);
                 }
             }
 

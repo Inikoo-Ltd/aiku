@@ -16,6 +16,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairShopifyUsers
 {
@@ -119,6 +120,7 @@ class RepairShopifyUsers
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $tableData = [];
         $counter   = 1;
 

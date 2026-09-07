@@ -11,6 +11,7 @@ namespace App\Actions\SysAdmin\UI;
 use App\Actions\OrgAction;
 use App\Actions\Search\GetSearchAnalytics;
 use App\Actions\SysAdmin\GetMcpAnalytics;
+use App\Actions\SysAdmin\GetStaffChatAnalytics;
 use App\Actions\SysAdmin\GetUsersInsights;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Models\SysAdmin\Group;
@@ -51,11 +52,23 @@ class ShowSysAdminDashboard extends OrgAction
                         'icon'  => ['fal', 'fa-users-cog'],
                         'title' => __('System Administration')
                     ],
-                    'title' => __('System Administration'),
+                    'title'   => __('System Administration'),
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Settings'),
+                            'icon'  => ['fal', 'fa-cog'],
+                            'route' => [
+                                'name' => 'grp.sysadmin.settings.edit',
+                            ]
+                        ]
+                    ]
                 ],
                 'users_insights'  => GetUsersInsights::run($group),
                 'search_insights' => GetSearchAnalytics::run($group),
                 'ai_insights'     => GetMcpAnalytics::run($group),
+                'staff_chat_insights' => GetStaffChatAnalytics::run($group),
             ]
         );
     }

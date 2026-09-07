@@ -20,16 +20,13 @@ library.add(faTrashAlt)
 const props = defineProps({
     modelValue: { type: Object, default: () => ({}) }
 })
-console.log('model', props.modelValue)
+
 const emit = defineEmits(['update:modelValue'])
 
 
 const cards = computed({
     get: () => props.modelValue ?? {},
-    set: (val) => {
-        console.log('changed -> emit', val)
-        emit('update:modelValue', val)
-    }
+    set: (val) => emit('update:modelValue', val)
 })
 
 
@@ -53,6 +50,7 @@ const createDefaultCard = () => ({
     titles: [{ text: '<h3>NEW IN</h3><p>Nymph gemstone rings</p>' }],
     horizontal: 'center',
     vertical: 'middle',
+    contentAlign: 'top',
     width: 50,
     height: 160,
     padding: 30,
@@ -86,7 +84,7 @@ const updateCard = (key: string, patch: any) => {
 }
 
 const updateButton = (key: string, patch: any) => {
-    const card = cards.value[key]
+    const card = cards.value[key] ?? {}
 
     updateCard(key, {
         button: {
@@ -98,16 +96,14 @@ const updateButton = (key: string, patch: any) => {
 }
 
 const updateTitle = (key: string, index: number, val: any) => {
-    const newCards = { ...cards.value }
-    const titles = [...(newCards[key].titles || [])]
+    const titles = [...(cards.value[key]?.titles || [])]
 
     titles[index] = {
         ...titles[index],
         ...val
     }
 
-    newCards[key].titles = titles
-    cards.value = newCards
+    updateCard(key, { titles })
 }
 
 
@@ -128,45 +124,29 @@ const removeCard = (key: string) => {
 }
 
 const addTitle = (key: string) => {
-    const newCards = { ...cards.value }
-    const titles = [...(newCards[key].titles || [])]
+    const titles = [...(cards.value[key]?.titles || []), { text: '' }]
 
-    titles.push({ text: '' })
-    newCards[key].titles = titles
-    cards.value = newCards
+    updateCard(key, { titles })
 }
 
 const removeTitle = (key: string, index: number) => {
-    const newCards = { ...cards.value }
-    const titles = [...(newCards[key].titles || [])]
+    const titles = [...(cards.value[key]?.titles || [])]
 
     titles.splice(index, 1)
-    newCards[key].titles = titles
-    cards.value = newCards
+    updateCard(key, { titles })
 }
 
-const ensureButton = (card: any) => {
-    if (!card.button || typeof card.button !== 'object') {
-        card.button = defaultButton()
-        return
-    }
-
-    // merge jika sebagian field hilang (data lama)
-    card.button = {
+const withDefaultButton = (card: any) => ({
+    ...card,
+    button: {
         ...defaultButton(),
-        ...card.button
+        ...(card?.button && typeof card.button === 'object' ? card.button : {})
     }
-}
-
-const normalizedCards = computed(() => {
-    const obj = cards.value || {}
-
-    Object.keys(obj).forEach(key => {
-        ensureButton(obj[key])
-    })
-
-    return obj
 })
+
+const normalizedCards = computed(() => Object.fromEntries(
+    Object.entries(cards.value || {}).map(([key, card]) => [key, withDefaultButton(card)])
+))
 </script>
 
 <template>
@@ -215,19 +195,19 @@ const normalizedCards = computed(() => {
                             <div>
                                 <label class="block mb-2">Width ({{ card.width }}%)</label>
                                 <Slider :modelValue="card.width" @update:modelValue="v => updateCard(key, { width: v })"
-                                    :min="10" :max="100" :step="10" />
+                                    :min="10" :max="100" :step="5" />
                             </div>
 
                             <div>
                                 <label class="block mb-2">Height ({{ card.height }}px)</label>
                                 <Slider :modelValue="card.height" @update:modelValue="v => updateCard(key, { height: v })"
-                                    :min="10" :max="800" :step="10" />
+                                    :min="10" :max="800" :step="5" />
                             </div>
 
                             <div>
                                 <label class="block mb-2">Padding ({{ card.padding }}px)</label>
                                 <Slider :modelValue="card.padding" @update:modelValue="v => updateCard(key, { padding: v })"
-                                    :min="10" :max="100" :step="5" />
+                                    :min="0" :max="100" :step="5" />
                             </div>
 
                             <div>
@@ -279,6 +259,20 @@ const normalizedCards = computed(() => {
                                         @update:modelValue="v => updateCard(key, { vertical: v })" /><label>Middle</label>
                                     <RadioButton :modelValue="card.vertical" value="bottom"
                                         @update:modelValue="v => updateCard(key, { vertical: v })" /><label>Bottom</label>
+                                </div>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block mb-2 font-medium">Content inside card</label>
+                                <div class="flex flex-wrap gap-3">
+                                    <RadioButton :modelValue="card.contentAlign ?? 'top'" value="top"
+                                        @update:modelValue="v => updateCard(key, { contentAlign: v })" /><label>Top</label>
+                                    <RadioButton :modelValue="card.contentAlign ?? 'top'" value="middle"
+                                        @update:modelValue="v => updateCard(key, { contentAlign: v })" /><label>Middle</label>
+                                    <RadioButton :modelValue="card.contentAlign ?? 'top'" value="bottom"
+                                        @update:modelValue="v => updateCard(key, { contentAlign: v })" /><label>Bottom</label>
+                                    <RadioButton :modelValue="card.contentAlign ?? 'top'" value="spread"
+                                        @update:modelValue="v => updateCard(key, { contentAlign: v })" /><label>Text top, button bottom</label>
                                 </div>
                             </div>
                         </div>

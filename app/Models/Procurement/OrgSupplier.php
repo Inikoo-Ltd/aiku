@@ -108,4 +108,15 @@ class OrgSupplier extends Model
         return $this->hasMany(OrgSupplierProduct::class);
     }
 
+    protected static function booted(): void
+    {
+        static::saved(function (OrgSupplier $orgSupplier) {
+            $orgSupplier->supplier?->searchable();
+        });
+
+        static::deleted(function (OrgSupplier $orgSupplier) {
+            $orgSupplier->supplier?->searchable();
+        });
+    }
+
 }

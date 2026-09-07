@@ -10,6 +10,7 @@
 
 namespace App\Actions\Procurement\OrgSupplierProducts\UI;
 
+use App\Actions\SupplyChain\SupplierProduct\UI\WithSupplierProductInfo;
 use App\Actions\SupplyChain\SupplierProduct\UI\WithSupplierProductShowcase;
 use App\Models\Procurement\OrgSupplierProduct;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -18,11 +19,12 @@ class GetOrgSupplierProductShowcase
 {
     use AsObject;
     use WithSupplierProductShowcase;
+    use WithSupplierProductInfo;
 
     public function handle(OrgSupplierProduct $orgSupplierProduct): array
     {
         return array_merge(
-            $this->getSupplierProductShowcase($orgSupplierProduct->supplierProduct),
+            $this->getSupplierProductShowcase($orgSupplierProduct->supplierProduct, withSupplyChainLink: true, organisationId: $orgSupplierProduct->organisation_id),
             [
                 'organisation' => [
                     'name'         => $orgSupplierProduct->organisation->name,
@@ -35,6 +37,7 @@ class GetOrgSupplierProductShowcase
                     $this->getOrgAgentParty($orgSupplierProduct->orgAgent),
                 ])),
                 'stats'        => $this->getProcurementStatsBoxes($orgSupplierProduct->stats),
+                'supplierProductInfo' => $this->supplierProductInfo($orgSupplierProduct->supplierProduct),
             ]
         );
     }

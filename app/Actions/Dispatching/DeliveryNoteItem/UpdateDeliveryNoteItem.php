@@ -30,6 +30,16 @@ class UpdateDeliveryNoteItem extends OrgAction
         $previousBatchCodeId = $deliveryNoteItem->batch_code_id;
         $deliveryNoteItem    = $this->update($deliveryNoteItem, $modelData, ['data']);
 
+        /*
+         * Whether a line is finished is a function of what is wanted against what was picked, so
+         * it has to be re-derived whenever what is wanted moves. The composition syncs changed the
+         * quantity here without doing so and left is_handled describing the old quantity, which is
+         * how a finished line came to look finished with work outstanding, or the other way round.
+         */
+        if ($deliveryNoteItem->wasChanged('quantity_required')) {
+            $deliveryNoteItem = CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+        }
+
         if ($deliveryNoteItem->wasChanged('batch_code_id')) {
             if ($previousBatchCodeId) {
                 BatchCodeHydrateDeliveryNotes::dispatch(BatchCode::find($previousBatchCodeId))->delay($this->hydratorsDelay);

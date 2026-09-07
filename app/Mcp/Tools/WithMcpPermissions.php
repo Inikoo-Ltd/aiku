@@ -102,7 +102,9 @@ trait WithMcpPermissions
             ->whereNotNull("arguments->{$argument}")
             ->latest('id')
             ->limit(20)
-            ->pluck("arguments->{$argument}")
+            ->pluck('arguments')
+            ->map(fn ($arguments) => data_get($arguments, $argument))
+            ->filter()
             ->unique()
             ->take(3)
             ->values();

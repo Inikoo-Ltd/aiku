@@ -14,6 +14,13 @@ Route::prefix("")
     ->name("dashboard.")
     ->group(__DIR__ . "/dashboard.php");
 
+Route::prefix("marketing")
+    ->name("marketing.")
+    ->group(function () {
+        Route::get('/', [App\Actions\UI\Marketing\ShowAggregatedMarketingDashboard::class, 'asController'])->name('dashboard');
+        Route::get('/channels/{channelType}', [App\Actions\UI\Marketing\ShowAggregatedMarketingChannel::class, 'asController'])->name('channels.show');
+    });
+
 Route::prefix("hr")
     ->name("hr.")
     ->group(__DIR__ . "/hr.php");

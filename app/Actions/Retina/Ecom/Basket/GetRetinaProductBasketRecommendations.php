@@ -115,7 +115,7 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
             ->where('products.state', ProductStateEnum::ACTIVE->value)
             ->where('products.has_live_webpage', true)
             ->where('products.available_quantity', '>', 0)
-            ->whereNotNull('products.price')
+            ->where('products.price', '>', 0)
             ->whereNotIn('products.id', $basketProductIds)
             ->where(function ($query) {
                 $query->where(function ($subQuery) {

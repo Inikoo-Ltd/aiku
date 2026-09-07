@@ -16,7 +16,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Look up one order by its reference and return its current state and key dates.')]
+#[Description('Look up one order by its reference and return its current state, key dates and the aiku (grp) page URL to open it in the browser.')]
 #[IsReadOnly]
 class OrderStatusTool extends AikuTool
 {
@@ -55,6 +55,7 @@ class OrderStatusTool extends AikuTool
             'total_amount' => (float) $order->total_amount,
             'currency'     => $shop->currency->code,
             'customer'     => $order->customer?->contact_name,
+            'grp_url'      => route('grp.org.shops.show.ordering.orders.show', [$order->organisation->slug, $shop->slug, $order->slug]),
         ]);
     }
 

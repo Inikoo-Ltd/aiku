@@ -32,6 +32,7 @@ class OrganisationHydrateOrgStocks implements ShouldBeUnique
 
         $stats = [
             'number_org_stocks'                  => $organisation->orgStocks()->count(),
+            'number_org_stocks_excluded_from_auto_ordering' => $organisation->orgStocks()->where('is_excluded_from_auto_ordering', true)->count(),
         ];
 
         $stats = array_merge(

@@ -64,7 +64,6 @@ class IndexProductsInCollection extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->orderBy('products.state');
-        $queryBuilder->where('products.is_main', true);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
         $queryBuilder->join('collection_has_models', function ($join) {

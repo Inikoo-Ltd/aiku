@@ -6,23 +6,29 @@ import {
     faPersonDolly, faUserPlus, faStar, faChargingStation, faConciergeBell, faShippingFast,
     faMapMarkedAlt, faBadgePercent, faCommentDollar, faMailBulk, faBrowser, faCube,
     faFolderTree, faAlbumCollection, faCopyright, faTags, faBarcode, faEnvelope, faPhone,
-    faSpinnerThird, faUserHardHat, faComments,
+    faSpinnerThird, faUserHardHat, faComments, faClipboardList, faTruckLoading,
+    faPeopleArrows, faBoxes, faFileInvoice, faUsers,
 } from '@fal'
 import { Link } from '@inertiajs/vue3'
 import Skeleton from 'primevue/skeleton'
 import { computed, ref, watch } from 'vue'
+import Icon from '@/Components/Icon.vue'
+import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
+import { Icon as IconTS } from '@/types/Utils/Icon'
 
 library.add(
     faShoppingCart, faFileInvoiceDollar, faCoins, faTruck, faBox, faBoxesAlt, faAtom,
     faPersonDolly, faUserPlus, faStar, faChargingStation, faConciergeBell, faShippingFast,
     faMapMarkedAlt, faBadgePercent, faCommentDollar, faMailBulk, faBrowser, faCube,
     faFolderTree, faAlbumCollection, faCopyright, faTags, faBarcode, faEnvelope, faPhone,
-    faSpinnerThird, faUserHardHat, faComments,
+    faSpinnerThird, faUserHardHat, faComments, faClipboardList, faTruckLoading,
+    faPeopleArrows, faBoxes, faFileInvoice, faUsers,
 )
 
 type ResultItem = {
     id: number
     slug?: string
+    reference?: string
     code?: string
     name?: string
     state?: string
@@ -31,6 +37,8 @@ type ResultItem = {
     email?: string
     phone?: string
     rating?: number
+    location?: string[]
+    state_icon?: IconTS
 }
 
 type SectionConfig = {
@@ -40,6 +48,7 @@ type SectionConfig = {
 }
 
 const SECTIONS: Record<string, SectionConfig> = {
+    customers: { label: 'Customers', icon: 'fal fa-users', redirectRoute: 'grp.majordomo.redirect_customer' },
     orders: { label: 'Orders', icon: 'fal fa-shopping-cart', redirectRoute: 'grp.majordomo.redirect_order' },
     invoices: { label: 'Invoices', icon: 'fal fa-file-invoice-dollar', redirectRoute: 'grp.majordomo.redirect_invoice_in_accounting' },
     payments: { label: 'Payments', icon: 'fal fa-coins' },
@@ -67,6 +76,11 @@ const SECTIONS: Record<string, SectionConfig> = {
     barcodes: { label: 'Barcodes', icon: 'fal fa-barcode', redirectRoute: 'grp.majordomo.redirect_barcode' },
     employees: { label: 'Employees', icon: 'fal fa-user-hard-hat', redirectRoute: 'grp.majordomo.redirect_employee' },
     chat_messages: { label: 'Chat Messages', icon: 'fal fa-comments', redirectRoute: 'grp.majordomo.redirect_chat_message' },
+    purchase_orders: { label: 'Purchase Orders', icon: 'fal fa-clipboard-list', redirectRoute: 'grp.majordomo.redirect_purchase_order' },
+    stock_deliveries: { label: 'Stock Deliveries', icon: 'fal fa-truck-loading', redirectRoute: 'grp.majordomo.redirect_stock_delivery' },
+    agents: { label: 'Agents', icon: 'fal fa-people-arrows', redirectRoute: 'grp.majordomo.redirect_agent' },
+    supplier_products: { label: 'Supplier Products', icon: 'fal fa-boxes', redirectRoute: 'grp.majordomo.redirect_supplier_product' },
+    agent_supplier_purchase_orders: { label: 'Agent Supplier Purchase Orders', icon: 'fal fa-file-invoice', redirectRoute: 'grp.majordomo.redirect_agent_supplier_purchase_order' },
 }
 
 const model = defineModel('open')
@@ -78,7 +92,7 @@ const props = defineProps<{
 }>()
 
 const tabs = computed(() =>
-    Object.keys(props.results ?? {}).filter((key) => SECTIONS[key])
+    Object.keys(props.results ?? {}).filter((key) => SECTIONS[key] && props.results?.[key]?.length)
 )
 
 const activeTab = ref<string>(tabs.value[0] ?? '')
@@ -155,7 +169,7 @@ const activeItems = computed(() =>
                 >
                     <div class="flex items-center justify-between gap-2">
                         <p class="text-sm font-semibold truncate min-w-0">
-                            {{ item.code || item.name || item.contact_name || item.company_name }}
+                            {{ item.reference || item.code || item.name || item.contact_name || item.company_name }}
                         </p>
                         <span v-if="item.rating != null" class="shrink-0 text-xs text-amber-500">
                             <FontAwesomeIcon icon='fal fa-star' fixed-width aria-hidden='true' />{{ item.rating }}
@@ -163,6 +177,7 @@ const activeItems = computed(() =>
                         <span v-if="loadingId === item.id" class="shrink-0 text-slate-400">
                             <FontAwesomeIcon icon='fal fa-spinner-third' spin fixed-width aria-hidden='true' />
                         </span>
+                        <Icon v-else-if="item.state_icon" :data="item.state_icon" size="2xs" class="shrink-0" />
                         <span
                             v-else-if="item.state"
                             class="shrink-0 text-[10px] px-2 py-0.5 rounded-full capitalize"
@@ -179,6 +194,10 @@ const activeItems = computed(() =>
                         </span>
                     </p>
 
+                    <p v-else-if="item.company_name" class="text-xs text-gray-400 mt-2 truncate">
+                        {{ item.company_name }}
+                    </p>
+
                     <div v-if="item.email || item.phone" class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
                         <span v-if="item.email" class="inline-flex items-center gap-1 min-w-0 max-w-full truncate">
                             <FontAwesomeIcon icon='fal fa-envelope' fixed-width aria-hidden='true' />
@@ -188,6 +207,9 @@ const activeItems = computed(() =>
                             <FontAwesomeIcon icon='fal fa-phone' fixed-width aria-hidden='true' />
                             {{ item.phone }}
                         </span>
+                    </div>
+                    <div v-if="item.location?.length" class="mt-2 text-xs text-gray-400">
+                        <AddressLocation :data="item.location" />
                     </div>
                 </component>
             </div>

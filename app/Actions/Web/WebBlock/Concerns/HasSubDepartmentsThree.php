@@ -21,36 +21,40 @@ use Illuminate\Support\Facades\DB;
 
 trait HasSubDepartmentsThree
 {
-    protected function getSubDepartmentsThree(Webpage $webpage, array $webBlock): array
+    protected function getSubDepartmentsThree(Webpage $webpage, array $webBlock, string $publishedLayoutKey = 'sub_department'): array
     {
         $parent = $webpage->model;
 
-        $subDepartmentList = DB::table('product_categories')
-            ->where('product_categories.department_id', $parent->id)
-            ->where('product_categories.shop_id', $webpage->shop_id)
-            ->leftJoin('webpages', function ($join) {
-                $join->on('product_categories.id', '=', 'webpages.model_id')
-                    ->where('webpages.model_type', '=', 'ProductCategory');
-            })
-            ->select(
-                [
-                    'product_categories.code',
-                    'product_categories.name',
-                    'webpages.canonical_url as url',
-                ]
-            )
-            ->orderBy('product_categories.code')
-            ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
-            ->whereIn('product_categories.state', [
-                ProductCategoryStateEnum::ACTIVE,
-                ProductCategoryStateEnum::DISCONTINUING
-            ])
-            ->where('product_categories.show_in_website', true)
-            ->whereNotNull('webpages.id')
-            ->where('webpages.state', WebpageStateEnum::LIVE->value)
-            ->whereNull('product_categories.deleted_at')
-            ->get()
-            ->toArray();
+        $subDepartmentList = [];
+
+        if ($parent->type !== ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $subDepartmentList = DB::table('product_categories')
+                ->where('product_categories.department_id', $parent->id)
+                ->where('product_categories.shop_id', $webpage->shop_id)
+                ->leftJoin('webpages', function ($join) {
+                    $join->on('product_categories.id', '=', 'webpages.model_id')
+                        ->where('webpages.model_type', '=', 'ProductCategory');
+                })
+                ->select(
+                    [
+                        'product_categories.code',
+                        'product_categories.name',
+                        'webpages.canonical_url as url',
+                    ]
+                )
+                ->orderBy('product_categories.code')
+                ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
+                ->whereIn('product_categories.state', [
+                    ProductCategoryStateEnum::ACTIVE,
+                    ProductCategoryStateEnum::DISCONTINUING
+                ])
+                ->where('product_categories.show_in_website', true)
+                ->whereNotNull('webpages.id')
+                ->where('webpages.state', WebpageStateEnum::LIVE->value)
+                ->whereNull('product_categories.deleted_at')
+                ->get()
+                ->toArray();
+        }
 
         $collectionList = $parent->collections()->where('collections.state', CollectionStateEnum::ACTIVE)
             ->leftJoin('webpages', function ($join) {
@@ -73,7 +77,7 @@ trait HasSubDepartmentsThree
 
         $familiesList = GetFamiliesUnderDepartmentPage::run($parent);
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['sub_department']['data']['fieldValue'] ?? []);
+        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout[$publishedLayoutKey]['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_department_list', $subDepartmentList ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.collections_list', $collectionList ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.filter_options', array_merge($subDepartmentList ?? [], $collectionList ?? []));

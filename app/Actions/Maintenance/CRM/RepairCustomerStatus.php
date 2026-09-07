@@ -12,6 +12,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairCustomerStatus
 {
@@ -27,6 +28,7 @@ class RepairCustomerStatus
 
     public function asCommand(): void
     {
+        Nightwatch::dontSample();
         $shops = Shop::where('registration_needs_approval', true)->get();
 
         foreach ($shops as $shop) {

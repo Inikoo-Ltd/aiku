@@ -16,8 +16,8 @@
         @cache('iris-favicon-'.request()->input('website')->id, 3600)
             <link rel="icon" type="image/png" sizes="16x16" href="{{ request()->input('website')->faviconSources(16, 16)['original'] ?? url('favicons/iris-favicon-16x16.png') }}">
             <link rel="icon" type="image/png" sizes="32x32" href="{{ request()->input('website')->faviconSources(32, 32)['original'] ?? url('favicons/iris-favicon-32x32.png') }}">
-            <link rel="icon" type="image/png" sizes="48x48" href="{{ request()->input('website')->faviconSources(48, 48)['original'] ?? url('favicons/iris-favicon.ico') }}">
-            <link rel="apple-touch-icon" sizes="180x180" href="{{ request()->input('website')->faviconSources(180, 180)['original'] ?? url('favicons/iris-apple-favicon-180x180.png') }}">
+            <link rel="icon" type="image/png" sizes="48x48" href="{{ request()->input('website')->faviconSources(48, 48)['original'] ?? url('favicons/iris-favicon-48x48.png') }}">
+            <link rel="apple-touch-icon" sizes="180x180" href="{{ request()->input('website')->faviconSources(180, 180)['original'] ?? url('favicons/iris-favicon-180x180.png') }}">
         @endcache
         @endif
 

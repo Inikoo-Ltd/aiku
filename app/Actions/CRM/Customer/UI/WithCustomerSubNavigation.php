@@ -59,7 +59,7 @@ trait WithCustomerSubNavigation
                     'tooltip' => __('Orders')
                 ]
             ],
-            [
+            $customer->shop->type !== ShopTypeEnum::EXTERNAL ? [
                 'label'    => __('Checkout abandonments'),
                 'number'   => $customer->checkoutAbandonments()->count(),
                 'route'     => [
@@ -70,7 +70,7 @@ trait WithCustomerSubNavigation
                     'icon'    => ['fal', 'fa-shopping-cart'],
                     'tooltip' => __('Checkout abandonments')
                 ]
-            ],
+            ] : null,
             [
                 'label'    => $deliveryNotedLabel,
                 'number'   => $customer->stats->number_delivery_notes,

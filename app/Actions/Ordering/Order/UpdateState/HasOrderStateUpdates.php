@@ -35,6 +35,11 @@ trait HasOrderStateUpdates
             OrderStateEnum::CREATING,
             OrderStateEnum::SUBMITTED,
         ])) {
+            /** Until the note is picked a short or missing line is not final - it is waiting, not
+             * lost - so the order keeps the amounts the customer submitted. Only from picked on
+             * are the amounts rewritten to what was actually taken, which is what gets invoiced. */
+            $picksAreFinal = $newState->isPickedOrLater();
+
             // INI-1811: Guard, is follow on products must always be 0
             foreach ($order->transactions()->where('model_type', 'Product')->where('is_follow_on', false)->get() as $transaction) {
                 $packedData = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction, $deliveryNote);
@@ -42,11 +47,13 @@ trait HasOrderStateUpdates
                 $transactionData = [
                     'status'          => TransactionStatusEnum::PROCESSING,
                     'quantity_picked' => $packedData['quantity'],
-                    'gross_amount'    => $packedData['gross_amount'],
-                    'net_amount'      => $packedData['net_amount'],
-                    'org_net_amount'  => $packedData['org_net_amount'],
-                    'grp_net_amount'  => $packedData['grp_net_amount'],
                 ];
+                if ($picksAreFinal) {
+                    $transactionData['gross_amount']   = $packedData['gross_amount'];
+                    $transactionData['net_amount']     = $packedData['net_amount'];
+                    $transactionData['org_net_amount'] = $packedData['org_net_amount'];
+                    $transactionData['grp_net_amount'] = $packedData['grp_net_amount'];
+                }
                 if ($newTransactionState !== null) {
                     $transactionData['state'] = $newTransactionState;
                 }

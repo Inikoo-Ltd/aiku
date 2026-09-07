@@ -79,6 +79,11 @@ const pricingBulkField = ref<'master_prices' | 'master_rrps' | null>(null)
 // Bumping this tells the bulk edit tab's table to open the tax modal for the selection
 const taxBulkSignal = ref(0)
 
+// Same channel for the in-cell edits: the table holds the pending changes, the page head
+// holds the button that submits them
+const bulkEditSaveSignal = ref(0)
+const bulkEditState = ref<{ dirty: number, saving: boolean }>({ dirty: 0, saving: false })
+
 const component = computed(() => {
     const components: any = {
         index: TableMasterProducts,
@@ -213,6 +218,7 @@ const SaveOrder = () => {
 
 watch(() => currentTab.value, (tab) => {
     selectedProductsId.value = {}
+    bulkEditState.value = { dirty: 0, saving: false }
 
     if (tab === 'index' || tab === 'index_ordering' || tab === 'sales') {
         localData.value = (props as any)[tab] || props.data
@@ -243,7 +249,7 @@ watch(() => currentTab.value, (tab) => {
             <Button
                 v-if="currentTab === 'index_ordering'"
                 :icon="action.icon"
-                :label="action.label" 
+                :label="action.label"
                 :style="action.style"
                 :onClick="SaveOrder"
                 :loading="loadingOrder"
@@ -271,6 +277,14 @@ watch(() => currentTab.value, (tab) => {
                 />
             </template>
             <template v-if="currentTab === 'bulk_edit'">
+                <Button
+                    @click="() => bulkEditSaveSignal++"
+                    :label="trans('Save changes') + ` (${bulkEditState.dirty})`"
+                    :disabled="!bulkEditState.dirty || bulkEditState.saving"
+                    :loading="bulkEditState.saving"
+                    type="save"
+                    :key="currentTab"
+                />
                 <Button
                     @click="() => taxBulkSignal++"
                     :label="trans('Set tax for selected') + ` (${compSelectedProductsId?.length})`"
@@ -323,6 +337,8 @@ watch(() => currentTab.value, (tab) => {
         :data="currentTab == 'index_ordering' ?  localData : props[currentTab]"
         :taxPresetOptions="taxPresetOptions"
         :taxBulkSignal="taxBulkSignal"
+        :bulkEditSaveSignal="bulkEditSaveSignal"
+        @bulkEditState="(state: { dirty: number, saving: boolean }) => bulkEditState = state"
         :majorCurrencies="pricingMajorCurrencies"
         :pricingCurrencies="pricingCurrencies"
         :bulkEditField="pricingBulkField"

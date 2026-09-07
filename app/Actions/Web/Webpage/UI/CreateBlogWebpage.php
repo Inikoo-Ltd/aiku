@@ -10,6 +10,7 @@ namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -69,8 +70,6 @@ class CreateBlogWebpage extends OrgAction
                 ],
                 'formData'    => [
                     'blueprint' => [
-
-
                         [
                             'title'  => __('Blog'),
                             'icon'   => ['fal', 'fa-fingerprint'],
@@ -102,10 +101,7 @@ class CreateBlogWebpage extends OrgAction
                                     'label'       => __('Blog Category'),
                                     'placeholder' => __('Select a blog category'),
                                     'mode'        => 'single',
-                                    'options'     => [
-                                        ['value' => 'davids_travel_blog', 'label' => __("David's Travel Blog")],
-                                        ['value' => 'tips', 'label' => __('Tips')],
-                                    ],
+                                    'options'     => WebpageSubTypeEnum::blogCategoriesWithLabel(),
                                     'value'       => '',
                                     'required'    => true,
                                 ],
@@ -113,9 +109,7 @@ class CreateBlogWebpage extends OrgAction
                         ]
                     ],
                     'route'     => $route,
-
                 ],
-
             ]
         );
     }

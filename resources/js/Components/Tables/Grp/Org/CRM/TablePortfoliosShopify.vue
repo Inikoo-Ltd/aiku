@@ -14,7 +14,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { computed, ref, onMounted } from "vue"
 import { routeType } from "@/types/route"
 import { notify } from "@kyvg/vue3-notification"
-import { faTrashAlt, faImage, faTools, faTimes } from "@fal"
+import { faTrashAlt, faImage, faTools, faTimes, faRecycle } from "@fal"
 import { faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Portfolio } from "@/types/portfolio"
@@ -29,7 +29,7 @@ import { debounce } from "lodash-es"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
 import { Message } from "primevue"
 
-library.add(faTrashAlt, faImage, faTools, faCheckCircle)
+library.add(faTrashAlt, faImage, faTools, faRecycle, faCheckCircle)
 
 interface ShopifyProduct {
     id: string // "gid://shopify/Product/12148498727252"
@@ -386,7 +386,7 @@ onMounted(() => {
 
         <template #cell(matches)="{ item: portfolio }">
             <template v-if="(portfolio.customer_sales_channel_platform_status)">
-                <template v-if="portfolio.platform_status">
+                <template v-if="!portfolio.platform_status">
                     <div v-if="portfolio.platform_possible_matches?.number_matches"  class="flex gap-x-2 items-center">
                         <div class="min-h-12 h-auto max-h-24 min-w-24 w-auto max-w-24 shadow bg-gray-100">
                             <img :src="portfolio.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
@@ -394,7 +394,6 @@ onMounted(() => {
                         <div class="flex flex-col justify-start items-start gap-y-1">
                             <div class="">{{ portfolio.platform_possible_matches?.matches_labels[0]}}</div>
                             <ButtonWithLink
-                                v-if="portfolio.platform_possible_matches?.number_matches"
                                 v-tooltip="trans('Match to existing Shopify product')"
                                 :routeTarget="{
                                     method: 'post',
@@ -412,26 +411,40 @@ onMounted(() => {
                                 size="xxs"
                                 icon="fal fa-tools"
                             />
-                            
-                            <Button
-                                xv-if="portfolio.platform_possible_matches?.number_matches"
-                                @click="() => (fetchRoute(), isOpenModalVariant = true, selectedPortfolio = portfolio)"
-                                :label="trans('Select other product from Shopify')"
-                                size="xxs"
-                                type="tertiary"
-                            />
                         </div>
                     </div>
-                </template> 
-                <Button v-else
-                    @click="() => {if(portfolio.is_for_sale) fetchRoute(); isOpenModalVariant = true; selectedPortfolio = portfolio}"
-                    :label="trans('Match it with an existing product in your shop')" 
-                    :capitalize="false"
-                    size="xxs"
-                    type="tertiary"
-                    :style="'white-w-outline'"
-                    :disabled="!portfolio.is_for_sale"
-                />
+
+                    <Button
+                        @click="() => {if(portfolio.is_for_sale) fetchRoute(); isOpenModalVariant = true; selectedPortfolio = portfolio}"
+                        :label="portfolio.platform_possible_matches?.number_matches ? trans('Select other product from Shopify') : trans('Match it with an existing product in your shop')"
+                        :capitalize="false"
+                        size="xxs"
+                        type="tertiary"
+                        :style="'white-w-outline'"
+                        :disabled="!portfolio.is_for_sale"
+                    />
+                </template>
+
+                <template v-else>
+                    <div v-if="portfolio.shopify_product_data?.title" class="flex gap-x-2 items-center">
+                        <div v-if="portfolio.shopify_product_data?.images?.edges?.[0]?.node?.src"
+                            class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
+                            <img :src="portfolio.shopify_product_data.images.edges[0].node.src" />
+                        </div>
+
+                        <div>
+                            <span class="mr-1">{{ portfolio.shopify_product_data.title }}</span>
+                        </div>
+                    </div>
+
+                    <Button class="mt-2"
+                        @click="() => (fetchRoute(), isOpenModalVariant = true, selectedPortfolio = portfolio)"
+                        :label="trans('Connect with other product')"
+                        :icon="faRecycle"
+                        size="xxs"
+                        type="tertiary"
+                    />
+                </template>
             </template>
 
             <div v-else-if="portfolio.matched_product?.label">

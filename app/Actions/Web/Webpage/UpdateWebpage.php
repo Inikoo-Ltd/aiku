@@ -153,6 +153,8 @@ class UpdateWebpage extends OrgAction
 
         if (Arr::has($changes, 'url')) {
             ProcessUpdateWebpageUrl::dispatch($webpage, $oldUrl);
+        } elseif (Arr::has($changes, 'sub_type') && $webpage->type == WebpageTypeEnum::BLOG) {
+            UpdateWebpageCanonicalUrl::dispatch($webpage, false);
         }
 
         if (Arr::has($changes, 'state')) {
@@ -207,7 +209,7 @@ class UpdateWebpage extends OrgAction
             'seo_data'                       => ['sometimes', 'array'],
             'structured_data'                => ['sometimes', 'nullable', 'string'],
             'level'                          => ['sometimes', 'integer'],
-            'sub_type'                       => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
+            'sub_type'                       => $this->subTypeRules(),
             'type'                           => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
             'state_data'                     => ['sometimes', 'array'],
             'state_data.state'               => ['sometimes', Rule::enum(WebpageStateEnum::class)],
@@ -237,6 +239,31 @@ class UpdateWebpage extends OrgAction
         }
 
         return $rules;
+    }
+
+    /**
+     * A blog converted from a mailshot is edited with the Beefree builder, which the workshop picks
+     * by the mailshot sub type, so the sub type is locked to keep the builder and its stored layout
+     * in step.
+     *
+     * @return array<int, mixed>
+     */
+    protected function subTypeRules(): array
+    {
+        $rules = ['sometimes', Rule::enum(WebpageSubTypeEnum::class)];
+
+        if ($this->strict && $this->webpage->sub_type == WebpageSubTypeEnum::MAILSHOT) {
+            $rules[] = Rule::in([WebpageSubTypeEnum::MAILSHOT->value]);
+        }
+
+        return $rules;
+    }
+
+    public function getValidationMessages(): array
+    {
+        return [
+            'sub_type.in' => __('The category of a blog made from a mailshot can not be changed.'),
+        ];
     }
 
     public function action(Webpage $webpage, array $modelData, int $hydratorsDelay = 0, $strict = true, bool $audit = true): Webpage

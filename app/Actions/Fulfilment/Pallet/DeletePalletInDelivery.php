@@ -21,7 +21,6 @@ use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletDelivery;
-use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeletePalletInDelivery extends OrgAction
@@ -66,7 +65,7 @@ class DeletePalletInDelivery extends OrgAction
         return $request->user()->authTo("fulfilment.{$this->fulfilment->id}.edit");
     }
 
-    public function asController(Organisation $organisation, FulfilmentCustomer $fulfilmentCustomer, PalletDelivery $palletDelivery, Pallet $pallet, ActionRequest $request): bool
+    public function asController(FulfilmentCustomer $fulfilmentCustomer, PalletDelivery $palletDelivery, Pallet $pallet, ActionRequest $request): bool
     {
         $this->pallet = $pallet;
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);

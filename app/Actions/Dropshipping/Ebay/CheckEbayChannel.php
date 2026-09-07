@@ -23,25 +23,44 @@ class CheckEbayChannel
 {
     use asAction;
     use WithActionUpdate;
+    use WithEbaySellerRegistration;
 
     public function handle(EbayUser $ebayUser): CustomerSalesChannel
     {
         $platformStatus = $canConnectToPlatform = $existInPlatform = false;
 
-        if (!$ebayUser->fulfillment_policy_id || !$ebayUser->return_policy_id || !$ebayUser->payment_policy_id || !$ebayUser->location_key) {
+        if (!$ebayUser->fulfillment_policy_id || !$ebayUser->return_policy_id || !$ebayUser->payment_policy_id || !$ebayUser->hasUsableLocationKey()) {
             UpdateEbayUserData::run($ebayUser);
 
             $ebayUser->refresh();
         }
 
+        if ($ebayUser->fulfillment_policy_id) {
+            $usableFulfilmentPolicyId = $ebayUser->getUsableFulfilmentPolicyId($ebayUser->fulfillment_policy_id);
+
+            if ($usableFulfilmentPolicyId && $usableFulfilmentPolicyId !== $ebayUser->fulfillment_policy_id) {
+                $this->update($ebayUser, ['fulfillment_policy_id' => $usableFulfilmentPolicyId]);
+
+                $ebayUser->refresh();
+            }
+        }
+
         $step = EbayUserStepEnum::MARKETPLACE;
 
-        if (! blank($ebayUser->getUser())) {
+        $ebayApiUser = $ebayUser->getUser();
+
+        if (blank($ebayApiUser) && !$ebayUser->ebayAuthRevoked) {
+            return $ebayUser->customerSalesChannel;
+        }
+
+        if (! blank($ebayApiUser)) {
             $canConnectToPlatform = true;
             $existInPlatform = true;
             $step = EbayUserStepEnum::AUTH;
 
-            if ($ebayUser->fulfillment_policy_id && $ebayUser->return_policy_id && $ebayUser->payment_policy_id && $ebayUser->location_key) {
+            $this->refreshEbaySellerRegistration($ebayUser);
+
+            if ($ebayUser->fulfillment_policy_id && $ebayUser->return_policy_id && $ebayUser->payment_policy_id && $ebayUser->hasUsableLocationKey()) {
                 $step = EbayUserStepEnum::COMPLETED;
                 $platformStatus = true;
             }

@@ -33,18 +33,25 @@ class SyncChatSessionByEmail
 
     public function handle(ChatSession $chatSession, string $email): array
     {
-        $webUser = WebUser::where('email', $email)->first();
+        $shopId = $chatSession->shop_id;
 
-        if (!$webUser) {
-            $webUser = WebUser::whereHas('customer', function ($q) use ($email) {
-                $q->where('email', $email);
-            })->first();
-        }
+        // Only match a customer registered in the same shop the guest is chatting from,
+        // never across the whole database.
+        $webUser = $shopId
+            ? WebUser::where('shop_id', $shopId)
+                ->where(function ($query) use ($email) {
+                    $query->where('email', $email)
+                        ->orWhereHas('customer', function ($customerQuery) use ($email) {
+                            $customerQuery->where('email', $email);
+                        });
+                })
+                ->first()
+            : null;
 
         if (!$webUser) {
             return [
                 'success' => false,
-                'message' => 'No customer found for the provided email',
+                'message' => 'No customer registered with this email in this shop',
                 'data' => [
                     'email' => $email,
                     'chat_session_ulid' => $chatSession->ulid,

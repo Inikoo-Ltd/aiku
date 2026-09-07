@@ -9,6 +9,7 @@
 namespace App\Actions\GoodsIn\StockDelivery\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -17,6 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditStockDelivery extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
+
     public function handle(StockDelivery $stockDelivery): StockDelivery
     {
         return $stockDelivery;

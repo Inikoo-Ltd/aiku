@@ -100,7 +100,10 @@ function createOrderWithPastpayApiPoint($customer, $product, PaymentAccountShop 
 
     $order = StoreOrder::make()->action($customer, $modelData);
 
-    StoreTransaction::make()->action($order, $product->historicAsset, Transaction::factory()->definition());
+    StoreTransaction::make()->action($order, $product->historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 2]
+    ));
     $order->refresh();
 
     $orderPaymentApiPoint = StoreOrderPaymentApiPoint::run($order);

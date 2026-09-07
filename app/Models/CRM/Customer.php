@@ -27,6 +27,7 @@ use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\AllegroUser;
+use App\Models\Dropshipping\WixUser;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -111,6 +112,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property Carbon|null $last_submitted_order_at
  * @property Carbon|null $last_dispatched_delivery_at
  * @property Carbon|null $last_invoiced_at
+ * @property Carbon|null $gr_extended_until
  * @property array<array-key, mixed> $data
  * @property array<array-key, mixed> $settings
  * @property string|null $internal_notes
@@ -146,13 +148,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $accounting_reference Sage customer number
  * @property string|null $external_id
  * @property string|null $searchable_text Normalized search cache for ILIKE queries
- * @property string|null $eori
- * @property string|null $ukims
  * @property string|null $identity_document_number_alt
  * @property string|null $fiscal_name
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
+ * @property-read Collection<int, Product> $allExclusiveProducts
  * @property-read Collection<int, AllegroUser> $allegroUsers
+ * @property-read Collection<int, WixUser> $wixUsers
  * @property-read Collection<int, AmazonUser> $amazonUsers
  * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -237,6 +239,9 @@ class Customer extends Model implements HasMedia, Auditable
     use Notifiable;
     use HasSearchableText;
     use HasSearch;
+    /* A recorded marketing touch is telemetry, not an edit someone made; auditing it would write an
+       audit row for every tracked email click. */
+    protected array $auditExclude = ['traffic_sources'];
 
     protected $casts = [
         'data'                        => 'array',
@@ -251,6 +256,7 @@ class Customer extends Model implements HasMedia, Auditable
         'last_submitted_order_at'     => 'datetime',
         'last_dispatched_delivery_at' => 'datetime',
         'last_invoiced_at'            => 'datetime',
+        'gr_extended_until'           => 'datetime',
         'fetched_at'                  => 'datetime',
         'rejected_at'                 => 'datetime',
         'last_fetched_at'             => 'datetime',
@@ -269,6 +275,11 @@ class Customer extends Model implements HasMedia, Auditable
 
     protected $guarded = [];
 
+    public function hasActiveGrExtension(): bool
+    {
+        return $this->gr_extended_until !== null && $this->gr_extended_until->endOfDay()->isFuture();
+    }
+
     public function searchIndexShouldBeUpdated(): bool
     {
         return $this->wasRecentlyCreated
@@ -281,7 +292,6 @@ class Customer extends Model implements HasMedia, Auditable
                 'contact_name',
                 'company_name',
                 'fiscal_name',
-                'eori',
                 'email',
                 'phone',
                 'contact_website',
@@ -289,8 +299,7 @@ class Customer extends Model implements HasMedia, Auditable
                 'internal_notes',
                 'warehouse_internal_notes',
                 'warehouse_public_notes',
-                'eori',
-                'ukims',
+                'shipping_notes',
                 'created_at'
             ]);
     }
@@ -313,8 +322,6 @@ class Customer extends Model implements HasMedia, Auditable
             'phone'                    => (string)$this->phone,
             'contact_website'          => (string)$this->contact_website,
             'identity_document_number' => (string)$this->identity_document_number,
-            'eori'                     => (string)$this->identity_document_number,
-            'ukims'                    => (string)$this->identity_document_number,
             'notes'                    => preg_replace('/\s+/', ' ', trim($this->internal_notes.' '.$this->warehouse_internal_notes.' '.$this->warehouse_public_notes)),
             'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
@@ -335,13 +342,18 @@ class Customer extends Model implements HasMedia, Auditable
         'contact_name',
         'company_name',
         'fiscal_name',
-        'eori',
-        'ukims',
         'email',
         'phone',
         'contact_website',
         'identity_document_type',
         'identity_document_number',
+        'status',
+        'state',
+        'trade_state',
+        'balance',
+        'address_id',
+        'delivery_address_id',
+        'is_credit_customer',
     ];
 
     protected array $searchable_columns = [
@@ -349,8 +361,6 @@ class Customer extends Model implements HasMedia, Auditable
         'name',
         'contact_name',
         'company_name',
-        'eori',
-        'ukims',
         'email',
         'phone',
     ];
@@ -543,6 +553,11 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasMany(TiktokUser::class);
     }
 
+    public function wixUsers(): HasMany
+    {
+        return $this->hasMany(WixUser::class);
+    }
+
     public function allegroUsers(): HasMany
     {
         return $this->hasMany(AllegroUser::class);
@@ -618,6 +633,16 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasMany(Product::class, 'exclusive_for_customer_id');
     }
 
+    /**
+     * Every product this customer may buy exclusively. exclusiveProducts() only finds the ones
+     * where they are the primary customer, which undercounts anything shared with another customer.
+     */
+    public function allExclusiveProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'product_has_exclusive_customers')
+            ->withTimestamps();
+    }
+
     public function trafficSource(): BelongsTo
     {
         return $this->belongsTo(TrafficSource::class, 'traffic_source_id');
@@ -626,7 +651,7 @@ class Customer extends Model implements HasMedia, Auditable
     public function trafficSources(): MorphToMany
     {
         return $this->morphToMany(TrafficSource::class, 'model', 'model_has_traffic_sources')
-            ->withPivot('share')
+            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model', 'first_touch_at', 'last_touch_at'])
             ->withTimestamps();
     }
 

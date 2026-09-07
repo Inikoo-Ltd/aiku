@@ -26,10 +26,46 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreProductCategoryDiscount extends OrgAction
 {
+    /**
+     * @throws \Throwable
+     *
+     * @return array{offers: array<int, Offer>, skipped: int}
+     */
+    public function handleMultiple(array $modelData): array
+    {
+        $productCategoryIds = array_unique(
+            Arr::wrap(Arr::pull($modelData, 'product_category_ids') ?? Arr::pull($modelData, 'product_category_id'))
+        );
+
+        $offers  = [];
+        $skipped = 0;
+
+        foreach ($productCategoryIds as $productCategoryId) {
+            try {
+                $offer = $this->handle(array_merge($modelData, ['product_category_id' => $productCategoryId]));
+            } catch (ValidationException $e) {
+                if (Arr::has($e->errors(), 'code')) {
+                    $skipped++;
+                    continue;
+                }
+                throw $e;
+            }
+
+            if ($offer) {
+                $offers[] = $offer;
+            } else {
+                $skipped++;
+            }
+        }
+
+        return ['offers' => $offers, 'skipped' => $skipped];
+    }
+
     /**
      * @throws \Throwable
      */
@@ -73,13 +109,14 @@ class StoreProductCategoryDiscount extends OrgAction
         $code = Str::lower($offerCampaign->code.'-'.$productCategory->code);
         data_set($modelData, 'code', $code, false);
 
-        $english = Language::where('code', 'en')->first();
-        data_set(
-            $modelData,
-            'name',
-            Translate::run('Category Discount', $english, $productCategory->shop->language, 'gpt-5-nano').' '.$productCategory->code,
-            false
-        );
+        if (!Arr::has($modelData, 'name')) {
+            $english = Language::where('code', 'en')->first();
+            data_set(
+                $modelData,
+                'name',
+                Translate::run('Category Discount', $english, $productCategory->shop->language, 'gpt-5-nano').' '.$productCategory->code
+            );
+        }
 
         data_set($modelData, 'trigger_type', 'ProductCategory');
         data_set($modelData, 'trigger_id', $productCategory->id);
@@ -174,7 +211,9 @@ class StoreProductCategoryDiscount extends OrgAction
             ],
             'end_at'                     => ['nullable', 'required_if:duration,interval', 'date'],
             'percentage_off'             => ['required', 'numeric', 'gt:0', 'lt:100'],
-            'product_category_id'        => ['required', 'integer', 'exists:product_categories,id'],
+            'product_category_id'        => ['required_without:product_category_ids', 'integer', 'exists:product_categories,id'],
+            'product_category_ids'       => ['required_without:product_category_id', 'array', 'min:1'],
+            'product_category_ids.*'     => ['integer', 'exists:product_categories,id'],
             'target_product_category_id' => ['sometimes', 'nullable', 'integer', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
         ];
     }
@@ -182,18 +221,47 @@ class StoreProductCategoryDiscount extends OrgAction
 
     /**
      * @throws \Throwable
+     *
+     * @return array{offers: array<int, Offer>, skipped: int}
      */
-    public function asController(Shop $shop, ActionRequest $request): Offer
+    public function asController(Shop $shop, ActionRequest $request): array
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($this->validatedData);
+        return $this->handleMultiple($this->validatedData);
     }
 
-    public function jsonResponse(Offer $offer): array
+    /**
+     * @param array{offers: array<int, Offer>, skipped: int} $result
+     */
+    public function jsonResponse(array $result): array
     {
+        $offers = $result['offers'];
+
+        /** @var Offer|null $offer */
+        $offer = Arr::first($offers);
+
+        if (!$offer) {
+            $url = null;
+        } elseif (count($offers) == 1) {
+            $url = route('grp.org.shops.show.discounts.campaigns.offer.show', [
+                'organisation'  => $offer->organisation->slug,
+                'shop'          => $offer->shop->slug,
+                'offerCampaign' => $offer->offerCampaign->slug,
+                'offer'         => $offer->slug,
+            ]);
+        } else {
+            $url = route('grp.org.shops.show.discounts.campaigns.show', [
+                'organisation'  => $offer->organisation->slug,
+                'shop'          => $offer->shop->slug,
+                'offerCampaign' => $offer->offerCampaign->slug,
+            ]);
+        }
+
         return [
-            'slug' => $offer->slug,
+            'url'     => $url,
+            'created' => count($offers),
+            'skipped' => $result['skipped'],
         ];
     }
 

@@ -17,7 +17,6 @@ use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
-use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -115,7 +114,7 @@ class UpdatePalletReturn extends OrgAction
         ];
     }
 
-    public function asController(Organisation $organisation, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
+    public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
         $this->palletReturn = $palletReturn;
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);

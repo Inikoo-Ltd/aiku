@@ -1,6 +1,7 @@
 <script setup lang="ts">
 
 import Table from "@/Components/Table/Table.vue"
+import MarginCell from "@/Components/Margin/MarginCell.vue"
 import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Link } from "@inertiajs/vue3"
@@ -57,6 +58,10 @@ function assetRedirectRoute(transaction: InvoiceTransaction) {
                         <FontAwesomeIcon icon="fal fa-gift" class="" fixed-width aria-hidden="true" />
                     </span>
                 </div>
+            </template>
+
+            <template #cell(margin)="{ item }">
+                <MarginCell :margin="item.margin" :currencyCode="item.currency_code" />
             </template>
 
             <template #cell(net_amount)="{ item }">

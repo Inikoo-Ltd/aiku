@@ -17,6 +17,7 @@ use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Throwable;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairTradeUnitsImageSlots
 {
@@ -130,6 +131,7 @@ class RepairTradeUnitsImageSlots
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $dryRun         = (bool) $command->option('dry-run');
         $forcePropagate = (bool) $command->option('force-propagate');
 

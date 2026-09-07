@@ -85,6 +85,7 @@ class IrisProductsInWebpageResource extends JsonResource
             'url'             => $url,
             'top_seller'      => $this->top_seller,
             'web_images'      => $this->getCardWebImages($this->web_images),
+            'audio'           => $this->audio_ulid ? '/audio/'.$this->audio_ulid : null,
             'transaction_id'  => $this->transaction_id,
             'is_on_demand'    => $this->is_on_demand,
             'is_variant'      => $this->is_variant,

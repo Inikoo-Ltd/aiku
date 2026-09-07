@@ -2,23 +2,23 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sun, 04 Feb 2024 17:35:41 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Sun, 04 Feb 2024 09:06:02 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
 namespace App\Actions\UI\AikuPublic;
 
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Contracts\View\View;
 use Lorisleiva\Actions\Concerns\AsController;
 
 class ShowHome
 {
     use AsController;
 
-    public function handle(): Response
+    public function handle(): View
     {
-        return Inertia::render('Home');
+        return view('aiku-public.home', [
+            'posts' => BlogPosts::all()->take(3),
+        ]);
     }
-
 }

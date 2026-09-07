@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\WooCommerce\Orders;
 
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
+use App\Actions\Dropshipping\WithSanitizedPhone;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
@@ -35,6 +36,7 @@ class StoreOrderFromWooCommerce extends OrgAction
     use WithActionUpdate;
     use WithGeneratedWooCommerceAddress;
     use WithPayAndSubmitOrder;
+    use WithSanitizedPhone;
 
     /**
      * @throws \Throwable
@@ -103,7 +105,7 @@ class StoreOrderFromWooCommerce extends OrgAction
                 'company_name' => Arr::get($wooOrderData, 'shipping.company'),
                 'phone'        => $this->sanitizePhone(Arr::get($wooOrderData, 'shipping.phone')),
                 'address'      => $this->digestWooAddress(Arr::get($wooOrderData, 'billing'))->toArray(),
-            ]);
+            ], strict: false);
         } else {
             $customerClient = CustomerClient::find($customerClientID->id);
             $customerClient = UpdateCustomerClient::make()->action($customerClient, [
@@ -113,21 +115,13 @@ class StoreOrderFromWooCommerce extends OrgAction
                 'phone'        => $this->sanitizePhone(Arr::get($wooOrderData, 'shipping.phone')),
                 'address'      => $this->digestWooAddress(Arr::get($wooOrderData, 'billing'))->toArray(),
 
-            ]);
+            ], strict: false);
         }
 
 
         return $customerClient;
     }
 
-    private function sanitizePhone($phone): array|string|null
-    {
-        // Extract only digits
-        $digits = preg_replace('/[^0-9]/', '', $phone);
-
-        // Ensure minimum 10 digits
-        return strlen($digits) >= 10 ? $digits : str_pad($digits, 10, '0', STR_PAD_RIGHT);
-    }
 
     public function digestWooAddress($wooOrderData): Address
     {
@@ -154,26 +148,50 @@ class StoreOrderFromWooCommerce extends OrgAction
     }
 
 
+    /**
+     * A line for a variation carries both the variation id and the parent product id. A portfolio
+     * matched to the variation wins, one matched to the parent covers every variation of it.
+     *
+     * @return array<int, string>
+     */
+    public static function lineItemPlatformProductIds(array $item): array
+    {
+        return array_values(array_map(
+            'strval',
+            array_filter([Arr::get($item, 'variation_id'), Arr::get($item, 'product_id')])
+        ));
+    }
+
     public function digestWooProducts(WooCommerceUser $wooCommerceUser, array $wooOrderData): array
     {
         $orderedProducts = [];
         foreach (Arr::get($wooOrderData, 'line_items', []) as $item) {
-            $portfolioData = DB::table('portfolios')->select('item_id')->where('item_type', 'Product')->where('customer_sales_channel_id', $wooCommerceUser->customer_sales_channel_id)
-                ->where('platform_product_id', $item['product_id'])->first();
+            $platformProductIds = self::lineItemPlatformProductIds($item);
+
+            $portfolioData = DB::table('portfolios')
+                ->select('item_id', 'platform_product_id')
+                ->where('item_type', 'Product')
+                ->where('customer_sales_channel_id', $wooCommerceUser->customer_sales_channel_id)
+                ->whereIn('platform_product_id', $platformProductIds)
+                ->get()
+                ->sortBy(fn ($portfolio) => array_search($portfolio->platform_product_id, $platformProductIds))
+                ->first();
+
             if ($portfolioData && $portfolioData->item_id) {
-                $product = Product::find($portfolioData->item_id);
-                if ($product) {
+                $product       = Product::find($portfolioData->item_id);
+                $historicAsset = $product?->currentHistoricProduct;
+                if ($historicAsset) {
                     $orderedProducts[] = [
-                        'historicAsset'           => $product->currentHistoricProduct,
+                        'historicAsset'           => $historicAsset,
                         'quantity_ordered'        => $item['quantity'],
                         'platform_transaction_id' => $item['id']
                     ];
+                } else {
+                    Sentry::captureMessage('Woo order item '.$item['id'].' matched portfolio for product '.$portfolioData->item_id.' but could not resolve a '.($product ? 'historic asset' : 'product').', item dropped');
                 }
             }
         }
 
         return $orderedProducts;
     }
-
-
 }

@@ -22,6 +22,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $status
  * @property mixed $quantity
  * @property mixed $marketing_weight
+ * @property mixed $grp_currency_code
  * @property mixed $sales_grp_currency_external
  * @property mixed $sales_grp_currency_external_ly
  * @property mixed $invoices
@@ -77,6 +78,7 @@ class TradeUnitsResource extends JsonResource
             'status'                            => $tradeUnit->status,
             'status_icon'                       => $tradeUnit->status ? $tradeUnit->status->icon()[$tradeUnit->status->value] : null,
             'media'                             => null,
+            'grp_currency'                      => $tradeUnit->grp_currency_code,
             'sales_grp_currency_external'       => $tradeUnit->sales_grp_currency_external ?? 0,
             'sales_grp_currency_external_ly'    => $tradeUnit->sales_grp_currency_external_ly ?? 0,
             'sales_grp_currency_external_delta' => $this->calculateDelta($tradeUnit->sales_grp_currency_external ?? 0, $tradeUnit->sales_grp_currency_external_ly ?? 0),

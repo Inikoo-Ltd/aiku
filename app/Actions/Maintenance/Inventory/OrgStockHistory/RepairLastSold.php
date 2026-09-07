@@ -8,13 +8,16 @@
 
 namespace App\Actions\Maintenance\Inventory\OrgStockHistory;
 
+use App\Actions\Traits\WithStockHistoryArchiveWrite;
 use App\Models\Inventory\OrgStockHistory;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairLastSold
 {
     use asAction;
+    use WithStockHistoryArchiveWrite;
 
     public function handle(OrgStockHistory $orgStockHistory): void
     {
@@ -37,22 +40,33 @@ class RepairLastSold
         return 'repair:last-sold';
     }
 
+    /**
+     * An Eloquent model carries its own connection, so a history read from the archive is written
+     * back there; only the source of the walk has to know both databases exist.
+     */
     public function asCommand(Command $command): void
     {
-        $total = OrgStockHistory::count();
-        $bar   = $command->getOutput()->createProgressBar($total);
-        $bar->setFormat('debug');
-        $bar->start();
+        Nightwatch::dontSample();
+        foreach ($this->stockHistoryWriteConnections() as $connection) {
+            $query = $connection ? OrgStockHistory::on($connection) : OrgStockHistory::query();
 
-        OrgStockHistory::chunk(10000, function ($orgStockHistories) use ($command, $bar) {
-            foreach ($orgStockHistories as $orgStockHistory) {
-                $this->handle($orgStockHistory);
-                $bar->advance();
-            }
-        });
+            $command->info('Repairing '.($connection ?? 'operational').' stock histories');
 
-        $bar->finish();
-        $command->newLine();
+            $bar = $command->getOutput()->createProgressBar((clone $query)->count());
+            $bar->setFormat('debug');
+            $bar->start();
+
+            $query->chunk(10000, function ($orgStockHistories) use ($bar) {
+                foreach ($orgStockHistories as $orgStockHistory) {
+                    $this->handle($orgStockHistory);
+                    $bar->advance();
+                }
+            });
+
+            $bar->finish();
+            $command->newLine();
+        }
+
         $command->info('Completed processing OrgStockHistory records.');
     }
 

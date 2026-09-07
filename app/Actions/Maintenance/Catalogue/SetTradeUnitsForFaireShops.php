@@ -15,6 +15,7 @@ use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class SetTradeUnitsForFaireShops
 {
@@ -79,6 +80,7 @@ class SetTradeUnitsForFaireShops
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         if ($command->option('product')) {
             $product = Product::where('slug', $command->option('product'))->firstOrFail();
             $this->handle($product, $command);

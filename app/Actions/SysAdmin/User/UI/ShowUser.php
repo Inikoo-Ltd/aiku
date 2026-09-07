@@ -128,8 +128,8 @@ class ShowUser extends OrgAction
                     : Inertia::optional(fn () => ApiTokensResource::collection(IndexApiTokens::run($user, prefix: UserTabsEnum::API_TOKENS->value))),
 
                 UserTabsEnum::HISTORY->value => $this->tab == UserTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($user))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($user)))
+                    fn () => HistoryResource::collection(IndexHistory::run($user, UserTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($user, UserTabsEnum::HISTORY->value)))
 
             ]
         )

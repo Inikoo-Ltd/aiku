@@ -19,6 +19,7 @@ import { trans } from "laravel-vue-i18n"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import Image from "@common/Components/Image.vue"
 import { faHandHoldingMagic, faPlus } from "@far"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
@@ -51,6 +52,7 @@ const props = defineProps<{
   },
   trade_units?: Object
   attachments?:any
+  history?: Object
 }>()
 console.log(props)
 const currentTab = ref(props.tabs.current)
@@ -66,7 +68,8 @@ const component = computed(() => {
   const components = {
     showcase: TradeUnitFamiliesShowcase,
     trade_units: TableTradeUnits,
-    attachments : AttachmentManagement
+    attachments : AttachmentManagement,
+    history: TableHistories
   }
   return components[currentTab.value]
 })

@@ -17,6 +17,23 @@ class GetOrganisationNavigation
     use AsAction;
     use WithLayoutNavigation;
 
+    /**
+     * Marketing is a shop-scoped permission, so the organisation-wide entry appears for anyone who may
+     * see marketing on any shop of it. There is no unscoped `marketing.view` to check.
+     *
+     * @param \Illuminate\Support\Collection<int, int> $shopIds
+     */
+    private function canViewAnyShopMarketing(User $user, $shopIds): bool
+    {
+        foreach ($shopIds as $shopId) {
+            if ($user->authTo("marketing.$shopId.view")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function handle(User $user, Organisation $organisation): array
     {
         $navigation = [];
@@ -135,12 +152,35 @@ class GetOrganisationNavigation
                             ]
                         ],
                         [
+                            'label' => __("Agent's Shipping List"),
+                            'icon'  => ['fal', 'fa-shopping-basket'],
+                            'root'  => 'grp.org.procurement.shopping_list.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.shopping_list.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
+                            'label' => __('Agent Suppliers'),
+                            'icon'  => ['fal', 'fa-person-dolly'],
+                            'root'  => 'grp.org.procurement.org_agent_suppliers.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.org_agent_suppliers.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
                             'label' => __('Suppliers'),
                             'icon'  => ['fal', 'fa-person-dolly'],
                             'root'  => 'grp.org.procurement.org_suppliers.',
                             'route' => [
                                 'name'       => 'grp.org.procurement.org_suppliers.index',
-                                'parameters' => [$organisation->slug],
+                                'parameters' => [
+                                    'organisation' => $organisation->slug,
+                                    '_query'       => [
+                                        'sort' => 'code',
+                                    ],
+                                ],
                             ]
                         ],
                         [
@@ -173,98 +213,118 @@ class GetOrganisationNavigation
         $navigation = $this->getHumanResourcesNavs($user, $organisation, $navigation);
 
 
-        $navigation['overview'] = [
-            'label'   => __('Overview'),
-            'icon'    => ['fal', 'fa-mountains'],
-            'root'    => 'grp.org.overview.',
+        if ($this->canViewAnyShopMarketing($user, $organisation->shops()->pluck('id'))) {
+            $navigation['marketing'] = [
+                'label' => __('Org Marketing'),
+                'icon'  => ['fal', 'fa-bullhorn'],
+                'root'  => 'grp.org.marketing.',
+                'route' => [
+                    'name'       => 'grp.org.marketing.dashboard',
+                    'parameters' => [$organisation->slug],
+                ],
+            ];
+        }
 
-            'route' => [
-                'name'       => 'grp.org.overview.hub',
-                'parameters' => [$organisation->slug],
-            ],
+        if ($user->authTo('org-reports.'.$organisation->id)) {
+            $navigation['overview'] = [
+                'label'   => __('Overview'),
+                'icon'    => ['fal', 'fa-mountains'],
+                'root'    => 'grp.org.overview.',
 
-            'topMenu' => [
-                'subSections' => [
-                    [
-                        'label'   => __('Top Customers'),
-                        'icon'    => ['fal', 'fa-trophy'],
-                        'root'    => 'grp.org.overview.customers.top_customers',
-                        'route'   => [
-                            'name'       => 'grp.org.overview.customers.top_customers',
-                            'parameters' => [$organisation->slug]
-                        ]
-                    ],
+                'route' => [
+                    'name'       => 'grp.org.overview.hub',
+                    'parameters' => [$organisation->slug],
+                ],
+
+                'topMenu' => [
+                    'subSections' => [
+                        [
+                            'label'   => __('Top Customers'),
+                            'icon'    => ['fal', 'fa-trophy'],
+                            'root'    => 'grp.org.overview.customers.top_customers',
+                            'route'   => [
+                                'name'       => 'grp.org.overview.customers.top_customers',
+                                'parameters' => [$organisation->slug]
+                            ]
+                        ],
+                    ]
                 ]
-            ]
-        ];
+            ];
+        }
 
         $navigation = $this->getReportsNavs($user, $organisation, $navigation);
 
 
-        $navigation['chat'] = [
-            'label'   => __('Chat'),
-            'icon'    => ['fal', 'comment-alt'],
-            'root'    => 'grp.org.chat.',
-            'route'   => [
-                'name'       => 'grp.org.chat.dashboard',
-                'parameters' => [$organisation->slug],
-            ],
-            'topMenu' => [
-                'subSections' => [
-                    [
-                        'label'   => __('Dashboard'),
-                        'icon'    => ['fal', 'comment-alt'],
-                        'root'    => 'grp.org.chat.dashboard',
-                        'route'   => [
-                            'name'       => 'grp.org.chat.dashboard',
-                            'parameters' => [$organisation->slug],
-                        ],
-                    ],
-                    [
-                        'label'   => __('Agents'),
-                        'icon'    => ['fal', 'fa-headset'],
-                        'root'    => 'grp.org.chat.agents.show',
-                        'route'   => [
-                            'name'       => 'grp.org.chat.agents.show',
-                            'parameters' => [$organisation->slug],
-                        ],
-                    ],
-                    [
-                        'label'   => __('Conversations'),
-                        'icon'    => ['fal', 'fa-comments'],
-                        'root'    => 'grp.org.chat.conversations.show',
-                        'route'   => [
-                            'name'       => 'grp.org.chat.conversations.show',
-                            'parameters' => [$organisation->slug],
-                        ],
-                    ],
-                    ...($user->chatAgent ? [
+        $canSeeShops = $user->authTo(['accounting.'.$organisation->id.'.view', 'org-supervisor.'.$organisation->id, 'shops-view.'.$organisation->id]);
+
+        if ($canSeeShops || $user->chatAgent) {
+            $navigation['chat'] = [
+                'label'   => __('Chat'),
+                'icon'    => ['fal', 'comment-alt'],
+                'root'    => 'grp.org.chat.',
+                'route'   => [
+                    'name'       => 'grp.org.chat.dashboard',
+                    'parameters' => [$organisation->slug],
+                ],
+                'topMenu' => [
+                    'subSections' => [
                         [
-                            'label'   => __('Inbox'),
-                            'icon'    => ['fal', 'fa-inbox'],
-                            'root'    => 'grp.org.chat.inbox',
+                            'label'   => __('Dashboard'),
+                            'icon'    => ['fal', 'comment-alt'],
+                            'root'    => 'grp.org.chat.dashboard',
                             'route'   => [
-                                'name'       => 'grp.org.chat.inbox',
+                                'name'       => 'grp.org.chat.dashboard',
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
-                    ] : []),
+                        [
+                            'label'   => __('Agents'),
+                            'icon'    => ['fal', 'fa-headset'],
+                            'root'    => 'grp.org.chat.agents.show',
+                            'route'   => [
+                                'name'       => 'grp.org.chat.agents.show',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
+                        [
+                            'label'   => __('Conversations'),
+                            'icon'    => ['fal', 'fa-comments'],
+                            'root'    => 'grp.org.chat.conversations.show',
+                            'route'   => [
+                                'name'       => 'grp.org.chat.conversations.show',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
+                        ...($user->chatAgent ? [
+                            [
+                                'label'   => __('Inbox'),
+                                'icon'    => ['fal', 'fa-inbox'],
+                                'root'    => 'grp.org.chat.inbox',
+                                'route'   => [
+                                    'name'       => 'grp.org.chat.inbox',
+                                    'parameters' => [$organisation->slug],
+                                ],
+                            ],
+                        ] : []),
+                    ],
                 ],
-            ],
-        ];
+            ];
+        }
 
-        $navigation['calendar_offers'] = [
-            'label'   => __('Calendar Offers'),
-            'icon'    => ['fal', 'fa-calendar'],
-            'root'    => 'grp.org.offer.calendar',
-            'route'   => [
-                'name'       => 'grp.org.offer.calendar',
-                'parameters' => [
-                    'organisation' => $organisation->slug,
+        if ($canSeeShops) {
+            $navigation['calendar_offers'] = [
+                'label'   => __('Calendar Offers'),
+                'icon'    => ['fal', 'fa-calendar'],
+                'root'    => 'grp.org.offer.calendar',
+                'route'   => [
+                    'name'       => 'grp.org.offer.calendar',
+                    'parameters' => [
+                        'organisation' => $organisation->slug,
+                    ],
                 ],
-            ],
-            'topMenu' => [],
-        ];
+                'topMenu' => [],
+            ];
+        }
 
         $navigation = $this->getSettingsNavs($user, $organisation, $navigation);
 

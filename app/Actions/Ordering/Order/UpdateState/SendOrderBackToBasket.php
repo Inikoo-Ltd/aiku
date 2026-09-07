@@ -82,7 +82,7 @@ class SendOrderBackToBasket extends OrgAction
             if ($count > 0) {
                 $validator->errors()->add('message', 'Customer already has an order in basket');
             }
-        } else if ($shop->type == ShopTypeEnum::DROPSHIPPING && $this->order->platform_id != $platform->id) {
+        } elseif ($shop->type == ShopTypeEnum::DROPSHIPPING && $this->order->platform_id != $platform->id) {
             $validator->errors()->add('message', 'Unable to send platform order back to basket');
         }
     }

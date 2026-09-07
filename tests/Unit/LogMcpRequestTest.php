@@ -8,21 +8,21 @@
 
 use App\Http\Middleware\LogMcpRequest;
 
-function mcpResponseHasError(string $content): bool
+function mcpResponseError(string $content): ?string
 {
-    $method = new ReflectionMethod(LogMcpRequest::class, 'responseHasError');
+    $method = new ReflectionMethod(LogMcpRequest::class, 'responseError');
 
     return $method->invoke(new LogMcpRequest(), $content);
 }
 
 test('tool-level error is flagged', function () {
-    expect(mcpResponseHasError('{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"boom"}],"isError":true}}'))->toBeTrue();
+    expect(mcpResponseError('{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"boom"}],"isError":true}}'))->toBe('boom');
 });
 
 test('protocol error such as unknown tool is flagged', function () {
-    expect(mcpResponseHasError('{"jsonrpc":"2.0","id":1,"error":{"code":-32602,"message":"Tool not found"}}'))->toBeTrue();
+    expect(mcpResponseError('{"jsonrpc":"2.0","id":1,"error":{"code":-32602,"message":"Tool not found"}}'))->toBe('Tool not found');
 });
 
 test('successful response with escaped error text in payload is not flagged', function () {
-    expect(mcpResponseHasError('{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"{\"orders\":3,\"last_error\":{\"note\":\"none\"}}"}],"isError":false}}'))->toBeFalse();
+    expect(mcpResponseError('{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"{\"orders\":3,\"last_error\":{\"note\":\"none\"}}"}],"isError":false}}'))->toBeNull();
 });

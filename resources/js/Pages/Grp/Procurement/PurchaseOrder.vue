@@ -18,7 +18,10 @@ import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurem
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import ModalProductList from "@/Components/Utils/ModalProductList.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import Checkbox from "primevue/checkbox"
 import ConfirmDialog from "primevue/confirmdialog"
+import DatePicker from "primevue/datepicker"
+import Dialog from "primevue/dialog"
 import { useConfirm } from "primevue/useconfirm"
 import { notify } from "@kyvg/vue3-notification"
 
@@ -32,8 +35,9 @@ import { routeType } from "@/types/route"
 import { Timeline as TSTimeline } from "@/types/Timeline"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt } from "@fal"
 import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare, faTruck } from "@fas"
 import { faPlus } from "@far"
 
@@ -60,6 +64,7 @@ library.add(
 	faTruck,
 	faClipboardList,
 	faPeopleArrows,
+	faCalendarAlt,
 )
 
 const props = defineProps < {
@@ -77,11 +82,15 @@ const props = defineProps < {
 	stock_delivery_timelines: {
 		reference: string
 		state: string
+		state_icon: any
 		route: routeType
-		timeline: {
-			[key: string]: TSTimeline
-		}
 	}[]
+    delivery_items: {
+        id: number
+        code: string | null
+        name: string | null
+        quantity_ordered: number | string
+    }[]
     tabs: {
         current: string
         navigation: {}
@@ -221,17 +230,16 @@ const costBlocks = computed(() => {
 			? ""
 			: `1 ${orgCurrency} = ${orderPerOrg.toLocaleString(locale.locale_iso ?? "en", { maximumFractionDigits: 5 })} ${currency ?? ""}`.trim()
 
-	return [
-		supplierBlock,
-		{
-			key: "org",
-			title: rateLabel,
-			rows: [
-				...costRows.value.map(row => ({ label: row.label, value: money(orgCurrency, orgAmount(row)) })),
-				{ label: trans("Total"), value: money(orgCurrency, orgTotal), isTotal: true },
-			],
-		},
-	]
+	const organisationBlock = {
+		key: "org",
+		title: rateLabel,
+		rows: [
+			...costRows.value.map(row => ({ label: row.label, value: money(orgCurrency, orgAmount(row)) })),
+			{ label: trans("Total"), value: money(orgCurrency, orgTotal), isTotal: true },
+		],
+	}
+
+	return sameCurrency ? [supplierBlock] : [supplierBlock, organisationBlock]
 })
 
 const currentTab = ref(props.tabs.current)
@@ -250,7 +258,7 @@ const openProductListModal = (action: any) => {
 
 watch(isModalProductListOpen, (isOpen, wasOpen) => {
 	if (wasOpen && !isOpen) {
-		router.reload({ only: [currentTab.value, "items", "products", "box_stats"] })
+		router.reload({ only: [currentTab.value, "items", "products", "box_stats", "pageHead"] })
 	}
 })
 
@@ -262,25 +270,35 @@ const undoSubmitLoading = ref(false)
 const confirmLoading = ref(false)
 const undoConfirmLoading = ref(false)
 const newStockDeliveryLoading = ref(false)
+const estimatedReceivingDate = ref<Date | null>(null)
+const estimatedDeliveryDateModalOpen = ref(false)
+const deliveryScopeModalOpen = ref(false)
+const deliveryItemsModalOpen = ref(false)
+const estimatedDeliveryDateAction = ref<any>(null)
+const newStockDeliveryAction = ref<any>(null)
+const selectedDeliveryItemIds = ref<number[]>([])
 
-const confirmSubmitPurchaseOrder = (action: any) => {
-	confirm.require({
-		group: "purchase-order",
-		message: trans("Are you sure you want to submit this purchase order?"),
-		header: trans("Submit Purchase Order"),
-		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Submit"), severity: "primary" },
-		accept: () => {
-			router.patch(route(action.route.name, action.route.parameters), {}, {
-				onStart: () => { submitLoading.value = true },
-				onFinish: () => { submitLoading.value = false },
-				onError: () => {
-					notify({
-						title: trans("Something went wrong"),
-						text: trans("Failed to submit purchase order"),
-						type: "error",
-					})
-				},
+const formatDate = (date: Date | null): string | null => {
+	if (!date) {
+		return null
+	}
+
+	const year = date.getFullYear()
+	const month = String(date.getMonth() + 1).padStart(2, "0")
+	const day = String(date.getDate()).padStart(2, "0")
+
+	return `${year}-${month}-${day}`
+}
+
+const submitPurchaseOrder = (action: any) => {
+	router.patch(route(action.route.name, action.route.parameters), {}, {
+		onStart: () => { submitLoading.value = true },
+		onFinish: () => { submitLoading.value = false },
+		onError: () => {
+			notify({
+				title: trans("Something went wrong"),
+				text: trans("Failed to submit purchase order"),
+				type: "error",
 			})
 		},
 	})
@@ -356,14 +374,20 @@ const confirmUndoSubmitPurchaseOrder = (action: any) => {
 }
 
 const confirmConfirmPurchaseOrder = (action: any) => {
+	estimatedReceivingDate.value = action.estimated_receiving_date
+		? new Date(`${action.estimated_receiving_date}T00:00:00`)
+		: null
+
 	confirm.require({
-		group: "purchase-order",
-		message: trans("Are you sure you want to confirm this purchase order?"),
+		group: "purchase-order-confirm",
+		message: trans("Are you sure the supplier confirmed they will fulfil this purchase order?"),
 		header: trans("Confirm Purchase Order"),
 		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
 		acceptProps: { label: trans("Confirm") },
 		accept: () => {
-			router.patch(route(action.route.name, action.route.parameters), {}, {
+			router.patch(route(action.route.name, action.route.parameters), {
+				estimated_receiving_date: formatDate(estimatedReceivingDate.value),
+			}, {
 				onStart: () => { confirmLoading.value = true },
 				onFinish: () => { confirmLoading.value = false },
 				onError: () => {
@@ -373,6 +397,40 @@ const confirmConfirmPurchaseOrder = (action: any) => {
 						type: "error",
 					})
 				},
+			})
+		},
+	})
+}
+
+const openEstimatedDeliveryDateModal = (action: any) => {
+	estimatedDeliveryDateAction.value = action
+	estimatedReceivingDate.value = action.estimated_receiving_date
+		? new Date(`${action.estimated_receiving_date}T00:00:00`)
+		: null
+	estimatedDeliveryDateModalOpen.value = true
+}
+
+const saveEstimatedDeliveryDate = () => {
+	const action = estimatedDeliveryDateAction.value
+
+	if (!action) {
+		return
+	}
+
+	router.patch(route(action.route.name, action.route.parameters), {
+		estimated_receiving_date: formatDate(estimatedReceivingDate.value),
+	}, {
+		onStart: () => { confirmLoading.value = true },
+		onSuccess: () => {
+			estimatedDeliveryDateModalOpen.value = false
+			router.reload({ only: ["showcase", "pageHead", "timelines"] })
+		},
+		onFinish: () => { confirmLoading.value = false },
+		onError: () => {
+			notify({
+				title: trans("Something went wrong"),
+				text: trans("Failed to update estimated delivery date"),
+				type: "error",
 			})
 		},
 	})
@@ -401,24 +459,38 @@ const confirmUndoConfirmPurchaseOrder = (action: any) => {
 	})
 }
 
-const confirmNewStockDelivery = (action: any) => {
-	confirm.require({
-		group: "purchase-order",
-		message: trans("Are you sure you want to create a new delivery from this purchase order?"),
-		header: trans("New Delivery"),
-		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Create delivery") },
-		accept: () => {
-			router.post(route(action.route.name, action.route.parameters), {}, {
-				onStart: () => { newStockDeliveryLoading.value = true },
-				onFinish: () => { newStockDeliveryLoading.value = false },
-				onError: () => {
-					notify({
-						title: trans("Something went wrong"),
-						text: trans("Failed to create delivery"),
-						type: "error",
-					})
-				},
+const openDeliveryScopeModal = (action: any) => {
+	newStockDeliveryAction.value = action
+	selectedDeliveryItemIds.value = []
+	deliveryScopeModalOpen.value = true
+}
+
+const openDeliveryItemsModal = () => {
+	deliveryScopeModalOpen.value = false
+	deliveryItemsModalOpen.value = true
+}
+
+const createStockDelivery = (purchaseOrderTransactionIds: number[]) => {
+	const action = newStockDeliveryAction.value
+
+	if (!action || purchaseOrderTransactionIds.length === 0) {
+		return
+	}
+
+	router.post(route(action.route.name, action.route.parameters), {
+		purchase_order_transaction_ids: purchaseOrderTransactionIds,
+	}, {
+		onStart: () => { newStockDeliveryLoading.value = true },
+		onSuccess: () => {
+			deliveryScopeModalOpen.value = false
+			deliveryItemsModalOpen.value = false
+		},
+		onFinish: () => { newStockDeliveryLoading.value = false },
+		onError: () => {
+			notify({
+				title: trans("Something went wrong"),
+				text: trans("Failed to create delivery"),
+				type: "error",
 			})
 		},
 	})
@@ -479,7 +551,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				:icon="action.icon"
 				:tooltip="action.tooltip"
 				:loading="submitLoading"
-				@click="() => confirmSubmitPurchaseOrder(action)"
+				@click="() => submitPurchaseOrder(action)"
 			/>
 		</template>
 
@@ -523,7 +595,18 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				:icon="action.icon"
 				:tooltip="action.tooltip"
 				:loading="newStockDeliveryLoading"
-				@click="() => confirmNewStockDelivery(action)"
+				@click="() => openDeliveryScopeModal(action)"
+			/>
+		</template>
+
+		<template #button-edit-estimated-delivery-date="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="confirmLoading"
+				@click="() => openEstimatedDeliveryDateModal(action)"
 			/>
 		</template>
 
@@ -555,25 +638,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		<Timeline
 			:options="timelines"
 			:state="props.data.data.state"
-			:slidesPerView="6"
-			:format-time="'MMMM d yyyy, HH:mm'"
-		/>
-	</div>
-
-	<!-- Stock Delivery Timelines -->
-	<div
-		v-for="stockDelivery in stock_delivery_timelines"
-		:key="stockDelivery.reference"
-		class="flex items-center gap-x-4 py-2 pl-4 border-b border-gray-300"
-	>
-		<Link :href="route(stockDelivery.route.name, stockDelivery.route.parameters)" class="primaryLink flex items-center gap-x-2 text-sm whitespace-nowrap">
-			<FontAwesomeIcon icon="fas fa-truck" fixed-width aria-hidden="true" />
-			{{ stockDelivery.reference }}
-		</Link>
-		<Timeline
-			class="flex-1 min-w-0"
-			:options="stockDelivery.timeline"
-			:state="stockDelivery.state"
 			:slidesPerView="6"
 			:format-time="'MMMM d yyyy, HH:mm'"
 		/>
@@ -682,7 +746,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 		<!-- Second Block -->
 		<BoxStatPallet class="p-4">
-            <div class="flex justify-center items-center gap-4">
+            <div class="flex h-8 justify-center items-center gap-4">
                 <div class="flex items-center gap-2">
                     <FontAwesomeIcon
                         v-tooltip="trans('Purchase Order')"
@@ -710,7 +774,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
                 </div>
             </div>
 
-            <hr class="my-1 border-t border-gray-300" />
+            <hr class="-mx-4 mb-1 border-t border-gray-300" />
 
             <template v-if="data.data.state === 'cancelled'">
                 <div class="space-y-1 text-sm">
@@ -791,27 +855,54 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
             </div>
 		</BoxStatPallet>
 
-		<BoxStatPallet v-for="block in costBlocks" :key="block.key" class="p-4">
-			<div class="flex justify-center text-center">
-				{{ block.title }}
+		<!-- Third Block: stock deliveries -->
+		<BoxStatPallet class="p-4">
+			<div class="flex h-8 items-center justify-center text-center">
+				{{ trans("Stock Deliveries") }}
 			</div>
 
-			<hr class="my-1 border-t border-gray-300" />
+			<hr class="-mx-4 mb-1 border-t border-gray-300" />
 
-			<div class="mt-2 space-y-1 text-sm">
+			<div v-if="stock_delivery_timelines.length" class="mt-2 space-y-1 text-sm">
 				<div
-					v-for="row in block.rows"
-					:key="row.label"
-					class="flex items-center justify-between gap-4"
-					:class="row.isTotal ? 'font-semibold text-gray-700' : ''"
+					v-for="stockDelivery in stock_delivery_timelines"
+					:key="stockDelivery.reference"
+					class="flex items-center gap-2"
 				>
-					<span>{{ row.label }}</span>
-					<span>{{ row.value }}</span>
+					<FontAwesomeIcon icon="fal fa-truck" class="text-gray-400" fixed-width aria-hidden="true" />
+					<Link :href="route(stockDelivery.route.name, stockDelivery.route.parameters)" class="primaryLink">
+						{{ stockDelivery.reference }}
+					</Link>
+					<Icon :data="stockDelivery.state_icon" />
 				</div>
+			</div>
+			<div v-else class="mt-2 text-center text-sm italic text-gray-400">
+				{{ trans("No stock deliveries") }}
 			</div>
 		</BoxStatPallet>
 
-		<BoxStatPallet v-for="n in (2 - costBlocks.length)" :key="`cost-empty-${n}`" class="p-4" />
+		<!-- Fourth Block: money -->
+		<BoxStatPallet class="p-4 space-y-3">
+			<div v-for="block in costBlocks" :key="block.key">
+				<div class="flex h-8 items-center justify-center text-center">
+					{{ block.title }}
+				</div>
+
+				<hr class="-mx-4 mb-1 border-t border-gray-300" />
+
+				<div class="mt-2 space-y-1 text-sm">
+					<div
+						v-for="row in block.rows"
+						:key="row.label"
+						class="flex items-center justify-between gap-4"
+						:class="row.isTotal ? 'font-semibold text-gray-700' : ''"
+					>
+						<span>{{ row.label }}</span>
+						<span>{{ row.value }}</span>
+					</div>
+				</div>
+			</div>
+		</BoxStatPallet>
 	</div>
 
 	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
@@ -850,4 +941,145 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
 		</template>
 	</ConfirmDialog>
+
+	<ConfirmDialog group="purchase-order-confirm">
+		<template #message="{ message }">
+			<div class="flex w-full flex-col gap-4">
+				<div class="flex items-start gap-3">
+					<FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 text-xl text-orange-500" />
+					<span>{{ message.message }}</span>
+				</div>
+
+				<div class="flex flex-col gap-2">
+					<label for="purchase-order-estimated-delivery-date" class="font-medium text-gray-700">
+						{{ trans("Estimated delivery date") }}
+					</label>
+					<DatePicker
+						v-model="estimatedReceivingDate"
+						inputId="purchase-order-estimated-delivery-date"
+						dateFormat="yy-mm-dd"
+						:minDate="new Date()"
+						showIcon
+						showButtonBar
+						fluid
+					/>
+				</div>
+			</div>
+		</template>
+	</ConfirmDialog>
+
+	<Dialog
+		v-model:visible="estimatedDeliveryDateModalOpen"
+		modal
+		:header="trans('Estimated delivery date')"
+		:style="{ width: '30rem', maxWidth: 'calc(100vw - 2rem)' }"
+		:draggable="false"
+	>
+		<div class="flex flex-col gap-2">
+			<label for="purchase-order-edit-estimated-delivery-date" class="font-medium text-gray-700">
+				{{ trans("Estimated delivery date") }}
+			</label>
+			<DatePicker
+				v-model="estimatedReceivingDate"
+				inputId="purchase-order-edit-estimated-delivery-date"
+				dateFormat="yy-mm-dd"
+				:minDate="new Date()"
+				showIcon
+				showButtonBar
+				fluid
+			/>
+		</div>
+
+		<template #footer>
+			<Button
+				:label="trans('Cancel')"
+				type="secondary"
+				@click="estimatedDeliveryDateModalOpen = false"
+			/>
+			<Button
+				:label="trans('Save')"
+				type="save"
+				:loading="confirmLoading"
+				@click="saveEstimatedDeliveryDate"
+			/>
+		</template>
+	</Dialog>
+
+	<Dialog
+		v-model:visible="deliveryScopeModalOpen"
+		modal
+		:header="trans('Create delivery')"
+		:style="{ width: '34rem', maxWidth: 'calc(100vw - 2rem)' }"
+		:draggable="false"
+	>
+		<div class="flex flex-col gap-4">
+			<p class="text-gray-600">{{ trans("Which purchase order items should be included in this delivery?") }}</p>
+
+			<button
+				type="button"
+				class="flex items-start gap-3 rounded-lg border border-gray-200 p-4 text-left hover:border-indigo-400 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50"
+				:disabled="delivery_items.length === 0 || newStockDeliveryLoading"
+				@click="createStockDelivery(delivery_items.map(item => item.id))"
+			>
+				<FontAwesomeIcon icon="fal fa-box" class="mt-0.5 text-indigo-500" fixed-width aria-hidden="true" />
+				<span class="flex flex-col gap-1">
+					<span class="font-medium text-gray-800">{{ trans("All items") }}</span>
+					<span class="text-sm text-gray-500">{{ trans("Include every item in this purchase order") }}</span>
+				</span>
+			</button>
+
+			<button
+				type="button"
+				class="flex items-start gap-3 rounded-lg border border-gray-200 p-4 text-left hover:border-indigo-400 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50"
+				:disabled="delivery_items.length === 0 || newStockDeliveryLoading"
+				@click="openDeliveryItemsModal"
+			>
+				<FontAwesomeIcon icon="fal fa-clipboard-list" class="mt-0.5 text-indigo-500" fixed-width aria-hidden="true" />
+				<span class="flex flex-col gap-1">
+					<span class="font-medium text-gray-800">{{ trans("Only selected items") }}</span>
+					<span class="text-sm text-gray-500">{{ trans("Choose the items to include in this delivery") }}</span>
+				</span>
+			</button>
+		</div>
+	</Dialog>
+
+	<Dialog
+		v-model:visible="deliveryItemsModalOpen"
+		modal
+		:header="trans('Select delivery items')"
+		:style="{ width: '44rem', maxWidth: 'calc(100vw - 2rem)' }"
+		:draggable="false"
+	>
+		<div class="flex max-h-[60vh] flex-col divide-y divide-gray-200 overflow-y-auto rounded-lg border border-gray-200">
+			<label
+				v-for="item in delivery_items"
+				:key="item.id"
+				class="flex cursor-pointer items-center gap-3 p-3 hover:bg-gray-50"
+			>
+				<Checkbox v-model="selectedDeliveryItemIds" :value="item.id" />
+				<span class="min-w-0 flex-1">
+					<span class="block font-medium text-gray-800">{{ item.code || trans("No code") }}</span>
+					<span class="block truncate text-sm text-gray-500">{{ item.name }}</span>
+				</span>
+				<span class="text-sm text-gray-500">
+					{{ trans("Quantity") }}: {{ locale.number(Number(item.quantity_ordered)) }}
+				</span>
+			</label>
+		</div>
+
+		<template #footer>
+			<Button
+				:label="trans('Back')"
+				type="secondary"
+				@click="deliveryItemsModalOpen = false; deliveryScopeModalOpen = true"
+			/>
+			<Button
+				:label="trans('Create delivery')"
+				type="create"
+				:loading="newStockDeliveryLoading"
+				:disabled="selectedDeliveryItemIds.length === 0"
+				@click="createStockDelivery(selectedDeliveryItemIds)"
+			/>
+		</template>
+	</Dialog>
 </template>

@@ -94,7 +94,7 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
 <template>
     <div>
         <!-- Desktop -->
-        <div class="hidden px-6 md:flex gap-x-6 my-2 xborder-b border-gray-300">
+        <div class="hidden px-6 md:flex gap-x-6 my-2 xborder-b border-gray-300 overflow-x-auto pb-1.5 tinyScrollbar">
             <div v-for="box in tabs_box" class="rounded-md px-3 relative border flex flex-col py-2 xtransition-all z-10"
                 xclass="box.tabs.some(tab => tab.tab_slug === currentTab)
                     ? 'bg-indigo-100 border-indigo-'
@@ -103,6 +103,8 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
                 :style="{
                     flexGrow: box.tabs.length,
                     flexBasis: 0,
+                    flexShrink: 0,
+                    minWidth: 'max-content',
                     backgroundColor: box.tabs.some(tab => tab.tab_slug === currentTab) ? layoutStore.app.theme[4] + '22' : 'transparent',
                     color: box.tabs.some(tab => tab.tab_slug === currentTab) ? layoutStore.app.theme[4] : 'inherit',
                     borderColor: box.tabs.some(tab => tab.tab_slug === currentTab) ? layoutStore.app.theme[4] : 'inherit'
@@ -188,6 +190,29 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
         
 
         <div class="mt-2"></div>
-        
     </div>
 </template>
+
+<style scoped>
+.tinyScrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.gray.300') transparent;
+}
+
+.tinyScrollbar::-webkit-scrollbar {
+    height: 6px;
+}
+
+.tinyScrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.tinyScrollbar::-webkit-scrollbar-thumb {
+    background-color: theme('colors.gray.300');
+    border-radius: 9999px;
+}
+
+.tinyScrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: theme('colors.gray.400');
+}
+</style>

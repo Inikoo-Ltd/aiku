@@ -96,6 +96,17 @@ class ShowVariant extends OrgAction
             ]
         ];
 
+        $warning = null;
+
+        if (!$variant->status) {
+            $warning = [
+                'type'  => 'warning',
+                'title' => __('Important'),
+                'text'  => __('This variant is disabled. Make sure to enable it in order for it to be shown on website'),
+                'icon'  => ['fas', 'fa-exclamation-triangle']
+            ];
+        }
+
         return Inertia::render(
             'Org/Catalogue/Variant',
             [
@@ -105,6 +116,7 @@ class ShowVariant extends OrgAction
                     request()->route()->originalParameters()
                 ),
                 'title'           => __('Show Variant'),
+                'warning'         => $warning,
                 'pageHead'        => [
                     'title' => $variant->code,
                     'model'         => __('Variants'),
@@ -128,6 +140,7 @@ class ShowVariant extends OrgAction
                     ],
                 ],
                 'variantSlugs'   => [$variant->slug => productCodeToHexCode($variant->slug)],
+                'status'         => $variant->status,
                 VariantTabsEnum::SHOWCASE->value =>
                     $this->tab === VariantTabsEnum::SHOWCASE->value ? $variantData : Inertia::optional(fn () => $variantData),
                 VariantTabsEnum::PRODUCTS->value =>
