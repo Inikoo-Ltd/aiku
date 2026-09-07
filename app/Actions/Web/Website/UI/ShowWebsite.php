@@ -233,6 +233,34 @@ class ShowWebsite extends OrgAction
             ];
         }
 
+        $route_login_page       = [];
+        if ($website->loginPage) {
+            data_set($routeParam, 'webpage', $website->loginPage->slug);
+            $route_login_page = [
+                'name'          => $routeShowWebpage,
+                'parameters'    => $routeParam
+            ];
+        }
+
+        $route_register_page    = [];
+        if ($website->registerPage) {
+            data_set($routeParam, 'webpage', $website->registerPage->slug);
+            $route_register_page = [
+                'name'          => $routeShowWebpage,
+                'parameters'    => $routeParam
+            ];
+        }
+
+        $route_forgot_pass_page = [];
+        if ($website->forgotPasswordPage) {
+            data_set($routeParam, 'webpage', $website->forgotPasswordPage->slug);
+            $route_forgot_pass_page = [
+                'name'          => $routeShowWebpage,
+                'parameters'    => $routeParam
+            ];
+        }
+
+
         $route_restricted_country = [];
         if (!empty($website->blocked_country_regions)) {
             $route_restricted_country = [
@@ -304,6 +332,9 @@ class ShowWebsite extends OrgAction
 
                 'route_storefront'   => $route_storefront,
                 'route_welcome'      => $route_landing_page,
+                'route_login'        => $route_login_page,
+                'route_register'     => $route_register_page,
+                'route_forgot_pass'  => $route_forgot_pass_page,
                 'luigi_data'         => [
                     'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
                     'luigisbox_tracker_id'  => Arr::get($website->settings, "luigisbox.tracker_id"),

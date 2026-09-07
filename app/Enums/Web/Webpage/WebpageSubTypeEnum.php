@@ -46,6 +46,7 @@ enum WebpageSubTypeEnum: string
     case LOGIN_PAGE = "login_page";
     case REGISTER_PAGE = "register_page";
     case FORGOT_PASSWORD_PAGE = "forgot_password_page";
+    case BLOG_DASHBOARD_PAGE = "blog_dashboard_page";
 
     /** Legacy catch all still stored on existing webpages, resolved by resolveBlogCategory. */
     case BLOG = 'blog';

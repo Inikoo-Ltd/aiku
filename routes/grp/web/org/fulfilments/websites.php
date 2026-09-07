@@ -76,6 +76,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
 
     Route::get('tree', [ShowWebpagesTree::class, 'inFulfilment'])->name('tree');
     Route::get('/type/content', [IndexWebpages::class, 'contentInFulfilment'])->name('index.type.content');
+    Route::get('/type/system', [IndexWebpages::class, 'systemInFulfilment'])->name('index.type.system');
     Route::get('/type/info', [IndexWebpages::class, 'infoInFulfilment'])->name('index.type.info');
 
     Route::get('/type/operations', [IndexWebpages::class, 'operationsInFulfilment'])->name('index.type.operations');

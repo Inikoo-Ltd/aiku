@@ -90,6 +90,18 @@ trait WithWebpageSubNavigation
                     "tooltip" => __("Content pages"),
                 ],
             ],
+            [
+                "number"   => $website->webStats->number_webpages_type_system,
+                "label"    => __("Systems"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.web.webpages.index.type.system",
+                    "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-cogs"],
+                    "tooltip" => __("System pages"),
+                ],
+            ],
            /*  [
                 "number"   => $website->webStats->number_webpages_type_info,
                 "label"    => __("Info"),
