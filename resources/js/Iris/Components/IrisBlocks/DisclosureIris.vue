@@ -42,11 +42,11 @@ const layout: any = inject("layout", {})
             </div>
             <DisclosureButton class="ml-2 flex h-[44px] w-[44px] items-center justify-center transition "
               :name="'disclosure-button-' + index"
-              :aria-label="open ? trans('Hide answer') : trans('Show answer')">
+              :aria-label="open ? ctrans('Hide answer') : ctrans('Show answer')">
               <font-awesome-icon :icon="open ? 'minus' : 'plus'" aria-hidden="true" />
             </DisclosureButton>
           </dt>
-          <DisclosurePanel as="dd" class="px-4 pb-4 text-base text-gray-600 transition-all duration-300 ease-in-out !text-left">
+          <DisclosurePanel as="dd" :unmount="false" class="px-4 pb-4 text-base text-gray-600 transition-all duration-300 ease-in-out !text-left">
             <div v-html="faq.description"></div>
           </DisclosurePanel>
         </Disclosure>
