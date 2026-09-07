@@ -13,6 +13,7 @@ const props = defineProps<{
     session: {
         id: number
         started_at: string
+        can_reject?: boolean
         task: {
             task_name: string
             artefact_code: string
@@ -33,6 +34,7 @@ const props = defineProps<{
 
 const processing = ref(false)
 const quantityMade = ref<number | null>(null)
+const remaining = computed(() => Math.max(0, props.session.task.quantity_required - props.session.task.quantity_made))
 const quantityRejected = ref(0)
 
 const now = ref(Date.now())
@@ -103,32 +105,40 @@ function closeSession() {
 </script>
 
 <template>
-    <div class="rounded-xl border-2 border-indigo-500 bg-indigo-50 p-6">
+    <div class="rounded-2xl border-2 border-indigo-500 bg-indigo-50 p-10">
         <div class="flex items-baseline justify-between">
             <div>
                 <div class="text-xs uppercase tracking-wide text-indigo-600">{{ trans('Working on') }}</div>
-                <div class="text-2xl font-semibold mt-1">{{ session.task.task_name }}</div>
-                <div class="text-gray-600 mt-1">
+                <div class="text-4xl font-semibold mt-1">{{ session.task.task_name }}</div>
+                <div class="text-2xl text-gray-600 mt-1">
                     {{ session.task.artefact_code }} — {{ session.task.artefact_name }}
                 </div>
-                <div class="text-sm text-gray-500 mt-1">
+                <div class="text-lg text-gray-500 mt-1">
                     {{ trans('Job order') }} {{ session.task.job_order_reference }}
-                    · {{ session.task.quantity_made }} / {{ session.task.quantity_required }}
                 </div>
+                <button
+                    type="button"
+                    class="mt-3 rounded-lg border-2 border-dashed border-indigo-300 px-4 py-2 text-left hover:bg-indigo-100"
+                    :title="trans('Tap to fill quantity made')"
+                    @click="quantityMade = remaining"
+                >
+                    <span class="text-7xl font-semibold tabular-nums text-indigo-700">{{ remaining }}</span>
+                    <span class="ml-3 text-xl text-gray-500">{{ trans('to do') }} · {{ session.task.quantity_made }} / {{ session.task.quantity_required }}</span>
+                </button>
             </div>
-            <div class="text-4xl font-mono tabular-nums text-indigo-700">{{ elapsed }}</div>
+            <div class="text-7xl font-mono tabular-nums text-indigo-700">{{ elapsed }}</div>
         </div>
 
         <div class="mt-6 flex items-end gap-4">
             <div>
-                <label class="block text-sm text-gray-600 mb-1">{{ trans('Quantity made') }}</label>
+                <label class="block text-lg text-gray-600 mb-1">{{ trans('Quantity made') }}</label>
                 <input
                     type="number" min="0" inputmode="numeric"
                     v-model.number="quantityMade"
-                    class="w-36 rounded-lg border-gray-300 text-3xl text-center py-3 tabular-nums"
+                    class="w-52 rounded-lg border-gray-300 text-5xl text-center py-4 tabular-nums"
                 />
             </div>
-            <div>
+            <div v-if="session.can_reject">
                 <label class="block text-sm text-gray-600 mb-1">{{ trans('Rejected') }}</label>
                 <input
                     type="number" min="0" inputmode="numeric"
@@ -138,7 +148,7 @@ function closeSession() {
             </div>
             <button
                 type="button"
-                class="flex-1 rounded-lg bg-green-600 text-white text-2xl font-semibold py-4 disabled:opacity-40"
+                class="flex-1 rounded-lg bg-green-600 text-white text-4xl font-semibold py-6 disabled:opacity-40"
                 :disabled="processing || quantityMade === null"
                 @click="closeSession"
             >

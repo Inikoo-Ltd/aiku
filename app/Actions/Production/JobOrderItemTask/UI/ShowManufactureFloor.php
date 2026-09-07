@@ -101,6 +101,24 @@ class ShowManufactureFloor extends OrgAction
             ->sortBy(fn (array $task) => count($task['waiting_for']) > 0)
             ->values();
 
+        $finishedToday = ManufactureTaskSession::where('user_id', $user->id)
+            ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
+            ->whereDate('ended_at', now()->toDateString())
+            ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'manufactureTask'])
+            ->orderByDesc('ended_at')
+            ->get()
+            ->map(fn (ManufactureTaskSession $session) => [
+                'id'                  => $session->id,
+                'ended_at'            => $session->ended_at,
+                'minutes'             => (int) $session->started_at->diffInMinutes($session->ended_at),
+                'task_name'           => $session->manufactureTask->name,
+                'artefact_code'       => $session->jobOrderItemTask->jobOrderItem->artefact->code,
+                'artefact_name'       => $session->jobOrderItemTask->jobOrderItem->artefact->name,
+                'job_order_reference' => $session->jobOrderItemTask->jobOrder->reference,
+                'quantity_made'       => (float) $session->quantity_made,
+                'quantity_rejected'   => (float) $session->quantity_rejected,
+            ]);
+
         $todayTotals = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
             ->whereDate('ended_at', now()->toDateString())
@@ -121,6 +139,7 @@ class ShowManufactureFloor extends OrgAction
                 ],
                 'open_session' => $openSession ? [
                     'id'         => $openSession->id,
+                    'can_reject' => $canPickOpenJobs,
                     'started_at' => $openSession->started_at,
                     'task'       => $this->serializeTask($openSession->jobOrderItemTask),
                     'close_route' => [
@@ -133,6 +152,7 @@ class ShowManufactureFloor extends OrgAction
                 'artisan'      => $this->employee?->contact_name,
                 'can_pick_open_jobs' => $canPickOpenJobs,
                 'tasks'        => $tasks,
+                'finished_today' => $finishedToday,
                 'today'        => [
                     'sessions'      => (int)$todayTotals->sessions,
                     'quantity_made' => (float)$todayTotals->quantity_made,
