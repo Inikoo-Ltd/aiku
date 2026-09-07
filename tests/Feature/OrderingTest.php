@@ -2328,7 +2328,8 @@ test('invoice totals from a part picked order keep net plus tax equal to the tot
     ]);
 
     $order->refresh();
-    $order->update(['shipping_amount' => 0, 'charges_amount' => 0, 'amount_off' => 0]);
+    $order->transactions()->whereNot('model_type', 'Product')->delete();
+    $order->update(['amount_off' => 0]);
 
     $totals = GenerateInvoiceFromOrder::make()->recalculateTotals($order, $deliveryNote);
 
