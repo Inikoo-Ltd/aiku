@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\JobOrder\UI;
 
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Actions\OrgAction;
@@ -82,6 +83,7 @@ class ShowJobOrder extends OrgAction
             ]);
 
         $artefactOptions = Artefact::where('production_id', $this->production->id)
+            ->whereNot('state', ArtefactStateEnum::DORMANT)
             ->withCount('manufactureTasks')
             ->orderBy('code')
             ->get()

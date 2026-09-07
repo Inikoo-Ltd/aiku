@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import Icon from "@/Components/Icon.vue"
 import { Link, router } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
 import Table from '@/Components/Table/Table.vue'
@@ -139,6 +140,9 @@ function productionRoute(artefact: { slug: string }) {
     </Transition>
 
     <Table ref="tableRef" :resource="data" :name="tab" class="mt-5" :isCheckBox="!!moveToFamily" checkboxKey="id" @onSelectRow="(rows) => selected = { ...rows }">
+        <template #cell(state)="{ item: artefact }">
+            <Icon :data="artefact.state" />
+        </template>
         <template #cell(code)="{ item: production }">
             <Link :href="productionRoute(production)" class="primaryLink">
                 {{ production['code'] }}
