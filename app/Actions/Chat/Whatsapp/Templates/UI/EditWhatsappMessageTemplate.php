@@ -57,6 +57,13 @@ class EditWhatsappMessageTemplate extends OrgAction
                     'header_media'  => $metaMessageTemplate->headerMedia ? [
                         'name' => $metaMessageTemplate->headerMedia->file_name,
                         'url'  => $metaMessageTemplate->imageSources(0, 0, 'headerMedia'),
+                        'mime' => $metaMessageTemplate->headerMedia->mime_type,
+                        'size' => $metaMessageTemplate->headerMedia->size,
+                        /* imageSources only serves images through imgproxy, so a video or
+                           document needs the raw file to be playable and downloadable. */
+                        'file_url' => route('grp.api.chats.chat.attachment.download', [
+                            'ulid' => $metaMessageTemplate->headerMedia->ulid,
+                        ]),
                     ] : null,
                     'synchronize_at' => $metaMessageTemplate->synchronize_at,
                 ],
