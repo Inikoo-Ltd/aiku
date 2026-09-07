@@ -31,6 +31,7 @@ const props = defineProps<{
 	message?: {
 		placeholder?: string
 	}
+	loadingSubmit?: boolean
 }>()
 
 const emits = defineEmits<{
@@ -163,7 +164,7 @@ const messageDelete = ref("")
 									</div>
 
 									<div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-										<DialogTitle as="h3" class="text-base font-semibold">
+										<DialogTitle as="h3" class="text-base font-semibold pr-2">
 											{{ title || trans("Are you sure want to delete?") }}
 										</DialogTitle>
 										<div class="mt-2">
@@ -205,7 +206,7 @@ const messageDelete = ref("")
 										<div class="mt-5 flex flex-row-reverse gap-2">
 											<div class="xw-full sm:w-fit">
 												<Button
-													:loading="isLoadingdelete"
+													:loading="isLoadingdelete || loadingSubmit"
 													@click="() => (onClickDelete(), emits('onYes'))"
 													type="red"
 													xlabel="props.noLabel ?? trans('Delete')"
@@ -229,6 +230,7 @@ const messageDelete = ref("")
 												type="tertiary"
 												icccon="far fa-arrow-left"
 												:label="cancelLabel ?? trans('Cancel')"
+												:disabled="isLoadingdelete || loadingSubmit"
 												full
 												@click="
 													() => ((isOpenModal = false), emits('onNo'))
