@@ -22,36 +22,21 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     floor_route: { name: string, parameters: object }
     performance_route: { name: string, parameters: object }
-    payroll_export_route: { name: string, parameters: object }
     artisans: {
         id: number
         name: string
+        avatar: string | null
         assigned: number
         queued: number
         working_now: boolean
     }[]
 }>()
 
-function previousMonday(weeksBack: number) {
-    const date = new Date()
-    const day = (date.getDay() + 6) % 7
-    date.setDate(date.getDate() - day - weeksBack * 7)
-    return date.toISOString().slice(0, 10)
+const brokenAvatars = ref(new Set<string>())
+function initials(name: string) {
+    return name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase()
 }
-const payrollFrom = ref(previousMonday(1))
-const payrollTo = ref((() => {
-    const date = new Date(previousMonday(1))
-    date.setDate(date.getDate() + 6)
-    return date.toISOString().slice(0, 10)
-})())
 
-function payrollExportUrl() {
-    return route(props.payroll_export_route.name, {
-        ...props.payroll_export_route.parameters,
-        from: payrollFrom.value,
-        to: payrollTo.value,
-    })
-}
 </script>
 
 <template>
@@ -76,7 +61,11 @@ function payrollExportUrl() {
             <div v-for="artisan in artisans" :key="artisan.id"
                 class="mb-2 rounded-lg border px-4 py-2 flex items-center justify-between gap-3 text-sm"
                 :class="artisan.queued || artisan.assigned ? 'border-gray-200 bg-white' : 'border-amber-300 bg-amber-50'">
-                <span class="font-medium truncate">{{ artisan.name }}</span>
+                <span class="flex items-center gap-3 min-w-0">
+                    <img v-if="artisan.avatar && !brokenAvatars.has(artisan.avatar)" :src="artisan.avatar" :alt="artisan.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(artisan.avatar)" />
+                    <span v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(artisan.name) }}</span>
+                    <span class="font-medium truncate">{{ artisan.name }}</span>
+                </span>
                 <span class="shrink-0 tabular-nums" :class="artisan.queued || artisan.assigned ? 'text-gray-600' : 'text-amber-700'">
                     <template v-if="artisan.queued || artisan.assigned">
                         <span v-if="artisan.working_now">{{ trans('working') }} · </span>
@@ -90,20 +79,6 @@ function payrollExportUrl() {
         </div>
 
         <div>
-            <h2 class="text-lg font-semibold mb-3">{{ trans('Payroll') }}</h2>
-            <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 flex items-end gap-3">
-                <div>
-                    <label class="block text-xs text-gray-500 mb-1">{{ trans('Payroll from') }}</label>
-                    <input type="date" v-model="payrollFrom" class="rounded border-gray-300 text-sm" />
-                </div>
-                <div>
-                    <label class="block text-xs text-gray-500 mb-1">{{ trans('To') }}</label>
-                    <input type="date" v-model="payrollTo" class="rounded border-gray-300 text-sm" />
-                </div>
-                <a :href="payrollExportUrl()" class="rounded bg-gray-700 text-white text-sm px-3 py-2">
-                    {{ trans('Export payroll CSV') }}
-                </a>
-            </div>
             <Link :href="route(performance_route.name, performance_route.parameters)" class="inline-block mt-3 text-sm text-indigo-700 hover:underline">
                 {{ trans('View performance by artisan') }}
             </Link>

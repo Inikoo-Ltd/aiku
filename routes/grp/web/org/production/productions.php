@@ -28,6 +28,7 @@ use App\Actions\Production\JobOrder\UI\ShowJobOrder;
 use App\Actions\Production\JobOrderItemTask\UI\ShowManufactureFloor;
 use App\Actions\Production\ManufactureTaskSession\ExportManufacturePayroll;
 use App\Actions\Production\ManufactureTaskSession\UI\IndexArtisans;
+use App\Actions\Production\ManufactureTaskSession\UI\ShowManufacturePayroll;
 use App\Actions\Production\ManufactureTask\UI\CreateManufactureTask;
 use App\Actions\Production\ManufactureTask\UI\EditManufactureTask;
 use App\Actions\Production\ManufactureTask\UI\IndexManufactureTasks;
@@ -72,6 +73,7 @@ Route::prefix('{production}')
                     ->group(function () {
                         Route::get('', ShowArtisansDashboard::class)->name('dashboard');
                         Route::get('performance', IndexArtisans::class)->name('index');
+                        Route::get('payroll', ShowManufacturePayroll::class)->name('payroll');
                         Route::get('payroll/export', ExportManufacturePayroll::class)->name('payroll.export');
                     });
 

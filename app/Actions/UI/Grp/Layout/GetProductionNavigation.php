@@ -81,18 +81,6 @@ class GetProductionNavigation
             ];
 
 
-            $navigation['partners'] = [
-                'root'  => 'grp.org.productions.show.to_produce.',
-                'label' => __('To produce'),
-                'icon'  => ['fal', 'fa-truck-loading'],
-
-                'route' => [
-                    'name'       => 'grp.org.productions.show.to_produce.index',
-                    'parameters' => [$production->organisation->slug, $production->slug]
-                ],
-            ];
-
-
             $navigation['operations'] = [
                 'root'  => 'grp.org.productions.show.operations.',
                 'label' => __('Operations'),
@@ -140,6 +128,18 @@ class GetProductionNavigation
 
             ];
 
+            $navigation['partners'] = [
+                'root'  => 'grp.org.productions.show.to_produce.',
+                'label' => __('To produce'),
+                'icon'  => ['fal', 'fa-truck-loading'],
+
+                'route' => [
+                    'name'       => 'grp.org.productions.show.to_produce.index',
+                    'parameters' => [$production->organisation->slug, $production->slug]
+                ],
+            ];
+
+
             $navigation['artisans'] = [
                 'root'  => 'grp.org.productions.show.artisans.',
                 'label' => __('Artisans'),
@@ -171,6 +171,16 @@ class GetProductionNavigation
                                 'parameters' => [$production->organisation->slug, $production->slug]
                             ],
                         ],
+                        ...($user->hasAnyPermission(['org-supervisor.'.$production->organisation->id, "human-resources.{$production->organisation->id}.view"]) ? [[
+                            'label'   => __('Payroll'),
+                            'tooltip' => __('Piece-rate payroll export'),
+                            'icon'    => ['fal', 'fa-money-check-alt'],
+                            'root'    => 'grp.org.productions.show.artisans.payroll',
+                            'route'   => [
+                                'name'       => 'grp.org.productions.show.artisans.payroll',
+                                'parameters' => [$production->organisation->slug, $production->slug]
+                            ],
+                        ]] : []),
                     ]
                 ]
             ];

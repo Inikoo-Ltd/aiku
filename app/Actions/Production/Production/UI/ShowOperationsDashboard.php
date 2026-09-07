@@ -88,80 +88,70 @@ class ShowOperationsDashboard extends OrgAction
 
 
                 ],
-                'flatTreeMaps' => [
+                'stats' => [
                     [
-                        [
-                            'name'  => __('Job orders'),
-                            'icon'  => ['fal', 'fa-sort-shapes-down'],
-                            'route' => [
-                                'name'       => 'grp.org.productions.show.operations.job-orders.index',
-                                'parameters' => $request->route()->originalParameters()
-                            ],
-                            'index' => [
-                                'number' => $production->jobOrders()
-                                    ->whereIn('state', [
-                                        JobOrderStateEnum::IN_PROCESS,
-                                        JobOrderStateEnum::SUBMITTED,
-                                        JobOrderStateEnum::CONFIRMED,
-                                    ])->count()
-                            ],
+                        'name' => __('Job orders'),
+                        'color' => 'indigo',
+                        'icon'  => ['fal', 'fa-sort-shapes-down'],
+                        'route' => [
+                            'name'       => 'grp.org.productions.show.operations.job-orders.index',
+                            'parameters' => $request->route()->originalParameters()
                         ],
-                        [
-                            'name'  => __('Manufacture tasks'),
-                            'icon'  => ['fal', 'fa-project-diagram'],
-                            'route' => [
-                                'name'       => 'grp.org.productions.show.operations.manufacture_tasks.index',
-                                'parameters' => $request->route()->originalParameters()
-                            ],
-                            'index' => [
-                                'number' => $production->stats->number_manufacture_tasks
-                            ],
+                        'stat' => $production->jobOrders()
+                                ->whereIn('state', [
+                                    JobOrderStateEnum::IN_PROCESS,
+                                    JobOrderStateEnum::SUBMITTED,
+                                    JobOrderStateEnum::CONFIRMED,
+                                ])->count(),
+                    ],
+                    [
+                        'name' => __('Manufacture tasks'),
+                        'color' => 'teal',
+                        'icon'  => ['fal', 'fa-project-diagram'],
+                        'route' => [
+                            'name'       => 'grp.org.productions.show.operations.manufacture_tasks.index',
+                            'parameters' => $request->route()->originalParameters()
                         ],
-                        [
-                            'name'      => __('Tasks in queue'),
-                            'shortName' => __('queue'),
-                            'icon'      => ['fal', 'fa-tasks'],
-                            'route'     => [
-                                'name'       => 'grp.org.productions.show.floor',
-                                'parameters' => $request->route()->originalParameters()
-                            ],
-                            'index'     => [
-                                'number' => JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
-                                    ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
-                                    ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
-                                    ->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
-                                    ->count()
-                            ],
+                        'stat' => $production->stats->number_manufacture_tasks,
+                    ],
+                    [
+                        'name' => __('Tasks in queue'),
+                        'color' => 'amber',
+                        'icon' => ['fal', 'fa-tasks'],
+                        'route' => [
+                            'name'       => 'grp.org.productions.show.floor',
+                            'parameters' => $request->route()->originalParameters()
                         ],
-                        [
-                            'name'      => __('Working now'),
-                            'shortName' => __('working'),
-                            'icon'      => ['fal', 'fa-user-hard-hat'],
-                            'route'     => [
-                                'name'       => 'grp.org.productions.show.floor',
-                                'parameters' => $request->route()->originalParameters()
-                            ],
-                            'index'     => [
-                                'number' => ManufactureTaskSession::where('production_id', $production->id)
-                                    ->where('state', ManufactureTaskSessionStateEnum::OPEN)
-                                    ->count()
-                            ],
+                        'stat' => JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
+                                ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
+                                ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
+                                ->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
+                                ->count(),
+                    ],
+                    [
+                        'name' => __('Working now'),
+                        'color' => 'green',
+                        'icon' => ['fal', 'fa-user-hard-hat'],
+                        'route' => [
+                            'name'       => 'grp.org.productions.show.floor',
+                            'parameters' => $request->route()->originalParameters()
                         ],
-                        [
-                            'name'      => __('Made today'),
-                            'shortName' => __('today'),
-                            'icon'      => ['fal', 'fa-cubes'],
-                            'route'     => [
-                                'name'       => 'grp.org.productions.show.floor',
-                                'parameters' => $request->route()->originalParameters()
-                            ],
-                            'index'     => [
-                                'number' => (int)ManufactureTaskSession::where('production_id', $production->id)
-                                    ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
-                                    ->whereDate('ended_at', now()->toDateString())
-                                    ->sum('quantity_made')
-                            ],
+                        'stat' => ManufactureTaskSession::where('production_id', $production->id)
+                                ->where('state', ManufactureTaskSessionStateEnum::OPEN)
+                                ->count(),
+                    ],
+                    [
+                        'name' => __('Made today'),
+                        'color' => 'blue',
+                        'icon' => ['fal', 'fa-cubes'],
+                        'route' => [
+                            'name'       => 'grp.org.productions.show.floor',
+                            'parameters' => $request->route()->originalParameters()
                         ],
+                        'stat' => (int)ManufactureTaskSession::where('production_id', $production->id)
+                                ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
+                                ->whereDate('ended_at', now()->toDateString())
+                                ->sum('quantity_made'),
                     ],
                 ],
                 'command_control' => [

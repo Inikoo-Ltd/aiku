@@ -77,17 +77,13 @@ class ShowArtisansDashboard extends OrgAction
                     'name'       => 'grp.org.productions.show.artisans.index',
                     'parameters' => $routeParameters
                 ],
-                'payroll_export_route' => [
-                    'name'       => 'grp.org.productions.show.artisans.payroll.export',
-                    'parameters' => $routeParameters
-                ],
                 'artisans' => $this->artisans($production),
             ]
         );
     }
 
     /**
-     * @return array<int, array{id: int, name: string, assigned: int, queued: int, working_now: bool}>
+     * @return array<int, array{id: int, name: string, avatar: string|null, assigned: int, queued: int, working_now: bool}>
      */
     private function artisans(Production $production): array
     {
@@ -118,11 +114,14 @@ class ShowArtisansDashboard extends OrgAction
         return Employee::where('organisation_id', $production->organisation_id)
             ->where('state', EmployeeStateEnum::WORKING)
             ->whereIn('id', $artisanIds)
+            ->with(['image', 'users' => fn ($query) => $query->wherePivot('status', true)->with('image')])
             ->orderBy('contact_name')
             ->get()
             ->map(fn (Employee $employee) => [
                 'id'          => $employee->id,
                 'name'        => $employee->contact_name,
+                'avatar'      => Arr::get($employee->imageSources(80, 80), 'original')
+                    ?? Arr::get($employee->users->first()?->imageSources(80, 80), 'original'),
                 'assigned'    => (int)$assigned->get($employee->id, 0),
                 'queued'      => (int)$queued->get($employee->id, 0),
                 'working_now' => $workingNow->contains($employee->id),

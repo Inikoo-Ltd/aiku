@@ -8,7 +8,6 @@
 import { Head, Link, router } from "@inertiajs/vue3";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
-import FlatTreeMap from "@/Components/Navigation/FlatTreeMap.vue";
 import ManufactureWorkingCard from "@/Components/ManufactureWorkingCard.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSeedling, faThumbsDown, faUserHardHat, faTasks } from "@fal";
@@ -17,6 +16,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
 
 import { capitalize } from "@/Composables/capitalize";
+import { useLocaleStore } from "@/Stores/locale";
 
 import { PageHeadingTypes } from "@/types/PageHeading";
 
@@ -37,7 +37,13 @@ interface QueueTask {
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
-    flatTreeMaps: {}
+    stats: {
+        name: string
+        stat: number
+        color: string
+        icon: string[]
+        route: { name: string, parameters: object }
+    }[]
     command_control?: {
         floor_route: { name: string, parameters: object }
         open_session: null | {
@@ -87,6 +93,14 @@ function voidSession(session: { id: number, worker: string, quantity_made: numbe
 }
 
 const processing = ref(false)
+const locale = useLocaleStore()
+const iconColors: Record<string, string> = {
+    indigo: "text-indigo-500",
+    teal: "text-teal-500",
+    amber: "text-amber-500",
+    green: "text-green-500",
+    blue: "text-blue-500",
+}
 
 function startTask(task: QueueTask) {
     processing.value = true
@@ -114,7 +128,17 @@ function elapsedSince(startedAt: string) {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-    <FlatTreeMap class="mx-4" v-for="(treeMap, idx) in flatTreeMaps" :key="idx" :nodes="treeMap" />
+    <dl class="mx-4 mt-4 grid grid-cols-2 divide-x divide-gray-100 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100 md:grid-cols-5">
+        <Link
+            v-for="card in stats"
+            :key="card.name"
+            :href="route(card.route.name, card.route.parameters)"
+            class="flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-gray-50">
+            <FontAwesomeIcon :icon="card.icon" :class="iconColors[card.color] ?? 'text-gray-400'" fixed-width />
+            <dt class="truncate text-gray-500">{{ card.name }}</dt>
+            <dd class="ml-auto font-semibold tabular-nums text-gray-800">{{ locale.number(card.stat) }}</dd>
+        </Link>
+    </dl>
 
     <div v-if="command_control" class="mx-4 mt-6 grid gap-6 lg:grid-cols-2">
         <div>

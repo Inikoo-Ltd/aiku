@@ -915,8 +915,21 @@ test('UI show artisans dashboard', function () {
         $page
             ->component('Org/Production/ArtisansDashboard')
             ->has('artisans')
-            ->has('payroll_export_route')
+            ->missing('payroll_export_route')
             ->has('breadcrumbs', 3);
+    });
+});
+
+test('UI show manufacture payroll', function () {
+    $response = get(route('grp.org.productions.show.artisans.payroll', [
+        $this->organisation->slug,
+        $this->production->slug,
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Production/ManufacturePayroll')
+            ->has('payroll_export_route')
+            ->has('breadcrumbs', 4);
     });
 });
 
