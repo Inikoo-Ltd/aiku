@@ -33,7 +33,7 @@ class RepairInvoiceTaxHeader
     use AsAction;
     use WithLineTaxCategories;
 
-    public string $commandSignature = 'repair:invoice_tax_header {--from= : Only invoices dated on/after this (Y-m-d)} {--shop= : Shop slug} {--fix : Rewrite the headers, otherwise only report}';
+    public string $commandSignature = 'repair:invoice_tax_header {--from= : Only invoices dated on/after this (Y-m-d)} {--shop= : Shop slug} {--min-tax-delta=0 : Skip invoices whose tax differs from the lines by less than this (penny rounding drifts are a different problem)} {--fix : Rewrite the headers, otherwise only report}';
 
     /**
      * @return array{net: float, tax: float, total: float}
@@ -102,7 +102,10 @@ class RepairInvoiceTaxHeader
         Invoice::whereIn('id', $ids)->with('shop')->orderBy('id')->chunkById(200, function ($invoices) use (&$rows, &$record, $command) {
             foreach ($invoices as $invoice) {
                 $expected = $this->expectedTotals($invoice);
-                $rows[]   = [
+                if (abs((float)$invoice->tax_amount - $expected['tax']) < (float)$command->option('min-tax-delta')) {
+                    continue;
+                }
+                $rows[] = [
                     $invoice->shop->code,
                     $invoice->reference,
                     $invoice->date?->toDateString(),
