@@ -16,6 +16,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -24,7 +25,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * default; --fix rewrites the header from the lines and recalculates the order from its
  * transactions. An issued invoice already on a filed VAT return is not to be rewritten: scope
  * with --from to the open period and leave the rest to accounts. External (Faire) invoices
- * carry the marketplace's tax and are never touched.
+ * carry the marketplace's tax and are never touched. Every --fix run leaves a before/after csv
+ * per invoice and order under storage/app/repairs, on top of the invoice audit trail.
  */
 class RepairInvoiceTaxHeader
 {
@@ -95,8 +97,9 @@ class RepairInvoiceTaxHeader
 
         $ids = $this->mismatchedInvoiceIds($from, $command->option('shop'));
 
-        $rows = [];
-        Invoice::whereIn('id', $ids)->with('shop')->orderBy('id')->chunkById(200, function ($invoices) use (&$rows, $command) {
+        $rows   = [];
+        $record = [];
+        Invoice::whereIn('id', $ids)->with('shop')->orderBy('id')->chunkById(200, function ($invoices) use (&$rows, &$record, $command) {
             foreach ($invoices as $invoice) {
                 $expected = $this->expectedTotals($invoice);
                 $rows[]   = [
@@ -113,7 +116,23 @@ class RepairInvoiceTaxHeader
                 ];
 
                 if ($command->option('fix')) {
+                    $order  = $invoice->order;
+                    $before = [$invoice->net_amount, $invoice->tax_amount, $invoice->total_amount, $order?->net_amount, $order?->tax_amount, $order?->total_amount];
                     $this->handle($invoice);
+                    $invoice->refresh();
+                    $order?->refresh();
+                    $record[] = [
+                        $invoice->shop->code,
+                        $invoice->reference,
+                        $order?->reference,
+                        ...$before,
+                        $invoice->net_amount,
+                        $invoice->tax_amount,
+                        $invoice->total_amount,
+                        $order?->net_amount,
+                        $order?->tax_amount,
+                        $order?->total_amount,
+                    ];
                 }
             }
         });
@@ -127,7 +146,17 @@ class RepairInvoiceTaxHeader
             return 0;
         }
 
-        $command->info(count($rows).' invoices repaired.');
+        $csv = fopen('php://temp', 'r+');
+        fputcsv($csv, ['shop', 'invoice', 'order', 'invoice_net_before', 'invoice_tax_before', 'invoice_total_before', 'order_net_before', 'order_tax_before', 'order_total_before', 'invoice_net_after', 'invoice_tax_after', 'invoice_total_after', 'order_net_after', 'order_tax_after', 'order_total_after']);
+        foreach ($record as $line) {
+            fputcsv($csv, $line);
+        }
+        rewind($csv);
+        $path = 'repairs/invoice_tax_header_'.now()->format('Ymd_His').'.csv';
+        Storage::disk('local')->put($path, stream_get_contents($csv));
+        fclose($csv);
+
+        $command->info(count($rows).' invoices repaired. Before/after record: storage/app/'.$path);
 
         return 0;
     }

@@ -31,6 +31,7 @@ use App\Actions\Billables\ShippingZone\StoreShippingZone;
 use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use App\Actions\Maintenance\Accounting\RepairInvoiceTaxHeader;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
@@ -524,9 +525,14 @@ test('the repair rewrites the header from the lines and mirrors it onto the orde
         ->assertSuccessful();
     expect((float)$invoice->refresh()->tax_amount)->toBe(27.0);
 
+    Storage::fake('local');
     $this->artisan('repair:invoice_tax_header', ['--shop' => $invoice->shop->slug, '--from' => '2020-01-01', '--fix' => true])
         ->expectsOutputToContain('1 invoices repaired.')
         ->assertSuccessful();
+
+    $recordFile = collect(Storage::disk('local')->files('repairs'))->sole();
+    expect(Storage::disk('local')->get($recordFile))
+        ->toContain($invoice->reference.','.$invoice->order->reference.',120.00,27.00,147.00,120.00,27.00,147.00,120.00,24.00,144.00,120.00,24.00,144.00');
 
     expect((float)$invoice->refresh()->tax_amount)->toBe(24.0)
         ->and((float)$invoice->total_amount)->toBe(144.0)
