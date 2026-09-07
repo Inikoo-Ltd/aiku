@@ -37,6 +37,22 @@ const isLooping = computed(() => {
     return settingsLoop && props.modelValue.carousel_data.cards.length > 1
 })
 
+const isStacked = computed(() => props.screenType === 'mobile')
+
+const gridClass = computed(() => isStacked.value ? 'grid-cols-1' : 'grid-cols-2')
+
+const imageHeightClass = computed(() => {
+    if (props.screenType === 'mobile') return 'h-[250px]'
+    if (props.screenType === 'tablet') return 'h-[300px]'
+    return 'h-[400px]'
+})
+
+const textPaddingClass = computed(() => {
+    if (props.screenType === 'mobile') return 'px-4 py-6'
+    if (props.screenType === 'tablet') return 'p-5'
+    return 'p-4'
+})
+
 const layout: any = inject("layout", {})
 const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
@@ -44,19 +60,21 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 </script>
 
 <template>
-    <div :id="modelValue?.id ? modelValue?.id  : 'carousel-cta' + indexBlock">
+    <div :id="modelValue?.id ? modelValue?.id  : 'carousel-cta' + indexBlock" component="carousel-cta"
+        :class="{ 'carousel-cta-overlay-nav': isStacked }">
         <div :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(modelValue.container?.properties, screenType)
         }">
             <Carousel :value="modelValue.carousel_data.cards" :numVisible="1" :numScroll="1" :circular="isLooping">
                 <template #item="{ data, index }">
-                    <div :style="{
+                    <div class="w-full" :style="{
                         ...getStyles(data.container?.properties, screenType),
                     }">
-                        <div class="grid grid-cols-1 md:grid-cols-2 w-full">
+                        <div class="grid w-full" :class="gridClass">
 
-                            <div class="relative w-full cursor-pointer overflow-hidden h-[250px] md:h-[400px]"
+                            <div class="relative w-full cursor-pointer overflow-hidden"
+                            :class="imageHeightClass"
                             :style="getStyles(modelValue?.image?.container?.properties, screenType)"
                              @click.stop="
                                 () => {
@@ -79,9 +97,10 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                     />
                             </div>
 
-                            <div class="flex flex-col justify-center m-auto p-4"
+                            <div class="flex flex-col justify-center m-auto w-full min-w-0"
+                                :class="textPaddingClass"
                                 :style="getStyles(data?.text_block?.properties, screenType)">
-                                <div class="max-w-xl w-full" @click="
+                                <div class="max-w-xl w-full mx-auto" @click="
                                     () => {
                                         sendMessageToParent('activeBlock', indexBlock)
                                         sendMessageToParent('activeChildBlock', bKeys[1])
@@ -93,7 +112,6 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                         v-model="data.text"
                                         @focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
                                         @update:modelValue="(e) => { data.text = e, emits('autoSave')}"
-                                        class="mb-6" 
                                         :uploadImageRoute="{
                                             name: webpageData.images_upload_route.name,
                                             parameters: {
@@ -103,7 +121,7 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                         }" 
                                     />
 
-                                    <div class="flex justify-center">
+                                    <div class="flex justify-center mt-6">
                                         <Button
                                             :injectStyle="getStyles(data?.button?.container?.properties, screenType)"
                                             :label="data?.button?.text" @click.stop="
@@ -126,14 +144,37 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 </template>
 
 <style scoped>
-#carousel-cta {
-    .p-carousel-item {
-        display: flex;
-        justify-content: center;
-    }
+[component="carousel-cta"] :deep(.p-carousel-item) {
+    display: flex;
+    justify-content: center;
+}
+
+[component="carousel-cta"] :deep(.p-carousel-viewport) {
+    min-width: 0;
 }
 
 :deep(.p-carousel-indicator-list) {
     display: none;
+}
+
+.carousel-cta-overlay-nav :deep(.p-carousel-content) {
+    position: relative;
+}
+
+.carousel-cta-overlay-nav :deep(.p-carousel-prev-button),
+.carousel-cta-overlay-nav :deep(.p-carousel-next-button) {
+    position: absolute;
+    top: 50%;
+    z-index: 2;
+    margin: 0;
+    transform: translateY(-50%);
+}
+
+.carousel-cta-overlay-nav :deep(.p-carousel-prev-button) {
+    left: 0.25rem;
+}
+
+.carousel-cta-overlay-nav :deep(.p-carousel-next-button) {
+    right: 0.25rem;
 }
 </style>
