@@ -882,6 +882,59 @@ test('a product can be exclusive to several customers and only they can see it',
         ->and($visibleTo(null))->toBeTrue();
 });
 
+test('repair makes products sold only to partners and hidden from the site exclusive to them', function () {
+    list($organisation, $user, $shop) = createShop();
+
+    $newCustomer = fn () => \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $shop,
+        \App\Models\CRM\Customer::factory()->definition(),
+    );
+    $partnerCustomer = $newCustomer();
+    $publicCustomer  = $newCustomer();
+    DB::table('org_partners')->insert([
+        'group_id'        => $organisation->group_id,
+        'organisation_id' => $organisation->id,
+        'partner_id'      => $organisation->id,
+        'customer_id'     => $partnerCustomer->id,
+        'sources'         => '{}',
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    createProduct($shop);
+    $intercompany = $shop->products()->orderBy('id')->first();
+    $public       = StoreProduct::make()->action($intercompany->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $intercompany->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+    DB::table('products')->whereIn('id', [$intercompany->id, $public->id])
+        ->update(['is_for_sale' => false, 'state' => ProductStateEnum::ACTIVE->value]);
+
+    $invoiceFor = function ($customer, $product) {
+        $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($customer, \App\Models\Accounting\Invoice::factory()->definition());
+        \App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+            'date'            => now(),
+            'tax_category_id' => $invoice->tax_category_id,
+            'quantity'        => 1,
+            'gross_amount'    => 10,
+            'net_amount'      => 10,
+        ]);
+    };
+    $invoiceFor($partnerCustomer, $intercompany);
+    $invoiceFor($partnerCustomer, $public);
+    $invoiceFor($publicCustomer, $public);
+
+    $repair   = \App\Actions\Maintenance\Catalogue\RepairPartnerExclusiveProducts::make();
+    $partners = $repair->partnerCustomerIds($shop);
+    expect($partners)->toBe([$partnerCustomer->id])
+        ->and($repair->candidates($shop, $partners)->pluck('id')->all())->toBe([$intercompany->id]);
+
+    $repair->handle($intercompany, $partners);
+    $intercompany->refresh();
+    expect($intercompany->exclusive_for_customer_id)->toBe($partnerCustomer->id)
+        ->and($repair->candidates($shop, $partners)->count())->toBe(0);
+});
+
 test('repair repoints products from a discontinued org stock to its active twin', function () {
     $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
     createProduct($shop);
