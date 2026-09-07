@@ -712,7 +712,7 @@ class IndexCustomers extends OrgAction
                 'type'        => 'button',
                 'style'       => 'tertiary',
                 'icon'        => ['fab', 'fa-google'],
-                'tooltip'     => __('Sync all customers to Google Ads'),
+                'tooltip'     => __('Sync subscribed customers to Google Ads'),
                 'label'       => __('Sync to Google Ads'),
                 'fullLoading' => true,
                 'route'       => [

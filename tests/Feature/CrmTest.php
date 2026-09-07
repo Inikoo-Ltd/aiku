@@ -1362,9 +1362,11 @@ test('sync customers to google ads uploads hashed identifiers', function () {
 
     $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     $customer->update(['email' => 'match@example.com', 'phone' => '+447911123456']);
+    $customer->comms()->update(['is_subscribed_to_marketing' => true]);
 
     $eligibleCustomersCount = $this->shop->customers()
         ->where(fn ($query) => $query->whereNotNull('email')->orWhereNotNull('phone'))
+        ->whereHas('comms', fn ($q) => $q->where('is_subscribed_to_marketing', true)->where('is_suspended', false))
         ->count();
 
     Http::fake([
@@ -1375,7 +1377,7 @@ test('sync customers to google ads uploads hashed identifiers', function () {
     $result = SyncCustomersToGoogleAds::make()->handle($this->shop);
 
     expect($result['uploaded'])->toBe($eligibleCustomersCount)
-        ->and($result['request_ids'])->toBe(['req-1']);
+        ->and($result['request_ids'])->toContain('req-1');
 
     Http::assertSent(fn ($request) => $request->url() === 'https://oauth2.googleapis.com/token'
         && $request['refresh_token'] === 'refresh-token'
@@ -1402,6 +1404,80 @@ test('sync customers to google ads uploads hashed identifiers', function () {
             && $request['termsOfService']['customerMatchTermsOfServiceStatus'] === 'ACCEPTED'
             && $matchedMember !== null;
     });
+});
+
+test('sync customers to google ads filters by marketing consent and removes unsubscribed', function () {
+    Config::set('services.google_ads.client_id', 'client-id');
+    Config::set('services.google_ads.client_secret', 'client-secret');
+
+    $this->shop->update([
+        'settings' => array_merge($this->shop->settings ?? [], [
+            'google_ads' => [
+                'refresh_token' => 'refresh-token',
+                'customer_id'   => '123-456-7890',
+                'user_list_id'  => '999',
+            ],
+        ]),
+    ]);
+
+    $subscribedCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $subscribedCustomer->update(['email' => 'subscribed@example.com', 'phone' => null]);
+    $subscribedCustomer->comms()->update(['is_subscribed_to_marketing' => true]);
+
+    $unsubscribedCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $unsubscribedCustomer->update(['email' => 'unsubscribed@example.com', 'phone' => null]);
+    $unsubscribedCustomer->comms()->update(['is_subscribed_to_marketing' => false]);
+
+    $eligibleComms = fn ($q) => $q->where('is_subscribed_to_marketing', true)->where('is_suspended', false);
+
+    $expectedUploaded = $this->shop->customers()
+        ->where(fn ($query) => $query->whereNotNull('email')->orWhereNotNull('phone'))
+        ->whereHas('comms', $eligibleComms)
+        ->count();
+
+    $expectedRemoved = $this->shop->customers()
+        ->where(fn ($query) => $query->whereNotNull('email')->orWhereNotNull('phone'))
+        ->whereDoesntHave('comms', $eligibleComms)
+        ->count();
+
+    Http::fake([
+        'oauth2.googleapis.com/*'      => Http::response(['access_token' => 'fake-access-token']),
+        'datamanager.googleapis.com/*' => Http::response(['requestId' => 'req-1']),
+    ]);
+
+    $result = SyncCustomersToGoogleAds::make()->handle($this->shop);
+
+    expect($result['uploaded'])->toBe($expectedUploaded)->toBeGreaterThan(0)
+        ->and($result['removed'])->toBe($expectedRemoved)->toBeGreaterThan(0);
+
+    Http::assertSent(function ($request) {
+        if ($request->url() !== 'https://datamanager.googleapis.com/v1/audienceMembers:ingest') {
+            return false;
+        }
+
+        $identifiers = collect($request['audienceMembers'])->flatMap(fn ($member) => $member['compositeData']['userData']['userIdentifiers']);
+
+        return $identifiers->contains('emailAddress', hash('sha256', 'subscribed@example.com'))
+            && !$identifiers->contains('emailAddress', hash('sha256', 'unsubscribed@example.com'));
+    });
+
+    Http::assertSent(function ($request) {
+        if ($request->url() !== 'https://datamanager.googleapis.com/v1/audienceMembers:remove') {
+            return false;
+        }
+
+        $identifiers = collect($request['audienceMembers'])->flatMap(fn ($member) => $member['compositeData']['userData']['userIdentifiers']);
+
+        return $identifiers->contains('emailAddress', hash('sha256', 'unsubscribed@example.com'))
+            && !$identifiers->contains('emailAddress', hash('sha256', 'subscribed@example.com'))
+            && !array_key_exists('termsOfService', $request->data());
+    });
+
+    $this->shop->refresh();
+
+    expect(Arr::get($this->shop->settings, 'google_ads.last_sync.uploaded'))->toBe($expectedUploaded)
+        ->and(Arr::get($this->shop->settings, 'google_ads.last_sync.removed'))->toBe($expectedRemoved)
+        ->and(Arr::get($this->shop->settings, 'google_ads.last_sync.at'))->not->toBeNull();
 });
 
 describe('EU VAT re-validation (HELP-2374)', function () {

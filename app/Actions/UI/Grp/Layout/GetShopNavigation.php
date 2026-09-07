@@ -373,6 +373,16 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
+                        [
+                            "label"   => __("Google Ads"),
+                            "tooltip" => __("Google Ads campaigns"),
+                            "icon"    => ["fab", "fa-google"],
+                            'root'    => 'grp.org.shops.show.marketing.google_ads.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.marketing.google_ads.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
 
 
                     ],

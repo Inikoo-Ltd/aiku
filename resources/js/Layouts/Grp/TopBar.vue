@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import { faGoogle } from "@fortawesome/free-brands-svg-icons"
 import { Link, router } from "@inertiajs/vue3"
 import { reactive, inject } from "vue"
 import MenuPopoverList from "@/Layouts/Grp/MenuPopoverList.vue"
@@ -70,7 +71,7 @@ import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useTruncate } from "@/Composables/useTruncate"
 
-library.add(faChevronDown, faTerminal, faUserAlien, faCog, faCity, faBuilding, faNetworkWired, faUserHardHat, faCalendar, faStopwatch, faStoreAlt, faWarehouseAlt, faChartNetwork, faFolderTree, faFolder, faCube, faUserPlus,
+library.add(faGoogle, faChevronDown, faTerminal, faUserAlien, faCog, faCity, faBuilding, faNetworkWired, faUserHardHat, faCalendar, faStopwatch, faStoreAlt, faWarehouseAlt, faChartNetwork, faFolderTree, faFolder, faCube, faUserPlus,
     faBox, faBoxesAlt, faMoneyCheckAlt, faCashRegister, faCoins, faFileInvoiceDollar, faReceipt, faPersonDolly, faPeopleArrows, faStream, faAppleCrate,
     faConciergeBell, faGarage, faHamsa, faCodeMerge, faSortShapesDownAlt, faHatChef, faTags, faCommentDollar, faNewspaper, faMailBulk, faBell, faLaptopHouse, faHandHoldingBox,
     faShippingFast, faChessClock, faBallot, faHouseDamage, faSign, faClipboardListCheck, faClipboardList, faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faAnalytics, faUserCircle, faChevronRight
