@@ -605,8 +605,13 @@ const applyChannelFromUrl = () => {
 }
 
 
+// reloadContacts() calls this on every load, and the lookup below reloads in turn, so
+// the pending ulid is cleared before that happens and a lookup already in flight is not
+// started a second time. Without both, the two functions call each other forever.
+const isResolvingPendingSession = ref(false)
+
 const openPendingSession = async () => {
-    if (!pendingSessionUlid.value) return
+    if (!pendingSessionUlid.value || isResolvingPendingSession.value) return
 
     const contact = contacts.value.find((c) => String(c.ulid) === pendingSessionUlid.value)
 
@@ -619,6 +624,8 @@ const openPendingSession = async () => {
     // Session not in the current tab — look it up by ulid so it is found wherever it
     // sits in the list, then switch to the matching tab before opening.
     const ulid = pendingSessionUlid.value
+    isResolvingPendingSession.value = true
+
     try {
         const url = selectedChannel.value === "whatsapp"
             ? `${baseUrl}/app/api/chats/meta/sessions`
@@ -648,6 +655,9 @@ const openPendingSession = async () => {
 
         const mapped = mapSession(found)
 
+        // Cleared before the reload below, because that reload calls back into here.
+        pendingSessionUlid.value = null
+
         if (mapped.shop?.id && mapped.shop.id !== selectedShopId.value) {
             revealInbox(mapped.shop.id, mapped.channel)
         }
@@ -656,12 +666,12 @@ const openPendingSession = async () => {
 
         await nextTick()
         await reloadContacts()
-
-        pendingSessionUlid.value = null
         linkedContact.value = mapped
         openChat(mapped)
     } catch (e) {
         console.error("Failed to fetch pending session:", e)
+    } finally {
+        isResolvingPendingSession.value = false
     }
 }
 
