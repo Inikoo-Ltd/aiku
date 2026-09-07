@@ -2161,8 +2161,14 @@ test('an operative only sees the factory jobs page and nothing group or commerci
 
     expect(fn () => StartManufactureTaskSession::make()->action($user, $pool->jobOrderItems()->first()->tasks()->first()))
         ->toThrow(\Illuminate\Validation\ValidationException::class);
-    StartManufactureTaskSession::make()->action($user, $assigned->jobOrderItems()->first()->tasks()->first());
-    expect($assigned->refresh()->state)->toBe(JobOrderStateEnum::CONFIRMED);
+    $session = StartManufactureTaskSession::make()->action($user, $assigned->jobOrderItems()->first()->tasks()->first());
+    expect($assigned->refresh()->state)->toBe(JobOrderStateEnum::CONFIRMED)
+        ->and(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+            ->viewData('page')['props']['open_session']['can_reject'])->toBeFalse();
+    \Pest\Laravel\patch(route('grp.models.manufacture-task-session.close', $session->id), ['quantity_made' => 2, 'quantity_rejected' => 5])
+        ->assertRedirect();
+    expect((float) $session->refresh()->quantity_rejected)->toBe(0.0)
+        ->and((float) $session->quantity_made)->toBe(2.0);
 
     get(route('grp.org.chat.dashboard', $this->organisation->slug))->assertForbidden();
     get(route('grp.org.offer.calendar', $this->organisation->slug))->assertForbidden();
