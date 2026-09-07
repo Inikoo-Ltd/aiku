@@ -32,7 +32,7 @@ class CreateArtefact extends OrgAction
                     'title'        => __('New artefact'),
                     'icon'         => [
                         'title' => __('Create artefact'),
-                        'icon'  => 'fal fa-industry'
+                        'icon'  => 'fal fa-hamsa'
                     ],
                     'actions'      => [
                         [
@@ -54,24 +54,31 @@ class CreateArtefact extends OrgAction
                                 'code' => [
                                     'type'     => 'input',
                                     'label'    => __('Code'),
+                                    'placeholder' => __('Enter new code') . ' (e.g. NewArtefact-001)',
                                     'value'    => '',
                                     'required' => true
                                 ],
                                 'name' => [
                                     'type'     => 'input',
                                     'label'    => __('Name'),
+                                    'placeholder' => __('Enter new name') . ' (e.g. New Artefact)',
                                     'value'    => '',
                                     'required' => true
                                 ],
                                 'recommended_batch_size' => [
-                                    'type'     => 'input',
+                                    'type'     => 'input_number',
                                     'label'    => __('Recommended batch size'),
+                                    'bind'  => [
+                                        'min' => 0,
+                                        'placeholder' => __('Enter recommended batch size') . ' (e.g. 100)',
+                                    ],
                                     'value'    => '',
                                     'required' => false
                                 ],
                                 'trade_unit_id' => [
                                     'type'       => 'select_infinite',
                                     'label'      => __('Trade unit'),
+                                    'placeholder' => __('Select a trade unit'),
                                     'options'    => [],
                                     'fetchRoute' => [
                                         'name'       => 'grp.goods.trade-units.index',
@@ -85,11 +92,12 @@ class CreateArtefact extends OrgAction
                                 'org_stock_id' => [
                                     'type'       => 'select_infinite',
                                     'label'      => __('Stock (SKU)'),
+                                    'placeholder' => __('Select a stock'),
                                     'options'    => [],
                                     'fetchRoute' => [
                                         'name'       => 'grp.json.org_stocks.index',
                                         'parameters' => [
-                                            'organisation' => $this->organisation->slug,
+                                            'organisation' => $this->organisation->id,
                                         ]
                                     ],
                                     'valueProp' => 'id',

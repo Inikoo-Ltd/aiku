@@ -82,8 +82,8 @@ class IndexArtefacts extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('artefacts.code', $value)
-                    ->whereWith('artefacts.name', $value);
+                $query->whereWith('artefacts.code', $value)
+                    ->orWhereWith('artefacts.name', $value);
             });
         });
 
@@ -237,9 +237,10 @@ class IndexArtefacts extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('artefacts'),
+                'title'       => __('Artefacts'),
                 'pageHead'    => [
-                    'title'     => __('artefacts'),
+                    'model'     => $this->parent instanceof Production ? __('Crafts') : null,
+                    'title'     => __('Artefacts'),
                     'icon'      => [
                         'icon'  => ['fal', 'fa-hamsa'],
                         'title' => __('Artefacts'),
@@ -254,7 +255,7 @@ class IndexArtefacts extends OrgAction
                                     'type'  => 'button',
                                     'style' => 'primary',
                                     'icon'  => ['fal', 'fa-upload'],
-                                    'label' => 'upload',
+                                    'label' => __('Upload'),
                                     // 'route' => [
                                     //     'name'       => 'grp.models.production.artefacts.upload',
                                     //     'parameters' => [
@@ -266,7 +267,7 @@ class IndexArtefacts extends OrgAction
 
                                     'type'  => 'button',
                                     'style' => 'create',
-                                    'label' => __('artefact'),
+                                    'label' => __('Artefact'),
                                     'route' => [
                                         'name'       => 'grp.org.productions.show.crafts.artefacts.create',
                                         'parameters' => $request->route()->originalParameters()

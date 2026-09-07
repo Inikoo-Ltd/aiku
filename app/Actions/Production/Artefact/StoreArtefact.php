@@ -103,8 +103,8 @@ class StoreArtefact extends OrgAction
     {
         $production   = $artefact->production;
         $organisation = $artefact->organisation;
-        return Redirect::route('grp.org.productions.show.crafts.artefacts.index', [
-            $organisation, $production
+        return Redirect::route('grp.org.productions.show.crafts.artefacts.show', [
+            $organisation, $production, $artefact
         ]);
     }
 
