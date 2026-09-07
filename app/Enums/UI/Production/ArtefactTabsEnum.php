@@ -53,7 +53,7 @@ enum ArtefactTabsEnum: string
                 'icon'  => 'fal fa-clock',
             ],
             ArtefactTabsEnum::SHOWCASE => [
-                'title' => __('Warehouse'),
+                'title' => __('Showcase'),
                 'icon'  => 'fas fa-info-circle',
             ],
         };

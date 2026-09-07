@@ -76,9 +76,21 @@ class EditArtefact extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Edit artefact'),
+                'title'       => __('Edit artefact') . ' ' . $artefact->code,
                 'pageHead'    => [
-                    'title'     => __('Edit artefact'),
+                    'icon'      => ['fal', 'fa-hamsa'],
+                    'model' => __('Edit Artefact'),
+                    'title'     => $artefact->name,
+                    'actions'   => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'exitEdit',
+                            'route' => [
+                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ]
+                    ],
                     // 'actions'   => [
                     //     [
                     //         'type'  => 'button',
@@ -162,7 +174,7 @@ class EditArtefact extends OrgAction
                                     'fetchRoute' => [
                                         'name'       => 'grp.json.org_stocks.index',
                                         'parameters' => [
-                                            'organisation' => $artefact->organisation->slug,
+                                            'organisation' => $artefact->organisation->id,
                                         ]
                                     ],
                                     'valueProp' => 'id',
