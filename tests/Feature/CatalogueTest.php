@@ -1105,6 +1105,11 @@ test('audit archiver moves closed shop and discontinued product audits, history 
     expect($history->total())->toBeGreaterThan(0)
         ->and($footerNoteFor($discontinuedProduct))->toBe(__('Showing archived history.'));
 
+    $archivedAudit = \App\Models\Helpers\Audit::on('archive')
+        ->where('auditable_type', 'Product')->where('auditable_id', $discontinuedProduct->id)->first();
+    expect($archivedAudit->getConnectionName())->toBe('archive')
+        ->and($archivedAudit->user()->getQuery()->getModel()->getConnectionName())->not->toBe('archive');
+
     UpdateProduct::make()->action($discontinuedProduct->refresh(), ['name' => 'relaunched']);
     $mixedHistory = \App\Actions\Helpers\History\UI\IndexHistory::run($discontinuedProduct);
     expect($mixedHistory->total())->toBeGreaterThan(0)
