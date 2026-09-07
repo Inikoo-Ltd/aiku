@@ -11,10 +11,13 @@ namespace App\Actions\Dropshipping\Portfolio\UI;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\WithCustomerSalesChannelSubNavigation;
+use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\UI\CRM\PortfoliosInCustomerSalesChannelTabsEnum;
 use App\Http\Resources\CRM\PortfoliosResource;
+use App\Http\Resources\Dropshipping\PlatformPortfolioLogsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -83,12 +86,16 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'portfolios.has_valid_platform_product_id',
                 'portfolios.number_platform_possible_matches as matches',
                 'portfolios.data',
+                'portfolios.last_stock_value',
+                'portfolios.stock_last_updated_at',
+                'portfolios.stock_last_fail_updated_at',
                 'p.is_for_sale',
+                'p.available_quantity',
                 'platforms.type as platform_type',
                 'customer_sales_channels.platform_status as customer_sales_channel_platform_status',
             ])
             ->defaultSort('portfolios.reference')
-            ->allowedSorts(['item_code', 'item_name', 'created_at', 'matches', 'platform_status'])
+            ->allowedSorts(['item_code', 'item_name', 'created_at', 'matches', 'platform_status', 'last_stock_value', 'stock_last_updated_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -153,6 +160,15 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                     'progressDescription' => __('Importing portfolios'),
                     'upload_spreadsheet'  => $this->buildUploadSpreadsheetConfig($this->customerSalesChannel)
                 ],
+
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => PortfoliosInCustomerSalesChannelTabsEnum::navigation()
+                ],
+
+                PortfoliosInCustomerSalesChannelTabsEnum::LOGS->value => $this->tab == PortfoliosInCustomerSalesChannelTabsEnum::LOGS->value
+                    ? fn () => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($this->customerSalesChannel, PortfoliosInCustomerSalesChannelTabsEnum::LOGS->value))
+                    : Inertia::optional(fn () => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($this->customerSalesChannel, PortfoliosInCustomerSalesChannelTabsEnum::LOGS->value))),
 
                 'is_show_add_products_modal' => $this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL,
                 'data'                       => PortfoliosResource::collection($portfolios),
@@ -295,7 +311,8 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                     ],
                 ],
             ]
-        )->table($this->tableStructure());
+        )->table($this->tableStructure())
+            ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, PortfoliosInCustomerSalesChannelTabsEnum::LOGS->value));
     }
 
 
@@ -313,6 +330,8 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 ->column(key: 'item_code', label: __('Product'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'item_name', label: __('Product name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'platform_status', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'stock', label: __('Stock (AW / pushed)'), canBeHidden: true, sortable: false, searchable: false)
+                ->column(key: 'stock_last_updated_at', label: __('Stock pushed at'), canBeHidden: true, sortable: true, searchable: false)
                 ->column(key: 'matches', label: __('Matches'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'actions', label: __('Actions'), canBeHidden: false, searchable: true);
         };
@@ -321,7 +340,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
         $this->customerSalesChannel = $customerSalesChannel;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(PortfoliosInCustomerSalesChannelTabsEnum::values());
 
         return $this->handle($customerSalesChannel);
     }

@@ -13,6 +13,7 @@ use App\Models\Helpers\Country;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreMasterCollectionFromOriginCountry
@@ -49,6 +50,8 @@ class StoreMasterCollectionFromOriginCountry
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
+
         $masterShop = MasterShop::where('slug', $command->argument('master_shop'))->firstOrFail();
         $country    = Country::where('code', strtoupper($command->argument('country')))->firstOrFail();
         $code       = $command->option('code') ?? 'made-in-'.strtolower($country->code);

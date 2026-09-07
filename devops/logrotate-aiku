@@ -1,4 +1,4 @@
-/home/aiku/aiku/shared/local_storage/logs/*.log {
+/home/aiku/aiku/shared/local_storage/logs/*.log /home/aiku/logs/nginx-webhooks-access.log {
     su aiku aiku
     maxsize 100M
     daily

@@ -148,12 +148,35 @@ class StoreOrderFromWooCommerce extends OrgAction
     }
 
 
+    /**
+     * A line for a variation carries both the variation id and the parent product id. A portfolio
+     * matched to the variation wins, one matched to the parent covers every variation of it.
+     *
+     * @return array<int, string>
+     */
+    public static function lineItemPlatformProductIds(array $item): array
+    {
+        return array_values(array_map(
+            'strval',
+            array_filter([Arr::get($item, 'variation_id'), Arr::get($item, 'product_id')])
+        ));
+    }
+
     public function digestWooProducts(WooCommerceUser $wooCommerceUser, array $wooOrderData): array
     {
         $orderedProducts = [];
         foreach (Arr::get($wooOrderData, 'line_items', []) as $item) {
-            $portfolioData = DB::table('portfolios')->select('item_id')->where('item_type', 'Product')->where('customer_sales_channel_id', $wooCommerceUser->customer_sales_channel_id)
-                ->where('platform_product_id', $item['product_id'])->first();
+            $platformProductIds = self::lineItemPlatformProductIds($item);
+
+            $portfolioData = DB::table('portfolios')
+                ->select('item_id', 'platform_product_id')
+                ->where('item_type', 'Product')
+                ->where('customer_sales_channel_id', $wooCommerceUser->customer_sales_channel_id)
+                ->whereIn('platform_product_id', $platformProductIds)
+                ->get()
+                ->sortBy(fn ($portfolio) => array_search($portfolio->platform_product_id, $platformProductIds))
+                ->first();
+
             if ($portfolioData && $portfolioData->item_id) {
                 $product       = Product::find($portfolioData->item_id);
                 $historicAsset = $product?->currentHistoricProduct;

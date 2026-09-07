@@ -9,18 +9,24 @@
 namespace App\Models\Helpers;
 
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Enums\Helpers\Ticket\TicketKindEnum;
+use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
+use App\Models\Chat\StaffConversation;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasTicketImages;
 use App\Models\Traits\InShop;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -32,6 +38,10 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property int|null $shop_id
  * @property int|null $customer_id
  * @property TicketTypeEnum $type
+ * @property TicketKindEnum|null $kind
+ * @property TicketModuleEnum|null $module
+ * @property array<int, string> $tags
+ * @property bool $is_confidential
  * @property int $number
  * @property string $reference
  * @property TicketStatusEnum $status
@@ -71,6 +81,7 @@ class Ticket extends Model implements Auditable, HasMedia
 
     protected $attributes = [
         'data'     => '{}',
+        'tags'     => '[]',
         'status'   => TicketStatusEnum::OPEN,
         'priority' => ChatPriorityEnum::NORMAL,
     ];
@@ -80,15 +91,22 @@ class Ticket extends Model implements Auditable, HasMedia
         'priority',
         'assignee_id',
         'subject',
+        'module',
+        'tags',
+        'is_confidential',
     ];
 
     protected function casts(): array
     {
         return [
             'type'        => TicketTypeEnum::class,
+            'kind'        => TicketKindEnum::class,
+            'module'      => TicketModuleEnum::class,
             'status'      => TicketStatusEnum::class,
             'priority'    => ChatPriorityEnum::class,
             'data'        => 'array',
+            'tags'        => 'array',
+            'is_confidential' => 'boolean',
             'rated_at'    => 'datetime',
             'resolved_at' => 'datetime',
             'closed_at'   => 'datetime',
@@ -123,5 +141,41 @@ class Ticket extends Model implements Auditable, HasMedia
     public function comments(): HasMany
     {
         return $this->hasMany(TicketComment::class);
+    }
+
+    public const array PRESET_TAGS = ['not a bug', 'lack of training', 'not enough info', 'duplicate', 'user error', 'data fix', 'wont fix'];
+
+    public static function knownTags(int $groupId): array
+    {
+        $used = DB::table('tickets')->where('group_id', $groupId)->selectRaw('distinct jsonb_array_elements_text(tags) as tag')->pluck('tag')->all();
+
+        return array_values(array_unique(array_merge(self::PRESET_TAGS, $used)));
+    }
+
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->hasRole('group-admin')) {
+            return $query;
+        }
+
+        return $query->where(fn (Builder $query) => $query
+            ->where('tickets.is_confidential', false)
+            ->orWhere('tickets.assignee_id', $user->id)
+            ->orWhere(fn (Builder $query) => $query->where('tickets.reporter_type', 'User')->where('tickets.reporter_id', $user->id)));
+    }
+
+    public function isVisibleTo(User $user): bool
+    {
+        return static::query()->whereKey($this->id)->visibleTo($user)->exists();
+    }
+
+    public function escalations(): HasMany
+    {
+        return $this->hasMany(Ticket::class, 'model_id')->where('model_type', 'Ticket');
+    }
+
+    public function staffConversation(): MorphOne
+    {
+        return $this->morphOne(StaffConversation::class, 'context');
     }
 }

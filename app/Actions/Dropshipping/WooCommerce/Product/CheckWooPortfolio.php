@@ -17,6 +17,11 @@ class CheckWooPortfolio
 {
     use AsAction;
 
+    /**
+     * When the store cannot be asked (error page, timeout) the portfolio keeps whatever it had:
+     * flipping a live listing to "missing" on a transient failure would drop it from stock sync
+     * with nothing scheduled to put it back.
+     */
     public function handle(Portfolio $portfolio): Portfolio
     {
         if (!$portfolio->customerSalesChannel) {
@@ -34,29 +39,24 @@ class CheckWooPortfolio
         $productExistsInWoo = false;
         $hasVariantAtLocation   = false;
         if ($hasValidProductId) {
-            $result = CheckIfProductExistInWoo::run($wooUser, $portfolio);
+            $reply  = $wooUser->getWooCommerceProduct($portfolio->platform_product_id);
+            $result = CheckIfProductExistInWoo::onlyProducts([$reply]);
+
+            if (blank($result) && !CheckIfProductExistInWoo::isMissingProductReply($reply)) {
+                return $portfolio;
+            }
+
             $productExistsInWoo = ! blank($result);
             $hasVariantAtLocation   = $productExistsInWoo;
         }
 
-        $numberMatches = 0;
-        $matchesLabels = [];
-        $matches       = [];
-
-        if (!$hasValidProductId || !$productExistsInWoo || !$hasVariantAtLocation) {
-            $result = CheckIfProductExistInWoo::run($wooUser, $portfolio);
-
-            $matches       = $result;
-            $numberMatches = count($matches);
-            $matchesLabels = Arr::pluck($matches, 'name');
-        }
-
+        $matches       = $hasVariantAtLocation ? [] : CheckIfProductExistInWoo::possibleMatches($wooUser, $portfolio);
+        $numberMatches = count($matches);
 
         $matchData = [
             'number_matches' => $numberMatches,
-            'matches_labels' => $matchesLabels,
+            'matches_labels' => Arr::pluck($matches, 'name'),
             'raw_data'       => $matches
-
         ];
 
         $portfolio->update([

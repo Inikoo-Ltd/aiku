@@ -33,7 +33,7 @@ class ReviveInActiveWooChannel extends OrgAction
             $reviveWooUser = WooCommerceUser::where('customer_sales_channel_id', $customerSalesChannel->id)->restore();
 
             if ($reviveWooUser) {
-                CheckWooChannel::run($customerSalesChannel->user);
+                CheckWooChannel::run($customerSalesChannel->load('user')->user);
             } else {
                 throw ValidationException::withMessages(['message' => __('Unable to revive WooCommerce channel')]);
             }

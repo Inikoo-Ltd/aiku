@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CreateFulfilmentOrderFr
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\ShopifyUser;
+use Sentry;
 
 class AcceptShopifyFulfillmentRequest extends OrgAction
 {
@@ -69,6 +70,8 @@ class AcceptShopifyFulfillmentRequest extends OrgAction
 
             return [false, 'No fulfillment order data in response'];
         } catch (\Exception $e) {
+            Sentry::captureException($e);
+
             return [false, 'Exception occurred: '.$e->getMessage()];
         }
     }

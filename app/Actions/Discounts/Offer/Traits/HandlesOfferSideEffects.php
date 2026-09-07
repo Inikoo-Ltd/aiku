@@ -15,6 +15,7 @@ use App\Actions\Ordering\Order\CleanFinishedVouchers;
 use App\Actions\Ordering\Order\RecalculateCustomerTotalsOrdersInBasket;
 use App\Actions\Ordering\Order\RecalculateShopOrderDiscountsInBasket;
 use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
@@ -34,7 +35,7 @@ trait HandlesOfferSideEffects
             CleanFinishedVouchers::run($offer->id);
         }
 
-        if ($offer->trigger_type == 'ProductCategory') {
+        if ($offer->hydratesCatalogueOffersData()) {
             UpdateProductCategoryOffersData::run($offer);
         }
 
@@ -65,6 +66,12 @@ trait HandlesOfferSideEffects
 
             if ($product && $product->webpage) {
                 BreakWebpageCache::run($product->webpage);
+            }
+        }
+
+        foreach (Collection::whereIn('id', $offer->targetCollectionIds())->get() as $collection) {
+            if ($collection->webpage) {
+                BreakWebpageCache::run($collection->webpage, true);
             }
         }
     }

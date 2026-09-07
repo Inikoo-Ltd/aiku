@@ -26,6 +26,7 @@ use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -76,7 +77,7 @@ class StoreOrderFromShopify extends OrgAction
         }
 
         if ($unmatchedShopifyProducts) {
-            \Sentry\captureMessage(
+            Log::info(
                 'Shopify order '.Arr::get($modelData, 'id').' of customer sales channel '
                 .$shopifyUser->customer_sales_channel_id.' has line items outside the portfolio: '
                 .json_encode($unmatchedShopifyProducts)

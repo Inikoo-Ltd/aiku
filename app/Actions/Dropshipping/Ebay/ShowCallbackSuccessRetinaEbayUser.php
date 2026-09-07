@@ -25,9 +25,15 @@ class ShowCallbackSuccessRetinaEbayUser extends RetinaAction
     use WithActionUpdate;
     use WithEbayApiRequest;
 
+    /**
+     * WooCommerce sends the owner back here with success=0 when its own POST of the keys to our
+     * callback failed, so the page must not claim the store is connected in that case.
+     */
     public function htmlResponse(ActionRequest $request): Response
     {
-        return Inertia::render('Dropshipping/ShowCallbackSuccessRetinaEbay', []);
+        return Inertia::render('Dropshipping/ShowCallbackSuccessRetinaEbay', [
+            'success' => $request->query('success', '1') !== '0',
+        ]);
     }
 
     public function asController(ActionRequest $request): ActionRequest

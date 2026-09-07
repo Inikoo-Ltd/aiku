@@ -251,6 +251,10 @@ class ShowInvoice extends OrgAction
                 'value' => 'group_by_tariff_code',
             ],
             [
+                'label' => __('Export invoice: one line per tariff code & origin'),
+                'value' => 'export_by_tariff_code',
+            ],
+            [
                 'label' => __('Show Dispatch Totals (SKO & Units)'),
                 'value' => 'show_dispatch_totals',
             ],

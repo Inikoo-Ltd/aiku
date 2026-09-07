@@ -1094,3 +1094,26 @@ test('repair fills and overwrites trade unit tariff codes from the latest Aurora
     expect($tradeUnit->fresh()->tariff_code)->toBe('2520100000')
         ->and($product->fresh()->tariff_code)->toBe('2520100000');
 });
+
+test('tariff codes index lists rows and the export name is editable', function () {
+    $tariffCode = \App\Models\Helpers\TariffCode::firstOrCreate(['hs_code' => '330741'], ['section' => 'VI', 'description' => 'Agarbatti and other odoriferous preparations which operate by burning', 'level' => 6]);
+
+    get(route('grp.goods.tariff_codes.index'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Goods/TariffCodes')->has('data.data'));
+
+    \Pest\Laravel\patch(route('grp.models.tariff_code.update', $tariffCode->id), ['name' => 'Incense'])->assertStatus(302);
+
+    \App\Models\Helpers\TariffCode::firstOrCreate(['hs_code' => '3307410010'], ['section' => 'VI', 'description' => 'Agarbatti', 'level' => 10, 'parent_id' => $tariffCode->id, 'name' => 'Incense Sticks']);
+
+    $fetch = \App\Actions\Transfers\Aurora\FetchAuroraTariffCodeNames::make();
+
+    expect($tariffCode->fresh()->name)->toBe('Incense')
+        ->and(\App\Models\Helpers\TariffCode::exportNameFor('3307 41 0099'))->toBe('Incense Sticks')
+        ->and(\App\Models\Helpers\TariffCode::exportNameFor('3307490000'))->toBeNull()
+        ->and(\App\Models\Helpers\TariffCode::exportNameFor('330741'))->toBe('Incense')
+        ->and(\App\Models\Helpers\TariffCode::exportNameFor('9999999999'))->toBeNull()
+        ->and($fetch->normaliseCode('902300000'))->toBe('0902300000')
+        ->and($fetch->normaliseCode('9021000'))->toBe('09021000')
+        ->and($fetch->normaliseCode('3406000000'))->toBe('3406000000');
+});

@@ -27,14 +27,19 @@ trait WithValidateTaxNumberCustomAudit
             'tax_number'           => $oldTaxNumber->number == $newTaxNumber->number ? null : $oldTaxNumber->number, // To trick always show tax number on VAT Validation History (If old & new is the same, won't be displayed)
         ];
 
-        $customer->auditCustomNew = array_filter([
+        $updatedData = [
             'country_code'          => $newTaxNumber->country_code,
             'tax_number'            => $newTaxNumber->number,
             'status'                => ucfirst($newTaxNumber->status->value),
-            'third_party_status'    => $thirdPartyStatus,
             'validation_type'       => ucfirst($validationType->value),
             'validated_at'          => now()->format('d/m/Y H:i A T'),
-        ]);
+        ];
+
+        if ($validationType != TaxNumberValidationTypeEnum::MANUAL) {
+            data_set($updatedData, 'third_party_status', $thirdPartyStatus);
+        }
+
+        $customer->auditCustomNew = array_filter($updatedData);
 
         Event::dispatch(new AuditCustom($customer));
     }

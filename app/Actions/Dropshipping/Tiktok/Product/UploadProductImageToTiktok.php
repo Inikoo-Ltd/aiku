@@ -13,6 +13,7 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Helpers\Media;
+use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -29,7 +30,7 @@ class UploadProductImageToTiktok extends RetinaAction
                 ->resize(480, 480));
 
             $tempPath = $this->temporaryPngPath();
-            file_put_contents($tempPath, file_get_contents($imageUrl));
+            file_put_contents($tempPath, Http::timeout(30)->get($imageUrl)->throw()->body());
 
             $productData = [
                 [
@@ -46,7 +47,7 @@ class UploadProductImageToTiktok extends RetinaAction
         } catch (\Exception $e) {
             $fallbackUrl = "https://sf-static.tiktokcdn.com/obj/eden-sg/uhtyvueh7nulogpoguhm/tiktok-icon2.png";
             $tempPath = $this->temporaryPngPath();
-            file_put_contents($tempPath, file_get_contents($fallbackUrl));
+            file_put_contents($tempPath, Http::timeout(30)->get($fallbackUrl)->throw()->body());
 
             $productData = [
                 [

@@ -10,6 +10,8 @@ namespace App\Actions\Helpers\Ticket\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Enums\Helpers\Ticket\TicketKindEnum;
+use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -47,6 +49,8 @@ class CreateTicket extends OrgAction
                 ],
                 'storeRoute'  => ['name' => 'grp.models.ticket.store'],
                 'priorities'  => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
+                'modules'     => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
+                'kinds'       => collect(TicketKindEnum::labels())->except('escalation')->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
             ]
         );
     }

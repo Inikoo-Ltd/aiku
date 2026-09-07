@@ -92,6 +92,74 @@ class IndexOrders extends OrgAction
         }
 
 
+        $query = $this->baseQuery($parent);
+        $this->applyBucket($query, $parent, $prefix);
+
+        if (isset($this->bucket) && in_array($this->bucket, OrdersBacklogTabsEnum::values())) {
+            $query->whereElementGroup(
+                key: 'scope',
+                allowedElements: ['domestic', 'export'],
+                engine: fn ($query, $elements) => $query->where('orders.is_export', in_array('export', $elements)),
+                prefix: $prefix
+            );
+        }
+
+        return $query->defaultSort('-orders.date')
+            ->select([
+                'orders.id',
+                'orders.slug',
+                'orders.reference',
+                'orders.date',
+                'orders.submitted_at',
+                'orders.dispatched_at',
+                'orders.state',
+                'orders.created_at',
+                'orders.updated_at',
+                'orders.is_premium_dispatch',
+                'orders.has_extra_packing',
+                'orders.has_insurance',
+                'orders.is_export',
+                'orders.slug',
+                'orders.net_amount',
+                'orders.total_amount',
+                'orders.payment_amount',
+                'orders.pay_detailed_status',
+                'orders.updated_by_customer_at',
+                'customers.name as customer_name',
+                'customers.slug as customer_slug',
+                'customer_clients.name as client_name',
+                'customer_clients.ulid as client_ulid',
+                'currencies.code as currency_code',
+                'currencies.id as currency_id',
+                'shops.name as shop_name',
+                'shops.slug as shop_slug',
+                'organisations.name as organisation_name',
+                'organisations.slug as organisation_slug',
+                'customers.slug as customer_slug',
+                'customers.name as customer_name',
+                'customers.is_vip as is_customer_vip',
+                'orders.customer_notes',
+                'orders.internal_notes',
+                'orders.public_notes',
+                'orders.shipping_notes',
+                'orders.to_be_paid_by',
+                'orders.tracking_number',
+                'orders.shipping_data',
+                'orders.with_replacement',
+                'platforms.type as platform',
+                'sales_channels.type as sales_channel_type',
+                'sales_channels.name as sales_channel_name',
+            ])
+            ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
+            ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at', 'updated_by_customer_at']) // Ensure `id` is the first sort column
+            ->withBetweenDates([$this->getBucketDateColumn($this->bucket ?? null)])
+            ->allowedFilters([$globalSearch])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
+    }
+
+    protected function baseQuery(Group|Organisation|Shop|Customer|CustomerClient|Offer $parent): QueryBuilder
+    {
         $query = QueryBuilder::for(Order::class);
 
         if (class_basename($parent) == 'Shop') {
@@ -124,7 +192,11 @@ class IndexOrders extends OrgAction
         $query->leftJoin('sales_channels', 'orders.sales_channel_id', '=', 'sales_channels.id');
         $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id')->where('shops.state', ShopStateEnum::OPEN);
 
+        return $query;
+    }
 
+    protected function applyBucket(QueryBuilder $query, Group|Organisation|Shop|Customer|CustomerClient|Offer $parent, ?string $prefix): void
+    {
         if ($this->bucket == 'creating' || $this->bucket == OrdersBacklogTabsEnum::IN_BASKET->value) {
             $query->where('orders.state', OrderStateEnum::CREATING);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::SUBMITTED_PAID->value) {
@@ -180,59 +252,25 @@ class IndexOrders extends OrgAction
                 );
             }
         }
+    }
 
+    /**
+     * Live domestic/export split of the bucket, one indexed aggregate per page load instead of a hydrated stat
+     *
+     * @return array{domestic: int, export: int}
+     */
+    public function scopeCounts(Group|Organisation|Shop $parent, string $bucket): array
+    {
+        $this->bucket = $bucket;
+        $query        = $this->baseQuery($parent);
+        $this->applyBucket($query, $parent, null);
 
-        return $query->defaultSort('-orders.date')
-            ->select([
-                'orders.id',
-                'orders.slug',
-                'orders.reference',
-                'orders.date',
-                'orders.submitted_at',
-                'orders.dispatched_at',
-                'orders.state',
-                'orders.created_at',
-                'orders.updated_at',
-                'orders.is_premium_dispatch',
-                'orders.has_extra_packing',
-                'orders.has_insurance',
-                'orders.slug',
-                'orders.net_amount',
-                'orders.total_amount',
-                'orders.payment_amount',
-                'orders.pay_detailed_status',
-                'orders.updated_by_customer_at',
-                'customers.name as customer_name',
-                'customers.slug as customer_slug',
-                'customer_clients.name as client_name',
-                'customer_clients.ulid as client_ulid',
-                'currencies.code as currency_code',
-                'currencies.id as currency_id',
-                'shops.name as shop_name',
-                'shops.slug as shop_slug',
-                'organisations.name as organisation_name',
-                'organisations.slug as organisation_slug',
-                'customers.slug as customer_slug',
-                'customers.name as customer_name',
-                'customers.is_vip as is_customer_vip',
-                'orders.customer_notes',
-                'orders.internal_notes',
-                'orders.public_notes',
-                'orders.shipping_notes',
-                'orders.to_be_paid_by',
-                'orders.tracking_number',
-                'orders.shipping_data',
-                'orders.with_replacement',
-                'platforms.type as platform',
-                'sales_channels.type as sales_channel_type',
-                'sales_channels.name as sales_channel_name',
-            ])
-            ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
-            ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at', 'updated_by_customer_at']) // Ensure `id` is the first sort column
-            ->withBetweenDates([$this->getBucketDateColumn($this->bucket ?? null)])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+        $counts = ['domestic' => 0, 'export' => 0];
+        foreach ($query->toBase()->selectRaw('orders.is_export, count(*) as count')->groupBy('orders.is_export')->get() as $row) {
+            $counts[$row->is_export ? 'export' : 'domestic'] = (int) $row->count;
+        }
+
+        return $counts;
     }
 
     protected function getBucketDateColumn(?string $bucket): string

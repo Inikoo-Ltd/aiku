@@ -169,17 +169,22 @@ class ShowAikuPublicAnalytics extends OrgAction
         };
     }
 
-    /** @return array{daily: array<int, object>, pages: array<int, object>, searches: array<int, object>, referrers: array<int, object>, page_referrers: array<int, object>, countries: array<int, object>, bots: array<int, object>, articles: array<int, array<string, mixed>>} */
+    /** Suspect visitors: no referrer and a single view in the window, the signature of headless scraper farms; excluded from every stat, counted per day.
+     *
+     * @return array{daily: array<int, object>, pages: array<int, object>, searches: array<int, object>, referrers: array<int, object>, page_referrers: array<int, object>, countries: array<int, object>, bots: array<int, object>, articles: array<int, array<string, mixed>>} */
     public function handle(int $days = 30): array
     {
-        $visits = fn () => DB::table('aiku_public_visits')->where('is_bot', false)->where('created_at', '>', now()->subDays($days));
+        $since = now()->subDays($days);
+        $suspects = DB::table('aiku_public_visits')->where('is_bot', false)->where('created_at', '>', $since)
+            ->select('visitor_hash')->groupBy('visitor_hash')->havingRaw('count(*) = 1 and bool_and(referrer is null)');
+        $visits = fn () => DB::table('aiku_public_visits')->where('is_bot', false)->where('created_at', '>', $since)->whereNotIn('visitor_hash', $suspects);
 
         return [
             'bots' => DB::table('aiku_public_visits')->where('is_bot', true)->where('created_at', '>', now()->subDays($days))
                 ->selectRaw('user_agent, count(*) as views, count(distinct visitor_hash) as visitors, max(created_at) as last_visited_at')
                 ->groupBy('user_agent')->orderByDesc(DB::raw('count(*)'))->limit(25)->get()->all(),
-            'daily' => $visits()
-                ->selectRaw('created_at::date as day, count(*) as views, count(distinct visitor_hash) as visitors')
+            'daily' => DB::table('aiku_public_visits')->where('is_bot', false)->where('created_at', '>', $since)
+                ->selectRaw('created_at::date as day, count(*) filter (where visitor_hash not in ('.$suspects->toSql().')) as views, count(distinct visitor_hash) filter (where visitor_hash not in ('.$suspects->toSql().')) as visitors, count(*) filter (where visitor_hash in ('.$suspects->toSql().')) as suspect', array_merge($suspects->getBindings(), $suspects->getBindings(), $suspects->getBindings()))
                 ->groupBy('day')->orderBy('day')->get()->all(),
             'pages' => $visits()->where('path', 'not like', '/~search/%')
                 ->selectRaw('path, count(*) as views, count(distinct visitor_hash) as visitors, max(created_at) as last_visited_at')

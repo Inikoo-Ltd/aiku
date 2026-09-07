@@ -64,6 +64,7 @@ class StoreTiktokUser extends RetinaAction
 
     public function action(Customer $customer, array $modelData): TiktokUser
     {
+        $this->asAction = true;
         $this->initialisationActions($customer, $modelData);
 
         return $this->handle($customer, $this->validatedData);

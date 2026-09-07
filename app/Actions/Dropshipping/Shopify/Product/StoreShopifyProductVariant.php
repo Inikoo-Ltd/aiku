@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Dropshipping\WithPortfolioErrorResponse;
+use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
@@ -100,18 +101,13 @@ class StoreShopifyProductVariant extends RetinaAction
                 ];
             }
 
-            $availableQuantity = $product->available_quantity;
-            if ($customerSalesChannel->max_quantity_advertise > 0) {
-                $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
-            }
-
             // Prepare variables for the mutation
             $variants = [
                 [
                     'barcode'             => $portfolio->barcode,
                     'inventoryItem'       => $inventoryItem,
                     'inventoryQuantities' => [
-                        'availableQuantity' => $availableQuantity ?? 0,
+                        'availableQuantity' => UpdateWooCustomerSalesChannelPortfolio::quantityToSend($product, $customerSalesChannel),
                         'locationId'        => $shopifyUser->shopify_location_id
                     ]
                 ]
@@ -173,9 +169,14 @@ class StoreShopifyProductVariant extends RetinaAction
             }
 
 
+            $variantId = Arr::get($body, 'data.productVariantsBulkCreate.productVariants.0.id');
+            if ($variantId) {
+                UpdatePortfolio::run($portfolio, ['platform_product_variant_id' => $variantId]);
+            }
+
             SaveShopifyProductData::run($portfolio);
 
-            return [true, ''];
+            return [true, $variantId];
         } catch (Exception $e) {
             Sentry::captureException($e);
             UpdatePortfolio::run($portfolio, [

@@ -46,6 +46,7 @@ use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgPartner\StoreOrgPartner;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydrateOrgSupplierProducts;
+use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock;
 use App\Actions\Procurement\OrgSupplierProducts\StoreOrgSupplierProduct;
 use App\Actions\Procurement\OrgSupplierProducts\RepairOrgSupplierProductsSupplierDrift;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
@@ -79,6 +80,7 @@ use App\Models\HumanResources\Employee;
 use App\Models\Production\Artefact;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
+use App\Models\Production\JobOrder;
 use App\Models\Production\Production;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
 use App\Actions\Production\PartnerShippingList\SendPartnerOrderToWarehouse;
@@ -2898,6 +2900,10 @@ describe('partner shopping list', function () {
 
         $again = StoreJobOrdersFromToProduceItems::make()->action($production, [$item->id]);
         expect($again['job_orders'])->toBe([]);
+
+        \App\Actions\Production\PartnerShippingList\UnassignToProduceItems::make()->action($production, [$item->id]);
+        expect($item->fresh()->job_order_id)->toBeNull()
+            ->and(JobOrder::withTrashed()->find($jobOrder->id)->jobOrderItems()->count())->toBe(0);
     });
 
     test('store partner shopping list item denormalises', function () {
@@ -3434,7 +3440,7 @@ test('UI partner shopping list index', function () {
 test('UI partner shipping list index', function () {
     $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
 
-    $response = $this->get(route('grp.org.productions.show.partners.index', [$this->organisation->slug, $production->slug]));
+    $response = $this->get(route('grp.org.productions.show.to_produce.list', [$this->organisation->slug, $production->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -3444,17 +3450,33 @@ test('UI partner shipping list index', function () {
     });
 });
 
+test('to produce item moves backlog to preparing and back', function () {
+    $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
+    $orgStock   = OrgStock::where('organisation_id', $this->orgPartner->organisation_id)->first() ?? createOrgStocks($this->orgPartner->organisation, [Stock::first()])[0];
+    $item       = PartnerShoppingListItem::whereNull('job_order_id')->first() ?? StorePartnerShoppingListItem::make()->action($this->orgPartner, $orgStock, ['quantity' => 3]);
+
+    $this->post(route('grp.org.productions.show.to_produce.items.preparing', [$this->organisation->slug, $production->slug]), ['preparing' => true, 'lines' => [['id' => $item->id, 'quantity' => 10]]])
+        ->assertRedirect();
+    expect($item->fresh()->preparing_at)->not->toBeNull()
+        ->and((float) $item->fresh()->quantity_to_produce)->toBe(10.0);
+
+    $this->post(route('grp.org.productions.show.to_produce.items.preparing', [$this->organisation->slug, $production->slug]), ['preparing' => false, 'lines' => [['id' => $item->id]]])
+        ->assertRedirect();
+    expect($item->fresh()->preparing_at)->toBeNull()
+        ->and($item->fresh()->quantity_to_produce)->toBeNull();
+});
+
 test('UI to produce list grouped by artisan, family and for', function () {
     $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
 
-    foreach (['by_artisan' => 'maker', 'by_category' => 'family', 'by_for' => 'buyer_code'] as $routeSuffix => $groupBy) {
-        $this->get(route('grp.org.productions.show.partners.'.$routeSuffix, [$this->organisation->slug, $production->slug]))
+    foreach (['by_artisan' => 'maker', 'by_category' => 'family', 'by_for' => 'buyer_code', 'index' => 'board'] as $routeSuffix => $groupBy) {
+        $this->get(route('grp.org.productions.show.to_produce.'.$routeSuffix, [$this->organisation->slug, $production->slug]))
             ->assertInertia(function (AssertableInertia $page) use ($groupBy) {
                 $page
                     ->component('Org/Production/PartnerShippingList')
                     ->where('groupBy', $groupBy)
                     ->has('groups')
-                    ->where('artisanWorkload', fn ($workload) => $groupBy === 'maker' ? $workload !== null : $workload === null);
+                    ->where('artisanWorkload', fn ($workload) => in_array($groupBy, ['maker', 'board', 'mixes']) ? $workload !== null : $workload === null);
             });
     }
 });
@@ -4037,4 +4059,42 @@ test('repair supplier drift leaves rows whose correct twin already exists', func
 
     expect($result['collisions'])->toBe($baseline['collisions'] + 1)
         ->and($drifted->refresh()->org_supplier_id)->toBe($orgSupplierA->id);
+});
+
+test('attach a supplier product to an org stock that has none, first one becomes preferred', function () {
+    $orgStock = $this->orgStocks[1];
+    expect(OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->count())->toBe(0);
+
+    $supplierProduct    = StoreSupplierProduct::make()->action($this->orgSupplier->supplier, [
+        'code'             => 'attach-me',
+        'name'             => 'Attach me',
+        'cost'             => 12,
+        'stock_id'         => $this->stocks[1]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100,
+    ]);
+    $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($this->orgSupplier, $supplierProduct);
+
+    $link = AttachOrgSupplierProductToOrgStock::make()->action($orgStock, $orgSupplierProduct);
+    expect($link->org_stock_id)->toBe($orgStock->id)
+        ->and($link->org_supplier_product_id)->toBe($orgSupplierProduct->id)
+        ->and((int) $link->local_priority)->toBe(10)
+        ->and(StockHasSupplierProduct::where('stock_id', $orgStock->stock_id)->where('supplier_product_id', $supplierProduct->id)->exists())->toBeTrue();
+
+    $again = AttachOrgSupplierProductToOrgStock::make()->action($orgStock, $orgSupplierProduct);
+    expect($again->id)->toBe($link->id)
+        ->and(OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->count())->toBe(1);
+
+    $secondSupplierProduct    = StoreSupplierProduct::make()->action($this->orgSupplier->supplier, [
+        'code'             => 'attach-me-2',
+        'name'             => 'Attach me 2',
+        'cost'             => 15,
+        'stock_id'         => $this->stocks[1]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100,
+    ]);
+    $secondOrgSupplierProduct = StoreOrgSupplierProduct::make()->action($this->orgSupplier, $secondSupplierProduct);
+    $second                   = AttachOrgSupplierProductToOrgStock::make()->action($orgStock, $secondOrgSupplierProduct);
+    expect((int) $second->local_priority)->toBe(0)
+        ->and(OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->count())->toBe(2);
 });

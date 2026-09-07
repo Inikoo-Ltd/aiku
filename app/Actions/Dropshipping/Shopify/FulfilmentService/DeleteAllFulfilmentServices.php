@@ -72,6 +72,10 @@ class DeleteAllFulfilmentServices
                 $serviceId = $service['id'];
                 $serviceName = $service['serviceName'] ?? 'Unknown';
 
+                if (!str_starts_with($serviceName, 'aiku-')) {
+                    continue;
+                }
+
                 list($deleteSuccess, $deleteResult) = $deleteFulfilmentService->handle($customerSalesChannel, $serviceId);
 
                 $results[] = [

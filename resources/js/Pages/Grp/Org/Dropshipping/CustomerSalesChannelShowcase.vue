@@ -23,6 +23,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
+import CopyButton from "@/Components/Utils/CopyButton.vue"
 
 library.add(faStore, faBookmark, faUndoAlt)
 
@@ -305,6 +306,26 @@ const isModalAddress = ref(false)
 					</template>
 				</ModalConfirmationDelete>
 
+				<div
+					v-if="data?.reconnect_link"
+					class="border border-amber-300 bg-amber-50 rounded px-3 py-2 flex flex-col gap-y-1 w-full max-w-xl">
+					<span class="text-sm">
+						{{
+							trans(
+								"The store no longer accepts our keys. Only the store owner can authorise again: send them this link, it opens the authorisation screen in their WooCommerce and lands them back in their AW channel. It works for 7 days."
+							)
+						}}
+					</span>
+					<div class="flex items-center gap-x-2">
+						<input
+							:value="data.reconnect_link"
+							readonly
+							class="text-xs flex-1 border border-gray-300 rounded px-2 py-1 bg-white"
+							@focus="$event.target.select()" />
+						<CopyButton :text="data.reconnect_link" />
+					</div>
+				</div>
+
 				<ModalConfirmation
 					v-if="
 						data?.customer_sales_channel?.status === 'open' &&
@@ -317,7 +338,13 @@ const isModalAddress = ref(false)
 						},
 						method: 'patch',
 					}"
-					:description="trans('Are you sure you want to check channel')"
+					:description="
+						data?.platform?.type === 'woocommerce'
+							? trans(
+									'Checking reconnects the channel. If the store answers, every order it still shows as processing from the last 14 days is imported and charged, so make sure the customer has closed the orders they handled themselves while the channel was down.'
+								)
+							: trans('Are you sure you want to check channel')
+					"
 					xisFullLoading>
 					<template #default="{ isOpenModal, changeModel }">
 						<Button

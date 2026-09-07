@@ -453,7 +453,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             } elseif ($offerData->type == 'Shop Ordered') {
                 $enabledOffers[$offerData->allowance_signature] = [
                     'offer_id'    => $offerData->id,
-                    'offer_label' => $offerData->name
+                    'offer_label' => $offerData->name,
+                    'sub_trigger' => 'so',
                 ];
             } elseif ($offerData->type == 'Department Ordered') {
                 if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'departments_ids', []))) {
