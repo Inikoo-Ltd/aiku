@@ -110,7 +110,7 @@ class ShowManufactureFloor extends OrgAction
             ->map(fn (ManufactureTaskSession $session) => [
                 'id'                  => $session->id,
                 'ended_at'            => $session->ended_at,
-                'minutes'             => (int) $session->started_at->diffInMinutes($session->ended_at),
+                'seconds'             => (int) $session->started_at->diffInSeconds($session->ended_at),
                 'task_name'           => $session->manufactureTask->name,
                 'artefact_code'       => $session->jobOrderItemTask->jobOrderItem->artefact->code,
                 'artefact_name'       => $session->jobOrderItemTask->jobOrderItem->artefact->name,

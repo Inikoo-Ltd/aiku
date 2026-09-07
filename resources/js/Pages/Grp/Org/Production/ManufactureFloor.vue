@@ -51,7 +51,7 @@ const props = defineProps<{
     finished_today: {
         id: number
         ended_at: string
-        minutes: number
+        seconds: number
         task_name: string
         artefact_code: string
         artefact_name: string
@@ -82,6 +82,12 @@ const sections = computed(() => {
     }
     return list
 })
+
+function formatDuration(seconds: number) {
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    return `${m}:${String(s).padStart(2, '0')}`
+}
 
 function startTask(task: FloorTask) {
     processing.value = true
@@ -182,7 +188,7 @@ function startTask(task: FloorTask) {
                 <div class="text-gray-600 truncate">{{ session.artefact_code }} — {{ session.artefact_name }}</div>
                 <div class="text-sm text-gray-500 mt-0.5">
                     {{ trans('Job order') }} {{ session.job_order_reference }}
-                    · {{ session.minutes }} {{ trans('min') }}
+                    · {{ formatDuration(session.seconds) }}
                     <span v-if="session.quantity_rejected" class="ml-2 text-red-600">{{ session.quantity_rejected }} {{ trans('rejected') }}</span>
                 </div>
             </div>
