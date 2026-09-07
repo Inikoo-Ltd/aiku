@@ -1257,6 +1257,7 @@ test('retina new arrivals hide exclusive products from other customers and famil
         'status'            => \App\Enums\Catalogue\Product\ProductStatusEnum::FOR_SALE->value,
     ]);
     DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
+    \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($product, ['customer_ids' => []]);
 
     $codesFor = fn (\App\Models\CRM\Customer $customer) => collect(
         \App\Actions\Retina\Ecom\NewArrival\UI\IndexRetinaEcomNewArrivals::make()->handle($customer)->items()
