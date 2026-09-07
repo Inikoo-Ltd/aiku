@@ -83,8 +83,10 @@ const slideNext = () => swiperInstance.value?.slideNext()
           <FontAwesomeIcon :icon="faChevronLeft" />
         </button>
 
-        <Swiper class="w-full min-w-0" :modules="[Autoplay]" :slides-per-view="1" :space-between="0" :loop="isLooping"
-          :autoplay="autoplayOptions" @swiper="onSwiper" @slide-change="syncNavigatorState">
+        <Swiper class="w-full min-w-0 carousel-cta-swiper" :modules="[Autoplay]" :slides-per-view="1"
+          :space-between="0" :loop="isLooping" :autoplay="autoplayOptions" :allow-touch-move="cards.length > 1"
+          :simulate-touch="true" :grab-cursor="cards.length > 1" :threshold="5" :resistance-ratio="0.6"
+          @swiper="onSwiper" @slide-change="syncNavigatorState">
           <SwiperSlide v-for="(data, index) in cards" :key="index">
 
             <div class="w-full" :style="{
@@ -142,6 +144,15 @@ const slideNext = () => swiperInstance.value?.slideNext()
   </div>
 </template>
 <style scoped>
+.carousel-cta-swiper {
+  touch-action: pan-y;
+}
+
+.carousel-cta-swiper :deep(img) {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
 .carousel-cta-content {
   display: flex;
   flex-direction: row;
