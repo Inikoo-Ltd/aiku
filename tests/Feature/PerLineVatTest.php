@@ -32,6 +32,9 @@ use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use App\Actions\Maintenance\Accounting\RepairInvoiceTaxHeader;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use App\Actions\Helpers\TaxCategory\GetTaxCategory;
+use App\Models\Helpers\Address;
+use App\Models\Helpers\Country;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
@@ -540,3 +543,23 @@ test('the repair rewrites the header from the lines and mirrors it onto the orde
         ->and((float)$invoice->order->total_amount)->toBe(144.0)
         ->and($invoice->taxBreakdown())->toHaveCount(1);
 })->depends('tax rows that do not add up to the stored header give way to the header');
+
+/**
+ * HELP-2768: Aurora charged UK VAT when either address was in the UK; the port required both, so
+ * a customer billed abroad and delivered in the UK was invoiced without VAT.
+ */
+test('a uk delivery is standard rated whatever the billing country, and a uk billing whatever the delivery', function (string $billing, string $delivery, float $rate) {
+    $address = fn (string $code) => new Address(array_merge(Address::factory()->definition(), [
+        'country_id'   => Country::where('code', $code)->firstOrFail()->id,
+        'country_code' => $code,
+    ]));
+
+    $taxCategory = GetTaxCategory::run(Country::where('code', 'GB')->firstOrFail(), null, $address($billing), $address($delivery));
+
+    expect((float)$taxCategory->rate)->toBe($rate);
+})->with([
+    'billed in Ukraine, delivered in the UK' => ['UA', 'GB', 0.2],
+    'billed in the UK, delivered in France'  => ['GB', 'FR', 0.2],
+    'both in the UK'                          => ['GB', 'GB', 0.2],
+    'billed in Ukraine, delivered in France'  => ['UA', 'FR', 0.0],
+]);
