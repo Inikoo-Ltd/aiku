@@ -22,7 +22,6 @@ use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Sentry;
 
 class ShowRetinaTopUpCheckout extends RetinaAction
 {
@@ -36,6 +35,12 @@ class ShowRetinaTopUpCheckout extends RetinaAction
         list($publicKey, $secretKey) = $paymentAccountShop->getCredentials();
 
         $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
+        if (!$checkoutApi) {
+            return [
+                'error'                         => __('Online payments are temporarily unavailable'),
+                'top_up_payment_api_point_ulid' => $topUpPaymentApiPoint->ulid,
+            ];
+        }
 
         $paymentSessionClient = $checkoutApi->getPaymentSessionsClient();
 
@@ -79,14 +84,14 @@ class ShowRetinaTopUpCheckout extends RetinaAction
             $this->customer->address
         );
 
-        try {
-            $paymentSession = $paymentSessionClient->createPaymentSessions($paymentSessionRequest);
-        } catch (\Exception $e) {
-            $paymentSession = [
-                'error' => $e->getMessage(),
-            ];
-            Sentry::captureException($e);
-        }
+        $paymentSessionRequest = $this->setCustomerPhone(
+            $paymentSessionRequest,
+            $this->shop->currency->code,
+            $this->customer,
+            $this->customer->address?->country?->phone_code
+        );
+
+        $paymentSession = $this->createPaymentSession($paymentSessionClient, $paymentSessionRequest);
 
         return [
             'label'                         => __('Online payments'),
