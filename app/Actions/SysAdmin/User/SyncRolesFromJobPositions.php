@@ -31,7 +31,7 @@ class SyncRolesFromJobPositions
         $roles = [];
 
         if ($user->status) {
-            foreach ($user->employees as $employee) {
+            foreach ($user->employees()->wherePivot('status', true)->get() as $employee) {
                 foreach ($employee->jobPositions as $jobPosition) {
                     $roles = $this->getRoles($roles, $jobPosition);
                 }
