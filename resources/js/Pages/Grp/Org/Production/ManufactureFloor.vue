@@ -46,6 +46,7 @@ const props = defineProps<{
         }
     }
     artisan: string | null
+    can_pick_open_jobs: boolean
     tasks: FloorTask[]
     today: {
         sessions: number
@@ -61,6 +62,9 @@ const startError = computed(() => (page.props.errors as Record<string, string> |
 const sections = computed(() => {
     const mine = props.tasks.filter(task => task.is_mine)
     const open = props.tasks.filter(task => !task.is_mine)
+    if (!props.can_pick_open_jobs) {
+        return [{ key: 'mine', title: trans('Your jobs'), tasks: mine, empty: trans('No jobs addressed to you yet') }]
+    }
     const list = [{ key: 'open', title: trans('Open jobs'), tasks: open, empty: trans('No open jobs right now') }]
     if (props.artisan) {
         list.unshift({ key: 'mine', title: trans('Your jobs'), tasks: mine, empty: trans('No jobs addressed to you, pick one from the open jobs') })

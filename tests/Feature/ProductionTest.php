@@ -2145,7 +2145,25 @@ test('an operative only sees the factory jobs page and nothing group or commerci
     get(route('grp.dashboard.show'))->assertRedirect(route('grp.org.dashboard.show', $this->organisation->slug));
     get(route('grp.org.dashboard.show', $this->organisation->slug))
         ->assertRedirect(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]));
-    get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))->assertOk();
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $assigned = StoreJobOrder::make()->action($this->production, ['employee_id' => $employee->id]);
+    StoreJobOrderItem::make()->action($assigned, ['artefact_id' => $this->artefact->id, 'quantity' => 2]);
+    $pool = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($pool, ['artefact_id' => $this->artefact->id, 'quantity' => 2]);
+    ConfirmJobOrder::make()->action($pool);
+
+    $props = get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->assertOk()->viewData('page')['props'];
+    expect($props['can_pick_open_jobs'])->toBeFalse()
+        ->and(collect($props['tasks'])->pluck('job_order_reference')->all())->toBe([$assigned->reference]);
+
+    expect(fn () => StartManufactureTaskSession::make()->action($user, $pool->jobOrderItems()->first()->tasks()->first()))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    StartManufactureTaskSession::make()->action($user, $assigned->jobOrderItems()->first()->tasks()->first());
+    expect($assigned->refresh()->state)->toBe(JobOrderStateEnum::CONFIRMED);
+
     get(route('grp.org.chat.dashboard', $this->organisation->slug))->assertForbidden();
     get(route('grp.org.offer.calendar', $this->organisation->slug))->assertForbidden();
     get(route('grp.org.overview.hub', $this->organisation->slug))->assertForbidden();

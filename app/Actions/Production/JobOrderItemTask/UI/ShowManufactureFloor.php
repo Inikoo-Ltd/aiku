@@ -19,6 +19,7 @@ use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufacturePayBand;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
+use App\Models\SysAdmin\User;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -31,6 +32,17 @@ class ShowManufactureFloor extends OrgAction
     public function handle(Production $production): Production
     {
         return $production;
+    }
+
+    public static function canPickOpenJobs(User $user, Production $production): bool
+    {
+        return $user->authTo([
+            'org-supervisor.'.$production->organisation_id,
+            'productions-view.'.$production->organisation_id,
+            "productions_operations.$production->id.edit",
+            "productions_operations.$production->id.orchestrate",
+            "productions_operations.$production->id.prepare",
+        ]);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -67,11 +79,20 @@ class ShowManufactureFloor extends OrgAction
             ->groupBy('job_order_item_task_id')
             ->map(fn ($sessions) => $sessions->map(fn (ManufactureTaskSession $session) => $session->user->contact_name ?: $session->user->username)->values()->all());
 
+        $canPickOpenJobs = $this->canPickOpenJobs($user, $production);
+
         $tasks = JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
             ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
             ->with(['jobOrderItem.artefact', 'jobOrder.employee', 'manufactureTask'])
             ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
-            ->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
+            ->where(function ($query) {
+                $query->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
+                    ->orWhere(function ($query) {
+                        $query->where('job_orders.state', JobOrderStateEnum::IN_PROCESS)
+                            ->where('job_orders.employee_id', $this->employee?->id ?? 0);
+                    });
+            })
+            ->when(!$canPickOpenJobs, fn ($query) => $query->where('job_orders.employee_id', $this->employee?->id ?? 0))
             ->orderBy('job_orders.date')
             ->orderBy('job_order_item_tasks.position')
             ->select('job_order_item_tasks.*')
@@ -110,6 +131,7 @@ class ShowManufactureFloor extends OrgAction
                     'band_feedback' => $this->bandFeedback($openSession),
                 ] : null,
                 'artisan'      => $this->employee?->contact_name,
+                'can_pick_open_jobs' => $canPickOpenJobs,
                 'tasks'        => $tasks,
                 'today'        => [
                     'sessions'      => (int)$todayTotals->sessions,
