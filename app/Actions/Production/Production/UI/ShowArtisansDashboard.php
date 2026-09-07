@@ -87,7 +87,7 @@ class ShowArtisansDashboard extends OrgAction
     }
 
     /**
-     * @return array<int, array{id: int, name: string, queued: int, working_now: bool}>
+     * @return array<int, array{id: int, name: string, assigned: int, queued: int, working_now: bool}>
      */
     private function artisans(Production $production): array
     {
@@ -104,6 +104,13 @@ class ShowArtisansDashboard extends OrgAction
             ->selectRaw('job_orders.employee_id, count(*) as queued')
             ->pluck('queued', 'employee_id');
 
+        $assigned = JobOrder::where('production_id', $production->id)
+            ->whereIn('state', [JobOrderStateEnum::IN_PROCESS, JobOrderStateEnum::SUBMITTED])
+            ->whereNotNull('employee_id')
+            ->groupBy('employee_id')
+            ->selectRaw('employee_id, count(*) as assigned')
+            ->pluck('assigned', 'employee_id');
+
         $workingNow = ManufactureTaskSession::where('production_id', $production->id)
             ->where('state', ManufactureTaskSessionStateEnum::OPEN)
             ->pluck('employee_id');
@@ -116,10 +123,11 @@ class ShowArtisansDashboard extends OrgAction
             ->map(fn (Employee $employee) => [
                 'id'          => $employee->id,
                 'name'        => $employee->contact_name,
+                'assigned'    => (int)$assigned->get($employee->id, 0),
                 'queued'      => (int)$queued->get($employee->id, 0),
                 'working_now' => $workingNow->contains($employee->id),
             ])
-            ->sortBy('queued')
+            ->sortBy(fn (array $artisan) => $artisan['assigned'] + $artisan['queued'])
             ->values()
             ->all();
     }

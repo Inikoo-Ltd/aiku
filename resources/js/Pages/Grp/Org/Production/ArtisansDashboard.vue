@@ -26,6 +26,7 @@ const props = defineProps<{
     artisans: {
         id: number
         name: string
+        assigned: number
         queued: number
         working_now: boolean
     }[]
@@ -74,11 +75,16 @@ function payrollExportUrl() {
             </div>
             <div v-for="artisan in artisans" :key="artisan.id"
                 class="mb-2 rounded-lg border px-4 py-2 flex items-center justify-between gap-3 text-sm"
-                :class="artisan.queued ? 'border-gray-200 bg-white' : 'border-amber-300 bg-amber-50'">
+                :class="artisan.queued || artisan.assigned ? 'border-gray-200 bg-white' : 'border-amber-300 bg-amber-50'">
                 <span class="font-medium truncate">{{ artisan.name }}</span>
-                <span class="shrink-0 tabular-nums" :class="artisan.queued ? 'text-gray-600' : 'text-amber-700'">
-                    <span v-if="artisan.working_now">{{ trans('working') }} · </span>
-                    {{ artisan.queued ? `${artisan.queued} ${trans('queued')}` : trans('nothing queued') }}
+                <span class="shrink-0 tabular-nums" :class="artisan.queued || artisan.assigned ? 'text-gray-600' : 'text-amber-700'">
+                    <template v-if="artisan.queued || artisan.assigned">
+                        <span v-if="artisan.working_now">{{ trans('working') }} · </span>
+                        <span v-if="artisan.assigned">{{ artisan.assigned }} {{ trans('assigned') }}</span>
+                        <span v-if="artisan.assigned && artisan.queued"> · </span>
+                        <span v-if="artisan.queued">{{ artisan.queued }} {{ trans('on floor') }}</span>
+                    </template>
+                    <template v-else>{{ trans('nothing queued') }}</template>
                 </span>
             </div>
         </div>

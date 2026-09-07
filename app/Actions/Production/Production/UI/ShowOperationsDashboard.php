@@ -126,8 +126,10 @@ class ShowOperationsDashboard extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ],
                             'index'     => [
-                                'number' => JobOrderItemTask::where('production_id', $production->id)
-                                    ->where('state', '!=', JobOrderItemTaskStateEnum::DONE)
+                                'number' => JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
+                                    ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
+                                    ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
+                                    ->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
                                     ->count()
                             ],
                         ],

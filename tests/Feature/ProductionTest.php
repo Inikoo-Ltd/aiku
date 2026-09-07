@@ -894,12 +894,16 @@ test('floor shows job orders addressed to the worker first and the dashboard lis
         ->and($tasks->where('is_mine', true)->pluck('job_order_reference')->all())->toBe([$addressed->reference])
         ->and($tasks->where('is_mine', false)->pluck('job_order_reference'))->toContain($pool->reference);
 
+    $draft = StoreJobOrder::make()->action($this->production, ['employee_id' => $idle->id]);
+    StoreJobOrderItem::make()->action($draft, ['artefact_id' => $this->artefact->id, 'quantity' => 1]);
+
     $artisans = collect(get(route('grp.org.productions.show.artisans.dashboard', [$this->organisation->slug, $this->production->slug]))
         ->viewData('page')['props']['artisans']);
 
     expect($artisans->firstWhere('id', $worker->id)['queued'])->toBe(1)
+        ->and($artisans->firstWhere('id', $worker->id)['assigned'])->toBe(0)
         ->and($artisans->firstWhere('id', $idle->id)['queued'])->toBe(0)
-        ->and($artisans->first()['queued'])->toBe(0);
+        ->and($artisans->firstWhere('id', $idle->id)['assigned'])->toBe(1);
 });
 
 test('UI show artisans dashboard', function () {
