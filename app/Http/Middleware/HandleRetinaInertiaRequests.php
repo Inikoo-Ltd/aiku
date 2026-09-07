@@ -107,6 +107,7 @@ class HandleRetinaInertiaRequests extends Middleware
                 'ziggy'    => [
                     'location' => $request->url(),
                 ],
+                'phpComponent' => app()->environment('local') ? str_replace('\\', '/', $request->route()->getActionName()) : null,
                 "retina"   => [
                     "type"     => $website->shop->type->value,
                     "currency" => CurrencyResource::make($website->shop->currency)->toArray(request()),
