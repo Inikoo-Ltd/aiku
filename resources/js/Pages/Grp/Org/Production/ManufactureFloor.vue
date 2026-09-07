@@ -105,7 +105,7 @@ function startTask(task: FloorTask) {
 
     <div class="px-4 py-4 max-w-6xl mx-auto grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
     <div>
-        <div class="mb-6 grid grid-cols-3 gap-3 text-center">
+        <div class="mb-6 grid grid-cols-2 gap-3 text-center">
             <div class="rounded-lg bg-gray-50 border border-gray-200 py-3">
                 <div class="text-2xl font-semibold tabular-nums">{{ today.quantity_made }}</div>
                 <div class="text-xs text-gray-500">{{ trans('Units today') }}</div>
@@ -113,10 +113,6 @@ function startTask(task: FloorTask) {
             <div class="rounded-lg bg-gray-50 border border-gray-200 py-3">
                 <div class="text-2xl font-semibold tabular-nums">{{ today.sessions }}</div>
                 <div class="text-xs text-gray-500">{{ trans('Tasks finished') }}</div>
-            </div>
-            <div class="rounded-lg bg-gray-50 border border-gray-200 py-3">
-                <div class="text-2xl font-semibold tabular-nums">{{ today.earned.toFixed(2) }}</div>
-                <div class="text-xs text-gray-500">{{ trans('Earned today') }}</div>
             </div>
         </div>
 
