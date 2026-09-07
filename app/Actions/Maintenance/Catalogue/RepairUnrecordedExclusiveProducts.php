@@ -20,8 +20,9 @@ use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Exclusives that were never recorded, found among products hidden from the site (not for
- * sale, no live webpage) by who bought them. Every invoice to a partner organisation's customer
+ * Exclusives that were never recorded, found among products with no live webpage by who
+ * bought them; the for-sale flag is not trusted (in aroma it only means "on the website")
+ * and the sync clears it anyway. Every invoice to a partner organisation's customer
  * account: the intercompany range, exclusive to all partner customers of the shop since that
  * range is shared. Every invoice to one single other customer: private label, exclusive to
  * that customer. Lists by default; --fix writes and leaves a csv under storage/app/repairs.
@@ -58,7 +59,6 @@ class RepairUnrecordedExclusiveProducts
         return Product::where('shop_id', $shop->id)
             ->where('state', ProductStateEnum::ACTIVE)
             ->where('is_main', true)
-            ->where('is_for_sale', false)
             ->whereNull('exclusive_for_customer_id')
             ->whereDoesntHave('webpage', fn ($query) => $query->where('state', WebpageStateEnum::LIVE))
             ->whereExists($this->buyers())
