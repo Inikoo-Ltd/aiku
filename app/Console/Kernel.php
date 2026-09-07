@@ -34,6 +34,7 @@ use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\DevOps\MonitorNightowlIngest;
 use App\Actions\DevOps\MonitorQueueBacklogs;
 use App\Actions\DevOps\WebsiteHealthLog\MonitorWebsitesUptime;
 use App\Actions\Discounts\Offer\ActivateScheduledOffers;
@@ -182,6 +183,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'MonitorQueueBacklogs',
                 ),
                 name: 'MonitorQueueBacklogs',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(MonitorNightowlIngest::makeJob())->everyFifteenMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'MonitorNightowlIngest',
+                ),
+                name: 'MonitorNightowlIngest',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

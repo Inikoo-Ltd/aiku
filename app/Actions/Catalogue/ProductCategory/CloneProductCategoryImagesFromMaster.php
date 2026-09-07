@@ -10,6 +10,8 @@ namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Catalogue\Concerns\CanCloneImages;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateImages;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoImage;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -44,5 +46,9 @@ class CloneProductCategoryImagesFromMaster implements ShouldBeUnique
 
         ProductCategoryHydrateImages::run($productCategory);
         UpdateProductCategoryWebImages::run($productCategory);
+
+        if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
+            ShopHydrateFamiliesWithNoImage::dispatch($productCategory->shop)->delay(2);
+        }
     }
 }

@@ -8,12 +8,14 @@
 
 namespace App\Actions\Web\Webpage\Hydrators;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsNotOnline;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class HydrateIsInWebsite
@@ -49,6 +51,10 @@ class HydrateIsInWebsite
 
         if ($modelData) {
             $model->update($modelData);
+
+            if ($model instanceof Product && Arr::has($modelData, 'has_live_webpage')) {
+                ShopHydrateProductsNotOnline::dispatch($model->shop)->delay(2);
+            }
         }
     }
 

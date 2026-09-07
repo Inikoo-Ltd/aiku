@@ -19,6 +19,7 @@ use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufacturePayBand;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
+use App\Models\SysAdmin\User;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -31,6 +32,17 @@ class ShowManufactureFloor extends OrgAction
     public function handle(Production $production): Production
     {
         return $production;
+    }
+
+    public static function canPickOpenJobs(User $user, Production $production): bool
+    {
+        return $user->authTo([
+            'org-supervisor.'.$production->organisation_id,
+            'productions-view.'.$production->organisation_id,
+            "productions_operations.$production->id.edit",
+            "productions_operations.$production->id.orchestrate",
+            "productions_operations.$production->id.prepare",
+        ]);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -67,11 +79,20 @@ class ShowManufactureFloor extends OrgAction
             ->groupBy('job_order_item_task_id')
             ->map(fn ($sessions) => $sessions->map(fn (ManufactureTaskSession $session) => $session->user->contact_name ?: $session->user->username)->values()->all());
 
+        $canPickOpenJobs = $this->canPickOpenJobs($user, $production);
+
         $tasks = JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
             ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
             ->with(['jobOrderItem.artefact', 'jobOrder.employee', 'manufactureTask'])
             ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
-            ->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
+            ->where(function ($query) {
+                $query->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
+                    ->orWhere(function ($query) {
+                        $query->where('job_orders.state', JobOrderStateEnum::IN_PROCESS)
+                            ->where('job_orders.employee_id', $this->employee?->id ?? 0);
+                    });
+            })
+            ->when(!$canPickOpenJobs, fn ($query) => $query->where('job_orders.employee_id', $this->employee?->id ?? 0))
             ->orderBy('job_orders.date')
             ->orderBy('job_order_item_tasks.position')
             ->select('job_order_item_tasks.*')
@@ -79,6 +100,24 @@ class ShowManufactureFloor extends OrgAction
             ->map(fn (JobOrderItemTask $task) => $this->serializeTask($task) + ['working_on_by' => $workingOnBy->get($task->id, [])])
             ->sortBy(fn (array $task) => count($task['waiting_for']) > 0)
             ->values();
+
+        $finishedToday = ManufactureTaskSession::where('user_id', $user->id)
+            ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
+            ->whereDate('ended_at', now()->toDateString())
+            ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'manufactureTask'])
+            ->orderByDesc('ended_at')
+            ->get()
+            ->map(fn (ManufactureTaskSession $session) => [
+                'id'                  => $session->id,
+                'ended_at'            => $session->ended_at,
+                'seconds'             => (int) $session->started_at->diffInSeconds($session->ended_at),
+                'task_name'           => $session->manufactureTask->name,
+                'artefact_code'       => $session->jobOrderItemTask->jobOrderItem->artefact->code,
+                'artefact_name'       => $session->jobOrderItemTask->jobOrderItem->artefact->name,
+                'job_order_reference' => $session->jobOrderItemTask->jobOrder->reference,
+                'quantity_made'       => (float) $session->quantity_made,
+                'quantity_rejected'   => (float) $session->quantity_rejected,
+            ]);
 
         $todayTotals = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
@@ -100,6 +139,7 @@ class ShowManufactureFloor extends OrgAction
                 ],
                 'open_session' => $openSession ? [
                     'id'         => $openSession->id,
+                    'can_reject' => $canPickOpenJobs,
                     'started_at' => $openSession->started_at,
                     'task'       => $this->serializeTask($openSession->jobOrderItemTask),
                     'close_route' => [
@@ -110,7 +150,9 @@ class ShowManufactureFloor extends OrgAction
                     'band_feedback' => $this->bandFeedback($openSession),
                 ] : null,
                 'artisan'      => $this->employee?->contact_name,
+                'can_pick_open_jobs' => $canPickOpenJobs,
                 'tasks'        => $tasks,
+                'finished_today' => $finishedToday,
                 'today'        => [
                     'sessions'      => (int)$todayTotals->sessions,
                     'quantity_made' => (float)$todayTotals->quantity_made,

@@ -2115,3 +2115,63 @@ test('aurora recipe quantities are divided by batch size exactly once', function
     expect((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(1.0)
         ->and($artefact->refresh()->data['recipe_quantities_normalised_at'])->not->toBeNull();
 });
+
+test('an operative only sees the factory jobs page and nothing group or commercial', function () {
+    SeedJobPositions::make()->handle($this->organisation);
+    $operativePosition = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'prod-c')->first();
+
+    $modelData                    = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+    $modelData['worker_number']   = 'W'.rand(1000, 9999);
+    $modelData['alias']           = 'Alias '.rand(1000, 9999);
+    $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+    $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+    $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+    $modelData['username']        = 'operative'.rand(1000, 9999);
+    $modelData['password']        = 'secret-password';
+    $employee = StoreEmployee::make()->action($this->organisation, $modelData);
+    SyncEmployeeJobPositions::make()->handle($employee, [
+        $operativePosition->id => ['Production' => [$this->production->id]],
+    ]);
+    $user = $employee->users()->first()->refresh();
+
+    expect($user->hasGroupAccess())->toBeFalse()
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetProductionNavigation::run($this->production, $user)))->toBe(['jobs'])
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationNavigation::run($user, $this->organisation)))
+        ->not->toContain('overview', 'chat', 'calendar_offers')
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetProductionNavigation::run($this->production, $this->guest->getUser())))
+        ->toBe(['jobs', 'crafts', 'operations', 'partners', 'artisans']);
+
+    actingAs($user);
+    get(route('grp.dashboard.show'))->assertRedirect(route('grp.org.dashboard.show', $this->organisation->slug));
+    get(route('grp.org.dashboard.show', $this->organisation->slug))
+        ->assertRedirect(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]));
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $assigned = StoreJobOrder::make()->action($this->production, ['employee_id' => $employee->id]);
+    StoreJobOrderItem::make()->action($assigned, ['artefact_id' => $this->artefact->id, 'quantity' => 2]);
+    $pool = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($pool, ['artefact_id' => $this->artefact->id, 'quantity' => 2]);
+    ConfirmJobOrder::make()->action($pool);
+
+    $props = get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->assertOk()->viewData('page')['props'];
+    expect($props['can_pick_open_jobs'])->toBeFalse()
+        ->and(collect($props['tasks'])->pluck('job_order_reference')->all())->toBe([$assigned->reference]);
+
+    expect(fn () => StartManufactureTaskSession::make()->action($user, $pool->jobOrderItems()->first()->tasks()->first()))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    $session = StartManufactureTaskSession::make()->action($user, $assigned->jobOrderItems()->first()->tasks()->first());
+    expect($assigned->refresh()->state)->toBe(JobOrderStateEnum::CONFIRMED)
+        ->and(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+            ->viewData('page')['props']['open_session']['can_reject'])->toBeFalse();
+    \Pest\Laravel\patch(route('grp.models.manufacture-task-session.close', $session->id), ['quantity_made' => 2, 'quantity_rejected' => 5])
+        ->assertRedirect();
+    expect((float) $session->refresh()->quantity_rejected)->toBe(0.0)
+        ->and((float) $session->quantity_made)->toBe(2.0);
+
+    get(route('grp.org.chat.dashboard', $this->organisation->slug))->assertForbidden();
+    get(route('grp.org.offer.calendar', $this->organisation->slug))->assertForbidden();
+    get(route('grp.org.overview.hub', $this->organisation->slug))->assertForbidden();
+    actingAs($this->guest->getUser());
+});

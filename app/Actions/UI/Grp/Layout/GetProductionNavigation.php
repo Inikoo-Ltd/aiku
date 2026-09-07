@@ -25,7 +25,26 @@ class GetProductionNavigation
                 'org-supervisor.'.$production->organisation->id,
                 'productions-view.'.$production->organisation->id,
                 "productions_operations.$production->id.view",
+            ]
+        )) {
+            $navigation['jobs'] = [
+                'root'  => 'grp.org.productions.show.floor',
+                'label' => __('Jobs'),
+                'icon'  => ['fal', 'fa-tasks'],
+                'route' => [
+                    'name'       => 'grp.org.productions.show.floor',
+                    'parameters' => [$production->organisation->slug, $production->slug]
+                ],
+            ];
+        }
+
+        if ($user->hasAnyPermission(
+            [
+                'org-supervisor.'.$production->organisation->id,
+                'productions-view.'.$production->organisation->id,
+                "productions_operations.$production->id.edit",
                 "productions_operations.$production->id.orchestrate",
+                "productions_operations.$production->id.prepare",
                 "productions_rd.$production->id.view",
                 "productions_procurement.$production->id.view",
             ]

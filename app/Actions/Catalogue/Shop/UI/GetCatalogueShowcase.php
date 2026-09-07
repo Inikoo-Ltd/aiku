@@ -442,9 +442,7 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-folder',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->getFamiliesRelation() // Todo: remove this and make stats
-                ->whereNull('image_id')
-                ->count(),
+            'value'           => $shop->stats->number_families_no_images,
         ];
     }
 
@@ -459,10 +457,7 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-cube',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->products() // Todo: remove this and make stats
-                ->whereNull('exclusive_for_customer_id')
-                ->whereNull('image_id')
-                ->count(),
+            'value'           => $shop->stats->number_products_no_images,
         ];
     }
 
@@ -477,13 +472,7 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-cube',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->products() // Todo: remove this and make stats
-                ->where('products.is_main', true)
-                ->whereNull('products.exclusive_for_customer_id')
-                ->join('master_assets', 'master_assets.id', 'products.master_product_id')
-                ->join('product_categories as family', 'family.id', 'products.family_id')
-                ->whereColumn('family.master_product_category_id', '!=', 'master_assets.master_family_id')
-                ->count(),
+            'value'           => $shop->stats->number_products_mismatch_family,
         ];
     }
 
@@ -546,12 +535,7 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-align-left',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->products() // Todo: remove this and make stats
-                ->where('is_main', true)
-                ->whereIn('state', [ProductStateEnum::IN_PROCESS, ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])
-                ->where(function ($q) {
-                    $q->whereNull('description')->orWhere('description', '');
-                })->count(),
+            'value'           => $shop->stats->number_products_no_description,
         ];
     }
 
@@ -581,13 +565,7 @@ class GetCatalogueShowcase
             ],
             'icon'            => 'fal fa-globe',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->products() // Todo: remove this and make stats
-                ->where('is_main', true)
-                ->whereNull('exclusive_for_customer_id')
-                ->where('is_for_sale', true)
-                ->whereIn('state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING, ProductStateEnum::IN_PROCESS])
-                ->where('has_live_webpage', false)
-                ->count(),
+            'value'           => $shop->stats->number_products_not_online,
         ];
     }
 }
