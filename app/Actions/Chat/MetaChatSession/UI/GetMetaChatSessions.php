@@ -45,6 +45,7 @@ class GetMetaChatSessions
             'channel'         => ['sometimes', 'string', 'max:50'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
             'customer_id'     => ['sometimes', 'integer', 'exists:customers,id'],
+            'ulid'            => ['sometimes', 'string', 'max:26'],
             'search'          => ['sometimes', 'string', 'max:100'],
             'organisation_id' => ['sometimes', 'integer', 'exists:organisations,id'],
             'shop_id'         => ['sometimes', 'integer', 'exists:shops,id'],
@@ -153,7 +154,12 @@ class GetMetaChatSessions
                     ? ChatAssignmentStatusEnum::RESOLVED->value
                     : ChatAssignmentStatusEnum::ACTIVE->value;
 
-                if (!empty($filters['view_team'])) {
+                if (!empty($filters['ulid'])) {
+                    // Opening one chat by link: it only has to belong to a shop this
+                    // agent handles, whoever is currently on it. Which tab and which of
+                    // my/team it belongs to is then decided from what comes back.
+                    $query->whereIn('shop_id', $shopIds);
+                } elseif (!empty($filters['view_team'])) {
                     $teamAgentIds = ChatAgent::whereHas('shops', function ($q) use ($shopIds) {
                         $q->whereIn('shops.id', $shopIds);
                     })->where('id', '!=', $currentAgent->id)->pluck('id');
@@ -193,6 +199,12 @@ class GetMetaChatSessions
 
         if (isset($filters['customer_id'])) {
             $query->where('customer_id', $filters['customer_id']);
+        }
+
+        // Opening a chat from a link has to find it wherever it sits in the list, not
+        // only within the first page.
+        if (!empty($filters['ulid'])) {
+            $query->where('ulid', $filters['ulid']);
         }
 
         if (!empty($filters['search'])) {

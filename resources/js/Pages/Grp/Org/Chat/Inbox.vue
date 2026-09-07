@@ -315,14 +315,40 @@ const clearAgentFilter = () => {
     selectedAgentIds.value = []
 }
 
-const filteredContacts = computed(() =>
-    contacts.value.filter(
-        (c) => (spamView.value || trashView.value ? true : c.status === activeTab.value) &&
-            (highlightView.value || !selectedShopId.value || c.shop?.id === selectedShopId.value) &&
-            (!selectedAgentIds.value.length ||
-                (c.agent?.id && selectedAgentIds.value.includes(c.agent.id)))
-    )
-)
+
+const linkedContact = ref<Contact | null>(null)
+const viewModeForAgent = (assignedUserId: unknown): "my" | "team" =>
+    assignedUserId && String(assignedUserId) !== String(myAgentId) ? "team" : "my"
+const revealViewFor = (contact: Contact): void => {
+    const mode = viewModeForAgent((contact.agent as any)?.user_id)
+    // Team has no waiting bucket; those threads are nobody's yet.
+    const tab = mode === "team" && contact.status === "waiting" ? "active" : contact.status
+
+    if (viewMode.value !== mode) {
+        viewMode.value = mode
+    }
+
+    if (tab && ["waiting", "active", "closed"].includes(tab) && activeTab.value !== tab) {
+        activeTab.value = tab as "waiting" | "active" | "closed"
+    }
+}
+
+const matchesCurrentView = (c: Contact) =>
+    (spamView.value || trashView.value ? true : c.status === activeTab.value) &&
+    (highlightView.value || !selectedShopId.value || c.shop?.id === selectedShopId.value) &&
+    (!selectedAgentIds.value.length ||
+        (c.agent?.id && selectedAgentIds.value.includes(c.agent.id)))
+
+const filteredContacts = computed(() => {
+    const list = contacts.value.filter(matchesCurrentView)
+    const linked = linkedContact.value
+
+    if (linked && matchesCurrentView(linked) && !list.some((c) => c.ulid === linked.ulid)) {
+        return [linked, ...list]
+    }
+
+    return list
+})
 
 const selectedInbox = computed(() =>
     props.inboxes?.find((i) => i.id === selectedShopId.value) ?? props.inboxes?.[0] ?? null
@@ -378,6 +404,7 @@ const selectChannel = (shopId: number, channelKey: string) => {
     selectedShopId.value = shopId
     selectedChannel.value = channelKey
     selectedSession.value = null
+    linkedContact.value = null
     messages.value = []
     newChatVisible.value = false
     clearAgentFilter()
@@ -460,6 +487,9 @@ const patchSession = async (c: Contact, routeName: string, method: "patch" | "de
 
 const removeFromList = (ulid: string) => {
     contacts.value = contacts.value.filter((x) => x.ulid !== ulid)
+    if (linkedContact.value?.ulid === ulid) {
+        linkedContact.value = null
+    }
     if (selectedSession.value?.ulid === ulid) {
         selectedSession.value = null
         messages.value = []
@@ -561,8 +591,6 @@ const notifWaWaiting = ref<any[]>([])
 const notifWaActive = ref<any[]>([])
 const notifWaReopen = ref<any[]>([])
 
-// The messages widget links here with the channel it came from, so a WhatsApp row does
-// not land the agent on the website tab of the right shop.
 const pendingSessionUlid = ref<string | null>(null)
 
 const applyChannelFromUrl = () => {
@@ -576,8 +604,7 @@ const applyChannelFromUrl = () => {
     pendingSessionUlid.value = params.get("session")
 }
 
-// The linked conversation can only be opened once its list has arrived, so the ulid waits
-// here and is consumed by the first load that contains it.
+
 const openPendingSession = async () => {
     if (!pendingSessionUlid.value) return
 
@@ -589,38 +616,50 @@ const openPendingSession = async () => {
         return
     }
 
-    // Session not in the current tab — fetch all statuses from the API to find it
-    // and switch to the matching tab before opening.
+    // Session not in the current tab — look it up by ulid so it is found wherever it
+    // sits in the list, then switch to the matching tab before opening.
     const ulid = pendingSessionUlid.value
     try {
         const url = selectedChannel.value === "whatsapp"
             ? `${baseUrl}/app/api/chats/meta/sessions`
             : `${baseUrl}/app/api/chats/sessions`
 
+        // Deliberately unscoped by the selected shop: a link carries no shop, so the
+        // sidebar's default inbox would hide a chat belonging to any other one. The
+        // backend still limits this to shops the agent handles.
         const { data } = await axios.get(url, {
             params: {
+                ulid,
                 assigned_to_me: myAgentId,
                 organisation_id: props.organisation.id,
-                ...(selectedShopId.value ? { shop_id: selectedShopId.value } : {}),
                 page: 1,
-                limit: 50,
+                limit: 1,
             },
+            withCredentials: true,
         })
 
         const sessions = data?.data?.sessions ?? []
         const found = sessions.find((s: any) => String(s.ulid) === ulid)
 
-        if (found) {
-            const mapped = mapSession(found)
-
-            if (mapped.status && ["waiting", "active", "closed"].includes(mapped.status) && activeTab.value !== mapped.status) {
-                activeTab.value = mapped.status as "waiting" | "active" | "closed"
-                await reloadContacts()
-            }
-
+        if (!found) {
             pendingSessionUlid.value = null
-            openChat(mapped)
+            return
         }
+
+        const mapped = mapSession(found)
+
+        if (mapped.shop?.id && mapped.shop.id !== selectedShopId.value) {
+            revealInbox(mapped.shop.id, mapped.channel)
+        }
+
+        revealViewFor(mapped)
+
+        await nextTick()
+        await reloadContacts()
+
+        pendingSessionUlid.value = null
+        linkedContact.value = mapped
+        openChat(mapped)
     } catch (e) {
         console.error("Failed to fetch pending session:", e)
     }
@@ -700,6 +739,12 @@ const inboxUnread = computed<Record<number, number>>(() => {
 })
 
 const openChat = (c: Contact) => {
+    // Moving to another chat retires the linked one, so it does not sit pinned above
+    // the list once the agent has moved on.
+    if (linkedContact.value && linkedContact.value.ulid !== c.ulid) {
+        linkedContact.value = null
+    }
+
     selectedSession.value = {
         channel: c.channel,
         ulid: String(c.ulid),
@@ -845,6 +890,7 @@ const onTransferAgentSuccess = async () => {
 
 watch([activeTab, viewMode], async () => {
     selectedSession.value = null
+    linkedContact.value = null
     messages.value = []
     if (viewMode.value === "team" && activeTab.value === "waiting") {
         activeTab.value = "active"
@@ -867,25 +913,6 @@ const toggleSearch = () => {
 watchDebounced(searchQuery, () => reloadContacts(), { debounce: 400 })
 
 const joinedChatListChannels: string[] = []
-
-const buildInitialSession = () => {
-    const init = props.initialSession
-    if (!init) return
-    selectedSession.value = {
-        channel: "website",
-        ulid: String(init.ulid),
-        contact_name: init.contact_name,
-        guest_identifier: init.guest_identifier ?? init.contact_name,
-        status: init.status,
-        priority: init.priority,
-        web_user: init.web_user,
-        guest_profile: init.guest_profile,
-        assigned_agent: init.assigned_agent,
-        shop: init.shop,
-        organisation: init.organisation,
-    } as SessionAPI
-    messages.value = []
-}
 
 const openSelectedFromProp = () => {
     if (!props.selectedSessionUlid) return
@@ -971,18 +998,19 @@ onMounted(async () => {
         revealInbox(init.shop.id, urlChannel)
     }
 
-    if (init && ["waiting", "active", "closed"].includes(init.status) && activeTab.value !== init.status) {
-        // Triggers the tab watcher (which reloads the list and clears the selection).
-        activeTab.value = init.status
-    }
-
-    await reloadContacts()
-    await nextTick()
-
     if (init) {
-        // Set the selection AFTER the tab watcher has flushed so it isn't cleared.
-        buildInitialSession()
+        const mapped = mapSession(init)
+
+        revealViewFor(mapped)
+
+        await nextTick()
+        await reloadContacts()
+
+        linkedContact.value = mapped
+        openChat(mapped)
     } else {
+        await reloadContacts()
+        await nextTick()
         openSelectedFromProp()
     }
 
