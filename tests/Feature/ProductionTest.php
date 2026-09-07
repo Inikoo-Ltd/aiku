@@ -2115,3 +2115,39 @@ test('aurora recipe quantities are divided by batch size exactly once', function
     expect((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(1.0)
         ->and($artefact->refresh()->data['recipe_quantities_normalised_at'])->not->toBeNull();
 });
+
+test('an operative only sees the factory jobs page and nothing group or commercial', function () {
+    SeedJobPositions::make()->handle($this->organisation);
+    $operativePosition = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'prod-c')->first();
+
+    $modelData                    = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+    $modelData['worker_number']   = 'W'.rand(1000, 9999);
+    $modelData['alias']           = 'Alias '.rand(1000, 9999);
+    $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+    $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+    $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+    $modelData['username']        = 'operative'.rand(1000, 9999);
+    $modelData['password']        = 'secret-password';
+    $employee = StoreEmployee::make()->action($this->organisation, $modelData);
+    SyncEmployeeJobPositions::make()->handle($employee, [
+        $operativePosition->id => ['Production' => [$this->production->id]],
+    ]);
+    $user = $employee->users()->first()->refresh();
+
+    expect($user->hasGroupAccess())->toBeFalse()
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetProductionNavigation::run($this->production, $user)))->toBe(['jobs'])
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationNavigation::run($user, $this->organisation)))
+        ->not->toContain('overview', 'chat', 'calendar_offers')
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetProductionNavigation::run($this->production, $this->guest->getUser())))
+        ->toBe(['jobs', 'crafts', 'operations', 'partners', 'artisans']);
+
+    actingAs($user);
+    get(route('grp.dashboard.show'))->assertRedirect(route('grp.org.dashboard.show', $this->organisation->slug));
+    get(route('grp.org.dashboard.show', $this->organisation->slug))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('dashboard.super_blocks', []));
+    get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))->assertOk();
+    get(route('grp.org.chat.dashboard', $this->organisation->slug))->assertForbidden();
+    get(route('grp.org.offer.calendar', $this->organisation->slug))->assertForbidden();
+    get(route('grp.org.overview.hub', $this->organisation->slug))->assertForbidden();
+    actingAs($this->guest->getUser());
+});

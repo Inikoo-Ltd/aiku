@@ -28,6 +28,12 @@ class ShowChatDashboard extends OrgAction
         return $organisation;
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->chatAgent
+            || $request->user()->authTo(['accounting.'.$this->organisation->id.'.view', 'org-supervisor.'.$this->organisation->id, 'shops-view.'.$this->organisation->id]);
+    }
+
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
         $this->initialisation($organisation, $request);

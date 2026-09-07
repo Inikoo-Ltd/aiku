@@ -165,6 +165,7 @@ export const initialiseApp = () => {
         if (usePage().props.layout?.group) {
             layout.group = usePage().props.layout.group
         }
+        layout.has_group_access = !!usePage().props.layout?.has_group_access
 
 
         // Set App theme

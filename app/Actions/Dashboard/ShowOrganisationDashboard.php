@@ -40,6 +40,11 @@ class ShowOrganisationDashboard extends OrgAction
     use WithTabsBox;
     use WithPerformanceDateResolution;
 
+    private function canViewSales(Organisation $organisation, User $user): bool
+    {
+        return $user->authTo(['accounting.'.$organisation->id.'.view', 'org-supervisor.'.$organisation->id, 'shops-view.'.$organisation->id]);
+    }
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()
@@ -106,7 +111,7 @@ class ShowOrganisationDashboard extends OrgAction
             [
                 'title'         => __('Dashboard').' '.$organisation->name,
                 'breadcrumbs'   => $this->getBreadcrumbs($request->route()->originalParameters(), __('Dashboard')),
-                'dashboard'     => $organisation->type === OrganisationTypeEnum::AGENT ? ['super_blocks' => []] : $dashboard,
+                'dashboard'     => $organisation->type === OrganisationTypeEnum::AGENT || !$this->canViewSales($organisation, $request->user()) ? ['super_blocks' => []] : $dashboard,
                 'cleanHandover' => $this->getCleanHandover($organisation, $request->user()),
             ]
         );
