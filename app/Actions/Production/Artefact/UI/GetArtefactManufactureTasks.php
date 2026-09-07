@@ -44,6 +44,7 @@ class GetArtefactManufactureTasks
 
         return [
             'artefact_id'         => $artefact->id,
+            'artefact_name'       => $artefact->name,
             'recipe'              => $recipe,
             'routes'              => [
                 'task_options' => [
