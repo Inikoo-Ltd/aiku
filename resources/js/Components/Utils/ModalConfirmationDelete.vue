@@ -164,7 +164,7 @@ const messageDelete = ref("")
 									</div>
 
 									<div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-										<DialogTitle as="h3" class="text-base font-semibold pr-2">
+										<DialogTitle as="h3" class="text-base font-semibold pr-4">
 											{{ title || trans("Are you sure want to delete?") }}
 										</DialogTitle>
 										<div class="mt-2">
