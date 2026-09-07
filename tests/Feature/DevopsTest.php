@@ -45,6 +45,12 @@ it('logs failure and sends alert notification when website returns 500', functio
         'commit_hash' => 'dummy123',
     ]);
 
+    WebsiteHealthLog::create([
+        'url'           => 'https://example.test',
+        'is_up'         => false,
+        'error_message' => 'Earlier failed check',
+    ]);
+
     Http::fake([
         'https://example.test'                 => Http::response('Error', 500),
         'https://discord.com/api/webhooks/1/A' => Http::response('OK'),
@@ -74,6 +80,12 @@ it('handles timeout and connection exceptions correctly', function () {
         'commit_hash' => 'dummy123',
     ]);
 
+    WebsiteHealthLog::create([
+        'url'           => 'https://example.test',
+        'is_up'         => false,
+        'error_message' => 'Earlier failed check',
+    ]);
+
     Http::fake([
         'https://example.test'                 => function () {
             throw new \Illuminate\Http\Client\ConnectionException('Connection timed out');
@@ -97,6 +109,25 @@ it('handles timeout and connection exceptions correctly', function () {
             && str_contains($request['content'], 'Website Down Alert')
             && str_contains($request['content'], 'https://example.test')
             && str_contains($request['content'], 'Connection timed out');
+    });
+});
+
+it('does NOT send notification for a single unconfirmed failure', function () {
+    Http::fake([
+        'https://isolated.test'                => Http::response('Error', 500),
+        'https://discord.com/api/webhooks/1/A' => Http::response('OK'),
+    ]);
+
+    $this->artisan('monitor:webpage-uptime', ['url' => 'https://isolated.test'])
+        ->assertSuccessful();
+
+    $this->assertDatabaseHas('website_health_logs', [
+        'url'   => 'https://isolated.test',
+        'is_up' => false,
+    ]);
+
+    Http::assertNotSent(function ($request) {
+        return str_contains($request->url(), 'discord.com');
     });
 });
 
