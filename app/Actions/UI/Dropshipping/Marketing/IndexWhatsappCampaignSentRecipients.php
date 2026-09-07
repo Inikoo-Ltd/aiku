@@ -75,10 +75,11 @@ class IndexWhatsappCampaignSentRecipients extends OrgAction
 
     /**
      * The session is resolved per recipient rather than read off the joined message, because
-     * a failed send leaves meta_chat_message_id null so a re-run can retry it; reaching the
-     * session through that column would hide the conversation for exactly the failures an
-     * agent needs to open. A subselect rather than a join: phone numbers are not unique per
-     * shop, so joining would multiply recipient rows and desync the list from its counts.
+     * a recipient whose session could not be found is left with a null meta_chat_message_id;
+     * reaching the session through that column would hide the conversation for exactly the
+     * failures an agent needs to open. A subselect rather than a join: phone numbers are not
+     * unique per shop, so joining would multiply recipient rows and desync the list from its
+     * counts.
      *
      * The shop scope, normalisation and latest('id') tie-break mirror
      * SendWhatsappDeliveryChannel::resolveSession(); these two must agree, or this links to

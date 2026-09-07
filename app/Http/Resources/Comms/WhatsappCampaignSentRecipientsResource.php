@@ -42,9 +42,12 @@ class WhatsappCampaignSentRecipientsResource extends JsonResource
     }
 
     /**
-     * A recipient with no message never reached Meta: SendWhatsappDeliveryChannel keeps
-     * meta_chat_message_id null on a failure so a re-run can retry it, which makes that
-     * null the primary failure signal rather than missing data.
+     * Two ways a recipient failed, and both must read as failed: the send was recorded
+     * against the contact's thread and carries a failed wa_status, or no chat session could
+     * be found to record it against at all, which leaves the message id null.
+     *
+     * Checked before the timestamps because Meta can report a message delivered and then
+     * fail it afterwards.
      */
     private function status(): MetaTrackingEventTypeEnum
     {
