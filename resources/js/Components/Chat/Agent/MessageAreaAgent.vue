@@ -589,11 +589,27 @@ const groupedTimeline = computed(() => {
 
 let chatChannel: any = null
 
+// Echo hands back the same channel object for a name already subscribed, so this pane
+// and a mini chat window on the same conversation share one channel. Dropping a
+// listener by event name alone would take the other component's with it, which is why
+// each handler is kept and removed individually.
+let onMessage: ((payload: any) => void) | null = null
+let onReaction: ((payload: any) => void) | null = null
+let onMessagesRead: ((payload: any) => void) | null = null
+let onTyping: ((payload: any) => void) | null = null
+let onTranslation: ((payload: any) => void) | null = null
+
 const stopSocket = () => {
-    chatChannel?.stopListening(".message")
-    chatChannel?.stopListening(".typing")
-    chatChannel?.stopListening(".messages.read")
-    chatChannel?.stopListening(".translation")
+    if (onMessage) chatChannel?.stopListening(".message", onMessage)
+    if (onReaction) chatChannel?.stopListening(".reaction", onReaction)
+    if (onMessagesRead) chatChannel?.stopListening(".messages.read", onMessagesRead)
+    if (onTyping) chatChannel?.stopListening(".typing", onTyping)
+    if (onTranslation) chatChannel?.stopListening(".translation", onTranslation)
+    onMessage = null
+    onReaction = null
+    onMessagesRead = null
+    onTyping = null
+    onTranslation = null
     chatChannel = null
 }
 
@@ -608,7 +624,7 @@ const initSocket = () => {
     chatChannel = window.Echo.channel(`chat-session.${chatSession.value.ulid}`)
 
     // Message
-    chatChannel.listen(".message", ({ message }: any) => {
+    onMessage = ({ message }: any) => {
         messagesLocal.value = messagesLocal.value.filter(
             (m) => !(m._status === "sending" && m.sender_type === "agent")
         )
@@ -645,8 +661,9 @@ const initSocket = () => {
         }
 
         scrollBottom()
-    })
-    chatChannel.listen(".reaction", ({ message }: any) => {
+    }
+
+    onReaction = ({ message }: any) => {
         if (!message?.id) return
         const index = messagesLocal.value.findIndex((m) => m.id === message.id)
         if (index !== -1) {
@@ -655,8 +672,9 @@ const initSocket = () => {
                 reactions: message.reactions ?? [],
             }
         }
-    })
-    chatChannel.listen(".messages.read", (event: any) => {
+    }
+
+    onMessagesRead = (event: any) => {
         if (event.reader_type !== "agent") {
             messagesLocal.value.forEach((msg) => {
                 if (event.message_ids.includes(msg.id)) {
@@ -664,9 +682,9 @@ const initSocket = () => {
                 }
             })
         }
-    })
+    }
 
-    chatChannel.listen(".typing", (payload: any) => {
+    onTyping = (payload: any) => {
         if (payload.user_name === "agent") return
 
         if (payload.is_typing) {
@@ -686,13 +704,19 @@ const initSocket = () => {
         remoteTypingTimeout = setTimeout(() => {
             remoteTypingUser.value = null
         }, 800)
-    })
+    }
 
-    chatChannel.listen(".translation", async (event: any) => {
+    onTranslation = async () => {
         isTranslatingAll.value = false
 
         await getMessages()
-    })
+    }
+
+    chatChannel.listen(".message", onMessage)
+    chatChannel.listen(".reaction", onReaction)
+    chatChannel.listen(".messages.read", onMessagesRead)
+    chatChannel.listen(".typing", onTyping)
+    chatChannel.listen(".translation", onTranslation)
 }
 
 const markAsRead = async () => {

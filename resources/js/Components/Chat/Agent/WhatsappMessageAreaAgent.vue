@@ -635,10 +635,21 @@ watch(
 
 let chatChannel: any = null
 
+// Echo hands back the same channel object for a name already subscribed, so this pane
+// and a mini chat window on the same conversation share one channel. Dropping a
+// listener by event name alone would take the other component's with it, which is why
+// each handler is kept and removed individually.
+let onMessage: ((payload: any) => void) | null = null
+let onReaction: ((payload: any) => void) | null = null
+let onStatus: ((payload: any) => void) | null = null
+
 const stopSocket = () => {
-    chatChannel?.stopListening(".message")
-    chatChannel?.stopListening(".reaction")
-    chatChannel?.stopListening(".status")
+    if (onMessage) chatChannel?.stopListening(".message", onMessage)
+    if (onReaction) chatChannel?.stopListening(".reaction", onReaction)
+    if (onStatus) chatChannel?.stopListening(".status", onStatus)
+    onMessage = null
+    onReaction = null
+    onStatus = null
     chatChannel = null
 }
 
@@ -666,7 +677,7 @@ const initSocket = () => {
 
     chatChannel = window.Echo.private(`meta-chat-session.${chatSession.value.ulid}`)
 
-    chatChannel.listen(".message", ({ message, can_send_non_template_message }: any) => {
+    onMessage = ({ message, can_send_non_template_message }: any) => {
         if (!message?.id) return
 
         if (can_send_non_template_message !== undefined) {
@@ -691,9 +702,9 @@ const initSocket = () => {
         }
 
         scrollBottom()
-    })
+    }
 
-    chatChannel.listen(".reaction", ({ message }: any) => {
+    onReaction = ({ message }: any) => {
         if (!message?.id) return
 
         const index = messagesLocal.value.findIndex((m) => m.id === message.id)
@@ -704,9 +715,9 @@ const initSocket = () => {
                 reactions: message.reactions ?? [],
             }
         }
-    })
+    }
 
-    chatChannel.listen(".status", (payload: any) => {
+    onStatus = (payload: any) => {
         const index = messagesLocal.value.findIndex((m) => m.id === payload?.message_id)
 
         if (index === -1) return
@@ -721,7 +732,11 @@ const initSocket = () => {
             },
             _status: payload.status === "failed" ? "failed" : "sent",
         }
-    })
+    }
+
+    chatChannel.listen(".message", onMessage)
+    chatChannel.listen(".reaction", onReaction)
+    chatChannel.listen(".status", onStatus)
 }
 
 watch(

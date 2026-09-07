@@ -753,9 +753,24 @@ const handleTyping = () => {
 
 let chatChannel: any = null
 
+// Echo hands back the same channel object for a name already subscribed, so the inbox
+// and this window share one channel when both have the chat open. Dropping a listener
+// by event name alone would take the other component's with it, which is why each
+// handler is kept and removed individually.
+let onMessage: ((payload: any) => void) | null = null
+let onTyping: ((payload: any) => void) | null = null
+let onStatus: ((payload: any) => void) | null = null
+let onMessagesRead: ((payload: any) => void) | null = null
+
 const stopSocket = () => {
-    chatChannel?.stopListening(".message")
-    chatChannel?.stopListening(".typing")
+    if (onMessage) chatChannel?.stopListening(".message", onMessage)
+    if (onTyping) chatChannel?.stopListening(".typing", onTyping)
+    if (onStatus) chatChannel?.stopListening(".status", onStatus)
+    if (onMessagesRead) chatChannel?.stopListening(".messages.read", onMessagesRead)
+    onMessage = null
+    onTyping = null
+    onStatus = null
+    onMessagesRead = null
     chatChannel = null
 }
 
@@ -768,7 +783,7 @@ const initSocket = () => {
         ? window.Echo.private(`meta-chat-session.${props.chat.ulid}`)
         : window.Echo.channel(`chat-session.${props.chat.ulid}`)
 
-    chatChannel.listen(".message", ({ message, session_status }: any) => {
+    onMessage = ({ message, session_status }: any) => {
         messages.value = messages.value.filter(
             (item) => !(item._status === "sending" && item.sender_type === "agent")
         )
@@ -794,9 +809,9 @@ const initSocket = () => {
         }
 
         scrollBottom()
-    })
+    }
 
-    chatChannel.listen(".typing", (payload: any) => {
+    onTyping = (payload: any) => {
         if (payload.user_name === "agent") return
 
         remoteTypingUser.value = payload.is_typing ? payload.user_name : null
@@ -806,7 +821,42 @@ const initSocket = () => {
         remoteTypingTimeout = setTimeout(() => {
             remoteTypingUser.value = null
         }, 1500)
-    })
+    }
+
+    // WhatsApp reports its delivery lifecycle by webhook, so the ticks only advance
+    // past "sent" when this arrives.
+    onStatus = (payload: any) => {
+        const index = messages.value.findIndex((m) => m.id === payload?.message_id)
+
+        if (index === -1) return
+
+        messages.value[index] = {
+            ...messages.value[index],
+            is_read: payload.is_read ?? messages.value[index].is_read,
+            metadata: {
+                ...(messages.value[index].metadata ?? {}),
+                wa_status: payload.status,
+                wa_error: payload.error,
+            },
+            _status: payload.status === "failed" ? "failed" : "sent",
+        }
+    }
+
+    // Website chat has no delivery states; its tick turns on when the reader marks read.
+    onMessagesRead = (event: any) => {
+        if (event.reader_type === "agent") return
+
+        messages.value.forEach((message) => {
+            if (event.message_ids?.includes(message.id)) {
+                message.is_read = true
+            }
+        })
+    }
+
+    chatChannel.listen(".message", onMessage)
+    chatChannel.listen(".typing", onTyping)
+    chatChannel.listen(".status", onStatus)
+    chatChannel.listen(".messages.read", onMessagesRead)
 }
 
 const openFullConversation = () => {
