@@ -16,9 +16,10 @@ use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
 use App\Models\SysAdmin\User;
-use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SyncRolesFromJobPositions
@@ -155,20 +156,41 @@ class SyncRolesFromJobPositions
         return $roles;
     }
 
-    public string $commandSignature = 'user:sync-roles-from-positions {user : User slug}';
+    public string $commandSignature = 'user:sync-roles-from-positions {user? : User slug, all users when omitted} {--N|dry_run : Show roles that would be added and removed}';
 
     public function asCommand(Command $command): int
     {
-        try {
-            /** @var User $user */
-            $user = User::where('slug', $command->argument('user'))->firstOrFail();
-        } catch (Exception) {
-            $command->error('User not found');
+        Nightwatch::dontSample();
 
-            return 1;
+        $users = User::query();
+        if ($command->argument('user')) {
+            $users->where('slug', $command->argument('user'));
+            if (!$users->exists()) {
+                $command->error('User not found');
+
+                return 1;
+            }
         }
-        setPermissionsTeamId($user->group->id);
-        $this->handle($user);
+
+        $users->each(function (User $user) use ($command) {
+            setPermissionsTeamId($user->group_id);
+            $before = $user->roles()->pluck('name')->sort()->values();
+            if ($command->option('dry_run')) {
+                DB::beginTransaction();
+                $this->handle($user);
+                $after = $user->roles()->pluck('name')->sort()->values();
+                DB::rollBack();
+            } else {
+                $this->handle($user);
+                $after = $user->roles()->pluck('name')->sort()->values();
+            }
+
+            $added   = $after->diff($before);
+            $removed = $before->diff($after);
+            if ($added->isNotEmpty() || $removed->isNotEmpty()) {
+                $command->line($user->slug.'  +'.$added->implode(',').'  -'.$removed->implode(','));
+            }
+        });
 
         return 0;
     }
