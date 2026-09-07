@@ -151,17 +151,16 @@ class FetchAuroraArtefacts extends FetchAuroraAction
     }
 
     /**
-     * Aurora retires a part as "Not In Use" while the factory keeps making it; a part with a job order in the
-     * last two years is a live artefact whatever the part status says.
+     * Aurora retires a part as "Not In Use" while the factory keeps making it; a part that was ever in a job
+     * order is an artefact whatever the part status says (the dormant repair parks the unsold ones).
      */
-    protected function producedRecently(): \Closure
+    protected function everProduced(): \Closure
     {
         return fn ($query) => $query->from('Purchase Order Transaction Fact as t')
             ->join('Purchase Order Dimension as po', 'po.Purchase Order Key', 't.Purchase Order Key')
             ->whereColumn('t.Supplier Part Key', 'spp.Supplier Part Key')
             ->where('po.Purchase Order Type', 'Production')
-            ->where('po.Purchase Order State', '!=', 'Cancelled')
-            ->where('po.Purchase Order Date', '>', now()->subYears(2));
+            ->where('po.Purchase Order State', '!=', 'Cancelled');
     }
 
     public function getModelsQuery(): Builder
@@ -176,7 +175,7 @@ class FetchAuroraArtefacts extends FetchAuroraAction
         }
 
         return $query->whereIn('Supplier Part Status', ['Available', 'NoAvailable'])
-            ->where(fn ($query) => $query->where('Part Status', '!=', 'Not In Use')->orWhereExists($this->producedRecently()))
+            ->where(fn ($query) => $query->where('Part Status', '!=', 'Not In Use')->orWhereExists($this->everProduced()))
             ->where('spp.aiku_ignore', 'No')
             ->where('sd.Supplier Production', 'Yes')
             ->where('sd.Supplier Type', 'Free')
@@ -195,7 +194,7 @@ class FetchAuroraArtefacts extends FetchAuroraAction
         }
 
         return $query->whereIn('Supplier Part Status', ['Available', 'NoAvailable'])
-            ->where(fn ($query) => $query->where('Part Status', '!=', 'Not In Use')->orWhereExists($this->producedRecently()))
+            ->where(fn ($query) => $query->where('Part Status', '!=', 'Not In Use')->orWhereExists($this->everProduced()))
             ->where('spp.aiku_ignore', 'No')
             ->where('sd.Supplier Production', 'Yes')
             ->where('sd.Supplier Type', 'Free')
