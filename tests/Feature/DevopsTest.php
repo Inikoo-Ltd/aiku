@@ -112,6 +112,14 @@ it('handles timeout and connection exceptions correctly', function () {
     });
 });
 
+it('resolves the nightowl agent buffer to an absolute path inside storage', function () {
+    // A path outside storage/ sits in the deploy-rewritten anchor tree, where a
+    // release unlinks the buffer under the running agent and telemetry silently stops.
+    $path = config('nightowl.agent.sqlite_path');
+
+    expect($path)->toStartWith(storage_path().DIRECTORY_SEPARATOR);
+});
+
 it('does NOT send notification for a single unconfirmed failure', function () {
     Http::fake([
         'https://isolated.test'                => Http::response('Error', 500),
