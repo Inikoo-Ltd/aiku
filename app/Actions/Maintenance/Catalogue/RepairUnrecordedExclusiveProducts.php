@@ -20,17 +20,17 @@ use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * A shop's intercompany range: products hidden from the site (not for sale, no live webpage)
- * whose every invoice went to a partner organisation's customer account. Those are exclusive
- * to the partners in all but the flag, so this sets the flag: every partner customer of the
- * shop is attached, not only the ones that happened to buy, since the range is shared.
- * Lists by default; --fix writes and leaves a csv under storage/app/repairs.
+ * Exclusives that were never recorded, found among products hidden from the site (not for
+ * sale, no live webpage) by who bought them. Every invoice to a partner organisation's customer
+ * account: the intercompany range, exclusive to all partner customers of the shop since that
+ * range is shared. Every invoice to one single other customer: private label, exclusive to
+ * that customer. Lists by default; --fix writes and leaves a csv under storage/app/repairs.
  */
-class RepairPartnerExclusiveProducts
+class RepairUnrecordedExclusiveProducts
 {
     use AsAction;
 
-    public string $commandSignature = 'repair:partner_exclusive_products {shop : Shop slug} {--fix : Make them exclusive, otherwise only report}';
+    public string $commandSignature = 'repair:unrecorded_exclusive_products {shop : Shop slug} {--fix : Record the exclusivity, otherwise only report}';
 
     /**
      * @return array<int, int>
@@ -44,26 +44,44 @@ class RepairPartnerExclusiveProducts
             ->all();
     }
 
-    /**
-     * @param  array<int, int>  $partnerCustomerIds
-     */
-    public function candidates(Shop $shop, array $partnerCustomerIds): Builder
+    protected function buyers(): \Illuminate\Database\Query\Builder
     {
-        $buyers = DB::table('invoice_transactions as it')
+        return DB::table('invoice_transactions as it')
             ->join('invoices as i', 'i.id', 'it.invoice_id')
             ->whereNull('it.deleted_at')
             ->whereNull('i.deleted_at')
             ->whereColumn('it.asset_id', 'products.asset_id');
+    }
 
+    protected function hidden(Shop $shop): Builder
+    {
         return Product::where('shop_id', $shop->id)
             ->where('state', ProductStateEnum::ACTIVE)
             ->where('is_main', true)
             ->where('is_for_sale', false)
             ->whereNull('exclusive_for_customer_id')
             ->whereDoesntHave('webpage', fn ($query) => $query->where('state', WebpageStateEnum::LIVE))
-            ->whereExists((clone $buyers))
-            ->whereNotExists((clone $buyers)->whereNotIn('i.customer_id', $partnerCustomerIds))
+            ->whereExists($this->buyers())
             ->orderBy('code');
+    }
+
+    /**
+     * @param  array<int, int>  $partnerCustomerIds
+     */
+    public function candidates(Shop $shop, array $partnerCustomerIds): Builder
+    {
+        return $this->hidden($shop)
+            ->whereNotExists($this->buyers()->whereNotIn('i.customer_id', $partnerCustomerIds));
+    }
+
+    /**
+     * Products every invoice of which went to one customer, that customer's id alongside.
+     */
+    public function singleBuyerCandidates(Shop $shop): Builder
+    {
+        return $this->hidden($shop)
+            ->addSelect(['products.*', 'buyer_id' => $this->buyers()->selectRaw('min(i.customer_id)')])
+            ->whereRaw('('.$this->buyers()->selectRaw('count(distinct i.customer_id)')->toRawSql().') = 1');
     }
 
     public function handle(Product $product, array $partnerCustomerIds): Product
@@ -83,25 +101,33 @@ class RepairPartnerExclusiveProducts
 
         $rows = [];
         foreach ($this->candidates($shop, $partners)->get() as $product) {
-            $rows[] = [$product->code, $product->name];
+            $rows[] = [$product->code, $product->name, 'partners', implode(' ', $partners)];
             if ($command->option('fix')) {
                 $this->handle($product, $partners);
             }
         }
+        $partnerCount = count($rows);
 
-        $command->table(['Code', 'Name'], $rows);
-        $command->info(count($rows).' products sold only to partners and hidden from the site.');
+        foreach ($this->singleBuyerCandidates($shop)->get() as $product) {
+            $rows[] = [$product->code, $product->name, 'single customer', $product->buyer_id];
+            if ($command->option('fix')) {
+                $this->handle($product, [$product->buyer_id]);
+            }
+        }
+
+        $command->table(['Code', 'Name', 'Exclusive to', 'Customer ids'], $rows);
+        $command->info($partnerCount.' products sold only to partners, '.(count($rows) - $partnerCount).' sold to one single customer, all hidden from the site.');
 
         if (!$command->option('fix')) {
-            $command->line('Dry run. Pass --fix to make them exclusive to the '.count($partners).' partner customers.');
+            $command->line('Dry run. Pass --fix to record them as exclusive.');
 
             return 0;
         }
 
         $csv = fopen('php://temp', 'r+');
-        fputcsv($csv, ['code', 'name', 'partner_customer_ids']);
+        fputcsv($csv, ['code', 'name', 'exclusive_to', 'customer_ids']);
         foreach ($rows as $row) {
-            fputcsv($csv, [...$row, implode(' ', $partners)]);
+            fputcsv($csv, $row);
         }
         rewind($csv);
         $path = 'repairs/partner_exclusive_products_'.$shop->slug.'_'.now()->format('Ymd_His').'.csv';

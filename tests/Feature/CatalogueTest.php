@@ -882,7 +882,7 @@ test('a product can be exclusive to several customers and only they can see it',
         ->and($visibleTo(null))->toBeTrue();
 });
 
-test('repair makes products sold only to partners and hidden from the site exclusive to them', function () {
+test('repair records unrecorded exclusives among products hidden from the site', function () {
     list($organisation, $user, $shop) = createShop();
 
     $newCustomer = fn () => \App\Actions\CRM\Customer\StoreCustomer::make()->action(
@@ -920,19 +920,33 @@ test('repair makes products sold only to partners and hidden from the site exclu
             'net_amount'      => 10,
         ]);
     };
+    $privateLabel = StoreProduct::make()->action($intercompany->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $intercompany->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 3]
+    ));
+    DB::table('products')->where('id', $privateLabel->id)
+        ->update(['is_for_sale' => false, 'state' => ProductStateEnum::ACTIVE->value]);
+
     $invoiceFor($partnerCustomer, $intercompany);
     $invoiceFor($partnerCustomer, $public);
     $invoiceFor($publicCustomer, $public);
+    $invoiceFor($publicCustomer, $privateLabel);
 
-    $repair   = \App\Actions\Maintenance\Catalogue\RepairPartnerExclusiveProducts::make();
+    $repair   = \App\Actions\Maintenance\Catalogue\RepairUnrecordedExclusiveProducts::make();
     $partners = $repair->partnerCustomerIds($shop);
     expect($partners)->toBe([$partnerCustomer->id])
-        ->and($repair->candidates($shop, $partners)->pluck('id')->all())->toBe([$intercompany->id]);
+        ->and($repair->candidates($shop, $partners)->pluck('id')->all())->toBe([$intercompany->id])
+        ->and($repair->singleBuyerCandidates($shop)->reorder("id")->get()->map(fn ($product) => [$product->id, $product->buyer_id])->all())
+        ->toBe([[$intercompany->id, $partnerCustomer->id], [$privateLabel->id, $publicCustomer->id]]);
 
     $repair->handle($intercompany, $partners);
+    $repair->handle($privateLabel, [$publicCustomer->id]);
     $intercompany->refresh();
+    $privateLabel->refresh();
     expect($intercompany->exclusive_for_customer_id)->toBe($partnerCustomer->id)
-        ->and($repair->candidates($shop, $partners)->count())->toBe(0);
+        ->and($privateLabel->exclusive_for_customer_id)->toBe($publicCustomer->id)
+        ->and($repair->candidates($shop, $partners)->count())->toBe(0)
+        ->and($repair->singleBuyerCandidates($shop)->count())->toBe(0);
 });
 
 test('repair repoints products from a discontinued org stock to its active twin', function () {
