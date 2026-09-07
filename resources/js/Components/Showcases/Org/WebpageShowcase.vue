@@ -2,7 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import BrowserView from '@/Components/Pure/BrowserView.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import InputSwitch from 'primevue/inputswitch'
+import ToggleSwitch from 'primevue/toggleswitch'
 import SelectButton from 'primevue/selectbutton'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import {
@@ -27,32 +27,39 @@ import SearchInWebsiteAvailabilityChecklist from '@/Components/Utils/SearchInWeb
 library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt, faGlobe, faLink, faSearch, faFragile)
 
 const props = defineProps<{
-  data: {
-    slug: string
-    state: string
-    status: string
-    created_at: string
-    updated_at: string
-    domain: string
-    code: string
-    typeIcon: string
-    canonical_url_without_domain: string
-    canonical_url: string
-    url: string
-    layout: {
+  data?: {
+    id?: number
+    slug?: string
+    state?: string
+    status?: string
+    created_at?: string
+    updated_at?: string
+    domain?: string
+    code?: string
+    title?: string
+    typeIcon?: string
+    canonical_url_without_domain?: string
+    canonical_url?: string
+    url?: string
+    search_in_website_availability?: any
+    layout?: {
       web_blocks?: any[]
     }
-    luigi_data: {
-      last_reindexed: string
-      luigisbox_tracker_id: string
-      luigisbox_private_key: string
-      luigisbox_lbx_code: string
+    luigi_data?: {
+      last_reindexed?: string
+      luigisbox_tracker_id?: string
+      luigisbox_private_key?: string
+      luigisbox_lbx_code?: string
     }
   },
-  redirected_to?: {}
+  redirected_to?: {
+    slug?: string
+    code?: string
+    url?: string
+  }
 }>()
 
-const filterBlock = ref<Boolean>(true)
+const filterBlock = ref<boolean>(true)
 const screenMode = ref<'desktop' | 'tablet' | 'mobile'>('desktop')
 const isIframeLoading = ref(true)
 const _iframe = ref<HTMLIFrameElement | null>(null)
@@ -107,7 +114,7 @@ const visitRedirect = () => {
         {{ trans('This webpage is being redirected to another page') }}:
       </span>
       <span>
-        [ <span class="font-semibold italic"> {{ redirected_to.code }} </span> | ../{{ redirected_to.url }} ]
+        [ <span class="font-semibold italic"> {{ redirected_to?.code }} </span> | ../{{ redirected_to?.url }} ]
         <FontAwesomeIcon 
           v-tooltip="trans('Click here to view page')"
           :icon="faExternalLink" 
@@ -126,7 +133,7 @@ const visitRedirect = () => {
           <!-- Logged In / Logged Out Switch -->
           <div class="flex items-center gap-3">
             <FontAwesomeIcon :icon="['fal', filterBlock ? 'user' : 'user-slash']" />
-            <InputSwitch v-model="filterBlock" :true-value="true" :false-value="false" />
+            <ToggleSwitch v-model="filterBlock" :true-value="true" :false-value="false" />
             <span class="text-sm font-medium text-gray-800">
               {{ filterBlock ? 'Logged In' : 'Logged Out' }}
             </span>
@@ -146,16 +153,16 @@ const visitRedirect = () => {
         </div>
         <!-- Browser View -->
         <div class="relative">
-          <BrowserView :screenMode="screenMode" :tab="{ icon: data.typeIcon, label: data.title }"
-            :url="{ domain: data.domain, page: data.canonical_url_without_domain }">
-            <template #page v-if="data.layout.web_blocks?.length">
+          <BrowserView :screenMode="screenMode" :tab="{ icon: data?.typeIcon, label: data?.title }"
+            :url="{ domain: data?.domain, page: data?.canonical_url_without_domain }">
+            <template #page v-if="data?.layout?.web_blocks?.length">
               <div class="relative w-full h-full">
                 <div v-if="isIframeLoading" class="absolute inset-0 flex items-center justify-center bg-white">
                   <LoadingIcon class="w-24 h-24 text-6xl" />
                 </div>
                 <iframe 
                   ref="_iframe" 
-                  :src="data.canonical_url" 
+                  :src="data?.canonical_url"
                   :key="screenMode"
                   :title="'props.title'" 
                   class="w-full h-full"
@@ -164,7 +171,7 @@ const visitRedirect = () => {
               </template>
             </BrowserView>
             
-            <div v-if="data.state === 'closed'" class="absolute inset-0 bg-black/40 flex items-center justify-center rounded-md">
+            <div v-if="data?.state === 'closed'" class="absolute inset-0 bg-black/40 flex items-center justify-center rounded-md">
               <img src="/assets/offline_stamp.webp" class="-rotate-[12deg] w-1/2"/>
             </div>
         </div>
@@ -173,10 +180,10 @@ const visitRedirect = () => {
       <!-- Right Panel (Optional) -->
       <div class="row-start-1 xl:row-start-auto flex justify-end w-full">
         <!-- Optional sidebar -->
-        <div class="w-64 border border-gray-300 rounded-md p-2 h-fit" v-if="data.luigi_data && data.state == 'live'">
+        <div class="w-64 border border-gray-300 rounded-md p-2 h-fit" v-if="data?.luigi_data && data?.state == 'live'">
           <div class="space-y-2">
             <ModalConfirmationDelete
-              v-if="data.state == 'live'"
+              v-if="data?.state == 'live'"
               :description="trans('Purge all cached files. Purging your cache may slow your website temporarily')"
               :title="trans('Break cache')" :noLabel="trans('Confirm')" noIcon="" :routeDelete="{
                 name: 'grp.models.webpage.break_cache',
@@ -199,8 +206,8 @@ const visitRedirect = () => {
             -->
 
             <!-- Internal Search Availability Checklist -->
-            <div v-if="data.search_in_website_availability" class="mt-3 border-t border-gray-200 pt-3">
-                <SearchInWebsiteAvailabilityChecklist :availability="data.search_in_website_availability" />
+            <div v-if="data?.search_in_website_availability" class="mt-3 border-t border-gray-200 pt-3">
+                <SearchInWebsiteAvailabilityChecklist :availability="data?.search_in_website_availability" />
             </div>
 
             <!-- <ButtonWithLink v-if="data?.luigi_data?.luigisbox_tracker_id"

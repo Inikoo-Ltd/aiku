@@ -60,6 +60,7 @@ class HandleInertiaGrpRequests extends Middleware
                 'ziggy' => [
                     'location' => $request->url(),
                 ],
+                'phpComponent' => app()->environment('local') ? str_replace('\\', '/', $request->route()->getActionName()) : null,
 
             ],
             parent::share($request),
