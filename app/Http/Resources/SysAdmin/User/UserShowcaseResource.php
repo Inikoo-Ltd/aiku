@@ -14,6 +14,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Api\Dropshipping\ShopResource;
 use App\Http\Resources\HumanResources\JobPositionResource;
 use App\Http\Resources\Inventory\WarehouseResource;
+use App\Http\Resources\Production\ProductionsResource;
 use App\Http\Resources\SysAdmin\Organisation\OrganisationsResource;
 use App\Models\SysAdmin\McpRequest;
 use App\Models\SysAdmin\Organisation;
@@ -90,6 +91,7 @@ class UserShowcaseResource extends JsonResource
                             'shops'       => ['data' => \App\Http\Resources\Catalogue\ShopResource::collection($organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get())],
                             'fulfilments' => ['data' => ShopResource::collection($organisation->shops()->where('type', '=', ShopTypeEnum::FULFILMENT)->get())],
                             'warehouses'  => ['data' => WarehouseResource::collection($organisation->warehouses)],
+                            'productions' => ['data' => ProductionsResource::collection($organisation->productions)],
                         ]
                     ];
                 })->toArray(),
