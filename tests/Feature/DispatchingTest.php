@@ -3869,8 +3869,8 @@ test('replacing one single of a 3-pack orders a third of a pack, not a whole pac
     ]);
 
     $order       = $deliveryNote->orders()->first();
-    $replacement = $order->refresh()->transactions()->where('model_id', $this->product2->id)->first();
-    $replacementItem = $deliveryNote->deliveryNoteItems()->where('transaction_id', $replacement->id)->first();
+    $replacement = $order->refresh()->transactions()->orderByDesc('id')->first();
+    $replacementItem = $deliveryNote->deliveryNoteItems()->where('transaction_id', $replacement->id)->where('org_stock_id', $item->org_stock_id)->first();
 
     expect((float)$replacement->quantity_ordered)->toBe(0.333333)
         ->and((float)$replacementItem->quantity_required)->toEqualWithDelta(1.0, 0.00001)
