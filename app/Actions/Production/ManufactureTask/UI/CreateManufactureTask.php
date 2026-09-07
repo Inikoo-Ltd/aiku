@@ -42,7 +42,7 @@ class CreateManufactureTask extends OrgAction
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.index',
+                                'name'       => 'grp.org.productions.show.operations.manufacture_tasks.index',
                                 'parameters' => $request->route()->originalParameters()
                             ],
                         ]

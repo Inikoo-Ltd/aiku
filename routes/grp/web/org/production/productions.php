@@ -28,6 +28,7 @@ use App\Actions\Production\JobOrder\UI\ShowJobOrder;
 use App\Actions\Production\JobOrderItemTask\UI\ShowManufactureFloor;
 use App\Actions\Production\ManufactureTaskSession\ExportManufacturePayroll;
 use App\Actions\Production\ManufactureTaskSession\UI\IndexArtisans;
+use App\Actions\Production\ManufactureTaskSession\UI\ShowManufacturePayroll;
 use App\Actions\Production\ManufactureTask\UI\CreateManufactureTask;
 use App\Actions\Production\ManufactureTask\UI\EditManufactureTask;
 use App\Actions\Production\ManufactureTask\UI\IndexManufactureTasks;
@@ -36,6 +37,7 @@ use App\Actions\Production\Production\UI\CreateProduction;
 use App\Actions\Production\Production\UI\EditProduction;
 use App\Actions\Production\Production\UI\IndexProductions;
 use App\Actions\Production\Production\UI\ShowProduction;
+use App\Actions\Production\Production\UI\ShowArtisansDashboard;
 use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Actions\Production\Production\UI\ShowOperationsDashboard;
 use App\Actions\Production\RawMaterial\UI\CreateRawMaterial;
@@ -59,11 +61,20 @@ Route::prefix('{production}')
                 Route::name('.operations.')->prefix('operations')
                     ->group(function () {
                         Route::get('', ShowOperationsDashboard::class)->name('dashboard');
-                        Route::get('artisans', IndexArtisans::class)->name('artisans.index');
-
-                        Route::get('payroll/export', ExportManufacturePayroll::class)->name('payroll.export');
                         Route::get('job-orders', IndexJobOrders::class)->name('job-orders.index');
                         Route::get('job-orders/{jobOrder}', ShowJobOrder::class)->name('job-orders.show');
+                        Route::get('manufacture-tasks', IndexManufactureTasks::class)->name('manufacture_tasks.index');
+                        Route::get('manufacture-tasks/create', CreateManufactureTask::class)->name('manufacture_tasks.create');
+                        Route::get('manufacture-tasks/{manufactureTask}', ShowManufactureTask::class)->name('manufacture_tasks.show');
+                        Route::get('manufacture-tasks/{manufactureTask}/edit', EditManufactureTask::class)->name('manufacture_tasks.edit');
+                    });
+
+                Route::name('.artisans.')->prefix('artisans')
+                    ->group(function () {
+                        Route::get('', ShowArtisansDashboard::class)->name('dashboard');
+                        Route::get('performance', IndexArtisans::class)->name('index');
+                        Route::get('payroll', ShowManufacturePayroll::class)->name('payroll');
+                        Route::get('payroll/export', ExportManufacturePayroll::class)->name('payroll.export');
                     });
 
                 Route::name('.to_produce.')->prefix('to-produce')
@@ -105,10 +116,6 @@ Route::prefix('{production}')
                         Route::get('artefact-families/{artefactFamily}/edit', EditArtefactFamily::class)->name('artefact_families.edit');
 
 
-                        Route::get('manufacture-tasks', IndexManufactureTasks::class)->name('manufacture_tasks.index');
-                        Route::get('manufacture-tasks/create', CreateManufactureTask::class)->name('manufacture_tasks.create');
-                        Route::get('manufacture-tasks/{manufactureTask}', ShowManufactureTask::class)->name('manufacture_tasks.show');
-                        Route::get('manufacture-tasks/{manufactureTask}/edit', EditManufactureTask::class)->name('manufacture_tasks.edit');
 
 
 

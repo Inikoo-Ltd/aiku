@@ -56,7 +56,7 @@ class StoreManufactureTask extends OrgAction
     {
         $production   = $manufactureTask->production;
         $organisation = $manufactureTask->organisation;
-        return Redirect::route('grp.org.productions.show.crafts.manufacture_tasks.index', [$organisation, $production]);
+        return Redirect::route('grp.org.productions.show.operations.manufacture_tasks.index', [$organisation, $production]);
     }
 
 
