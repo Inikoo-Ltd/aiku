@@ -9,6 +9,7 @@
 namespace App\Actions\Maintenance\Production;
 
 use App\Enums\Production\Artefact\ArtefactStateEnum;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Production\Artefact;
 use App\Models\Production\Production;
 use Illuminate\Console\Command;
@@ -18,8 +19,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * Artefacts nobody has bought for three years cannot be discontinued (the recipe is still
  * the record of how the thing is made) but should not sit in the working list either. This
- * parks them as dormant, judged by sales of the products behind the artefact's org stock, and
- * wakes a dormant one up again the moment it sells. Flags are not consulted: in aroma
+ * parks them as dormant, judged by sales of the products behind the artefact's org stock and by
+ * job orders for the artefact itself, and wakes a dormant one up again the moment it sells or
+ * is made. Flags are not consulted: in aroma
  * is_for_sale means "on the website", not "still sold".
  */
 class RepairDormantArtefacts
@@ -38,11 +40,22 @@ class RepairDormantArtefacts
             ->where('it.date', '>', $since);
     }
 
+    protected function madeSince(string $since): \Closure
+    {
+        return fn ($query) => $query->from('job_order_items as joi')
+            ->join('job_orders as jo', 'jo.id', 'joi.job_order_id')
+            ->whereColumn('joi.artefact_id', 'artefacts.id')
+            ->whereNull('joi.deleted_at')
+            ->where('jo.state', '!=', JobOrderStateEnum::NOT_RECEIVED)
+            ->where(fn ($query) => $query->where('jo.date', '>', $since)->orWhere('jo.created_at', '>', $since));
+    }
+
     public function toPark(Production $production, string $since): Builder
     {
         return Artefact::where('production_id', $production->id)
             ->where('state', ArtefactStateEnum::ACTIVE)
             ->where(fn ($query) => $query->whereNull('org_stock_id')->orWhereNotExists($this->soldSince($since)))
+            ->whereNotExists($this->madeSince($since))
             ->orderBy('code');
     }
 
@@ -50,7 +63,7 @@ class RepairDormantArtefacts
     {
         return Artefact::where('production_id', $production->id)
             ->where('state', ArtefactStateEnum::DORMANT)
-            ->whereExists($this->soldSince($since))
+            ->where(fn ($query) => $query->whereExists($this->soldSince($since))->orWhereExists($this->madeSince($since)))
             ->orderBy('code');
     }
 

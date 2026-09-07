@@ -2189,6 +2189,11 @@ test('artefacts with nothing sold in three years go dormant and wake up when the
     expect($artefact->refresh()->state)->toBe(ArtefactStateEnum::DORMANT)
         ->and($repair->toWake($this->production, $since)->count())->toBe(0);
 
+    $made = StoreArtefact::make()->action($this->production, ['code' => 'DORM-02', 'name' => 'Made but never sold']);
+    $made->update(['state' => ArtefactStateEnum::ACTIVE]);
+    StoreJobOrderItem::make()->action(StoreJobOrder::make()->action($this->production, []), ['artefact_id' => $made->id, 'quantity' => 1]);
+    expect($repair->toPark($this->production, $since)->pluck('id')->all())->not->toContain($made->id);
+
     list($organisation, $user, $shop) = createShop();
     [, $product] = createProduct($shop);
     $orgStock = $product->orgStocks()->first();
