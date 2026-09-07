@@ -44,19 +44,19 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 </script>
 
 <template>
-    <div :id="modelValue?.id ? modelValue?.id  : 'carousel-cta' + indexBlock">
+    <div :id="modelValue?.id ? modelValue?.id  : 'carousel-cta' + indexBlock" component="carousel-cta">
         <div :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(modelValue.container?.properties, screenType)
         }">
             <Carousel :value="modelValue.carousel_data.cards" :numVisible="1" :numScroll="1" :circular="isLooping">
                 <template #item="{ data, index }">
-                    <div :style="{
+                    <div class="w-full" :style="{
                         ...getStyles(data.container?.properties, screenType),
                     }">
-                        <div class="grid grid-cols-1 md:grid-cols-2 w-full">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 w-full">
 
-                            <div class="relative w-full cursor-pointer overflow-hidden h-[250px] md:h-[400px]"
+                            <div class="relative w-full cursor-pointer overflow-hidden h-[250px] sm:h-[300px] lg:h-[400px]"
                             :style="getStyles(modelValue?.image?.container?.properties, screenType)"
                              @click.stop="
                                 () => {
@@ -79,9 +79,9 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                     />
                             </div>
 
-                            <div class="flex flex-col justify-center m-auto p-4"
+                            <div class="flex flex-col justify-center m-auto w-full min-w-0 px-4 py-6 sm:p-5 lg:p-4"
                                 :style="getStyles(data?.text_block?.properties, screenType)">
-                                <div class="max-w-xl w-full" @click="
+                                <div class="max-w-xl w-full mx-auto" @click="
                                     () => {
                                         sendMessageToParent('activeBlock', indexBlock)
                                         sendMessageToParent('activeChildBlock', bKeys[1])
@@ -93,7 +93,6 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                         v-model="data.text"
                                         @focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
                                         @update:modelValue="(e) => { data.text = e, emits('autoSave')}"
-                                        class="mb-6" 
                                         :uploadImageRoute="{
                                             name: webpageData.images_upload_route.name,
                                             parameters: {
@@ -103,7 +102,7 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                         }" 
                                     />
 
-                                    <div class="flex justify-center">
+                                    <div class="flex justify-center mt-6">
                                         <Button
                                             :injectStyle="getStyles(data?.button?.container?.properties, screenType)"
                                             :label="data?.button?.text" @click.stop="
@@ -126,14 +125,34 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 </template>
 
 <style scoped>
-#carousel-cta {
-    .p-carousel-item {
-        display: flex;
-        justify-content: center;
-    }
+[component="carousel-cta"] :deep(.p-carousel-viewport) {
+    min-width: 0;
 }
 
 :deep(.p-carousel-indicator-list) {
     display: none;
+}
+
+@media (max-width: 639px) {
+    [component="carousel-cta"] :deep(.p-carousel-content) {
+        position: relative;
+    }
+
+    [component="carousel-cta"] :deep(.p-carousel-prev-button),
+    [component="carousel-cta"] :deep(.p-carousel-next-button) {
+        position: absolute;
+        top: 50%;
+        z-index: 2;
+        margin: 0;
+        transform: translateY(-50%);
+    }
+
+    [component="carousel-cta"] :deep(.p-carousel-prev-button) {
+        left: 0.25rem;
+    }
+
+    [component="carousel-cta"] :deep(.p-carousel-next-button) {
+        right: 0.25rem;
+    }
 }
 </style>

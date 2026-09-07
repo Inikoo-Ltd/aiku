@@ -1,3 +1,6 @@
+import { ctrans } from "@/Composables/useTrans"
+import { trans } from "laravel-vue-i18n"
+
 export default {
 	blueprint: [
 		{
@@ -10,6 +13,18 @@ export default {
 			name: "Settings",
 			key: ["value"],
 			type: "disclosure",
+		},
+		{
+			name: "SEO",
+			key: ["seo"],
+			replaceForm: [
+				{
+					key: ["is_faq"],
+					label: "Frequently asked questions?",
+					type: "switch",
+					information: ctrans('Add FAQPage structured data (schema.org) for this block. Only enable it when every item is a real question and answer.'),
+				},
+			],
 		},
 		{
 			name: "Layout",
