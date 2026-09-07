@@ -40,22 +40,6 @@ onMounted(() => {
   isCarouselMounted.value = true
 })
 
-const isStacked = computed(() => props.screenType === 'mobile')
-
-const gridClass = computed(() => isStacked.value ? 'grid-cols-1' : 'grid-cols-2')
-
-const imageHeightClass = computed(() => {
-  if (props.screenType === 'mobile') return 'h-[250px]'
-  if (props.screenType === 'tablet') return 'h-[300px]'
-  return 'h-[400px]'
-})
-
-const textPaddingClass = computed(() => {
-  if (props.screenType === 'mobile') return 'px-4 py-6'
-  if (props.screenType === 'tablet') return 'p-5'
-  return 'p-4'
-})
-
 const isLooping = computed(() => {
   const settingsLoop = props.fieldValue?.carousel_data?.carousel_setting?.loop || false
   return settingsLoop && (props.fieldValue?.carousel_data?.cards?.length || 0) > 1
@@ -64,7 +48,7 @@ const isLooping = computed(() => {
 
 <template>
   <div :id="fieldValue?.id ? fieldValue?.id : 'carousel-cta' + indexBlock" component="carousel-cta"
-    :class="{ 'carousel-cta-pending': !isCarouselMounted, 'carousel-cta-overlay-nav': isStacked }">
+    :class="{ 'carousel-cta-pending': !isCarouselMounted }">
     <div :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType)
@@ -78,14 +62,13 @@ const isLooping = computed(() => {
           <div class="w-full" :style="{
             ...getStyles(data.container?.properties, screenType),
           }">
-            <div class="grid w-full" :class="gridClass">
+            <div class="grid grid-cols-1 sm:grid-cols-2 w-full">
               <component 
                   :is="data?.image?.link?.href ? LinkIris : 'div'" 
                   :href="data?.image?.link?.href" 
                   :target="data?.image?.link?.target"
                   :type="data?.image?.link?.type"  
-                  class="relative w-full cursor-pointer overflow-hidden"
-                  :class="imageHeightClass"
+                  class="relative w-full cursor-pointer overflow-hidden h-[250px] sm:h-[300px] lg:h-[400px]"
                   :style="getStyles(fieldValue?.image?.container?.properties, screenType)"
               >
                 <Image 
@@ -100,7 +83,7 @@ const isLooping = computed(() => {
                 />
               </component>
 
-              <div class="flex flex-col justify-center m-auto w-full min-w-0" :class="textPaddingClass"
+              <div class="flex flex-col justify-center m-auto w-full min-w-0 px-4 py-6 sm:p-5 lg:p-4"
                 :style="getStyles(data?.text_block?.properties, screenType)">
                 <div class="max-w-xl w-full mx-auto">
                   <div v-html="data.text" />
@@ -125,11 +108,6 @@ const isLooping = computed(() => {
   </div>
 </template>
 <style scoped>
-[component="carousel-cta"] :deep(.p-carousel-item) {
-  display: flex;
-  justify-content: center;
-}
-
 [component="carousel-cta"] :deep(.p-carousel-viewport) {
   min-width: 0;
 }
@@ -138,24 +116,26 @@ const isLooping = computed(() => {
   display: none;
 }
 
-.carousel-cta-overlay-nav :deep(.p-carousel-content) {
-  position: relative;
-}
+@media (max-width: 639px) {
+  [component="carousel-cta"] :deep(.p-carousel-content) {
+    position: relative;
+  }
 
-.carousel-cta-overlay-nav :deep(.p-carousel-prev-button),
-.carousel-cta-overlay-nav :deep(.p-carousel-next-button) {
-  position: absolute;
-  top: 50%;
-  z-index: 2;
-  margin: 0;
-  transform: translateY(-50%);
-}
+  [component="carousel-cta"] :deep(.p-carousel-prev-button),
+  [component="carousel-cta"] :deep(.p-carousel-next-button) {
+    position: absolute;
+    top: 50%;
+    z-index: 2;
+    margin: 0;
+    transform: translateY(-50%);
+  }
 
-.carousel-cta-overlay-nav :deep(.p-carousel-prev-button) {
-  left: 0.25rem;
-}
+  [component="carousel-cta"] :deep(.p-carousel-prev-button) {
+    left: 0.25rem;
+  }
 
-.carousel-cta-overlay-nav :deep(.p-carousel-next-button) {
-  right: 0.25rem;
+  [component="carousel-cta"] :deep(.p-carousel-next-button) {
+    right: 0.25rem;
+  }
 }
 </style>
