@@ -298,7 +298,15 @@ class StoreWhatsappCampaignRecipients extends OrgAction
     {
         return [
             'select_all'       => ['sometimes', 'boolean'],
-            'phone_keys'       => ['required_without_all:select_all,select,unselect', 'array'],
+            /* Presence rather than required_without_all: an empty list is how the workshop
+               clears an audience, and required rejects any empty countable, so the rule would
+               422 the one payload that says "select nobody". Absent still fails, that is a
+               malformed request. Laravel ships present_with and present_with_all but no
+               present_without_all, so the condition is spelled out here. */
+            'phone_keys'       => [
+                $this->has('select_all') || $this->has('select') || $this->has('unselect') ? 'sometimes' : 'present',
+                'array',
+            ],
             'phone_keys.*'     => ['string', 'regex:/^[1-9][0-9]{3,14}$/'],
             /* A delta names only what the user touched. Capped because past a few thousand
                the page is describing an audience rather than an edit, and select_all or an

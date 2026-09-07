@@ -99,6 +99,7 @@ class ShowWhatsappCampaignWorkshop extends OrgAction
                 'templates'    => $this->getTemplates($shop),
                 'mergeTags'    => GetWhatsappTemplateTags::run($shop),
                 'businessName' => $shop->name,
+                'whatsappNumber' => Arr::get($shop->settings, 'whatsapp.phone_number'),
                 'isConfigured' => filled(Arr::get($shop->settings, 'whatsapp.phone_number_id')),
                 'isEditable'   => $campaign->isUnsent(),
                 'isDeletable'  => $campaign->isUnsent(),

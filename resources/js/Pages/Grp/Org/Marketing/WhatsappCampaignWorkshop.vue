@@ -40,6 +40,7 @@ const props = defineProps<{
     templates: TemplateOption[]
     mergeTags: { value: string }[]
     businessName: string
+    whatsappNumber?: string | null
     isConfigured: boolean
     isEditable: boolean
     isDeletable: boolean
@@ -113,11 +114,14 @@ const applyTemplate = async (value: number | null, resetRecipients = false) => {
     if (!resetRecipients || saveError.value) return
 
     try {
-        await axios.post(
+        const { data } = await axios.post(
             route(props.clearRecipientsRoute.name, props.clearRecipientsRoute.parameters),
             { phone_keys: [] }
         )
-        recipientsCount.value = 0
+
+        /* Read back rather than assume zero: the clear spares contacts a send has already
+           claimed, and those still count. */
+        recipientsCount.value = data?.recipients_count ?? 0
     } catch (error: any) {
         saveError.value =
             error?.response?.data?.message ?? trans("Could not clear the recipients, please try again.")
@@ -218,11 +222,11 @@ const confirmTemplateChange = async () => {
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             {{ trans("WhatsApp number") }}
                         </label>
-                        <!-- ponytail: a shop has exactly one WhatsApp identity in settings, so this
+                        <!-- ponytail: a shop has exactly one WhatsApp number in settings, so this
                              shows it rather than offering a picker over a list that does not exist -->
                         <div class="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-600">
                             <FontAwesomeIcon :icon="faWhatsapp" class="text-green-500" />
-                            {{ businessName }}
+                            {{ whatsappNumber ?? trans("No WhatsApp number configured") }}
                         </div>
                     </div>
 
