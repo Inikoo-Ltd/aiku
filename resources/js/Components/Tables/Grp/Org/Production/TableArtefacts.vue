@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import Table from '@/Components/Table/Table.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -35,22 +35,11 @@ const routeCurrent = route().current()
 const routeParams = route().params
 
 const tableRef = ref<any>(null)
-const familySelectRef = ref<any>(null)
 const selected = ref<Record<string, boolean>>({})
 const targetFamily = ref<Family | null>(null)
 const isMoving = ref(false)
 
 const selectedIds = computed(() => Object.entries(selected.value).filter(([, on]) => on).map(([id]) => Number(id)))
-
-let areFamiliesLoaded = false
-const loadFamiliesOnce = async () => {
-    if (areFamiliesLoaded) return
-    areFamiliesLoaded = true
-    await nextTick()
-    familySelectRef.value?.fetchProductList()
-}
-
-watch(() => selectedIds.value.length > 0, (isBulkBarVisible) => isBulkBarVisible && loadFamiliesOnce())
 
 const clearSelection = () => {
     const rows = tableRef.value?.selectRow
@@ -121,7 +110,6 @@ function productionRoute(artefact: { slug: string }) {
             <div class="ml-auto flex flex-wrap items-center gap-x-2 gap-y-2">
                 <div class="w-72 text-gray-700">
                     <PureMultiselectInfiniteScroll
-                        ref="familySelectRef"
                         v-model="targetFamily"
                         :fetchRoute="moveToFamily.families_route"
                         :placeholder="ctrans('Move to family')"
@@ -129,6 +117,7 @@ function productionRoute(artefact: { slug: string }) {
                         valueProp="id"
                         labelProp="name"
                         labelAdditionalProp="code"
+                        fetchOnOpen
                         :object="true" />
                 </div>
 

@@ -11,6 +11,8 @@ import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPlus, faTrashAlt, faSave } from '@fal'
+import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
+import { routeType } from '@/types/route'
 
 library.add(faPlus, faTrashAlt, faSave)
 
@@ -39,9 +41,9 @@ const props = defineProps<{
     data: {
         artefact_id: number
         recipe: RecipeRow[]
-        task_options: { id: number, code: string, name: string }[]
-        raw_material_options: { id: number, code: string, description: string, unit: string }[]
         routes: {
+            task_options: routeType
+            raw_material_options: routeType
             attach: { name: string, parameters: object }
             detach: { name: string, parameters: object }
             raw_material_attach: { name: string }
@@ -198,12 +200,17 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                             </li>
                         </ul>
                         <div class="pl-4 mt-2 flex items-center gap-2">
-                            <select v-model="newRawMaterialId[row.step_id]" class="rounded border-gray-300 text-xs min-w-40">
-                                <option :value="null" disabled>{{ trans('Select raw material') }}</option>
-                                <option v-for="option in data.raw_material_options" :key="option.id" :value="option.id">
-                                    {{ option.code }} — {{ option.description }}
-                                </option>
-                            </select>
+                            <div class="w-64">
+                                <PureMultiselectInfiniteScroll
+                                    v-model="newRawMaterialId[row.step_id]"
+                                    :fetchRoute="data.routes.raw_material_options"
+                                    :placeholder="trans('Select raw material')"
+                                    :noOptionsText="trans('No raw materials yet')"
+                                    valueProp="id"
+                                    labelProp="description"
+                                    labelAdditionalProp="code"
+                                    fetchOnOpen />
+                            </div>
                             <input
                                 type="number" min="0.0001" step="any"
                                 class="w-24 rounded border-gray-300 text-xs"
@@ -224,7 +231,7 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                 </tr>
                 <tr v-if="!data.recipe.length">
                     <td colspan="5" class="py-6 text-center text-gray-400">
-                        {{ trans('No manufacture tasks yet. Add the steps needed to make this artefact.') }}
+                        {{ ctrans('No manufacture tasks yet. Add the steps needed to make this artefact.') }}
                     </td>
                 </tr>
             </tbody>
@@ -232,13 +239,18 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
 
         <div class="mt-4 flex items-end gap-3">
             <div>
-                <label class="block text-xs text-gray-500 mb-1">{{ trans('Task') }}</label>
-                <select v-model="newTaskId" class="rounded border-gray-300 text-sm min-w-48">
-                    <option :value="null" disabled>{{ trans('Select task') }}</option>
-                    <option v-for="option in data.task_options" :key="option.id" :value="option.id">
-                        {{ option.code }} — {{ option.name }}
-                    </option>
-                </select>
+                <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Task') }}</label>
+                <div class="w-72">
+                    <PureMultiselectInfiniteScroll
+                        v-model="newTaskId"
+                        :fetchRoute="data.routes.task_options"
+                        :placeholder="ctrans('Select task')"
+                        :noOptionsText="ctrans('No manufacture tasks yet')"
+                        valueProp="id"
+                        labelProp="name"
+                        labelAdditionalProp="code"
+                        fetchOnOpen />
+                </div>
             </div>
             <div>
                 <label class="block text-xs text-gray-500 mb-1">{{ trans('Step') }}</label>
