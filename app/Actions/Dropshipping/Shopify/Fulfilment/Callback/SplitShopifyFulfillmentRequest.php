@@ -7,6 +7,7 @@ use App\Actions\Dropshipping\Shopify\WithShopifyPortfolioMatching;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Sentry;
 
 class SplitShopifyFulfillmentRequest extends OrgAction
@@ -53,7 +54,7 @@ class SplitShopifyFulfillmentRequest extends OrgAction
             }
 
             if ($unmatchedLineItems) {
-                Sentry::captureMessage(
+                Log::info(
                     'Shopify fulfillment request has line items outside the portfolio of customer sales channel '
                     .$shopifyUser->customer_sales_channel_id.': '.json_encode($unmatchedLineItems)
                 );
@@ -134,6 +135,10 @@ class SplitShopifyFulfillmentRequest extends OrgAction
             ];
 
             list($status, $response) = $this->doPost($shopifyUser, $mutation, $variables);
+
+            if (!$status) {
+                return ['error' => $response];
+            }
 
             $body = $response['body']->toArray();
 

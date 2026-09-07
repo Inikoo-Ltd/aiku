@@ -477,7 +477,7 @@ onMounted(async () => {
                 </div>
 
                 <div v-if="Object.keys(customerData?.offers_data || {})?.length" class="my-3 w-full">
-                    <Discount :offers_data="customerData?.offers_data" class="justify-center" template="agnes_and_cat" />
+                  <!--   <Discount :offers_data="customerData?.offers_data" class="justify-center" template="agnes_and_cat" /> -->
                 </div>
 
                 <hr class="my-4 border-gray-200" />
@@ -531,7 +531,7 @@ onMounted(async () => {
                         <NonMemberPriceLabel v-else :product="product" />
                     </template>
 
-                    <DiscountByType v-if="showDiscount" template="products_triggers_label" :offers_data="offersData" />
+                    <DiscountByType v-if="showDiscount" template="products_triggers_label" :offers_data="offersData" :isGoldenProduct="product?.is_golden_product" />
 
                     <DiscountByType
                         v-if="isPurchasable && bestOffer?.type !== 'Category Quantity Ordered Order Interval'"
@@ -760,7 +760,7 @@ onMounted(async () => {
                     <NonMemberPriceLabel v-else :product="product" />
                 </template>
 
-                <DiscountByType v-if="showDiscount" template="products_triggers_label" :offers_data="offersData" />
+                <DiscountByType v-if="showDiscount" template="products_triggers_label" :offers_data="offersData" :isGoldenProduct="product?.is_golden_product" />
 
                 <DiscountByType v-if="isPurchasable && bestOffer?.type !== 'Category Quantity Ordered Order Interval'"
                     template="max_discount" :offers_data="offersData" />

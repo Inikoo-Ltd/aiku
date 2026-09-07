@@ -7,7 +7,9 @@
  */
 
 use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
+use App\Actions\Production\PartnerShippingList\SetToProduceItemPreparing;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems;
+use App\Actions\Production\PartnerShippingList\UnassignToProduceItems;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
 use App\Actions\Production\Artisan\ToggleArtisanInRoster;
 use App\Actions\Production\PartnerShippingList\SendPartnerOrderToWarehouse;
@@ -17,6 +19,7 @@ use App\Actions\Production\ArtefactFamily\UI\CreateArtefactFamily;
 use App\Actions\Production\ArtefactFamily\UI\EditArtefactFamily;
 use App\Actions\Production\ArtefactFamily\UI\IndexArtefactFamilies;
 use App\Actions\Production\ArtefactFamily\UI\ShowArtefactFamily;
+use App\Actions\Production\Artefact\SetArtefactAsMix;
 use App\Actions\Production\Artefact\UI\EditArtefact;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\Artefact\UI\ShowArtefact;
@@ -63,9 +66,10 @@ Route::prefix('{production}')
                         Route::get('job-orders/{jobOrder}', ShowJobOrder::class)->name('job-orders.show');
                     });
 
-                Route::name('.partners.')->prefix('partners')
+                Route::name('.to_produce.')->prefix('to-produce')
                     ->group(function () {
-                        Route::get('', IndexPartnerShippingList::class)->name('index');
+                        Route::get('', [IndexPartnerShippingList::class, 'board'])->name('index');
+                        Route::get('list', IndexPartnerShippingList::class)->name('list');
                         Route::get('by-artisan', [IndexPartnerShippingList::class, 'byArtisan'])->name('by_artisan');
                         Route::get('by-category', [IndexPartnerShippingList::class, 'byFamily'])->name('by_category');
                         Route::get('for', [IndexPartnerShippingList::class, 'byFor'])->name('by_for');
@@ -73,6 +77,8 @@ Route::prefix('{production}')
                         Route::post('mixes/job-orders', StoreJobOrdersForMixes::class)->name('mixes.job_orders.store');
                         Route::post('cherry-pick', CherryPickPartnerShoppingListItems::class)->name('cherry_pick');
                         Route::post('job-orders', StoreJobOrdersFromToProduceItems::class)->name('job_orders.store');
+                        Route::post('items/preparing', SetToProduceItemPreparing::class)->name('items.preparing');
+                        Route::post('items/unassign', UnassignToProduceItems::class)->name('items.unassign');
                         Route::post('artisans/{employee:id}/hide', [ToggleArtisanInRoster::class, 'hide'])->name('artisans.hide')->withoutScopedBindings();
                         Route::post('artisans/{employee:id}/show', [ToggleArtisanInRoster::class, 'show'])->name('artisans.show')->withoutScopedBindings();
                         Route::post('orders/{order}/send-to-warehouse', SendPartnerOrderToWarehouse::class)->name('send_to_warehouse');
@@ -91,6 +97,7 @@ Route::prefix('{production}')
                         Route::get('artefacts/create', CreateArtefact::class)->name('artefacts.create');
                         Route::get('artefacts/{artefact}', ShowArtefact::class)->name('artefacts.show');
                         Route::get('artefacts/{artefact}/edit', EditArtefact::class)->name('artefacts.edit');
+                        Route::post('artefacts/{artefact}/mix', SetArtefactAsMix::class)->name('artefacts.mix');
 
                         Route::get('artefact-families', IndexArtefactFamilies::class)->name('artefact_families.index');
                         Route::get('artefact-families/create', CreateArtefactFamily::class)->name('artefact_families.create');

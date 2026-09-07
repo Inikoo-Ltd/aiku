@@ -1,4 +1,6 @@
 
+import { ctrans } from "@/Composables/useTrans"
+
 type Offer = {
     id: number
     type: string
@@ -41,4 +43,17 @@ export function getBestOffer(
   }
 
   return offer
+}
+
+// Method: get label (Product page)
+export function getGoldenProductTriggerLabel(offer?: Offer | null): string {
+  const percentageOff = offer?.allowances?.[0]?.percentage_off
+
+  if (!percentageOff) {
+    return ''
+  }
+
+  return ctrans('GOLDEN PRODUCT - :offerPercentage OFF', {
+    offerPercentage: `${Math.round(percentageOff * 10000) / 100}%`,
+  })
 }

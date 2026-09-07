@@ -122,10 +122,14 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
             return false;
         }
 
+        if ($force) {
+            return true;
+        }
+
         $lastSuccessAt = $portfolio->stock_last_updated_at;
         $lastFailAt = $portfolio->stock_last_fail_updated_at;
 
-        if (!$force && $lastFailAt && (!$lastSuccessAt || $lastFailAt->gt($lastSuccessAt))) {
+        if ($lastFailAt && (!$lastSuccessAt || $lastFailAt->gt($lastSuccessAt))) {
             return $lastFailAt->lt(now()->subDay())
                 || ($product->available_quantity_updated_at && $product->available_quantity_updated_at->gt($lastFailAt));
         }

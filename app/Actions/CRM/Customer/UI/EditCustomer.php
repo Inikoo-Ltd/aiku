@@ -122,10 +122,14 @@ class EditCustomer extends OrgAction
                     ],
                 ],
                 'tax_number'               => [
-                    'type'    => 'tax_number',
-                    'label'   => __('Tax number'),
-                    'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
-                    'country' => $customer->address->country_code,
+                    'type'                  => 'tax_number',
+                    'label'                 => __('Tax number'),
+                    'value'                 => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
+                    'mark_as_valid_button'  => [
+                        'show'      => true,
+                        'cus_id'    => $customer->id,
+                    ],
+                    'country'               => $customer->address->country_code,
                 ],
                 'is_re'                    => [
                     'type'   => 'toggle',

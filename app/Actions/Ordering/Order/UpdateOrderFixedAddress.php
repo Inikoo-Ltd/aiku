@@ -49,11 +49,11 @@ class UpdateOrderFixedAddress extends OrgAction
 
         $address = $this->createFixedAddress($order, $modelData['address'], 'Ordering', $type, $type == 'billing' ? 'billing_address_id' : 'delivery_address_id');
 
-        $order->updateQuietly(
-            [
-                $type . '_country_id' => $address->country_id,
-            ]
-        );
+        if ($type == 'delivery') {
+            SetOrderDeliveryCountry::run($order, $address);
+        } else {
+            $order->updateQuietly(['billing_country_id' => $address->country_id]);
+        }
 
         if ($oldAddress) {
             FixedAddressGarbageCollection::dispatch($oldAddress->id)->delay($this->hydratorsDelay);

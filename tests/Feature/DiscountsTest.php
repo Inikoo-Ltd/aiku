@@ -2541,12 +2541,20 @@ describe('calculate order discounts', function () {
         expect((float)$transaction->net_amount)->toBe(210.0)
             ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($shopOffer->id);
 
+        UpdateTriggerModelOffersData::run($shopOffer);
+        expect(Arr::get($this->product->refresh()->offers_data, 'best_percentage_off.percentage_off'))->toBe(0.3)
+            ->and(Arr::get($this->product->offers_data, 'offers.'.$shopOffer->id.'.products_triggers_label'))->toContain('Made in Nepal')
+            ->and(Arr::get($nepalCollection->refresh()->offers_data, 'number_offers'))->toBe(1);
+
         $allowance->update(['target_id' => $emptyCollection->id, 'data' => array_merge($allowance->data, ['collection_id' => $emptyCollection->id])]);
         CalculateOrderDiscounts::run($order->refresh());
         $transaction->refresh();
         expect((float)$transaction->net_amount)->toBe(270.0);
 
+        $allowance->update(['target_id' => $nepalCollection->id]);
         SuspendOffer::run($shopOffer);
+        expect(Arr::get($this->product->refresh()->offers_data, 'number_offers'))->toBe(0)
+            ->and(Arr::get($nepalCollection->refresh()->offers_data, 'number_offers'))->toBe(0);
     });
 
     test('department offers: quantity, unconditional and amount thresholds', function () {

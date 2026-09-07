@@ -15,6 +15,8 @@ defineProps<{
     title: string
     storeRoute: { name: string; parameters?: Record<string, unknown> }
     priorities: { label: string; value: string }[]
+    kinds: { label: string; value: string }[]
+    modules: { label: string; value: string }[]
 }>()
 </script>
 
@@ -22,6 +24,6 @@ defineProps<{
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <div class="p-4">
-        <TicketForm :store-route="storeRoute" :priorities="priorities" />
+        <TicketForm :store-route="storeRoute" :priorities="priorities" :kinds="kinds" :modules="modules" />
     </div>
 </template>

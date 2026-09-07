@@ -3833,8 +3833,8 @@ test('UI orders at gate index', function () {
 });
 
 test('delivery note tariff codes use the organisation override for the national digits', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
-    $tradeUnit      = $deliveryNote->deliveryNoteItems->first()->orgStock->tradeUnits->first();
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $tradeUnit                         = $deliveryNoteItem->orgStock->tradeUnits->first();
 
     \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, [
         'tariff_code'       => '3304 99 0000',
@@ -3848,6 +3848,7 @@ test('delivery note tariff codes use the organisation override for the national 
     request()->setRouteResolver(fn () => new Route('GET', 'test', []));
     $rows = \App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote);
 
-    expect($rows->first()->tariff_code)->toBe('3304999100')
-        ->and((bool) $rows->first()->is_incomplete)->toBeFalse();
+    $row = $rows->firstWhere('tariff_code', '3304999100');
+    expect($row)->not->toBeNull()
+        ->and((bool) $row->is_incomplete)->toBeFalse();
 });

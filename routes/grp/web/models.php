@@ -259,6 +259,7 @@ use App\Actions\Goods\StockFamily\UpdateStockFamily;
 use App\Actions\Goods\TradeUnit\AttachTradeUnitsToTradeUnitFamily;
 use App\Actions\Goods\TradeUnit\DeleteTradeUnitTariffCodeOverride;
 use App\Actions\Goods\TradeUnit\SetTradeUnitTariffCodeOverride;
+use App\Actions\Helpers\TariffCode\UpdateTariffCode;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnitTranslations;
 use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UI\AssignBrandTagsToTradeUnitFamily;
@@ -523,6 +524,7 @@ use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
 use App\Stubs\UIDummies\ImportDummy;
+use App\Actions\Helpers\Ticket\EscalateTicket;
 use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
@@ -543,6 +545,7 @@ Route::prefix('ticket')->name('ticket.')->group(function () {
     Route::patch('{ticket:id}', UpdateTicket::class)->name('update')->whereNumber('ticket');
     Route::post('{ticket:id}/comment', StoreTicketComment::class)->name('comment.store')->whereNumber('ticket');
     Route::post('{ticket:id}/rate', RateTicket::class)->name('rate')->whereNumber('ticket');
+    Route::post('{ticket:id}/escalate', EscalateTicket::class)->name('escalate')->whereNumber('ticket');
 });
 
 Route::prefix('employee/{employee:id}')->name('employee.')->group(function () {
@@ -1587,3 +1590,5 @@ require __DIR__.'/models/sys_admin/user.php';
 require __DIR__.'/models/fulfilment/fulfilment_customer.php';
 require __DIR__.'/models/fulfilment/stored_item_audit.php';
 require __DIR__.'/models/fulfilment/stored_item_audit_delta.php';
+
+Route::patch('tariff-code/{tariffCode:id}', UpdateTariffCode::class)->name('tariff_code.update');

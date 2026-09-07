@@ -710,6 +710,22 @@ test('update order state to in warehouse', function (Order $order) {
     return $order;
 })->depends('update order state to submitted');
 
+test('delivery note recipient follows the order recipient, not the customer', function (Order $order) {
+    $order = UpdateOrder::make()->action($order, [
+        'contact_name' => 'Jana Novak',
+        'company_name' => 'Novak Retail s.r.o.',
+    ]);
+
+    expect($order->company_name)->toBe('Novak Retail s.r.o.')
+        ->and(SendOrderToWarehouse::make()->getCompanyName($order))->toBe('Novak Retail s.r.o.')
+        ->and(SendOrderToWarehouse::make()->getContactName($order))->toBe('Jana Novak');
+
+    $order = UpdateOrder::make()->action($order, ['company_name' => null]);
+    expect(SendOrderToWarehouse::make()->getCompanyName($order))->toBe($order->customer->company_name);
+
+    return $order;
+})->depends('update order state to in warehouse');
+
 test('staff can change the billing address of an order already in the warehouse', function (Order $order) {
     $newAddress                   = Address::factory()->definition();
     $newAddress['address_line_1'] = 'Billing street 42';
@@ -3423,4 +3439,72 @@ test('turning on recargo de equivalencia propagates to baskets migrated from aur
     UpdateCustomer::make()->action($this->customer, ['is_re' => true]);
 
     expect($order->refresh()->is_re)->toBeTrue();
+});
+
+test('UI shop dashboard widgets endpoint returns every widget for an interval', function () {
+    $this->withoutExceptionHandling();
+    StoreInvoice::make()->action($this->customer, Invoice::factory()->definition());
+
+    $dashboard = get(route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug]));
+    $dashboard->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('dashboard.super_blocks.0.widgets_route.name', 'grp.org.shops.show.dashboard.widgets')
+            ->etc()
+    );
+
+    $response = getJson(route('grp.org.shops.show.dashboard.widgets', [$this->organisation->slug, $this->shop->slug, 'interval' => '1y']));
+    $response->assertOk()
+        ->assertJsonPath('interval', '1y')
+        ->assertJsonPath('currency_code', $this->shop->currency->code)
+        ->assertJsonStructure([
+            'from', 'to', 'channels', 'top_customers', 'top_products', 'top_families', 'out_of_stock', 'top_webpages',
+            'email' => ['totals', 'mailshots'],
+            'marketing' => ['totals', 'channels'],
+            'subscriptions' => ['registrations', 'unsubscribed', 'net'],
+            'routes' => ['customers', 'product', 'family', 'marketing'],
+        ]);
+
+    expect(collect($response->json('channels'))->sum('invoices'))->toBeGreaterThanOrEqual(1);
+
+    $allTime = getJson(route('grp.org.shops.show.dashboard.widgets', [$this->organisation->slug, $this->shop->slug, 'interval' => 'all']));
+    $allTime->assertOk()->assertJsonPath('from', null);
+    expect($allTime->json('subscriptions.registrations'))->toBeGreaterThanOrEqual(1);
+});
+
+test('export flag follows the customs territory of the organisation', function () {
+    $addressIn = fn (string $code, ?string $postalCode = null) => new Address(array_merge(
+        Address::factory()->definition(),
+        ['country_code' => $code, 'country_id' => Country::where('code', $code)->value('id'), 'postal_code' => $postalCode ?? fake()->postcode]
+    ));
+    $canaries = $addressIn('ES', '35001');
+    $madrid   = $addressIn('ES', '28001');
+    $jersey   = $addressIn('JE');
+    $london   = $addressIn('GB');
+    $usa      = $addressIn('US');
+
+    expect(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('GB', $london))->toBeFalse()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('GB', $jersey))->toBeTrue()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('GB', $madrid))->toBeTrue()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('SK', $madrid))->toBeFalse()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('SK', $canaries))->toBeTrue()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('SK', $london))->toBeTrue()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('SK', $usa))->toBeTrue();
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', $usa);
+    $order = StoreOrder::make()->action($this->customer, $modelData, strict: false);
+    expect($order->is_export)->toBeTrue();
+
+    $home = $addressIn($this->organisation->country->code);
+    \App\Actions\Ordering\Order\UpdateOrderFixedAddress::make()->action($order, ['address' => $home, 'type' => 'delivery']);
+    expect($order->refresh()->is_export)->toBe(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery($this->organisation->country->code, $home));
+
+    $this->shop->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+    $counts = \App\Actions\Ordering\Order\UI\IndexOrders::make()->scopeCounts($this->shop, 'in_basket');
+    $creating = Order::where('shop_id', $this->shop->id)->where('state', OrderStateEnum::CREATING);
+    expect($counts)->toBe([
+        'domestic' => (clone $creating)->where('is_export', false)->count(),
+        'export'   => (clone $creating)->where('is_export', true)->count(),
+    ])->and($counts['domestic'] + $counts['export'])->toBeGreaterThan(0);
 });

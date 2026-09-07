@@ -10,14 +10,14 @@
 namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Actions\CRM\Customer\UI\ShowCustomer;
-use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
 use App\Actions\Dropshipping\UI\ShowPlatform;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\CRM\CustomerPlatformTabsEnum;
-use App\Http\Resources\Dropshipping\PlatformPortfolioLogsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -111,16 +111,30 @@ class ShowCustomerSalesChannel extends OrgAction
                     'platform'               => $customerSalesChannel->platform,
                     'customer_sales_channel' => $customerSalesChannel,
                     'platform_user'          => $customerSalesChannel->user,
-                    'fulfilment_policies'    => $fulfilmentPolicies
+                    'fulfilment_policies'    => $fulfilmentPolicies,
+                    'reconnect_link'         => $this->getReconnectLink($customerSalesChannel),
                 ],
-                'logs' => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($customerSalesChannel)),
-
                 CustomerPlatformTabsEnum::HISTORY->value => $this->tab == CustomerPlatformTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($customerSalesChannel, CustomerPlatformTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($customerSalesChannel, CustomerPlatformTabsEnum::HISTORY->value))),
             ]
-        )->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'))
-            ->table(IndexHistory::make()->tableStructure(CustomerPlatformTabsEnum::HISTORY->value));
+        )->table(IndexHistory::make()->tableStructure(CustomerPlatformTabsEnum::HISTORY->value));
+    }
+
+    /**
+     * Staff cannot authorise a store themselves, only its owner can, so a channel that lost its
+     * connection gets a link customer services can send the customer to authorise again.
+     */
+    public function getReconnectLink(CustomerSalesChannel $customerSalesChannel): ?string
+    {
+        if ($customerSalesChannel->platform->type !== PlatformTypeEnum::WOOCOMMERCE
+            || $customerSalesChannel->status !== CustomerSalesChannelStatusEnum::OPEN
+            || $customerSalesChannel->platform_status
+            || !$customerSalesChannel->user instanceof WooCommerceUser) {
+            return null;
+        }
+
+        return ReAuthorizeRetinaWooCommerceUser::run($customerSalesChannel->user, ReAuthorizeRetinaWooCommerceUser::STAFF_LINK_TTL_SECONDS);
     }
 
     public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, string $routeName, array $routeParameters): array

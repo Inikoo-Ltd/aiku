@@ -1463,11 +1463,14 @@ trait WithEbayApiRequest
             $endpoint = "/sell/fulfillment/v1/order/$orderId/shipping_fulfillment";
 
             $fulfillment = [
-                'lineItems'           => $fulfillmentData['line_items'],
-                'shippedDate'         => now()->toISOString(),
-                'shippingCarrierCode' => $fulfillmentData['carrier_code'] ?? 'USPS',
-                'trackingNumber'      => $fulfillmentData['tracking_number'] ?? null
+                'lineItems'   => $fulfillmentData['line_items'],
+                'shippedDate' => now()->toISOString(),
             ];
+
+            if (filled(Arr::get($fulfillmentData, 'tracking_number'))) {
+                $fulfillment['trackingNumber']      = $fulfillmentData['tracking_number'];
+                $fulfillment['shippingCarrierCode'] = Arr::get($fulfillmentData, 'carrier_code') ?: 'Other';
+            }
 
             return $this->makeEbayRequest('post', $endpoint, $fulfillment);
         } catch (Exception $e) {
@@ -1888,7 +1891,7 @@ trait WithEbayApiRequest
     public function getInventoryLocations()
     {
         try {
-            $endpoint = "/sell/inventory/v1/location?limit=20&offset=0";
+            $endpoint = "/sell/inventory/v1/location?limit=100&offset=0";
 
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {

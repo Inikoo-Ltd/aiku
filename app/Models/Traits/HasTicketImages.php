@@ -36,6 +36,32 @@ trait HasTicketImages
     /**
      * @return array<int, array<string, mixed>>
      */
+    public function attachTicketFile(string $path, string $originalName, ?string $mimeType = null, array $properties = []): Media
+    {
+        $isImage    = str_starts_with((string) ($mimeType ?: mime_content_type($path)), 'image/');
+        $collection = $isImage ? 'ticket_images' : 'ticket_attachments';
+
+        $media = StoreMediaFromFile::run($this, [
+            'path'         => $path,
+            'originalName' => $originalName,
+            'extension'    => pathinfo($originalName, PATHINFO_EXTENSION) ?: null,
+            'checksum'     => md5_file($path),
+        ], $collection, $isImage ? 'image' : 'file');
+
+        if ($properties) {
+            $media->setCustomProperty('source', $properties)->save();
+        }
+
+        return $media;
+    }
+
+    public function ticketAttachments(): array
+    {
+        return $this->getMedia('ticket_attachments')
+            ->map(fn (Media $media) => ['name' => $media->name, 'url' => $media->getUrl(), 'size' => $media->size, 'mime' => $media->mime_type])
+            ->all();
+    }
+
     public function ticketImageSources(): array
     {
         return $this->getMedia('ticket_images')

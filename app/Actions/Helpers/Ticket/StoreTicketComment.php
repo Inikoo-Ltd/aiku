@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Ticket;
 
+use App\Actions\Helpers\Ticket\Concerns\WithTicketsWriteGuard;
 use App\Actions\OrgAction;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Ticket;
@@ -19,8 +20,12 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreTicketComment extends OrgAction
 {
+    use WithTicketsWriteGuard;
+
     public function handle(Ticket $ticket, User|WebUser $author, array $modelData): TicketComment
     {
+        $this->guardTicketsWritable();
+
         $comment = $ticket->comments()->create([
             'author_type' => $author instanceof User ? 'User' : 'WebUser',
             'author_id'   => $author->id,

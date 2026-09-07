@@ -8,9 +8,12 @@
 
 namespace App\Actions\Helpers\Ticket;
 
+use App\Actions\Helpers\Ticket\Concerns\WithTicketsWriteGuard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Enums\Helpers\Ticket\TicketKindEnum;
+use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Models\Helpers\Ticket;
 use Illuminate\Http\RedirectResponse;
@@ -20,17 +23,27 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTicket extends OrgAction
 {
+    use WithTicketsWriteGuard;
+
     use WithActionUpdate;
 
     public function handle(Ticket $ticket, array $modelData): Ticket
     {
+        $this->guardTicketsWritable();
+
         if ($status = Arr::get($modelData, 'status')) {
             $status = TicketStatusEnum::from($status);
             data_set($modelData, 'resolved_at', $status === TicketStatusEnum::RESOLVED ? now() : ($status->isOpen() ? null : $ticket->resolved_at));
             data_set($modelData, 'closed_at', $status === TicketStatusEnum::CLOSED ? now() : null);
         }
 
-        return $this->update($ticket, $modelData);
+        $ticket = $this->update($ticket, $modelData);
+
+        if ($ticket->wasChanged('assignee_id') && $ticket->assignee_id && $conversation = $ticket->staffConversation) {
+            $conversation->participants()->syncWithoutDetaching([$ticket->assignee_id]);
+        }
+
+        return $ticket;
     }
 
     public function rules(): array
@@ -41,6 +54,11 @@ class UpdateTicket extends OrgAction
             'status'      => ['sometimes', Rule::enum(TicketStatusEnum::class)],
             'priority'    => ['sometimes', Rule::enum(ChatPriorityEnum::class)],
             'assignee_id' => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
+            'kind'        => ['sometimes', 'nullable', Rule::enum(TicketKindEnum::class)],
+            'module'      => ['sometimes', 'nullable', Rule::enum(TicketModuleEnum::class)],
+            'tags'        => ['sometimes', 'array'],
+            'is_confidential' => ['sometimes', 'boolean'],
+            'tags.*'        => ['string', 'max:64'],
         ];
     }
 

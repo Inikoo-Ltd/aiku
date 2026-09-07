@@ -17,6 +17,7 @@ use App\Models\CRM\TrafficSourceCampaign;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -43,7 +44,7 @@ class ReclassifyAiTrafficSourceTouches
      */
     public function handle(bool $dryRun = false): array
     {
-        $summary = ['campaigns' => 0, 'customers' => 0, 'prospects' => 0, 'orders' => 0];
+        $summary = ['campaigns' => 0, 'customers' => 0, 'prospects' => 0, 'orders' => 0, 'clicks' => 0, 'visit_days' => 0];
 
         $aiSources = TrafficSource::where('type', TrafficSourcesTypeEnum::AI->value)->pluck('id', 'shop_id');
 
@@ -70,6 +71,24 @@ class ReclassifyAiTrafficSourceTouches
                     continue;
                 }
 
+                /* The AI source usually has its own row for the host by now, created by arrivals
+                   since the channel existed, while visitors' old cookies keep minting the Referral one
+                   at registration. A second row cannot share the reference, so the old one is folded
+                   into the new: its touches and costs repointed, the row itself gone. */
+                $existing = TrafficSourceCampaign::where('traffic_source_id', $aiSourceId)
+                    ->where('reference', $campaign->reference)
+                    ->value('id');
+
+                if ($existing) {
+                    foreach (['model_has_traffic_sources', 'traffic_source_costs'] as $table) {
+                        DB::table($table)->where('traffic_source_campaign_id', $campaign->id)
+                            ->update(['traffic_source_campaign_id' => $existing]);
+                    }
+                    TrafficSourceCampaign::where('id', $campaign->id)->delete();
+
+                    continue;
+                }
+
                 TrafficSourceCampaign::where('id', $campaign->id)->update([
                     'traffic_source_id' => $aiSourceId,
                     'type'              => TrafficSourcesTypeEnum::AI->value,
@@ -81,6 +100,8 @@ class ReclassifyAiTrafficSourceTouches
             $summary[$key] = $this->reclassifyModels($class, $dryRun);
         }
 
+        [$summary['clicks'], $summary['visit_days']] = $this->reclassifyClicksAndVisits($aiSources, $dryRun);
+
         if (!$dryRun) {
             TrafficSource::whereIn('type', [
                 TrafficSourcesTypeEnum::REFERRAL->value,
@@ -89,6 +110,92 @@ class ReclassifyAiTrafficSourceTouches
         }
 
         return $summary;
+    }
+
+    /**
+     * The click log and the daily visit counts remember the channel an arrival was filed under at
+     * the time, so before the AI channel existed a ChatGPT arrival is a Referral click and a Referral
+     * visit. Left alone, the assistant lines under AI count arrivals the AI channel total does not,
+     * and a child bigger than its parent is a report nobody trusts. The clicks are retyped, and for
+     * every shop and day the retyped arrivals are moved from the old channel's visit row to the AI
+     * one, counted the way the counter counts: one per browser per day.
+     *
+     * @param \Illuminate\Support\Collection<int, int> $aiSources AI traffic source id by shop id
+     *
+     * @return array{0: int, 1: int}
+     */
+    private function reclassifyClicksAndVisits($aiSources, bool $dryRun): array
+    {
+        $oldTypes = [TrafficSourcesTypeEnum::REFERRAL->value, TrafficSourcesTypeEnum::ORGANIC_SEARCH->value];
+
+        $aiHosts = DB::table('traffic_source_clicks')
+            ->whereIn('type', $oldTypes)
+            ->whereNotNull('campaign_ref')
+            ->distinct()
+            ->pluck('campaign_ref')
+            ->filter(fn (string $host) => GetTrafficSourceFromRefererHeader::isAiAssistantHost($host))
+            ->values();
+
+        if ($aiHosts->isEmpty()) {
+            return [0, 0];
+        }
+
+        $moved = DB::table('traffic_source_clicks')
+            ->whereIn('type', $oldTypes)
+            ->whereIn('campaign_ref', $aiHosts)
+            ->where('is_bot', false)
+            ->groupBy('shop_id', 'type', DB::raw('created_at::date'))
+            ->select('shop_id', 'type', DB::raw('created_at::date as day'), DB::raw('COUNT(DISTINCT (ip, user_agent)) as visits'))
+            ->get();
+
+        $clicks = DB::table('traffic_source_clicks')
+            ->whereIn('type', $oldTypes)
+            ->whereIn('campaign_ref', $aiHosts)
+            ->count();
+
+        if ($dryRun) {
+            return [$clicks, $moved->count()];
+        }
+
+        $oldSources = TrafficSource::whereIn('type', $oldTypes)->get(['id', 'shop_id', 'type'])
+            ->keyBy(fn (TrafficSource $source) => $source->shop_id.':'.$source->type);
+
+        foreach ($moved as $row) {
+            $oldSource = $oldSources[$row->shop_id.':'.$row->type] ?? null;
+            $aiSourceId = $aiSources[$row->shop_id] ?? null;
+
+            if (!$oldSource || !$aiSourceId) {
+                continue;
+            }
+
+            DB::table('traffic_source_visits')
+                ->where('traffic_source_id', $oldSource->id)
+                ->where('date', $row->day)
+                ->update(['visits' => DB::raw('GREATEST(visits - '.(int) $row->visits.', 0)'), 'updated_at' => now()]);
+
+            $aiRow = DB::table('traffic_source_visits')->where('traffic_source_id', $aiSourceId)->where('date', $row->day)->first();
+
+            if ($aiRow) {
+                DB::table('traffic_source_visits')->where('id', $aiRow->id)
+                    ->update(['visits' => DB::raw('visits + '.(int) $row->visits), 'updated_at' => now()]);
+            } else {
+                DB::table('traffic_source_visits')->insert([
+                    'shop_id'           => $row->shop_id,
+                    'traffic_source_id' => $aiSourceId,
+                    'date'              => $row->day,
+                    'visits'            => (int) $row->visits,
+                    'created_at'        => now(),
+                    'updated_at'        => now(),
+                ]);
+            }
+        }
+
+        DB::table('traffic_source_clicks')
+            ->whereIn('type', $oldTypes)
+            ->whereIn('campaign_ref', $aiHosts)
+            ->update(['type' => TrafficSourcesTypeEnum::AI->value]);
+
+        return [$clicks, $moved->count()];
     }
 
     /**
@@ -148,21 +255,9 @@ class ReclassifyAiTrafficSourceTouches
             return null;
         }
 
-        $aiAbbr    = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::AI->value];
-        $rewritten = false;
-
-        $segments = array_map(function (array $touch) use ($aiAbbr, &$rewritten) {
-            $isReclassifiable = $touch['type'] === TrafficSourcesTypeEnum::REFERRAL
-                && GetTrafficSourceFromRefererHeader::isAiAssistantHost($touch['campaign_ref']);
-
-            if ($isReclassifiable) {
-                $rewritten = true;
-            }
-
-            return $touch['timestamp'].($isReclassifiable ? $aiAbbr : $touch['abbr']).($touch['campaign_ref'] ?? '');
-        }, $touches);
-
-        return $rewritten ? implode('|', $segments) : null;
+        /* The parser already reads an assistant filed as a referral as AI; this makes that reading
+           permanent in the stored string. */
+        return ParseTrafficSourceTouches::wasTranslated($touches) ? ParseTrafficSourceTouches::serialise($touches) : null;
     }
 
     public function getCommandSignature(): string

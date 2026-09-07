@@ -27,6 +27,12 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
 
     public string $jobQueue = 'woo';
 
+    /**
+     * The store is asked for processing orders only, but a paid order that has since been
+     * cancelled, refunded or binned must never become a warehouse order.
+     */
+    private const array SKIPPED_STATUSES = ['cancelled', 'refunded', 'failed', 'trash'];
+
     public function getJobUniqueId(WooCommerceUser $wooCommerceUser): string
     {
         return $wooCommerceUser->id;
@@ -79,7 +85,7 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
                     return is_string($value) ? mb_convert_encoding($value, 'UTF-8', 'UTF-8') : $value;
                 }, $wooOrder)
             ]);
-            if (!Arr::get($wooOrder, 'date_paid')) {
+            if (!Arr::get($wooOrder, 'date_paid') || in_array(Arr::get($wooOrder, 'status'), self::SKIPPED_STATUSES)) {
                 continue;
             }
 
@@ -94,7 +100,9 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
                 continue;
             }
 
-            $lineItems = collect(Arr::get($wooOrder, 'line_items', []))->pluck('product_id')->filter()->toArray();
+            $lineItems = collect(Arr::get($wooOrder, 'line_items', []))
+                ->flatMap(fn ($item) => StoreOrderFromWooCommerce::lineItemPlatformProductIds($item))
+                ->all();
 
             $hasOutProducts = DB::table('portfolios')
                 ->where('customer_sales_channel_id', $wooCommerceUser->customer_sales_channel_id)
