@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Banner\UpdateBanner;
 use App\Models\Web\Banner;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairBannersMissingDefaultRatio
 {
@@ -28,6 +29,7 @@ class RepairBannersMissingDefaultRatio
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $query     = Banner::where(function ($q) {
             $q->whereNull('ratio')
             ->orWhereRaw("TRIM(ratio) = ''");

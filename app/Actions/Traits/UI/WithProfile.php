@@ -10,13 +10,14 @@ namespace App\Actions\Traits\UI;
 
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Models\CRM\WebUser;
+use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 
 trait WithProfile
 {
-    public function processProfileAvatar(array $modelData, User|WebUser  $model): User|WebUser
+    public function processProfileAvatar(array $modelData, User|WebUser|Employee $model): User|WebUser|Employee
     {
         if (Arr::has($modelData, 'image')) {
             /** @var UploadedFile $image */

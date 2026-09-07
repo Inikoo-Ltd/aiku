@@ -26,6 +26,7 @@ class GetInvoicePdfColumns
         'hide_payment_status'   => false,
         'cpnp'                  => false,
         'group_by_tariff_code'  => false,
+        'export_by_tariff_code' => false,
         'show_dispatch_totals'  => false,
         'show_batch_code'       => false,
         'separate_out_of_stock' => true,

@@ -14,18 +14,19 @@ const props = defineProps<{
     tab?:string
 }>()
 
-console.log(route().current())
 function jobPositionRoute(jobPosition: JobPosition) {
     switch (route().current()) {
         case 'grp.org.hr.job_positions.index':
-      case 'grp.org.hr.employees.show':
+        case 'grp.org.hr.employees.show.positions.index':
             return route(
                 'grp.org.hr.job_positions.show',
                 [
                     route().params['organisation'],
                     jobPosition.slug
                 ]);
-      case 'grp.overview.hr.responsibilities.index':
+        case 'grp.overview.hr.responsibilities.index':
+            // Group scoped responsibilities belong to no organisation, so they have no show page
+            if (!jobPosition.organisation_slug) return undefined
             return route(
                 'grp.org.hr.job_positions.show',
                 [
@@ -39,14 +40,17 @@ function jobPositionRoute(jobPosition: JobPosition) {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5"   >
+    <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(code)="{ item: jobPosition }">
-            <Link :href="jobPositionRoute(jobPosition)" class="primaryLink">
+            <Link v-if="jobPositionRoute(jobPosition)" :href="jobPositionRoute(jobPosition)" class="primaryLink">
                 {{ jobPosition['code'] }}
             </Link>
+            <span v-else>{{ jobPosition['code'] }}</span>
         </template>
 
-
-
+        <template #cell(share)="{ item: jobPosition }">
+            <span v-if="jobPosition['share']">{{ jobPosition['share'] }}</span>
+            <span v-else class="text-gray-400">-</span>
+        </template>
     </Table>
 </template>

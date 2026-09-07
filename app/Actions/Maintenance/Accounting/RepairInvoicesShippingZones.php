@@ -16,6 +16,7 @@ use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Billables\ShippingZone;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairInvoicesShippingZones
 {
@@ -55,6 +56,7 @@ class RepairInvoicesShippingZones
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
 
         $count = Invoice::count();
 

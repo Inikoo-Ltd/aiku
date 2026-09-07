@@ -17,6 +17,7 @@ use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Comms\EmailTemplate;
 use App\Models\Comms\Outbox;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairOutboxesState
 {
@@ -71,6 +72,7 @@ class RepairOutboxesState
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $count = Outbox::count();
 
         $command->info("outboxes: $count");

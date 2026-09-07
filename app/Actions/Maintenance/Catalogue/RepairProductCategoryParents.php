@@ -15,6 +15,7 @@ use App\Models\Catalogue\ProductCategory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairProductCategoryParents
 {
@@ -81,6 +82,7 @@ class RepairProductCategoryParents
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->argument('productCategory')) {
             $productCategory = ProductCategory::find($command->argument('productCategory'));
             $this->handle($productCategory, $command);

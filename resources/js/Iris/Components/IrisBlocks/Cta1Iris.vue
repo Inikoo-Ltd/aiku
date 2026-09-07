@@ -15,10 +15,9 @@ import { faCube, faLink, faImage } from "@fal"
 import Button from "@iris/Components/IrisButton.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { get, isPlainObject } from 'lodash-es'
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faSpinnerThird } from "@fas"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faCube, faLink, faImage, faSpinnerThird)
+library.add(faCube, faLink, faImage)
 
 const props = defineProps<{
 	fieldValue: FieldValue
@@ -82,13 +81,7 @@ const imageBoxStyle = computed(() => {
 							v-if="isLoading"
 							class="absolute inset-0 z-10 flex items-center justify-center bg-black/35 pointer-events-none"
 						>
-							<FontAwesomeIcon
-								icon="fas fa-spinner-third"
-								spin
-								class="text-3xl text-white"
-								fixed-width
-								aria-hidden="true"
-							/>
+							<LoadingIcon class="text-3xl text-white" />
 						</div>
 					</template>
 				</component>

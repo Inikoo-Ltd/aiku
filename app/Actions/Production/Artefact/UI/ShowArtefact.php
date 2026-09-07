@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\Artefact\UI;
 
+use App\Actions\Production\Artisan\GetArtisanAssignmentProps;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Actions\OrgAction;
@@ -93,6 +94,18 @@ class ShowArtefact extends OrgAction
                         // $this->canDelete ? $this->getDeleteActionIcon($request) : null,
                         [
                             'type'    => 'button',
+                            'style'   => $artefact->rawMaterial ? 'tertiary' : 'secondary',
+                            'icon'    => 'fal fa-blender-phone',
+                            'label'   => $artefact->rawMaterial ? __('Mix') : __('Mark as mix'),
+                            'tooltip' => $artefact->rawMaterial ? __('This artefact is a mix prepared in-house. Click to unmark.') : __('Mark as a mix prepared in-house, it then shows on the Mixes board when needed'),
+                            'route'   => [
+                                'method'     => 'post',
+                                'name'       => 'grp.org.productions.show.crafts.artefacts.mix',
+                                'parameters' => array_merge($request->route()->originalParameters(), ['is_mix' => !$artefact->rawMaterial]),
+                            ],
+                        ],
+                        [
+                            'type'    => 'button',
                         'tooltip'     => __('Edit'),
                         'icon'        => 'fal fa-pencil',
                         'style'       => 'secondary',
@@ -118,6 +131,7 @@ class ShowArtefact extends OrgAction
                     //     ]
                     // ]
                 ],
+                'artisans'                             => GetArtisanAssignmentProps::run($artefact, $this->canEdit),
                 'tabs'                                 => [
                     'current'    => $this->tab,
                     'navigation' => ArtefactTabsEnum::navigation()

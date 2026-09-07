@@ -11,6 +11,7 @@ namespace App\Actions\Production\ArtefactFamily\UI;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
+use App\Actions\Production\Artisan\GetArtisanAssignmentProps;
 use App\Enums\UI\Production\ArtefactFamilyTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Production\ArtefactFamiliesResource;
@@ -62,6 +63,7 @@ class ShowArtefactFamily extends OrgAction
                     ],
                 ],
                 'move_to_family' => IndexArtefacts::make()->getMoveToFamilyProps($this->production, $this->canEdit),
+                'artisans'       => GetArtisanAssignmentProps::run($artefactFamily, $this->canEdit),
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => ArtefactFamilyTabsEnum::navigation()

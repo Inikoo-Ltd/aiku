@@ -1,8 +1,8 @@
 ---
 title: Sledovanie objednávky od košíka po expedíciu
 summary: Pozrite sa na celú cestu, ktorou predajná objednávka prechádza v aiku, od zákazníkovho košíka cez vychystávanie a balenie až po fakturáciu a expedíciu, a kde ju v jednotlivých krokoch skontrolovať.
-date: 2026-09-01
-source_date: 2026-09-01
+date: 2026-09-02
+source_date: 2026-09-02
 tags: orders, orders lifecycle
 category: orders
 ---
@@ -52,6 +52,22 @@ Ak chcete zmeniť adresu na odoslanej objednávke, urobte to priamo na objednáv
 
 Po expedícii objednávky sú jej adresy natrvalo pevné. Ak zákazník potom potrebuje inú adresu na faktúre, opravte ju na faktúre: otvorte faktúru zo záložky objednávky **Invoices** a použite ceruzku vedľa adresy.
 
+## Poznámky k objednávke a čo sa tlačí na prepravnom štítku
+
+Otvorte ktorúkoľvek objednávku a hore uvidíte rad farebných políčok s poznámkami. Každé ide inam, preto záleží, do ktorého píšete. Políčko upravíte dvojklikom.
+
+- **Shipping Label (From Customer)** (štítok pre kuriéra od zákazníka) — text vytlačený na kuriérskom štítku pod adresou. Zmestí sa len prvých 34 znakov, takže sem patrí len to, čo potrebuje vodič: „Ring bell at side door", „Open 9-5 Mon-Fri". Zvyčajne ho vypĺňa zákazník ako *pokyny pre doručenie* vo svojom košíku, ale upraviť ho môže aj personál.
+- **Customer Instructions** (pokyny zákazníka) — čo zákazník napísal pri objednávaní. Len na čítanie.
+- **Public Note** (verejná poznámka) — viditeľná pre zákazníka aj personál.
+- **CRMs Note (Private)** (súkromná poznámka CRM) — len pre personál, na dodacom liste sa nezobrazuje.
+- **Warehouse Note (Private)** (súkromná poznámka pre sklad) — len pre personál, tlačí sa na dodacom liste pre vychystávačov a baličov.
+
+Niektorí zákazníci potrebujú rovnaký text štítku na každej zásielke, typicky svoje otváracie hodiny. Nezadávajte ho nanovo pri každej objednávke. Otvorte kartu zákazníka a vyplňte **Shipping Label (Permanent)** (trvalý štítok) v riadku poznámok hore. Od tej chvíle každý nový košík, ktorý si zákazník otvorí, začína s týmto textom už predvyplneným v pokynoch pre doručenie, takže zákazník vidí presne to, čo sa vytlačí, a môže si to pre danú objednávku zmeniť. Ak text ponechá tak, ako je, presne to sa dostane na štítok. Objednávky, ktoré už boli v košíku predtým, než ste text nastavili, ho prevezmú pri pokladni, pokiaľ do nich nikto poznámku k štítku nezadal ručne.
+
+Zákazníkov vlastný text má vždy prednosť pred trvalou poznámkou. Je to zámer: osoba, ktorá zásielku preberá, najlepšie vie, čo si má vodič v daný deň prečítať.
+
+V tom istom riadku na karte zákazníka je aj **Warehouse Note (Permanent)** (trvalá poznámka pre sklad), ktorá funguje rovnako pre poznámku pre sklad, a **Warehouse Note (Temporary)** (dočasná poznámka pre sklad), ktorá sa použije jednorazovo, len pri najbližšej objednávke.
+
 ## Vyhľadanie objednávky a kontrola jej priebehu
 
 Otvorte obchod a prejdite na **Orders → Orders**, kde uvidíte každú objednávku daného obchodu. Každý riadok zobrazuje stav objednávky ako ikonu, jej referenciu, kedy bola odoslaná alebo expedovaná, zákazníka, stav platby, informácie o doručení a čistú sumu. Zoznam môžete filtrovať podľa stavu a vyhľadávať podľa referencie alebo sledovacieho čísla.
@@ -75,6 +91,8 @@ Otvorte ktorúkoľvek objednávku, aby ste videli jej úplný záznam. Stránka 
 <li><b>Zobraziť, čo čaká na spracovanie:</b> váš obchod → <b>Orders</b> (horné menu) → záložka <b>Backlog</b>.</li>
 <li><b>Zmeniť adresu na odoslanej objednávke:</b> otvorte objednávku → <b>Edit</b> alebo <b>Edit billing address</b> pod blokom adresy, kým nie je expedovaná.</li>
 <li><b>Opraviť adresu na vystavenej faktúre:</b> otvorte objednávku → záložka <b>Invoices</b> → otvorte faktúru → ceruzka vedľa adresy.</li>
+<li><b>Zmeniť, čo sa tlačí na kuriérskom štítku pre jednu objednávku:</b> otvorte objednávku → dvojklik na <b>Shipping Label (From Customer)</b> v riadku poznámok → uložte. Tlačí sa prvých 34 znakov.</li>
+<li><b>Nastaviť trvalú poznámku pre štítok zákazníka:</b> váš obchod → <b>Customers</b> → otvorte zákazníka → <b>Shipping Label (Permanent)</b> v riadku poznámok hore. Predvyplní pokyny pre doručenie v každom novom košíku.</li>
 </ul>
 </aside>
 

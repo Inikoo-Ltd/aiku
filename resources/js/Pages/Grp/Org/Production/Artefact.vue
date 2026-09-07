@@ -14,6 +14,7 @@ import { Tabs as TSTabs } from '@/types/Tabs'
 import TableArtefactRecipe from "@/Components/Tables/Grp/Org/Production/TableArtefactRecipe.vue"
 import TableArtefactCompliance from "@/Components/Tables/Grp/Org/Production/TableArtefactCompliance.vue"
 import ArtefactShowcase from "@/Components/Showcases/Grp/ArtefactShowcase.vue"
+import ArtisanAssignments from "@/Components/Production/ArtisanAssignments.vue"
 
 const props = defineProps<{
     title: string,
@@ -23,6 +24,7 @@ const props = defineProps<{
     manufacture_tasks?:{}
     compliance?: {}
     history?: {}
+    artisans: {}
 
 
 }>()
@@ -49,6 +51,7 @@ const component = computed(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <ArtisanAssignments :data="artisans" />
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />

@@ -2,13 +2,13 @@
 import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes } from '@fal'
-import { faSpinnerThird } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { ref, inject, computed, onMounted, onUnmounted } from "vue"
 import type { BlockProperties } from "@/types/Announcement"
 import { blueprint, defaultData } from "@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1/Blueprint"
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
-library.add(faTimes, faSpinnerThird)
+library.add(faTimes)
 
 type TransitionText = {
     icon?: string
@@ -123,7 +123,7 @@ defineExpose({
                 <FontAwesomeIcon v-if="texts[activeIndex]?.icon && navigatingIndex !== activeIndex" :icon="texts[activeIndex].icon"
                     class="opacity-50 mr-2" />
                 <span v-html="texts[activeIndex]?.text"></span>
-                <FontAwesomeIcon v-if="navigatingIndex === activeIndex" icon="fad fa-spinner-third" class="opacity-70 ml-2 animate-spin" />
+                <LoadingIcon v-if="navigatingIndex === activeIndex" class="opacity-70 ml-2" />
             </div>
 
             <!-- DESKTOP & TABLET : Normal layout -->
@@ -134,7 +134,7 @@ defineExpose({
                         paddingRight: announcementData?.fields?.text_transition_data?.gap + 'px',
                     }">
                     <FontAwesomeIcon v-if="abc.icon && navigatingIndex !== idx" :icon="abc.icon" class="opacity-50" />
-                    <FontAwesomeIcon v-if="navigatingIndex === idx" icon="fad fa-spinner-third" class="opacity-70 my-auto animate-spin" />
+                    <LoadingIcon v-if="navigatingIndex === idx" class="opacity-70 my-auto" />
                     <span v-html="abc.text"></span>
                 </div>
             </template>

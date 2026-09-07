@@ -28,6 +28,7 @@ use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerShoppingDashboard;
 use App\Actions\Procurement\OrgPartner\RemoveMisplacedShoppingListItems;
 use App\Actions\Procurement\OrgPartner\UpdatePartnerLeadTimeEstimate;
+use App\Actions\Procurement\PartnerShoppingListItem\DeleteOpenPartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexPartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
@@ -151,6 +152,7 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
             Route::get('', IndexPartnerShoppingListItems::class)->name('index');
             Route::post('suggest', SuggestPartnerShoppingList::class)->name('suggest');
             Route::post('bulk', StorePartnerShoppingListItems::class)->name('bulk_store');
+            Route::delete('open', DeleteOpenPartnerShoppingListItems::class)->name('destroy_open');
             Route::post('{orgStock}', StorePartnerShoppingListItem::class)->name('store');
             Route::patch('{partnerShoppingListItem}', UpdatePartnerShoppingListItem::class)->name('update');
             Route::delete('{partnerShoppingListItem}', DeletePartnerShoppingListItem::class)->name('destroy');

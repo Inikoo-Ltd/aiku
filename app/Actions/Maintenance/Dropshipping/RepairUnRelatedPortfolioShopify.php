@@ -16,6 +16,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairUnRelatedPortfolioShopify
 {
@@ -44,6 +45,7 @@ class RepairUnRelatedPortfolioShopify
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $customerSalesChannelSlug = $command->argument('customerSalesChannel');
 
         if (!blank($customerSalesChannelSlug)) {

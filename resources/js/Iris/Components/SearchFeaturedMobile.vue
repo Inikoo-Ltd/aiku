@@ -9,12 +9,8 @@ import { Image as ImgTS } from '@/types/Image'
 import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
 import MemberPriceLabel from '@/Iris/Components/Offer/MemberPriceLabel.vue'
 import { getBestOffer } from '@/Composables/useOffers'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faSpinnerThird } from '@fas'
-import { library } from '@fortawesome/fontawesome-svg-core'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import LoadingOverlay2 from '@/Components/Utils/LoadingOverlay2.vue'
-
-library.add(faSpinnerThird)
 
 // Shown while the search field is still empty: the items the shop merchandises, framed as a
 // centred card so nobody mistakes them for the results of a query they have not typed yet
@@ -35,6 +31,7 @@ interface FeaturedProduct {
     discounted_price_per_unit?: number | null
     discounted_percentage?: string | null
     product_offers_data?: any
+    is_golden_product?: boolean
     stock?: number | null
     units?: number | string | null
     unit?: string | null
@@ -82,6 +79,7 @@ const isIntervalOffer = (product: FeaturedProduct): boolean => getOffer(product)
 // The member price is already earned once the family has been ordered past the offer trigger
 const hasMemberPrice = (product: FeaturedProduct): boolean => {
     if (isGoldRewardMember.value) return true
+    if (product.is_golden_product) return true
 
     const trigger = getOffer(product)?.category_qty_trigger
     if (trigger == null || product.family_id == null) return false
@@ -197,6 +195,7 @@ const isOuter = (product: FeaturedProduct): boolean => (Number(product.units) ||
                                             v-if="product.discounted_price && isIntervalOffer(product)"
                                             :offer="getOffer(product)"
                                             :active="hasMemberPrice(product)"
+                                            :isGoldenProduct="product.is_golden_product"
                                         />
                                     </div>
                                 </div>
@@ -215,7 +214,7 @@ const isOuter = (product: FeaturedProduct): boolean => (Number(product.units) ||
                         @success="() => model = false"
                     >
                         <template #default="{ isLoading: isVisiting }">
-                            <FontAwesomeIcon v-if="isVisiting" :icon="faSpinnerThird" spin class="mr-1" fixed-width aria-hidden="true" />
+                            <LoadingIcon v-if="isVisiting" class="mr-1" />
                             {{ chip.name }}
                         </template>
                     </LinkIris>

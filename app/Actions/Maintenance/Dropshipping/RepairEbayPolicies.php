@@ -16,6 +16,7 @@ use App\Models\Dropshipping\Platform;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairEbayPolicies
 {
@@ -48,6 +49,7 @@ class RepairEbayPolicies
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $platform = Platform::where('type', PlatformTypeEnum::EBAY)->first();
         if ($command->argument('customerSalesChannel')) {
             $customerSalesChannels = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->get();

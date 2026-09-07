@@ -18,6 +18,7 @@ use App\Models\SysAdmin\Role;
 use App\Models\SysAdmin\User;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SyncRolesFromJobPositions
@@ -146,7 +147,7 @@ class SyncRolesFromJobPositions
         $jobPosition->refresh();
         foreach ($jobPosition->roles as $role) {
             /** @noinspection PhpUndefinedFieldInspection */
-            if (in_array($role->scope_id, $jobPosition->pivot->scopes[$role->scope_type])) {
+            if (in_array($role->scope_id, Arr::get($jobPosition->pivot->scopes, $role->scope_type, []))) {
                 $roles[] = $role->id;
             }
         }

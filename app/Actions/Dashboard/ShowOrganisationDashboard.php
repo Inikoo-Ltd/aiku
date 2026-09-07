@@ -24,6 +24,7 @@ use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Enums\UI\Organisation\OrgDashboardIntervalTabsEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -105,21 +106,26 @@ class ShowOrganisationDashboard extends OrgAction
             [
                 'title'         => __('Dashboard').' '.$organisation->name,
                 'breadcrumbs'   => $this->getBreadcrumbs($request->route()->originalParameters(), __('Dashboard')),
-                'dashboard'     => $dashboard,
-                'cleanHandover' => $this->getCleanHandover($organisation),
+                'dashboard'     => $organisation->type === OrganisationTypeEnum::AGENT ? ['super_blocks' => []] : $dashboard,
+                'cleanHandover' => $this->getCleanHandover($organisation, $request->user()),
             ]
         );
     }
 
-    private function getCleanHandover(Organisation $organisation): ?array
+    private function getCleanHandover(Organisation $organisation, User $user): ?array
     {
         if ($organisation->type !== OrganisationTypeEnum::AGENT) {
             return null;
         }
 
         $agent = Agent::where('organisation_id', $organisation->id)->first();
+        if (!$agent) {
+            return null;
+        }
 
-        return $agent ? GetAgentCleanHandoverScore::run($agent) : null;
+        $score = GetAgentCleanHandoverScore::run($agent);
+
+        return $user->hasGroupAccess() ? $score : Arr::except($score, 'hygiene');
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): Response

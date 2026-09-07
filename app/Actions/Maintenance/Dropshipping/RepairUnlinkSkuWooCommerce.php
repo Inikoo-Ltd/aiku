@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairUnlinkSkuWooCommerce
 {
@@ -35,6 +36,7 @@ class RepairUnlinkSkuWooCommerce
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $customerSalesChannelSlug = $command->argument('customerSalesChannel');
         $customerSalesChannel = CustomerSalesChannel::where('slug', $customerSalesChannelSlug)->first();
 

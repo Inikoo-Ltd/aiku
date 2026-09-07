@@ -110,6 +110,7 @@ enum RolesEnum: string
     case MANUFACTURING_ORCHESTRATOR = 'production-orchestrator';
     case MANUFACTURING_LINE_MANAGER = 'production-line-manager';
     case MANUFACTURING_OPERATOR = 'production-operator';
+    case MANUFACTURING_PREPARER = 'production-preparer';
     case MANUFACTURING_PRODUCT_DEVELOPER = 'production-product-developer';
 
 
@@ -168,6 +169,7 @@ enum RolesEnum: string
             RolesEnum::MANUFACTURING_ORCHESTRATOR => __('Production orchestrator'),
             RolesEnum::MANUFACTURING_LINE_MANAGER => __('Production line manager'),
             RolesEnum::MANUFACTURING_OPERATOR => __('Production operator'),
+            RolesEnum::MANUFACTURING_PREPARER => __('Production mix preparer'),
             RolesEnum::MANUFACTURING_PRODUCT_DEVELOPER => __('Production product developer'),
             RolesEnum::GOODS_IN_SUPERVISOR => __('Goods in supervisor'),
             RolesEnum::GOODS_IN_CLERK => __('Goods in clerk'),
@@ -486,6 +488,10 @@ enum RolesEnum: string
             RolesEnum::MANUFACTURING_OPERATOR => [
                 ProductionPermissionsEnum::PRODUCTION_OPERATIONS_VIEW,
             ],
+            RolesEnum::MANUFACTURING_PREPARER => [
+                ProductionPermissionsEnum::PRODUCTION_OPERATIONS_VIEW,
+                ProductionPermissionsEnum::PRODUCTION_OPERATIONS_PREPARE,
+            ],
             RolesEnum::SHOP_PPC => [
                 ShopPermissionsEnum::PRODUCTS_VIEW,
                 ShopPermissionsEnum::CRM_VIEW,
@@ -549,6 +555,7 @@ enum RolesEnum: string
             RolesEnum::MANUFACTURING_ORCHESTRATOR,
             RolesEnum::MANUFACTURING_LINE_MANAGER,
             RolesEnum::MANUFACTURING_OPERATOR,
+            RolesEnum::MANUFACTURING_PREPARER,
             RolesEnum::MANUFACTURING_PRODUCT_DEVELOPER,
 
 
@@ -571,6 +578,7 @@ enum RolesEnum: string
             RolesEnum::MANUFACTURING_ORCHESTRATOR,
             RolesEnum::MANUFACTURING_LINE_MANAGER,
             RolesEnum::MANUFACTURING_OPERATOR,
+            RolesEnum::MANUFACTURING_PREPARER,
             RolesEnum::MANUFACTURING_PRODUCT_DEVELOPER,
             RolesEnum::SHOP_PPC
             => [OrganisationTypeEnum::SHOP],

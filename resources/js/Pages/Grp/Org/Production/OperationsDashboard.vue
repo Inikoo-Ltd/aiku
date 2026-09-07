@@ -64,6 +64,12 @@ const props = defineProps<{
             quantity_made: number
             quantity_required: number
         }[]
+        artisans: {
+            id: number
+            name: string
+            queued: number
+            working_now: boolean
+        }[]
         today_sessions: {
             id: number
             worker: string
@@ -177,6 +183,19 @@ function elapsedSince(startedAt: string) {
                     <div class="text-xs text-gray-500 tabular-nums">{{ session.quantity_made }} / {{ session.quantity_required }}</div>
                 </div>
             </div>
+
+            <template v-if="command_control.artisans.length">
+                <h3 class="text-sm font-semibold text-gray-500 mt-6 mb-2">{{ trans('Artisans') }}</h3>
+                <div v-for="artisan in command_control.artisans" :key="artisan.id"
+                    class="mb-2 rounded-lg border px-4 py-2 flex items-center justify-between gap-3 text-sm"
+                    :class="artisan.queued ? 'border-gray-200 bg-white' : 'border-amber-300 bg-amber-50'">
+                    <span class="font-medium truncate">{{ artisan.name }}</span>
+                    <span class="shrink-0 tabular-nums" :class="artisan.queued ? 'text-gray-600' : 'text-amber-700'">
+                        <span v-if="artisan.working_now">{{ trans('working') }} · </span>
+                        {{ artisan.queued ? `${artisan.queued} ${trans('queued')}` : trans('nothing queued') }}
+                    </span>
+                </div>
+            </template>
 
             <template v-if="command_control.today_sessions.length">
                 <h3 class="text-sm font-semibold text-gray-500 mt-6 mb-2">{{ trans('Finished today') }}</h3>

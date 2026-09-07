@@ -13,6 +13,7 @@ use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairOrgStockMovementCostFromStockDeliveryItems
 {
@@ -36,6 +37,7 @@ class RepairOrgStockMovementCostFromStockDeliveryItems
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $dryRun = $command->option('dry-run');
 
         $query = "

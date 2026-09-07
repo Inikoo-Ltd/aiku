@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 /*
  *  Author: Raul Perusquia <raul@inikoo.com>
  *  Created: Fri, 16 Sept 2022 00:24:09 Malaysia Time, Kuala Lumpur, Malaysia

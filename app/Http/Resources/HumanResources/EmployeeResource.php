@@ -12,6 +12,7 @@ namespace App\Http\Resources\HumanResources;
 use App\Models\HumanResources\Employee;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 use JsonSerializable;
 
 class EmployeeResource extends JsonResource
@@ -37,6 +38,11 @@ class EmployeeResource extends JsonResource
             'is_on_probation' => $employee->isOnProbation(),
             'length_of_service' => $employee->getLengthOfService(),
             'emergency_contact' => $employee->emergency_contact,
+            'email' => $employee->work_email ?: $employee->email,
+            'phone' => $employee->phone,
+            'job_title' => $employee->job_title,
+            'employment_type' => $employee->employment_type?->value,
+            'avatar' => $employee->image_id ? Arr::get($employee->imageSources(112, 112), 'original') : null,
 
             'created_at' => $employee->created_at,
             'updated_at' => $employee->updated_at,

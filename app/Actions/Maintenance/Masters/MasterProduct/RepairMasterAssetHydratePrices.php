@@ -11,6 +11,7 @@ use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMasterAssetHydratePrices
 {
@@ -148,6 +149,7 @@ class RepairMasterAssetHydratePrices
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $masterShop = MasterShop::where('slug', $command->argument('master_shop'))->firstOrFail();
         $dryRun     = (bool) $command->option('dry-run');
 

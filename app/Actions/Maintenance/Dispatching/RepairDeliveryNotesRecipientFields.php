@@ -14,6 +14,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairDeliveryNotesRecipientFields
 {
@@ -42,6 +43,7 @@ class RepairDeliveryNotesRecipientFields
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $count = DeliveryNote::whereNull('source_id')->count();
 
         $bar = $command->getOutput()->createProgressBar($count);

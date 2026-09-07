@@ -92,6 +92,7 @@ class DropshippingPortfoliosResource extends JsonResource
         $ebayUploadRoute    = [];
         $amazonUploadRoute  = [];
         $magentoUploadRoute = [];
+        $wixUploadRoute     = [];
 
 
         if ($this->platform_type != PlatformTypeEnum::MANUAL->value && $this->platform_user_id) {
@@ -147,6 +148,18 @@ class DropshippingPortfoliosResource extends JsonResource
                 ];
             }
 
+            if ($this->platform_type == PlatformTypeEnum::WIX->value) {
+                $wixUploadRoute = [
+                    'platform_upload_portfolio' => [
+                        'method'     => 'post',
+                        'name'       => 'retina.models.portfolio.store_new_wix_product',
+                        'parameters' => [
+                            'portfolio' => $this->id
+                        ]
+                    ],
+                ];
+            }
+
             if ($this->platform_type == PlatformTypeEnum::MAGENTO->value) {
                 $magentoUploadRoute = [
                     'platform_upload_portfolio' => [
@@ -197,6 +210,7 @@ class DropshippingPortfoliosResource extends JsonResource
             'platform_product_data' => match ($this->platform_type) {
                 PlatformTypeEnum::WOOCOMMERCE->value => Arr::get($this->data, 'woo_product', []),
                 PlatformTypeEnum::EBAY->value => Arr::get($this->data, 'ebay_product', []),
+                PlatformTypeEnum::WIX->value => Arr::get($this->data, 'wix_product', []),
                 default => [],
             },
 
@@ -242,7 +256,8 @@ class DropshippingPortfoliosResource extends JsonResource
             ...$wooUploadRoute,
             ...$ebayUploadRoute,
             ...$amazonUploadRoute,
-            ...$magentoUploadRoute
+            ...$magentoUploadRoute,
+            ...$wixUploadRoute
         ];
     }
 }

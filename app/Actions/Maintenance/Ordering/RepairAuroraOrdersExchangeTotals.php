@@ -14,6 +14,7 @@ use App\Actions\Traits\WithFixedAddressActions;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairAuroraOrdersExchangeTotals
 {
@@ -44,6 +45,7 @@ class RepairAuroraOrdersExchangeTotals
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->argument('order')) {
             $order = Order::find($command->argument('order'));
             $this->handle($order);

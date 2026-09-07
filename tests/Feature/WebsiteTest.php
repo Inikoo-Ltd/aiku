@@ -47,6 +47,9 @@ use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
+use App\Actions\Web\Webpage\GetWebpagePerformance;
+use App\Actions\Web\Webpage\PublishWebpage;
+use App\Enums\Helpers\Audit\AuditEventEnum;
 use App\Actions\Web\Website\SaveWebsiteRobotsTxt;
 use App\Actions\Web\Website\SaveWebsiteSitemap;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
@@ -2113,3 +2116,18 @@ describe('deployment crawling', function () {
             ->and($restartSsr)->toBeLessThan($flushVarnish);
     });
 });
+
+test('publish webpage records history and performance events', function (Webpage $webpage) {
+    $webpage = PublishWebpage::make()->action($webpage, ['comment' => 'Added FAQ']);
+
+    $audit = $webpage->audits()->where('event', AuditEventEnum::PUBLISHED->value)->latest('id')->first();
+    expect($audit)->not->toBeNull()
+        ->and($audit->new_values)->toBe(['content' => 'Added FAQ']);
+
+    $performance = GetWebpagePerformance::run($webpage, []);
+    expect($performance['events'])->toHaveCount(1)
+        ->and($performance['events'][0]['type'])->toBe('publish')
+        ->and($performance['events'][0]['label'])->toBe('Added FAQ')
+        ->and($performance['events'][0]['date'])->toBe(now()->toDateString())
+        ->and($performance['sales'])->toBe([]);
+})->depends('create webpage');

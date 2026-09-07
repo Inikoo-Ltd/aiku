@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Web\WebBlockType;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class DeleteWebBlockType
 {
@@ -41,6 +42,7 @@ class DeleteWebBlockType
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->argument('block_name')) {
             $this->handle($command->argument('block_name'));
         }

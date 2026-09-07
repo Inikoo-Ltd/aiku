@@ -18,6 +18,7 @@ use App\Models\CRM\Customer;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairCustomersTaxNumbers
 {
@@ -58,6 +59,7 @@ class RepairCustomersTaxNumbers
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
 
 
 

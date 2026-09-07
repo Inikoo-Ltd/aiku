@@ -12,6 +12,7 @@ use App\Actions\Billables\ShippingZone\StoreShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class CreateShippingZones
 {
@@ -34,6 +35,7 @@ class CreateShippingZones
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $shippingZoneSchema = ShippingZoneSchema::where('slug', $command->argument('shippingZoneSchema'))->first();
 
         $data['bg'] = [

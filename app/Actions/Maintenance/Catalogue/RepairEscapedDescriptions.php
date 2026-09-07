@@ -23,6 +23,7 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairEscapedDescriptions
 {
@@ -256,6 +257,7 @@ class RepairEscapedDescriptions
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $apply        = (bool)$command->option('apply');
         $retranslate  = (bool)$command->option('retranslate');
         $this->driver = $command->option('driver') ?: null;

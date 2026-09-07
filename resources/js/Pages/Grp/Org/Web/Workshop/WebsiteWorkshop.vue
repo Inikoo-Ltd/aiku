@@ -7,13 +7,13 @@ import { useTabChange } from '@/Composables/tab-change'
 import {
   faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube,
   faPalette, faCheeseburger, faDraftingCompass, faWindow,
-  faPageBreak, faSpinnerThird
+  faPageBreak
 } from '@fal'
 
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 import WorkshopTab from '@/Components/CMS/Website/Workshop/WorkshopTab.vue'
 
@@ -21,7 +21,7 @@ import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 
-library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPageBreak, faSpinnerThird)
+library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPageBreak)
 
 const TAB_COMPONENT_MAP = {
   website_layout: WorkshopTab,
@@ -152,7 +152,7 @@ onUnmounted(() => stopSocketListener())
     <template #button-publish="{ action }">
       <Button v-if="currentTab !== 'history'" v-bind="action" @click="onPublish">
         <template #loading v-if="loadingPublish">
-          <FontAwesomeIcon :icon="faSpinnerThird" class="animate-spin" fixed-width aria-hidden="true" /> {{ progress }}%
+          <LoadingIcon /> {{ progress }}%
         </template>
       </Button>
       <div v-else></div>

@@ -21,6 +21,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -139,11 +140,14 @@ class IndexIrisCatalogue extends IrisAction
         });
 
         $queryBuilder->when($parent === 'collection', function ($query) use ($parentKey) {
-            $query->join('collection_has_models', function ($join) use ($parentKey) {
-                $join->on('products.id', '=', 'collection_has_models.model_id')
-                    ->where('collection_has_models.model_type', class_basename(Product::class))
-                    ->where('collection_has_models.collection_id', $parentKey);
-            });
+            $members = DB::table('collection_has_models')
+                ->join('products as member', 'member.id', 'collection_has_models.model_id')
+                ->leftJoin('webpages as member_page', 'member_page.id', 'member.webpage_id')
+                ->where('collection_has_models.model_type', class_basename(Product::class))
+                ->where('collection_has_models.collection_id', $parentKey)
+                ->selectRaw('distinct coalesce(member_page.model_id, member.id) as product_id');
+
+            $query->joinSub($members, 'collection_members', 'collection_members.product_id', 'products.id');
         });
 
         return $queryBuilder
@@ -240,7 +244,7 @@ class IndexIrisCatalogue extends IrisAction
         return $queryBuilder
             ->allowedFilters([$globalSearch])
             ->allowedSorts(['code', 'name', ...$additionalSortableKeys])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->appends(Arr::except(request()->query(), ['domain', 'website']));
     }
 

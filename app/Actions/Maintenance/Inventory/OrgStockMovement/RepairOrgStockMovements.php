@@ -13,6 +13,7 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairOrgStockMovements implements ShouldBeUnique
 {
@@ -51,6 +52,7 @@ class RepairOrgStockMovements implements ShouldBeUnique
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         if ($command->argument('orgStock')) {
             $orgStock = OrgStock::where('slug', $command->argument('orgStock'))->firstOrFail();
             $this->handle($orgStock, $command);

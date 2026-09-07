@@ -29,6 +29,8 @@ enum PaymentAccountTypeEnum: string
 
     public const MANUALLY_SETTLED = [self::PASTPAY, self::CASH_ON_DELIVERY, self::BANK];
 
+    public const SETTLED_AT_INVOICING = [self::PASTPAY, self::CASH_ON_DELIVERY];
+
     public function isManuallySettled(): bool
     {
         return in_array($this, self::MANUALLY_SETTLED, true);

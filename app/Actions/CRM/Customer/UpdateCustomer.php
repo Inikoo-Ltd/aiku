@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateIsStaff;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\Dropshipping\Platform\RedoPlatformTimeSeries;
@@ -19,6 +20,7 @@ use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Helpers\TaxNumber\DeleteTaxNumber;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
+use App\Actions\Helpers\TaxNumber\Traits\WithValidateTaxNumberCustomAudit;
 use App\Actions\Helpers\TaxNumber\UpdateTaxNumber;
 use App\Actions\Ordering\Order\CalculateOrderDiscounts;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
@@ -40,10 +42,13 @@ use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Helpers\Audit\AuditEventEnum;
+use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
+use App\Enums\Helpers\TaxNumber\TaxNumberValidationTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
+use App\Models\SysAdmin\User;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
@@ -63,8 +68,10 @@ class UpdateCustomer extends OrgAction
     use WithProcessContactNameComponents;
     use WithCRMEditAuthorisation;
     use WithPrepareTaxNumberValidation;
+    use WithValidateTaxNumberCustomAudit;
 
     private Customer $customer;
+    private ?User $user = null;
 
     public function handle(Customer $customer, array $modelData): Customer
     {
@@ -140,37 +147,58 @@ class UpdateCustomer extends OrgAction
             }
         }
 
-        if (Arr::has($modelData, 'tax_number')) {
-            if ($this->strict) {
-                $taxNumberData = [];
-                data_set($taxNumberData, 'number', Arr::get($modelData, 'tax_number.number'));
-                data_set($taxNumberData, 'country_id', $customer->address->country_id);
-                Arr::forget($modelData, 'tax_number');
-            } else {
-                $taxNumberData = Arr::pull($modelData, 'tax_number');
+        if (Arr::hasAny($modelData, ['tax_number', 'mark_tax_number_valid'])) {
+            if (Arr::has($modelData, 'tax_number')) {
+                if ($this->strict) {
+                    $taxNumberData = [];
+                    data_set($taxNumberData, 'number', Arr::get($modelData, 'tax_number.number'));
+                    data_set($taxNumberData, 'country_id', $customer->address->country_id);
+                    Arr::forget($modelData, 'tax_number');
+                } else {
+                    $taxNumberData = Arr::pull($modelData, 'tax_number');
+                }
+
+                if (Arr::get($taxNumberData, 'number')) {
+                    if (!$customer->taxNumber) {
+                        if (!Arr::get($taxNumberData, 'data.name')) {
+                            Arr::forget($taxNumberData, 'data.name');
+                        }
+
+                        if (!Arr::get($taxNumberData, 'data.address')) {
+                            Arr::forget($taxNumberData, 'data.address');
+                        }
+
+                        StoreTaxNumber::run(
+                            owner: $customer,
+                            modelData: $taxNumberData,
+                            strict: $this->strict
+                        );
+                    } else {
+                        UpdateTaxNumber::run($customer->taxNumber, $taxNumberData, $this->strict);
+                    }
+                } elseif ($customer->taxNumber) {
+                    DeleteTaxNumber::run($customer->taxNumber);
+                }
             }
 
+            $markAsValid = Arr::pull($modelData, 'mark_tax_number_valid', false);
 
-            if (Arr::get($taxNumberData, 'number')) {
-                if (!$customer->taxNumber) {
-                    if (!Arr::get($taxNumberData, 'data.name')) {
-                        Arr::forget($taxNumberData, 'data.name');
-                    }
+            if ($markAsValid && $customer->taxNumber) {
+                $taxNumber = $customer->taxNumber;
+                $oldTaxNumber = $taxNumber->replicate();
 
-                    if (!Arr::get($taxNumberData, 'data.address')) {
-                        Arr::forget($taxNumberData, 'data.address');
-                    }
+                $updatedData = [
+                    'status'                    => TaxNumberStatusEnum::VALID,
+                    'valid'                     => true,
+                ];
 
-                    StoreTaxNumber::run(
-                        owner: $customer,
-                        modelData: $taxNumberData,
-                        strict: $this->strict
-                    );
-                } else {
-                    UpdateTaxNumber::run($customer->taxNumber, $taxNumberData, $this->strict);
+                if ($this->user) {
+                    data_set($updatedData, 'manual_validation_user_id', $this->user?->id);
                 }
-            } elseif ($customer->taxNumber) {
-                DeleteTaxNumber::run($customer->taxNumber);
+
+                $taxNumber->update($updatedData);
+
+                $this->deployTaxValidationCustomAudit($oldTaxNumber, $taxNumber, TaxNumberValidationTypeEnum::MANUAL);
             }
 
             // Recalculate customer orders VAT Charges | INI-875
@@ -259,7 +287,7 @@ class UpdateCustomer extends OrgAction
         }
 
         if (Arr::hasAny($changes, ['is_re'])) {
-            foreach ($customer->orders()->where('state', OrderStateEnum::CREATING)->whereNull('orders.source_id')->get() as $order) {
+            foreach ($customer->orders()->where('state', OrderStateEnum::CREATING)->when(!$customer->shop->is_aiku, fn ($query) => $query->whereNull('orders.source_id'))->get() as $order) {
                 $order->update(['is_re' => $customer->is_re]);
                 ResetOrderTaxCategory::run($order);
             }
@@ -269,7 +297,11 @@ class UpdateCustomer extends OrgAction
             MatchCustomerProspects::run($customer);
         }
 
-        if (Arr::hasAny($changes, ['internal_notes', 'warehouse_internal_notes', 'warehouse_temporary_notes'])) {
+        if (Arr::hasAny($changes, ['email', 'as_employee_id', 'as_organisation_id'])) {
+            CustomerHydrateIsStaff::run($customer);
+        }
+
+        if (Arr::hasAny($changes, ['internal_notes', 'warehouse_internal_notes', 'warehouse_temporary_notes', 'shipping_notes'])) {
             $customer->auditEvent    = AuditEventEnum::CUSTOMER_NOTE->value;
             $customer->isCustomEvent = true;
 
@@ -345,6 +377,7 @@ class UpdateCustomer extends OrgAction
             'internal_notes'                                        => ['sometimes', 'nullable', 'string'],
             'warehouse_internal_notes'                              => ['sometimes', 'nullable', 'string'],
             'warehouse_public_notes'                                => ['sometimes', 'nullable', 'string'],
+            'shipping_notes'                                        => ['sometimes', 'nullable', 'string', 'max:4000'],
             'warehouse_temporary_notes'                             => ['sometimes', 'nullable', 'string'],
             'tax_number'                                            => ['sometimes', 'nullable', 'array'],
             'tags'                                                  => ['sometimes', 'array'],
@@ -364,6 +397,12 @@ class UpdateCustomer extends OrgAction
             'gr_extended_until'                                     => ['sometimes', 'nullable', 'date'],
             'fiscal_name'                                           => ['sometimes', 'nullable', 'string', 'max:255'],
             'is_vip'                                                => ['sometimes', 'boolean'],
+            'as_employee_id'                                        => [
+                'sometimes',
+                'nullable',
+                Rule::exists('employees', 'id')->where('organisation_id', $this->organisation->id),
+            ],
+            'mark_tax_number_valid'                                 => ['sometimes', 'boolean', Rule::prohibitedIf(fn () => empty($this->customer?->taxNumber))],
         ];
 
         if ($this?->asAction) {
@@ -373,7 +412,6 @@ class UpdateCustomer extends OrgAction
 
         if (!$this->strict) {
             $rules['as_organisation_id'] = ['sometimes', 'nullable', 'integer'];
-            $rules['as_employee_id']     = ['sometimes', 'nullable', 'integer'];
             $rules['registered_at']      = ['sometimes', 'nullable', 'date'];
             $rules['reference']          = ['sometimes', 'string', 'max:255'];
 
@@ -404,10 +442,15 @@ class UpdateCustomer extends OrgAction
 
     public function asController(Customer $customer, ActionRequest $request): Customer
     {
+        $this->user = $request->user();
         $this->customer = $customer;
         $this->initialisationFromShop($customer->shop, $request);
 
-        return $this->handle($customer, $this->validatedData);
+        $modelData = $customer->shop->type === ShopTypeEnum::EXTERNAL
+            ? Arr::only($this->validatedData, ['tax_number'])
+            : $this->validatedData;
+
+        return $this->handle($customer, $modelData);
     }
 
     public function action(Customer $customer, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Customer

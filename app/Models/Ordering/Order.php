@@ -443,7 +443,7 @@ class Order extends Model implements HasMedia, Auditable
 
     public function payments(): MorphToMany
     {
-        return $this->morphToMany(Payment::class, 'model', 'model_has_payments')->withTimestamps()->withPivot(['amount', 'share']);
+        return $this->morphToMany(Payment::class, 'model', 'model_has_payments')->withTimestamps();
     }
 
     public function invoices(): HasMany

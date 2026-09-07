@@ -14,6 +14,8 @@ use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\PartnerShoppingListItem;
+use App\Models\SysAdmin\Organisation;
+use App\Models\Procurement\OrgPartner;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -54,10 +56,10 @@ class UpdatePartnerShoppingListItem extends OrgAction
         ];
     }
 
-    public function asController(PartnerShoppingListItem $partnerShoppingListItem, ActionRequest $request): PartnerShoppingListItem
+    public function asController(Organisation $organisation, OrgPartner $orgPartner, PartnerShoppingListItem $partnerShoppingListItem, ActionRequest $request): PartnerShoppingListItem
     {
         $this->partnerShoppingListItem = $partnerShoppingListItem;
-        $this->initialisation($partnerShoppingListItem->organisation, $request);
+        $this->initialisation($organisation, $request);
 
         return $this->handle($partnerShoppingListItem, $this->validatedData);
     }

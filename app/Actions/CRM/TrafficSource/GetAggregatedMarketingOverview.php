@@ -37,7 +37,7 @@ class GetAggregatedMarketingOverview
      * campaign table would be a list of other people's campaigns; the children table links down to
      * each organisation instead, and the drill-down continues on that dashboard.
      *
-     * @return array{from: string|null, to: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, unsubscribed: int, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, registrations_route: array{name: string, parameters: array<string, string>}, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, baseline: array{registrations: float, orders: float, revenue: float}, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, registrations_total: int, orders: float, orders_total: int, pending: float, revenue_total: float, top_channel: string|null, route: array{name: string, parameters: array<int, string>}}>}
+     * @return array{from: string|null, to: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, unsubscribed: int, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, registrations_route: array{name: string, parameters: array<string, string>}, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, baseline: array{registrations: float, orders: float, revenue: float}, untraced: array{visits: int, revenue: float, registrations: float, orders: float}, out_of_scope: array<int, array{name: string, revenue: float, orders: float}>, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, registrations_total: int, orders: float, orders_total: int, pending: float, revenue_total: float, top_channel: string|null, route: array{name: string, parameters: array<int, string>}}>}
      */
     public function handle(Organisation|Group $parent, ?Carbon $from = null, ?Carbon $to = null): array
     {
@@ -110,6 +110,7 @@ class GetAggregatedMarketingOverview
                and no touches yet is exactly the one worth seeing. */
             array_keys(array_filter($emailCostBy)),
         )))
+            ->reject(fn (string $type) => $type === TrafficSourcesTypeEnum::DIRECT->value)
             ->map(fn (string $type) => [
                 'name'          => TrafficSourcesTypeEnum::labels()[$type] ?? $type,
                 'type'          => $type,
@@ -162,6 +163,10 @@ class GetAggregatedMarketingOverview
         $totalPending       = round(array_sum(array_column($channels, 'pending')), 2);
 
         $baselineByShop     = $this->baselineByShop($shops, $from, $to, $revenueColumn);
+        $baseline           = $this->baseline($baselineByShop);
+        $outOfScope         = $this->outOfScopeSalesChannels($shops->pluck('id')->all(), $from, $to, $revenueColumn);
+        $outOfScopeRevenue  = round(array_sum(array_column($outOfScope, 'revenue')), 2);
+        $outOfScopeOrders   = array_sum(array_column($outOfScope, 'orders'));
 
         return [
             'from'          => $from?->toDateString(),
@@ -194,8 +199,21 @@ class GetAggregatedMarketingOverview
                every mailshot in the period earned us nobody. The remainder is the trade that arrives
                whether we advertise or not. */
             'attribution_started_at' => GetAttributionStartedAt::run()?->toIso8601String(),
-            'baseline'      => $this->baseline($baselineByShop),
+            'baseline'      => $baseline,
             'channels'      => $channels,
+            /* The trade no channel can claim: typed, bookmarked, or arrived from somewhere we could
+               not name. Its visits are counted directly; its money is what is left of the baseline
+               once every channel has taken its share. Not a channel, so it never enters the channel
+               totals or a ROAS - nobody paid for it. */
+            'untraced'      => [
+                'visits'        => (int) ($visits[TrafficSourcesTypeEnum::DIRECT->value] ?? 0),
+                'visits_since'  => $this->directVisitsSince($shops->pluck('id')->all()),
+                'revenue'       => round(max(0, $baseline['revenue'] - $totalRevenue - $outOfScopeRevenue), 2),
+                'registrations' => round(max(0, $baseline['registrations'] - $totalRegistrations), 2),
+                'orders'        => round(max(0, $baseline['orders'] - array_sum(array_column($channels, 'orders')) - $outOfScopeOrders), 2),
+            ],
+            'out_of_scope'  => $outOfScope,
+            'before_tracking' => $this->directBeforeTracking($shops->pluck('id')->all(), $from, $to, $revenueColumn, $window),
             'referrers'     => $this->referrers($shops, $from, $to, $revenueColumn, $window ?? 0),
             'children'      => $this->children($parent, $shops, $attributed, $baselineByShop),
         ];
@@ -300,8 +318,8 @@ class GetAggregatedMarketingOverview
                 ->whereIn('shop_id', $shopIds)
                 ->whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
                 ->whereNull('deleted_at')
-                ->when($from, fn ($query) => $query->where('date', '>=', $from))
-                ->when($to, fn ($query) => $query->where('date', '<=', $to))
+                ->when($from, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' >= ?', [$from]))
+                ->when($to, fn ($query) => $query->whereRaw(self::ORDER_PLACED_AT.' <= ?', [$to]))
                 ->groupBy('shop_id')
                 ->select('shop_id', DB::raw('COUNT(*) as total'))
                 ->pluck('total', 'shop_id'),
@@ -356,7 +374,7 @@ class GetAggregatedMarketingOverview
      *
      * @param Collection<int, Shop> $shops
      *
-     * @return array<int, array{host: string, kind: string, visitors: float, revenue: float}>
+     * @return array<int, array{host: string, kind: string, visitors: float, visits: int, revenue: float}>
      */
     private function referrers(Collection $shops, ?Carbon $from, ?Carbon $to, string $revenueColumn, int $window, int $limit = 10): array
     {
@@ -380,6 +398,8 @@ class GetAggregatedMarketingOverview
         if ($campaigns->isEmpty()) {
             return [];
         }
+
+        $visits = $this->visitsByHost($shops->pluck('id')->all(), $from, $to);
 
         $visitors = DB::table('model_has_traffic_sources')
             ->where('model_type', 'Customer')
@@ -405,12 +425,15 @@ class GetAggregatedMarketingOverview
 
         /* Every shop carries its own campaign row for the same host, so the rows are folded by host:
            this list is about which site sends the group visitors, not which shop they landed on. */
+        $sitesShown = 0;
+
         return $campaigns
             ->map(fn ($campaign) => [
                 'host'      => $campaign->name,
                 'reference' => $campaign->reference,
                 'kind'      => TrafficSourcesTypeEnum::referrerKind($kindBySource[$campaign->traffic_source_id] ?? ''),
                 'visitors'  => (float) ($visitors[$campaign->id] ?? 0),
+                'visits'    => (int) ($visits[($kindBySource[$campaign->traffic_source_id] ?? '').'|'.$campaign->reference] ?? 0),
                 'revenue'   => (float) ($revenue[$campaign->id] ?? 0),
             ])
             ->groupBy(fn (array $referrer) => $referrer['reference'].'|'.$referrer['kind'])
@@ -418,11 +441,18 @@ class GetAggregatedMarketingOverview
                 'host'     => $rows->first()['host'],
                 'kind'     => $rows->first()['kind'],
                 'visitors' => round($rows->sum('visitors'), 2),
+                /* Not summed: every shop's campaign row carries the same host and the visits are
+                   already counted across the shops. */
+                'visits'   => (int) $rows->first()['visits'],
                 'revenue'  => round($rows->sum('revenue'), 2),
             ])
-            ->filter(fn (array $referrer) => $referrer['visitors'] > 0 || $referrer['revenue'] > 0)
+            ->filter(fn (array $referrer) => $referrer['visitors'] > 0 || $referrer['revenue'] > 0 || $referrer['visits'] > 0)
             ->sortByDesc(fn (array $referrer) => [$referrer['revenue'], $referrer['visitors']])
-            ->take($limit)
+            /* The cap is for the long tail of websites. Search engines and AI assistants are few and
+               each one is a line under its channel, so none of them may fall off the end. */
+            ->filter(function (array $referrer) use (&$sitesShown, $limit) {
+                return $referrer['kind'] !== 'site' || $sitesShown++ < $limit;
+            })
             ->values()
             ->all();
     }

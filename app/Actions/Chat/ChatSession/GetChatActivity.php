@@ -34,6 +34,7 @@ class GetChatActivity
                     ChatEventTypeEnum::GUEST_PROFILE,
                     ChatEventTypeEnum::REOPEN,
                     ChatEventTypeEnum::JIRA_TICKET,
+                    ChatEventTypeEnum::TICKET,
                     ChatEventTypeEnum::SPAM,
                     ChatEventTypeEnum::NOT_SPAM,
                 ])
@@ -153,6 +154,7 @@ class GetChatActivity
                 break;
 
             case ChatEventTypeEnum::JIRA_TICKET:
+            case ChatEventTypeEnum::TICKET:
                 $formatted['details'] = $this->formatJiraTicketEvent($event);
                 break;
 
@@ -180,7 +182,7 @@ class GetChatActivity
         $payload = $event->payload ?? [];
 
         return [
-            'description'   => 'Jira ticket '.Arr::get($payload, 'key', '').' created',
+            'description'   => 'Ticket '.Arr::get($payload, 'key', '').' created',
             'ticket_key'    => Arr::get($payload, 'key'),
             'ticket_url'    => Arr::get($payload, 'url'),
             'summary'       => Arr::get($payload, 'summary'),

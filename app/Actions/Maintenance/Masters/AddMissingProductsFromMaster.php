@@ -15,6 +15,7 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class AddMissingProductsFromMaster
 {
@@ -44,6 +45,7 @@ class AddMissingProductsFromMaster
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $masterShop = MasterShop::where('slug', $command->argument('master'))->firstOrFail();
 
         $this->handle($masterShop);

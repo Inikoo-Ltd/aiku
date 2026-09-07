@@ -15,6 +15,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairProductCurrentHistoric
 {
@@ -69,6 +70,7 @@ class RepairProductCurrentHistoric
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->argument('shop')) {
             $shop     = Shop::find($command->argument('shop'));
             $shopsIds = [$shop->id];

@@ -3,6 +3,7 @@
 namespace App\Models\Production;
 
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Model;
@@ -96,6 +97,11 @@ class JobOrder extends Model
     public function group(): BelongsTo
     {
         return $this->belongsTo(Group::class);
+    }
+
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class);
     }
 
     public function jobOrderItems(): HasMany

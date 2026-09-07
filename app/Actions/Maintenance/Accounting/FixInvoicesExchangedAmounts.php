@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class FixInvoicesExchangedAmounts
 {
@@ -30,6 +31,7 @@ class FixInvoicesExchangedAmounts
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $ids = $command->argument('ids');
 
         $query = $ids

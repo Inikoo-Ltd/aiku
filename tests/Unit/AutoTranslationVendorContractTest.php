@@ -142,3 +142,20 @@ it('falls back to the source text on engine failure, but the interactive button 
     expect(fn () => App\Actions\Helpers\Translations\Translate::make()->handle($text, $english, $polish, 'broken', throwOnFailure: true))
         ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
 });
+
+it('sends the batch to ChatGPT as a json object, never a list', function () {
+    Illuminate\Support\Facades\Http::fake([
+        'api.openai.com/*' => Illuminate\Support\Facades\Http::response([
+            'choices' => [['message' => ['content' => '{"0":"bonjour","1":"monde"}']]],
+        ]),
+    ]);
+
+    $translated = (new App\Actions\Helpers\Translations\ChatGPT5Driver(['api_key' => 'x', 'max_tokens' => 16384]))
+        ->translate(['a' => 'hello', 'b' => 'world'], 'en', 'fr');
+
+    expect($translated)->toBe(['a' => 'bonjour', 'b' => 'monde']);
+
+    Illuminate\Support\Facades\Http::assertSent(function (Illuminate\Http\Client\Request $request) {
+        return $request['messages'][1]['content'] === '{"0":"hello","1":"world"}';
+    });
+});

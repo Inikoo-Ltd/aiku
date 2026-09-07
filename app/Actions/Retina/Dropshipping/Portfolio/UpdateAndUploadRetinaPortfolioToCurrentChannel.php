@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Dropshipping\Ebay\Product\UpdateEbayOffer;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyProductVariant;
+use App\Actions\Dropshipping\Wix\Product\UpdateWixProduct;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooProduct;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -66,6 +67,7 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
                 PlatformTypeEnum::EBAY => UpdateEbayOffer::run($portfolio),
                 PlatformTypeEnum::WOOCOMMERCE => UpdateWooProduct::run($portfolio),
                 PlatformTypeEnum::SHOPIFY => UpdateShopifyProductVariant::run($portfolio),
+                PlatformTypeEnum::WIX => UpdateWixProduct::run($portfolio),
                 default => null
             };
         }

@@ -175,6 +175,11 @@ test('can update employee', function (Employee $employee) {
 
     expect($updatedEmployee->contact_name)->toBe('Updated Name')
         ->and($updatedEmployee->job_title)->toBe('Updated Title');
+
+    $withPhoto = UpdateEmployee::make()->action($employee, [
+        'image' => \Illuminate\Http\UploadedFile::fake()->image('photo.jpg', 200, 200),
+    ]);
+    expect($withPhoto->image_id)->not->toBeNull();
 })->depends('can store employee');
 
 test('can delete employee', function (Employee $employee) {

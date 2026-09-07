@@ -10,6 +10,9 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TablePortfolios from "@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue"
 import TablePortfoliosShopify from "@/Components/Tables/Grp/Org/CRM/TablePortfoliosShopify.vue"
 import TablePortfoliosManual from "@/Components/Tables/Grp/Org/CRM/TablePortfoliosManual.vue"
+import TablePlatformPortfolioLogs from "@/Components/Tables/Grp/Org/CRM/TablePlatformPortfolioLogs.vue"
+import Tabs from "@/Components/Navigation/Tabs.vue"
+import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { ref, computed, onMounted } from "vue"
@@ -41,6 +44,11 @@ const props = defineProps<{
     platform: {}
     customerSalesChannel: {}
     routes:{}
+    tabs: {
+        current: string
+        navigation: {}
+    }
+    logs?: {}
     download_route?: Record<string, routeType>
     bulk_import_product?: {
         title: {
@@ -55,6 +63,9 @@ const props = defineProps<{
 
 const isOpenModalPortfolios = ref(false)
 const isOpenModalImport = ref(false)
+
+const currentTab = ref(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 
 // Method: Submit the selected item
@@ -364,9 +375,15 @@ const submitPortfolioAction = async (action: any) => {
         </template>
     </PageHeading>
 
-    <TablePortfoliosShopify v-if="platform.type === 'shopify'" :data="data" :customerSalesChannel v-model:selectedProducts="selectedProducts" :key="key" :progressToUploadToShopifyAll="progessbar"/>
-    <TablePortfoliosManual v-else-if="platform.type === 'manual'" :data="data" :customerSalesChannel />
-    <TablePortfolios v-else :data="data" :customerSalesChannel  v-model:selectedProducts="selectedProducts" :key="key"    :progressToUploadToShopifyAll="progessbar"  :routes="props.routes"/>
+    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+
+    <TablePlatformPortfolioLogs v-if="currentTab === 'logs'" :data="logs" :tab="currentTab" />
+
+    <template v-else>
+        <TablePortfoliosShopify v-if="platform.type === 'shopify'" :data="data" :customerSalesChannel v-model:selectedProducts="selectedProducts" :key="key" :progressToUploadToShopifyAll="progessbar"/>
+        <TablePortfoliosManual v-else-if="platform.type === 'manual'" :data="data" :customerSalesChannel />
+        <TablePortfolios v-else :data="data" :customerSalesChannel  v-model:selectedProducts="selectedProducts" :key="key"    :progressToUploadToShopifyAll="progessbar"  :routes="props.routes"/>
+    </template>
 
 
     <Modal v-if="is_show_add_products_modal" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"

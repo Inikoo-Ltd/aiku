@@ -32,6 +32,7 @@ export interface CustomerSalesChannel {
     can_connect_to_platform: boolean
     exist_in_platform: boolean
     platform_status: boolean
+    not_ready_reason?: string | null
 
     customer_company_name: string
     customer_slug: string

@@ -3172,3 +3172,29 @@ test('upload and delete sound sample on master asset', function () {
     expect($masterAsset->audio_id)->toBeNull()
         ->and($masterAsset->images()->count())->toBe(0);
 });
+
+test('master collection from origin country keeps only assets made there', function (MasterCollection $masterCollection, MasterAsset $nepalMasterAsset) {
+    $nepal = \App\Models\Helpers\Country::where('code', 'NP')->first();
+    $india = \App\Models\Helpers\Country::where('code', 'IN')->first();
+    $nepalMasterAsset->update(['origin_country_id' => $nepal->id, 'status' => true]);
+
+    $indiaMasterAsset = StoreMasterAsset::make()->action($nepalMasterAsset->masterFamily, [
+        'code'    => 'MASTER_ASSET_IN',
+        'name'    => 'made in india',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+    $indiaMasterAsset->update(['origin_country_id' => $india->id, 'status' => true]);
+
+    AttachModelToMasterCollection::make()->action($masterCollection, $nepalMasterAsset->masterFamily);
+    AttachModelToMasterCollection::make()->action($masterCollection, $indiaMasterAsset);
+    expect($masterCollection->masterFamilies()->count())->toBeGreaterThanOrEqual(1)
+        ->and($masterCollection->masterProducts()->count())->toBeGreaterThanOrEqual(1);
+
+    \App\Actions\Masters\MasterCollection\StoreMasterCollectionFromOriginCountry::run($masterCollection->masterShop, $nepal, $masterCollection->code, $masterCollection->name);
+
+    expect($masterCollection->masterFamilies()->count())->toBe(0)
+        ->and($masterCollection->masterProducts()->pluck('master_assets.id')->all())->toBe([$nepalMasterAsset->id]);
+})->depends('create master collection', 'create master asset');

@@ -84,6 +84,7 @@ class StoreManufactureTask extends OrgAction
             'operative_reward_terms'            => ['required', Rule::enum(ManufactureTaskOperativeRewardTermsEnum::class)],
             'operative_reward_allowance_type'   => ['required', Rule::enum(ManufactureTaskOperativeRewardAllowanceTypeEnum::class)],
             'operative_reward_amount'           => ['required', 'numeric', 'min:0'],
+            'is_piece_rate'                     => ['sometimes', 'boolean'],
         ];
     }
 

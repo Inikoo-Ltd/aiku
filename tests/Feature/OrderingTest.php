@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Comms\Email\SendInvoicePaidEmailToCustomer;
 use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
@@ -74,6 +75,11 @@ use App\Actions\Ordering\PurgedOrder\UpdatePurgedOrder;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use Illuminate\Support\Str;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Actions\Accounting\Payment\StorePayment;
+use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
+use App\Actions\CRM\Customer\PayOrderWithCustomerBalance;
 use App\Actions\Ordering\Transaction\StoreTransactionFromAdjustment;
 use App\Actions\Ordering\Transaction\StoreTransactionFromCharge;
 use App\Actions\Ordering\Transaction\StoreTransactionFromShipping;
@@ -88,6 +94,7 @@ use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderEnum;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
@@ -702,6 +709,22 @@ test('update order state to in warehouse', function (Order $order) {
 
     return $order;
 })->depends('update order state to submitted');
+
+test('delivery note recipient follows the order recipient, not the customer', function (Order $order) {
+    $order = UpdateOrder::make()->action($order, [
+        'contact_name' => 'Jana Novak',
+        'company_name' => 'Novak Retail s.r.o.',
+    ]);
+
+    expect($order->company_name)->toBe('Novak Retail s.r.o.')
+        ->and(SendOrderToWarehouse::make()->getCompanyName($order))->toBe('Novak Retail s.r.o.')
+        ->and(SendOrderToWarehouse::make()->getContactName($order))->toBe('Jana Novak');
+
+    $order = UpdateOrder::make()->action($order, ['company_name' => null]);
+    expect(SendOrderToWarehouse::make()->getCompanyName($order))->toBe($order->customer->company_name);
+
+    return $order;
+})->depends('update order state to in warehouse');
 
 test('staff can change the billing address of an order already in the warehouse', function (Order $order) {
     $newAddress                   = Address::factory()->definition();
@@ -1500,7 +1523,7 @@ test('invoice from overpaid order credits excess to customer balance', function 
         ->and($excessCreditsAfter)->toBe($excessCreditsBefore + 1);
 });
 
-test('invoice from overpaid order with manually settled payment does not credit excess', function () {
+test('invoice from overpaid order paid by bank transfer credits excess to customer balance', function () {
     $billingAddress  = new Address(Address::factory()->definition());
     $deliveryAddress = new Address(Address::factory()->definition());
 
@@ -1516,6 +1539,46 @@ test('invoice from overpaid order with manually settled payment does not credit 
         [
             'code' => 'ACC'.mt_rand(1000, 9999),
             'name' => 'Bank Account Excess',
+        ]
+    );
+
+    expect($paymentAccount->type->isManuallySettled())->toBeTrue();
+
+    PayOrder::make()->action($order, $paymentAccount, [
+        'amount' => 100.00,
+        'status' => PaymentStatusEnum::SUCCESS,
+        'state'  => PaymentStateEnum::COMPLETED,
+    ]);
+
+    $excessCreditsBefore = CreditTransaction::where('customer_id', $this->customer->id)
+        ->where('type', CreditTransactionTypeEnum::FROM_EXCESS)->count();
+
+    $invoice = GenerateInvoiceFromOrder::make()->action($order->refresh());
+
+    $excessCreditsAfter = CreditTransaction::where('customer_id', $this->customer->id)
+        ->where('type', CreditTransactionTypeEnum::FROM_EXCESS)->count();
+
+    expect($invoice)->toBeInstanceOf(Invoice::class)
+        ->and($excessCreditsAfter)->toBe($excessCreditsBefore + 1)
+        ->and($order->refresh()->payments()->count())->toBe(2);
+});
+
+test('invoice from overpaid order with payment settled at invoicing does not credit excess', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $orderData = Order::factory()->definition();
+    data_set($orderData, 'billing_address', $billingAddress);
+    data_set($orderData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $orderData);
+
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', PaymentServiceProviderEnum::PASTPAY->value)->first(),
+        [
+            'code' => 'ACC'.mt_rand(1000, 9999),
+            'name' => 'Pastpay Account Excess',
         ]
     );
 
@@ -3287,3 +3350,161 @@ test('repair order charge flags sets premium flag from orphan charge line', func
     $this->artisan('repair:order_charge_flags --commit')->assertSuccessful();
     expect($order->refresh()->is_premium_dispatch)->toBeTrue();
 })->depends('create order');
+
+test('submitting an order stamps the customer permanent shipping label note unless the order has its own', function () {
+    $this->customer->update(['shipping_notes' => 'Open Mon-Fri 9-5']);
+
+    $newOrder = function () {
+        $modelData = Order::factory()->definition();
+        data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+        data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+        return StoreOrder::make()->action($this->customer, $modelData);
+    };
+
+    $order = $newOrder();
+    expect($order->shipping_notes)->toBe('Open Mon-Fri 9-5');
+    $order = SubmitOrder::make()->action($order);
+    expect($order->shipping_notes)->toBe('Open Mon-Fri 9-5');
+
+    $this->customer->update(['shipping_notes' => null]);
+    $order = $newOrder();
+    expect($order->shipping_notes)->toBeNull();
+    $this->customer->update(['shipping_notes' => 'Open Mon-Fri 9-5']);
+    $order = SubmitOrder::make()->action($order->refresh());
+    expect($order->shipping_notes)->toBe('Open Mon-Fri 9-5');
+
+    $order = $newOrder();
+    UpdateOrder::make()->action($order, ['shipping_notes' => 'Leave at reception']);
+    $order = SubmitOrder::make()->action($order->refresh());
+    expect($order->shipping_notes)->toBe('Leave at reception');
+
+    $this->customer->update(['shipping_notes' => null]);
+});
+
+test('paying with balance sends the order to the warehouse only when the balance covers it', function () {
+    $newSubmittedOrder = function () {
+        $modelData = Order::factory()->definition();
+        data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+        data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+        $order = StoreOrder::make()->action($this->customer, $modelData);
+        StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+
+        return SubmitOrder::make()->action($order->refresh());
+    };
+
+    $balanceAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $topUp          = function (float $amount) use ($balanceAccount) {
+        $payment = StorePayment::make()->action($this->customer, $balanceAccount, [
+            'amount'    => $amount,
+            'reference' => 'ref-bal-'.Str::ulid(),
+            'status'    => PaymentStatusEnum::SUCCESS->value,
+            'state'     => PaymentStateEnum::COMPLETED->value,
+        ]);
+        StoreCreditTransaction::make()->action($this->customer, [
+            'payment_id' => $payment->id,
+            'amount'     => $amount,
+            'date'       => now(),
+            'type'       => CreditTransactionTypeEnum::TOP_UP,
+        ]);
+    };
+
+    $order = $newSubmittedOrder();
+    expect((float) $order->total_amount)->toBeGreaterThan(1);
+
+    $topUp(1);
+    $result = PayOrderWithCustomerBalance::make()->initialisationFromShop($this->shop, [])->handle($order->fresh());
+    $order->refresh();
+    expect($result['success'])->toBeTrue($result['reason'])
+        ->and($order->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and($order->pay_status)->toBe(OrderPayStatusEnum::UNPAID);
+
+    $topUp((float) $order->total_amount);
+    PayOrderWithCustomerBalance::make()->initialisationFromShop($this->shop, [])->handle($order->refresh());
+    $order->refresh();
+    expect($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+});
+
+test('turning on recargo de equivalencia propagates to baskets migrated from aurora in aiku shops', function () {
+    $this->shop->update(['is_aiku' => true]);
+    $this->customer->refresh();
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->update(['source_id' => '3:999999']);
+    expect($order->is_re)->toBeFalse();
+
+    UpdateCustomer::make()->action($this->customer, ['is_re' => true]);
+
+    expect($order->refresh()->is_re)->toBeTrue();
+});
+
+test('UI shop dashboard widgets endpoint returns every widget for an interval', function () {
+    $this->withoutExceptionHandling();
+    StoreInvoice::make()->action($this->customer, Invoice::factory()->definition());
+
+    $dashboard = get(route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug]));
+    $dashboard->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('dashboard.super_blocks.0.widgets_route.name', 'grp.org.shops.show.dashboard.widgets')
+            ->etc()
+    );
+
+    $response = getJson(route('grp.org.shops.show.dashboard.widgets', [$this->organisation->slug, $this->shop->slug, 'interval' => '1y']));
+    $response->assertOk()
+        ->assertJsonPath('interval', '1y')
+        ->assertJsonPath('currency_code', $this->shop->currency->code)
+        ->assertJsonStructure([
+            'from', 'to', 'channels', 'top_customers', 'top_products', 'top_families', 'out_of_stock', 'top_webpages',
+            'email' => ['totals', 'mailshots'],
+            'marketing' => ['totals', 'channels'],
+            'subscriptions' => ['registrations', 'unsubscribed', 'net'],
+            'routes' => ['customers', 'product', 'family', 'marketing'],
+        ]);
+
+    expect(collect($response->json('channels'))->sum('invoices'))->toBeGreaterThanOrEqual(1);
+
+    $allTime = getJson(route('grp.org.shops.show.dashboard.widgets', [$this->organisation->slug, $this->shop->slug, 'interval' => 'all']));
+    $allTime->assertOk()->assertJsonPath('from', null);
+    expect($allTime->json('subscriptions.registrations'))->toBeGreaterThanOrEqual(1);
+});
+
+test('export flag follows the customs territory of the organisation', function () {
+    $addressIn = fn (string $code, ?string $postalCode = null) => new Address(array_merge(
+        Address::factory()->definition(),
+        ['country_code' => $code, 'country_id' => Country::where('code', $code)->value('id'), 'postal_code' => $postalCode ?? fake()->postcode]
+    ));
+    $canaries = $addressIn('ES', '35001');
+    $madrid   = $addressIn('ES', '28001');
+    $jersey   = $addressIn('JE');
+    $london   = $addressIn('GB');
+    $usa      = $addressIn('US');
+
+    expect(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('GB', $london))->toBeFalse()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('GB', $jersey))->toBeTrue()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('GB', $madrid))->toBeTrue()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('SK', $madrid))->toBeFalse()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('SK', $canaries))->toBeTrue()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('SK', $london))->toBeTrue()
+        ->and(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery('SK', $usa))->toBeTrue();
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', $usa);
+    $order = StoreOrder::make()->action($this->customer, $modelData, strict: false);
+    expect($order->is_export)->toBeTrue();
+
+    $home = $addressIn($this->organisation->country->code);
+    \App\Actions\Ordering\Order\UpdateOrderFixedAddress::make()->action($order, ['address' => $home, 'type' => 'delivery']);
+    expect($order->refresh()->is_export)->toBe(\App\Actions\Ordering\Order\SetOrderDeliveryCountry::isExportDelivery($this->organisation->country->code, $home));
+
+    $this->shop->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+    $counts = \App\Actions\Ordering\Order\UI\IndexOrders::make()->scopeCounts($this->shop, 'in_basket');
+    $creating = Order::where('shop_id', $this->shop->id)->where('state', OrderStateEnum::CREATING);
+    expect($counts)->toBe([
+        'domestic' => (clone $creating)->where('is_export', false)->count(),
+        'export'   => (clone $creating)->where('is_export', true)->count(),
+    ])->and($counts['domestic'] + $counts['export'])->toBeGreaterThan(0);
+});

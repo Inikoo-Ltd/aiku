@@ -9,5 +9,9 @@
 export interface JobPosition {
     slug: string
     name: string,
-
+    code?: string,
+    number_employees_currently_working?: number,
+    share?: string | null,
+    organisation_name?: string | null,
+    organisation_slug?: string | null,
 }

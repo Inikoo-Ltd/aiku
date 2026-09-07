@@ -15,6 +15,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Space\SpaceStateEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairCreateRecurringBillAfterAnSpace extends OrgAction
 {
@@ -68,6 +69,7 @@ class RepairCreateRecurringBillAfterAnSpace extends OrgAction
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $customerFulfilment = FulfilmentCustomer::where('slug', $command->argument('customerFulfilment'))->firstOrFail();
         $this->handle($customerFulfilment);
     }

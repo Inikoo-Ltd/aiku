@@ -12,6 +12,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairInvoiceMissingDelivery
 {
@@ -42,6 +43,7 @@ class RepairInvoiceMissingDelivery
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
 
         $count = Invoice::whereNull('delivery_address_id')->count();
 

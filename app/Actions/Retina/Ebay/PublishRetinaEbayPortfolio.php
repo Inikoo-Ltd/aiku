@@ -28,6 +28,15 @@ class PublishRetinaEbayPortfolio extends RetinaAction
         /** @var EbayUser $ebayUser */
         $ebayUser = $portfolio->customerSalesChannel->user;
 
+        if (blank($portfolio->platform_product_id)) {
+            $message = __('This product was never created on eBay, so there is nothing to publish. Upload it again and check the error it reports.');
+
+            return UpdatePortfolio::run($portfolio, [
+                'upload_warning'  => $message,
+                'errors_response' => ['message' => $message],
+            ]);
+        }
+
         $publishedOffer = $ebayUser->publishListing($portfolio->platform_product_id);
 
         $errorMessage = Arr::get($publishedOffer, 'errors.0.message') ?? Arr::get($publishedOffer, 'error');

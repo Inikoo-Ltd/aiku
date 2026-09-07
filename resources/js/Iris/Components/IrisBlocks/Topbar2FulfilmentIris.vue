@@ -59,6 +59,14 @@ const emits = defineEmits<{
 
 const screenType = inject("screenType", "desktop")
 
+let restoreIrisSession: (() => void) | null = null
+const onStartLogout = () => {
+    restoreIrisSession = clearIrisSession(layout)
+}
+const onErrorLogout = () => {
+    restoreIrisSession?.()
+}
+
 </script>
 
 <template>
@@ -129,7 +137,8 @@ const screenType = inject("screenType", "desktop")
                 url="/app/logout"
                 method="post"
                 :data="{}"
-                @success="clearIrisSession(layout)"
+                @start="onStartLogout"
+                @error="onErrorLogout"
                 icon="fal fa-sign-out"
                 class="col-span-2 text-right block md:hidden space-x-1.5 "
             >
@@ -155,7 +164,8 @@ const screenType = inject("screenType", "desktop")
                 url="/app/logout"
                 method="post"
                 :data="{}"
-                @success="clearIrisSession(layout)"
+                @start="onStartLogout"
+                @error="onErrorLogout"
                 icon="fal fa-sign-out"
                 class="hidden md:block space-x-1.5 "
                 type="negative"

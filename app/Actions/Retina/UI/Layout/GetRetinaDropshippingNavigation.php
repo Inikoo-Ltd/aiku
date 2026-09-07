@@ -176,6 +176,18 @@ class GetRetinaDropshippingNavigation
         //     ],
         // ];
 
+        // ponytail: customer-facing support hidden until the team is ready to answer AD tickets here; drop the guard to launch
+        if (app()->isLocal()) {
+            $groupNavigation['support'] = [
+                'label' => __('Support'),
+                'icon'  => ['fal', 'fa-life-ring'],
+                'root'  => 'retina.dropshipping.tickets.',
+                'route' => [
+                    'name' => 'retina.dropshipping.tickets.index'
+                ],
+            ];
+        }
+
         $groupNavigation['top_up'] = [
             'label'   => __('Top Up'),
             'icon'    => ['fal', 'fa-money-bill-wave'],

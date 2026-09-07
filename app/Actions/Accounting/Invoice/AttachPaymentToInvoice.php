@@ -11,17 +11,12 @@ namespace App\Actions\Accounting\Invoice;
 use App\Actions\OrgAction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
-use Illuminate\Support\Arr;
 
 class AttachPaymentToInvoice extends OrgAction
 {
     public function handle(Invoice $invoice, Payment $payment, array $modelData): void
     {
-        $amount = Arr::get($modelData, 'amount', $payment->amount);
-
-        $invoice->payments()->attach($payment, [
-            'amount' => $amount,
-        ]);
+        $invoice->payments()->attach($payment);
 
         UpdateInvoicePaymentState::run($invoice);
     }

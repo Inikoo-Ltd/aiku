@@ -16,7 +16,9 @@ use Illuminate\Http\Response;
 use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Tighten\Ziggy\Ziggy;
 use Inertia\Inertia;
 use Throwable;
 
@@ -198,6 +200,9 @@ class Handler extends ExceptionHandler
                 default => [],
             };
 
+            if (!Arr::has($firstLoadOnlyProps, 'ziggy.routes') && config()->has("ziggy.groups.$app")) {
+                $firstLoadOnlyProps['ziggy'] = rescue(fn () => (new Ziggy($app))->toArray(), [], false);
+            }
             data_set($firstLoadOnlyProps, 'ziggy.location', $request->url());
         }
 
@@ -216,10 +221,9 @@ class Handler extends ExceptionHandler
                 'auth'      => [
                     'user' => ($request->user() && $request->user() instanceof User) ? GetLoggedUser::run($request->user()) : null,
                 ],
-                'ziggy'     => [
+                'ziggy'     => Arr::get($firstLoadOnlyProps, 'ziggy', [
                     'location' => $request->url(),
-                ],
-
+                ]),
             ]
         );
     }

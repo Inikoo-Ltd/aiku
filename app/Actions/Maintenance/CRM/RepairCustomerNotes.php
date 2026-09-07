@@ -13,6 +13,7 @@ use App\Models\CRM\Customer;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairCustomerNotes
 {
@@ -52,6 +53,7 @@ class RepairCustomerNotes
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         if ($command->argument('shop')) {
             $shop     = Shop::where('slug', $command->argument('shop'))->firstOrFail();
             $shopsIds = [$shop->id];

@@ -48,6 +48,26 @@ class BlogPosts
             'notice' => 'Preložené pre pohodlie. V prípade rozdielov platí anglická verzia.',
             'stale'  => 'Anglický originál sa od tohto prekladu zmenil. Platí anglická verzia.',
         ],
+        'ro' => [
+            'name'   => 'Română',
+            'notice' => 'Tradus pentru comoditate. În caz de diferențe, versiunea în engleză prevalează.',
+            'stale'  => 'Originalul în engleză s-a schimbat de la această traducere. Versiunea în engleză prevalează.',
+        ],
+        'pl' => [
+            'name'   => 'Polski',
+            'notice' => 'Przetłumaczono dla wygody. W razie rozbieżności obowiązuje wersja angielska.',
+            'stale'  => 'Angielski oryginał zmienił się od czasu tego tłumaczenia. Obowiązuje wersja angielska.',
+        ],
+        'lv' => [
+            'name'   => 'Latviešu',
+            'notice' => 'Tulkots ērtībai. Ja ir atšķirības, noteicošā ir versija angļu valodā.',
+            'stale'  => 'Angļu oriģināls kopš šī tulkojuma ir mainījies. Noteicošā ir versija angļu valodā.',
+        ],
+        'cs' => [
+            'name'   => 'Čeština',
+            'notice' => 'Přeloženo pro pohodlí. V případě rozdílů platí anglická verze.',
+            'stale'  => 'Anglický originál se od tohoto překladu změnil. Platí anglická verze.',
+        ],
     ];
 
     /**

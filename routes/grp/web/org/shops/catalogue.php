@@ -18,6 +18,7 @@ use App\Actions\Catalogue\Product\UI\CreateProduct;
 use App\Actions\Catalogue\Product\UI\EditProduct;
 use App\Actions\Catalogue\Product\UI\EditProductComposition;
 use App\Actions\Catalogue\Product\UI\ExportProducts;
+use App\Actions\Catalogue\Product\UI\ExportProductsWithNoImage;
 use App\Actions\Catalogue\Product\UI\IndexOutOfStockProducts;
 use App\Actions\Catalogue\Product\UI\IndexPendingBackInStockRemindersProducts;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
@@ -179,6 +180,7 @@ Route::prefix('products')->as('products.')
 
         Route::prefix('missing-images')->as('no_image_product.')->group(function () {
             Route::get('', IndexProductsWithNoImage::class)->name('index');
+            Route::get('export', [ExportProductsWithNoImage::class, 'inShop'])->name('export');
             Route::get('create', CreateProduct::class)->name('create');
             Route::prefix('{product}')->group(function () {
                 Route::get('', ShowProduct::class)->name('show');

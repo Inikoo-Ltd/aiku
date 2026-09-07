@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed, reactive, ref, watch } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
 import DatePicker from "primevue/datepicker"
 import {
@@ -33,7 +33,7 @@ interface AttendanceRow {
 	id: number
 	employee_name: string
 	job_title: string | null
-	avatar: string
+	avatar: string | null
 	start_at: string | null
 	end_at: string | null
 	notes: string | null
@@ -50,7 +50,7 @@ interface BirthdayRow {
 	id: number
 	name: string
 	job_title: string | null
-	avatar: string
+	avatar: string | null
 	day: number
 	date_label: string
 	is_today: boolean
@@ -61,11 +61,22 @@ interface StatCard {
 	stat: number
 	color: string
 	icon: [string, string]
+	key?: string
 	route?: { name: string; parameters: Record<string, unknown> }
+}
+
+interface PersonRow {
+	id: number
+	name: string
+	job_title: string | null
+	avatar: string | null
+	detail: string | null
+	route: { name: string; parameters: Record<string, unknown> }
 }
 
 interface QuickAction {
 	label: string
+	hint?: string
 	icon: [string, string]
 	route: { name: string; parameters: Record<string, unknown> }
 }
@@ -79,7 +90,7 @@ interface LeaveOverviewDay {
 interface EmployeeLeave {
 	id: number
 	name: string
-	avatar: string
+	avatar: string | null
 	type_name: string
 	type_color: string
 	date_label: string
@@ -107,6 +118,9 @@ const props = defineProps<{
 	attendanceStats: StatCard[]
 	quickActions: QuickAction[]
 	attendance: AttendanceRow[]
+	show: string | null
+	showRoute: { name: string; parameters: Record<string, unknown> }
+	people: PersonRow[]
 	attendanceDate: AttendanceDate
 	birthdays: BirthdayRow[]
 	leaveOverview: LeaveOverviewDay[]
@@ -141,10 +155,22 @@ const goToDate = (date: Date) => {
 
 	router.get(
 		route(props.attendanceDate.route.name, props.attendanceDate.route.parameters),
-		{ date: dateString },
+		{ date: dateString, ...(props.show ? { show: props.show } : {}) },
 		{ preserveScroll: true, preserveState: true }
 	)
 }
+
+const showPeople = computed(() => ["annual", "sick", "absent"].includes(props.show ?? ""))
+const visibleAttendance = computed(() =>
+	props.show === "late" ? props.attendance.filter((row) => row.is_late) : props.attendance
+)
+const brokenAvatars = reactive(new Set<string>())
+const showAvatar = (src: string | null): src is string => !!src && !brokenAvatars.has(src)
+
+const initials = (name: string) =>
+	name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join("")
+
+const activeCard = computed(() => props.attendanceStats.find((card) => card.key === props.show))
 
 const shiftDay = (days: number) => {
 	const next = parseDateString(props.attendanceDate.date)
@@ -255,29 +281,32 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 			</dl>
 
 			<div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
-				<div
+				<Link
 					v-for="card in attendanceStats"
 					:key="card.name"
-					class="overflow-hidden rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-gray-100">
+					:href="route(card.route.name, card.route.parameters)"
+					preserve-scroll
+					class="overflow-hidden rounded-xl bg-white px-4 py-3 shadow-sm ring-1 transition hover:bg-gray-50"
+					:class="card.key === show ? 'ring-2 ring-indigo-400' : 'ring-gray-100'">
 					<dd class="text-2xl font-bold tracking-tight text-gray-800">{{ card.stat }}</dd>
 					<dt class="mt-0.5 flex items-center gap-1.5 truncate text-sm font-medium text-gray-500">
 						<FontAwesomeIcon :icon="card.icon" :class="iconColors[card.color]?.icon ?? 'text-gray-400'" fixed-width />
 						{{ card.name }}
 					</dt>
-				</div>
+				</Link>
 			</div>
 		</div>
 
-		<div class="flex shrink-0 flex-col overflow-hidden rounded-xl bg-white px-4 py-4 shadow-sm ring-1 ring-gray-100 xl:w-64">
-			<h3 class="mb-2.5 text-sm font-semibold text-gray-700">{{ trans("Quick actions") }}</h3>
-			<div class="flex flex-col gap-2">
+		<div class="flex shrink-0 flex-col overflow-hidden justify-center rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-100 xl:w-[30rem]">
+			<div class="grid grid-cols-2 gap-2">
 				<Link
 					v-for="action in quickActions"
 					:key="action.label"
 					:href="route(action.route.name, action.route.parameters)"
-					class="flex items-center gap-2.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-100 hover:text-indigo-900">
+					class="flex min-w-0 items-center gap-2 whitespace-nowrap rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-100 hover:text-indigo-900">
 					<FontAwesomeIcon :icon="action.icon" class="text-indigo-500" fixed-width />
 					{{ action.label }}
+					<span v-if="action.hint" class="truncate text-xs font-normal text-indigo-400">{{ action.hint }}</span>
 				</Link>
 			</div>
 		</div>
@@ -285,11 +314,15 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 
 	<!-- Today's attendance (full width) -->
 	<div class="mt-6 px-4 pb-6">
-		<div class="bg-white shadow-sm rounded-lg p-4">
+		<div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-100 p-4">
 			<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
 				<div>
 					<h2 class="text-lg font-bold text-gray-800">
-						{{ attendanceDate.is_today ? trans("Today's attendance") : trans("Attendance") }}
+						<template v-if="activeCard">{{ activeCard.name }}</template>
+						<template v-else>{{ attendanceDate.is_today ? trans("Today's attendance") : trans("Attendance") }}</template>
+						<Link v-if="show" :href="route(showRoute.name, showRoute.parameters)" preserve-scroll class="ml-2 text-xs font-medium text-indigo-600 hover:underline">
+							{{ trans("Show all") }}
+						</Link>
 					</h2>
 					<p class="text-xs text-gray-500">
 						{{ attendanceDate.label }} · {{ trans("earliest arrivals first") }}
@@ -309,7 +342,8 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 						showIcon
 						iconDisplay="input"
 						:maxDate="maxDate"
-						class="w-44"
+						size="small"
+						class="w-36 text-sm"
 						@update:modelValue="onDatePicked" />
 					<button
 						type="button"
@@ -326,13 +360,46 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 						@click="goToDate(maxDate)">
 						{{ trans("Today") }}
 					</button>
-					<span class="inline-flex items-center rounded-full bg-green-100 px-3 py-0.5 text-sm font-medium text-green-800">
+					<span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
 						{{ attendance.length }} {{ trans("present") }}
 					</span>
 				</div>
 			</div>
 
-			<div class="overflow-x-auto">
+			<div v-if="showPeople" class="overflow-x-auto">
+				<table class="w-full text-sm">
+					<thead>
+						<tr class="text-left text-xs font-medium uppercase tracking-wider text-gray-500 border-b border-gray-200">
+							<th class="py-2 pr-3">{{ trans("Name") }}</th>
+							<th class="py-2 px-3">{{ trans("Details") }}</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-gray-100">
+						<tr v-for="row in people" :key="row.id" class="hover:bg-gray-50">
+							<td class="py-2 pr-3">
+								<div class="flex items-center gap-3">
+									<img v-if="showAvatar(row.avatar)" :src="row.avatar" :alt="row.name" class="h-9 w-9 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(row.avatar)" />
+<div v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(row.name) }}</div>
+									<div class="min-w-0">
+										<Link
+											:href="route(row.route.name, row.route.parameters)"
+											class="block font-medium text-gray-900 hover:text-indigo-600 hover:underline truncate">
+											{{ row.name }}
+										</Link>
+										<div class="text-xs text-gray-500 truncate">{{ row.job_title || "—" }}</div>
+									</div>
+								</div>
+							</td>
+							<td class="py-2 px-3 text-gray-500">{{ row.detail || "—" }}</td>
+						</tr>
+						<tr v-if="people.length === 0">
+							<td colspan="2" class="py-10 text-center text-gray-400">{{ trans("No one.") }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div v-else class="overflow-x-auto">
 				<table class="w-full text-sm">
 					<thead>
 						<tr class="text-left text-xs font-medium uppercase tracking-wider text-gray-500 border-b border-gray-200">
@@ -348,10 +415,11 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-gray-100">
-						<tr v-for="row in attendance" :key="row.id" class="hover:bg-gray-50">
+						<tr v-for="row in visibleAttendance" :key="row.id" class="hover:bg-gray-50">
 							<td class="py-2 pr-3">
 								<div class="flex items-center gap-3">
-									<img :src="row.avatar" :alt="row.employee_name" class="h-9 w-9 rounded-full object-cover bg-gray-100" />
+									<img v-if="showAvatar(row.avatar)" :src="row.avatar" :alt="row.employee_name" class="h-9 w-9 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(row.avatar)" />
+<div v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(row.employee_name) }}</div>
 									<div class="min-w-0">
 										<Link
 											:href="route(row.route.name, row.route.parameters)"
@@ -386,7 +454,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 							<td class="py-2 px-3 text-center text-gray-700">{{ row.clock_in_count }}</td>
 							<td class="py-2 pl-3 text-center text-gray-700">{{ row.clock_out_count }}</td>
 						</tr>
-						<tr v-if="attendance.length === 0">
+						<tr v-if="visibleAttendance.length === 0">
 							<td colspan="9" class="py-10 text-center text-gray-400">
 								{{ trans("No one has clocked in yet today.") }}
 							</td>
@@ -399,7 +467,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 
 	<div class="grid grid-cols-1 gap-5 px-4 pb-8 md:grid-cols-2 xl:grid-cols-4">
 		<!-- Leave overview -->
-		<div class="bg-white shadow-sm rounded-lg p-4 flex flex-col">
+		<div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-100 p-4 flex flex-col">
 			<div class="flex items-center justify-between mb-4">
 				<h2 class="text-lg font-bold text-gray-800">{{ trans("Leave overview") }}</h2>
 				<span class="text-xs text-gray-400">{{ trans("This week") }}</span>
@@ -410,11 +478,12 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 		</div>
 
 		<!-- Employee leaves -->
-		<div class="bg-white shadow-sm rounded-lg p-4 flex flex-col">
+		<div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-100 p-4 flex flex-col">
 			<h2 class="text-lg font-bold text-gray-800 mb-3">{{ trans("Employee leaves") }}</h2>
 			<ul v-if="employeeLeaves.length" class="divide-y divide-gray-100 max-h-64 overflow-y-auto pr-1">
 				<li v-for="leave in employeeLeaves" :key="leave.id" class="flex items-center gap-3 py-2.5">
-					<img :src="leave.avatar" :alt="leave.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" />
+					<img v-if="showAvatar(leave.avatar)" :src="leave.avatar" :alt="leave.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(leave.avatar)" />
+<div v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(leave.name) }}</div>
 					<div class="min-w-0 flex-1">
 						<div class="font-medium text-gray-900 truncate">{{ leave.name }}</div>
 						<div class="text-xs font-medium truncate" :style="{ color: leave.type_color }">{{ leave.type_name }}</div>
@@ -428,7 +497,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 		</div>
 
 		<!-- Leave types -->
-		<div class="bg-white shadow-sm rounded-lg p-4 flex flex-col">
+		<div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-100 p-4 flex flex-col">
 			<h2 class="text-lg font-bold text-gray-800 mb-3">{{ trans("Leave types") }}</h2>
 			<div class="relative h-40 w-40 mx-auto shrink-0">
 				<Doughnut v-if="leaveTypes.total > 0" :data="leaveTypesData" :options="leaveTypesOptions" />
@@ -460,7 +529,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 		</div>
 
 		<!-- Birthdays this month (beside Leave types) -->
-		<div class="bg-white shadow-sm rounded-lg p-4 flex flex-col">
+		<div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-100 p-4 flex flex-col">
 			<div class="flex items-center gap-2 mb-3">
 				<FontAwesomeIcon :icon="faBirthdayCake" class="text-pink-500" fixed-width />
 				<h2 class="text-lg font-bold text-gray-800">{{ trans("Birthdays this month") }}</h2>
@@ -472,7 +541,8 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 					:key="person.id"
 					class="flex items-center gap-3 py-2.5"
 					:class="{ 'bg-pink-50 -mx-2 px-2 rounded': person.is_today }">
-					<img :src="person.avatar" :alt="person.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" />
+					<img v-if="showAvatar(person.avatar)" :src="person.avatar" :alt="person.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(person.avatar)" />
+<div v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(person.name) }}</div>
 					<div class="min-w-0 flex-1">
 						<div class="font-medium text-gray-900 truncate">{{ person.name }}</div>
 						<div class="text-xs text-gray-500 truncate">{{ person.job_title || "—" }}</div>

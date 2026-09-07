@@ -15,6 +15,7 @@ use App\Models\Goods\TradeUnitFamily;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class SyncTradeUnitFamiliesAndStockFamilies
 {
@@ -51,6 +52,7 @@ class SyncTradeUnitFamiliesAndStockFamilies
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $count = Stock::whereNotNull('stock_family_id')->count();
 
         ProgressBar::setFormatDefinition(

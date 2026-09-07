@@ -2,6 +2,7 @@
 import { computed, ref } from "vue"
 import Image from "@common/Components/Image.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 
@@ -35,6 +36,7 @@ const allProducts = computed(() => props.products ?? [])
 
 const prevEl = ref(null)
 const nextEl = ref(null)
+const idxSlideLoading = ref<number | null>(null)
 
 const getImage = (product: any) => {
   return product?.web_images?.main?.gallery ?? product?.web_images?.main?.original ?? null
@@ -60,12 +62,14 @@ const getImage = (product: any) => {
       :loop="false"
       :autoHeight="false"
     >
-      <SwiperSlide v-for="product in allProducts" :key="product.id ?? product.slug" class="!h-auto">
+      <SwiperSlide v-for="(product, productIndex) in allProducts" :key="product.id ?? product.slug" class="!h-auto">
         <component
           :is="product.url ? LinkIris : 'div'"
           :href="product.url"
           type="internal"
-          class="group flex h-full flex-col items-center text-center"
+          class="group relative flex h-full flex-col items-center text-center"
+          @start="() => idxSlideLoading = productIndex"
+          @finish="() => idxSlideLoading = null"
         >
           <div class="relative w-[180px] h-[180px] shrink-0 overflow-hidden bg-white 2xl:w-[240px] 2xl:h-[240px]">
             <Image
@@ -84,6 +88,13 @@ const getImage = (product: any) => {
 
           <div class="mt-3 w-[180px] text-sm leading-tight text-[#1d2d44] group-hover:text-gray-500 2xl:mt-4 2xl:w-[240px] 2xl:text-base">
             {{ product.name }}
+          </div>
+
+          <div
+            v-if="idxSlideLoading === productIndex"
+            class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-2xl"
+          >
+            <LoadingIcon />
           </div>
         </component>
       </SwiperSlide>

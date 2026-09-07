@@ -21,6 +21,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RecalculateOrgStockHistoriesPostCostFix
 {
@@ -190,6 +191,7 @@ class RecalculateOrgStockHistoriesPostCostFix
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $organisation = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
 
         $orgStockIds = DB::table('org_stock_movements')

@@ -54,6 +54,7 @@ use App\Actions\Dispatching\PickedBay\StorePickedBay;
 use App\Actions\Dispatching\PickedBay\UI\GetPickedBayShowcase;
 use App\Actions\Dispatching\PickedBay\UpdatePickedBay;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
+use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
@@ -569,6 +570,13 @@ test('set remaining quantity to not picked (2nd picking)', function (Picking $pi
         ->and(intval($picking->deliveryNoteItem->quantity_picked))->toBe(5)
         ->and(intval($picking->deliveryNoteItem->quantity_not_picked))->toBe(10)
         ->and($picking->deliveryNoteItem->is_handled)->toBeTrue();
+
+    $order       = $picking->deliveryNote->orders()->first()->refresh();
+    $transaction = $picking->deliveryNoteItem->transaction;
+    $notPicked   = ShowOrder::make()->getOrderBoxStats($order)['products']['not_picked'];
+    expect($order->state)->toBe(OrderStateEnum::HANDLING)
+        ->and($notPicked['amount'])->toBe(round(10 * $transaction->net_amount / $transaction->quantity_ordered * (1 + $order->tax_amount / $order->net_amount), 2))
+        ->and($notPicked['expected_return'])->toBe(round(max(0, $order->payment_amount - ($order->total_amount - $notPicked['amount'])), 2));
 
     $picking->refresh();
 
@@ -3822,4 +3830,25 @@ test('UI orders at gate index', function () {
             ->has('data.data')
             ->etc()
     );
+});
+
+test('delivery note tariff codes use the organisation override for the national digits', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $tradeUnit                         = $deliveryNoteItem->orgStock->tradeUnits->first();
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, [
+        'tariff_code'       => '3304 99 0000',
+        'origin_country_id' => $this->organisation->country_id,
+    ]);
+    \App\Actions\Goods\TradeUnit\SetTradeUnitTariffCodeOverride::make()->action($tradeUnit, $this->organisation, $this->user, [
+        'national_extension' => '9100',
+        'reason'             => 'National customs classifies it differently',
+    ]);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+    $rows = \App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote);
+
+    $row = $rows->firstWhere('tariff_code', '3304999100');
+    expect($row)->not->toBeNull()
+        ->and((bool) $row->is_incomplete)->toBeFalse();
 });

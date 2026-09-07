@@ -29,6 +29,8 @@ use App\Actions\Inventory\LocationOrgStock\MoveOrgStockToOtherLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\AddLostAndFoundOrgStock;
+use App\Actions\Inventory\OrgStock\AssignSkoBarcodeToOrgStock;
+use App\Actions\Inventory\OrgStock\Json\ScanSkoBarcode;
 use App\Actions\Inventory\OrgStock\AssociateOrgStockToOrgStockFamily;
 use App\Actions\Inventory\OrgStock\DeleteOrgStock;
 use App\Actions\Inventory\OrgStock\FillOrgStockWithTradeUnitsBarcodes;
@@ -2943,3 +2945,37 @@ test('stock history sweeps refuse to rewrite only the live years when the archiv
 
     expect($sweep->connection())->toBeNull();
 });
+
+test('sko barcode scanner finds an org stock by outer or unit barcode and moves a barcode between org stocks', function ($warehouse) {
+    $makeOrgStock = fn (string $code) => StoreOrgStock::make()->action(
+        $this->organisation,
+        StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['code' => $code, 'state' => StockStateEnum::ACTIVE]))
+    );
+    $first  = $makeOrgStock('SCANA');
+    $second = $makeOrgStock('SCANB');
+    UpdateOrgStock::make()->action($first, ['barcode' => 'SKO-SCAN-1', 'unit_barcode' => '5050000000999']);
+
+    expect(ScanSkoBarcode::make()->handle($this->organisation, ' SKO-SCAN-1 ')?->id)->toBe($first->id)
+        ->and(ScanSkoBarcode::make()->handle($this->organisation, '5050000000999')?->id)->toBe($first->id)
+        ->and(ScanSkoBarcode::make()->handle($this->organisation, 'NOPE'))->toBeNull();
+
+    $scanUrl = fn (string $barcode) => route('grp.json.warehouse.scan_sko_barcode', ['warehouse' => $warehouse->slug, 'barcode' => $barcode]);
+    get($scanUrl('SKO-SCAN-1'))->assertOk()->assertJsonPath('found', true)->assertJsonPath('matched_on', 'sko')->assertJsonPath('org_stock.code', $first->code);
+    get($scanUrl('5050000000999'))->assertOk()->assertJsonPath('matched_on', 'unit');
+    get($scanUrl('NOPE'))->assertOk()->assertJsonPath('found', false)->assertJsonPath('org_stock', null);
+
+    $second = AssignSkoBarcodeToOrgStock::make()->handle($second, ' SKO-SCAN-1 ');
+    expect($second->barcode)->toBe('SKO-SCAN-1')
+        ->and($second->stock->refresh()->barcode)->toBe('SKO-SCAN-1')
+        ->and($first->refresh()->barcode)->toBeNull()
+        ->and($first->stock->refresh()->barcode)->toBeNull();
+
+    get(route('grp.org.warehouses.show.inventory.org_stocks.barcode_scanner', [$this->organisation->slug, $warehouse->slug]))
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->component('Org/Inventory/SkoBarcodeScanner')
+                ->where('scan_route.name', 'grp.json.warehouse.scan_sko_barcode')
+                ->where('assign_route.name', 'grp.org.warehouses.show.inventory.org_stocks.assign_sko_barcode')
+                ->etc()
+        );
+})->depends('create warehouse');

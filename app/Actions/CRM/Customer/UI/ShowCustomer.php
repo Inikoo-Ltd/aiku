@@ -148,16 +148,16 @@ class ShowCustomer extends OrgAction
                         $webUsersMeta
                     ]),
                     'actions'       => array_values(array_filter([
-                        $customer->shop->type !== ShopTypeEnum::EXTERNAL ? [
+                        [
                             'key'     => 'edit_customer',
                             'type'    => 'button',
                             'style'   => 'edit',
-                            'tooltip' => __('Edit Customer'),
+                            'tooltip' => $customer->shop->type === ShopTypeEnum::EXTERNAL ? __('Edit tax number') : __('Edit Customer'),
                             'route'   => [
                                 'name'       => 'grp.org.shops.show.crm.customers.edit',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
-                        ] : false,
+                        ],
                         $customer->shop->type !== ShopTypeEnum::EXTERNAL && $this->isSupervisor && DeleteCustomer::canBeDeleted($customer) ? [
                             'key'     => 'delete_customer',
                             'type'    => 'button',
@@ -297,6 +297,14 @@ class ShowCustomer extends OrgAction
                     "editable"    => true,
                     "field"       => "warehouse_internal_notes",
                     ...NotesEnum::WAREHOUSE->boilerPlate()
+                ],
+                [
+                    "label"       => __("Shipping Label (Permanent)"),
+                    "note"        => $customer->shipping_notes ?? '',
+                    "information" => __("Printed on the shipping label of every new order unless the customer writes their own label note. First 34 characters."),
+                    "editable"    => true,
+                    "field"       => "shipping_notes",
+                    ...NotesEnum::SHIPPING_LABEL->boilerPlate()
                 ]
             ],
             "temporary_note"   => [

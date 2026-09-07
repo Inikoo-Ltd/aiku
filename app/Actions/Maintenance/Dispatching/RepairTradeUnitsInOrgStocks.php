@@ -15,6 +15,7 @@ use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairTradeUnitsInOrgStocks extends OrgAction
 {
@@ -47,6 +48,7 @@ class RepairTradeUnitsInOrgStocks extends OrgAction
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $command->info('Matching trade units to org stocks');
 
         $chunkSize = 100;

@@ -30,6 +30,12 @@ class IndexRetinaEcomNewArrivals extends RetinaAction
 
         $query = $this->getRetinaProductsListQuery($customer);
         $query->where('products.shop_id', $customer->shop_id);
+        $query->where('products.is_in_website', true);
+        $query->whereExists(function ($subQuery) {
+            $subQuery->from('product_categories')
+                ->whereColumn('product_categories.id', 'products.family_id')
+                ->where('product_categories.is_in_website', true);
+        });
         $query->where(function ($query) {
             $query->where(function ($subQuery) {
                 $subQuery->where('products.is_minion_variant', false)
@@ -50,7 +56,7 @@ class IndexRetinaEcomNewArrivals extends RetinaAction
         return $query->defaultSort('-products.created_at')
             ->allowedSorts(['code', 'name', 'created_at'])
             ->allowedFilters([$this->getRetinaProductsGlobalSearch()])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
     }
 

@@ -18,6 +18,7 @@ use App\Models\SysAdmin\Organisation;
 use DB;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class UpdateOrgStocksDataFromAurora
 {
@@ -78,6 +79,7 @@ class UpdateOrgStocksDataFromAurora
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $organisation = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
         $this->setSource($organisation);
         OrgStock::where('organisation_id', $organisation->id)

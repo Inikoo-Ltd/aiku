@@ -334,7 +334,7 @@ class Invoice extends Model implements Auditable, HasMedia
 
     public function payments(): MorphToMany
     {
-        return $this->morphToMany(Payment::class, 'model', 'model_has_payments')->withTimestamps()->withPivot(['amount', 'share']);
+        return $this->morphToMany(Payment::class, 'model', 'model_has_payments')->withTimestamps();
     }
 
     public function recurringBill(): BelongsTo

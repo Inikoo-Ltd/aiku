@@ -23,16 +23,17 @@ use Illuminate\Console\Command;
  *     php artisan lang:strip-empty
  *     php artisan lang:apply-glossary
  *
- * A term a translator has already changed to something else is left alone and reported,
- * because POEditor is the source of truth and people do edit terms there. Pass --force
- * only when the glossary is deliberately overruling them.
+ * The glossary wins over whatever a download brought back - that is the whole point, and
+ * a correction that loses to the stale value it was written to replace would never stick.
+ * Every override is printed. --keep-edits inverts it if a locale ever gets a real
+ * translator whose choices should outrank the glossary.
  */
 class ApplyTranslationGlossary extends Command
 {
     protected $signature = 'lang:apply-glossary
                             {locale? : Only this locale}
                             {--dry-run : Report without writing}
-                            {--force : Also overwrite terms a translator has already changed}';
+                            {--keep-edits : Leave any term whose current value differs, instead of correcting it}';
 
     protected $description = 'Overwrite machine-translated UI terms with the curated values in resources/translation-glossary.json';
 
@@ -73,13 +74,17 @@ class ApplyTranslationGlossary extends Command
                     continue;
                 }
 
-                // Anything already translated to something else is a translator's decision,
-                // not a machine guess. Silently reverting it every download would undo their
-                // work without telling anyone, so report it and leave it alone.
-                if (is_string($current) && trim($current) !== '' && !$this->option('force')) {
-                    $this->warn(sprintf('%s: kept "%s" for "%s" (glossary says "%s") - use --force to override', $locale, $current, $key, $value));
-                    $kept++;
-                    continue;
+                // The glossary is the record of corrections, and a download brings back
+                // whatever POEditor still holds, so it has to win or a fix never sticks.
+                // Overrides are reported rather than silent.
+                if (is_string($current) && trim($current) !== '') {
+                    if ($this->option('keep-edits')) {
+                        $this->warn(sprintf('%s: kept "%s" for "%s" (glossary says "%s")', $locale, $current, $key, $value));
+                        $kept++;
+                        continue;
+                    }
+
+                    $this->line(sprintf('  %s: "%s" corrected from "%s" to "%s"', $locale, $key, $current, $value));
                 }
 
                 $strings[$key] = $value;
@@ -97,7 +102,7 @@ class ApplyTranslationGlossary extends Command
             }
         }
 
-        $this->table(['locale', 'corrected', 'kept (translator edited)', 'glossary terms'], $rows);
+        $this->table(['locale', 'corrected', 'kept', 'glossary terms'], $rows);
 
         return self::SUCCESS;
     }

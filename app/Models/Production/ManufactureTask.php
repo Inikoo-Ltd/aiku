@@ -92,6 +92,7 @@ class ManufactureTask extends Model implements Auditable
         'operative_reward_terms',
         'operative_reward_allowance_type',
         'operative_reward_amount',
+        'is_piece_rate',
         'standard_rate',
         'target_override_reason',
     ];

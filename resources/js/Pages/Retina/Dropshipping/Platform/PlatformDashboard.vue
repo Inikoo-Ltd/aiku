@@ -16,6 +16,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
 import PlatformEbayWarningNotComplete from "@/Components/Retina/Platform/PlatformEbayWarningNotComplete.vue"
 import PlatformTiktokWarningNotComplete from "@/Components/Retina/Platform/PlatformTiktokWarningNotComplete.vue"
+import { Message } from "primevue"
 import { routeType } from "@/types/route"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
@@ -51,6 +52,7 @@ const props = defineProps<{
     }
     platform_status: boolean
     fetch_orders_route?: routeType | null
+    ebay_registration_notice?: boolean
     exist_in_platform: boolean
     can_connect_to_platform: boolean
     platform_logo: string,
@@ -289,6 +291,16 @@ const layout = inject('layout', layoutStructure)
             </template>
 
             <div v-else>
+                <!-- Notice: eBay will not list until the seller account is finished -->
+                <Message v-if="ebay_registration_notice" severity="error" class="mt-5">
+                    <div class="ml-2 font-normal text-sm">
+                        <div class="font-bold">{{ trans("eBay has not finished setting up your seller account") }}</div>
+                        <div class="mt-1">
+                            {{ trans("Until it is complete eBay refuses every listing, so uploads and drafts here cannot go live. Sign in to eBay and finish the outstanding registration details, then upload again.") }}
+                        </div>
+                    </div>
+                </Message>
+
                 <!-- Notice: Stock update status -->
                 <div v-if="stock_update_notice" class="flex justify-between mt-5">
                     <div class="w-full border-2 rounded-lg p-4"

@@ -15,6 +15,7 @@ use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairInvoiceCategoryCustomerFields
 {
@@ -50,6 +51,7 @@ class RepairInvoiceCategoryCustomerFields
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $query = Invoice::whereNull('source_id')
             ->whereHas('customer', function (Builder $query) {
                 $query->where('is_vip', true)

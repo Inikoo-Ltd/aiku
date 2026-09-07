@@ -14,6 +14,7 @@ use App\Models\Masters\MasterAsset;
 use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairTradeUnitsInMasterProducts extends OrgAction
 {
@@ -56,6 +57,7 @@ class RepairTradeUnitsInMasterProducts extends OrgAction
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $command->info('Matching trade units to masters');
 
         $chunkSize = 100;

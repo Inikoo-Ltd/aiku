@@ -99,7 +99,7 @@ class StoreOrder extends OrgAction
             $modelData['phone']            = $parent->phone;
             $modelData['contact_name']     = $parent->contact_name;
             $modelData['company_name']     = $parent->company_name;
-
+            data_set($modelData, 'shipping_notes', $parent->shipping_notes, overwrite: false);
 
             $shop = $parent->shop;
         } elseif ($parent instanceof CustomerClient) {
@@ -220,11 +220,7 @@ class StoreOrder extends OrgAction
                         'delivery',
                         'delivery_address_id'
                     );
-                    $order->updateQuietly(
-                        [
-                            'delivery_country_id' => $address->country_id
-                        ]
-                    );
+                    SetOrderDeliveryCountry::run($order, $address);
                 } else {
                     StoreOrderAddress::make()->action(
                         $order,
@@ -235,12 +231,8 @@ class StoreOrder extends OrgAction
                     );
                 }
             } else {
-                $order->updateQuietly(
-                    [
-                        'collection_address_id' => $order->shop->collection_address_id,
-                        'delivery_country_id'   => $order->shop->collectionAddress->country_id
-                    ]
-                );
+                $order->updateQuietly(['collection_address_id' => $order->shop->collection_address_id]);
+                SetOrderDeliveryCountry::run($order, $order->shop->collectionAddress);
                 OrderHydrateShipments::run($order->id);
             }
 

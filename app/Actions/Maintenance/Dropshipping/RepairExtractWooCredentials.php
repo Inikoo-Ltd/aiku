@@ -14,6 +14,7 @@ use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairExtractWooCredentials
 {
@@ -57,6 +58,7 @@ class RepairExtractWooCredentials
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $ok = 0;
         $no = 0;
 

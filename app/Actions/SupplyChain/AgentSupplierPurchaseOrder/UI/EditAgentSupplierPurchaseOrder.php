@@ -47,6 +47,8 @@ class EditAgentSupplierPurchaseOrder extends OrgAction
 
     public function htmlResponse(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, ActionRequest $request): Response
     {
+        $isAgentLogin = !$request->user()->hasGroupAccess();
+
         return Inertia::render(
             'EditModel',
             [
@@ -115,31 +117,37 @@ class EditAgentSupplierPurchaseOrder extends OrgAction
                                     'type'  => 'date',
                                     'label' => __('Approved ready date'),
                                     'value' => $agentSupplierPurchaseOrder->approved_ready_at,
+                                    'readonly' => $isAgentLogin,
                                 ],
                                 'handed_over_at' => [
                                     'type'  => 'date',
                                     'label' => __('Handed over to shipping agent'),
                                     'value' => $agentSupplierPurchaseOrder->handed_over_at,
+                                    'readonly' => $isAgentLogin,
                                 ],
                                 'qc_passed_at' => [
                                     'type'  => 'date',
                                     'label' => __('QC passed'),
                                     'value' => $agentSupplierPurchaseOrder->qc_passed_at,
+                                    'readonly' => $isAgentLogin,
                                 ],
                                 'compliance_complete_at' => [
                                     'type'  => 'date',
                                     'label' => __('Compliance pack complete'),
                                     'value' => $agentSupplierPurchaseOrder->compliance_complete_at,
+                                    'readonly' => $isAgentLogin,
                                 ],
                                 'chs_excluded' => [
                                     'type'  => 'toggle',
                                     'label' => __('Excluded from CHS'),
                                     'value' => $agentSupplierPurchaseOrder->chs_excluded,
+                                    'readonly' => $isAgentLogin,
                                 ],
                                 'chs_exclusion_reason' => [
                                     'type'  => 'textarea',
                                     'label' => __('Exclusion reason'),
                                     'value' => $agentSupplierPurchaseOrder->chs_exclusion_reason,
+                                    'readonly' => $isAgentLogin,
                                 ],
                             ]
                         ],

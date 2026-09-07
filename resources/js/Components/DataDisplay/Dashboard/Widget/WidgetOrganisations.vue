@@ -61,19 +61,25 @@ const dataSetsSplit = computed(() => {
       return sum + (Number(item.columns.sales_grp_currency_external[props.intervals.value]?.raw_value) || 0)
     }, 0);
 
+    const summedSales = {
+        [props.intervals.value]: {
+            raw_value: summedValue,
+            formatted_value: trans('Others')
+        }
+    }
+
+    const summedLabel = {
+        formatted_value: trans('Others'),
+        align: "left",
+    }
+
     // Create the summed object
     const summedEntry = {
         columns: {
-            sales_grp_currency_external: {
-                [props.intervals.value]: {
-                    raw_value: summedValue,
-                    formatted_value: trans('Others')
-                }
-            },
-            label: {
-                formatted_value: trans('Others'),
-                align: "left",
-            },
+            sales_grp_currency_external: summedSales,
+            sales_grp_currency_external_minified: summedSales,
+            label: summedLabel,
+            label_minified: summedLabel,
         }
     }
 
@@ -121,8 +127,8 @@ const isLoadingVisit = ref<number | null>(null)
                                 }"
                                 aria-hidden="true" />
                             <div class="text-gray-400">
-                                <span class="text-gray-500 font-semibold">{{ row.columns.label_minified.formatted_value }}</span>
-                                ({{ row.columns.sales_grp_currency_external_minified[intervals.value]?.formatted_value }})
+                                <span class="text-gray-500 font-semibold">{{ row.columns.label_minified?.formatted_value }}</span>
+                                ({{ row.columns.sales_grp_currency_external_minified?.[intervals.value]?.formatted_value }})
                             </div>
                         </component>
                     </template>
@@ -134,10 +140,10 @@ const isLoadingVisit = ref<number | null>(null)
         <div class="w-28">
             <Pie
                 :data="{
-                    labels: dataSetsSplit.map(bod => bod.columns.label.formatted_value),
+                    labels: dataSetsSplit.map(bod => bod.columns.label?.formatted_value),
                     datasets: [
                         {
-                            data: dataSetsSplit.map(bod => bod.columns.sales_grp_currency_external[intervals.value].raw_value),
+                            data: dataSetsSplit.map(bod => bod.columns.sales_grp_currency_external?.[intervals.value]?.raw_value),
                             backgroundColor: [
                                 ...dataSetsSplit.map((dCase) => useStringToHex(dCase.columns.label.formatted_value)),
                             ],

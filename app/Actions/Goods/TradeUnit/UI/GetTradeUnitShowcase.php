@@ -10,6 +10,8 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Models\SysAdmin\Organisation;
 use App\Actions\Traits\HasBucketAttachment;
 use App\Actions\Traits\HasBucketImages;
 use App\Helpers\NaturalLanguage;
@@ -116,10 +118,44 @@ class GetTradeUnitShowcase
             $countriesOrigin[] = NaturalLanguage::make()->country($country);
         }
 
+        $overrides = $tradeUnit->tariffCodeOverrides()->with('approvedBy')->get()->keyBy('organisation_id');
+        $user      = request()->user();
+
+        $tariffCodeByOrganisation = $tradeUnit->group->organisations()
+            ->where('type', OrganisationTypeEnum::SHOP)
+            ->orderBy('code')
+            ->get()
+            ->map(function (Organisation $organisation) use ($tradeUnit, $overrides, $user) {
+                $override = $overrides->get($organisation->id);
+
+                return [
+                    'organisation_code'  => $organisation->code,
+                    'organisation_name'  => $organisation->name,
+                    'tariff_code'        => $tradeUnit->getTariffCodeForOrganisation($organisation->id),
+                    'national_extension' => $override?->national_extension,
+                    'reason'             => $override?->reason,
+                    'approved_by'        => $override?->approvedBy?->contact_name,
+                    'approved_at'        => $override?->approved_at,
+                    'can_edit'           => (bool) $user?->authTo("accounting.$organisation->id.edit"),
+                    'update_route'       => [
+                        'name'       => 'grp.models.trade-unit.tariff_code_override.update',
+                        'parameters' => ['tradeUnit' => $tradeUnit->id, 'organisation' => $organisation->id],
+                        'method'     => 'patch',
+                    ],
+                    'delete_route'       => [
+                        'name'       => 'grp.models.trade-unit.tariff_code_override.delete',
+                        'parameters' => ['tradeUnit' => $tradeUnit->id, 'organisation' => $organisation->id],
+                        'method'     => 'delete',
+                    ],
+                ];
+            })->values()->all();
+
         $properties = [
             'countries_of_origin' => $countriesOrigin,
             'ingredients'       => $tradeUnit->ingredients->pluck('name')->all(),
             'tariff_code'       => $tradeUnit->tariff_code,
+            'tariff_code_heading' => $tradeUnit->getTariffCodeHeading(),
+            'tariff_code_by_organisation' => $tariffCodeByOrganisation,
             'duty_rate'         => $tradeUnit->duty_rate,
             'hts_us'            => $tradeUnit->hts_us,
         ];

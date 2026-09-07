@@ -30,6 +30,10 @@ use Illuminate\Support\Arr;
  * @property mixed $platform_possible_matches
  * @property mixed $platform_product_id
  * @property mixed $customer_sales_channel_id
+ * @property mixed $available_quantity
+ * @property mixed $last_stock_value
+ * @property mixed $stock_last_updated_at
+ * @property mixed $stock_last_fail_updated_at
  */
 class PortfoliosResource extends JsonResource
 {
@@ -48,6 +52,14 @@ class PortfoliosResource extends JsonResource
             'created_at' => $this->created_at,
             'is_for_sale'  => $this->is_for_sale,
 
+            'available_quantity'         => $this->available_quantity,
+            'last_stock_value'           => $this->last_stock_value,
+            'stock_last_updated_at'      => $this->stock_last_updated_at,
+            'stock_last_fail_updated_at' => $this->stock_last_fail_updated_at,
+            'is_stock_in_sync'           => $this->last_stock_value === null
+                ? null
+                : (int) $this->last_stock_value === (int) $this->available_quantity,
+
             'customer_sales_channel_platform_status' => $this->customer_sales_channel_platform_status,
 
             'has_valid_platform_product_id' => $this->has_valid_platform_product_id,
@@ -55,9 +67,11 @@ class PortfoliosResource extends JsonResource
             'platform_status'               => $this->platform_type === 'manual' ? $this->status : $this->platform_status,
             'platform_possible_matches'     => $this->platform_possible_matches,
             'platform_product_id'           => $this->platform_product_id,
+            'shopify_product_data'  => Arr::get($this->data, 'shopify_product', []),
             'platform_product_data' => match ($this->platform_type) {
                 PlatformTypeEnum::WOOCOMMERCE->value => Arr::get($this->data, 'woo_product', []),
                 PlatformTypeEnum::EBAY->value => Arr::get($this->data, 'ebay_product', []),
+                PlatformTypeEnum::WIX->value => Arr::get($this->data, 'wix_product', []),
                 default => [],
             },
 

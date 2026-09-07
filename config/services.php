@@ -51,6 +51,13 @@ return [
         'client_id'     => env('ALLEGRO_CLIENT_ID'),
         'client_secret' => env('ALLEGRO_CLIENT_SECRET')
     ],
+    'wix'       => [
+        'api_url'     => env('WIX_API_URL', 'https://www.wixapis.com'),
+        'install_url' => env('WIX_INSTALL_URL', 'https://www.wix.com/app-installer'),
+        'app_id'      => env('WIX_APP_ID'),
+        'app_secret'  => env('WIX_APP_SECRET'),
+        'public_key'  => str_replace('\\n', "\n", (string) env('WIX_PUBLIC_KEY')) ?: null,
+    ],
     'ebay'      => [
         'client_id'       => env('EBAY_CLIENT_ID'),
         'client_secret'   => env('EBAY_CLIENT_SECRET'),
@@ -85,9 +92,11 @@ return [
         'api_version'  => env('META_ADS_API_VERSION', 'v21.0'),
     ],
     'slack'     => [
+        'signing_secret' => env('SLACK_SIGNING_SECRET'),
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel'              => env('SLACK_CHANNEL', '#general'),
+            'tickets_channel'      => env('SLACK_TICKETS_CHANNEL'),
         ],
     ],
     // Atlassian Jira Service Desk (embedded widget)

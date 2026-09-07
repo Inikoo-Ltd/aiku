@@ -15,6 +15,7 @@ use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairWebpageBlogSubType
 {
@@ -35,6 +36,7 @@ class RepairWebpageBlogSubType
 
     public function asCommand(Command $command)
     {
+        Nightwatch::dontSample();
         $webpages = Webpage::where('type', WebpageTypeEnum::BLOG)->get();
 
         foreach ($webpages as $webpage) {

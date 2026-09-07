@@ -21,6 +21,11 @@ class ShowDevopsDashboard extends OrgAction
 {
     use WithInertia;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->hasGroupAccess();
+    }
+
     public function handle(Group $group): Group
     {
         return $group;

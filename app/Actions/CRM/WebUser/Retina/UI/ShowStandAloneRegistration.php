@@ -11,6 +11,7 @@
 namespace App\Actions\CRM\WebUser\Retina\UI;
 
 use App\Actions\IrisAction;
+use App\Actions\Traits\WithRetinaAuthRedirect;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -22,6 +23,8 @@ use Illuminate\Support\Arr;
 
 class ShowStandAloneRegistration extends IrisAction
 {
+    use WithRetinaAuthRedirect;
+
     public function handle(ActionRequest $request): Response|RedirectResponse
     {
         $shop = $this->shop;
@@ -50,6 +53,7 @@ class ShowStandAloneRegistration extends IrisAction
     public function asController(ActionRequest $request): Response
     {
         $this->initialisation($request);
+        $this->rememberRetinaIntendedUrl($request, $this->website);
 
         return $this->handle($request);
     }

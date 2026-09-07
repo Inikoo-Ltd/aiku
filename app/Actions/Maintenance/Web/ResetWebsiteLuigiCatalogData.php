@@ -14,6 +14,7 @@ use App\Actions\Web\Website\Luigi\WithLuigis;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class ResetWebsiteLuigiCatalogData
 {
@@ -71,6 +72,7 @@ class ResetWebsiteLuigiCatalogData
      */
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $website = Website::where('slug', $command->argument('website'))->first();
 
         if ($website) {
