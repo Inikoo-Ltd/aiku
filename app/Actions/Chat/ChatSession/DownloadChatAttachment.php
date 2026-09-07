@@ -26,7 +26,16 @@ class DownloadChatAttachment
         $media = Media::where('ulid', $ulid)->firstOrFail();
 
 
-        if (!in_array($media->model_type, ['App\Models\Chat\ChatMessage', 'App\Models\Chat\MetaChatMessage'])) {
+        /* A template message points at the template's own header media rather than
+           copying it per send, so that media has to be servable here too — otherwise
+           the video or document in the bubble can be neither played nor downloaded. */
+        $allowedModels = [
+            'App\Models\Chat\ChatMessage',
+            'App\Models\Chat\MetaChatMessage',
+            'App\Models\Chat\MetaMessageTemplate',
+        ];
+
+        if (!in_array($media->model_type, $allowedModels, true)) {
             abort(403);
         }
 

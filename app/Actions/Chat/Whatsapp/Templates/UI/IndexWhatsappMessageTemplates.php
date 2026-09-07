@@ -45,6 +45,9 @@ class IndexWhatsappMessageTemplates extends OrgAction
 
         return $queryBuilder
             ->defaultSort('meta_message_templates.name')
+            // headerMedia backs the hover preview; its foreign key has to be selected for
+            // the relation to load, and eager loading keeps the list to one extra query.
+            ->with('headerMedia')
             ->select([
                 'meta_message_templates.id',
                 'meta_message_templates.template_id',
@@ -53,6 +56,7 @@ class IndexWhatsappMessageTemplates extends OrgAction
                 'meta_message_templates.status',
                 'meta_message_templates.category',
                 'meta_message_templates.synchronize_at',
+                'meta_message_templates.header_media_id',
                 'meta_message_templates.data',
             ])
             ->allowedSorts(['name', 'language', 'status', 'category', 'synchronize_at'])

@@ -18,15 +18,21 @@ import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Table from "@/Components/Table/Table.vue"
+import WhatsappTemplatePreview from "@/Components/Chat/WhatsappTemplatePreview.vue"
 
 interface TemplateRow {
     id: number
     name: string
+    label?: string | null
     language: string
     body: string
     variable_count: number
     merge_tags: string[]
     is_draft?: boolean
+    header?: { format?: string; text?: string | null } | null
+    footer?: string | null
+    buttons?: { type?: string; text?: string }[]
+    media_preview?: string | null
 }
 
 const props = defineProps<{
@@ -44,6 +50,43 @@ const props = defineProps<{
 }>()
 
 const rowRoute = (name: string, id: number) => route(name, { ...props.routeParameters, metaMessageTemplate: id })
+
+/* Hovering a name shows the message as the customer will receive it. The card is
+   teleported to <body> and fixed-positioned so the table's overflow cannot clip it. */
+const PREVIEW_WIDTH = 340
+
+const previewTemplate = ref<TemplateRow | null>(null)
+const previewStyle = ref<Record<string, string>>({})
+
+const openPreview = (event: MouseEvent, template: TemplateRow) => {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+
+    // Prefer the right of the cell, and fall back to its left when that would run off.
+    let left = rect.right + 12
+    if (left + PREVIEW_WIDTH > window.innerWidth - 8) {
+        left = Math.max(8, rect.left - PREVIEW_WIDTH - 12)
+    }
+
+    // Keep the card on screen when the row sits near the bottom.
+    const maxHeight = window.innerHeight - 32
+    let top = rect.top - 8
+    if (top + maxHeight > window.innerHeight - 16) {
+        top = Math.max(16, window.innerHeight - maxHeight - 16)
+    }
+
+    previewStyle.value = {
+        left: `${left}px`,
+        top: `${top}px`,
+        width: `${PREVIEW_WIDTH}px`,
+        maxHeight: `${maxHeight}px`,
+    }
+
+    previewTemplate.value = template
+}
+
+const closePreview = () => {
+    previewTemplate.value = null
+}
 
 const refreshingId = ref<number | null>(null)
 
@@ -119,7 +162,9 @@ const save = () => {
         </template>
 
         <template #cell(name)="{ item: template }">
-            <div class="flex flex-col">
+            <div class="flex flex-col cursor-help"
+                @mouseenter="openPreview($event, template)"
+                @mouseleave="closePreview">
                 <span class="font-medium">{{ template.label || template.name }}</span>
                 <span v-if="template.label" class="text-[11px] text-gray-400">{{ template.name }}</span>
             </div>
@@ -181,6 +226,20 @@ const save = () => {
             </button>
         </template>
     </Table>
+
+    <Teleport to="body">
+        <div v-if="previewTemplate"
+            class="fixed z-[9999] overflow-y-auto rounded-xl shadow-2xl ring-1 ring-black/10"
+            :style="previewStyle">
+            <WhatsappTemplatePreview
+                :body="previewTemplate.body"
+                :header="previewTemplate.header"
+                :footer="previewTemplate.footer"
+                :buttons="previewTemplate.buttons ?? []"
+                :merge-tags="previewTemplate.merge_tags ?? []"
+                :media-preview="previewTemplate.media_preview" />
+        </div>
+    </Teleport>
 
     <Dialog :visible="!!editing" @update:visible="editing = null" modal
         :header="trans('What do this template\'s variables mean?')" :style="{ width: '32rem' }">

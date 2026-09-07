@@ -3,7 +3,7 @@ import { computed, ref } from "vue"
 import { Head, useForm, router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faLock, faLink, faPhone, faReply, faTrash, faUpload, faImage, faVideo, faFilePdf } from "@fortawesome/free-solid-svg-icons"
+import { faLock, faLink, faPhone, faReply, faTrash, faUpload, faImage, faVideo, faFilePdf, faDownload } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { Message } from "primevue"
 import { notify } from "@kyvg/vue3-notification"
@@ -29,7 +29,7 @@ const props = defineProps<{
     businessName: string
     template: {
         id: number
-        header_media?: { name: string; url?: any } | null
+        header_media?: { name: string; url?: any; mime?: string | null; size?: number | null; file_url?: string | null } | null
         name: string
         label: string
         language: string
@@ -125,6 +125,25 @@ const headerIcon = computed(() => {
     const icons: Record<string, any> = { IMAGE: faImage, VIDEO: faVideo, DOCUMENT: faFilePdf }
 
     return icons[headerFormat.value] ?? null
+})
+
+// `inline=1` makes the browser play the file in place instead of downloading it.
+const headerMediaInlineUrl = computed(() => {
+    const url = props.template.header_media?.file_url
+
+    if (!url) return null
+
+    return url + (url.includes("?") ? "&" : "?") + "inline=1"
+})
+
+const headerMediaSize = computed(() => {
+    const bytes = Number(props.template.header_media?.size ?? 0)
+
+    if (!bytes) return null
+
+    return bytes >= 1048576
+        ? `${(bytes / 1048576).toFixed(1)} MB`
+        : `${Math.max(1, Math.round(bytes / 1024))} KB`
 })
 
 const statusTone = computed(() => {
@@ -307,9 +326,23 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                                     <FontAwesomeIcon v-else-if="headerIcon" :icon="headerIcon"
                                         class="text-xl text-gray-300" />
                                 </div>
-                                <span class="min-w-0 flex-1 truncate text-xs text-gray-500">
-                                    {{ template.header_media.name }}
+                                <span class="min-w-0 flex-1">
+                                    <span class="block truncate text-xs text-gray-700">
+                                        {{ template.header_media.name }}
+                                    </span>
+                                    <span v-if="headerMediaSize" class="block text-[11px] text-gray-400">
+                                        {{ headerMediaSize }}
+                                    </span>
                                 </span>
+
+                                <!-- Staff need to see the real file before it goes out, not
+                                     just its name. -->
+                                <a v-if="template.header_media.file_url"
+                                    :href="template.header_media.file_url" target="_blank" rel="noopener"
+                                    class="shrink-0 inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-[11px] text-gray-600 transition hover:bg-white hover:text-gray-800">
+                                    <FontAwesomeIcon :icon="faDownload" class="text-[10px]" />
+                                    {{ trans("Download") }}
+                                </a>
                             </div>
 
                             <Message v-else severity="warn" :closable="false" class="text-xs">
@@ -442,7 +475,23 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                                 <div
                                     class="relative rounded-lg rounded-tl-none bg-white shadow-[0_1px_1px_rgba(0,0,0,0.12)] overflow-hidden">
                                     <div v-if="needsHeaderMedia" class="p-1.5 pb-0">
-                                        <div class="h-36 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
+                                        <!-- The real file, so staff see what the customer will
+                                             actually receive rather than a placeholder icon. -->
+                                        <video v-if="headerFormat === 'VIDEO' && headerMediaInlineUrl"
+                                            :src="headerMediaInlineUrl" controls preload="metadata"
+                                            class="h-36 w-full rounded-md bg-black object-contain" />
+
+                                        <a v-else-if="headerFormat === 'DOCUMENT' && template.header_media?.file_url"
+                                            :href="template.header_media.file_url" target="_blank" rel="noopener"
+                                            class="h-36 rounded-md bg-gray-100 flex flex-col items-center justify-center gap-1 text-gray-500 transition hover:bg-gray-200">
+                                            <FontAwesomeIcon :icon="faFilePdf" class="text-3xl text-gray-400" />
+                                            <span class="max-w-[90%] truncate text-[11px]">
+                                                {{ template.header_media.name }}
+                                            </span>
+                                            <span class="text-[10px] underline">{{ trans("Open file") }}</span>
+                                        </a>
+
+                                        <div v-else class="h-36 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
                                             <Image v-if="headerFormat === 'IMAGE' && template.header_media?.url"
                                                 :src="template.header_media.url" image-cover
                                                 class="w-full h-full" />
