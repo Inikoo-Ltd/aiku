@@ -15,6 +15,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $id
  * @property string $slug
  * @property string $reference
+ * @property string|null $artisan
  * @property JobOrderStateEnum $state
  * @property string|null $date
  * @property int $number_tasks
@@ -28,6 +29,7 @@ class JobOrdersResource extends JsonResource
             'id'                => $this->id,
             'slug'              => $this->slug,
             'reference'         => $this->reference,
+            'artisan'           => $this->artisan,
             'state'             => $this->state,
             'state_label'       => JobOrderStateEnum::labels()[$this->state->value] ?? $this->state->value,
             'date'              => $this->date,

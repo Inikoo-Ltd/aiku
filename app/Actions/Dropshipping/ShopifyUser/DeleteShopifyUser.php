@@ -53,7 +53,8 @@ class DeleteShopifyUser extends OrgAction
             'name'   => $ulid,
             'slug'   => $ulid,
             'email'  => $ulid,
-            'status' => false
+            'status' => false,
+            'data'   => $data,
         ]);
 
         if ($shopifyUser->customerSalesChannel && $shopifyUser->customerSalesChannel->status != CustomerSalesChannelStatusEnum::CLOSED) {

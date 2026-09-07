@@ -91,7 +91,7 @@ Payments, payment accounts and gateways — Checkout.com, PayPal, Braintree, Hok
 Employees, clocking machines, timesheets, leave, job positions and roles. A manufacture module for artefacts, raw materials and job orders.
 
 ### 📊 Analytics, search & AI
-Time-series metrics and dashboards, margins, exports. Group-wide instant search (Typesense / Meilisearch) and semantic search (pgvector). A first-party **MCP server** with permission-scoped tools so your AI assistants can answer questions about the business — safely.
+Time-series metrics and dashboards, margins, exports. Group-wide instant search (Typesense) and semantic search (pgvector). A first-party **MCP server** with permission-scoped tools so your AI assistants can answer questions about the business — safely.
 
 ## The apps
 
@@ -106,7 +106,7 @@ Time-series metrics and dashboards, margins, exports. Group-wide instant search 
 
 ## Under the hood
 
-**PHP 8.4 · Laravel 13 · Octane · Horizon · Passport · Pennant · Scout · laravel/mcp · PostgreSQL 18 + pgvector · Redis · Typesense · Meilisearch · Vue 3 · Inertia v2 · Tailwind · Vite · TypeScript · React Native · Pest 4**
+**PHP 8.4 · Laravel 13 · Octane · Horizon · Passport · Pennant · Scout · laravel/mcp · PostgreSQL 18 + pgvector · Redis · Typesense · Vue 3 · Inertia v2 · Tailwind · Vite · TypeScript · React Native · Pest 4**
 
 ## Getting started
 

@@ -47,8 +47,7 @@ class ExportManufacturePayroll extends OrgAction
 
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
-            'productions-view.'.$this->organisation->id,
-            "productions_operations.{$this->production->id}.orchestrate",
+            "human-resources.{$this->organisation->id}.view",
         ]);
     }
 

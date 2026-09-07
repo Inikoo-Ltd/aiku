@@ -194,6 +194,7 @@ class StoreEmployee extends OrgAction
             'positions.*.scopes.warehouses.slug.*'    => ['sometimes', Rule::exists('warehouses', 'slug')->where('organisation_id', $this->organisation->id)],
             'positions.*.scopes.fulfilments.slug.*'   => ['sometimes', Rule::exists('fulfilments', 'slug')->where('organisation_id', $this->organisation->id)],
             'positions.*.scopes.shops.slug.*'         => ['sometimes', Rule::exists('shops', 'slug')->where('organisation_id', $this->organisation->id)],
+            'positions.*.scopes.productions.slug.*'   => ['sometimes', Rule::exists('productions', 'slug')->where('organisation_id', $this->organisation->id)],
             'email'                                   => ['sometimes', 'nullable', 'email'],
             'username'                                => [
                 $this->asAction ? 'nullable' : 'required',

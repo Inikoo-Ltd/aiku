@@ -477,7 +477,7 @@ onMounted(async () => {
                 </div>
 
                 <div v-if="Object.keys(customerData?.offers_data || {})?.length" class="my-3 w-full">
-                    <Discount :offers_data="customerData?.offers_data" class="justify-center" template="agnes_and_cat" />
+                  <!--   <Discount :offers_data="customerData?.offers_data" class="justify-center" template="agnes_and_cat" /> -->
                 </div>
 
                 <hr class="my-4 border-gray-200" />

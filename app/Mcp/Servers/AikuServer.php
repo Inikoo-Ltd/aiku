@@ -26,6 +26,8 @@ use App\Mcp\Tools\EmailMarketingPerformanceTool;
 use App\Mcp\Tools\OfferPerformanceTool;
 use App\Mcp\Tools\MarginTrendTool;
 use App\Mcp\Tools\MyAccessTool;
+use App\Mcp\Tools\TicketsTool;
+use App\Mcp\Tools\TicketWriteTool;
 use App\Mcp\Tools\OffersOverviewTool;
 use App\Mcp\Tools\OrderStatusTool;
 use App\Mcp\Tools\OrderFunnelTool;
@@ -54,7 +56,7 @@ use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('Aiku')]
 #[Version('1.0.0')]
-#[Instructions('Read-only access to Aiku commerce data. Every tool is scoped by the authenticated user\'s permissions: a tool call against a shop the user cannot view returns a permission error. Tools identify shops, organisations and warehouses by slug, never by their display name — when a question names one in words, call my-access-tool first to get the slugs this user can reach, and never guess a slug. For questions about a specific product or customer use product-lookup-tool and customer-lookup-tool. For marketing questions — traffic sources, where customers come from, ad spend and return (ROAS/ROI), Google Ads or Meta Ads effectiveness, SEO/organic trend, AI assistant traffic, which newsletter earned most — use marketing-performance-tool, marketing-trend-tool and email-marketing-performance-tool; they encode the attribution rules, do not reconstruct them in SQL. sql-query-tool and describe-tables-tool only work for users with SQL access enabled: if they return an access error, do not retry them and answer with the other tools instead.')]
+#[Instructions('Access to Aiku commerce data and the Aiku ticketing system. Tickets: tickets-tool lists or shows tickets (HELP-n internal bugs, features and escalations; AD-n customer tickets) and ticket-write-tool comments, assigns, changes status, tags and modules, or raises a new HELP ticket; when the user reports something broken, raise a ticket with ticket-write-tool rather than only answering. Everything else is read-only. Every tool is scoped by the authenticated user\'s permissions: a tool call against a shop the user cannot view returns a permission error. Tools identify shops, organisations and warehouses by slug, never by their display name — when a question names one in words, call my-access-tool first to get the slugs this user can reach, and never guess a slug. For questions about a specific product or customer use product-lookup-tool and customer-lookup-tool. For marketing questions — traffic sources, where customers come from, ad spend and return (ROAS/ROI), Google Ads or Meta Ads effectiveness, SEO/organic trend, AI assistant traffic, which newsletter earned most — use marketing-performance-tool, marketing-trend-tool and email-marketing-performance-tool; they encode the attribution rules, do not reconstruct them in SQL. sql-query-tool and describe-tables-tool only work for users with SQL access enabled: if they return an access error, do not retry them and answer with the other tools instead.')]
 class AikuServer extends Server
 {
     /**
@@ -62,6 +64,8 @@ class AikuServer extends Server
      */
     protected array $tools = [
         MyAccessTool::class,
+        TicketsTool::class,
+        TicketWriteTool::class,
         ProductLookupTool::class,
         CustomerLookupTool::class,
         ShopSalesTool::class,

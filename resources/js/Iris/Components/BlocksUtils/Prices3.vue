@@ -292,6 +292,8 @@ const _popoverProfit = ref(null)
                         :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Department Ordered'"
                         :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
+                    <DiscountByType v-if="bestOffer?.type == 'Shop Ordered'"
+                        :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Subdepartment Ordered'"
                         :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
                     <div v-else class="w-full"></div>

@@ -181,6 +181,10 @@ const props = defineProps<{
         address_modal_title: string
     }
     box_stats: {
+        recipient?: {
+            contact_name: string | null
+            company_name: string | null
+        }
         customer: {
             reference: string
             contact_name: string
@@ -653,6 +657,31 @@ const updateCollection = async (e: Event) => {
             type: "error",
         })
     }
+}
+
+const recipientForm = ref({
+    contact_name: props.box_stats?.recipient?.contact_name ?? '',
+    company_name: props.box_stats?.recipient?.company_name ?? '',
+})
+const isRecipientDifferentFromCustomer = computed(() =>
+    !!props.box_stats?.recipient && (
+        (props.box_stats.recipient.contact_name ?? '') !== (props.box_stats.customer?.contact_name ?? '') ||
+        (props.box_stats.recipient.company_name ?? '') !== (props.box_stats.customer?.company_name ?? '')
+    )
+)
+const canEditRecipient = computed(() => !props.readonly && props.data?.data?.state !== 'dispatched')
+const saveRecipient = () => {
+    if (recipientForm.value.contact_name === (props.box_stats?.recipient?.contact_name ?? '')
+        && recipientForm.value.company_name === (props.box_stats?.recipient?.company_name ?? '')) {
+        return
+    }
+    router.patch(route(props.routes.updateOrderRoute.name, props.routes.updateOrderRoute.parameters), {
+        contact_name: recipientForm.value.contact_name || null,
+        company_name: recipientForm.value.company_name || null,
+    }, {
+        preserveScroll: true,
+        onError: () => notify({ title: ctrans("Something went wrong."), text: ctrans("Failed to update recipient"), type: "error" }),
+    })
 }
 
 const updateShippingExternal = async (e: boolean) => {
@@ -1931,6 +1960,18 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             </div>
                         </div>
 
+                        <!-- Field: Recipient (only when it differs from the customer) -->
+                        <dl v-if="!isCollection && isRecipientDifferentFromCustomer" class="mt-2 flex items-center w-full gap-x-2">
+                            <dt v-tooltip="ctrans('Recipient on delivery label')" class="flex-none">
+                                <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="text-sm text-gray-500">
+                                {{ box_stats?.recipient?.contact_name || '-' }}
+                                <span v-if="box_stats?.recipient?.company_name">({{ box_stats?.recipient?.company_name }})</span>
+                            </dd>
+                            <CopyButton :text="[box_stats?.recipient?.contact_name, box_stats?.recipient?.company_name].filter(Boolean).join(', ')" />
+                        </dl>
+
                         <!-- Field: Shipping Address -->
                         <dl v-if="box_stats?.customer?.addresses?.delivery?.formatted_address !== box_stats?.customer?.addresses?.billing?.formatted_address && !isCollection"
                             class="mt-2 pt-1 flex items-start w-full flex-none gap-x-2">
@@ -2690,6 +2731,15 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
     <!-- Section: address edit -->
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)" width="w-full max-w-xl">
+        <div v-if="canEditRecipient" class="mb-4">
+            <div class="text-sm font-semibold mb-1">{{ ctrans("Recipient on delivery label") }}</div>
+            <div class="grid grid-cols-2 gap-x-2">
+                <input v-model="recipientForm.contact_name" @blur="saveRecipient" type="text" :placeholder="ctrans('Contact name')"
+                    class="w-full text-sm border border-gray-300 rounded px-2 py-1" />
+                <input v-model="recipientForm.company_name" @blur="saveRecipient" type="text" :placeholder="ctrans('Company name')"
+                    class="w-full text-sm border border-gray-300 rounded px-2 py-1" />
+            </div>
+        </div>
         <AddressEditModal v-if="props.shop_type === 'b2b'" :addresses="delivery_address_management.addresses"
             :address="box_stats?.customer.addresses.delivery"
             :updateRoute="delivery_address_management.address_update_route" @submitted="() => (isModalAddress = false)"

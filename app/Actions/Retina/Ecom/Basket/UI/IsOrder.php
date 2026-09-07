@@ -384,6 +384,10 @@ trait IsOrder
 
         return [
             'customer_client'  => $customerClientData,
+            'recipient'        => [
+                'contact_name' => $order->contact_name,
+                'company_name' => $order->company_name,
+            ],
             'customer'         => $order->customer ? array_merge(
                 CustomerResource::make($order->customer)->getArray(),
                 [

@@ -65,6 +65,7 @@ class CheckWooChannel
         if ($platformStatus) {
             $data['state']                 = CustomerSalesChannelStateEnum::AUTHENTICATED;
             $data['ban_stock_update_util'] = null;
+            $data['ping_error_count']      = 0;
         } else {
             $data['state'] = CustomerSalesChannelStateEnum::NOT_READY;
         }

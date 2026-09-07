@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { inject, onMounted } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBoxUsd, faUsersCog, faChartLine, faUserHardHat, faUser, faInventory, faConveyorBeltAlt,
+import { faBoxUsd, faUsersCog, faChartLine, faUserHardHat, faBlenderPhone, faUser, faInventory, faConveyorBeltAlt,
     faChevronDown, faPalletAlt, faAbacus,faCloudRainbow,faShoppingCart,faMountains, faTasksAlt, faTruck,
     faFlaskPotion,faFillDrip,faBullhorn,faBadgePercent,faChargingStation, faBallot, faSlidersH, faChartLineDown,
   faArrowFromLeft,faArrowToBottom, faWarehouse, faFax
@@ -23,7 +23,7 @@ import NavigationHorizontal from "@/Layouts/Grp/NavigationHorizontal.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { trans } from "laravel-vue-i18n"
 
-library.add(faBoxUsd, faUsersCog, faChartLine, faUserHardHat, faUser, faUsersCog, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt,
+library.add(faBoxUsd, faUsersCog, faChartLine, faUserHardHat, faBlenderPhone, faUser, faUsersCog, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt,
 faAbacus, faCloudRainbow,faShoppingCart,faMountains, faTasksAlt, faTruck, faFlaskPotion, faFillDrip, faBullhorn,faBadgePercent,faChargingStation,
 faBallot, faSlidersH, faChartLineDown,faArrowFromLeft,faArrowToBottom, faWarehouse, faFax
 )

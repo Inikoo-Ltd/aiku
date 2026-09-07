@@ -21,7 +21,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -86,11 +85,7 @@ class StoreEbayProduct extends RetinaAction
                         'errors_response' => ['params' => $params] + $errorResponse
                     ]);
 
-                    if (!blank($params)) {
-                        throw ValidationException::withMessages(['title' => $displayError]);
-                    }
-
-                    return $displayError;
+                    return $displayError ?: true;
                 }
 
                 return false;

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping;
 
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -15,12 +16,19 @@ use Illuminate\Support\Facades\Log;
  * customer's own live store, using the credentials held in the database. A non production
  * environment restored from a production database would therefore write to real customer shops,
  * so every outbound call to those platforms is refused outside production.
+ *
+ * A test may open the guard only while Laravel's Http client refuses every request it has not faked,
+ * so nothing can leave the process even then.
  */
 class PlatformOutboundGuard
 {
     public static function blocks(string $platform, string $context = ''): bool
     {
         if (app()->isProduction()) {
+            return false;
+        }
+
+        if (app()->runningUnitTests() && Http::preventingStrayRequests()) {
             return false;
         }
 

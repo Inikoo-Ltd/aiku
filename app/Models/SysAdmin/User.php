@@ -369,7 +369,8 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
 
     public function hasGroupAccess(): bool
     {
-        return $this->authorisedShopOrganisations()->exists() || $this->authTo(['group-overview', 'sysadmin.view']);
+        return $this->authorisedShopOrganisations()->count() > 1
+            || $this->authTo(['group-overview', 'sysadmin.view', 'goods.view', 'masters.view', 'supply-chain.view', 'organisations.view']);
     }
 
     public function authorisedShops(): MorphToMany

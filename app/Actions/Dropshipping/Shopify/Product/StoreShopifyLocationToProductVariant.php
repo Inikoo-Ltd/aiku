@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Dropshipping\WithPortfolioErrorResponse;
+use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
@@ -96,7 +97,7 @@ class StoreShopifyLocationToProductVariant extends RetinaAction
             }
             MUTATION;
 
-            $availableQuantity = $product->total_quantity;
+            $availableQuantity = $product instanceof Product ? UpdateWooCustomerSalesChannelPortfolio::quantityToSend($product, $customerSalesChannel) : (int) $product->total_quantity;
 
             // Get inventory item ID from variant ID
             //  format: gid://shopify/ProductVariant/123
@@ -133,7 +134,7 @@ class StoreShopifyLocationToProductVariant extends RetinaAction
             $variables = [
                 'inventoryItemId' => $inventoryItemId,
                 'locationId' => $shopifyUser->shopify_location_id,
-                'available' => (int) $availableQuantity ?? 0
+                'available' => $availableQuantity
             ];
 
             // Make the GraphQL request

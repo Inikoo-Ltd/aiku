@@ -34,9 +34,27 @@ class IndexTickets extends OrgAction
 
     protected function getElementGroups(Group $group): array
     {
-        $base = Ticket::where('group_id', $group->id);
+        $user = request()->user();
+        $base = Ticket::where('group_id', $group->id)->visibleTo($user);
 
         return [
+            'mine'   => [
+                'label'    => __('Mine'),
+                'elements' => [
+                    'reported' => [__('Reported by me'), (clone $base)->where('reporter_type', 'User')->where('reporter_id', $user->id)->count()],
+                    'assigned' => [__('Assigned to me'), (clone $base)->where('assignee_id', $user->id)->count()],
+                ],
+                'engine'   => function ($query, $elements) use ($user) {
+                    $query->where(function ($query) use ($elements, $user) {
+                        if (in_array('reported', $elements)) {
+                            $query->orWhere(fn ($query) => $query->where('tickets.reporter_type', 'User')->where('tickets.reporter_id', $user->id));
+                        }
+                        if (in_array('assigned', $elements)) {
+                            $query->orWhere('tickets.assignee_id', $user->id);
+                        }
+                    });
+                },
+            ],
             'status' => [
                 'label'    => __('Status'),
                 'elements' => collect(TicketStatusEnum::cases())->mapWithKeys(fn (TicketStatusEnum $status) => [
@@ -73,6 +91,7 @@ class IndexTickets extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Ticket::class)
             ->where('tickets.group_id', $group->id)
+            ->visibleTo(request()->user())
             ->leftJoin('users', 'users.id', '=', 'tickets.assignee_id')
             ->with(['reporter', 'customer']);
 

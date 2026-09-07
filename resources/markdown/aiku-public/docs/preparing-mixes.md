@@ -4,7 +4,7 @@ summary: For the preparer and the planner - how a mix or base becomes something 
 date: 2026-09-02
 tags: production, crafts
 category: production
-help_routes: grp.org.productions.show.partners.mixes, grp.org.productions.show.crafts.raw_materials
+help_routes: grp.org.productions.show.to_produce.mixes, grp.org.productions.show.crafts.raw_materials
 series: Ordering from partners
 order: 6
 ---

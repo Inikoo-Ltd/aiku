@@ -195,20 +195,11 @@ class StoreShopifyProduct extends RetinaAction
                 'platform_product_id' => Arr::get($createdProduct, 'id'),
             ]);
 
-            StoreShopifyProductVariant::run($portfolio);
+            [$variantStored, $variantResult] = StoreShopifyProductVariant::run($portfolio);
 
-
-            // Extract variant ID if available
-            $variantId = null;
-            if (isset($createdProduct['variants']['edges'][0]['node']['id'])) {
-                $variantId = $createdProduct['variants']['edges'][0]['node']['id'];
+            if (!$variantStored) {
+                return [false, $variantResult];
             }
-
-            UpdatePortfolio::run($portfolio, [
-                'platform_product_variant_id' => $variantId,
-            ]);
-
-            SaveShopifyProductData::run($portfolio);
 
             // Format the response to match the expected structure
             return [true, $this->formatProductResponse($createdProduct)];

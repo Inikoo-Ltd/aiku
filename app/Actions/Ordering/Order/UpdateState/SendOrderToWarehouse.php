@@ -231,7 +231,7 @@ class SendOrderToWarehouse extends OrgAction
                 $companyName = $order->customerClient->company_name;
             }
         } else {
-            $companyName = $order->customer->company_name;
+            $companyName = $order->company_name ?? $order->customer->company_name;
         }
 
         return $companyName;
@@ -245,7 +245,7 @@ class SendOrderToWarehouse extends OrgAction
                 $contactName = $order->customerClient->contact_name;
             }
         } else {
-            $contactName = $order->customer->contact_name;
+            $contactName = $order->contact_name ?? $order->customer->contact_name;
         }
 
         return Str::substr($contactName, 0, 40);

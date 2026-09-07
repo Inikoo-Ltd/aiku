@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Clients;
 
+use App\Actions\Dropshipping\WooCommerce\Product\CheckIfProductExistInWoo;
 use App\Actions\Retina\Dropshipping\Client\StoreRetinaClientFromPlatformUser;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedWooCommerceAddress;
 use App\Actions\RetinaAction;
@@ -23,22 +24,32 @@ class GetRetinaCustomerClientFromWooCommerce extends RetinaAction
     use WithGeneratedWooCommerceAddress;
 
     /**
+     * A store customer carries the email at the top level and in billing, never in shipping. A client
+     * is recognised by phone, and by name among the phone-less ones, so a customer without a phone
+     * never lands on somebody else's row. An address the country table cannot place falls back to
+     * the customer's own delivery address rather than being saved without a country.
+     *
      * @throws \Throwable
      */
     public function handle(WooCommerceUser $wooCommerceUser): void
     {
-        $customers = $wooCommerceUser->getWooCommerceCustomers();
+        $customers = CheckIfProductExistInWoo::onlyProducts($wooCommerceUser->getWooCommerceCustomers());
 
         foreach ($customers as $customer) {
-            $address = Arr::get($customer, 'shipping', []);
-            $existsClient = $this->customer->clients()
-                ->where('phone', $customer['shipping']['phone'])
-                ->where('customer_sales_channel_id', $wooCommerceUser->customer_sales_channel_id)
-                ->first();
+            $address = array_filter(Arr::get($customer, 'shipping', []));
+            $phone   = Arr::get($customer, 'shipping.phone') ?: Arr::get($customer, 'billing.phone');
 
-            $attributes = $this->getAttributes($address);
+            $attributes          = $this->getAttributes($address);
+            $attributes['email'] = Arr::get($customer, 'email') ?: Arr::get($customer, 'billing.email', '');
+            $attributes['phone'] = $phone;
 
-            if (blank($address)) {
+            $clients = $wooCommerceUser->customer->clients()
+                ->where('customer_sales_channel_id', $wooCommerceUser->customer_sales_channel_id);
+
+            $existsClient = (filled($phone) ? (clone $clients)->where('phone', $phone)->first() : null)
+                ?? (clone $clients)->whereNull('phone')->where('contact_name', $attributes['contact_name'])->first();
+
+            if (blank($address) || !Arr::get($attributes, 'address.country_id')) {
                 data_set($attributes, 'address', $wooCommerceUser->customer?->deliveryAddress?->toArray());
             }
 

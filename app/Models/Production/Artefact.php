@@ -132,6 +132,11 @@ class Artefact extends Model implements Auditable
             ->orderByPivot('position');
     }
 
+    public function rawMaterial(): HasOne
+    {
+        return $this->hasOne(RawMaterial::class);
+    }
+
     public function orgStock(): BelongsTo
     {
         return $this->belongsTo(OrgStock::class);

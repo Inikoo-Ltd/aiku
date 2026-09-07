@@ -78,9 +78,8 @@ class CheckShopifyChannel
             }
         }
 
-        $shopName = Arr::get($storeData, 'name');
         $this->update($customerSalesChannel, [
-            'name'                    => $shopName,
+            'name'                    => Arr::get($storeData, 'name', $customerSalesChannel->name),
             'platform_status'         => $platformStatus,
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform,

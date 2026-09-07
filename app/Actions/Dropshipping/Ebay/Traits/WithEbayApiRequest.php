@@ -314,30 +314,11 @@ trait WithEbayApiRequest
         try {
             $endpoint = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_item_aspects_for_category";
 
-            $response = $this->makeEbayRequest('get', $endpoint, [
+            return $this->makeEbayRequest('get', $endpoint, [
                 'category_id' => $categoryId
             ]);
-
-            // makeEbayRequest hands back eBay's error body rather than throwing, so a failure
-            // here would otherwise pass silently and strip every aspect from the listing.
-            if (!is_array($response) || !array_key_exists('aspects', $response)) {
-                \Log::error('eBay category aspects unavailable, listing will carry no category aspects', [
-                    'category_id'      => $categoryId,
-                    'category_tree_id' => $categoryTree,
-                    'response'         => $response
-                ]);
-
-                return ['aspects' => []];
-            }
-
-            return $response;
         } catch (\Exception $e) {
-            \Log::error('Failed to get eBay category aspects', [
-                'category_id' => $categoryId,
-                'error'       => $e->getMessage()
-            ]);
-
-            return ['aspects' => []]; // Return empty aspects on failure
+            return ['aspects' => []];
         }
     }
 
@@ -1463,11 +1444,14 @@ trait WithEbayApiRequest
             $endpoint = "/sell/fulfillment/v1/order/$orderId/shipping_fulfillment";
 
             $fulfillment = [
-                'lineItems'           => $fulfillmentData['line_items'],
-                'shippedDate'         => now()->toISOString(),
-                'shippingCarrierCode' => $fulfillmentData['carrier_code'] ?? 'USPS',
-                'trackingNumber'      => $fulfillmentData['tracking_number'] ?? null
+                'lineItems'   => $fulfillmentData['line_items'],
+                'shippedDate' => now()->toISOString(),
             ];
+
+            if (filled(Arr::get($fulfillmentData, 'tracking_number'))) {
+                $fulfillment['trackingNumber']      = $fulfillmentData['tracking_number'];
+                $fulfillment['shippingCarrierCode'] = Arr::get($fulfillmentData, 'carrier_code') ?: 'Other';
+            }
 
             return $this->makeEbayRequest('post', $endpoint, $fulfillment);
         } catch (Exception $e) {
@@ -1888,7 +1872,7 @@ trait WithEbayApiRequest
     public function getInventoryLocations()
     {
         try {
-            $endpoint = "/sell/inventory/v1/location?limit=20&offset=0";
+            $endpoint = "/sell/inventory/v1/location?limit=100&offset=0";
 
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {

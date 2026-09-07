@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Collection\SyncIndirectProductsToCollection;
 use App\Actions\Catalogue\ProductCategory\Hydrators\DepartmentHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateProducts;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithMismatchFamily;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoFamily;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductsWithNoFamily;
@@ -67,6 +68,7 @@ class UpdateProductFamily extends OrgAction
         }
 
         if (Arr::has($changes, 'family_id')) {
+            ShopHydrateProductsWithMismatchFamily::dispatch($product->shop);
             FamilyHydrateProducts::dispatch($product->family);
             BreakProductInWebpagesCache::make()->breakCache($product->family->webpage);
             if ($product->webpage) {

@@ -139,12 +139,23 @@ class RetryOrderImport
     /**
      * StoreOrderFromAmazon never sets platform_order_id, it keeps the whole Amazon payload in
      * data, so Amazon has to be matched the same way GetRetinaOrdersFromAmazon matches it.
+     * WooCommerce stores the order key there while the store is asked by numeric id, which only
+     * lives inside the saved payload.
      */
     private function findExistingOrder(CustomerSalesChannel $customerSalesChannel, string $platformOrderId): ?Order
     {
         if ($customerSalesChannel->platform->type === PlatformTypeEnum::AMAZON) {
             return $customerSalesChannel->orders()
                 ->whereRaw("data->>'AmazonOrderId' = ?", [$platformOrderId])
+                ->first();
+        }
+
+        if ($customerSalesChannel->platform->type === PlatformTypeEnum::WOOCOMMERCE) {
+            return $customerSalesChannel->orders()
+                ->where(function ($query) use ($platformOrderId) {
+                    $query->where('platform_order_id', $platformOrderId)
+                        ->orWhereRaw("data->'woo_order'->>'id' = ?", [$platformOrderId]);
+                })
                 ->first();
         }
 
@@ -207,7 +218,9 @@ class RetryOrderImport
     private function getPortfolioMismatch(CustomerSalesChannel $customerSalesChannel, array $platformOrder): ?string
     {
         $lineItemIds = match ($customerSalesChannel->platform->type) {
-            PlatformTypeEnum::WOOCOMMERCE => collect(Arr::get($platformOrder, 'line_items', []))->pluck('product_id')->filter()->all(),
+            PlatformTypeEnum::WOOCOMMERCE => collect(Arr::get($platformOrder, 'line_items', []))
+                ->flatMap(fn ($item) => StoreOrderFromWooCommerce::lineItemPlatformProductIds($item))
+                ->all(),
             PlatformTypeEnum::EBAY => collect(Arr::get($platformOrder, 'lineItems', []))->pluck('legacyItemId')->filter()->all(),
             default => null,
         };

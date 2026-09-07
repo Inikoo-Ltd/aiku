@@ -15,6 +15,7 @@ use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProductHydrateMarketingIngredientsFromTradeUnits implements ShouldBeUnique
@@ -51,8 +52,29 @@ class ProductHydrateMarketingIngredientsFromTradeUnits implements ShouldBeUnique
 
     public function marketingIngredients(Collection $tradeUnits): string
     {
-        $sourceTradeUnit = $tradeUnits->first(fn (TradeUnit $tradeUnit) => filled($tradeUnit->marketing_ingredients));
+        $ingredients = [];
 
-        return $sourceTradeUnit?->marketing_ingredients ?? '';
+        foreach ($tradeUnits->sortBy('id') as $tradeUnit) {
+            /** @var TradeUnit $tradeUnit */
+            if (blank($tradeUnit->marketing_ingredients)) {
+                continue;
+            }
+
+            foreach ($this->splitIngredients($tradeUnit->marketing_ingredients) as $ingredient) {
+                $ingredients[Str::lower($ingredient)] ??= $ingredient;
+            }
+        }
+
+        return implode(', ', $ingredients);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function splitIngredients(string $marketingIngredients): array
+    {
+        $parts = preg_split('/,(?![^(]*\))/', $marketingIngredients) ?: [];
+
+        return array_values(array_filter(array_map('trim', $parts), 'filled'));
     }
 }

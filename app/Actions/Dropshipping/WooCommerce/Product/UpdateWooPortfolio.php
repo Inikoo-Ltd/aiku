@@ -75,15 +75,7 @@ class UpdateWooPortfolio implements ShouldBeUnique
         $product = $portfolio->item;
 
 
-        $availableQuantity = $product->available_quantity ?? 0;
-
-        if (!$product->isSellableThroughSalesChannels()) {
-            $availableQuantity = 0;
-        }
-
-        if ($customerSalesChannel->max_quantity_advertise > 0) {
-            $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
-        }
+        $availableQuantity = UpdateWooCustomerSalesChannelPortfolio::quantityToSend($product, $customerSalesChannel);
 
         $wooCommerceUser->setTimeout(45);
         try {

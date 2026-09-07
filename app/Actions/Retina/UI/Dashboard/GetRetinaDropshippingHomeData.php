@@ -82,7 +82,8 @@ class GetRetinaDropshippingHomeData
             'last_visited_channels' => $latestChannel,
             'shortcut'              => [
                 'order'                 => [
-                    'manual_data' => $manualSinglePlatformData
+                    'number_manual_channels' => $manuals->count(),
+                    'manual_data'            => $manualSinglePlatformData
                 ],
                 'create_customer_sales_channel' => [
                     'route_create' => [

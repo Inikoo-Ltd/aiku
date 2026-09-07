@@ -55,7 +55,13 @@ return [
         // it, links fall back to the generic dashboard root.
         'app_id' => env('NIGHTOWL_APP_ID'),
         'driver' => env('NIGHTOWL_AGENT_DRIVER', 'async'),
-        'sqlite_path' => env('NIGHTOWL_AGENT_SQLITE_PATH', storage_path('nightowl/agent-buffer.sqlite')),
+        // A relative NIGHTOWL_AGENT_SQLITE_PATH would resolve against the agent's
+        // cwd (supervisor's directory=), which sits inside the deploy-rewritten
+        // anchor tree — a deploy then unlinks the buffer under the running daemon
+        // and it writes to a deleted inode forever. Anchor it to storage_path().
+        'sqlite_path' => str_starts_with($nightowlSqlitePath = env('NIGHTOWL_AGENT_SQLITE_PATH', 'nightowl/agent-buffer.sqlite'), '/')
+            ? $nightowlSqlitePath
+            : storage_path($nightowlSqlitePath),
         'drain_interval_ms' => env('NIGHTOWL_DRAIN_INTERVAL_MS', 100),
         'drain_batch_size' => env('NIGHTOWL_DRAIN_BATCH_SIZE', 5000),
         'drain_workers' => env('NIGHTOWL_DRAIN_WORKERS', 1),

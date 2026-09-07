@@ -70,7 +70,7 @@ class IndexJobOrders extends OrgAction
             ->groupBy('job_orders.id', 'employees.contact_name')
             ->defaultSort('-date')
             ->allowedSorts(['reference', 'date', 'state', 'artisan'])
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch, AllowedFilter::exact('employee_id', 'job_orders.employee_id'), AllowedFilter::exact('state', 'job_orders.state')])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

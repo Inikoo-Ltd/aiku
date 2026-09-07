@@ -47,9 +47,9 @@ class UpdateWooProduct implements ShouldBeUnique
             $wooCommerceUser->updateWooCommerceProduct(
                 $portfolio->platform_product_id,
                 [
-                    'regular_price'     => (string)$portfolio->customer_price,
-                    'title' => $portfolio->customer_product_name,
-                    'description' => $portfolio->customer_description
+                    'regular_price' => (string) $portfolio->customer_price,
+                    'name'          => $portfolio->customer_product_name,
+                    'description'   => $portfolio->customer_description
                 ]
             );
 

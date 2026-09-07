@@ -133,7 +133,7 @@ class UpdateEbayPortfolio implements ShouldBeUnique
             if (in_array($statusCode, [200, 204])) {
                 $this->markUpdated($portfolio, $customerSalesChannel, $platformPortfolioLog, $availableQuantity);
             } else {
-                $errors = Arr::get($response, 'responses.0.errors', Arr::get($response, 'errors', $response));
+                $errors = self::bulkUpdateErrors($response);
 
                 UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
@@ -174,6 +174,26 @@ class UpdateEbayPortfolio implements ShouldBeUnique
         CustomerSalesChannelsHydratePortfolios::dispatch($portfolio->customerSalesChannel);
 
         return true;
+    }
+
+    /**
+     * The bulk endpoint returns one entry per request part, and only the failing part carries the errors.
+     *
+     * @param  array<string, mixed>  $response
+     * @return array<int, mixed>
+     */
+    public static function bulkUpdateErrors(array $response): array
+    {
+        $errors = collect(Arr::get($response, 'responses', []))
+            ->flatMap(fn ($part) => Arr::get($part, 'errors', []))
+            ->values()
+            ->all();
+
+        if ($errors) {
+            return $errors;
+        }
+
+        return Arr::get($response, 'errors', $response);
     }
 
     public static function isListingEndedError(mixed $errors): bool

@@ -100,6 +100,7 @@ class OrdersResource extends JsonResource
             'dispatched_at'               => $this->dispatched_at,
             'name'                        => $this->name,
             'state'                       => $this->state,
+            'is_export'                   => (bool) $this->is_export,
             'state_icon'                  => $this->state->stateIcon()[$this->state->value],
             'net_amount'                  => $this->net_amount,
             'payment_amount'              => $this->payment_amount,

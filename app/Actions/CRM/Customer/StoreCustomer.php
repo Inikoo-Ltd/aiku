@@ -239,6 +239,10 @@ class StoreCustomer extends OrgAction
             return;
         }
 
+        if (ParseTrafficSourceTouches::wasTranslated($touches)) {
+            $customer->updateQuietly(['traffic_sources' => ParseTrafficSourceTouches::serialise($touches)]);
+        }
+
         AttachTrafficSourcesToModel::run($customer, $customer->shop_id, $touches);
     }
 
