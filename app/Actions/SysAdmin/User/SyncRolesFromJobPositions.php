@@ -182,6 +182,7 @@ class SyncRolesFromJobPositions
                 DB::rollBack();
             } else {
                 $this->handle($user);
+                CleanUserCaches::run($user);
                 $after = $user->roles()->pluck('name')->sort()->values();
             }
 
