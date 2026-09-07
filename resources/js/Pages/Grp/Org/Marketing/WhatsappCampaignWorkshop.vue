@@ -97,6 +97,7 @@ const tagsDiffer = (a: string[] = [], b: string[] = []) => {
 
 const pendingTemplateId = ref<number | null>(null)
 const isConfirmingReset = ref(false)
+const isResettingRecipients = ref(false)
 
 /* The multiselect keeps its own copy of the value, so a declined change has to be undone by
    remounting it rather than by leaving templateId alone. */
@@ -113,6 +114,8 @@ const applyTemplate = async (value: number | null, resetRecipients = false) => {
 
     if (!resetRecipients || saveError.value) return
 
+    isResettingRecipients.value = true
+
     try {
         const { data } = await axios.post(
             route(props.clearRecipientsRoute.name, props.clearRecipientsRoute.parameters),
@@ -125,6 +128,8 @@ const applyTemplate = async (value: number | null, resetRecipients = false) => {
     } catch (error: any) {
         saveError.value =
             error?.response?.data?.message ?? trans("Could not clear the recipients, please try again.")
+    } finally {
+        isResettingRecipients.value = false
     }
 }
 
@@ -289,7 +294,11 @@ const confirmTemplateChange = async () => {
                     <Link
                         v-if="isEditable && templateId"
                         :href="route(recipientsRoute.name, recipientsRoute.parameters)">
-                        <Button :label="trans('Edit')" style="tertiary" size="xs" />
+                        <Button
+                            :label="trans('Edit')"
+                            style="tertiary"
+                            size="xs"
+                            :loading="isResettingRecipients" />
                     </Link>
                     <Button
                         v-else-if="isEditable"
@@ -331,6 +340,7 @@ const confirmTemplateChange = async () => {
                 <Button
                     :label="trans('Change template and clear recipients')"
                     style="primary"
+                    :loading="isResettingRecipients"
                     @click="confirmTemplateChange" />
             </div>
         </Modal>
