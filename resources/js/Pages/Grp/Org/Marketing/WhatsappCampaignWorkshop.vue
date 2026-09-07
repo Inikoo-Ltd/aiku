@@ -261,7 +261,7 @@ const confirmTemplateChange = async () => {
                         :footer="selectedTemplate?.footer"
                         :buttons="selectedTemplate?.buttons ?? []"
                         :businessName="businessName"
-                        :mergeTags="mergeTags"
+                        :mergeTags="selectedTemplate?.mergeTags ?? []"
                         :placeholder="trans('Select a template to preview it here…')" />
                 </div>
             </div>

@@ -100,6 +100,7 @@ const props = withDefaults(defineProps<{
     channels?: Record<string, boolean>
     channelOptions?: { value: string, label: string }[]
     reloadOnly?: string[]
+    pendingKeys?: string[]
 }>(), {
     showSave: true,
     showEstimate: true,
@@ -135,12 +136,26 @@ if (props.channelOptions?.length) {
     extraQuery.channels = { ...selectedChannels.value }
 }
 
-/* The selection no longer rides along: the server answers per row whether the campaign holds
-   that contact, so a channel change just re-asks. Deleted rather than left unset because a
-   value from an earlier visit would otherwise keep being sent on every later reload. */
+/* The contacts the page has ticked, carried on every reload so the server can say which of
+   them the new audience still holds. Kept current by a watcher rather than set at each call
+   site, because fetchCustomers is reached from the filter button, the channel boxes and the
+   composable's own clear. */
+watch(
+    () => props.pendingKeys,
+    (keys) => {
+        if (keys?.length) {
+            extraQuery.pending_keys = [...keys]
+        } else {
+            delete extraQuery.pending_keys
+        }
+    },
+    { immediate: true }
+)
+
+/* The selection no longer rides along per row: the server answers per row whether the
+   campaign holds that contact, so a channel change just re-asks. */
 const onChannelChange = () => {
     extraQuery.channels = { ...selectedChannels.value }
-    delete extraQuery.selection
     fetchCustomers()
 }
 

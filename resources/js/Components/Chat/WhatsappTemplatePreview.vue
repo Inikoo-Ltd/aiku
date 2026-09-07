@@ -19,7 +19,7 @@ const props = withDefaults(
         footer?: string | null
         buttons?: { type?: string; text?: string }[]
         businessName?: string
-        mergeTags?: { value: string }[]
+        mergeTags?: ({ value: string } | string)[]
         mediaPreview?: string | null
         placeholder?: string
     }>(),
@@ -38,26 +38,41 @@ const props = withDefaults(
 type PreviewSegment = { kind: "text" | "tag"; value: string }
 
 /**
+ * A draft written in the builder carries its tags by name — `[customer_name]` — while a
+ * template Meta has approved carries them by position — `{{1}}`. Both shapes arrive here,
+ * so the tag list is flattened to bare names once and `{{n}}` reads index `n - 1` of it.
+ */
+const tagNames = computed(() =>
+    props.mergeTags.map((tag: { value: string } | string) =>
+        (typeof tag === "string" ? tag : tag.value).replace(/^\[|\]$/g, "")
+    )
+)
+
+/**
  * The preview keeps merge tags visible as chips rather than swapping in a sample value:
  * the agent is checking the wording, and a real name in there would hide where the
  * variable actually sits.
  */
 const toSegments = (text: string): PreviewSegment[] => {
-    const names = props.mergeTags.map((tag) => tag.value.slice(1, -1))
+    const names = tagNames.value
     const segments: PreviewSegment[] = []
-    const pattern = /\[([^[\]]+)\]/g
+    const pattern = /\[([^[\]]+)\]|\{\{(\d+)\}\}/g
 
     let cursor = 0
     let match: RegExpExecArray | null
 
     while ((match = pattern.exec(text)) !== null) {
-        if (!names.includes(match[1])) continue
+        const label = match[1] !== undefined ? match[1] : names[Number(match[2]) - 1]
+
+        if (label === undefined || (match[1] !== undefined && !names.includes(match[1]))) {
+            continue
+        }
 
         if (match.index > cursor) {
             segments.push({ kind: "text", value: text.slice(cursor, match.index) })
         }
 
-        segments.push({ kind: "tag", value: match[1] })
+        segments.push({ kind: "tag", value: label.replace(/_/g, " ") })
         cursor = match.index + match[0].length
     }
 

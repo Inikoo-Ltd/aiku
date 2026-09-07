@@ -20,6 +20,7 @@ const props = defineProps<{
     pageHead: any
     customers: any
     recipientsCount: number
+    survivingKeys: string[]
     templateTags: string[]
     channels: Record<string, boolean>
     filters: Record<string, any>
@@ -50,6 +51,50 @@ const pendingSelect = ref<Set<string>>(new Set())
 const pendingUnselect = ref<Set<string>>(new Set())
 const isWholeAudience = ref(false)
 const isCleared = ref(false)
+
+/* Table snapshots its checkbox map once per mount and seeds anything it has not been told
+   about to false, so a new page of rows would render unticked however the server marked them.
+   Bumped whenever the selection changes behind the table's back. */
+const tableVersion = ref(0)
+
+/* What the page asks the server to check when the audience changes. A whole audience
+   selection is defined by the query rather than by keys, so only its exceptions are worth
+   asking about; everything else is the two delta sets. Capped the same as a save, since past
+   that the page cannot send them anyway. */
+const pendingKeys = computed<string[]>(() => {
+    const keys = isWholeAudience.value
+        ? [...pendingUnselect.value]
+        : [...pendingSelect.value, ...pendingUnselect.value]
+
+    return keys.slice(0, DELTA_CAP)
+})
+
+/* A filter or channel change leaves the ticks describing an audience that no longer exists,
+   because the reload preserves page state. The server answers which of them the new audience
+   still holds, and the rest are dropped: they were ticked against a question the user has
+   since replaced, and a save would drop them anyway, silently and after the fact. */
+watch(
+    () => props.survivingKeys,
+    (surviving: string[] | undefined) => {
+        if (!Array.isArray(surviving) || !pendingKeys.value.length) {
+            return
+        }
+
+        const kept = new Set(surviving)
+        const prune = (set: Set<string>) => new Set([...set].filter((key) => kept.has(key)))
+
+        const nextSelect = prune(pendingSelect.value)
+        const nextUnselect = prune(pendingUnselect.value)
+
+        if (nextSelect.size === pendingSelect.value.size && nextUnselect.size === pendingUnselect.value.size) {
+            return
+        }
+
+        pendingSelect.value = nextSelect
+        pendingUnselect.value = nextUnselect
+        tableVersion.value++
+    }
+)
 
 const rows = computed<any[]>(() => props.customers?.data ?? [])
 const audienceTotal = computed<number>(() => props.customers?.meta?.total ?? rows.value.length)
@@ -85,13 +130,13 @@ const isPageFullyTicked = computed(() => rows.value.length > 0 && rows.value.eve
 
 const hasSelection = computed(() => selectedCount.value > 0)
 
-/* Table snapshots its checkbox map once per mount and seeds anything it has not been told
-   about to false, so a new page of rows would render unticked however the server marked them.
-   Paging is therefore part of the key: the table has to be rebuilt to hear about them. */
-const tableVersion = ref(0)
+/* Everything that changes which contacts are on screen has to be in the key, because the
+   table only reads the checkbox map when it mounts: the channels, the page, and the filters,
+   which move the rows without necessarily moving either of the other two. */
 const tableKey = computed(() =>
     [
         Object.keys(props.channels).filter((key) => props.channels[key]).join("-"),
+        JSON.stringify(props.filters ?? {}),
         props.customers?.meta?.current_page ?? 1,
         tableVersion.value,
     ].join("-")
@@ -247,7 +292,8 @@ const onSelect = async () => {
             :recipients-recipe="filters && Object.keys(filters).length ? filters : null"
             :channels="channels"
             :channel-options="channelOptions"
-            :reload-only="['customers', 'filters', 'channels', 'recipientsCount', 'queryBuilderProps']"
+            :pending-keys="pendingKeys"
+            :reload-only="['customers', 'filters', 'channels', 'recipientsCount', 'survivingKeys', 'queryBuilderProps']"
             :shop-id="shop_id"
             :shop-slug="shop_slug"
             :show-save="false"

@@ -7,6 +7,7 @@
 
 namespace App\Actions\UI\Dropshipping\Marketing;
 
+use App\Actions\Comms\WhatsappCampaign\GetWhatsappRecipientsQuery;
 use App\Actions\Comms\WhatsappCampaign\WithWhatsappCampaignAudience;
 use App\Actions\CRM\Customer\GetCustomerFilterStructure;
 use App\Actions\OrgAction;
@@ -44,6 +45,14 @@ class IndexWhatsappCampaignRecipients extends OrgAction
 
     private array $templateTags = [];
 
+    private array $survivingKeys = [];
+
+    /**
+     * How many pending keys one reload may ask about, matching the cap a single save carries
+     * in StoreWhatsappCampaignRecipients. It bounds the IN list this builds from request input.
+     */
+    private const PENDING_KEY_CAP = 5000;
+
     public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
         $this->channels        = $this->readAudienceChannels(request()->input('channels'), $this->campaign);
@@ -64,6 +73,8 @@ class IndexWhatsappCampaignRecipients extends OrgAction
         }
 
         $recipients = $this->audienceQuery($this->campaign, $this->channels, $this->customerFilters);
+
+        $this->survivingKeys = $this->keysStillInAudience($recipients, request()->input('pending_keys'));
 
         return QueryBuilder::for($this->markStoredRecipients($recipients))
             ->defaultSort('-last_visitor_message_at')
@@ -103,6 +114,52 @@ class IndexWhatsappCampaignRecipients extends OrgAction
             ->select('recipients.*')
             ->selectRaw('exists ('.$isStored->toSql().') as is_selected')
             ->addBinding($isStored->getBindings(), 'select');
+    }
+
+    /**
+     * Which of the contacts the page has ticked are still in the audience it is now showing.
+     *
+     * The picker keeps its ticks as phone keys and survives a filter change untouched, because
+     * the reload preserves page state. Without this the ticks would go on describing contacts
+     * the new filter excludes: counted in the heading, sent on save, and then dropped by the
+     * save's own re-run of the audience query, so the count would promise more than it stores.
+     *
+     * Answered here rather than on the page because the browser only ever holds one page of
+     * contacts and cannot tell whether a key it ticked three filters ago still matches.
+     *
+     * Runs against the audience subquery before the paginator narrows it, so paging and the
+     * global search term leave the answer alone: searching is not a statement about who is
+     * selected.
+     *
+     * @param  mixed  $requested  raw request input, shaped by whoever called us
+     * @return array<int, string>
+     */
+    private function keysStillInAudience(Builder $recipients, mixed $requested): array
+    {
+        if (!is_array($requested)) {
+            return [];
+        }
+
+        $keys = array_values(array_unique(array_filter(array_map(
+            function ($phone) {
+                if (!is_scalar($phone) || !GetWhatsappRecipientsQuery::isSendablePhone((string) $phone)) {
+                    return '';
+                }
+
+                return GetWhatsappRecipientsQuery::normalisePhoneKey((string) $phone);
+            },
+            array_slice($requested, 0, self::PENDING_KEY_CAP)
+        ))));
+
+        if (!$keys) {
+            return [];
+        }
+
+        return DB::query()
+            ->fromSub($recipients, 'audience')
+            ->whereIn('audience.recipient_key', $keys)
+            ->pluck('audience.recipient_key')
+            ->all();
     }
 
     public function tableStructure($prefix = null): Closure
@@ -183,6 +240,9 @@ class IndexWhatsappCampaignRecipients extends OrgAction
                    itself: the browser only ever sees one page of contacts, so it has no way to
                    total an audience it never receives. */
                 'recipientsCount'    => $campaign->recipients_count,
+                /* Of the contacts the page said it had ticked, the ones this audience still
+                   holds. The page prunes its selection down to these. */
+                'survivingKeys'      => $this->survivingKeys,
                 'channels'           => $this->channels,
                 'filtersStructure'   => GetCustomerFilterStructure::run($this->shop),
                 'filters'            => $this->customerFilters,
