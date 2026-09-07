@@ -25,6 +25,9 @@ use App\Enums\UI\Organisation\OrgDashboardIntervalTabsEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Actions\UI\Grp\Layout\GetOrganisationNavigation;
+use App\Models\Production\Production;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -133,11 +136,31 @@ class ShowOrganisationDashboard extends OrgAction
         return $user->hasGroupAccess() ? $score : Arr::except($score, 'hygiene');
     }
 
-    public function asController(Organisation $organisation, ActionRequest $request): Response
+    public function asController(Organisation $organisation, ActionRequest $request): Response|RedirectResponse
     {
         $this->initialisation($organisation, $request)->withTabDashboardInterval(OrgDashboardIntervalTabsEnum::values());
 
+        if ($production = $this->onlyProductionReachable($organisation, $request->user())) {
+            return redirect()->route('grp.org.productions.show.floor', [$organisation->slug, $production->slug]);
+        }
+
         return $this->handle($organisation, $request);
+    }
+
+    private function onlyProductionReachable(Organisation $organisation, User $user): ?Production
+    {
+        if ($this->canViewSales($organisation, $user)) {
+            return null;
+        }
+        $navigation = GetOrganisationNavigation::run($user, $organisation);
+        $sections   = Arr::except($navigation, ['shops_fulfilments_navigation', 'productions_navigation', 'warehouses_navigation']);
+        $shops = collect(Arr::get($navigation, 'shops_fulfilments_navigation', []))->pluck('navigation')->flatten(1)->filter();
+        if ($sections || $shops->isNotEmpty() || Arr::get($navigation, 'warehouses_navigation')) {
+            return null;
+        }
+        $productions = $user->authorisedProductions()->where('productions.organisation_id', $organisation->id)->get();
+
+        return $productions->count() == 1 ? $productions->first() : null;
     }
 
     public function getBreadcrumbs(array $routeParameters, $label = null): array

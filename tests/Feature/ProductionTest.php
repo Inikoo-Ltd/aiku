@@ -2143,8 +2143,8 @@ test('an operative only sees the factory jobs page and nothing group or commerci
 
     actingAs($user);
     get(route('grp.dashboard.show'))->assertRedirect(route('grp.org.dashboard.show', $this->organisation->slug));
-    get(route('grp.org.dashboard.show', $this->organisation->slug))->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('dashboard.super_blocks', []));
+    get(route('grp.org.dashboard.show', $this->organisation->slug))
+        ->assertRedirect(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]));
     get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))->assertOk();
     get(route('grp.org.chat.dashboard', $this->organisation->slug))->assertForbidden();
     get(route('grp.org.offer.calendar', $this->organisation->slug))->assertForbidden();
