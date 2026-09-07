@@ -69,6 +69,10 @@ class ShowArtisansDashboard extends OrgAction
                     ],
                     'title'     => __('Artisans'),
                 ],
+                'job_orders_route' => [
+                    'name'       => 'grp.org.productions.show.operations.job-orders.index',
+                    'parameters' => $routeParameters
+                ],
                 'floor_route' => [
                     'name'       => 'grp.org.productions.show.floor',
                     'parameters' => $routeParameters

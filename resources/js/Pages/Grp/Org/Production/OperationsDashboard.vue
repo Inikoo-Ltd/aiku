@@ -29,6 +29,7 @@ interface QueueTask {
     artefact_code: string
     artefact_name: string
     job_order_reference: string
+    job_order_slug: string
     quantity_made: number
     quantity_required: number
     start_route: { name: string, parameters: object }
@@ -65,6 +66,7 @@ const props = defineProps<{
             task_name: string
             artefact_code: string
             job_order_reference: string
+            job_order_slug: string
             started_at: string
             quantity_made: number
             quantity_required: number
@@ -74,6 +76,8 @@ const props = defineProps<{
             worker: string
             task_name: string
             artefact_code: string
+            job_order_reference: string
+            job_order_slug: string
             ended_at: string
             quantity_made: number
             void_route: { name: string, parameters: object }
@@ -93,6 +97,9 @@ function voidSession(session: { id: number, worker: string, quantity_made: numbe
 }
 
 const processing = ref(false)
+function jobOrderHref(slug: string) {
+    return route('grp.org.productions.show.operations.job-orders.show', [route().params['organisation'], route().params['production'], slug])
+}
 const locale = useLocaleStore()
 const iconColors: Record<string, string> = {
     indigo: "text-indigo-500",
@@ -170,7 +177,7 @@ function elapsedSince(startedAt: string) {
                     <div class="font-medium truncate">{{ session.worker }}</div>
                     <div class="text-sm text-gray-600 truncate">
                         {{ session.task_name }} · {{ session.artefact_code }}
-                        · {{ trans('Job order') }} {{ session.job_order_reference }}
+                        · {{ trans('Job order') }} <Link :href="jobOrderHref(session.job_order_slug)" class="text-indigo-700 hover:underline">{{ session.job_order_reference }}</Link>
                     </div>
                 </div>
                 <div class="text-right shrink-0">
@@ -185,7 +192,8 @@ function elapsedSince(startedAt: string) {
                     class="mb-2 rounded-lg border border-gray-200 bg-white px-4 py-2 flex items-center justify-between gap-3 text-sm">
                     <div class="min-w-0 truncate">
                         <span class="font-medium">{{ session.worker }}</span>
-                        <span class="text-gray-600"> · {{ session.task_name }} · {{ session.artefact_code }}</span>
+                        <span class="text-gray-600"> · {{ session.task_name }} · {{ session.artefact_code }} · </span>
+                        <Link :href="jobOrderHref(session.job_order_slug)" class="text-indigo-700 hover:underline">{{ session.job_order_reference }}</Link>
                     </div>
                     <div class="flex items-center gap-3 shrink-0">
                         <span class="tabular-nums text-gray-700">{{ session.quantity_made }}</span>
@@ -216,7 +224,7 @@ function elapsedSince(startedAt: string) {
                     <div class="font-medium truncate">{{ task.task_name }}</div>
                     <div class="text-sm text-gray-600 truncate">
                         {{ task.artefact_code }} — {{ task.artefact_name }}
-                        · {{ trans('Job order') }} {{ task.job_order_reference }}
+                        · {{ trans('Job order') }} <Link :href="jobOrderHref(task.job_order_slug)" class="text-indigo-700 hover:underline">{{ task.job_order_reference }}</Link>
                     </div>
                     <div class="text-xs text-gray-500 mt-0.5 tabular-nums">
                         {{ task.quantity_made }} / {{ task.quantity_required }}

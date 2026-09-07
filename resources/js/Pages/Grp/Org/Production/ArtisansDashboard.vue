@@ -21,6 +21,7 @@ const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     floor_route: { name: string, parameters: object }
+    job_orders_route: { name: string, parameters: object }
     performance_route: { name: string, parameters: object }
     artisans: {
         id: number
@@ -33,6 +34,9 @@ const props = defineProps<{
 }>()
 
 const brokenAvatars = ref(new Set<string>())
+function jobOrdersHref(artisanId: number, state: string) {
+    return route(props.job_orders_route.name, { ...props.job_orders_route.parameters, 'filter[employee_id]': artisanId, 'filter[state]': state })
+}
 function initials(name: string) {
     return name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase()
 }
@@ -68,10 +72,10 @@ function initials(name: string) {
                 </span>
                 <span class="shrink-0 tabular-nums" :class="artisan.queued || artisan.assigned ? 'text-gray-600' : 'text-amber-700'">
                     <template v-if="artisan.queued || artisan.assigned">
-                        <span v-if="artisan.working_now">{{ trans('working') }} · </span>
-                        <span v-if="artisan.assigned">{{ artisan.assigned }} {{ trans('assigned') }}</span>
+                        <Link v-if="artisan.working_now" :href="route(floor_route.name, floor_route.parameters)" class="hover:underline">{{ trans('working') }} · </Link>
+                        <Link v-if="artisan.assigned" :href="jobOrdersHref(artisan.id, 'in_process')" class="hover:underline">{{ artisan.assigned }} {{ trans('assigned') }}</Link>
                         <span v-if="artisan.assigned && artisan.queued"> · </span>
-                        <span v-if="artisan.queued">{{ artisan.queued }} {{ trans('on floor') }}</span>
+                        <Link v-if="artisan.queued" :href="jobOrdersHref(artisan.id, 'confirmed')" class="hover:underline">{{ artisan.queued }} {{ trans('on floor') }}</Link>
                     </template>
                     <template v-else>{{ trans('nothing queued') }}</template>
                 </span>

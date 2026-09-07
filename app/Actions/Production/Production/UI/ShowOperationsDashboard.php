@@ -170,6 +170,7 @@ class ShowOperationsDashboard extends OrgAction
                                 'artefact_code'       => $openSession->jobOrderItemTask->jobOrderItem->artefact->code,
                                 'artefact_name'       => $openSession->jobOrderItemTask->jobOrderItem->artefact->name,
                                 'job_order_reference' => $openSession->jobOrderItemTask->jobOrder->reference,
+                                'job_order_slug'      => $openSession->jobOrderItemTask->jobOrder->slug,
                                 'quantity_made'       => (float)$openSession->jobOrderItemTask->quantity_made,
                                 'quantity_required'   => (float)$openSession->jobOrderItemTask->quantity_required,
                             ],
@@ -189,6 +190,7 @@ class ShowOperationsDashboard extends OrgAction
                             'task_name'           => $session->manufactureTask->name,
                             'artefact_code'       => $session->jobOrderItemTask->jobOrderItem->artefact->code,
                             'job_order_reference' => $session->jobOrderItemTask->jobOrder->reference,
+                            'job_order_slug'      => $session->jobOrderItemTask->jobOrder->slug,
                             'started_at'          => $session->started_at,
                             'quantity_made'       => (float)$session->jobOrderItemTask->quantity_made,
                             'quantity_required'   => (float)$session->jobOrderItemTask->quantity_required,
@@ -196,7 +198,7 @@ class ShowOperationsDashboard extends OrgAction
                     'today_sessions' => ManufactureTaskSession::where('manufacture_task_sessions.production_id', $production->id)
                         ->where('manufacture_task_sessions.state', ManufactureTaskSessionStateEnum::CLOSED)
                         ->whereDate('ended_at', now()->toDateString())
-                        ->with(['user', 'manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact'])
+                        ->with(['user', 'manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder'])
                         ->orderByDesc('ended_at')
                         ->limit(30)
                         ->get()
@@ -205,6 +207,8 @@ class ShowOperationsDashboard extends OrgAction
                             'worker'        => $session->user->contact_name ?: $session->user->username,
                             'task_name'     => $session->manufactureTask->name,
                             'artefact_code' => $session->jobOrderItemTask->jobOrderItem->artefact->code,
+                            'job_order_reference' => $session->jobOrderItemTask->jobOrder->reference,
+                            'job_order_slug'      => $session->jobOrderItemTask->jobOrder->slug,
                             'ended_at'      => $session->ended_at,
                             'quantity_made' => (float)$session->quantity_made,
                             'void_route'    => [
@@ -229,6 +233,7 @@ class ShowOperationsDashboard extends OrgAction
                             'artefact_code'       => $task->jobOrderItem->artefact->code,
                             'artefact_name'       => $task->jobOrderItem->artefact->name,
                             'job_order_reference' => $task->jobOrder->reference,
+                            'job_order_slug'      => $task->jobOrder->slug,
                             'quantity_made'       => (float)$task->quantity_made,
                             'quantity_required'   => (float)$task->quantity_required,
                             'start_route'         => [

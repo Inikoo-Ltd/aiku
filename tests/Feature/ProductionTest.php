@@ -900,6 +900,14 @@ test('floor shows job orders addressed to the worker first and the dashboard lis
     $artisans = collect(get(route('grp.org.productions.show.artisans.dashboard', [$this->organisation->slug, $this->production->slug]))
         ->viewData('page')['props']['artisans']);
 
+    $filtered = get(route('grp.org.productions.show.operations.job-orders.index', [
+        $this->organisation->slug,
+        $this->production->slug,
+        'filter[employee_id]' => $idle->id,
+        'filter[state]'       => 'in_process',
+    ]))->viewData('page')['props']['data']['data'];
+    expect(collect($filtered)->pluck('reference')->all())->toBe([$draft->reference]);
+
     expect($artisans->firstWhere('id', $worker->id)['queued'])->toBe(1)
         ->and($artisans->firstWhere('id', $worker->id)['assigned'])->toBe(0)
         ->and($artisans->firstWhere('id', $idle->id)['queued'])->toBe(0)

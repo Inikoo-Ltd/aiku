@@ -476,7 +476,7 @@ function submitCherryPick() {
                 :key="artisan.id"
                 class="flex items-center gap-1 rounded-full border px-2.5 py-px text-xs"
                 :class="artisan.open_job_orders === 0 ? 'border-red-300 bg-red-50 text-red-700' : artisan.open_job_orders === 1 ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-600'">
-                {{ artisan.name }} · {{ artisan.open_job_orders }}
+                <Link :href="route('grp.org.productions.show.operations.job-orders.index', { organisation: route().params['organisation'], production: route().params['production'], 'filter[employee_id]': artisan.id })" class="hover:underline">{{ artisan.name }} · {{ artisan.open_job_orders }}</Link>
                 <button type="button" class="opacity-40 hover:opacity-100" :title="trans('Not an artisan')" @click="toggleArtisan(artisan)">×</button>
             </span>
         </div>
