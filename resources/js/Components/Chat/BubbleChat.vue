@@ -33,6 +33,7 @@ interface Message {
     message_type?: "text" | "image" | "file"
     file_name?: string | null
     file_mime?: string | null
+    file_size?: number | null
     download_route?: {
         url: string
     } | null
@@ -290,12 +291,29 @@ const audioLabel = computed(() =>
         : props.message.file_name ?? trans("Audio")
 )
 
-const audioUrl = computed(() => {
+// Images go through imgproxy, but everything else is streamed by the download route.
+// `inline=1` makes the browser play it in place rather than save it.
+const inlineUrl = computed(() => {
     const url = props.message.download_route?.url
 
     if (!url) return null
 
     return url + (url.includes("?") ? "&" : "?") + "inline=1"
+})
+
+const isVideo = computed(() =>
+    isFile.value &&
+    (fileMime.value.startsWith("video/") || props.message.metadata?.wa_type === "video")
+)
+
+const fileSizeLabel = computed(() => {
+    const bytes = Number(props.message.file_size ?? 0)
+
+    if (!bytes) return null
+
+    return bytes >= 1048576
+        ? `${(bytes / 1048576).toFixed(1)} MB`
+        : `${Math.max(1, Math.round(bytes / 1024))} KB`
 })
 
 const fileIcon = computed(() => {
@@ -819,24 +837,33 @@ watch(selectedLanguage, async (val) => {
                 </div>
             </a>
 
-            <AudioPlayer v-if="isAudio && audioUrl" :src="audioUrl"
+            <AudioPlayer v-if="isAudio && inlineUrl" :src="inlineUrl"
                 :is-voice="!!message.metadata?.wa_payload?.voice" :label="audioLabel"
                 :download-url="message.download_route?.url" />
 
-            <div v-if="isFile && !isAudio && message.media_url" @click="openFile"
-                class="mb-1 flex items-center gap-3 p-3 rounded-lg border bg-white max-w-xs transition" :class="isOpening
-                    ? 'opacity-60 cursor-not-allowed'
-                    : 'cursor-pointer hover:bg-gray-50'">
-                <div class="text-2xl">
+            <!-- Played in place, the way the recipient sees it on WhatsApp. -->
+            <div v-else-if="isVideo && inlineUrl" class="mb-1 max-w-xs">
+                <video :src="inlineUrl" controls preload="metadata"
+                    class="w-full max-h-64 rounded-lg bg-black object-contain" />
+                <div class="mt-0.5 flex items-center gap-1.5 text-[10px] opacity-60">
+                    <span class="truncate">{{ message.file_name }}</span>
+                    <span v-if="fileSizeLabel" class="shrink-0">· {{ fileSizeLabel }}</span>
+                </div>
+            </div>
+
+            <div v-else-if="isFile && message.media_url" @click="openFile"
+                class="mb-1 flex items-center gap-3 p-2.5 rounded-lg border border-black/10 bg-white max-w-xs transition"
+                :class="isOpening ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'">
+                <div class="text-2xl leading-none">
                     {{ fileIcon }}
                 </div>
 
                 <div class="flex-1 min-w-0">
-                    <div class="text-sm font-medium truncate text-gray-400">
+                    <div class="text-xs font-medium truncate text-gray-800">
                         {{ message.file_name || message.media_url.name }}
                     </div>
-                    <div class="text-xs opacity-60 text-red-600">
-                        {{ trans("Click to download") }}
+                    <div class="text-[10px] text-gray-500">
+                        <span v-if="fileSizeLabel">{{ fileSizeLabel }} · </span>{{ trans("Click to open") }}
                     </div>
                 </div>
             </div>

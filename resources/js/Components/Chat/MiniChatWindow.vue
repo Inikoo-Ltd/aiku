@@ -312,6 +312,44 @@ const openAttachment = (message: LocalChatMessage) => {
     }
 }
 
+const attachmentMime = (message: LocalChatMessage) =>
+    (message as any).file_mime ?? message.media_url?.mime ?? ""
+
+const isVideoMessage = (message: LocalChatMessage) =>
+    message.message_type === "file" &&
+    (attachmentMime(message).startsWith("video/") || message.metadata?.wa_type === "video")
+
+// Images go through imgproxy; everything else is streamed by the download route, where
+// `inline=1` makes the browser play it in place rather than save it.
+const inlineUrl = (message: LocalChatMessage): string | null => {
+    const url = message.download_route?.url
+
+    if (!url) return null
+
+    return url + (url.includes("?") ? "&" : "?") + "inline=1"
+}
+
+const fileIcon = (message: LocalChatMessage) => {
+    const mime = attachmentMime(message)
+
+    if (mime.includes("pdf")) return "📕"
+    if (mime.includes("excel") || mime.includes("spreadsheet")) return "📊"
+    if (mime.startsWith("audio/")) return "🎧"
+    if (mime.startsWith("video/")) return "🎬"
+
+    return "📄"
+}
+
+const fileSizeLabel = (message: LocalChatMessage) => {
+    const bytes = Number((message as any).file_size ?? 0)
+
+    if (!bytes) return null
+
+    return bytes >= 1048576
+        ? `${(bytes / 1048576).toFixed(1)} MB`
+        : `${Math.max(1, Math.round(bytes / 1024))} KB`
+}
+
 const MAP = { tile: 256, zoom: 16, width: 200, height: 90 }
 
 const getLocation = (message: LocalChatMessage) => {
@@ -1100,10 +1138,23 @@ onUnmounted(() => {
                                         class="mt-1 rounded max-w-full max-h-28 object-contain cursor-pointer bg-gray-50"
                                         @click="openAttachment(message)" />
 
+                                    <!-- Played in place, the way the recipient sees it on WhatsApp. -->
+                                    <video v-else-if="isVideoMessage(message) && inlineUrl(message)"
+                                        :src="inlineUrl(message)!" controls preload="metadata"
+                                        class="mt-1 w-full max-h-32 rounded bg-black object-contain" />
+
                                     <button v-else-if="message.message_type === 'file' && message.media_url" type="button"
-                                        class="mt-1 flex items-center gap-1 max-w-full text-[10px] underline truncate"
+                                        class="mt-1 flex w-full items-center gap-1.5 rounded border border-black/10 bg-white/90 px-1.5 py-1 text-left text-gray-800 transition hover:bg-white"
                                         @click="openAttachment(message)">
-                                        📄 {{ message.file_name || message.media_url.name || trans('Attachment') }}
+                                        <span class="text-sm leading-none">{{ fileIcon(message) }}</span>
+                                        <span class="min-w-0 flex-1">
+                                            <span class="block truncate text-[10px] font-medium">
+                                                {{ message.file_name || message.media_url.name || trans('Attachment') }}
+                                            </span>
+                                            <span v-if="fileSizeLabel(message)" class="block text-[9px] text-gray-500">
+                                                {{ fileSizeLabel(message) }}
+                                            </span>
+                                        </span>
                                     </button>
                                 </template>
 
