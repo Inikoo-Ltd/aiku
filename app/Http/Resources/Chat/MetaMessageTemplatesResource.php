@@ -31,6 +31,10 @@ class MetaMessageTemplatesResource extends JsonResource
 
         preg_match_all('/\{\{(\d+)\}\}/', $body, $matches);
 
+        $components = collect(Arr::get($this->data, 'components', []));
+        $header     = $components->firstWhere('type', 'HEADER');
+        $buttons    = Arr::get($components->firstWhere('type', 'BUTTONS') ?? [], 'buttons', []);
+
         return [
             'id'             => $this->id,
             'template_id'    => $this->template_id,
@@ -44,6 +48,19 @@ class MetaMessageTemplatesResource extends JsonResource
             'body'           => $body,
             'variable_count' => empty($matches[1]) ? 0 : max(array_map('intval', $matches[1])),
             'merge_tags'     => Arr::get($this->data ?? [], 'merge_tags.body', []),
+
+            /* Feeds the hover preview on the list, so the whole message can be judged
+               without opening the template. */
+            'header'         => $header ? [
+                'format' => Arr::get($header, 'format'),
+                'text'   => Arr::get($header, 'text'),
+            ] : null,
+            'footer'         => Arr::get($components->firstWhere('type', 'FOOTER') ?? [], 'text'),
+            'buttons'        => array_map(fn ($button) => [
+                'type' => Arr::get($button, 'type'),
+                'text' => Arr::get($button, 'text'),
+            ], $buttons),
+            'media_preview'  => $this->headerMedia?->getUrl(),
         ];
     }
 }
