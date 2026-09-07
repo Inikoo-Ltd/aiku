@@ -355,7 +355,7 @@ const onSelect = async () => {
                     {{ trans("Clear selection") }}
                 </button>
                 <Button
-                    :label="trans('Select')"
+                    :label="trans('Save')"
                     style="primary"
                     :loading="isSaving"
                     :disabled="isOverCap"
