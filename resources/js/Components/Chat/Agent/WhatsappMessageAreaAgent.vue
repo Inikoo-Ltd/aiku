@@ -162,7 +162,8 @@ const FILE_TYPES = [
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 ]
 
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024
+// Meta's own ceilings; anything larger is refused by WhatsApp after upload.
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024
 const MAX_FILE_SIZE = 100 * 1024 * 1024
 
 const isLoadingMore = ref(false)
@@ -188,7 +189,7 @@ const handleImageSelect = (e: Event) => {
     }
 
     if (file.size > MAX_IMAGE_SIZE) {
-        notify({ title: trans("Failed"), text: trans("Maximum image size 10MB"), type: "error" })
+        notify({ title: trans("Failed"), text: trans("Maximum image size 5MB"), type: "error" })
         return
     }
 

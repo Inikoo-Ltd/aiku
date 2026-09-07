@@ -57,13 +57,15 @@ enum WhatsappMediaTypeEnum: string
     }
 
     /**
-     * Meta's ceiling in kilobytes.
+     * Meta's ceiling in kilobytes. Allowing more only means an upload is accepted here
+     * and then rejected by Meta as "(#100) Invalid parameter", which reads like a
+     * malformed payload rather than an oversized file.
      */
     public function maxKilobytes(): int
     {
         return match ($this) {
-            self::IMAGE    => 10 * 1024,
-            self::VIDEO    => 50 * 1024,
+            self::IMAGE    => 5 * 1024,
+            self::VIDEO    => 16 * 1024,
             self::AUDIO    => 16 * 1024,
             self::DOCUMENT => 100 * 1024,
         };
