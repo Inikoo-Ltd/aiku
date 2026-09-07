@@ -12,13 +12,10 @@ use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
-use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Enums\UI\Production\ProductionTabsEnum;
-use App\Models\HumanResources\Employee;
-use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
 use App\Http\Resources\History\HistoryResource;
@@ -26,7 +23,6 @@ use App\Http\Resources\Production\ProductionResource;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -111,6 +107,17 @@ class ShowOperationsDashboard extends OrgAction
                             ],
                         ],
                         [
+                            'name'  => __('Manufacture tasks'),
+                            'icon'  => ['fal', 'fa-project-diagram'],
+                            'route' => [
+                                'name'       => 'grp.org.productions.show.operations.manufacture_tasks.index',
+                                'parameters' => $request->route()->originalParameters()
+                            ],
+                            'index' => [
+                                'number' => $production->stats->number_manufacture_tasks
+                            ],
+                        ],
+                        [
                             'name'      => __('Tasks in queue'),
                             'shortName' => __('queue'),
                             'icon'      => ['fal', 'fa-tasks'],
@@ -156,10 +163,6 @@ class ShowOperationsDashboard extends OrgAction
                     ],
                 ],
                 'command_control' => [
-                    'payroll_export_route' => [
-                        'name'       => 'grp.org.productions.show.operations.payroll.export',
-                        'parameters' => $request->route()->originalParameters()
-                    ],
                     'floor_route' => [
                         'name'       => 'grp.org.productions.show.floor',
                         'parameters' => $request->route()->originalParameters()
@@ -198,7 +201,6 @@ class ShowOperationsDashboard extends OrgAction
                             'quantity_made'       => (float)$session->jobOrderItemTask->quantity_made,
                             'quantity_required'   => (float)$session->jobOrderItemTask->quantity_required,
                         ]),
-                    'artisans'    => $this->artisans($production),
                     'today_sessions' => ManufactureTaskSession::where('manufacture_task_sessions.production_id', $production->id)
                         ->where('manufacture_task_sessions.state', ManufactureTaskSessionStateEnum::CLOSED)
                         ->whereDate('ended_at', now()->toDateString())
@@ -265,44 +267,6 @@ class ShowOperationsDashboard extends OrgAction
         )->table(IndexHistory::make()->tableStructure(prefix: ProductionTabsEnum::HISTORY->value));
     }
 
-
-    /**
-     * @return array<int, array{id: int, name: string, queued: int, working_now: bool}>
-     */
-    private function artisans(Production $production): array
-    {
-        $artisanIds = DB::table('artisan_assignments')->pluck('employee_id')
-            ->merge(JobOrder::where('production_id', $production->id)->whereNotNull('employee_id')->pluck('employee_id'))
-            ->unique();
-
-        $queued = JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
-            ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
-            ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
-            ->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
-            ->whereNotNull('job_orders.employee_id')
-            ->groupBy('job_orders.employee_id')
-            ->selectRaw('job_orders.employee_id, count(*) as queued')
-            ->pluck('queued', 'employee_id');
-
-        $workingNow = ManufactureTaskSession::where('production_id', $production->id)
-            ->where('state', ManufactureTaskSessionStateEnum::OPEN)
-            ->pluck('employee_id');
-
-        return Employee::where('organisation_id', $production->organisation_id)
-            ->where('state', EmployeeStateEnum::WORKING)
-            ->whereIn('id', $artisanIds)
-            ->orderBy('contact_name')
-            ->get()
-            ->map(fn (Employee $employee) => [
-                'id'          => $employee->id,
-                'name'        => $employee->contact_name,
-                'queued'      => (int)$queued->get($employee->id, 0),
-                'working_now' => $workingNow->contains($employee->id),
-            ])
-            ->sortBy('queued')
-            ->values()
-            ->all();
-    }
 
     public function jsonResponse(Production $production): ProductionResource
     {

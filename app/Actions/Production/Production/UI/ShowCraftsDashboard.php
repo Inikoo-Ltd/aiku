@@ -111,17 +111,6 @@ class ShowCraftsDashboard extends OrgAction
                             ],
                         ],
                         [
-                            'name'  => __('Manufacture tasks'),
-                            'icon'  => ['fal', 'fa-project-diagram'],
-                            'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.index',
-                                'parameters' => $request->route()->originalParameters()
-                            ],
-                            'index' => [
-                                'number' => $production->stats->number_manufacture_tasks
-                            ],
-                        ],
-                        [
                             'name'      => __('Artefacts without recipe'),
                             'shortName' => __('no recipe'),
                             'icon'      => ['fal', 'fa-exclamation-triangle'],

@@ -52,7 +52,7 @@ class GetProductionNavigation
                         ],
 
                         [
-                            'label'   => __('raw materials'),
+                            'label'   => __('Raw materials'),
                             'tooltip' => __('artefacts raw materials'),
                             'icon'    => ['fal', 'fa-drone'],
                             'root'    => 'grp.org.productions.show.crafts.raw_materials.',
@@ -63,7 +63,7 @@ class GetProductionNavigation
                         ],
 
                         [
-                            'label'   => __('artefacts'),
+                            'label'   => __('Artefacts'),
                             'tooltip' => __('manufactured products'),
                             'icon'    => ['fal', 'fa-hamsa'],
                             'root'    => 'grp.org.productions.show.crafts.artefacts.',
@@ -73,16 +73,6 @@ class GetProductionNavigation
                             ],
                         ],
 
-                        [
-                            'label'   => __('tasks'),
-                            'tooltip' => __('manufacture tasks'),
-                            'icon'    => ['fal', 'fa-code-merge'],
-                            'root'    => 'grp.org.productions.show.crafts.manufacture_tasks.',
-                            'route'   => [
-                                'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.index',
-                                'parameters' => [$production->organisation->slug, $production->slug]
-                            ],
-                        ],
 
 
                     ]
@@ -126,7 +116,7 @@ class GetProductionNavigation
                         ],
 
                         [
-                            'label'   => __('job orders'),
+                            'label'   => __('Job orders'),
                             'tooltip' => __('Job Orders'),
                             'icon'    => ['fal', 'fa-sort-shapes-down-alt'],
                             'root'    => 'grp.org.productions.show.operations.job-orders.',
@@ -135,20 +125,54 @@ class GetProductionNavigation
                                 'parameters' => [$production->organisation->slug, $production->slug]
                             ],
                         ],
-
                         [
-                            'label'   => __('artisans'),
-                            'tooltip' => __('Production workers'),
-                            'icon'    => ['fal', 'fa-hat-chef'],
-                            'root'    => 'grp.org.productions.show.operations.artisans.',
+                            'label'   => __('Tasks'),
+                            'tooltip' => __('manufacture tasks'),
+                            'icon'    => ['fal', 'fa-code-merge'],
+                            'root'    => 'grp.org.productions.show.operations.manufacture_tasks.',
                             'route'   => [
-                                'name'       => 'grp.org.productions.show.operations.artisans.index',
+                                'name'       => 'grp.org.productions.show.operations.manufacture_tasks.index',
                                 'parameters' => [$production->organisation->slug, $production->slug]
                             ],
                         ],
                     ]
                 ]
 
+            ];
+
+            $navigation['artisans'] = [
+                'root'  => 'grp.org.productions.show.artisans.',
+                'label' => __('Artisans'),
+                'icon'  => ['fal', 'fa-hat-chef'],
+
+                'route' => [
+                    'name'       => 'grp.org.productions.show.artisans.dashboard',
+                    'parameters' => [$production->organisation->slug, $production->slug]
+                ],
+
+                'topMenu' => [
+                    'subSections' => [
+                        [
+                            "tooltip" => __("Dashboard"),
+                            "icon"    => ["fal", "fa-chart-network"],
+                            "root"    => "grp.org.productions.show.artisans.dashboard",
+                            "route"   => [
+                                "name"       => "grp.org.productions.show.artisans.dashboard",
+                                "parameters" => [$production->organisation->slug, $production->slug]
+                            ],
+                        ],
+                        [
+                            'label'   => __('Performance'),
+                            'tooltip' => __('Sessions, output and earnings per artisan'),
+                            'icon'    => ['fal', 'fa-user-hard-hat'],
+                            'root'    => 'grp.org.productions.show.artisans.index',
+                            'route'   => [
+                                'name'       => 'grp.org.productions.show.artisans.index',
+                                'parameters' => [$production->organisation->slug, $production->slug]
+                            ],
+                        ],
+                    ]
+                ]
             ];
         }
 

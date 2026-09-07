@@ -607,7 +607,7 @@ test('UI edit artefact', function () {
 });
 
 test('UI Index production task', function () {
-    $response = $this->get(route('grp.org.productions.show.crafts.manufacture_tasks.index', [$this->organisation->slug, $this->production->slug]));
+    $response = $this->get(route('grp.org.productions.show.operations.manufacture_tasks.index', [$this->organisation->slug, $this->production->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -619,7 +619,7 @@ test('UI Index production task', function () {
 });
 
 test('UI create production task', function () {
-    $response = get(route('grp.org.productions.show.crafts.manufacture_tasks.create', [$this->organisation->slug, $this->production->slug]));
+    $response = get(route('grp.org.productions.show.operations.manufacture_tasks.create', [$this->organisation->slug, $this->production->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
@@ -628,7 +628,7 @@ test('UI create production task', function () {
 });
 
 test('UI show production task', function () {
-    $response = get(route('grp.org.productions.show.crafts.manufacture_tasks.show', [$this->organisation->slug, $this->production->slug, $this->manufactureTask->slug]));
+    $response = get(route('grp.org.productions.show.operations.manufacture_tasks.show', [$this->organisation->slug, $this->production->slug, $this->manufactureTask->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Production/ManufactureTask')
@@ -646,7 +646,7 @@ test('UI show production task', function () {
 });
 
 test('UI show production task (Artefacts tab)', function () {
-    $response = get(route('grp.org.productions.show.crafts.manufacture_tasks.show', [
+    $response = get(route('grp.org.productions.show.operations.manufacture_tasks.show', [
         $this->organisation->slug,
         $this->production->slug,
         $this->manufactureTask->slug,
@@ -669,7 +669,7 @@ test('UI show production task (Artefacts tab)', function () {
 });
 
 test('UI edit manufacture task', function () {
-    $response = get(route('grp.org.productions.show.crafts.manufacture_tasks.edit', [$this->organisation->slug, $this->production->slug, $this->manufactureTask->slug]));
+    $response = get(route('grp.org.productions.show.operations.manufacture_tasks.edit', [$this->organisation->slug, $this->production->slug, $this->manufactureTask->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('EditModel')
@@ -681,13 +681,13 @@ test('UI edit manufacture task', function () {
 });
 
 test('UI get section route craft index', function () {
-    $sectionScope = GetSectionRoute::make()->handle('grp.org.productions.show.crafts.manufacture_tasks.index', [
+    $sectionScope = GetSectionRoute::make()->handle('grp.org.productions.show.operations.manufacture_tasks.index', [
         'organisation' => $this->organisation->slug,
         'production'      => $this->production->slug
     ]);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->organisation_id)->toBe($this->organisation->id)
-        ->and($sectionScope->code)->toBe(AikuSectionEnum::PRODUCTION_CRAFT->value)
+        ->and($sectionScope->code)->toBe(AikuSectionEnum::PRODUCTION_OPERATION->value)
         ->and($sectionScope->model_slug)->toBe($this->production->slug);
 });
 
@@ -894,12 +894,26 @@ test('floor shows job orders addressed to the worker first and the dashboard lis
         ->and($tasks->where('is_mine', true)->pluck('job_order_reference')->all())->toBe([$addressed->reference])
         ->and($tasks->where('is_mine', false)->pluck('job_order_reference'))->toContain($pool->reference);
 
-    $artisans = collect(get(route('grp.org.productions.show.operations.dashboard', [$this->organisation->slug, $this->production->slug]))
-        ->viewData('page')['props']['command_control']['artisans']);
+    $artisans = collect(get(route('grp.org.productions.show.artisans.dashboard', [$this->organisation->slug, $this->production->slug]))
+        ->viewData('page')['props']['artisans']);
 
     expect($artisans->firstWhere('id', $worker->id)['queued'])->toBe(1)
         ->and($artisans->firstWhere('id', $idle->id)['queued'])->toBe(0)
         ->and($artisans->first()['queued'])->toBe(0);
+});
+
+test('UI show artisans dashboard', function () {
+    $response = get(route('grp.org.productions.show.artisans.dashboard', [
+        $this->organisation->slug,
+        $this->production->slug,
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Production/ArtisansDashboard')
+            ->has('artisans')
+            ->has('payroll_export_route')
+            ->has('breadcrumbs', 3);
+    });
 });
 
 test('UI index job orders', function () {
@@ -933,7 +947,7 @@ test('UI show job order', function () {
 });
 
 test('payroll csv export aggregates closed sessions with snapshotted rates', function () {
-    $response = get(route('grp.org.productions.show.operations.payroll.export', [
+    $response = get(route('grp.org.productions.show.artisans.payroll.export', [
         $this->organisation->slug,
         $this->production->slug,
         'from' => now()->toDateString(),
@@ -981,7 +995,7 @@ test('UI index artisans aggregates worker sessions', function () {
     $session = StartManufactureTaskSession::make()->action($this->guest->getUser(), $jobOrderItem->tasks()->first());
     CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 5]);
 
-    $response = get(route('grp.org.productions.show.operations.artisans.index', [
+    $response = get(route('grp.org.productions.show.artisans.index', [
         $this->organisation->slug,
         $this->production->slug,
         'from' => now()->toDateString(),
