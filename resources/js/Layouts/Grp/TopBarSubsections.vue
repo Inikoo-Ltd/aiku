@@ -4,13 +4,13 @@ import { useLayoutStore } from "@/Stores/layout";
 import { capitalize } from "@/Composables/capitalize";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faDotCircle } from "@fas";
-import { faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap } from "@fal";
+import { faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap, faInbox, faCommentAlt, faComments, faHeadset } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { SubSection } from "@/types/Navigation";
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faDotCircle, faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap);
+library.add(faDotCircle, faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap, faInbox, faCommentAlt, faComments, faHeadset);
 
 const layoutStore = useLayoutStore();
 
@@ -27,6 +27,17 @@ const isSubSectionActive = (routeName: string) => {
 
 const isLoading = ref<string | boolean>(false)
 
+const subSectionHrefs = computed(() =>
+    props.subSections.map((subSection) => {
+        const routeName = subSection?.route?.name
+        if (!routeName || !route().has(routeName)) {
+            return null
+        }
+
+        return route(routeName, subSection.route.parameters)
+    })
+)
+
 const getTooltip = (subSection: SubSection) => {
     if (!subSection.tooltip || subSection.tooltip === subSection.label) {
         return false
@@ -40,8 +51,8 @@ const getTooltip = (subSection: SubSection) => {
     <template v-for="(subSection, idxSubSec) in subSections">
         <component
             v-if="subSection"
-            :is="subSection.route?.name ? Link : 'div'"
-            :href="subSection.route?.name ? route(subSection.route.name, subSection.route.parameters) : '#'"
+            :is="subSectionHrefs[idxSubSec] ? Link : 'div'"
+            :href="subSectionHrefs[idxSubSec] ?? '#'"
             class="group relative text-gray-700 group text-sm flex justify-end items-center cursor-pointer py-3 gap-x-2 px-3 md:px-4 lg:px-4"
             :class="[]"
             v-tooltip="getTooltip(subSection)"
