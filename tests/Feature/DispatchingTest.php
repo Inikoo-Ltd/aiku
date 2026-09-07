@@ -3852,3 +3852,27 @@ test('delivery note tariff codes use the organisation override for the national 
     expect($row)->not->toBeNull()
         ->and((bool) $row->is_incomplete)->toBeFalse();
 });
+
+test('replacing one single of a 3-pack orders a third of a pack, not a whole pack (HELP-3083)', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['quantity_waiting_crm' => 1, 'quantity_picked' => 0, 'locked_at' => null]);
+    $this->product2->update(['units' => 3]);
+    $this->product2->orgStocks()->syncWithoutDetaching([$item->org_stock_id => ['quantity' => 3]]);
+
+    \App\Actions\Ordering\WaitingCrmItem\ReplaceWaitingCrmItemProduct::run($item->refresh(), $this->user, [
+        'units'    => 1,
+        'products' => [['id' => $this->product2->id, 'units' => 1]],
+    ]);
+
+    $order       = $deliveryNote->orders()->first();
+    $replacement = $order->refresh()->transactions()->where('model_id', $this->product2->id)->first();
+    $replacementItem = $deliveryNote->deliveryNoteItems()->where('transaction_id', $replacement->id)->first();
+
+    expect((float)$replacement->quantity_ordered)->toBe(0.333333)
+        ->and((float)$replacementItem->quantity_required)->toEqualWithDelta(1.0, 0.00001)
+        ->and((float)$item->refresh()->quantity_waiting_crm)->toBe(0.0);
+});
