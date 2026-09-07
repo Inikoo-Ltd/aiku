@@ -751,6 +751,8 @@ test('delete offer', function () {
 
     $this->assertSoftDeleted($offer);
     $this->assertSoftDeleted($offer->offerAllowances()->withTrashed()->first());
+    expect(Offer::withTrashed()->find($offer->id)->status)->toBeFalse()
+        ->and($offer->offerAllowances()->withTrashed()->first()->status)->toBeFalse();
 });
 
 test('force delete offer', function () {
@@ -1243,6 +1245,25 @@ describe('calculate order discounts', function () {
         CalculateOrderDiscounts::run($order);
 
         expect($categoryDiscount)->toBeInstanceOf(Offer::class);
+        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(80.0);
+    });
+
+    test('CalculateOrderDiscounts ignores a soft deleted offer even if its status flag is still on', function () {
+        $order = Order::latest('id')->first();
+        $offer = Offer::where('shop_id', $order->shop_id)->where('trigger_type', 'ProductCategory')
+            ->where('trigger_id', $this->product->family->id)->where('status', true)->latest('id')->first();
+
+        $offer->delete();
+        expect($offer->refresh()->status)->toBeTrue();
+
+        CalculateOrderDiscounts::run($order);
+
+        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(180.0);
+
+        $offer->restore();
+        CalculateOrderDiscounts::run($order);
         $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
         expect((float)$transaction->net_amount)->toBe(80.0);
     });
