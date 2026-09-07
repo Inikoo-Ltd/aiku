@@ -21,6 +21,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
 import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
+import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
@@ -240,6 +241,8 @@ const scrollBottom = () =>
             messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
         }
     })
+
+const { jumpToMessage } = useJumpToMessage(messagesContainer)
 
 const autoResize = () => {
     if (!messageInput.value) return
@@ -835,7 +838,8 @@ onUnmounted(() => {
                 <div class="text-center text-xs text-gray-400">{{ date }}</div>
                 <template v-for="entry in entries" :key="entry.key">
                     <ChatTimelineEvent v-if="entry.kind === 'event'" :event="entry.event" />
-                    <div v-else class="flex"
+                    <div v-else class="flex rounded-lg transition-colors"
+                        :data-message-id="entry.message.id"
                         :class="isOutgoing(entry.message) ? 'justify-end' : 'justify-start'">
                         <BubbleChat :message="entry.message" viewerType="agent"
                             :contactName="session?.contact_name || session?.guest_identifier"
@@ -847,7 +851,8 @@ onUnmounted(() => {
                             :viewerReactorId="layout?.user?.id"
                             :canReply="!isClosed && !templateOnly"
                             format-markup
-                            @reply="startReply" />
+                            @reply="startReply"
+                            @jump-to-message="jumpToMessage" />
                     </div>
                 </template>
             </template>

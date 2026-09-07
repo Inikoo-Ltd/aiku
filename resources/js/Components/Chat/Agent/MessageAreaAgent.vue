@@ -22,6 +22,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
 import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
+import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { notify } from "@kyvg/vue3-notification"
@@ -245,6 +246,8 @@ const handleEditMessage = async ({ id, text }: { id: number; text: string }) => 
 
 const messageInput = ref<HTMLTextAreaElement>()
 const messagesContainer = ref<HTMLDivElement>()
+
+const { jumpToMessage } = useJumpToMessage(messagesContainer)
 
 const showEmojiPicker = ref(false)
 const emojiPickerContainer = ref<HTMLElement | null>(null)
@@ -977,7 +980,8 @@ const handleClickOutside = (e: MouseEvent) => {
                 <div class="text-center text-xs text-gray-400">{{ date }}</div>
                 <template v-for="entry in entries" :key="entry.key">
                     <ChatTimelineEvent v-if="entry.kind === 'event'" :event="entry.event" />
-                    <div v-else class="flex"
+                    <div v-else class="flex rounded-lg transition-colors"
+                        :data-message-id="entry.message.id"
                         :class="entry.message.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
                         <BubbleChat :message="entry.message" viewerType="agent"
                             :contactName="session?.contact_name || session?.guest_identifier"
@@ -986,6 +990,7 @@ const handleClickOutside = (e: MouseEvent) => {
                             :sessionUlid="session?.ulid"
                             :viewerReactorId="layout?.user?.id"
                             @edit-message="handleEditMessage"
+                            @jump-to-message="jumpToMessage"
                             @open-slack-settings="onOpenSlackSettings" />
                     </div>
                 </template>

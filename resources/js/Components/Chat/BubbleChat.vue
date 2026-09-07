@@ -105,6 +105,7 @@ const emit = defineEmits<{
     (e: "edit-message", payload: { id: number; text: string }): void
     (e: "open-slack-settings"): void
     (e: "reply", message: Message): void
+    (e: "jump-to-message", id: number): void
 }>()
 
 const EDIT_WINDOW_MS = 30 * 60 * 1000
@@ -758,8 +759,12 @@ watch(selectedLanguage, async (val) => {
                 {{ senderLabel }}
             </div>
 
-            <div v-if="message.replied_to"
-                class="mb-1 rounded-md border-l-[3px] border-current bg-black/5 px-2 py-1 text-[11px] leading-snug opacity-90">
+            <!-- Tapping the quote jumps to the message it answers, as WhatsApp does. -->
+            <div v-if="message.replied_to" role="button" tabindex="0"
+                :title="trans('Go to the quoted message')"
+                class="mb-1 cursor-pointer rounded-md border-l-[3px] border-current bg-black/5 px-2 py-1 text-[11px] leading-snug opacity-90 transition hover:bg-black/10"
+                @click.stop="emit('jump-to-message', message.replied_to.id)"
+                @keydown.enter.stop.prevent="emit('jump-to-message', message.replied_to.id)">
                 <div class="font-semibold opacity-70">{{ quotedAuthor }}</div>
                 <div class="opacity-70 line-clamp-2 break-words">{{ quotedLabel }}</div>
             </div>

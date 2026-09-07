@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick, defineAsyncComp
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { router } from "@inertiajs/vue3"
+import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
     faXmark,
@@ -78,6 +79,8 @@ const isSending = ref(false)
 const unreadCount = ref(0)
 const remoteTypingUser = ref<string | null>(null)
 const messagesContainer = ref<HTMLElement | null>(null)
+
+const { jumpToMessage } = useJumpToMessage(messagesContainer)
 
 const imageInput = ref<HTMLInputElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -1018,12 +1021,24 @@ onUnmounted(() => {
                             :event="{ description: trans(message.message_text), created_at: message.created_at }"
                         />
 
-                        <div v-else class="flex"
+                        <div v-else class="flex rounded-lg transition-colors"
+                            :data-message-id="message.id"
                             :class="['guest', 'user'].includes(message.sender_type) ? 'justify-start' : 'justify-end'">
                             <div class="max-w-[85%] min-w-0 px-2 py-1 rounded-lg text-[11px] leading-snug shadow-sm"
                                 :class="['guest', 'user'].includes(message.sender_type)
                                     ? 'bg-white text-gray-800 rounded-bl-sm'
                                     : 'bg-indigo-500 text-white rounded-br-sm'">
+                                <!-- Tapping the quote jumps to the message it answers. -->
+                                <div v-if="message.replied_to" role="button" tabindex="0"
+                                    :title="trans('Go to the quoted message')"
+                                    class="mb-1 cursor-pointer rounded border-l-[3px] border-current bg-black/10 px-1.5 py-0.5 text-[10px] leading-snug opacity-90 transition hover:bg-black/20"
+                                    @click.stop="jumpToMessage(message.replied_to.id)"
+                                    @keydown.enter.stop.prevent="jumpToMessage(message.replied_to.id)">
+                                    <div class="truncate opacity-80">
+                                        {{ message.replied_to.message_text || trans('Attachment') }}
+                                    </div>
+                                </div>
+
                                 <div v-if="isUnsupported(message)"
                                     class="inline-flex items-center gap-1 text-[10px] italic opacity-60">
                                     <FontAwesomeIcon :icon="faCircleExclamation" class="text-[9px]" />
