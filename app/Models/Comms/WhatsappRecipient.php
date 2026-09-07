@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property int $recipient_id
  * @property string|null $recipient_name
  * @property string $phone normalised, digits only
+ * @property array|null $data resolved template merge tag values
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read WhatsappCampaign|null $whatsappCampaign
@@ -28,6 +29,10 @@ class WhatsappRecipient extends Model
     protected $table = 'whatsapp_recipients';
 
     protected $guarded = [];
+
+    protected $casts = [
+        'data' => 'array',
+    ];
 
     public function recipient(): MorphTo
     {
