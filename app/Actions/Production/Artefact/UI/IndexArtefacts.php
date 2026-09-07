@@ -143,7 +143,7 @@ class IndexArtefacts extends OrgAction
         $parameters = [$production->organisation->slug, $production->slug];
 
         return [
-            'families'    => $production->artefactFamilies()->orderBy('name')->get(['id', 'name'])->map(fn ($family) => ['value' => $family->id, 'label' => $family->name])->all(),
+            'families_route' => ['name' => 'grp.json.production.artefact_families.index', 'parameters' => ['production' => $production->id]],
             'move_route'  => ['name' => 'grp.models.production.artefacts.move_to_family', 'parameters' => [$production->id]],
             'create_route' => ['name' => 'grp.org.productions.show.crafts.artefact_families.create', 'parameters' => $parameters],
         ];
