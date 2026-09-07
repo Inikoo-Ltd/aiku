@@ -8,6 +8,7 @@
 namespace App\Actions\Chat\Whatsapp\Concerns;
 
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
+use App\Enums\CRM\Livechat\WhatsappMediaTypeEnum;
 use App\Models\Chat\MetaMessageTemplate;
 use App\Models\Helpers\Media;
 use Illuminate\Support\Arr;
@@ -132,6 +133,20 @@ trait WithWhatsappTemplatePayload
             return [
                 'ok'      => false,
                 'message' => __('This template shows an image above the message, but no file is set for it. Add one on the template page first.'),
+                'code'    => 422,
+            ];
+        }
+
+        $limitKb = WhatsappMediaTypeEnum::fromHeaderFormat($format)?->maxKilobytes();
+
+        if ($limitKb && $media->size > $limitKb * 1024) {
+            return [
+                'ok'      => false,
+                'message' => __('The :format on this template is :size MB. WhatsApp allows :limit MB, so replace it with a smaller file on the template page.', [
+                    'format' => strtolower($format),
+                    'size'   => round($media->size / 1048576, 1),
+                    'limit'  => round($limitKb / 1024),
+                ]),
                 'code'    => 422,
             ];
         }

@@ -8,6 +8,7 @@
 namespace App\Actions\Chat\Whatsapp\Templates;
 
 use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappCredentials;
+use App\Actions\Chat\Whatsapp\NormaliseWhatsappVideo;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\WhatsappMediaTypeEnum;
@@ -398,17 +399,30 @@ class StoreWhatsappMessageTemplate extends OrgAction
 
     protected function storeHeaderMedia(MetaMessageTemplate $template, UploadedFile $file): void
     {
+        $mimeType = (string) $file->getMimeType();
+        $path     = $file->getPathName();
+
+        // A fragmented MP4 is stored as-is and then rejected by Meta at send time, so the
+        // container is normalised now rather than leaving a template that can never send.
+        $normalised = str_starts_with($mimeType, 'video/')
+            ? NormaliseWhatsappVideo::run($path)
+            : $path;
+
         $media = StoreMediaFromFile::run(
             $template,
             [
-                'path'         => $file->getPathName(),
+                'path'         => $normalised,
                 'originalName' => $file->getClientOriginalName(),
                 'extension'    => $file->getClientOriginalExtension(),
-                'checksum'     => md5_file($file->getPathName()),
+                'checksum'     => md5_file($normalised),
             ],
             'template_header',
-            str_starts_with((string) $file->getMimeType(), 'image/') ? 'image' : 'file'
+            str_starts_with($mimeType, 'image/') ? 'image' : 'file'
         );
+
+        if ($normalised !== $path) {
+            @unlink($normalised);
+        }
 
         $template->update(['header_media_id' => $media->id]);
     }
