@@ -24,6 +24,8 @@ return new class () extends Migration {
             $table->string('recipient_name')->nullable();
             $table->string('phone')->index()->comment('normalised, digits only');
 
+            $table->jsonb('data')->nullable();
+
             $table->timestampsTz();
 
             $table->index(['recipient_type', 'recipient_id', 'whatsapp_campaign_id'], 'whatsapp_recipients_recipient_idx');
