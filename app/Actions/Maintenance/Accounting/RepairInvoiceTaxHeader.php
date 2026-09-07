@@ -9,6 +9,7 @@
 namespace App\Actions\Maintenance\Accounting;
 
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
+use App\Actions\Accounting\Invoice\UpdateInvoicePaymentState;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Traits\WithLineTaxCategories;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -50,6 +51,7 @@ class RepairInvoiceTaxHeader
     public function handle(Invoice $invoice): void
     {
         CalculateInvoiceTotals::make()->action($invoice);
+        UpdateInvoicePaymentState::run($invoice->refresh());
 
         if ($invoice->order) {
             CalculateOrderTotalAmounts::run($invoice->order);
