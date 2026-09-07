@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Product\UI\GetProductShowcase;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoImage;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\WithImageColumns;
@@ -39,6 +40,8 @@ class DeleteImagesFromProduct extends OrgAction
 
         if (!empty($updateData)) {
             $product->update($updateData);
+
+            ShopHydrateProductsWithNoImage::dispatch($product->shop)->delay($this->hydratorsDelay);
         }
 
 
