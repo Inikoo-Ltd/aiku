@@ -1,7 +1,7 @@
 ---
 title: A laser scanner killed our two mobile apps. Their names were Maya and Han
 summary: Maya ran warehouse pallet and stock work; Han handled clocking in and out. Both React Native apps were finished, tested and production-ready, and neither was ever launched. What beat them was not a new technology but a question nobody asked early enough, because the answer had been sitting on every supermarket checkout since the eighties. How we proved in production that nothing had ever called them, the two threads out of 58,000 lines that still reached back into the live app, and what a year of good work that never met a user is actually worth.
-date: 2026-09-08
+date: 2026-09-09
 tags: warehouse, mobile, deletion, architecture, history
 ---
 
