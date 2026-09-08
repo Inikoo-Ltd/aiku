@@ -138,6 +138,10 @@ class ShowIrisWebpage
             $loggedIn = auth()->check();
         }
 
+        if (in_array($path, ['login', 'register', 'forgot-password']) && $loggedIn) {
+            return 'welcome';
+        }
+
         if (config('iris.cache.webpage_path.ttl') == 0) {
             $webpageID = $this->getWebpageID($request->input('website'), $path);
         } else {

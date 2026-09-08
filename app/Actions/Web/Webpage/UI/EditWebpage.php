@@ -271,8 +271,8 @@ class EditWebpage extends OrgAction
                 ],
                 'formData' => [
                     'blueprint' => array_values(array_filter([
-                        $mainData,
-                        $webpage->state !== WebpageStateEnum::CLOSED ? [
+                        $webpage->type == WebpageTypeEnum::SYSTEM_PAGE ? null : $mainData,
+                        ($webpage->state == WebpageStateEnum::CLOSED || $webpage->type == WebpageTypeEnum::SYSTEM_PAGE) ? null : [
                             'label'  => __('Structured data'),
                             'icon'   => 'fal fa-brackets-curly',
                             'fields' => [
@@ -284,7 +284,7 @@ class EditWebpage extends OrgAction
                                     'information_warning'   => $informationWarning,
                                 ],
                             ]
-                        ] : null,
+                        ],
                         $inVariant ? [] : [
                             'label'  => __('Set online/closed'),
                             'icon'   => 'fal fa-broadcast-tower',
