@@ -140,6 +140,13 @@ class ShowProspectMailshotWorkshop extends OrgAction
                     ],
                     'method' => 'patch'
                 ],
+                'updateUtmSettingsRoute' => [
+                    'name'       => 'grp.models.shop.mailshot.utm-settings.update',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'patch'
+                ],
                 'suggestCopyRoute' => [
                     'name'       => 'grp.json.mailshot.copy_suggestion',
                     'parameters' => [

@@ -64,6 +64,7 @@ const props = defineProps<{
     suggestCopyRoute: routeType
     utmLinksRoute: routeType
     updateUtmLinkRoute: routeType
+    updateUtmSettingsRoute: routeType
 }>()
 
 const isUtmLinksModalOpen = ref(false)
@@ -401,7 +402,8 @@ onMounted(() => {
     </PageHeading>
 
     <MailshotUtmLinks :isOpen="isUtmLinksModalOpen" :utmLinksRoute="utmLinksRoute"
-        :updateUtmLinkRoute="updateUtmLinkRoute" @onClose="isUtmLinksModalOpen = false" />
+        :updateUtmLinkRoute="updateUtmLinkRoute" :updateUtmSettingsRoute="updateUtmSettingsRoute"
+        @onClose="isUtmLinksModalOpen = false" />
 
     <Modal :isOpen="showUnpublishedWarning" @onClose="showUnpublishedWarning = false" width="w-full max-w-md">
         <div class="p-2 text-center">
