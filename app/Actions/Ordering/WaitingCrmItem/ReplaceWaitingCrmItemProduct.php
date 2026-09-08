@@ -16,6 +16,7 @@ use App\Actions\Ordering\Order\CalculateOrderDiscounts;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
@@ -96,16 +97,21 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
                      * as a bonus and prices at zero, so a replacement stored as an ordered quantity
                      * charges for what was given away - on an order that is already paid, leaving it
                      * short by the replacement's price with nobody to collect it.
+                     *
+                     * A replacement delivery note re-sends goods the customer has already paid and
+                     * been invoiced for, so a swap made on one is free for the same reason: the note
+                     * reuses the original transactions and raises no invoice of its own.
                      */
-                    $replacesAGift = (bool)$deliveryNoteItem->transaction?->is_gift;
+                    $isFree = (bool)$deliveryNoteItem->transaction?->is_gift
+                        || $deliveryNoteItem->deliveryNote->type == DeliveryNoteTypeEnum::REPLACEMENT;
 
                     $transaction = StoreTransaction::make()->action(
                         order: $order,
                         historicAsset: $product->currentHistoricProduct,
                         modelData: [
-                            'quantity_ordered' => $replacesAGift ? 0 : $quantityOrdered,
-                            'quantity_bonus'   => $replacesAGift ? $quantityOrdered : 0,
-                            'is_gift'          => $replacesAGift,
+                            'quantity_ordered' => $isFree ? 0 : $quantityOrdered,
+                            'quantity_bonus'   => $isFree ? $quantityOrdered : 0,
+                            'is_gift'          => $isFree,
                             'state'            => TransactionStateEnum::HANDLING_BLOCKED,
                             'status'           => TransactionStatusEnum::PROCESSING,
                             'submitted_at'     => now()

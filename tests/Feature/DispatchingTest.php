@@ -3218,6 +3218,34 @@ test('replacing a waiting gift keeps the replacement free', function () {
         ->and((float)$replacement->quantity_bonus)->toBe(1.0);
 });
 
+test('replacing a waiting item on a replacement note keeps it free', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $order = $deliveryNote->orders()->first();
+    $deliveryNote->update(['type' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum::REPLACEMENT]);
+    $item->update([
+        'quantity_waiting_crm' => 1,
+        'quantity_picked'      => 0,
+        'locked_at'            => null,
+    ]);
+
+    \App\Actions\Ordering\WaitingCrmItem\ReplaceWaitingCrmItemProduct::run($item->refresh(), $this->user, [
+        'quantity' => 1,
+        'products' => [['id' => $this->product2->id, 'quantity' => 1]],
+    ]);
+
+    $replacement = $order->refresh()->transactions()->where('model_id', $this->product2->id)->first();
+
+    expect($replacement)->not->toBeNull()
+        ->and((float)$replacement->net_amount)->toBe(0.0)
+        ->and((float)$replacement->quantity_ordered)->toBe(0.0)
+        ->and((float)$replacement->quantity_bonus)->toBe(1.0);
+});
+
 test('a replacement added while the note is being picked is just another line to pick', function () {
     $settings = $this->organisation->settings;
     data_set($settings, 'orders.allow_waiting', true);
