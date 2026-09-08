@@ -411,6 +411,7 @@ watch(
 					v-if="videoDialogVisible && embedUrl"
 					:src="`${embedUrl}`"
 					frameborder="0"
+					loading="lazy"
 					allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
 					referrerpolicy="strict-origin-when-cross-origin"
 					allowfullscreen
