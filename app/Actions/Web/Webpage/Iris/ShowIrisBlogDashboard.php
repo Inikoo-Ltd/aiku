@@ -35,12 +35,12 @@ class ShowIrisBlogDashboard
     private const COVER_LOOKUP_LIMIT = 10;
 
     /**
-     * A website with a blog dashboard webpage serves it here, blocks and all, like any other webpage.
-     * The rest fall back to the dashboard rendered from the blogs of the website.
+     * A website with a live blog dashboard webpage serves it here, blocks and all, like any other webpage.
+     * The rest, offline dashboard pages included, fall back to the dashboard rendered from the blogs of the website.
      */
     public function handle(Website $website, ?ActionRequest $request = null): LengthAwarePaginator|string|array
     {
-        if ($website->blogDashboardPage && $request) {
+        if ($request && $website->blogDashboardPage?->state === WebpageStateEnum::LIVE) {
             return ShowIrisWebpage::make()->handle($website->blogDashboardPage->url, [], $request);
         }
 
