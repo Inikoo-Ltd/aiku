@@ -20,7 +20,7 @@ class GetWebBlockLogin
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        data_forget($webBlock, 'web_block.layout.data.permissions');
+        data_set($webBlock, 'web_block.layout.data.permissions', []);
         data_set(
             $webBlock,
             'web_block.layout.data.fieldValue.categories',
