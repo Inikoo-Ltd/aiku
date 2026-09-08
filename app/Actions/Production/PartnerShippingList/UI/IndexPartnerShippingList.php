@@ -117,7 +117,7 @@ class IndexPartnerShippingList extends OrgAction
                 'partner_shopping_list_items.notes',
                 'partner_shopping_list_items.created_at',
                 'artefacts.id as artefact_id',
-                'org_stocks.quantity_in_locations as stock_available',
+                'org_stocks.quantity_available as stock_available',
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
                 'artefact_departments.name as family',
@@ -278,7 +278,7 @@ class IndexPartnerShippingList extends OrgAction
         $lanes  = ['to_pick' => __('Pre-pick'), 'backlog' => __('Backlog'), 'preparing' => __('Preparing'), 'assigned' => __('Assigned'), 'producing' => __('Producing'), 'done' => __('Done')];
         $byLane = collect($items->items())->groupBy(function ($item) use ($stageByJobOrderState) {
             if (!$item->job_order_id) {
-                if (!$item->artefact_id || (float) $item->stock_available >= (float) $item->quantity) {
+                if (!$item->artefact_id) {
                     return 'to_pick';
                 }
 

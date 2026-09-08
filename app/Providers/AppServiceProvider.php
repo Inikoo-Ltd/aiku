@@ -401,6 +401,7 @@ class AppServiceProvider extends ServiceProvider
                 'ManufactureTask'                  => 'App\Models\Production\ManufactureTask',
                 'Artefact'                         => 'App\Models\Production\Artefact',
                 'ArtefactDepartment'                   => 'App\Models\Production\ArtefactDepartment',
+                'ArtefactFamily'                   => 'App\Models\Production\ArtefactFamily',
 
                 //Reviews
                 'Review'                           => 'App\Models\Reviews\Review',

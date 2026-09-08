@@ -14,6 +14,8 @@ use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\UpdateArtefact;
 use App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment;
+use App\Actions\Production\ArtefactFamily\AssignArtefactsToFamiliesFromOrgStockFamilies;
+use App\Models\Production\ArtefactFamily;
 use App\Actions\Production\ArtefactDepartment\UpdateArtefactDepartment;
 use App\Actions\Production\Artisan\AttachArtisan;
 use App\Actions\Production\Artisan\DetachArtisan;
@@ -2243,23 +2245,91 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     expect($lanes['Pre-pick'])->toBe([$stocks[1]->code])
         ->and($lanes['Backlog'])->toBe([$stocks[0]->code]);
 
-    $orgStocks[0]->update(['quantity_in_locations' => 500]);
+    $otherProduction = StoreProduction::make()->action($this->organisation, ['code' => 'GATEF2', 'name' => 'Other factory']);
+    $elsewhere = StoreArtefact::make()->action($otherProduction, ['code' => 'GATE-02', 'name' => 'Made in the other factory']);
+    $elsewhere->update(['org_stock_id' => $orgStocks[1]->id]);
+
     $lanes = collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
         ->assertOk()->viewData('page')['props']['groups'])
         ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
-    expect($lanes['Pre-pick'])->toContain($stocks[0]->code)
-        ->and($lanes['Backlog'])->toBe([]);
+    expect($lanes['Pre-pick'])->toBe([$stocks[1]->code])
+        ->and($lanes['Backlog'])->toBe([$stocks[0]->code]);
+
+    $covered = \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[0]->id)->first();
+    $orgStocks[0]->update(['quantity_available' => 500, 'quantity_in_locations' => 500]);
+    $covered->update(['preparing_at' => now()]);
+    $lanes = collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
+        ->assertOk()->viewData('page')['props']['groups'])
+        ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
+    expect($lanes['Preparing'])->toBe([$stocks[0]->code])
+        ->and($lanes['Pre-pick'])->toBe([$stocks[1]->code]);
+    $covered->update(['preparing_at' => null]);
 
     \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()
-        ->action($this->production, [\App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[0]->id)->value('id')]);
+        ->action($this->production, [$covered->id]);
     $lanes = collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
         ->assertOk()->viewData('page')['props']['groups'])
         ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
     expect($lanes['Pre-pick'])->toBe([$stocks[1]->code])
         ->and($lanes['Assigned'])->toBe([$stocks[0]->code]);
 
+    $byArtisan = get(route('grp.org.productions.show.to_produce.by_artisan', $routeParameters))
+        ->assertOk()->viewData('page')['props'];
+    expect(collect($byArtisan['groups'])->pluck('items')->flatten(1)->pluck('stock_code')->all())->toBe([$stocks[0]->code]);
+
     $all = get(route('grp.org.productions.show.to_produce.list', $routeParameters))
         ->assertOk()->viewData('page')['props'];
     expect(collect($all['data']['data'])->pluck('stock_code')->sort()->values()->all())
         ->toBe(collect([$stocks[0]->code, $stocks[1]->code])->sort()->values()->all());
+});
+
+test('repair assigns artefacts to families mirroring their org stock family', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'FAMDEP', 'name' => 'Family department']);
+
+    $stockFamily = \App\Actions\Goods\StockFamily\StoreStockFamily::make()->action(
+        $this->group,
+        \App\Models\Goods\StockFamily::factory()->definition()
+    );
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $stockFamily,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+    $orgStockFamily = \App\Actions\Inventory\OrgStockFamily\StoreOrgStockFamily::make()->action($this->organisation, $stockFamily, []);
+    $orgStock       = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($orgStockFamily, $stock);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'FAMART1',
+        'name'                   => 'Artefact with org stock family',
+        'org_stock_id'           => $orgStock->id,
+        'artefact_department_id' => $department->id,
+    ]);
+
+    $orphan = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'FAMART2',
+        'name'                   => 'Artefact without org stock',
+        'artefact_department_id' => $department->id,
+    ]);
+
+    $dryRun = AssignArtefactsToFamiliesFromOrgStockFamilies::make()->handle();
+    expect($dryRun['families_created'])->toBe(1)
+        ->and($artefact->refresh()->artefact_family_id)->toBeNull();
+
+    $result = AssignArtefactsToFamiliesFromOrgStockFamilies::make()->handle(true);
+    expect($result['families_created'])->toBe(1)
+        ->and($result['artefacts_assigned'])->toBe(1);
+
+    $family = ArtefactFamily::where('org_stock_family_id', $orgStockFamily->id)->first();
+    expect($family)->not->toBeNull()
+        ->and($family->artefact_department_id)->toBe($department->id)
+        ->and($family->production_id)->toBe($this->production->id)
+        ->and($family->code)->toBe($orgStockFamily->code)
+        ->and($family->number_artefacts)->toBe(1)
+        ->and($artefact->refresh()->artefact_family_id)->toBe($family->id)
+        ->and($orphan->refresh()->artefact_family_id)->toBeNull();
+
+    $rerun = AssignArtefactsToFamiliesFromOrgStockFamilies::make()->handle(true);
+    expect($rerun['families_created'])->toBe(0)
+        ->and($rerun['artefacts_assigned'])->toBe(0);
 });

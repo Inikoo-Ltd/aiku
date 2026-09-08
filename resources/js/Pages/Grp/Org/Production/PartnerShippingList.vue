@@ -77,7 +77,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null }
+type BoardItem = { id: number, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null }
 
 function isReassignable(item: BoardItem): boolean {
     return !!item.job_order_id && ["in_process", "submitted"].includes(item.job_order_state ?? "")
@@ -664,12 +664,12 @@ function submitCherryPick() {
                         <span v-if="item.family">· {{ item.family }}</span>
                         <Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink ml-auto">{{ item.job_order_reference }}</Link>
                     </div>
-                    <div v-if="laneIndex === LANE_TO_PICK" class="text-gray-400">
-                        <span v-if="Number(item.stock_available) >= Number(item.quantity)">{{ trans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available)) }}</span>
-                        <span v-else class="text-red-600">{{ trans("Not made here, only :count in stock", { count: useLocaleStore().number(Number(item.stock_available ?? 0)) }) }}</span>
+                    <div v-if="laneIndex <= LANE_PREPARING" class="text-gray-400">
+                        <span v-if="Number(item.stock_available) >= Number(item.quantity)" class="text-emerald-600">{{ trans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available)) }}</span>
+                        <span v-else>{{ trans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>
                     </div>
                     <button
-                        v-if="laneIndex === LANE_TO_PICK"
+                        v-if="laneIndex === LANE_TO_PICK && item.buyer_code && item.state === 'open'"
                         type="button"
                         class="mt-1 w-full rounded bg-indigo-600 px-2 py-0.5 text-white hover:bg-indigo-700"
                         :title="trans('Not made here, take it from stock')"

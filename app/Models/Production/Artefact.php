@@ -114,6 +114,11 @@ class Artefact extends Model implements Auditable
         return $this->belongsTo(ArtefactDepartment::class);
     }
 
+    public function artefactFamily(): BelongsTo
+    {
+        return $this->belongsTo(ArtefactFamily::class);
+    }
+
     public function tags(): MorphToMany
     {
         return $this->morphToMany(Tag::class, 'model', 'model_has_tags')->withTimestamps();
