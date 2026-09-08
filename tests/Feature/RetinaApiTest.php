@@ -661,3 +661,27 @@ test('a paid order that fails to submit raises an alert', function () {
     Http::assertSent(fn ($request) => $request->url() === 'https://discord.test/hook'
         && str_contains($request['content'], $order->reference));
 });
+
+test('retina api refuses route bound records belonging to another customer', function () {
+    $otherOrder = StoreOrder::make()->action(
+        $this->fulfilmentCustomer,
+        ['reference' => 'other-customer-order']
+    );
+
+    $otherPortfolio = \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action(
+        $this->fulfilmentChannel,
+        $this->fulfilmentProduct,
+        []
+    );
+
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    getJson(route('retina.api.dropshipping.order.show', $otherOrder->id))->assertNotFound();
+    getJson(route('retina.api.dropshipping.products.my_product.show', $otherPortfolio->id))->assertNotFound();
+    patchJson(route('retina.api.dropshipping.products.my_product.update', $otherPortfolio->id), [
+        'customer_product_name' => 'hijacked',
+    ])->assertNotFound();
+    deleteJson(route('retina.api.dropshipping.products.my_product.delete', $otherPortfolio->id))->assertNotFound();
+
+    expect($otherPortfolio->refresh()->customer_product_name)->not->toBe('hijacked');
+});
