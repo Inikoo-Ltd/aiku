@@ -180,7 +180,7 @@ const meterTooltip = computed(() => {
 </script>
 
 <template>
-    <div class="w-full min-w-[340px]">
+    <div class="w-full">
         <div class="mb-2 text-xs text-gray-500">
             {{ ctrans('Free items preview') }}
         </div>
