@@ -505,6 +505,8 @@ test('retina api requests are logged with credentials redacted', function () {
         'first_name' => 'Api',
         'last_name'  => 'Logged',
         'email'      => 'api-logged@example.com',
+        'phone'      => '+44 7700 900123',
+        'address'    => ['address_line_1' => '12 Greenwix Parc', 'postal_code' => 'PL30 3AF'],
         'password'   => 'super-secret',
     ]);
 
@@ -515,8 +517,12 @@ test('retina api requests are logged with credentials redacted', function () {
         ->and($logged->method)->toBe('POST')
         ->and($logged->customer_sales_channel_id)->toBe($this->dropshippingChannel->id)
         ->and($logged->duration_ms)->not->toBeNull()
-        ->and($logged->payload['first_name'])->toBe('Api')
-        ->and($logged->payload['password'])->toBe('***');
+        ->and($logged->payload['password'])->toBe('***')
+        ->and($logged->payload['first_name'])->toBe('A***')
+        ->and($logged->payload['email'])->toBe('a***@e***')
+        ->and($logged->payload['phone'])->toBe('+***')
+        ->and($logged->payload['address']['address_line_1'])->toBe('1***')
+        ->and($logged->payload['address']['postal_code'])->toBe('P***');
 });
 
 test('retina api logs query string arguments', function () {

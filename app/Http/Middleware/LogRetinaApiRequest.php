@@ -28,6 +28,31 @@ class LogRetinaApiRequest
 {
     public const int MAX_PAYLOAD_CHARS = 4000;
 
+    /**
+     * These carry other people's personal data: the customer's own clients, who never dealt with
+     * us directly and whose record here would outlive the one they can ask us to delete. Enough
+     * of the value survives to recognise what was sent without the value itself being kept.
+     */
+    protected const array PII_KEYS = [
+        'name',
+        'first_name',
+        'last_name',
+        'contact_name',
+        'company_name',
+        'email',
+        'phone',
+        'phone_number',
+        'mobile',
+        'address',
+        'delivery_address',
+        'billing_address',
+        'address_line_1',
+        'address_line_2',
+        'postal_code',
+        'locality',
+        'city',
+    ];
+
     protected const array REDACTED_KEYS = [
         'password',
         'password_confirmation',
@@ -135,16 +160,48 @@ class LogRetinaApiRequest
     {
         foreach ($payload as $key => $value) {
             if (is_array($value)) {
-                $payload[$key] = $this->redact($value);
+                $payload[$key] = in_array(mb_strtolower((string) $key), self::PII_KEYS, true)
+                    ? $this->mask($value)
+                    : $this->redact($value);
+
                 continue;
             }
 
             if (in_array(mb_strtolower((string) $key), self::REDACTED_KEYS, true) || $this->looksLikeToken($value)) {
                 $payload[$key] = '***';
+                continue;
+            }
+
+            if (in_array(mb_strtolower((string) $key), self::PII_KEYS, true)) {
+                $payload[$key] = $this->mask($value);
             }
         }
 
         return $payload;
+    }
+
+    /**
+     * Keeps the first letter of each part so a support answer can say what shape of value
+     * arrived - a**@g*** against the address the customer says they sent - while the value
+     * itself is not retained. An address arrives as a nested object, so masking recurses.
+     */
+    protected function mask(mixed $value): mixed
+    {
+        if (is_array($value)) {
+            return array_map(fn ($item) => $this->mask($item), $value);
+        }
+
+        if (!is_string($value) || $value === '') {
+            return $value === null || $value === '' ? $value : '***';
+        }
+
+        if (str_contains($value, '@')) {
+            [$local, $domain] = explode('@', $value, 2);
+
+            return mb_substr($local, 0, 1).'***@'.mb_substr($domain, 0, 1).'***';
+        }
+
+        return mb_substr($value, 0, 1).'***';
     }
 
     /**
