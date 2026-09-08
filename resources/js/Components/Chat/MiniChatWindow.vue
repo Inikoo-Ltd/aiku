@@ -9,6 +9,7 @@ import {
     faXmark,
     faChevronDown,
     faPaperPlane,
+    faReply,
     faArrowUpRightFromSquare,
     faImage,
     faPaperclip,
@@ -309,6 +310,67 @@ const openAttachment = (message: LocalChatMessage) => {
     const url = message.download_route?.url ?? message.media_url?.original
     if (url) {
         window.open(url, "_blank")
+    }
+}
+
+/* Quick reactions, matching the inbox toolbar. The endpoint differs per channel because
+   the two channels store their messages in separate tables. */
+const quickReactions = ["✅", "👀", "👏"] as const
+
+const reactingMessageId = ref<number | null>(null)
+
+const replyingTo = ref<LocalChatMessage | null>(null)
+
+const startReply = (message: LocalChatMessage) => {
+    replyingTo.value = message
+    nextTick(() => messageInput.value?.focus())
+}
+
+const cancelReply = () => {
+    replyingTo.value = null
+}
+
+const replyPreviewText = (message: LocalChatMessage) =>
+    messageText(message) || message.file_name || trans("Attachment")
+
+const myReactedEmojis = (message: LocalChatMessage): Set<string> => {
+    const mine = new Set<string>()
+
+    for (const group of message.reactions ?? []) {
+        if (group.reactors?.some((reactor: any) => reactor.type === "agent")) {
+            mine.add(group.emoji)
+        }
+    }
+
+    return mine
+}
+
+const toggleReaction = async (message: LocalChatMessage, emoji: string) => {
+    if (!message.id || reactingMessageId.value) return
+
+    reactingMessageId.value = message.id as number
+
+    try {
+        const base = isWhatsapp.value ? "/app/api/chats/meta/messages" : "/app/api/chats/messages"
+
+        const { data } = await axios.post(
+            `${baseUrl}${base}/${message.id}/reactions`,
+            { emoji, reactor: "agent", session_ulid: props.chat.ulid },
+            { withCredentials: true }
+        )
+
+        const index = messages.value.findIndex((m) => m.id === message.id)
+
+        if (index !== -1) {
+            messages.value[index] = {
+                ...messages.value[index],
+                reactions: data?.data?.reactions ?? messages.value[index].reactions,
+            }
+        }
+    } catch {
+        notify({ title: trans("Failed"), text: trans("Could not update reaction."), type: "error" })
+    } finally {
+        reactingMessageId.value = null
     }
 }
 
@@ -713,10 +775,14 @@ const sendMessage = async () => {
         _status: "sending",
     })
 
+    // Captured before the composer is cleared, since the payload is built below.
+    const quoted = replyingTo.value
+
     newMessage.value = ""
     nextTick(autoResize)
     isSending.value = true
     clearAttachment(false)
+    cancelReply()
     scrollBottom()
 
     try {
@@ -731,6 +797,10 @@ const sendMessage = async () => {
 
         if (file) {
             formData.append(messageType === "image" ? "image" : "file", file)
+        }
+
+        if (isWhatsapp.value && quoted?.id) {
+            formData.append("replied_to_id", String(quoted.id))
         }
 
         await axios.post(
@@ -1076,9 +1146,33 @@ onUnmounted(() => {
                             :event="{ description: trans(message.message_text), created_at: message.created_at }"
                         />
 
-                        <div v-else class="flex rounded-lg transition-colors"
+                        <div v-else class="group/msg relative flex rounded-lg transition-colors"
                             :data-message-id="message.id"
                             :class="['guest', 'user'].includes(message.sender_type) ? 'justify-start' : 'justify-end'">
+                            <!-- Quick reactions on hover, sized down for the narrow window.
+                                 Reply is WhatsApp only: the website send endpoint takes no
+                                 replied_to_id. -->
+                            <div v-if="message.id && message._status !== 'sending'"
+                                class="absolute -top-3.5 z-20 flex items-center gap-px rounded-full border border-gray-200 bg-white px-0.5 py-px shadow-md opacity-0 scale-95 pointer-events-none transition-all duration-150 group-hover/msg:opacity-100 group-hover/msg:scale-100 group-hover/msg:pointer-events-auto"
+                                :class="['guest', 'user'].includes(message.sender_type) ? 'left-0' : 'right-0'">
+                                <button v-for="emoji in quickReactions" :key="emoji" type="button"
+                                    :disabled="reactingMessageId === message.id"
+                                    class="flex h-[18px] w-[18px] items-center justify-center rounded-full text-[11px] leading-none transition-all hover:bg-gray-100 hover:scale-110 disabled:opacity-50"
+                                    :class="myReactedEmojis(message).has(emoji) ? 'bg-indigo-50 ring-1 ring-indigo-200' : ''"
+                                    @click="toggleReaction(message, emoji)">
+                                    {{ emoji }}
+                                </button>
+
+                                <template v-if="isWhatsapp && canSend">
+                                    <span class="mx-px h-3 w-px bg-gray-200"></span>
+                                    <button type="button" :title="trans('Reply')"
+                                        class="flex h-[18px] w-[18px] items-center justify-center rounded-full text-gray-500 transition-all hover:bg-gray-100 hover:text-indigo-600 hover:scale-110"
+                                        @click="startReply(message)">
+                                        <FontAwesomeIcon :icon="faReply" class="text-[9px]" />
+                                    </button>
+                                </template>
+                            </div>
+
                             <div class="max-w-[85%] min-w-0 px-2 py-1 rounded-lg text-[11px] leading-snug shadow-sm"
                                 :class="['guest', 'user'].includes(message.sender_type)
                                     ? 'bg-white text-gray-800 rounded-bl-sm'
@@ -1192,14 +1286,20 @@ onUnmounted(() => {
                             </div>
                         </div>
 
-                        <!-- Read-only here: reacting is done from the full inbox. -->
+                        <!-- Clicking a chip toggles it, so a reaction added from the popup
+                             above can be taken back the same way. -->
                         <div v-if="message.reactions?.length" class="-mt-0.5 flex flex-wrap gap-0.5"
                             :class="['guest', 'user'].includes(message.sender_type) ? 'justify-start' : 'justify-end'">
-                            <span v-for="group in message.reactions" :key="group.emoji"
-                                class="inline-flex items-center gap-0.5 rounded-full border border-gray-200 bg-white px-1 py-px text-[10px] text-gray-600 shadow-sm">
+                            <button v-for="group in message.reactions" :key="group.emoji" type="button"
+                                :disabled="reactingMessageId === message.id"
+                                class="inline-flex items-center gap-0.5 rounded-full border px-1 py-px text-[10px] shadow-sm transition disabled:opacity-50"
+                                :class="myReactedEmojis(message).has(group.emoji)
+                                    ? 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'"
+                                @click="toggleReaction(message, group.emoji)">
                                 <span>{{ group.emoji }}</span>
                                 <span v-if="group.count > 1" class="font-semibold">{{ group.count }}</span>
-                            </span>
+                            </button>
                         </div>
                     </template>
                 </template>
@@ -1293,6 +1393,19 @@ onUnmounted(() => {
                             </div>
                             <button type="button" class="text-gray-400 hover:text-red-500 shrink-0"
                                 @click="clearAttachment()">
+                                <FontAwesomeIcon :icon="faXmark" class="text-[9px]" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="replyingTo" class="px-2 pt-1.5">
+                        <div class="flex items-center gap-1.5 rounded border-l-2 border-indigo-400 bg-gray-50 px-1.5 py-1 min-w-0">
+                            <div class="min-w-0 flex-1">
+                                <div class="text-[9px] font-semibold text-indigo-500">{{ trans("Replying to") }}</div>
+                                <div class="truncate text-[10px] text-gray-600">{{ replyPreviewText(replyingTo) }}</div>
+                            </div>
+                            <button type="button" class="shrink-0 text-gray-400 hover:text-red-500"
+                                :title="trans('Cancel reply')" @click="cancelReply">
                                 <FontAwesomeIcon :icon="faXmark" class="text-[9px]" />
                             </button>
                         </div>
