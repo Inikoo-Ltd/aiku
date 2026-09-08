@@ -130,6 +130,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemImage;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPricingSales;
 use App\Actions\Goods\Stock\JSON\ValidateStockTradeUnitChanges;
 use App\Actions\Masters\MasterAsset\Json\GetMasterUpdatedBadge;
+use App\Actions\Catalogue\Product\Json\GetProductsNeedReviewBadge;
 use App\Actions\Masters\MasterAsset\Json\GetPriceRebelProducts;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\GetMasterDepartments;
@@ -389,6 +390,7 @@ Route::get('dispatching/crm-waiting-badge', GetCrmWaitingBadge::class)->name('cr
 Route::get('shops/crm-return-badge', GetCrmReturnedBadge::class)->name('crm_return_badge');
 Route::get('shops/master-updated-badge', GetMasterUpdatedBadge::class)->name('master_updated_badge');
 Route::get('shops/faire-skipped-badge', GetFaireSkippedBadge::class)->name('faire_skipped_badge');
+Route::get('shops/products-need-review-badge', GetProductsNeedReviewBadge::class)->name('products_need_review_badge');
 
 Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelect::class)->name('webpages_for_workshop_select');
 

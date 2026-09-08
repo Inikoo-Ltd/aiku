@@ -370,44 +370,15 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if ($masterAsset->wasChanged(['name', 'description', 'description_title', 'description_extra', 'code', 'is_golden_product'])) {
-            $english = Language::where('code', 'en')->first();
-
+        if ($masterAsset->wasChanged('is_golden_product')) {
             foreach ($masterAsset->products as $product) {
-                $shop            = $product->shop;
-                $dataToBeUpdated = [];
-
-                if ($masterAsset->wasChanged('is_golden_product')) {
-                    $dataToBeUpdated['is_golden_product'] = $masterAsset->is_golden_product;
-                }
-
-                if (data_get($shop->settings, 'catalog.product_follow_master', false)) {
-                    $shopLanguage    = $shop->language;
-
-                    // Updates the affected field name using translation if follow_master_{field} is true
-                    if ($masterAsset->wasChanged('name')) {
-                        $dataToBeUpdated['name']             = Translate::run($masterAsset->name, $english, $shopLanguage, 'gpt-5-nano');
-                        $dataToBeUpdated['is_name_reviewed'] = false;
-                    }
-                    if ($masterAsset->wasChanged('description_title')) {
-                        $dataToBeUpdated['description_title']             = Translate::run($masterAsset->description_title, $english, $shopLanguage, 'gpt-5-nano');
-                        $dataToBeUpdated['is_description_title_reviewed'] = false;
-                    }
-                    if ($masterAsset->wasChanged('description')) {
-                        $dataToBeUpdated['description']             = Translate::run($masterAsset->description, $english, $shopLanguage, 'gpt-5-nano');
-                        $dataToBeUpdated['is_description_reviewed'] = false;
-                    }
-                    if ($masterAsset->wasChanged('description_extra')) {
-                        $dataToBeUpdated['description_extra']             = Translate::run($masterAsset->description_extra, $english, $shopLanguage, 'gpt-5-nano');
-                        $dataToBeUpdated['is_description_extra_reviewed'] = false;
-                    }
-                }
-
-                if ($dataToBeUpdated) {
-                    UpdateProduct::make()->action($product, $dataToBeUpdated);
-                }
+                UpdateProduct::make()->action($product, [
+                    'is_golden_product' => $masterAsset->is_golden_product,
+                ]);
             }
         }
+
+        PropagateMasterContentToProducts::run($masterAsset, array_keys($masterAsset->getChanges()));
 
         if ($masterAsset->wasChanged('is_for_sale') && $masterAsset->is_for_sale) {
             MasterAssetHydrateAssets::run($masterAsset->id);

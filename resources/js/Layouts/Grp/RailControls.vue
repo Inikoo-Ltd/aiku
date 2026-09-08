@@ -14,6 +14,7 @@ import { faCircle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import ReturnCrmList from './ReturnCrmList.vue';
 import MasterUpdatedList from './MasterUpdatedList.vue';
+import ProductsNeedReviewList from './ProductsNeedReviewList.vue';
 import FaireSkippedList from './FaireSkippedList.vue';
 library.add(faCircle)
 
@@ -38,7 +39,7 @@ const layout = inject('layout', layoutStructure)
         <div v-if="layout?.dispatching_waiting_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
             <Popover width="w-80" position="right-full mr-2 top-0">
                 <template #button="{ open }">
-                    <div class="relative bg-amber-300 text-amber-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
+                    <div :title="trans('Orders waiting in the warehouse')" class="relative bg-amber-300 text-amber-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
                         <Transition name="spin-to-right"><span :key="layout?.dispatching_waiting_count"><span :class="layout?.dispatching_waiting_count > 99 ? 'text-xxs' : 'text-xs'">{{ layout?.dispatching_waiting_count > 99 ? '99+' : layout?.dispatching_waiting_count }}</span></span></Transition>
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
@@ -54,7 +55,7 @@ const layout = inject('layout', layoutStructure)
         <div v-if="layout?.crm_waiting_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
             <Popover width="w-80" position="right-full mr-2 top-0">
                 <template #button="{ open }">
-                    <div class="relative bg-purple-300 text-purple-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
+                    <div :title="trans('Orders waiting in CRM')" class="relative bg-purple-300 text-purple-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
                         <Transition name="spin-to-right"><span :key="layout?.crm_waiting_count"><span :class="layout?.crm_waiting_count > 99 ? 'text-xxs' : 'text-xs'">{{ layout?.crm_waiting_count > 99 ? '99+' : layout?.crm_waiting_count }}</span></span></Transition>
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
@@ -70,7 +71,7 @@ const layout = inject('layout', layoutStructure)
         <div v-if="layout?.crm_return_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
             <Popover width="w-80" position="right-full mr-2 top-0">
                 <template #button="{ open }">
-                    <div class="relative bg-blue-300 text-blue-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
+                    <div :title="trans('Orders with returns')" class="relative bg-blue-300 text-blue-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
                         <Transition name="spin-to-right"><span :key="layout?.crm_return_count"><span :class="layout?.crm_return_count > 99 ? 'text-xxs' : 'text-xs'">{{ layout?.crm_return_count > 99 ? '99+' : layout?.crm_return_count }}</span></span></Transition>
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-blue-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-blue-500 text-[5px]" fixed-width aria-hidden="true" />
@@ -86,7 +87,7 @@ const layout = inject('layout', layoutStructure)
         <div v-if="layout?.master_updated_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
             <Popover width="w-80" position="right-full mr-2 top-0">
                 <template #button="{ open }">
-                    <div class="relative bg-rose-300 text-rose-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
+                    <div :title="trans('Prices not matching master')" class="relative bg-rose-300 text-rose-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
                         <Transition name="spin-to-right"><span :key="layout?.master_updated_count"><span :class="layout?.master_updated_count > 99 ? 'text-xxs' : 'text-xs'">{{ layout?.master_updated_count > 99 ? '99+' : layout?.master_updated_count }}</span></span></Transition>
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-rose-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-rose-500 text-[5px]" fixed-width aria-hidden="true" />
@@ -98,11 +99,27 @@ const layout = inject('layout', layoutStructure)
             </Popover>
         </div>
 
+        <!-- Badge: Master name or description changed, shop keeps its own translation -->
+        <div v-if="layout?.products_need_review_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
+            <Popover width="w-80" position="right-full mr-2 top-0">
+                <template #button="{ open }">
+                    <div :title="trans('Master text changed')" class="relative bg-emerald-300 text-emerald-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
+                        <Transition name="spin-to-right"><span :key="layout?.products_need_review_count"><span :class="layout?.products_need_review_count > 99 ? 'text-xxs' : 'text-xs'">{{ layout?.products_need_review_count > 99 ? '99+' : layout?.products_need_review_count }}</span></span></Transition>
+                        <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-emerald-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-emerald-500 text-[5px]" fixed-width aria-hidden="true" />
+                    </div>
+                </template>
+                <template #content="{ open, close }">
+                    <ProductsNeedReviewList :open="open" :close="close" />
+                </template>
+            </Popover>
+        </div>
+
         <!-- Badge: Faire orders that could not be imported -->
         <div v-if="layout?.faire_skipped_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
             <Popover width="w-80" position="right-full mr-2 top-0">
                 <template #button="{ open }">
-                    <div class="relative bg-sky-300 text-sky-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
+                    <div :title="trans('Faire orders not imported')" class="relative bg-sky-300 text-sky-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
                         <Transition name="spin-to-right"><span :key="layout?.faire_skipped_count"><span :class="layout?.faire_skipped_count > 99 ? 'text-xxs' : 'text-xs'">{{ layout?.faire_skipped_count > 99 ? '99+' : layout?.faire_skipped_count }}</span></span></Transition>
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-sky-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-sky-500 text-[5px]" fixed-width aria-hidden="true" />

@@ -10,8 +10,10 @@ namespace App\Actions\UI\Grp;
 
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireSkippedBadgeData;
+use App\Actions\Catalogue\Product\GetProductsNeedReviewBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetCrmReturnedBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetCrmWaitingBadgeData;
+use App\Actions\Masters\MasterAsset\GetMasterUpdatedBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetDispatchingWaitingBadgeData;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\UI\Grp\Layout\GetLayout;
@@ -62,6 +64,8 @@ class GetFirstLoadProps
         data_set($props, 'dispatching_waiting_count', $user ? GetDispatchingWaitingBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'crm_waiting_count', $user ? GetCrmWaitingBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'crm_return_count', $user ? GetCrmReturnedBadgeData::make()->totalCount($user) : 0);
+        data_set($props, 'master_updated_count', $user ? GetMasterUpdatedBadgeData::make()->totalCount($user) : 0);
+        data_set($props, 'products_need_review_count', $user ? GetProductsNeedReviewBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'faire_skipped_count', $user ? GetFaireSkippedBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'ziggy', new Ziggy('grp')->toArray());
         data_set($props, 'last_deployment_at', $lastDeployment?->created_at);

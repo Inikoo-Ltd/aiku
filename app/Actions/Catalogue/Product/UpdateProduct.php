@@ -20,6 +20,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMasterPricesRRPtoChild;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMissingChildDescription;
+use App\Actions\Masters\MasterAsset\PropagateMasterContentToProducts;
 use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
 use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
 use App\Models\Masters\MasterAsset;
@@ -444,6 +445,10 @@ class UpdateProduct extends OrgAction
             'description'               => ['sometimes', 'required', 'max:1500'],
             'description_title'         => ['sometimes', 'nullable', 'max:255'],
             'description_extra'         => ['sometimes', 'nullable', 'max:65500'],
+            'is_name_reviewed'              => ['sometimes', 'boolean'],
+            'is_description_title_reviewed' => ['sometimes', 'boolean'],
+            'is_description_reviewed'       => ['sometimes', 'boolean'],
+            'is_description_extra_reviewed' => ['sometimes', 'boolean'],
             'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
             'rrp_per_unit'              => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
             'data'                      => ['sometimes', 'array'],
@@ -560,7 +565,29 @@ class UpdateProduct extends OrgAction
         $this->product = $product;
         $this->initialisationFromShop($product->shop, $request);
 
-        return $this->handle($product, $this->validatedData);
+        return $this->handle($product, $this->markWrittenTextAsReviewed($this->validatedData));
+    }
+
+    /**
+     * A person writing the text is what counts as reviewing it, so the flag the master raised
+     * comes back down in the same save. This lives on the controller because only here is there
+     * a person: every caller of action() is a machine - the Aurora fetch, the bulk edit, and
+     * above all TranslateModel, which translates precisely because the flag is false and would
+     * otherwise stamp its own output as reviewed and never look at that product again.
+     *
+     * @param array<string, mixed> $modelData
+     *
+     * @return array<string, mixed>
+     */
+    private function markWrittenTextAsReviewed(array $modelData): array
+    {
+        foreach (PropagateMasterContentToProducts::REVIEW_FLAGS as $field => $reviewFlag) {
+            if (Arr::has($modelData, $field)) {
+                data_set($modelData, $reviewFlag, true, false);
+            }
+        }
+
+        return $modelData;
     }
 
     public function action(Product $product, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Product
