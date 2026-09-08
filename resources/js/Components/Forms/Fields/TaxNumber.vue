@@ -268,7 +268,6 @@ watch(
 
 const isLoadingMarkValid = ref(false);
 const markAsValid = () => {
-    console.log("KONTOL", props.fieldData.mark_as_valid_button.cus_id);
     router.patch(route('grp.models.customer.update', {
             customer: props.fieldData.mark_as_valid_button.cus_id
         }), {

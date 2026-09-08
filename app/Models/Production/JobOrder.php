@@ -2,10 +2,12 @@
 
 namespace App\Models\Production;
 
+use App\Events\BroadcastManufactureFloorChanged;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Traits\HasSearch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -54,7 +56,12 @@ use Spatie\Sluggable\SlugOptions;
 class JobOrder extends Model
 {
     use HasSlug;
+    use HasSearch;
     use SoftDeletes;
+    protected static function booted(): void
+    {
+        static::saved(fn (self $model) => BroadcastManufactureFloorChanged::dispatch($model->production_id));
+    }
 
     protected $guarded = [];
 
@@ -78,6 +85,19 @@ class JobOrder extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'reference'       => (string)$this->reference,
+            'state'           => $this->state->value,
+            'slug'            => (string)$this->slug,
+            'production_id'   => $this->production_id,
+            'organisation_id' => $this->organisation_id,
+            'created_at'      => $this->created_at?->timestamp ?? 0,
+        ];
     }
 
     public function getSlugOptions(): SlugOptions

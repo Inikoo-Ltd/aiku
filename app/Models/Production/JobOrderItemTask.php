@@ -8,6 +8,7 @@
 
 namespace App\Models\Production;
 
+use App\Events\BroadcastManufactureFloorChanged;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -44,6 +45,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class JobOrderItemTask extends Model
 {
+    protected static function booted(): void
+    {
+        static::saved(fn (self $model) => BroadcastManufactureFloorChanged::dispatch($model->production_id));
+    }
+
     protected $guarded = [];
 
     protected $casts = [

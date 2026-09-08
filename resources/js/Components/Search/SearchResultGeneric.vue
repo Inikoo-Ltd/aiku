@@ -7,7 +7,7 @@ import {
     faMapMarkedAlt, faBadgePercent, faCommentDollar, faMailBulk, faBrowser, faCube,
     faFolderTree, faAlbumCollection, faCopyright, faTags, faBarcode, faEnvelope, faPhone,
     faSpinnerThird, faUserHardHat, faComments, faClipboardList, faTruckLoading,
-    faPeopleArrows, faBoxes, faFileInvoice, faUsers,
+    faPeopleArrows, faBoxes, faFileInvoice, faUsers, faFlaskPotion, faVial, faConveyorBelt,
 } from '@fal'
 import { Link } from '@inertiajs/vue3'
 import Skeleton from 'primevue/skeleton'
@@ -22,11 +22,12 @@ library.add(
     faMapMarkedAlt, faBadgePercent, faCommentDollar, faMailBulk, faBrowser, faCube,
     faFolderTree, faAlbumCollection, faCopyright, faTags, faBarcode, faEnvelope, faPhone,
     faSpinnerThird, faUserHardHat, faComments, faClipboardList, faTruckLoading,
-    faPeopleArrows, faBoxes, faFileInvoice, faUsers,
+    faPeopleArrows, faBoxes, faFileInvoice, faUsers, faFlaskPotion, faVial, faConveyorBelt,
 )
 
 type ResultItem = {
     id: number
+    href?: string | null
     slug?: string
     reference?: string
     code?: string
@@ -81,6 +82,13 @@ const SECTIONS: Record<string, SectionConfig> = {
     agents: { label: 'Agents', icon: 'fal fa-people-arrows', redirectRoute: 'grp.majordomo.redirect_agent' },
     supplier_products: { label: 'Supplier Products', icon: 'fal fa-boxes', redirectRoute: 'grp.majordomo.redirect_supplier_product' },
     agent_supplier_purchase_orders: { label: 'Agent Supplier Purchase Orders', icon: 'fal fa-file-invoice', redirectRoute: 'grp.majordomo.redirect_agent_supplier_purchase_order' },
+    artefact_departments: { label: 'Artefact Departments', icon: 'fal fa-folder-tree' },
+    artefact_families: { label: 'Artefact Families', icon: 'fal fa-boxes-alt' },
+    artefacts: { label: 'Artefacts', icon: 'fal fa-flask-potion' },
+    raw_materials: { label: 'Raw Materials', icon: 'fal fa-vial' },
+    manufacture_tasks: { label: 'Manufacture Tasks', icon: 'fal fa-conveyor-belt' },
+    job_orders: { label: 'Job Orders', icon: 'fal fa-clipboard-list' },
+    artisans: { label: 'Artisans', icon: 'fal fa-user-hard-hat', redirectRoute: 'grp.majordomo.redirect_employee' },
 }
 
 const model = defineModel('open')
@@ -105,6 +113,10 @@ watch(tabs, (newTabs) => {
 const loadingId = ref<number | null>(null)
 
 function buildHref(sectionKey: string, item: ResultItem): string | null {
+    if (item.href) {
+        return item.href
+    }
+
     const redirectRoute = SECTIONS[sectionKey]?.redirectRoute
 
     return redirectRoute ? route(redirectRoute, [item.id]) : null

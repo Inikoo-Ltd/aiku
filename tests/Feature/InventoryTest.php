@@ -1264,6 +1264,30 @@ test('OrgStockHydrateQuantityInLocations recomputes quantities and short-circuit
     expect((float) $orgStock->fresh()->quantity_in_locations)->toBe($expectedQuantity);
 });
 
+test('stock parked in a goods out location stops being available', function () {
+    $warehouse = createWarehouse();
+    $location  = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $orgStock  = createOrgStocks($this->organisation, [createStocks($this->group)[0]])[0];
+    $slot      = StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::PICKING]);
+    UpdateLocationOrgStock::make()->action($slot, ['quantity' => 10]);
+    $slot->refresh();
+
+    OrgStockHydrateQuantityInLocations::run($orgStock->id);
+    $inLocations = (float) $orgStock->fresh()->quantity_in_locations;
+    expect((float) $orgStock->fresh()->quantity_available)->toBe($inLocations);
+
+    $slot->location->update(['is_goods_out' => true]);
+    OrgStockHydrateQuantityInLocations::run($orgStock->id);
+
+    $orgStock->refresh();
+    expect((float) $orgStock->quantity_in_locations)->toBe($inLocations)
+        ->and((float) $orgStock->quantity_available)->toBe($inLocations - 10);
+
+    $slot->location->update(['is_goods_out' => false]);
+    OrgStockHydrateQuantityInLocations::run($orgStock->id);
+    expect((float) $orgStock->fresh()->quantity_available)->toBe($inLocations);
+});
+
 test('OrgStockHydrate simple field hydrators recompute their target fields', function () {
     $orgStock = OrgStock::first();
 

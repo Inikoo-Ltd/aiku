@@ -176,10 +176,22 @@ onMounted(() => {
 	const elementText = props.isAdditional ? 'additionalElements' : 'elements';
 	const prefix = props.tableName === "default" ? elementText : props.tableName + "_" + elementText
 	const searchParams = new URLSearchParams(window.location.search)
-	const stateParam = searchParams.get(`${prefix}[${selectedGroup.value}]`)
 
-	if (stateParam) {
-		selectedFilters[selectedGroup.value] = stateParam.split(",")
+	let groupFromUrl = ""
+
+	Object.keys(props.elements).forEach((scope) => {
+		const param = searchParams.get(`${prefix}[${scope}]`)
+
+		if (!param) {
+			return
+		}
+
+		selectedFilters[scope] = param.split(",")
+		groupFromUrl = groupFromUrl || scope
+	})
+
+	if (groupFromUrl) {
+		selectedGroup.value = groupFromUrl
 		emits("checkboxChanged", selectedFilters, true)
 	} else if (props.elements[selectedGroup.value]?.default) {
 		selectedFilters[selectedGroup.value] = [

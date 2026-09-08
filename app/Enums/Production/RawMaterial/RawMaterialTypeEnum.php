@@ -18,4 +18,12 @@ enum RawMaterialTypeEnum: string
     case CONSUMABLE   = 'consumable';
     case INTERMEDIATE = 'intermediate';
 
+    public static function labels(): array
+    {
+        return [
+            self::STOCK->value        => __('Stock'),
+            self::CONSUMABLE->value   => __('Consumable'),
+            self::INTERMEDIATE->value => __('Intermediate'),
+        ];
+    }
 }

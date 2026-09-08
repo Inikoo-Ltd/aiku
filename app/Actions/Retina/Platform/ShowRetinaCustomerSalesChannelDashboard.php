@@ -59,13 +59,15 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
         $existInPlatform = $customerSalesChannel->exist_in_platform;
         $platformStatus = $customerSalesChannel->platform_status;
 
-        if ($customerSalesChannel->status == CustomerSalesChannelStatusEnum::CLOSED) {
+        $isClosed = $customerSalesChannel->status == CustomerSalesChannelStatusEnum::CLOSED;
+
+        if ($isClosed) {
             $canConnectToPlatform = false;
             $existInPlatform = false;
             $platformStatus = false;
         }
 
-        $isShowActions = $customerSalesChannel->status != CustomerSalesChannelStatusEnum::CLOSED;
+        $isShowActions = !$isClosed;
 
         return Inertia::render($renderPage, [
             'title'                   => $title,
@@ -108,6 +110,12 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform,
             'platform_status'         => $platformStatus,
+            'deleted_notice'          => $isClosed ? [
+                'create_route' => [
+                    'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.create' : 'retina.dropshipping.customer_sales_channels.create',
+                    'parameters' => [],
+                ]
+            ] : null,
             'fetch_orders_route'      => $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL ? null : [
                 'name'       => 'retina.models.customer_sales_channel.fetch_orders',
                 'parameters' => [

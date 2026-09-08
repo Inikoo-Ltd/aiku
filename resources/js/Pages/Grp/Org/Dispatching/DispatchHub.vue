@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -31,6 +31,18 @@ const props = defineProps<{
     picking_session?: object
     pickers_current?: {}
     packers_current?: {}
+    partner_staging?: {
+        org_partner_id: number
+        org_stock_id: number
+        stock_code: string
+        stock_name: string
+        partner_code: string
+        to_location: string
+        quantity_staged: number
+        quantity_to_move: number
+        from_locations: { location_org_stock_id: number, code: string, quantity: number }[]
+    }[]
+    stage_route?: { name: string; parameters: Record<string, string> }
     reports_route?: { name: string; parameters: Record<string, string> }
     gate_route?: { name: string; parameters: Record<string, string> } | null
     intervals: any
@@ -41,6 +53,17 @@ let currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const isPersonnelTab = computed(() => currentTab.value === "pickers" || currentTab.value === "packers")
+const isStagingTab = computed(() => currentTab.value === "partner_staging")
+
+function stage(task: { org_partner_id: number, quantity_to_move: number, from_locations: { location_org_stock_id: number, quantity: number }[] }) {
+    const source = task.from_locations[0]
+    if (!source || !props.stage_route) return
+    router.post(route(props.stage_route.name, props.stage_route.parameters), {
+        location_org_stock_id: source.location_org_stock_id,
+        org_partner_id: task.org_partner_id,
+        quantity: Math.min(task.quantity_to_move, source.quantity),
+    }, { preserveScroll: true })
+}
 const currentWorkData = computed(() => currentTab.value === "pickers" ? props.pickers_current : props.packers_current)
 
 const orderRoute = (order: { slug: string }) =>
@@ -63,7 +86,47 @@ const trolleyRoute = (trolley: { slug: string }) =>
     <PageHeading :data="pageHead"></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 
-    <template v-if="isPersonnelTab">
+    <div v-if="isStagingTab" class="mx-4 mt-4 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500 dark:bg-gray-800">
+                <tr>
+                    <th class="px-4 py-2">{{ trans("For") }}</th>
+                    <th class="px-4 py-2">{{ trans("SKO") }}</th>
+                    <th class="px-4 py-2">{{ trans("From") }}</th>
+                    <th class="px-4 py-2">{{ trans("To") }}</th>
+                    <th class="px-4 py-2 text-right">{{ trans("Staged") }}</th>
+                    <th class="px-4 py-2 text-right">{{ trans("To move") }}</th>
+                    <th class="px-4 py-2"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="task in partner_staging" :key="task.org_partner_id + '-' + task.org_stock_id" class="border-t border-gray-100 dark:border-gray-800">
+                    <td class="px-4 py-2 font-medium">{{ task.partner_code }}</td>
+                    <td class="px-4 py-2">
+                        <div class="font-medium">{{ task.stock_code }}</div>
+                        <div class="text-gray-500">{{ task.stock_name }}</div>
+                    </td>
+                    <td class="px-4 py-2">
+                        <span v-if="task.from_locations.length" class="font-mono">{{ task.from_locations[0].code }}</span>
+                        <span v-else class="text-red-600">{{ trans("Nowhere to take it from") }}</span>
+                    </td>
+                    <td class="px-4 py-2 font-mono">{{ task.to_location }}</td>
+                    <td class="px-4 py-2 text-right tabular-nums text-gray-500">{{ task.quantity_staged }}</td>
+                    <td class="px-4 py-2 text-right font-semibold tabular-nums">{{ task.quantity_to_move }}</td>
+                    <td class="px-4 py-2 text-right">
+                        <button v-if="task.from_locations.length" type="button" class="rounded bg-indigo-600 px-3 py-1 text-white hover:bg-indigo-700" @click="stage(task)">
+                            {{ trans("Moved") }}
+                        </button>
+                    </td>
+                </tr>
+                <tr v-if="!partner_staging?.length">
+                    <td colspan="7" class="px-4 py-6 text-center text-gray-400">{{ trans("Nothing to stage") }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <template v-else-if="isPersonnelTab">
         <div class="px-4 pt-2">
             <div class="flex justify-end gap-4">
                 <Link

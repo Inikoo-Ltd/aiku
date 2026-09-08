@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue"
+import { Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -30,19 +31,18 @@ defineProps<{
 
 }>()
 
-function productRoute(family): string {
-    const current = route().current()
-    if (current === "retina.catalogue.products.index") {
-        return route("retina.catalogue.products.show", [family.slug])
+function productRoute(product): string | null {
+    if (!product.slug) {
+        return null
     }
-    return route("retina.catalogue.products.show", [family.slug])
+
+    return route().current() === "retina.catalogue.bundles.index"
+        ? route("retina.catalogue.bundles.show", [product.slug])
+        : route("retina.catalogue.products.show", [product.slug])
 }
 
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
-
-console.log("RetinaTableProducts.vue", layout)
-
 
 </script>
 
@@ -59,9 +59,16 @@ console.log("RetinaTableProducts.vue", layout)
         </template>
 
         <template #cell(code)="{ item: product }">
-            <a :href="product.iris_url" class="primaryLink whitespace-nowrap">
-            {{ product["code"] }}
+            <a v-if="product.iris_url" :href="product.iris_url" class="primaryLink whitespace-nowrap">
+                {{ product["code"] }}
             </a>
+            <Link v-else-if="productRoute(product)" :href="productRoute(product)"
+                class="primaryLink whitespace-nowrap">
+                {{ product["code"] }}
+            </Link>
+            <span v-else class="whitespace-nowrap">
+                {{ product["code"] }}
+            </span>
         </template>
 
         <!-- Column: Stock -->
@@ -107,9 +114,16 @@ console.log("RetinaTableProducts.vue", layout)
                     class="h-12 w-12 rounded-full object-cover shadow-sm flex-shrink-0" />
 
                 <div class="min-w-0 flex-1">
-                      <a :href="item.iris_url" class="primaryLink whitespace-nowrap">
+                      <a v-if="item.iris_url" :href="item.iris_url" class="primaryLink whitespace-nowrap">
                         {{ item.code }}
                       </a>
+                      <Link v-else-if="productRoute(item)" :href="productRoute(item)"
+                        class="primaryLink whitespace-nowrap">
+                        {{ item.code }}
+                      </Link>
+                      <span v-else class="whitespace-nowrap">
+                        {{ item.code }}
+                      </span>
 
                     <p class="mt-2 p-1 truncate text-sm text-gray-500">
                         {{ item.name }}

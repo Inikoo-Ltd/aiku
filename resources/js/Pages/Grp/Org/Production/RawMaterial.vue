@@ -11,6 +11,7 @@ import type { Component } from 'vue'
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
+import RawMaterialShowcase from './RawMaterialShowcase.vue'
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
 
@@ -18,23 +19,20 @@ const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     tabs: TSTabs
+    showcase?: {}
     history?: {}
-
-    
 }>()
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
-
     const components: Component = {
-        // showcase: FileShowcase
+        showcase: RawMaterialShowcase,
         history: TableHistories,
     }
 
     return components[currentTab.value]
-
 })
 
 </script>

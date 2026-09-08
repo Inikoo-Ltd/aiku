@@ -17,7 +17,7 @@ Pentru managerul de fabrică sau planificator. Două lucruri mici de configurat 
 
 Un artefact e un singur lucru pe care îl face fabrica. O categorie e un raft cu mai multe: bombe de baie, săpun, uleiuri esențiale, o gamă de brand. Fiecare artefact aparține la cel mult o categorie.
 
-- **Factory → Crafts → Artefact families (Fabrică → Meșteșuguri → Familii de artefacte)** listează categoriile cu câte artefacte are fiecare. Deschide una ca să-i vezi artefactele.
+- **Factory → Crafts → Artefact departments (Fabrică → Meșteșuguri → Familii de artefacte)** listează categoriile cu câte artefacte are fiecare. Deschide una ca să-i vezi artefactele.
 - Ca să muți artefacte între categorii, bifează-le pe orice listă de artefacte și folosește **Move to family (Mută la familie)**. Ca să creezi o categorie, folosește butonul **new (nou)** de pe listă.
 
 Categoriile controlează două lucruri: vizualizarea *By category* a listei To produce, și rezerva pentru artizani, explicată în continuare.
@@ -42,7 +42,7 @@ Deci varianta simplă de a configura o fabrică este: atașează artizani la cat
 
 <aside class="wayfinder"><strong>Unde apeși în aiku</strong>
 <ul>
-<li><b>Categorii:</b> organizația ta → <b>Factory</b> → <b>Crafts</b> → <b>Artefact families</b>.</li>
+<li><b>Categorii:</b> organizația ta → <b>Factory</b> → <b>Crafts</b> → <b>Artefact departments</b>.</li>
 <li><b>Mută artefacte:</b> bifează artefacte pe orice listă de artefacte → <b>Move to family</b>.</li>
 <li><b>Atașează un artizan:</b> deschide o categorie sau un artefact → <b>Usually made by</b> → <b>Add artisan…</b>. Detașează cu cruciulița de pe etichetă.</li>
 <li><b>Vezi efectul:</b> <b>Factory</b> → <b>To produce</b> → <b>By artisan</b>.</li>

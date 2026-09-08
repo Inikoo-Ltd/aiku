@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 02 Sep 2026 Malaga, Spain
+ * Created: Tue, 08 Sep 2026 Malaga, Spain
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
@@ -11,7 +11,6 @@ namespace App\Actions\Production\ArtefactFamily\UI;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
-use App\Actions\Production\Artisan\GetArtisanAssignmentProps;
 use App\Enums\UI\Production\ArtefactFamilyTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Production\ArtefactFamiliesResource;
@@ -41,29 +40,48 @@ class ShowArtefactFamily extends OrgAction
 
     public function htmlResponse(ArtefactFamily $artefactFamily, ActionRequest $request): Response
     {
+        $routeParameters = $request->route()->originalParameters();
+
         return Inertia::render(
             'Org/Production/ArtefactFamily',
             [
                 'title'       => $artefactFamily->name,
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs($routeParameters),
                 'pageHead'    => [
-                    'icon'    => ['icon' => ['fal', 'fa-folder'], 'title' => __('Artefact family')],
-                    'model'   => __('Artefact family'),
-                    'title'   => $artefactFamily->name,
+                    'icon'       => ['icon' => ['fal', 'fa-folder'], 'title' => __('Artefact family')],
+                    'model'      => __('Artefact Family'),
+                    'title'      => $artefactFamily->name,
                     'afterTitle' => ['label' => $artefactFamily->code],
-                    'actions' => [
+                    'actions'    => [
                         $this->canEdit ? [
-                            'type'    => 'button',
-                            'style'   => 'edit',
-                            'route'   => [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'route' => [
                                 'name'       => 'grp.org.productions.show.crafts.artefact_families.edit',
-                                'parameters' => $request->route()->originalParameters()
+                                'parameters' => $routeParameters
                             ]
                         ] : null
                     ],
                 ],
+                'number_artefacts' => $artefactFamily->number_artefacts,
+                'delete_route'     => $this->canEdit ? [
+                    'method'     => 'delete',
+                    'name'       => 'grp.models.artefact_family.delete',
+                    'parameters' => [$artefactFamily->id],
+                ] : null,
+                'department'  => $artefactFamily->artefactDepartment ? [
+                    'code'  => $artefactFamily->artefactDepartment->code,
+                    'name'  => $artefactFamily->artefactDepartment->name,
+                    'route' => [
+                        'name'       => 'grp.org.productions.show.crafts.artefact_departments.show',
+                        'parameters' => [
+                            $artefactFamily->organisation->slug,
+                            $artefactFamily->production->slug,
+                            $artefactFamily->artefactDepartment->slug,
+                        ]
+                    ]
+                ] : null,
                 'move_to_family' => IndexArtefacts::make()->getMoveToFamilyProps($this->production, $this->canEdit),
-                'artisans'       => GetArtisanAssignmentProps::run($artefactFamily, $this->canEdit),
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => ArtefactFamilyTabsEnum::navigation()

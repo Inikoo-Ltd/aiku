@@ -12,6 +12,7 @@ import {
   isTabVisible,
   type FamilyExtraDescriptionTabKey,
 } from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/tabVisibility"
+import { buildFaqPageJsonLd } from "@/Iris/Composables/useFaqStructuredData"
 
 const props = defineProps<{
   fieldValue: any
@@ -20,6 +21,7 @@ const props = defineProps<{
 }>()
 
 const layout = inject("layout", {}) as any
+const webpageData = inject<any>("webpage_data", null)
 
 const family = computed(() => props.fieldValue?.family ?? {})
 
@@ -37,7 +39,6 @@ const tabs = computed(() =>
     isTabVisible(tab.key as FamilyExtraDescriptionTabKey, family.value, isLoggedIn.value)
   )
 )
-console.log('ddd',tabs.value, props)
 const activeTab = ref(tabs.value[0]?.key ?? "")
 
 watch(tabs, (visibleTabs) => {
@@ -86,7 +87,14 @@ const sectionStyle = computed(() => {
 })
 
 const isMobile = computed(() => props.screenType === "mobile")
-console.log('isMobile',props)
+
+const faqJsonLd = computed(() =>
+  buildFaqPageJsonLd({
+    faqs: family.value?.faq,
+    webpageData,
+    listId: props.fieldValue?.id ?? props.indexBlock,
+  })
+)
 </script>
 
 <template>
@@ -120,7 +128,11 @@ console.log('isMobile',props)
       </div>
 
       <!-- CONTENT -->
-      <component :is="component(activeTab)" :field-value="fieldValue" :screen-type="screenType" :faqs="fieldValue?.family?.faq"/>
+      <div v-for="tab in tabs" :key="tab.key" v-show="activeTab === tab.key">
+        <component :is="component(tab.key)" :field-value="fieldValue" :screen-type="screenType" :faqs="fieldValue?.family?.faq"/>
+      </div>
+
+      <component v-if="faqJsonLd" :is="'script'" type="application/ld+json" :innerHTML="faqJsonLd" />
     </div>
   </section>
 </template>

@@ -28,4 +28,45 @@ enum RawMaterialStockStatusEnum: string
             self::ERROR->value        => 'Error in Stock',
         ];
     }
+
+    public static function stockStatusIcon(): array
+    {
+        return [
+            self::UNLIMITED->value    => [
+                'tooltip' => __('Unlimited stock'),
+                'icon'    => 'fal fa-infinity',
+                'class'   => 'text-blue-500'
+            ],
+            self::SURPLUS->value      => [
+                'tooltip' => __('Surplus stock'),
+                'icon'    => 'fal fa-arrow-circle-up',
+                'class'   => 'text-sky-500'
+            ],
+            self::OPTIMAL->value      => [
+                'tooltip' => __('Optimal stock'),
+                'icon'    => 'fal fa-check-circle',
+                'class'   => 'text-green-500'
+            ],
+            self::LOW->value          => [
+                'tooltip' => __('Low stock'),
+                'icon'    => 'fal fa-exclamation-circle',
+                'class'   => 'text-amber-500'
+            ],
+            self::CRITICAL->value     => [
+                'tooltip' => __('Critical stock'),
+                'icon'    => 'fal fa-exclamation-triangle',
+                'class'   => 'text-orange-500'
+            ],
+            self::OUT_OF_STOCK->value => [
+                'tooltip' => __('Out of stock'),
+                'icon'    => 'fal fa-times-circle',
+                'class'   => 'text-red-500'
+            ],
+            self::ERROR->value        => [
+                'tooltip' => __('Error in stock'),
+                'icon'    => 'fal fa-question-circle',
+                'class'   => 'text-purple-500'
+            ],
+        ];
+    }
 }

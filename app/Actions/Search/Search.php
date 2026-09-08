@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\Inventory\Warehouse;
 use App\Models\Masters\MasterShop;
+use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -23,6 +24,7 @@ class Search extends OrgAction
     protected const array ORGANISATION_SCOPES = ['accounting', 'hr', 'procurement'];
     protected const array SHOP_SCOPES = ['catalogue', 'prospects', 'customers', 'orders', 'reviews', 'billables', 'offers', 'marketing', 'website', 'shop_accounting'];
     protected const array WAREHOUSE_SCOPES = ['inventory', 'dispatching', 'locations'];
+    protected const array PRODUCTION_SCOPES = ['production'];
 
 
     public function handle(string $scope, string $query, array $options = []): array
@@ -59,6 +61,7 @@ class Search extends OrgAction
             'inventory'    => static fn () => SearchInventory::run($query, $options),
             'dispatching'  => static fn () => SearchDispatching::run($query, $options),
             'locations'    => static fn () => SearchLocations::run($query, $options),
+            'production'   => static fn () => SearchProduction::run($query, $options),
         ];
 
         if (!isset($actions[$scope])) {
@@ -122,6 +125,15 @@ class Search extends OrgAction
                 'warehouse_id'    => $warehouse->id,
                 'organisation_id' => $warehouse->organisation_id,
             ];
+        } elseif (in_array($scope, self::PRODUCTION_SCOPES, true)) {
+            $production = Production::where('slug', $request->query('production'))->firstOrFail();
+            $this->initialisationFromProduction($production, $request);
+            $options = [
+                'production_id'     => $production->id,
+                'production_slug'   => $production->slug,
+                'organisation_id'   => $production->organisation_id,
+                'organisation_slug' => $production->organisation->slug,
+            ];
         } elseif (in_array($scope, self::SHOP_SCOPES, true)) {
             $shop = Shop::where('slug', $request->query('shop'))->firstOrFail();
             $this->initialisationFromShop($shop, $request);
@@ -175,6 +187,7 @@ class Search extends OrgAction
             'grp.org.shops.show.discounts'            => 'offers',
             'grp.org.shops.show.marketing'            => 'marketing',
             'grp.org.shops.show.web'                  => 'website',
+            'grp.org.productions.'                    => 'production',
             'grp.org.warehouses.show.inventory.'      => 'inventory',
             'grp.org.warehouses.show.dispatching.'    => 'dispatching',
             'grp.org.warehouses.show.infrastructure.' => 'locations',

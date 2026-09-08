@@ -139,6 +139,21 @@ function deleteItem(item: { id: number }) {
             </select>
             <span v-else>{{ trans(item.priority) }}</span>
         </template>
+        <template #cell(progress)="{ item }">
+            <div class="flex items-center gap-1.5">
+                <span
+                    class="whitespace-nowrap rounded-full border px-2 py-0.5 text-xs"
+                    :class="{
+                        'border-gray-200 bg-gray-50 text-gray-500': item.progress?.tone === 'gray',
+                        'border-amber-200 bg-amber-50 text-amber-700': item.progress?.tone === 'amber',
+                        'border-indigo-200 bg-indigo-50 text-indigo-700': item.progress?.tone === 'indigo',
+                        'border-emerald-200 bg-emerald-50 text-emerald-700': item.progress?.tone === 'emerald',
+                    }">
+                    {{ item.progress?.label }}
+                </span>
+                <span v-if="item.progress?.reference" class="font-mono text-xs text-gray-400">{{ item.progress.reference }}</span>
+            </div>
+        </template>
         <template #cell(created_at)="{ item }">
             {{ useFormatTime(item.created_at, { formatTime: "mdy" }) }}
             <span v-if="item.added_by_name" class="text-gray-400">· {{ item.added_by_name }}</span>

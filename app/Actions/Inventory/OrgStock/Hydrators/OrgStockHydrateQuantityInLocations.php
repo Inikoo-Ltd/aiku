@@ -50,7 +50,15 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
 
         $quantityInLocations = DB::table('location_org_stocks')->where('org_stock_id', $orgStock->id)->sum('quantity');
 
-        $quantityAvailable = $quantityInLocations - $orgStock->quantity_in_submitted_orders - $orgStock->quantity_to_be_picked;
+        /* Goods out locations are the gathering point for a dispatch: the stock is still ours
+           and still counted, but it is spoken for and must not be offered to anybody else. */
+        $quantityInGoodsOut = DB::table('location_org_stocks')
+            ->join('locations', 'locations.id', 'location_org_stocks.location_id')
+            ->where('location_org_stocks.org_stock_id', $orgStock->id)
+            ->where('locations.is_goods_out', true)
+            ->sum('location_org_stocks.quantity');
+
+        $quantityAvailable = $quantityInLocations - $quantityInGoodsOut - $orgStock->quantity_in_submitted_orders - $orgStock->quantity_to_be_picked;
 
         // The source_ columns mirror Aurora's own reservations and only Aurora's stock
         // locations fetch writes them. Once an organisation runs its stock control in

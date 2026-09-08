@@ -27,7 +27,7 @@ class StoreJobOrdersGroupedByArtisan
         $byArtisan = [];
         foreach ($lines as $line) {
             $artefact  = $line['artefact'];
-            $artisanId = $employeeId ?? $artefact->artisans()->first()?->id ?? $artefact->artefactFamily?->artisans()->first()?->id ?? 0;
+            $artisanId = $employeeId ?? $artefact->artisans()->first()?->id ?? $artefact->artefactDepartment?->artisans()->first()?->id ?? 0;
 
             $byArtisan[$artisanId][] = $line;
         }
