@@ -56,15 +56,25 @@ trait WithPayAndSubmitOrder
     /**
      * The money is taken before the submit, so a submit that fails leaves a paid order sitting in
      * the basket where nobody sees it (HELP-3064). SubmitOrder refuses with a ValidationException,
-     * which Laravel keeps off Sentry, so the alert has to be raised here by hand.
+     * which Laravel keeps off Sentry, so the alert has to be raised here by hand. Any money taken
+     * counts, not only a fully paid order: the balance is spent before the cards are tried, so a
+     * part paid basket is just as invisible and just as much the customer's money.
      */
     protected function alertPaidOrderNotSubmitted(Order $order, Throwable $e): void
     {
-        if ($order->refresh()->pay_status != OrderPayStatusEnum::PAID) {
+        $order->refresh();
+
+        $amountTaken = round($order->payment_amount, 2);
+
+        if ($amountTaken <= 0) {
             return;
         }
 
-        $message = 'Order '.$order->reference.' ('.$order->id.') was paid and then failed to submit: '.$e->getMessage();
+        $paidDescription = $order->pay_status == OrderPayStatusEnum::PAID
+            ? 'was paid'
+            : 'was part paid ('.$amountTaken.' of '.round($order->total_amount, 2).')';
+
+        $message = 'Order '.$order->reference.' ('.$order->id.') '.$paidDescription.' and then failed to submit: '.$e->getMessage();
 
         Sentry::captureMessage($message);
 

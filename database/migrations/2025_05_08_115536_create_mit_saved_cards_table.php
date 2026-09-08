@@ -26,7 +26,7 @@ return new class () extends Migration {
             $table->foreign('customer_id')->references('id')->on('customers');
 
             $table->unsignedInteger('payment_account_shop_id')->index();
-            $table->foreign('payment_account_shop_id')->references('id')->on('customers');
+            $table->foreign('payment_account_shop_id')->references('id')->on('payment_account_shop');
 
             $table->string('token')->nullable();
             $table->string('last_four_digits')->nullable()->index();
