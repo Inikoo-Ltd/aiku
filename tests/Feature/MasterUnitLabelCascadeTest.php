@@ -23,6 +23,7 @@ use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Language;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\patch;
 
 beforeAll(function () {
     loadDB();
@@ -184,10 +185,22 @@ test('writing the shop text clears the review flag', function () {
     UpdateMasterAsset::make()->action($this->masterAsset, ['name' => 'lavender soap']);
     expect($this->product->refresh()->is_name_reviewed)->toBeFalse();
 
-    UpdateProduct::make()->action($this->product, ['name' => 'levanduľové mydlo']);
+    patch(route('grp.models.product.update', $this->product->id), ['name' => 'levanduľové mydlo'])
+        ->assertRedirect();
 
     expect($this->product->refresh()->name)->toBe('levanduľové mydlo')
         ->and($this->product->is_name_reviewed)->toBeTrue();
+});
+
+test('a machine rewriting the text does not mark it reviewed', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'sk')->first()->id]);
+    UpdateMasterAsset::make()->action($this->masterAsset, ['name' => 'lavender soap']);
+    expect($this->product->refresh()->is_name_reviewed)->toBeFalse();
+
+    UpdateProduct::make()->action($this->product, ['name' => 'strojový preklad']);
+
+    expect($this->product->refresh()->name)->toBe('strojový preklad')
+        ->and($this->product->is_name_reviewed)->toBeFalse();
 });
 
 test('a master translation reaches the shop map in every language but the shop own', function () {
