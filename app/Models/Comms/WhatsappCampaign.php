@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -127,5 +128,33 @@ class WhatsappCampaign extends Model
     public function stats(): HasOne
     {
         return $this->hasOne(WhatsappCampaignStats::class);
+    }
+
+    /**
+     * Which run of the fill is the current one. Every audience or template change bumps it,
+     * and a fill job carrying an older number stops on its next slice rather than racing the
+     * chain that replaced it.
+     */
+    public function fillGeneration(): int
+    {
+        return (int) Arr::get($this->data, 'fill_generation', 0);
+    }
+
+    /**
+     * A null data column is a recipient whose merge tags have not been resolved yet, so the
+     * count of them is how much of the fill is left. Rows already claimed by a delivery
+     * channel are excluded, matching the rows the fill itself will touch.
+     */
+    public function recipientsPendingFill(): int
+    {
+        return $this->recipients()
+            ->whereNull('whatsapp_delivery_channel_id')
+            ->whereNull('data')
+            ->count();
+    }
+
+    public function isFillingRecipients(): bool
+    {
+        return $this->recipientsPendingFill() > 0;
     }
 }

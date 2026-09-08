@@ -4,7 +4,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, onMounted, onUnmounted, ref, watch } from "vue"
 import { Link, router } from "@inertiajs/vue3"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
@@ -57,6 +57,9 @@ const props = defineProps<{
     defaultShopTimezone: string
     mergeTags: { value: string }[]
     businessName: string
+    groupId: number
+    campaignId: number
+    fillProgress: { done: number; total: number; state: string; started_at: string | null }
 }>()
 
 const inProgress = ref(false)
@@ -127,11 +130,73 @@ const pieOptions = {
 const isScheduled = computed(() => props.status === "scheduled")
 const isDraft = computed(() => props.status === "in_process")
 
-// The same three conditions the server enforces, so the tooltip explains a refusal before it happens
+// The picker resolves each recipient's merge tags on a queue, and a send started while that is
+// still walking would go out against rows holding no values at all. Seeded from the server so a
+// reload mid fill shows the bar rather than a button that disables itself a moment later.
+const fillProgress = ref(props.fillProgress)
+
+// A reload re-reads the fill from the server, so the broadcast's answer is replaced by the
+// authoritative one rather than left behind as the older of two truths.
+watch(() => props.fillProgress, (progress) => {
+    fillProgress.value = progress
+})
+
+const isFilling = computed(() => fillProgress.value?.state === "filling")
+
+const fillPct = computed(() => {
+    const { done = 0, total = 0 } = fillProgress.value ?? {}
+
+    return total ? Math.round((done / total) * 100) : 0
+})
+
+// Extrapolated from the rate so far rather than a fixed guess at throughput: the workers are
+// shared, so the only honest estimate is the one this campaign's own slices have earned.
+const fillRemainingText = computed(() => {
+    const { done = 0, total = 0, started_at } = fillProgress.value ?? {}
+    if (!total || !done || !started_at) return null
+
+    const elapsedMs = Date.now() - new Date(started_at).getTime()
+    if (elapsedMs <= 0) return null
+
+    const remainingMinutes = Math.ceil((elapsedMs * (total - done)) / done / 60000)
+
+    return remainingMinutes <= 1
+        ? trans("less than a minute left")
+        : trans(":min min left", { min: String(remainingMinutes) })
+})
+
+const fillChannel = computed(() => `grp.${props.groupId}.whatsapp-campaigns.${props.campaignId}`)
+
+onMounted(() => {
+    if (!props.groupId || !props.campaignId || !(window as any).Echo) return
+
+    ;(window as any).Echo.private(fillChannel.value).listen(
+        ".whatsapp-campaign.fill-progress",
+        (event: { done: number; total: number; state: string; started_at: string | null }) => {
+            const wasFilling = isFilling.value
+            fillProgress.value = event
+
+            // The count and the campaign state are both server side, so the page has to go back
+            // for them once there is nothing left to resolve.
+            if (wasFilling && event.state === "finished") {
+                router.reload()
+            }
+        }
+    )
+})
+
+onUnmounted(() => {
+    if (!props.groupId || !props.campaignId || !(window as any).Echo) return
+
+    ;(window as any).Echo.leave(fillChannel.value)
+})
+
+// The same conditions the server enforces, so the tooltip explains a refusal before it happens
 const blockedReason = computed(() => {
     if (!props.template) return trans("Choose a template first")
     if (!props.campaign.recipients_count) return trans("This campaign has no recipients")
     if (!props.isConfigured) return trans("WhatsApp is not configured for this shop")
+    if (isFilling.value) return trans("Preparing recipient data…")
 
     return null
 })
@@ -353,48 +418,76 @@ const handleCancelSchedule = async () => {
                     </div>
                 </dl>
 
+                <div v-if="isFilling" class="border-t border-gray-200 px-4 py-3">
+                    <div class="flex items-center justify-between gap-4 text-xs">
+                        <span class="text-gray-600 flex items-center gap-2">
+                            <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-indigo-500" />
+                            {{ trans("Preparing recipient data") }}
+                        </span>
+                        <span class="text-gray-500 tabular-nums">
+                            {{ fillProgress.done.toLocaleString() }} / {{ fillProgress.total.toLocaleString() }}
+                            ({{ fillPct }}%)
+                        </span>
+                    </div>
+
+                    <div class="mt-2 h-2.5 rounded-full bg-gray-100 overflow-hidden">
+                        <div class="h-full rounded-full bg-indigo-500 transition-all duration-300"
+                            :style="{ width: fillPct + '%' }" />
+                    </div>
+
+                    <div v-if="fillRemainingText" class="mt-1 text-right text-xs text-gray-400">
+                        {{ fillRemainingText }}
+                    </div>
+                </div>
+
                 <div v-if="isReady || isScheduled || isDraft"
                     class="border-t border-gray-200 px-4 py-3 flex items-center justify-end gap-2">
                     <!-- Still a draft: the same controls are shown disabled so the tooltip can
-                         say what is missing, rather than the whole bar vanishing without a word. -->
+                         say what is missing, rather than the whole bar vanishing without a word.
+                         The tooltip sits on a wrapper because a natively disabled button fires no
+                         hover events, which would leave the reason unreadable. -->
                     <template v-if="isDraft">
-                        <Button
-                            :label="trans('Schedule')"
-                            style="tertiary"
-                            icon="fal fa-clock"
-                            disabled
-                            :tooltip="blockedReason ?? undefined" />
+                        <span v-tooltip="blockedReason ?? undefined">
+                            <Button
+                                :label="trans('Schedule')"
+                                style="tertiary"
+                                icon="fal fa-clock"
+                                disabled />
+                        </span>
 
-                        <Button
-                            :label="trans('Send now')"
-                            style="primary"
-                            icon="fal fa-paper-plane"
-                            disabled
-                            :tooltip="blockedReason ?? undefined" />
+                        <span v-tooltip="blockedReason ?? undefined">
+                            <Button
+                                :label="trans('Send now')"
+                                style="primary"
+                                icon="fal fa-paper-plane"
+                                disabled />
+                        </span>
                     </template>
 
                     <template v-else-if="isReady">
-                        <Button
-                            :label="trans('Schedule')"
-                            style="tertiary"
-                            icon="fal fa-clock"
-                            :disabled="!!blockedReason || scheduleInProgress"
-                            :loading="scheduleInProgress"
-                            :tooltip="blockedReason ?? undefined"
-                            @click="openSchedulePicker" />
+                        <span v-tooltip="blockedReason ?? undefined">
+                            <Button
+                                :label="trans('Schedule')"
+                                style="tertiary"
+                                icon="fal fa-clock"
+                                :disabled="!!blockedReason || scheduleInProgress"
+                                :loading="scheduleInProgress"
+                                @click="openSchedulePicker" />
+                        </span>
 
                         <ModalConfirmation
                             :title="trans('Are you sure you want to send this campaign now?')"
                             :description="trans('This will send the WhatsApp template to every selected recipient.')"
                             isFullLoading>
                             <template #default="{ changeModel }">
-                                <Button
-                                    :label="trans('Send now')"
-                                    style="primary"
-                                    icon="fal fa-paper-plane"
-                                    :disabled="!!blockedReason || inProgress"
-                                    :tooltip="blockedReason ?? undefined"
-                                    @click="changeModel" />
+                                <span v-tooltip="blockedReason ?? undefined">
+                                    <Button
+                                        :label="trans('Send now')"
+                                        style="primary"
+                                        icon="fal fa-paper-plane"
+                                        :disabled="!!blockedReason || inProgress"
+                                        @click="changeModel" />
+                                </span>
                             </template>
                             <template #btn-yes>
                                 <Button

@@ -8,13 +8,16 @@
 namespace App\Actions\Comms\WhatsappCampaign;
 
 use App\Actions\Chat\Whatsapp\Templates\ResolveWhatsappTemplateTags;
+use App\Events\WhatsappCampaignFillProgressEvent;
 use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\MetaChatSession;
 use App\Models\Comms\WhatsappCampaign;
 use App\Models\Comms\WhatsappRecipient;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -35,25 +38,117 @@ class FillWhatsappRecipientData
     use AsAction;
     use WithWhatsappCampaignAudience;
 
-    public string $jobQueue = 'urgent';
+    public string $jobQueue = 'ses';
 
     private const CHUNK_SIZE = 1000;
 
-    public function handle(WhatsappCampaign $campaign): void
+    /**
+     * One slice per call rather than the whole audience in one job. An audience in the tens of
+     * thousands does not fit a worker timeout, and the supervisor's retries would restart the
+     * walk from the first row every time it did not, so the job re-dispatches itself from where
+     * it stopped and each attempt only ever replays its own slice.
+     *
+     * $afterId is where the previous slice ended. Rows already carrying a snapshot are skipped,
+     * so a replayed slice costs a read rather than a re-resolve.
+     *
+     * $generation is which run of the fill this chain belongs to. Changing the audience or the
+     * template bumps the campaign's generation, so a chain started before that change finds its
+     * number stale and stops here rather than walking on with tags nobody selected any more.
+     */
+    public function handle(WhatsappCampaign $campaign, ?int $afterId = null, ?int $generation = null): void
     {
+        $generation ??= $campaign->fillGeneration();
+
+        if ($campaign->fresh()?->fillGeneration() !== $generation) {
+            return;
+        }
+
         $tags = $this->readTemplateTags($campaign);
         $shop = $campaign->shop;
 
-        $campaign->recipients()
-            ->whereNull('whatsapp_delivery_channel_id')
-            ->orderBy('id')
-            ->chunkById(self::CHUNK_SIZE, function (Collection $recipients) use ($tags, $shop) {
-                $customers = $this->customersFor($recipients);
+        if (!$tags) {
+            $this->fillTagless($campaign);
+            $this->broadcastProgress($campaign);
 
-                foreach ($recipients as $recipient) {
-                    $recipient->update(['data' => $this->resolveFor($recipient, $tags, $shop, $customers)]);
-                }
-            });
+            return;
+        }
+
+        $recipients = $campaign->recipients()
+            ->whereNull('whatsapp_delivery_channel_id')
+            ->whereNull('data')
+            ->when($afterId, fn ($query) => $query->where('id', '>', $afterId))
+            ->orderBy('id')
+            ->limit(self::CHUNK_SIZE)
+            ->get();
+
+        if ($recipients->isEmpty()) {
+            $this->broadcastProgress($campaign);
+
+            return;
+        }
+
+        $customers = $this->customersFor($recipients);
+
+        foreach ($recipients as $recipient) {
+            $this->writeSnapshot($recipient->id, $this->resolveFor($recipient, $tags, $shop, $customers));
+        }
+
+        $this->broadcastProgress($campaign);
+
+        self::dispatch($campaign, $recipients->last()->id, $generation);
+    }
+
+    /**
+     * Written straight to the table rather than through the model, so updated_at is left alone.
+     * StoreWhatsappCampaignRecipients marks the rows of a save with updated_at and sweeps
+     * whatever the mark did not reach, so a fill touching that column would look like a save
+     * and rescue rows the user had just deselected.
+     *
+     * @param  array<string, mixed>  $snapshot
+     */
+    private function writeSnapshot(int $recipientId, array $snapshot): void
+    {
+        DB::table('whatsapp_recipients')
+            ->where('id', $recipientId)
+            ->update(['data' => json_encode($snapshot)]);
+    }
+
+    /**
+     * What is left to resolve, counted rather than tracked: the rows still holding a null data
+     * column are exactly the ones no slice has reached. Costs a count per slice and cannot drift
+     * from the rows themselves the way a stored tally would.
+     */
+    private function broadcastProgress(WhatsappCampaign $campaign): void
+    {
+        $total   = $campaign->recipients()->whereNull('whatsapp_delivery_channel_id')->count();
+        $pending = $campaign->recipientsPendingFill();
+
+        WhatsappCampaignFillProgressEvent::dispatch($campaign, [
+            'done'       => $total - $pending,
+            'total'      => $total,
+            'state'      => $pending > 0 ? 'filling' : 'finished',
+            'started_at' => Arr::get($campaign->data, 'fill_started_at'),
+        ]);
+    }
+
+    /**
+     * A tagless template resolves to the same snapshot for every recipient, so it is one
+     * statement rather than one per row. At campaign sizes in the tens of thousands the
+     * per-row path is the whole cost of this job, and none of it buys a different answer.
+     */
+    private function fillTagless(WhatsappCampaign $campaign): void
+    {
+        DB::table('whatsapp_recipients')
+            ->where('whatsapp_campaign_id', $campaign->id)
+            ->whereNull('whatsapp_delivery_channel_id')
+            ->update([
+                'data' => json_encode([
+                    'template_parameters' => [],
+                    'missing_tags'        => [],
+                    'merge_tags'          => [],
+                    'resolved_at'         => now()->toIso8601String(),
+                ]),
+            ]);
     }
 
     /**

@@ -10,6 +10,7 @@ namespace App\Actions\Comms\WhatsappCampaign;
 use App\Enums\Comms\WhatsappCampaign\WhatsappCampaignStateEnum;
 use App\Models\Comms\WhatsappCampaign;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 trait WithWhatsappCampaignSendable
@@ -99,5 +100,45 @@ trait WithWhatsappCampaignSendable
                 'campaign' => __('WhatsApp is not configured for this shop.'),
             ]);
         }
+
+        if ($campaign->isFillingRecipients()) {
+            throw ValidationException::withMessages([
+                'campaign' => __('Recipient data is still being prepared.'),
+            ]);
+        }
+    }
+
+    /**
+     * Starts the fill over, abandoning whatever is already walking. The generation is the whole
+     * mechanism: an in flight chain reads it at the top of each slice and stops once it no
+     * longer matches, so the audience is only ever resolved by the run that matches the
+     * selection the user last saved.
+     *
+     * A fresh walk rather than a top up of the new rows: after a template change the snapshots
+     * already written answer the old template, and telling those apart costs more than
+     * resolving them again.
+     */
+    protected function restartRecipientFill(WhatsappCampaign $campaign, bool $discardSnapshots = false): void
+    {
+        if ($discardSnapshots) {
+            /* Through the query builder rather than the model: updated_at is the mark
+               StoreWhatsappCampaignRecipients sweeps on, and touching it here would make a
+               discarded snapshot look like a freshly saved selection. */
+            DB::table('whatsapp_recipients')
+                ->where('whatsapp_campaign_id', $campaign->id)
+                ->whereNull('whatsapp_delivery_channel_id')
+                ->update(['data' => null]);
+        }
+
+        $data = $campaign->data ?? [];
+
+        Arr::set($data, 'fill_generation', $campaign->fillGeneration() + 1);
+        Arr::set($data, 'fill_started_at', now()->toIso8601String());
+
+        $this->update($campaign, ['data' => $data]);
+
+        $campaign->refresh();
+
+        FillWhatsappRecipientData::dispatch($campaign, null, $campaign->fillGeneration());
     }
 }

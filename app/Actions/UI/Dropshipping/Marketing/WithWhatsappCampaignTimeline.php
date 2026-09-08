@@ -67,6 +67,26 @@ trait WithWhatsappCampaignTimeline
     /**
      * @return array<int, array{label: string, key: string, icon: string, value: int}>
      */
+    /**
+     * Seeds the page with the fill's current position, so a reload while it is still walking
+     * shows the bar straight away rather than a send button that disables itself a moment
+     * later when the first broadcast lands.
+     *
+     * @return array{done: int, total: int, state: string, started_at: string|null}
+     */
+    public function getWhatsappCampaignFillProgress(WhatsappCampaign $campaign): array
+    {
+        $total   = $campaign->recipients()->whereNull('whatsapp_delivery_channel_id')->count();
+        $pending = $campaign->recipientsPendingFill();
+
+        return [
+            'done'       => $total - $pending,
+            'total'      => $total,
+            'state'      => $pending > 0 ? 'filling' : 'finished',
+            'started_at' => Arr::get($campaign->data, 'fill_started_at'),
+        ];
+    }
+
     public function getWhatsappCampaignStats(WhatsappCampaign $campaign): array
     {
         $stats = $campaign->stats;

@@ -51,6 +51,9 @@ const props = defineProps<{
     businessName: string
     recipients: object | null
     inboxRoute: routeType
+    groupId: number
+    campaignId: number
+    fillProgress: { done: number; total: number; state: string; started_at: string | null }
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -95,6 +98,9 @@ const showcaseProps = computed(() => ({
     defaultShopTimezone: props.defaultShopTimezone,
     mergeTags: props.mergeTags,
     businessName: props.businessName,
+    groupId: props.groupId,
+    campaignId: props.campaignId,
+    fillProgress: props.fillProgress,
 }))
 
 // Sending a campaign hides the tab it was started from, which would otherwise

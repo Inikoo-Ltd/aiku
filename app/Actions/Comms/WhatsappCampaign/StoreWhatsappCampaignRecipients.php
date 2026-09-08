@@ -80,7 +80,7 @@ class StoreWhatsappCampaignRecipients extends OrgAction
 
         $campaign->refresh();
 
-        FillWhatsappRecipientData::run($campaign);
+        $this->restartRecipientFill($campaign);
 
         $this->syncReadyState($campaign);
 
@@ -121,7 +121,7 @@ class StoreWhatsappCampaignRecipients extends OrgAction
 
         $campaign->refresh();
 
-        FillWhatsappRecipientData::run($campaign);
+        $this->restartRecipientFill($campaign);
 
         $this->syncReadyState($campaign);
 
@@ -182,8 +182,9 @@ class StoreWhatsappCampaignRecipients extends OrgAction
      * split, and leaves one delete whatever the mode.
      *
      * updated_at doubles as the mark. That holds because this runs in a transaction and
-     * nothing else writes a row while its channel is still null, but it is the kind of
-     * assumption that rots: a second writer touching these rows would have them swept.
+     * nothing else writes a row while its channel is still null: FillWhatsappRecipientData
+     * writes its snapshot through the query builder for exactly this reason, so filling a
+     * row does not stamp it as freshly selected. Any future writer here has to do the same.
      */
     private function sweepUnselected(WhatsappCampaign $campaign, Carbon $mark): void
     {

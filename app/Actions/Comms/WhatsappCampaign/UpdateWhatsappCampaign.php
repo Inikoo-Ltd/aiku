@@ -46,7 +46,7 @@ class UpdateWhatsappCampaign extends OrgAction
         $campaign = $this->update($campaign, $modelData, ['data']);
 
         if ($templateChanged) {
-            FillWhatsappRecipientData::run($campaign);
+            $this->restartRecipientFill($campaign, discardSnapshots: true);
         }
 
         $this->syncReadyState($campaign);

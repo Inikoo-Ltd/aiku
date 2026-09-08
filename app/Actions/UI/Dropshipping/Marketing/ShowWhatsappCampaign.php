@@ -87,6 +87,9 @@ class ShowWhatsappCampaign extends OrgAction
                     'sent_at'          => $campaign->sent_at?->toIso8601String(),
                 ],
                 'status'       => $campaign->state->value,
+                'groupId'      => $campaign->group_id,
+                'campaignId'   => $campaign->id,
+                'fillProgress' => $this->getWhatsappCampaignFillProgress($campaign),
                 'template'     => $template ? $this->whatsappTemplatePreview($template) : null,
                 'workshopRoute' => [
                     'name'       => "$routeBase.workshop",

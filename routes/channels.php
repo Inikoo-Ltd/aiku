@@ -92,6 +92,10 @@ Broadcast::channel('grp.{groupID}.mailshots.{mailshotId}', function (User $user,
     return $user->group_id === $groupID;
 });
 
+Broadcast::channel('grp.{groupID}.whatsapp-campaigns.{campaignId}', function (User $user, int $groupID, int $campaignId) {
+    return $user->group_id === $groupID;
+});
+
 Broadcast::channel('grp.{groupID}.fulfilmentCustomer.{userID}', function (User $user, int $groupID, int $userID) {
     return $user->id === $userID;
 });
