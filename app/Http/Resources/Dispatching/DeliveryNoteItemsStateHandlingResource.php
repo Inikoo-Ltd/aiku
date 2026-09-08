@@ -180,7 +180,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'org_stock_name'                           => $this->org_stock_name,
             'barcode'                                  => $this->barcode,
             'org_stock_image_thumbnail'                => null,
-            'locations'                                => LocationOrgStocksForPickingActionsResource::collection($pickingLocations),
+            'locations'                                => LocationOrgStocksForPickingActionsResource::collectionForPicking($pickingLocations, $this->organisation_id),
             'pickings'                                 => PickingResourceForDeliveryNoteItemsStateHandling::collection($pickings),
             'packings'                                 => PackingsResource::collection($deliveryNoteItem->packings),
             'warning'                                  => $fullWarning,

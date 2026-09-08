@@ -8,7 +8,9 @@
 
 namespace App\Http\Resources\Inventory;
 
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Collection;
 
 /**
  * @property int $id
@@ -24,6 +26,27 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class LocationOrgStocksForPickingActionsResource extends JsonResource
 {
     public static $wrap = null;
+
+    // ponytail: one organisation read per item row, no static memo so a settings toggle takes effect at once under Octane
+    public static function collectionForPicking($locations, ?int $organisationId): mixed
+    {
+        $canChoose = $organisationId && (bool)data_get(
+            Organisation::find($organisationId)?->settings,
+            'orders.allow_picker_choose_location',
+            false
+        );
+
+        if ($canChoose) {
+            return self::collection($locations);
+        }
+
+        return self::collection(
+            Collection::make($locations)
+                ->values()
+                ->filter(fn ($location, $index) => $index == 0 || filled(data_get($location, 'pickings_data')))
+                ->values()
+        );
+    }
 
     public function toArray($request): array
     {
