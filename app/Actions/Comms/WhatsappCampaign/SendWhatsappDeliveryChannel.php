@@ -79,7 +79,7 @@ class SendWhatsappDeliveryChannel
         /* ponytail: no throttling between sends. Meta caps throughput per phone number,
            but the 50 per channel split already spreads a campaign over separate jobs.
            If Meta starts rejecting, delay each channel or put a token bucket here. */
-        foreach ($campaign->recipients()->with('metaChatMessage')->where('whatsapp_delivery_channel_id', $channel->id)->get() as $recipient) {
+        foreach ($campaign->recipients()->where('whatsapp_delivery_channel_id', $channel->id)->get() as $recipient) {
             $campaign->refresh();
 
             if ($campaign->state == WhatsappCampaignStateEnum::STOPPED) {
@@ -105,22 +105,9 @@ class SendWhatsappDeliveryChannel
         UpdateWhatsappCampaignSentState::run($campaign->refresh());
     }
 
-    /**
-     * A recipient is done with once the message they were linked to is one that did not fail.
-     * Every attempt is linked, the failures included, so the link alone no longer says a send
-     * succeeded; the message's wa_status is what separates the two.
-     *
-     * Reading wa_status is safe against a webhook arriving later because
-     * UpdateWhatsappMessageStatus ranks failed highest and never walks a status backwards,
-     * so a message that failed stays failed.
-     */
     private function hasBeenSentTo(WhatsappRecipient $recipient): bool
     {
-        if (!$recipient->meta_chat_message_id) {
-            return false;
-        }
-
-        return Arr::get($recipient->metaChatMessage?->metadata ?? [], 'wa_status') != 'failed';
+        return (bool) $recipient->meta_chat_message_id;
     }
 
     private function sendToRecipient(
@@ -258,8 +245,7 @@ class SendWhatsappDeliveryChannel
      * of their history is.
      *
      * The recipient is linked to that message the same way a sent one is, so every attempt
-     * points at the record of itself. A re-run still retries them: hasBeenSentTo() reads the
-     * linked message's failed wa_status rather than the mere presence of a link.
+     * points at the record of itself and a re-run does not message them twice.
      */
     private function recordFailure(MetaChatSession $session, WhatsappCampaign $campaign, WhatsappRecipient $recipient, string $messageText, string $reason): void
     {

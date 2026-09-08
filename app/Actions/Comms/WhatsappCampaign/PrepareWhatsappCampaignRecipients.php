@@ -8,6 +8,7 @@
 namespace App\Actions\Comms\WhatsappCampaign;
 
 use App\Models\Comms\WhatsappCampaign;
+use App\Models\CRM\Customer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -71,7 +72,7 @@ class PrepareWhatsappCampaignRecipients
                 'recipient_id' => $recipient->id,
                 'phone'        => $recipient->phone,
                 'name'         => $recipient->recipient_name,
-                'customer_id'  => $recipient->recipient_type == 'Customer' ? $recipient->recipient_id : null,
+                'customer_id'  => $recipient->recipient_type == class_basename(Customer::class) ? $recipient->recipient_id : null,
             ])
             ->values()
             ->all();
