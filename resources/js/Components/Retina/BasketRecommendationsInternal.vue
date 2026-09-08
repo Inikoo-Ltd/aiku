@@ -96,6 +96,7 @@ onBeforeUnmount(() => {
         </div>
 
         <Swiper
+            v-if="isLoadingFetch || listProducts.length"
             :slides-per-view="Math.min((listProducts.length || (isLoadingFetch ? skeletonSize : 0)), slidesPerView)"
             :loop="false"
             :autoplay="false"
@@ -193,5 +194,9 @@ onBeforeUnmount(() => {
                 </SwiperSlide>
             </template>
         </Swiper>
+
+        <div v-else class="py-8 text-center text-sm text-gray-500">
+            {{ trans('No recommendations available') }}
+        </div>
     </div>
 </template>
