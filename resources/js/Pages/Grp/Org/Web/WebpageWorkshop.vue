@@ -134,7 +134,7 @@ const templateMerge = ref<{ current: any[], incoming: any[] }>({ current: [], in
 const canUndo = computed(() => history.value.length > 1);
 const canRedo = computed(() => future.value.length > 0);
 
-const WEBPAGE_TYPES_WITHOUT_TEMPLATE = ['storefront', 'blog'];
+const WEBPAGE_TYPES_WITHOUT_TEMPLATE = ['storefront', 'blog', 'system_page'];
 const canUseTemplate = computed(() => !WEBPAGE_TYPES_WITHOUT_TEMPLATE.includes(props.webpage.type));
 
 console.log('layout',layout)
