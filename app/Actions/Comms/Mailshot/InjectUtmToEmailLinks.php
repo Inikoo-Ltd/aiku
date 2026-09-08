@@ -8,6 +8,8 @@
 
 namespace App\Actions\Comms\Mailshot;
 
+use App\Actions\Comms\Traits\WithEmailLinkContentLabels;
+use App\Actions\Comms\Traits\WithMailshotUtmLinks;
 use App\Enums\Comms\Mailshot\MailshotUtmParameterEnum;
 use App\Models\Comms\Mailshot;
 use Illuminate\Support\Arr;
@@ -17,6 +19,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class InjectUtmToEmailLinks
 {
     use AsAction;
+    use WithEmailLinkContentLabels;
+    use WithMailshotUtmLinks;
 
     public function handle(Mailshot $mailshot, ?string $emailHtmlBody): ?string
     {
@@ -24,15 +28,59 @@ class InjectUtmToEmailLinks
             return $emailHtmlBody;
         }
 
-        $utmLinks = $this->getUtmLinks($mailshot);
+        $settings  = GetMailshotUtmSettings::run($mailshot);
+        $overrides = $this->getUtmOverrides($mailshot);
 
-        if ($utmLinks === []) {
+        if (!$settings['is_enabled'] && $overrides === []) {
             return $emailHtmlBody;
         }
 
+        $domains  = $this->getWebsiteDomains($mailshot);
+        $counters = [];
+
+        return preg_replace_callback(
+            self::ANCHOR_PATTERN,
+            function (array $matches) use ($settings, $overrides, $domains, &$counters) {
+                $anchor = $matches[0];
+                $url    = $this->getAnchorUrl($anchor);
+
+                if ($url === null) {
+                    return $anchor;
+                }
+
+                $parameters = $this->isInternalLink($url, $domains)
+                    ? $this->getParameters($url, $this->getContentLabel($anchor, $counters), $settings, $overrides)
+                    : $this->getUtmOverrideFor($url, $overrides);
+
+                return $parameters === [] ? $anchor : $this->tagAnchorLinks($anchor, $parameters);
+            },
+            $emailHtmlBody
+        );
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function getParameters(string $url, string $contentLabel, array $settings, array $overrides): array
+    {
+        $parameters = $settings['is_enabled']
+            ? array_merge($settings['parameters'], [MailshotUtmParameterEnum::CONTENT->value => $contentLabel])
+            : [];
+
+        return array_filter(
+            array_merge($parameters, $this->getUtmOverrideFor($url, $overrides)),
+            fn ($value) => filled($value)
+        );
+    }
+
+    /**
+     * @param array<string, string> $parameters
+     */
+    private function tagAnchorLinks(string $anchor, array $parameters): string
+    {
         return preg_replace_callback(
             '/href=(["\'])(.*?)\1/i',
-            function (array $matches) use ($utmLinks) {
+            function (array $matches) use ($parameters) {
                 $url = html_entity_decode($matches[2], ENT_QUOTES);
 
                 if (!Str::startsWith(Str::lower($url), ['http://', 'https://'])) {
@@ -41,70 +89,15 @@ class InjectUtmToEmailLinks
 
                 [$base, $query, $fragment] = $this->splitUrl($url);
 
-                $utm = Arr::get($utmLinks, $this->rebuildUrl($base, $query, $fragment))
-                    ?? Arr::get($utmLinks, $this->rebuildUrl($base, $query, ''));
-
-                if (!$utm) {
-                    return $matches[0];
-                }
-
                 foreach (MailshotUtmParameterEnum::values() as $parameter) {
-                    if (filled(Arr::get($utm, $parameter))) {
-                        $query[] = $parameter.'='.rawurlencode($utm[$parameter]);
+                    if (filled(Arr::get($parameters, $parameter))) {
+                        $query[] = $parameter.'='.rawurlencode($parameters[$parameter]);
                     }
                 }
 
                 return 'href='.$matches[1].htmlspecialchars($this->rebuildUrl($base, $query, $fragment), ENT_QUOTES).$matches[1];
             },
-            $emailHtmlBody
+            $anchor
         );
-    }
-
-    /**
-     * @return array<string, array<string, string>>
-     */
-    private function getUtmLinks(Mailshot $mailshot): array
-    {
-        $utmLinks = Arr::get($mailshot->data, 'utm_links', []);
-
-        if ($utmLinks === [] && $mailshot->is_second_wave) {
-            $utmLinks = Arr::get($mailshot->parentMailshot?->data ?? [], 'utm_links', []);
-        }
-
-        return collect($utmLinks)
-            ->mapWithKeys(fn (array $link) => [Arr::get($link, 'url') => Arr::get($link, 'utm', [])])
-            ->filter()
-            ->all();
-    }
-
-    /**
-     * @return array{0: string, 1: array<int, string>, 2: string}
-     */
-    private function splitUrl(string $url): array
-    {
-        $fragment = '';
-        if (str_contains($url, '#')) {
-            [$url, $fragment] = explode('#', $url, 2);
-            $fragment = '#'.$fragment;
-        }
-
-        $query = [];
-        if (str_contains($url, '?')) {
-            [$url, $queryString] = explode('?', $url, 2);
-            $query = array_filter(
-                explode('&', $queryString),
-                fn (string $parameter) => filled($parameter) && !Str::startsWith(Str::lower($parameter), 'utm_')
-            );
-        }
-
-        return [$url, $query, $fragment];
-    }
-
-    /**
-     * @param array<int, string> $query
-     */
-    private function rebuildUrl(string $base, array $query, string $fragment): string
-    {
-        return $base.($query === [] ? '' : '?'.implode('&', $query)).$fragment;
     }
 }

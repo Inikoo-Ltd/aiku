@@ -8,6 +8,8 @@
 
 namespace App\Actions\Comms\Mailshot;
 
+use App\Actions\Comms\Traits\WithEmailLinkContentLabels;
+use App\Actions\Comms\Traits\WithMailshotUtmLinks;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Mailshot\MailshotUtmParameterEnum;
 use App\Models\Comms\Mailshot;
@@ -17,26 +19,64 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetMailshotUrls extends OrgAction
 {
-    /**
-     * @return array{links: array<int, array{url: string, utm: array<string, string>}>, fields: array<int, array{name: string, label: string, hint: string, placeholder: string}>}
-     */
+    use WithEmailLinkContentLabels;
+    use WithMailshotUtmLinks;
+
     public function handle(Mailshot $mailshot): array
     {
-        $savedUtms = collect(Arr::get($mailshot->data, 'utm_links', []))
-            ->keyBy(fn (array $link) => Arr::get($link, 'url'));
+        $settings  = GetMailshotUtmSettings::run($mailshot);
+        $overrides = $this->getUtmOverrides($mailshot);
+        $domains   = $this->getWebsiteDomains($mailshot);
+        $roles     = $this->getContentLabelsByUrl($mailshot->email?->liveSnapshot?->compiled_layout, $domains);
 
         $links = collect($this->extractUrls($mailshot->email?->unpublishedSnapshot?->layout ?? []))
             ->map(fn (string $url) => [
-                'url' => $url,
-                'utm' => Arr::get($savedUtms->get($url, []), 'utm', []),
+                'url'                  => $url,
+                'utm'                  => $this->getUtmOverrideFor($url, $overrides),
+                'roles'                => Arr::get($roles, $url, []),
+                'is_internal'          => $this->isInternalLink($url, $domains),
+                'is_tracking_redirect' => $this->isTrackingRedirect($url),
             ])
             ->values()
             ->all();
 
         return [
+            'settings' => [
+                'is_enabled'       => $settings['is_enabled'],
+                'source'           => Arr::get($settings, 'parameters.'.MailshotUtmParameterEnum::SOURCE->value),
+                'medium'           => Arr::get($settings, 'parameters.'.MailshotUtmParameterEnum::MEDIUM->value),
+                'campaign'         => Arr::get($settings, 'parameters.'.MailshotUtmParameterEnum::CAMPAIGN->value),
+                'campaign_id'      => Arr::get($settings, 'parameters.'.MailshotUtmParameterEnum::ID->value),
+                'default_campaign' => $settings['default_campaign'],
+            ],
             'links'  => $links,
-            'fields' => $this->getFields($mailshot),
+            'fields' => $this->getFields($settings),
         ];
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    private function getContentLabelsByUrl(?string $emailHtmlBody, array $domains): array
+    {
+        if (blank($emailHtmlBody) || !preg_match_all(self::ANCHOR_PATTERN, $emailHtmlBody, $matches)) {
+            return [];
+        }
+
+        $counters = [];
+        $labels   = [];
+
+        foreach ($matches[0] as $anchor) {
+            $url = $this->getAnchorUrl($anchor);
+
+            if ($url === null || !$this->isInternalLink($url, $domains)) {
+                continue;
+            }
+
+            $labels[$url][] = $this->getContentLabel($anchor, $counters);
+        }
+
+        return $labels;
     }
 
     /**
@@ -73,22 +113,13 @@ class GetMailshotUrls extends OrgAction
     /**
      * @return array<int, array{name: string, label: string, hint: string, placeholder: string}>
      */
-    private function getFields(Mailshot $mailshot): array
+    private function getFields(array $settings): array
     {
-        $suggestions = [
-            MailshotUtmParameterEnum::SOURCE->value   => 'newsletter',
-            MailshotUtmParameterEnum::MEDIUM->value   => 'email',
-            MailshotUtmParameterEnum::CAMPAIGN->value => Str::slug($mailshot->name ?: $mailshot->subject, '_'),
-            MailshotUtmParameterEnum::ID->value       => $mailshot->date?->format('Y-m-d') ?? '',
-            MailshotUtmParameterEnum::TERM->value     => '',
-            MailshotUtmParameterEnum::CONTENT->value  => '',
-        ];
-
         return array_map(fn (MailshotUtmParameterEnum $parameter) => [
             'name'        => $parameter->value,
             'label'       => $parameter->label(),
             'hint'        => $parameter->hint(),
-            'placeholder' => Arr::get($suggestions, $parameter->value, ''),
+            'placeholder' => (string) Arr::get($settings, 'parameters.'.$parameter->value, ''),
         ], MailshotUtmParameterEnum::cases());
     }
 
