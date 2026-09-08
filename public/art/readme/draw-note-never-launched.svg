@@ -1,0 +1,82 @@
+<svg viewBox="0 0 720 420" width="1200" height="700" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive" role="img" aria-label="Watercolor sketch: a bowed flower with fallen petals, and a small new shoot rising beside it" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="wash" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="14"/>
+      <feGaussianBlur stdDeviation="0.7"/>
+    </filter>
+    <filter id="wash2" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="21" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="9"/>
+      <feGaussianBlur stdDeviation="0.5"/>
+    </filter>
+    <filter id="pencil" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/>
+    </filter>
+    <filter id="paper">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="11" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.55  0 0 0 0 0.5  0 0 0 0 0.42  0 0 0 0.05 0"/>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+    <radialGradient id="dawn" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#E8A13C" stop-opacity=".38"/>
+      <stop offset="100%" stop-color="#E8A13C" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="720" height="420" rx="8" fill="#F2ECDD" filter="url(#paper)"/>
+
+  <circle cx="566" cy="150" r="120" fill="url(#dawn)"/>
+
+  <g filter="url(#wash)" opacity=".30">
+    <path d="M20 300 q180 -26 360 -6 q170 18 322 -8 l6 108 q-350 22 -688 4 z" fill="#8A9A78"/>
+  </g>
+
+  <g filter="url(#wash)">
+    <path d="M232 316 q-6 -104 -34 -168" stroke="#6E7F5B" stroke-width="9" fill="none" opacity=".62" stroke-linecap="round"/>
+    <path d="M198 148 q-16 -30 -48 -30 q-30 0 -34 26 q-4 26 30 34" fill="none" stroke="#6E7F5B" stroke-width="8" opacity=".55" stroke-linecap="round"/>
+  </g>
+
+  <g filter="url(#wash2)" opacity=".66">
+    <ellipse cx="140" cy="176" rx="30" ry="19" fill="#B0483E" transform="rotate(-24 140 176)"/>
+    <ellipse cx="124" cy="196" rx="25" ry="15" fill="#9C4A46" transform="rotate(-38 124 196)"/>
+    <ellipse cx="160" cy="192" rx="22" ry="13" fill="#C05C4E" transform="rotate(-8 160 192)"/>
+    <ellipse cx="139" cy="184" rx="11" ry="8" fill="#8A3B37" opacity=".8"/>
+  </g>
+
+  <g filter="url(#wash)" opacity=".5">
+    <ellipse cx="252" cy="228" rx="20" ry="11" fill="#6E7F5B" transform="rotate(28 252 228)"/>
+    <ellipse cx="206" cy="262" rx="17" ry="9" fill="#6E7F5B" transform="rotate(-16 206 262)"/>
+  </g>
+
+  <g filter="url(#wash2)" opacity=".5">
+    <ellipse cx="196" cy="300" rx="15" ry="9" fill="#C05C4E" transform="rotate(24 196 300)"/>
+    <ellipse cx="268" cy="316" rx="13" ry="8" fill="#B0483E" transform="rotate(-32 268 316)"/>
+    <ellipse cx="146" cy="322" rx="12" ry="7" fill="#9C4A46" transform="rotate(12 146 322)"/>
+    <ellipse cx="318" cy="330" rx="11" ry="6" fill="#C05C4E" transform="rotate(-8 318 330)"/>
+  </g>
+
+  <g filter="url(#pencil)" stroke="#4A4238" stroke-width="1.3" fill="none" opacity=".62">
+    <path d="M232 318 q-6 -104 -34 -170"/>
+    <path d="M197 149 q-16 -31 -49 -31 q-31 0 -35 27 q-3 26 31 35"/>
+    <path d="M118 172 q22 -14 44 -4 M116 200 q26 10 52 -2"/>
+  </g>
+
+  <g filter="url(#wash)">
+    <path d="M470 322 q4 -40 2 -62" stroke="#7FA05A" stroke-width="6" fill="none" opacity=".8" stroke-linecap="round"/>
+    <ellipse cx="446" cy="264" rx="24" ry="13" fill="#7FA05A" opacity=".72" transform="rotate(-32 446 264)"/>
+    <ellipse cx="498" cy="270" rx="22" ry="12" fill="#8FAE66" opacity=".72" transform="rotate(28 498 270)"/>
+  </g>
+  <g filter="url(#pencil)" stroke="#4A4238" stroke-width="1.2" fill="none" opacity=".55">
+    <path d="M470 324 q4 -40 2 -64"/>
+    <path d="M470 274 q-26 -14 -42 -4 M472 280 q26 -12 42 -2"/>
+  </g>
+
+  <g filter="url(#pencil)" stroke="#4A4238" stroke-width="1.1" fill="none" opacity=".34">
+    <path d="M40 336 q300 -14 640 -6"/>
+  </g>
+
+  <text x="150" y="372" fill="#4A4238" font-size="21" opacity=".62">finished</text>
+  <text x="432" y="372" fill="#4A4238" font-size="21" opacity=".62">and the next one</text>
+</svg>
