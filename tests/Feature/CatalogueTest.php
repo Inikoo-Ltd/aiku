@@ -1079,6 +1079,33 @@ test('a bundle combines its trade unit ingredients and shows no component dimens
     expect(Product::find($product->id)->marketing_dimensions)->toBeNull();
 });
 
+test('a bundle spec block says which component each ingredient and size belongs to', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    $bulb = $this->tradeUnit1;
+    $bulb->update(['marketing_ingredients' => 'Cotton', 'marketing_dimensions' => ['type' => 'rectangular', 'units' => 'cm', 'l' => 0.02, 'w' => 0.02, 'h' => 0.04]]);
+
+    $lamp = $this->tradeUnit2;
+    $lamp->update(['marketing_ingredients' => 'Himalayan Salt', 'marketing_dimensions' => ['type' => 'rectangular', 'units' => 'cm', 'l' => 0.1, 'w' => 0.1, 'h' => 0.19]]);
+
+    \App\Actions\Catalogue\Product\SyncProductTradeUnits::run($product, [
+        ['id' => $bulb->id, 'quantity' => 1],
+        ['id' => $lamp->id, 'quantity' => 1],
+    ]);
+
+    $specifications = \App\Actions\Iris\Catalogue\GetProductDetail::make()
+        ->jsonResponse(Product::find($product->id), \Lorisleiva\Actions\ActionRequest::createFrom(request()))['specifications'];
+
+    expect($specifications['ingredients'])
+        ->toContain($bulb->code.' (Cotton)')
+        ->toContain($lamp->code.' (Himalayan Salt)')
+        ->and($specifications['dimensions'])
+        ->toContain($bulb->code.' (')
+        ->toContain($lamp->code.' (');
+});
+
 test('bulk update product unit is scoped to shop', function () {
     $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
     createProduct($shop);
