@@ -98,6 +98,12 @@ trait WithFillIrisWebBlocks
             }
         } elseif ($webBlockType == 'blog-categories') {
             $webBlockData = GetIrisWebBlockBlogCategories::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                // for some reason, the blog categories web block is not relevant for this page, so we remove it from the web blocks
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif ($webBlockType == 'login') {
             $parsedWebBlocks[$key] = GetIrisWebBlockLogin::run($webpage, $webBlock);
         } elseif ($webBlockType == 'register') {
