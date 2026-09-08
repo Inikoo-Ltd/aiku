@@ -16,6 +16,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMailshotRecipientsStoredAt
 {
@@ -55,6 +56,7 @@ class RepairMailshotRecipientsStoredAt
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $mailshotSlugs = $command->argument('mailshots');
         $processedCount = 0;
         $failedCount = 0;

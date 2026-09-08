@@ -481,7 +481,7 @@ const submitEditAddress = async () => {
         </template>
     </PageHeading>
 
-    <div class="grid grid-cols-4 divide-x divide-gray-300 border-b border-gray-200">
+    <div class="grid grid-cols-1 sm:grid-cols-4 divide-x divide-gray-300 border-b border-gray-200">
         <!-- Box: Customer -->
         <BoxStatPallet class=" py-2 px-3" icon="fal fa-user">
 

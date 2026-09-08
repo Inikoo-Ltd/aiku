@@ -10,6 +10,7 @@ namespace App\Actions\Maintenance\SysAdmin;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\SysAdmin\Guest;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairGuestUsers
 {
@@ -41,6 +42,7 @@ class RepairGuestUsers
 
     public function asCommand(): void
     {
+        Nightwatch::dontSample();
         $guests = Guest::all();
 
         foreach ($guests as $guest) {

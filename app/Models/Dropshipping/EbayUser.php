@@ -115,6 +115,23 @@ class EbayUser extends Model implements Auditable
         return ['crm', 'websites'];
     }
 
+    /**
+     * Location keys that were once written locally without ever creating the matching inventory
+     * location on eBay. eBay answers "Location information not found" for every offer built with
+     * one, so they count as no key at all and the real location gets provisioned instead.
+     */
+    public const UNPROVISIONED_LOCATION_KEYS = [
+        'mainWarehouse',
+        'esWarehouse',
+        'deWarehouse',
+    ];
+
+    public function hasUsableLocationKey(): bool
+    {
+        return filled($this->location_key)
+            && !in_array($this->location_key, self::UNPROVISIONED_LOCATION_KEYS, true);
+    }
+
     protected array $auditInclude = [
         'name',
         'status',

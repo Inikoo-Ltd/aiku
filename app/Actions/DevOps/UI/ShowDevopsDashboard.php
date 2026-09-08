@@ -21,6 +21,11 @@ class ShowDevopsDashboard extends OrgAction
 {
     use WithInertia;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->hasGroupAccess();
+    }
+
     public function handle(Group $group): Group
     {
         return $group;
@@ -59,7 +64,7 @@ class ShowDevopsDashboard extends OrgAction
     /** @return array{daily: array<int, object>, visitors: int, views: int, top_referrer: string|null} */
     public function getPublicSiteVisits(): array
     {
-        $visits = fn (int $days) => DB::table('aiku_public_visits')
+        $visits = fn (int $days) => DB::table('aiku_public_visits')->where('is_bot', false)
             ->where('created_at', '>', now()->subDays($days))
             ->where('path', 'not like', '/~search/%');
 

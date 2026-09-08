@@ -11,6 +11,8 @@ namespace App\Models\Production;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Tag;
+use App\Models\HumanResources\Employee;
 use App\Models\Inventory\OrgStock;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InProduction;
@@ -18,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
@@ -44,6 +47,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $trade_unit_id
  * @property int|null $org_stock_id
  * @property int|null $recommended_batch_size
+ * @property int|null $artefact_family_id
+ * @property-read ArtefactFamily|null $artefactFamily
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Tag> $tags
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ArtefactComplianceItem> $complianceItems
  * @property-read \App\Models\SysAdmin\Group|null $group
@@ -87,6 +93,7 @@ class Artefact extends Model implements Auditable
         'name',
         'description',
         'state',
+        'artefact_family_id',
     ];
 
     public function getRouteKeyName(): string
@@ -102,9 +109,32 @@ class Artefact extends Model implements Auditable
             ->saveSlugsTo('slug');
     }
 
+    public function artefactFamily(): BelongsTo
+    {
+        return $this->belongsTo(ArtefactFamily::class);
+    }
+
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(Tag::class, 'model', 'model_has_tags')->withTimestamps();
+    }
+
     public function tradeUnit(): BelongsTo
     {
         return $this->belongsTo(TradeUnit::class);
+    }
+
+    public function artisans(): MorphToMany
+    {
+        return $this->morphToMany(Employee::class, 'artisanable', 'artisan_assignments')
+            ->withPivot('position')
+            ->withTimestamps()
+            ->orderByPivot('position');
+    }
+
+    public function rawMaterial(): HasOne
+    {
+        return $this->hasOne(RawMaterial::class);
     }
 
     public function orgStock(): BelongsTo
@@ -126,6 +156,7 @@ class Artefact extends Model implements Auditable
     public function manufactureTasks()
     {
         return $this->belongsToMany(ManufactureTask::class, 'artefacts_manufacture_tasks')
+            ->using(ArtefactManufactureTask::class)
             ->withPivot('id', 'position', 'units_per_artefact')
             ->orderByPivot('position');
     }

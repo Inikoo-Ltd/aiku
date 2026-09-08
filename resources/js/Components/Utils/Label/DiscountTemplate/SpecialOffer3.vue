@@ -6,10 +6,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faArrowDown } from "@far"
 
 interface Offer {
+    type?: string
     label?: string
     percentage_off?: string | number
     max_percentage_discount?: string | number
     duration_label?: string
+    products_triggers_label?: string
 }
 
 const props = withDefaults(
@@ -24,12 +26,23 @@ const props = withDefaults(
 
 const infoPopover = ref()
 
+let hideTimer: ReturnType<typeof setTimeout> | null = null
+
+const cancelHide = () => {
+    if (hideTimer) {
+        clearTimeout(hideTimer)
+        hideTimer = null
+    }
+}
+
 const showInfo = (event: Event) => {
+    cancelHide()
     infoPopover.value?.show(event)
 }
 
 const hideInfo = () => {
-    infoPopover.value?.hide()
+    cancelHide()
+    hideTimer = setTimeout(() => infoPopover.value?.hide(), 200)
 }
 
 const label = computed(() => props.offer?.label || ctrans("Special Offer"))
@@ -54,9 +67,10 @@ const maxDiscountLabel = computed(() => {
         aria-haspopup="true"
         @mouseenter="showInfo"
         @mouseleave="hideInfo"
+        @click="infoPopover?.toggle($event)"
     >
         <div
-            class="flex items-center bg-red-700  gap-2 rounded px-1 md:py-[5px] py-[3px] xl:py-[3px] text-[8px] xl:text-[10px] 2xl:text-xs font-semibold leading-none text-white transition-all duration-150"
+            class="flex items-center bg-red-700 gap-2 rounded px-1 md:py-[5px] py-[3px] xl:py-[3px] text-[8px] xl:text-[10px] 2xl:text-xs font-semibold leading-none text-white transition-all duration-150"
         >
 
         <FontAwesomeIcon :icon="faArrowDown"  class="text-[8px]"/>
@@ -69,22 +83,25 @@ const maxDiscountLabel = computed(() => {
             </span>
         </div>
 
-        <Popover ref="infoPopover">
-            <div class="max-w-[280px] space-y-3 text-sm">
+        <Popover ref="infoPopover" :pt="{ root: { onMouseenter: cancelHide, onMouseleave: hideInfo } }">
+            <div class="max-w-[280px] space-y-3 text-sm overflow-hidden">
                 <div class="special-offer__content">
-                    <div
-                        v-if="maxDiscountLabel"
-                        class="special-offer__percentage font-semibold"
-                    >
-                        {{ maxDiscountLabel }}% {{ ctrans("OFF") }}
+                    <div class="special-offer__label bg-red-700 text-white rounded-sm px-1 py-0.5 text-xs font-semibold leading-5">
+                        <span v-if="maxDiscountLabel" class="inline-block font-bold bg-black/25 -ml-1 -my-0.5 px-1.5 py-0.5 rounded-l-sm mr-1.5">{{ maxDiscountLabel }}% {{ ctrans("OFF") }}</span>{{ label }}
                     </div>
 
                     <div
-                        v-if="use_duration && offer?.duration_label"
+                        v-if="offer?.duration_label"
                         class="special-offer__status"
                     >
                         {{ offer.duration_label }}
                     </div>
+
+                    <div
+                        v-if="offer?.products_triggers_label"
+                        class="text-xs text-gray-600"
+                        v-html="offer.products_triggers_label"
+                    />
                 </div>
             </div>
         </Popover>

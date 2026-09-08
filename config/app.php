@@ -253,6 +253,7 @@ return [
         'retina_fulfilment_domain'   => env('LOCAL_FULFILMENT_RETINA_DOMAIN'),
         'retina_dropshipping_domain' => env('LOCAL_DROPSHIPPING_RETINA_DOMAIN'),
         'retina_b2b_domain'          => env('LOCAL_B2B_RETINA_DOMAIN'),
+        'ngrok_ds_domain'            => env('LOCAL_DS_NGROK_DOMAIN'),
     ],
 
     'analytics' => [

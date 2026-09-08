@@ -142,6 +142,8 @@ use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
 use App\Actions\Dispatching\Trolley\UpdateTrolley;
 use App\Actions\Dropshipping\Allegro\Product\MatchPortfolioToCurrentAllegroProduct;
 use App\Actions\Dropshipping\Allegro\Product\StoreNewProductToCurrentAllegro;
+use App\Actions\Dropshipping\Wix\Product\MatchPortfolioToCurrentWixProduct;
+use App\Actions\Dropshipping\Wix\Product\StoreNewProductToCurrentWix;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CheckCustomerSalesChannel;
@@ -255,6 +257,9 @@ use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\Goods\StockFamily\UpdateStockFamily;
 use App\Actions\Goods\TradeUnit\AttachTradeUnitsToTradeUnitFamily;
+use App\Actions\Goods\TradeUnit\DeleteTradeUnitTariffCodeOverride;
+use App\Actions\Goods\TradeUnit\SetTradeUnitTariffCodeOverride;
+use App\Actions\Helpers\TariffCode\UpdateTariffCode;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnitTranslations;
 use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UI\AssignBrandTagsToTradeUnitFamily;
@@ -407,15 +412,20 @@ use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransact
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
 use App\Actions\Production\Artefact\AttachManufactureTaskToArtefact;
+use App\Actions\Production\Artisan\AttachArtisan;
+use App\Actions\Production\Artisan\DetachArtisan;
 use App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep;
 use App\Actions\Production\Artefact\DeleteArtefactComplianceItem;
 use App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact;
 use App\Actions\Production\Artefact\DetachRawMaterialFromRecipeStep;
 use App\Actions\Production\Artefact\ImportArtefact;
+use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Production\Artefact\StoreArtefactComplianceItem;
 use App\Actions\Production\Artefact\UpdateArtefact;
 use App\Actions\Production\Artefact\UpdateArtefactComplianceItem;
+use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
+use App\Actions\Production\ArtefactFamily\UpdateArtefactFamily;
 use App\Actions\Production\JobOrder\ConfirmJobOrder;
 use App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock;
 use App\Actions\Production\JobOrder\StoreJobOrder;
@@ -514,6 +524,11 @@ use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
 use App\Stubs\UIDummies\ImportDummy;
+use App\Actions\Helpers\Ticket\EscalateTicket;
+use App\Actions\Helpers\Ticket\RateTicket;
+use App\Actions\Helpers\Ticket\StoreTicket;
+use App\Actions\Helpers\Ticket\StoreTicketComment;
+use App\Actions\Helpers\Ticket\UpdateTicket;
 use Illuminate\Support\Facades\Route;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
@@ -524,6 +539,14 @@ Route::get('/profile/app-login-qrcode', GetProfileAppLoginQRCode::class)->name('
 
 Route::patch('notification/{notification}', MarkNotificationAsRead::class)->name('notifications.read');
 Route::patch('notifications', MarkAllNotificationAsRead::class)->name('notifications.all.read');
+
+Route::prefix('ticket')->name('ticket.')->group(function () {
+    Route::post('/', StoreTicket::class)->name('store');
+    Route::patch('{ticket:id}', UpdateTicket::class)->name('update')->whereNumber('ticket');
+    Route::post('{ticket:id}/comment', StoreTicketComment::class)->name('comment.store')->whereNumber('ticket');
+    Route::post('{ticket:id}/rate', RateTicket::class)->name('rate')->whereNumber('ticket');
+    Route::post('{ticket:id}/escalate', EscalateTicket::class)->name('escalate')->whereNumber('ticket');
+});
 
 Route::prefix('employee/{employee:id}')->name('employee.')->group(function () {
     Route::post('create-user', StoreUserFromEmployee::class)->name('create_user');
@@ -974,6 +997,8 @@ Route::post('portfolio/{portfolio:id}/store-new-tiktok-product', StoreNewProduct
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-allegro-product', MatchPortfolioToCurrentAllegroProduct::class)->name('portfolio.match_to_existing_allegro_product');
 Route::post('portfolio/{portfolio:id}/store-new-allegro-product', StoreNewProductToCurrentAllegro::class)->name('portfolio.store_new_allegro_product');
+Route::post('portfolio/{portfolio:id}/match-to-existing-wix-product', MatchPortfolioToCurrentWixProduct::class)->name('portfolio.match_to_existing_wix_product');
+Route::post('portfolio/{portfolio:id}/store-new-wix-product', StoreNewProductToCurrentWix::class)->name('portfolio.store_new_wix_product');
 
 Route::patch('{storedItem:id}/stored-items/pallets', SyncStoredItemPallet::class)->name('stored-items.pallets.update');
 Route::patch('{storedItem:id}/stored-items', MoveStoredItem::class)->name('stored-items.move');
@@ -1253,6 +1278,8 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
     Route::patch('manufacture-tasks/{manufactureTask:id}', UpdateManufactureTask::class)->name('manufacture_tasks.update');
     Route::post('artefacts', StoreArtefact::class)->name('artefacts.store');
     Route::patch('artefacts/{artefact:id}', UpdateArtefact::class)->name('artefacts.update');
+    Route::post('artefact-families', StoreArtefactFamily::class)->name('artefact_families.store');
+    Route::post('artefacts/move-to-family', MoveArtefactsToFamily::class)->name('artefacts.move_to_family');
     Route::post('artefact-upload', ImportArtefact::class)->name('artefact.import');
 });
 
@@ -1261,6 +1288,10 @@ Route::post('/job-order/{jobOrder:id}/item', StoreJobOrderItem::class)->name('jo
 Route::patch('/job-order/{jobOrder:id}/confirm', ConfirmJobOrder::class)->name('job-order.confirm')->withoutScopedBindings();
 Route::patch('/job-order/{jobOrder:id}/receive', ReceiveJobOrderIntoStock::class)->name('job-order.receive')->withoutScopedBindings();
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/void', VoidManufactureTaskSession::class)->name('manufacture-task-session.void')->withoutScopedBindings();
+Route::post('/artefact/{artefact:id}/artisans', [AttachArtisan::class, 'inArtefact'])->name('artefact.artisans.attach')->withoutScopedBindings();
+Route::delete('/artefact/{artefact:id}/artisans/{employee:id}', [DetachArtisan::class, 'inArtefact'])->name('artefact.artisans.detach')->withoutScopedBindings();
+Route::post('/artefact-family/{artefactFamily:id}/artisans', [AttachArtisan::class, 'inArtefactFamily'])->name('artefact_family.artisans.attach')->withoutScopedBindings();
+Route::delete('/artefact-family/{artefactFamily:id}/artisans/{employee:id}', [DetachArtisan::class, 'inArtefactFamily'])->name('artefact_family.artisans.detach')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/manufacture-task/attach', AttachManufactureTaskToArtefact::class)->name('artefact.manufacture-task.attach')->withoutScopedBindings();
 Route::delete('/artefact/{artefact:id}/manufacture-task/{manufactureTask:id}', DetachManufactureTaskFromArtefact::class)->name('artefact.manufacture-task.detach')->withoutScopedBindings();
 Route::post('/recipe-step/{recipeStep:id}/raw-material/attach', AttachRawMaterialToRecipeStep::class)->name('recipe-step.raw-material.attach')->withoutScopedBindings();
@@ -1407,6 +1438,16 @@ Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id
     Route::delete('delete', DeleteModelHasContent::class)->name('delete');
 });
 
+Route::patch('artefact-family/{artefactFamily:id}', UpdateArtefactFamily::class)->name('artefact_family.update');
+
+Route::name('artefact.')->prefix('artefact/{artefact:id}')->group(function () {
+    Route::post('tags/store', [StoreTag::class, 'inArtefact'])->name('tags.store');
+    Route::patch('tags/{tag:id}/update', [UpdateTag::class, 'inArtefact'])->name('tags.update');
+    Route::delete('tags/{tag:id}/delete', [DeleteTag::class, 'inArtefact'])->name('tags.delete');
+    Route::post('tags/attach', [AttachTagsToModel::class, 'inArtefact'])->name('tags.attach');
+    Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inArtefact'])->name('tags.detach');
+});
+
 Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () {
     Route::post('tags/store', [StoreTag::class, 'inTradeUnit'])->name('tags.store');
     Route::patch('tags/{tag:id}/update', [UpdateTag::class, 'inTradeUnit'])->name('tags.update');
@@ -1415,6 +1456,8 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
     Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inTradeUnit'])->name('tags.detach');
 
     Route::patch('translations', UpdateTradeUnitTranslations::class)->name('translations.update');
+    Route::patch('tariff-code-override/{organisation:id}', SetTradeUnitTariffCodeOverride::class)->name('tariff_code_override.update')->withoutScopedBindings();
+    Route::delete('tariff-code-override/{organisation:id}', DeleteTradeUnitTariffCodeOverride::class)->name('tariff_code_override.delete')->withoutScopedBindings();
 
     Route::post('brands/store', [StoreBrand::class, 'inTradeUnit'])->name('brands.store');
     Route::delete('brands/{brand:id}/delete', [DeleteBrand::class, 'inTradeUnit'])->name('brands.delete')->withoutScopedBindings();
@@ -1547,3 +1590,5 @@ require __DIR__.'/models/sys_admin/user.php';
 require __DIR__.'/models/fulfilment/fulfilment_customer.php';
 require __DIR__.'/models/fulfilment/stored_item_audit.php';
 require __DIR__.'/models/fulfilment/stored_item_audit_delta.php';
+
+Route::patch('tariff-code/{tariffCode:id}', UpdateTariffCode::class)->name('tariff_code.update');

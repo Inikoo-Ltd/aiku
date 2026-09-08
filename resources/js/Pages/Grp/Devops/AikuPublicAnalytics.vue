@@ -24,6 +24,7 @@ library.add(faChartLine, faHashtag, faNewspaper, faTachometerAltFast)
 interface StatRow {
     views: number
     visitors: number
+    suspect?: number
     day?: string
     path?: string
     referrer?: string
@@ -32,7 +33,12 @@ interface StatRow {
     last_visited_at?: string
 }
 
-const lastVisited = (value?: string) => value ? new Date(value).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""
+const lastVisited = (value?: string) => {
+    if (!value) return ""
+    const d = new Date(value)
+    const pad = (n: number) => String(n).padStart(2, "0")
+    return `${pad(d.getDate())} ${d.toLocaleString("en", { month: "short" }).slice(0, 3)} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
 
 interface ArticleRow {
     slug: string
@@ -58,6 +64,7 @@ const props = defineProps<{
         referrers: StatRow[]
         page_referrers: StatRow[]
         countries: StatRow[]
+        bots: StatRow[]
     }
 }>()
 
@@ -65,13 +72,14 @@ const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const shortDate = (value?: string) => value ? new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "—"
 
-const maxDailyViews = computed(() => Math.max(...(props.overview?.daily ?? []).map(d => Number(d.views)), 1))
+const maxDailyViews = computed(() => Math.max(...(props.overview?.daily ?? []).map(d => Number(d.views) + Number(d.suspect ?? 0)), 1))
 
 const sections = computed(() => [
     { label: trans("Pages"), key: "path", rows: props.overview?.pages ?? [] },
     { label: trans("Referrers"), key: "referrer", rows: props.overview?.referrers ?? [] },
     { label: trans("Countries"), key: "country", rows: props.overview?.countries ?? [] },
     { label: trans("Searches"), key: "query", rows: props.overview?.searches ?? [] },
+    { label: trans("Bots (excluded above)"), key: "user_agent", rows: props.overview?.bots ?? [] },
 ])
 </script>
 
@@ -96,7 +104,7 @@ const sections = computed(() => [
                 <span class="tabular-nums text-gray-500">{{ item.views }}</span>
             </template>
             <template #cell(last_visited_at)="{ item }">
-                <span class="whitespace-nowrap text-xs text-gray-500">{{ lastVisited(item.last_visited_at) }}</span>
+                <span class="whitespace-nowrap font-mono text-xs text-gray-500">{{ lastVisited(item.last_visited_at) }}</span>
             </template>
         </Table>
 
@@ -105,7 +113,7 @@ const sections = computed(() => [
                 <span class="block -ml-2 lg:-ml-6">{{ item.hashtag }}</span>
             </template>
             <template #cell(last_visited_at)="{ item }">
-                <span class="whitespace-nowrap text-xs text-gray-500">{{ lastVisited(item.last_visited_at) }}</span>
+                <span class="whitespace-nowrap font-mono text-xs text-gray-500">{{ lastVisited(item.last_visited_at) }}</span>
             </template>
         </Table>
 
@@ -114,10 +122,12 @@ const sections = computed(() => [
             <h2 class="text-sm font-medium">{{ trans("Daily visits (last 30 days)") }}</h2>
             <div class="mt-2 flex h-32 items-end gap-1">
                 <div v-for="d in overview.daily" :key="d.day" class="group relative max-w-10 flex-1">
-                    <div class="w-full rounded-t bg-indigo-500/80"
+                    <div class="w-full rounded-t bg-gray-300" :title="trans('Suspect: no referrer, single view')"
+                        :style="{ height: `${(Number(d.suspect ?? 0) / maxDailyViews) * 120}px` }" />
+                    <div class="w-full bg-indigo-500/80"
                         :style="{ height: `${(Number(d.views) / maxDailyViews) * 120}px` }" />
                     <div class="pointer-events-none absolute bottom-full left-1/2 z-10 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white group-hover:block">
-                        {{ d.day }}: {{ d.views }} {{ trans("views") }}, {{ d.visitors }} {{ trans("visitors") }}
+                        {{ d.day }}: {{ d.views }} {{ trans("views") }}, {{ d.visitors }} {{ trans("visitors") }}, {{ d.suspect ?? 0 }} {{ trans("suspect") }}
                     </div>
                 </div>
             </div>
@@ -140,7 +150,7 @@ const sections = computed(() => [
                             <td class="max-w-56 truncate py-1">{{ row[section.key as keyof StatRow] }}</td>
                             <td class="py-1 text-right">{{ row.visitors }}</td>
                             <td class="py-1 text-right text-gray-500">{{ row.views }}</td>
-                            <td class="whitespace-nowrap py-1 text-right text-xs text-gray-500">{{ lastVisited(row.last_visited_at) }}</td>
+                            <td class="whitespace-nowrap py-1 text-right font-mono text-xs text-gray-500">{{ lastVisited(row.last_visited_at) }}</td>
                         </tr>
                         <tr v-if="!section.rows.length">
                             <td colspan="4" class="py-2 text-xs text-gray-500">{{ trans("No data yet") }}</td>
@@ -168,7 +178,7 @@ const sections = computed(() => [
                         <td class="max-w-56 truncate py-1">{{ row.referrer }}</td>
                         <td class="py-1 text-right">{{ row.visitors }}</td>
                         <td class="py-1 text-right text-gray-500">{{ row.views }}</td>
-                        <td class="whitespace-nowrap py-1 text-right text-xs text-gray-500">{{ lastVisited(row.last_visited_at) }}</td>
+                        <td class="whitespace-nowrap py-1 text-right font-mono text-xs text-gray-500">{{ lastVisited(row.last_visited_at) }}</td>
                     </tr>
                     <tr v-if="!overview.page_referrers.length">
                         <td colspan="5" class="py-2 text-xs text-gray-500">{{ trans("No data yet") }}</td>

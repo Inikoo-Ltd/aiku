@@ -121,6 +121,11 @@ class RawMaterial extends Model implements Auditable
         return $this->belongsTo(Organisation::class);
     }
 
+    public function artefact(): BelongsTo
+    {
+        return $this->belongsTo(Artefact::class);
+    }
+
     public function tradeUnit(): BelongsTo
     {
         return $this->belongsTo(TradeUnit::class);

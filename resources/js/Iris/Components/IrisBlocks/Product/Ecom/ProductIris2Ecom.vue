@@ -367,7 +367,6 @@ onMounted(async () => {
             <div class="col-span-5 self-start">
                 <div class="relative flex justify-between items-start mb-4">
                     <div class="w-full">
-                        <GoldenProductBadge v-if="product.is_golden_product" class="mb-2" />
 
                         <div class="text-xl text-black font-bold w-[80%]">
                             <span v-if="product.units > 1">{{ product.units }}x</span> {{ product.name }}
@@ -425,7 +424,7 @@ onMounted(async () => {
 
                 <!-- Section: Discounts -->
                 <div v-if="Object.keys(customerData?.offers_data || {})?.length" class="w-full my-2">
-                    <Discount :offers_data="customerData?.offers_data" class="justify-center" template="agnes_and_cat" />
+                   <!--  <Discount :offers_data="customerData?.offers_data" class="justify-center" template="agnes_and_cat" /> -->
                 </div>
 
 
@@ -451,16 +450,16 @@ onMounted(async () => {
                     <!-- Section: RRP -->
                     <div class="text-right">
                         <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
-                        <p class="text-xs text-black leading-tight line-through">
+                        <p class="text-xs text-black leading-tight font-semibold">
                             {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                         </p>
 
                         <p class="mt-2 text-xs text-black leading-tight">{{ trans("Profit") }}:</p>
                         <div class="flex items-baseline justify-end gap-1 text-black">
-                            <span class="text-base font-bold">
+                            <span class="text-xs font-semibold">
                                 {{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}
                             </span>
-                            <span class="text-sm">({{ displayedMargin }})</span>
+                            <span class="text-xs">({{ displayedMargin }})</span>
 
                             <span v-if="layout?.iris?.is_logged_in" class="cursor-pointer opacity-60 hover:opacity-100"
                                 @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show"
@@ -484,7 +483,7 @@ onMounted(async () => {
                         <NonMemberPriceLabel v-else :product="product" />
                     </template>
 
-                    <DiscountByType v-if="showDiscount" template="products_triggers_label" :offers_data="offersData" />
+                    <DiscountByType v-if="showDiscount" template="products_triggers_label" :offers_data="offersData" :isGoldenProduct="product?.is_golden_product" />
 
                     <DiscountByType
                         v-if="isPurchasable && bestOffer?.type !== 'Category Quantity Ordered Order Interval'"
@@ -713,9 +712,6 @@ onMounted(async () => {
 
         <div class="px-4 py-4 space-y-5">
 
-            <!-- TITLE -->
-            <GoldenProductBadge v-if="product.is_golden_product" />
-
             <h1 class="!text-xl font-bold leading-tight">
                 <span v-if="product.units > 1">{{ product.units }}x</span>
                 {{ product.name }}
@@ -767,16 +763,16 @@ onMounted(async () => {
 
                 <div class="text-right">
                     <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
-                    <p class="text-xs text-black leading-tight line-through">
+                    <p class="text-xs text-black leading-tight font-semibold">
                         {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                     </p>
 
                     <p class="mt-2 text-xs text-black leading-tight">{{ trans("Profit") }}:</p>
                     <div class="flex items-baseline justify-end gap-1 text-black">
-                        <span class="text-base font-bold">
+                        <span class="text-xs font-semibold">
                             {{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}
                         </span>
-                        <span class="text-sm">({{ displayedMargin }})</span>
+                        <span class="text-xs">({{ displayedMargin }})</span>
 
                         <span v-if="layout?.iris?.is_logged_in" class="cursor-pointer opacity-60 hover:opacity-100"
                             @click="_popoverProfitMobile?.toggle">
@@ -804,7 +800,7 @@ onMounted(async () => {
                     <NonMemberPriceLabel v-else :product="product" />
                 </template>
 
-                <DiscountByType v-if="showDiscount" template="products_triggers_label" :offers_data="offersData" />
+                <DiscountByType v-if="showDiscount" template="products_triggers_label" :offers_data="offersData" :isGoldenProduct="product?.is_golden_product" />
 
                 <DiscountByType v-if="isPurchasable && bestOffer?.type !== 'Category Quantity Ordered Order Interval'"
                     template="max_discount" :offers_data="offersData" />

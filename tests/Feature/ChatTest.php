@@ -2273,6 +2273,20 @@ describe('staff messaging', function () {
             ->postJson(route('grp.chat.staff.conversations.messages.store', $conversation), ['body' => 'intrude'])
             ->assertForbidden();
     });
+
+    test('empty conversation is listed only for its creator until a message is sent', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        $newcomer     = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$newcomer->id]]);
+
+        expect(\App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->user)->firstWhere('id', $conversation->id))->not->toBeNull()
+            ->and(\App\Actions\Chat\Staff\Json\GetStaffConversations::run($newcomer)->firstWhere('id', $conversation->id))->toBeNull();
+
+        \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'now you see me']);
+
+        expect(\App\Actions\Chat\Staff\Json\GetStaffConversations::run($newcomer)->firstWhere('id', $conversation->id))->not->toBeNull();
+    });
 });
 
 describe('staff messaging mentions', function () {

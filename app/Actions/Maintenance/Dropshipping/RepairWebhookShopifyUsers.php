@@ -14,6 +14,7 @@ use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairWebhookShopifyUsers
 {
@@ -52,6 +53,7 @@ class RepairWebhookShopifyUsers
 
     public function asCommand(): void
     {
+        Nightwatch::dontSample();
 
         foreach (ShopifyUser::withTrashed()->orderBy('id', 'desc')->get() as $shopifyUser) {
             $this->handle($shopifyUser);

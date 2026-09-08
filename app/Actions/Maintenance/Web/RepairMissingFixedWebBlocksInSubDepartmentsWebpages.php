@@ -17,6 +17,7 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
 {
@@ -144,6 +145,7 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $websiteId       = $command->option('website_id');
         $webpagesID = DB::table('webpages')
                         ->select('id')

@@ -26,14 +26,20 @@ class IndexWebLayoutTemplates extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('web_layout_templates.name', $value)
-                    ->orWhereStartWith('user.username', $value);
+                    ->orWhereStartWith('users.username', $value);
             });
+        });
+        
+        $showSearch = AllowedFilter::callback('show', function ($query, $value) use ($webpage) {
+            if ($value == 'matching') {
+                $query
+                    ->where('type', $webpage->type->value)
+                    ->where('sub_type', $webpage->sub_type);
+            }
         });
 
         $query = QueryBuilder::for(WebLayoutTemplate::class)
             ->where('scope', class_basename($webpage))
-            ->where('type', $webpage->type->value)
-            ->where('sub_type', $webpage->sub_type)
             ->leftJoin('users', 'users.id', 'web_layout_templates.author_id')
             ->orderBy('name');
 
@@ -52,7 +58,7 @@ class IndexWebLayoutTemplates extends OrgAction
                 'name',
                 'username',
             ])
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch, $showSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

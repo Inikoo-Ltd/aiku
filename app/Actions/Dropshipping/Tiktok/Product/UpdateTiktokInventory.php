@@ -36,7 +36,7 @@ class UpdateTiktokInventory implements ShouldBeUnique
     {
         $availableQuantity = $product->available_quantity ?? 0;
 
-        if (!$product->is_for_sale) {
+        if (!$product->isSellableThroughSalesChannels()) {
             $availableQuantity = 0;
         }
 
@@ -80,7 +80,10 @@ class UpdateTiktokInventory implements ShouldBeUnique
             ]
         ]);
 
-        if (count(Arr::get($tiktokInventory, 'data.errors', [])) === 0) {
+        $failed = Arr::get($tiktokInventory, 'error') === true;
+        $errors = Arr::get($tiktokInventory, 'data.errors', []);
+
+        if (!$failed && (!is_array($errors) || count($errors) === 0)) {
             UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
                 'status' => PlatformPortfolioLogsStatusEnum::OK,
                 'last_stock_value' => $availableQuantity
@@ -96,7 +99,7 @@ class UpdateTiktokInventory implements ShouldBeUnique
         } else {
             UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
                 'status' => PlatformPortfolioLogsStatusEnum::FAIL,
-                'response' => 'E1: ' . Arr::get($tiktokInventory, 'data.errors.0.message', [])
+                'response' => 'E1: ' . ($failed ? Arr::get($tiktokInventory, 'data') : Arr::get($tiktokInventory, 'data.errors.0.message', ''))
             ]);
 
             $customerSalesChannel->update([

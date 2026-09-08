@@ -66,6 +66,9 @@ use App\Actions\Retina\Ebay\StoreRetinaEbayUser;
 use App\Actions\Retina\Ebay\UpdateRetinaEbayUser;
 use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
+use App\Actions\Retina\Dropshipping\Ticket\UI\CreateRetinaTicket;
+use App\Actions\Retina\Dropshipping\Ticket\UI\IndexRetinaTickets;
+use App\Actions\Retina\Dropshipping\Ticket\UI\ShowRetinaTicket;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Accounting\Invoice\ExportDropshippingInvoicesByDate;
 use App\Actions\Retina\Dropshipping\DeliveryNotes\UI\PdfRetinaDropshippingPackingList;
@@ -91,6 +94,12 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
     Route::get('ebay-user/{ebayUser}/auth-check', CheckEbayUserAuthorized::class)->name('ebay.auth_check')->withoutScopedBindings();
     Route::get('ebay-user/creating-check', CheckEbayUserCreating::class)->name('ebay.creating_check')->withoutScopedBindings();
     Route::get('ebay-user/{ebayUser}/policies', IndexEbayUserPolicies::class)->name('ebay_policies.index')->withoutScopedBindings();
+});
+
+Route::prefix('support')->as('tickets.')->group(function () {
+    Route::get('/', IndexRetinaTickets::class)->name('index');
+    Route::get('/create', CreateRetinaTicket::class)->name('create');
+    Route::get('/{ticket:reference}', ShowRetinaTicket::class)->name('show');
 });
 
 Route::prefix('platform')->as('platform.')->group(function () {

@@ -12,6 +12,7 @@ use App\Models\Inventory\OrgStock;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairProductHasOrgStocks
 {
@@ -25,6 +26,7 @@ class RepairProductHasOrgStocks
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $productHasOrgStocks = DB::table('product_has_org_stocks')->whereNull('source_id')->get();
         foreach ($productHasOrgStocks as $productHasOrgStock) {
             $orgStock = OrgStock::find($productHasOrgStock->org_stock_id);

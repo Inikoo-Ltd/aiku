@@ -18,6 +18,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairDeliveryNotesTypeFromAurora
 {
@@ -32,6 +33,7 @@ class RepairDeliveryNotesTypeFromAurora
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $organisation = Organisation::where('slug', $command->argument('organisation'))->first();
 
         $organisationSource = $this->getOrganisationSource($organisation);

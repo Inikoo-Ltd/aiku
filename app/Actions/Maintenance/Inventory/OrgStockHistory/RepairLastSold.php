@@ -12,6 +12,7 @@ use App\Actions\Traits\WithStockHistoryArchiveWrite;
 use App\Models\Inventory\OrgStockHistory;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairLastSold
 {
@@ -45,6 +46,7 @@ class RepairLastSold
      */
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         foreach ($this->stockHistoryWriteConnections() as $connection) {
             $query = $connection ? OrgStockHistory::on($connection) : OrgStockHistory::query();
 

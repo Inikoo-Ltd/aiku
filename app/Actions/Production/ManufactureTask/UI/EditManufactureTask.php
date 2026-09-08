@@ -121,6 +121,13 @@ class EditManufactureTask extends OrgAction
                                     'value'    => $manufactureTask->task_work_cost,
                                     'required' => true
                                 ],
+                                'is_piece_rate' => [
+                                    'type'        => 'toggle',
+                                    'label'       => __('Paid by piece rate'),
+                                    'information' => __('Turn off for salaried work such as preparing mixes. Sessions are still recorded, but payroll and rewards count them at zero.'),
+                                    'value'       => $manufactureTask->is_piece_rate,
+                                    'required'    => true
+                                ],
                                 'status' => [
                                     'type'     => 'toggle',
                                     'label'    => __('status'),

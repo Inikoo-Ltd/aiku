@@ -6,6 +6,7 @@ use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Models\Ordering\Transaction;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairIsFollowOnTransactionsTotal
 {
@@ -31,6 +32,7 @@ class RepairIsFollowOnTransactionsTotal
 
     public function asCommand(Command $command)
     {
+        Nightwatch::dontSample();
         $transactions = Transaction::where('is_follow_on', true)
             ->where(function ($q) {
                 $q->where('net_amount', '>', 0)

@@ -66,13 +66,6 @@ class AddBalanceFromExcessPaymentOrder extends OrgAction
         }
 
         $order->refresh();
-
-
-        request()->session()->flash('modal', [
-            'status'      => 'success',
-            'title'       => __('Success!'),
-            'description' => __('Excess payment has been returned as balance.'),
-        ]);
     }
 
     /**
@@ -102,9 +95,22 @@ class AddBalanceFromExcessPaymentOrder extends OrgAction
         return $allocations;
     }
 
+    public function action(Order $order): void
+    {
+        $this->asAction = true;
+        $this->initialisationFromShop($order->shop, []);
+        $this->handle($order);
+    }
+
     public function asController(Order $order): void
     {
         $this->initialisationFromShop($order->shop, []);
         $this->handle($order);
+
+        request()->session()->flash('modal', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Excess payment has been returned as balance.'),
+        ]);
     }
 }

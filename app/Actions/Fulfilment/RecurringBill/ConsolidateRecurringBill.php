@@ -78,12 +78,14 @@ class ConsolidateRecurringBill extends OrgAction
                 }
             }
 
-            $this->update($recurringBill->fulfilmentCustomer, [
-                'current_recurring_bill_id'  => null,
-                'previous_recurring_bill_id' => $recurringBill->id
-            ]);
+            if ($recurringBill->fulfilmentCustomer->current_recurring_bill_id == $recurringBill->id) {
+                $this->update($recurringBill->fulfilmentCustomer, [
+                    'current_recurring_bill_id'  => null,
+                    'previous_recurring_bill_id' => $recurringBill->id
+                ]);
 
-            CreateNextRecurringBillPostConsolidation::run($recurringBill);
+                CreateNextRecurringBillPostConsolidation::run($recurringBill);
+            }
 
             return $invoice;
         });

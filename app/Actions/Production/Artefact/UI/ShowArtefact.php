@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\Artefact\UI;
 
+use App\Actions\Production\Artisan\GetArtisanAssignmentProps;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Actions\OrgAction;
@@ -72,10 +73,10 @@ class ShowArtefact extends OrgAction
                 'pageHead'                             => [
                     'icon'    =>
                         [
-                            'icon'  => ['fal', 'fa-map-signs'],
+                            'icon'  => ['fal', 'fa-hamsa'],
                             'title' => __('Warehouse area')
                         ],
-                    'model'   => __('artefact'),
+                    'model'   => __('Artefact'),
                     'title'   => $artefact->name,
                     'actions' => [
                         // $this->canEdit ?
@@ -91,17 +92,31 @@ class ShowArtefact extends OrgAction
                         //     ]
                         //     : null,
                         // $this->canDelete ? $this->getDeleteActionIcon($request) : null,
+                        
                         [
                             'type'    => 'button',
-                        'tooltip'     => __('Edit'),
-                        'icon'        => 'fal fa-pencil',
-                        'style'       => 'secondary',
-                        'route'       => [
-                            'name'       => preg_replace('/(show|dashboard)$/', 'edit', $request->route()->getName()),
-                            'parameters' => $request->route()->originalParameters()
-
+                            'tooltip'     => __('Edit'),
+                            'icon'        => 'fal fa-pencil',
+                            'style'       => 'tertiary',
+                            'route'       => [
+                                'name'       => preg_replace('/(show|dashboard)$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters()
                             ]
-                        ]
+                        ],
+                        [
+                            'type'    => 'button',
+                            'style'   => $artefact->rawMaterial ? 'tertiary' : 'secondary',
+                            'icon'    => 'fal fa-blender-phone',
+                            'label'   => $artefact->rawMaterial ? __('Used as ingredient') : __('Use as ingredient'),
+                            'tooltip' => $artefact->rawMaterial
+                                ? __('Click to stop using it as an ingredient. This artefact is also an in-house ingredient: other artefacts can use it in their recipes, and it is listed under To produce → Mixes when an open job order needs it.')
+                                : __('Also make this artefact available as an in-house ingredient, so other artefacts can use it in their recipes. It is then listed under To produce → Mixes whenever an open job order needs it.'),
+                            'route'   => [
+                                'method'     => 'post',
+                                'name'       => 'grp.org.productions.show.crafts.artefacts.mix',
+                                'parameters' => array_merge($request->route()->originalParameters(), ['is_mix' => !$artefact->rawMaterial]),
+                            ],
+                        ],
                     ],
                     // 'meta'    => [
                     //     [
@@ -118,6 +133,7 @@ class ShowArtefact extends OrgAction
                     //     ]
                     // ]
                 ],
+                'artisans'                             => GetArtisanAssignmentProps::run($artefact, $this->canEdit),
                 'tabs'                                 => [
                     'current'    => $this->tab,
                     'navigation' => ArtefactTabsEnum::navigation()

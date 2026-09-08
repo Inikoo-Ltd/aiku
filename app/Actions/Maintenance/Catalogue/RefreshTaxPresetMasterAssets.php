@@ -12,6 +12,7 @@ use App\Actions\Traits\WithLineTaxCategories;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 /**
  * Re-expands every master that follows a tax preset, so a rate change (a new UK reduced rate,
@@ -30,6 +31,7 @@ class RefreshTaxPresetMasterAssets
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $presetNames = $command->argument('preset') ? [$command->argument('preset')] : array_keys($this->getTaxPresets());
         $apply       = (bool)$command->option('apply');
 

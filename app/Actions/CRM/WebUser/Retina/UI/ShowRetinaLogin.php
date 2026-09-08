@@ -8,14 +8,17 @@
 
 namespace App\Actions\CRM\WebUser\Retina\UI;
 
+use App\Actions\Traits\WithRetinaAuthRedirect;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Inertia\Inertia;
 use Inertia\Response;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 
 class ShowRetinaLogin
 {
     use AsController;
+    use WithRetinaAuthRedirect;
 
 
     public function handle(): Response
@@ -30,5 +33,12 @@ class ShowRetinaLogin
                 'client_id' => config('services.google.client_id')
             ]
         ]);
+    }
+
+    public function asController(ActionRequest $request): Response
+    {
+        $this->rememberRetinaIntendedUrl($request, $request->input('website'));
+
+        return $this->handle();
     }
 }

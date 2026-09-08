@@ -12,6 +12,7 @@ use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxSubTypeEnum;
 use App\Models\Comms\Outbox;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairOutboxSubTypeFromReorderReminderSettings
 {
@@ -33,6 +34,7 @@ class RepairOutboxSubTypeFromReorderReminderSettings
 
     public function asCommand(): void
     {
+        Nightwatch::dontSample();
         $this->run();
     }
 }

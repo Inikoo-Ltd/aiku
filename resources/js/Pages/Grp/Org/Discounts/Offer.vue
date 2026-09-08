@@ -230,9 +230,9 @@ const irisOffersData = computed(() => {
 
     <!-- Section: Preview label -->
     <div class="p-5 border-b border-gray-300 offer">
-        <div class="grid grid-cols-1 md:grid-cols-3 items-center gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 items-center gap-8 sm:gap-4">
             <!-- Left: Duration & State -->
-            <div class="flex flex-col gap-3 ml-4">
+            <div class="flex flex-col gap-3">
                 <div v-if="data.offer.start_at || data.offer.end_at" class="flex flex-col gap-1 text-lg text-gray-600">
                     <div class="flex items-center gap-2">
                         <span class="w-16 text-xs text-gray-400 uppercase tracking-wide">{{ ctrans("Start") }}</span>

@@ -15,6 +15,7 @@ use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class DeleteWebpageTypeOperations
 {
@@ -37,6 +38,7 @@ class DeleteWebpageTypeOperations
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
 
         Webpage::withTrashed()->where('type', 'operations')->orderBy('id')
             ->chunk(

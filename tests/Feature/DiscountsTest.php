@@ -751,6 +751,8 @@ test('delete offer', function () {
 
     $this->assertSoftDeleted($offer);
     $this->assertSoftDeleted($offer->offerAllowances()->withTrashed()->first());
+    expect(Offer::withTrashed()->find($offer->id)->status)->toBeFalse()
+        ->and($offer->offerAllowances()->withTrashed()->first()->status)->toBeFalse();
 });
 
 test('force delete offer', function () {
@@ -991,6 +993,37 @@ test('create product category discount', function () {
 
     expect($offer2)->toBeInstanceOf(Offer::class)
         ->and($offer2->offerAllowances->count())->toBe(1);
+});
+
+test('editing discount and trigger of a live offer rewrites allowance data, signature and trigger data', function () {
+    $shop = $this->shop;
+    /** @var ProductCategory $category */
+    $category = ProductCategory::factory()->create([
+        'shop_id'         => $shop->id,
+        'organisation_id' => $shop->organisation_id,
+        'group_id'        => $shop->group_id,
+        'code'            => 'CAT-EDIT',
+        'type'            => ProductCategoryTypeEnum::FAMILY->value,
+    ]);
+
+    $offer = StoreProductCategoryDiscount::make()->action($category, [
+        'type'                       => 'quantity',
+        'trigger_data_item_quantity' => 2,
+        'percentage_off'             => .10,
+        'duration'                   => 'interval',
+        'start_at'                   => now()->toDateTimeString(),
+        'end_at'                     => now()->addDays(7)->toDateTimeString(),
+    ]);
+    expect($offer->status)->toBeTrue();
+
+    $offer = UpdateOffer::make()->action($offer, [
+        'edit_offer_discount' => ['percentage_off' => 40],
+        'edit_offer_trigger'  => ['trigger_item_quantity' => 5],
+    ]);
+
+    expect($offer->offerAllowances()->first()->data['percentage_off'])->toBe(0.4)
+        ->and($offer->allowance_signature)->toContain('percentage_off:0.4')
+        ->and($offer->trigger_data['item_quantity'])->toBe(5);
 });
 
 test('create volume gr discount', function () {
@@ -1243,6 +1276,25 @@ describe('calculate order discounts', function () {
         CalculateOrderDiscounts::run($order);
 
         expect($categoryDiscount)->toBeInstanceOf(Offer::class);
+        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(80.0);
+    });
+
+    test('CalculateOrderDiscounts ignores a soft deleted offer even if its status flag is still on', function () {
+        $order = Order::latest('id')->first();
+        $offer = Offer::where('shop_id', $order->shop_id)->where('trigger_type', 'ProductCategory')
+            ->where('trigger_id', $this->product->family->id)->where('status', true)->latest('id')->first();
+
+        $offer->delete();
+        expect($offer->refresh()->status)->toBeTrue();
+
+        CalculateOrderDiscounts::run($order);
+
+        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(180.0);
+
+        $offer->restore();
+        CalculateOrderDiscounts::run($order);
         $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
         expect((float)$transaction->net_amount)->toBe(80.0);
     });
@@ -2514,6 +2566,47 @@ describe('calculate order discounts', function () {
             ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($shopOffer->id);
 
         SuspendOffer::run($shopOffer);
+    });
+
+    test('shop offer scoped to a collection', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        $nepalCollection = StoreCollection::make()->action($this->shop, ['code' => 'NEPAL', 'name' => 'Made in Nepal']);
+        AttachModelToCollection::run($nepalCollection, $this->product);
+        $emptyCollection = StoreCollection::make()->action($this->shop, ['code' => 'EMPTY', 'name' => 'Empty collection']);
+
+        $shopOffer = StoreShopOffer::run($this->shop, [
+            'type'           => 'quantity',
+            'percentage_off' => 0.3,
+            'duration'       => 'permanent',
+            'start_at'       => now(),
+            'collection_id'  => $nepalCollection->id,
+        ]);
+        $allowance = $shopOffer->refresh()->offerAllowances()->first();
+        expect($shopOffer->code)->toBe('so-'.strtolower($this->shop->code).'-nepal')
+            ->and($allowance->target_type)->toBe(OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION)
+            ->and($allowance->target_id)->toBe($nepalCollection->id);
+
+        CalculateOrderDiscounts::run($order);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(210.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($shopOffer->id);
+
+        UpdateTriggerModelOffersData::run($shopOffer);
+        expect(Arr::get($this->product->refresh()->offers_data, 'best_percentage_off.percentage_off'))->toBe(0.3)
+            ->and(Arr::get($this->product->offers_data, 'offers.'.$shopOffer->id.'.products_triggers_label'))->toContain('Made in Nepal')
+            ->and(Arr::get($nepalCollection->refresh()->offers_data, 'number_offers'))->toBe(1);
+
+        $allowance->update(['target_id' => $emptyCollection->id, 'data' => array_merge($allowance->data, ['collection_id' => $emptyCollection->id])]);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        $allowance->update(['target_id' => $nepalCollection->id]);
+        SuspendOffer::run($shopOffer);
+        expect(Arr::get($this->product->refresh()->offers_data, 'number_offers'))->toBe(0)
+            ->and(Arr::get($nepalCollection->refresh()->offers_data, 'number_offers'))->toBe(0);
     });
 
     test('department offers: quantity, unconditional and amount thresholds', function () {

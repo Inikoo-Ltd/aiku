@@ -15,6 +15,8 @@ use App\Actions\Dropshipping\Shopify\Product\GetShopifyListedSkus;
 use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
 use App\Actions\Dropshipping\Tiktok\Product\GetTiktokListedSkus;
 use App\Actions\Dropshipping\Tiktok\Product\MatchPortfolioToCurrentTiktokProduct;
+use App\Actions\Dropshipping\Wix\Product\GetWixListedSkus;
+use App\Actions\Dropshipping\Wix\Product\MatchPortfolioToCurrentWixProduct;
 use App\Actions\Dropshipping\WooCommerce\Product\GetWooListedSkus;
 use App\Actions\Dropshipping\WooCommerce\Product\MatchPortfolioToCurrentWooProduct;
 use App\Actions\OrgAction;
@@ -96,6 +98,7 @@ class MatchBulkPortfoliosToPlatform extends OrgAction
             PlatformTypeEnum::WOOCOMMERCE => GetWooListedSkus::run($user),
             PlatformTypeEnum::TIKTOK => GetTiktokListedSkus::run($user),
             PlatformTypeEnum::ALLEGRO => GetAllegroListedSkus::run($user),
+            PlatformTypeEnum::WIX => GetWixListedSkus::run($user),
             default => []
         };
     }
@@ -116,6 +119,9 @@ class MatchBulkPortfoliosToPlatform extends OrgAction
                 'platform_product_id' => $platformProductId
             ]),
             PlatformTypeEnum::ALLEGRO => MatchPortfolioToCurrentAllegroProduct::dispatch($portfolio, [
+                'platform_product_id' => $platformProductId
+            ]),
+            PlatformTypeEnum::WIX => MatchPortfolioToCurrentWixProduct::dispatch($portfolio, [
                 'platform_product_id' => $platformProductId
             ]),
             default => null

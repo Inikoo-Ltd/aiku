@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Accounting;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairInvoiceMissingFooter
 {
@@ -29,6 +30,7 @@ class RepairInvoiceMissingFooter
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $count = Invoice::whereNull('source_id')
             ->whereDate('date', '>', '2025-06-01')
             ->count();

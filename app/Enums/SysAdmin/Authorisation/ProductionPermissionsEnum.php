@@ -20,6 +20,8 @@ enum ProductionPermissionsEnum: string
 
     case PRODUCTION_OPERATIONS_ORCHESTRATE = 'productions_operations.orchestrate';
 
+    case PRODUCTION_OPERATIONS_PREPARE = 'productions_operations.prepare';
+
     case PRODUCTION_RD = 'productions_rd';
 
     case PRODUCTION_RD_VIEW = 'productions_rd.view';

@@ -993,3 +993,127 @@ test('UI Show Trade Unit composition tab', function () {
             ->has('composition.products');
     });
 });
+
+test('organisation tariff code override keeps the shared HS heading and changes only the national digits', function () {
+    [, $product] = createProduct($this->shop);
+    $tradeUnit   = $product->tradeUnits->first();
+    $otherOrg    = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Organisation::factory()->definition(), ['code' => 'ovr', 'type' => \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP])
+    );
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['tariff_code' => '1234 56 7890']);
+    $product->refresh();
+    expect($product->tariff_code)->toBe('1234 56 7890');
+
+    $override = \App\Actions\Goods\TradeUnit\SetTradeUnitTariffCodeOverride::make()->action($tradeUnit, $this->organisation, $this->user, [
+        'national_extension' => '0011',
+        'reason'             => 'UK tariff classifies this as a set',
+    ]);
+    $product->refresh();
+
+    expect($override->approved_by_user_id)->toBe($this->user->id)
+        ->and($override->approved_at)->not->toBeNull()
+        ->and($tradeUnit->fresh()->getTariffCodeForOrganisation($this->organisation->id))->toBe('1234560011')
+        ->and($tradeUnit->fresh()->getTariffCodeForOrganisation($otherOrg->id))->toBe('1234 56 7890')
+        ->and($product->tariff_code)->toBe('1234560011');
+
+    \App\Actions\Goods\TradeUnit\DeleteTradeUnitTariffCodeOverride::make()->action($tradeUnit, $this->organisation);
+    $product->refresh();
+    expect($product->tariff_code)->toBe('1234 56 7890')
+        ->and($tradeUnit->fresh()->tariffCodeOverrides()->count())->toBe(0);
+});
+
+test('organisation tariff code override needs a shared 6-digit heading and 2-4 national digits', function () {
+    [, $product] = createProduct($this->shop);
+    $tradeUnit   = $product->tradeUnits->first();
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['tariff_code' => null]);
+
+    expect(fn () => \App\Actions\Goods\TradeUnit\SetTradeUnitTariffCodeOverride::make()->action($tradeUnit, $this->organisation, $this->user, [
+        'national_extension' => '0011',
+        'reason'             => 'x',
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['tariff_code' => '1234567890']);
+    expect(fn () => \App\Actions\Goods\TradeUnit\SetTradeUnitTariffCodeOverride::make()->action($tradeUnit, $this->organisation, $this->user, [
+        'national_extension' => 'ab',
+        'reason'             => 'x',
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
+test('UI Show Trade Unit lists the tariff code per organisation', function () {
+    $this->withoutExceptionHandling();
+    [, $product] = createProduct($this->shop);
+    $tradeUnit   = $product->tradeUnits->first();
+
+    $response = get(route('grp.goods.trade-units.show', [$tradeUnit->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Goods/TradeUnit')
+            ->has('showcase.properties.tariff_code_by_organisation.0', fn (AssertableInertia $row) => $row
+                ->where('organisation_code', $this->organisation->code)
+                ->has('update_route')
+                ->etc());
+    });
+});
+
+test('repair fills and overwrites trade unit tariff codes from the latest Aurora history audit', function () {
+    [, $product] = createProduct($this->shop);
+    $tradeUnit   = $product->tradeUnits->first();
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['tariff_code' => null]);
+    $tradeUnit->update(['source_id' => $this->organisation->id.':1', 'status' => \App\Enums\Goods\TradeUnit\TradeUnitStatusEnum::ACTIVE]);
+
+    $auditRow = fn (string $code, string $at) => [
+        'tags'           => '["goods"]',
+        'auditable_type' => 'TradeUnit',
+        'auditable_id'   => $tradeUnit->id,
+        'event'          => 'updated',
+        'old_values'     => '{}',
+        'new_values'     => json_encode(['tariff_code' => $code]),
+        'created_at'     => $at,
+        'updated_at'     => $at,
+    ];
+    \Illuminate\Support\Facades\DB::table('audits')->insert([$auditRow('1111110000', '2026-01-01'), $auditRow('2520100000', '2026-08-01')]);
+
+    $repair = \App\Actions\Goods\TradeUnit\RepairTradeUnitTariffCodesFromAurora::make();
+
+    $dryRun = $repair->handle();
+    expect($dryRun)->toHaveCount(1)
+        ->and($dryRun[0]['aurora'])->toBe('2520100000')
+        ->and($dryRun[0]['action'])->toBe('fill')
+        ->and($tradeUnit->fresh()->tariff_code)->toBeNull();
+
+    $repair->handle(fix: true);
+    expect($tradeUnit->fresh()->tariff_code)->toBe('2520100000');
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['tariff_code' => '2842908080']);
+    expect($repair->handle())->toBeEmpty()
+        ->and($repair->handle(overwrite: true)[0]['action'])->toBe('overwrite');
+
+    $repair->handle(fix: true, overwrite: true);
+    expect($tradeUnit->fresh()->tariff_code)->toBe('2520100000')
+        ->and($product->fresh()->tariff_code)->toBe('2520100000');
+});
+
+test('tariff codes index lists rows and the export name is editable', function () {
+    $tariffCode = \App\Models\Helpers\TariffCode::firstOrCreate(['hs_code' => '330741'], ['section' => 'VI', 'description' => 'Agarbatti and other odoriferous preparations which operate by burning', 'level' => 6]);
+
+    get(route('grp.goods.tariff_codes.index'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Goods/TariffCodes')->has('data.data'));
+
+    \Pest\Laravel\patch(route('grp.models.tariff_code.update', $tariffCode->id), ['name' => 'Incense'])->assertStatus(302);
+
+    \App\Models\Helpers\TariffCode::firstOrCreate(['hs_code' => '3307410010'], ['section' => 'VI', 'description' => 'Agarbatti', 'level' => 10, 'parent_id' => $tariffCode->id, 'name' => 'Incense Sticks']);
+
+    $fetch = \App\Actions\Transfers\Aurora\FetchAuroraTariffCodeNames::make();
+
+    expect($tariffCode->fresh()->name)->toBe('Incense')
+        ->and(\App\Models\Helpers\TariffCode::exportNameFor('3307 41 0099'))->toBe('Incense Sticks')
+        ->and(\App\Models\Helpers\TariffCode::exportNameFor('3307490000'))->toBeNull()
+        ->and(\App\Models\Helpers\TariffCode::exportNameFor('330741'))->toBe('Incense')
+        ->and(\App\Models\Helpers\TariffCode::exportNameFor('9999999999'))->toBeNull()
+        ->and($fetch->normaliseCode('902300000'))->toBe('0902300000')
+        ->and($fetch->normaliseCode('9021000'))->toBe('09021000')
+        ->and($fetch->normaliseCode('3406000000'))->toBe('3406000000');
+});

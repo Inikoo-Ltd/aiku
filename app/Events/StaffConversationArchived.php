@@ -29,7 +29,6 @@ class StaffConversationArchived implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return $this->conversation->participants
-            ->where('id', '!=', $this->user->id)
             ->map(fn (User $participant) => new PrivateChannel('grp.personal.'.$participant->id))
             ->values()
             ->all();

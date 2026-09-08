@@ -14,6 +14,7 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RedoProductCategoryTranslationsFromMaster
 {
@@ -24,6 +25,7 @@ class RedoProductCategoryTranslationsFromMaster
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $fields = [
             'name',
             'description',

@@ -10,7 +10,6 @@ namespace App\Actions\Production\Artefact\UI;
 
 use App\Models\Production\Artefact;
 use App\Models\Production\ManufactureTask;
-use App\Models\Production\RawMaterial;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetArtefactManufactureTasks
@@ -43,31 +42,20 @@ class GetArtefactManufactureTasks
             ];
         })->values()->all();
 
-        $taskOptions = ManufactureTask::where('production_id', $artefact->production_id)
-            ->orderBy('code')
-            ->get()
-            ->map(fn (ManufactureTask $task) => [
-                'id'   => $task->id,
-                'code' => $task->code,
-                'name' => $task->name,
-            ])->values()->all();
-
-        $rawMaterialOptions = RawMaterial::where('production_id', $artefact->production_id)
-            ->orderBy('code')
-            ->get()
-            ->map(fn (RawMaterial $rawMaterial) => [
-                'id'          => $rawMaterial->id,
-                'code'        => $rawMaterial->code,
-                'description' => $rawMaterial->description,
-                'unit'        => $rawMaterial->unit,
-            ])->values()->all();
-
         return [
             'artefact_id'         => $artefact->id,
+            'artefact_name'       => $artefact->name,
+            'currency_code'       => $artefact->organisation->currency->code,
             'recipe'              => $recipe,
-            'task_options'        => $taskOptions,
-            'raw_material_options' => $rawMaterialOptions,
             'routes'              => [
+                'task_options' => [
+                    'name'       => 'grp.json.production.manufacture_tasks.index',
+                    'parameters' => ['production' => $artefact->production_id],
+                ],
+                'raw_material_options' => [
+                    'name'       => 'grp.json.production.raw_materials.index',
+                    'parameters' => ['production' => $artefact->production_id],
+                ],
                 'attach' => [
                     'name'       => 'grp.models.artefact.manufacture-task.attach',
                     'parameters' => ['artefact' => $artefact->id],

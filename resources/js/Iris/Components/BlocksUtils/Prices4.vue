@@ -43,6 +43,7 @@ interface ProductResource {
     url: string | null
     units: number
     bestseller?: boolean
+    is_golden_product?: boolean
     is_favourite?: boolean
     exist_in_portfolios_channel: number[]
     is_exist_in_all_channel: boolean
@@ -214,6 +215,7 @@ const familyHasGoldenProductInBasket = computed(() => {
 const showMemberPrice = computed(() => {
     if (layout?.user?.gr_data?.amnesty) return true
     if (layout?.user?.gr_data?.customer_is_gr) return true
+    if (props.product?.is_golden_product) return true
     if (familyHasGoldenProductInBasket.value) return true  // If a golden product of the family is in the basket, show member price for all products of the family
 
     return bestOffer.value?.category_qty_trigger <= familyQuantityOrdered.value
@@ -422,7 +424,7 @@ const onHideStepsPopover = () => {
                 </button>
 
                 <div v-else-if="bestOffer?.type == 'Category Quantity Ordered Order Interval'">
-                    <MemberPriceLabel :offer="bestOffer" :active="showMemberPrice" />
+                    <MemberPriceLabel :offer="bestOffer" :active="showMemberPrice" :isGoldenProduct="product?.is_golden_product" />
                 </div>
                 <div v-else class="offer">
                     <DiscountByType v-if="bestOffer?.type == 'Category Ordered'"
@@ -438,6 +440,8 @@ const onHideStepsPopover = () => {
                     <DiscountByType v-if="bestOffer?.type == 'Subdepartment Quantity Ordered'"
                         :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Department Ordered'"
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
+                    <DiscountByType v-if="bestOffer?.type == 'Shop Ordered'"
                         :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Subdepartment Ordered'"
                         :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
@@ -495,7 +499,7 @@ const onHideStepsPopover = () => {
             <div v-if="showIntervalOffer && !showMemberPrice"
                 class="mt-1 flex flex-col items-start gap-0.5 text-[8px] sm:text-[9px] md:text-[10px] discount">
                 <DiscountByType v-if="showDiscount" :offers_data="product?.product_offers_data"
-                    template="products_triggers_label" />
+                    template="products_triggers_label" :isGoldenProduct="product?.is_golden_product" />
             </div>
 
             <Popover v-if="displayStep" ref="_popoverSteps" class="max-w-[90vw] sm:max-w-[300px]"
@@ -550,7 +554,7 @@ const onHideStepsPopover = () => {
 
 <style scoped>
 .step-discount-scope {
-    --step-discount-color: var(--theme-color-4, #8E44AD);
+    --step-discount-color: #C48497;
     --step-discount-surface: color-mix(in srgb, var(--step-discount-color) 12%, white);
     --step-discount-surface-soft: color-mix(in srgb, var(--step-discount-color) 6%, white);
     --step-discount-border-soft: color-mix(in srgb, var(--step-discount-color) 40%, #9ca3af);
@@ -659,7 +663,7 @@ const onHideStepsPopover = () => {
 }
 
 .offer :deep(.offer-max-discount) {
-    @apply bg-[#A80000] border border-red-900 text-gray-100 flex items-center rounded-sm px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1 min-w-0 max-w-[6rem] 2xl:max-w-[12rem];
+    @apply bg-[#A80000] border border-[#A80000] text-gray-100 flex items-center rounded-sm px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1 min-w-0 max-w-[6rem] 2xl:max-w-[12rem];
 }
 
 .offer :deep(.offer-label) {

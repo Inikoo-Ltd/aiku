@@ -28,6 +28,7 @@ library.add(faEnvelope, faUser, faAsterisk, faExclamationTriangle, faInfoCircle,
 const props = defineProps<{
   	requiresPhoneNumber: boolean,
 	countriesAddressData: {},
+	defaultCountryId?: number | null,
 	polls: [],
 	registerRoute: {
 		name: string,
@@ -118,7 +119,7 @@ const submit = () => {
 					user_data: buildRegistrationUserData(form, props.countriesAddressData),
 				})
 
-				const redirectUrl = await getRefRedirect()
+				const redirectUrl = await getRefRedirect({ registered: true })
 				await gtmTagsFired
 
 				window.location.href = redirectUrl
@@ -275,6 +276,7 @@ const isUserInputPassed = (dataToCheck: {}) => {
 
 							<FieldStandaloneRegistration
 								:countriesAddressData
+								:defaultCountryId
 								:polls
 								:form
 								:requiresPhoneNumber="props.requiresPhoneNumber"

@@ -15,6 +15,9 @@ use App\Actions\Billables\Service\UpdateService;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
+use Illuminate\Support\Facades\DB;
+use App\Actions\Iris\Catalogue\IndexIrisCatalogue;
+use App\Actions\Catalogue\Collection\AttachModelToCollection;
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Product\HydrateProducts;
@@ -651,12 +654,14 @@ test('update collection', function ($collection) {
     expect($collection->name)->not->toBe('Updated Collection Name');
 
     $collectionData = [
+        'code'        => 'updated-code',
         'name'        => 'Updated Collection Name',
         'description' => 'Updated Collection Description',
     ];
     $collection     = UpdateCollection::make()->action($collection, $collectionData);
 
-    expect($collection->name)->toBe('Updated Collection Name');
+    expect($collection->name)->toBe('Updated Collection Name')
+        ->and($collection->code)->toBe('updated-code');
 
     return $collection;
 })->depends('create collection');
@@ -877,6 +882,73 @@ test('a product can be exclusive to several customers and only they can see it',
         ->and($visibleTo(null))->toBeTrue();
 });
 
+test('repair records unrecorded exclusives among products hidden from the site', function () {
+    list($organisation, $user, $shop) = createShop();
+
+    $newCustomer = fn () => \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $shop,
+        \App\Models\CRM\Customer::factory()->definition(),
+    );
+    $partnerCustomer = $newCustomer();
+    $publicCustomer  = $newCustomer();
+    DB::table('org_partners')->insert([
+        'group_id'        => $organisation->group_id,
+        'organisation_id' => $organisation->id,
+        'partner_id'      => $organisation->id,
+        'customer_id'     => $partnerCustomer->id,
+        'sources'         => '{}',
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    createProduct($shop);
+    $intercompany = $shop->products()->orderBy('id')->first();
+    $public       = StoreProduct::make()->action($intercompany->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $intercompany->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+    DB::table('products')->whereIn('id', [$intercompany->id, $public->id])
+        ->update(['is_for_sale' => false, 'state' => ProductStateEnum::ACTIVE->value]);
+
+    $invoiceFor = function ($customer, $product) {
+        $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($customer, \App\Models\Accounting\Invoice::factory()->definition());
+        \App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+            'date'            => now(),
+            'tax_category_id' => $invoice->tax_category_id,
+            'quantity'        => 1,
+            'gross_amount'    => 10,
+            'net_amount'      => 10,
+        ]);
+    };
+    $privateLabel = StoreProduct::make()->action($intercompany->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $intercompany->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 3]
+    ));
+    DB::table('products')->where('id', $privateLabel->id)
+        ->update(['is_for_sale' => false, 'state' => ProductStateEnum::ACTIVE->value]);
+
+    $invoiceFor($partnerCustomer, $intercompany);
+    $invoiceFor($partnerCustomer, $public);
+    $invoiceFor($publicCustomer, $public);
+    $invoiceFor($publicCustomer, $privateLabel);
+
+    $repair   = \App\Actions\Maintenance\Catalogue\RepairUnrecordedExclusiveProducts::make();
+    $partners = $repair->partnerCustomerIds($shop);
+    expect($partners)->toBe([$partnerCustomer->id])
+        ->and($repair->candidates($shop, $partners)->pluck('id')->all())->toBe([$intercompany->id])
+        ->and($repair->singleBuyerCandidates($shop)->reorder("id")->get()->map(fn ($product) => [$product->id, $product->buyer_id])->all())
+        ->toBe([[$intercompany->id, $partnerCustomer->id], [$privateLabel->id, $publicCustomer->id]]);
+
+    $repair->handle($intercompany, $partners);
+    $repair->handle($privateLabel, [$publicCustomer->id]);
+    $intercompany->refresh();
+    $privateLabel->refresh();
+    expect($intercompany->exclusive_for_customer_id)->toBe($partnerCustomer->id)
+        ->and($privateLabel->exclusive_for_customer_id)->toBe($publicCustomer->id)
+        ->and($repair->candidates($shop, $partners)->count())->toBe(0)
+        ->and($repair->singleBuyerCandidates($shop)->count())->toBe(0);
+});
+
 test('repair repoints products from a discontinued org stock to its active twin', function () {
     $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
     createProduct($shop);
@@ -1033,6 +1105,11 @@ test('audit archiver moves closed shop and discontinued product audits, history 
     expect($history->total())->toBeGreaterThan(0)
         ->and($footerNoteFor($discontinuedProduct))->toBe(__('Showing archived history.'));
 
+    $archivedAudit = \App\Models\Helpers\Audit::on('archive')
+        ->where('auditable_type', 'Product')->where('auditable_id', $discontinuedProduct->id)->first();
+    expect($archivedAudit->getConnectionName())->toBe('archive')
+        ->and($archivedAudit->user()->getQuery()->getModel()->getConnectionName())->not->toBe('archive');
+
     UpdateProduct::make()->action($discontinuedProduct->refresh(), ['name' => 'relaunched']);
     $mixedHistory = \App\Actions\Helpers\History\UI\IndexHistory::run($discontinuedProduct);
     expect($mixedHistory->total())->toBeGreaterThan(0)
@@ -1162,4 +1239,88 @@ test('noise audit purge deletes flag only audits and keeps real history', functi
     expect($deleted)->toBe(3)
         ->and(DB::table('audits')->whereIn('auditable_id', [989001, 989004, 989005])->exists())->toBeFalse()
         ->and(DB::table('audits')->whereIn('auditable_id', [989002, 989003, 989006])->count())->toBe(3);
+});
+
+test('retina new arrivals hide exclusive products from other customers and families off the website', function () {
+    list($organisation, $user, $shop) = createShop();
+
+    $newCustomer = fn () => \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $shop,
+        \App\Models\CRM\Customer::factory()->definition(),
+    );
+    $customerA = $newCustomer();
+    $customerB = $newCustomer();
+
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+    DB::table('products')->where('id', $product->id)->update([
+        'price'             => 10,
+        'is_for_sale'       => true,
+        'is_minion_variant' => false,
+        'is_in_website'     => true,
+        'state'             => ProductStateEnum::ACTIVE->value,
+        'status'            => \App\Enums\Catalogue\Product\ProductStatusEnum::FOR_SALE->value,
+    ]);
+    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
+    \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($product, ['customer_ids' => []]);
+
+    $codesFor = fn (\App\Models\CRM\Customer $customer) => collect(
+        \App\Actions\Retina\Ecom\NewArrival\UI\IndexRetinaEcomNewArrivals::make()->handle($customer)->items()
+    )->pluck('code');
+
+    expect($codesFor($customerA))->toContain($product->code)
+        ->and($codesFor($customerB))->toContain($product->code);
+
+    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => false]);
+    expect($codesFor($customerA))->not->toContain($product->code);
+    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
+
+    \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($product, [
+        'customer_ids' => [$customerA->id],
+    ]);
+    DB::table('products')->where('id', $product->id)->update(['is_for_sale' => true, 'is_in_website' => true, 'status' => \App\Enums\Catalogue\Product\ProductStatusEnum::FOR_SALE->value]);
+
+    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
+    expect($codesFor($customerA))->toContain($product->code)
+        ->and($codesFor($customerB))->not->toContain($product->code);
+});
+
+test('iris collection lists the product that owns a member product webpage', function () {
+    list($organisation, $user, $shop) = createShop();
+    $website = createWebsite($shop);
+
+    createProduct($shop);
+    $bulk   = $shop->products()->orderBy('id')->first();
+    $sample = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+
+    $webpage = StoreProductWebpage::make()->action($sample);
+    DB::table('products')->whereIn('id', [$bulk->id, $sample->id])->update([
+        'is_for_sale' => true,
+        'state'       => ProductStateEnum::ACTIVE->value,
+        'webpage_id'  => $webpage->id,
+    ]);
+
+    $collection = StoreCollection::make()->action($shop, [
+        'code'        => 'Oils',
+        'name'        => 'Oils',
+        'description' => 'Oils',
+    ]);
+    AttachModelToCollection::make()->action($collection, $bulk);
+
+    $request = \Lorisleiva\Actions\ActionRequest::createFrom(request());
+    $request->merge(['website' => $website]);
+    $listed = fn () => collect(IndexIrisCatalogue::make()->initialisation($request)->handle([
+        'scope'      => 'product',
+        'parent'     => 'collection',
+        'parent_key' => $collection->id,
+    ])->items())->pluck('code');
+
+    expect($listed()->all())->toBe([$sample->code]);
+
+    AttachModelToCollection::make()->action($collection, $sample);
+
+    expect($listed()->all())->toBe([$sample->code]);
 });

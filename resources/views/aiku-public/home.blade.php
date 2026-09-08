@@ -80,7 +80,7 @@
 
         <section class="chapter narrow">
             <h2>Under the hood</h2>
-            <p class="stack">PHP 8.4 · Laravel · Octane · Horizon · Passport · Pennant · Scout · laravel/mcp<br>PostgreSQL + pgvector · Redis · Typesense · Meilisearch<br>Vue 3 · Inertia · Tailwind · Vite · TypeScript · React Native<br>Pest · Playwright</p>
+            <p class="stack">PHP 8.4 · Laravel · Octane · Horizon · Passport · Pennant · Scout · laravel/mcp<br>PostgreSQL + pgvector · Redis · Typesense<br>Vue 3 · Inertia · Tailwind · Vite · TypeScript · React Native<br>Pest · Playwright</p>
             <p>Around six thousand actions, one per thing the business can do; hydrators that keep every count and total honest at the point of change; time‑series tables for every dimension anyone has ever asked a question about.</p>
             <h3>On AI</h3>
             <p>We believe AI is a tool to empower human ingenuity, not to replace it. aiku ships a permission‑scoped MCP server so assistants can answer questions about the business; the decisions stay with people. <a href="{{ route('aiku-public.blog.show', 'rag-is-dead-give-the-model-the-tools') }}">How we drew that line →</a></p>

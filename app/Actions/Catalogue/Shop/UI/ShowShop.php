@@ -88,6 +88,10 @@ class ShowShop extends OrgAction
                         'current'    => $this->tab,
                         'navigation' => $tabsBox
                     ],
+                    'widgets_route' => [
+                        'name'       => 'grp.org.shops.show.dashboard.widgets',
+                        'parameters' => ['organisation' => $this->organisation->slug, 'shop' => $shop->slug],
+                    ],
                 ],
             ],
         ];

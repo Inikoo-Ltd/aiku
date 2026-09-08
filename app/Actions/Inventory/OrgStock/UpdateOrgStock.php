@@ -18,6 +18,7 @@ use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLowStockAudits;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateOrgStocksWithoutProducts;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateReplenishments;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgStocks;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -99,6 +100,11 @@ class UpdateOrgStock extends OrgAction
             }
         }
 
+        if (Arr::has($changes, 'is_excluded_from_auto_ordering')) {
+            OrganisationHydrateOrgStocks::dispatch($orgStock->organisation);
+            GroupHydrateOrgStocks::dispatch($orgStock->group);
+        }
+
         if (Arr::hasAny($changes, ['is_on_demand'])) {
             foreach ($orgStock->products as $product) {
                 ProductHydrateAvailableQuantity::run($product);
@@ -135,6 +141,7 @@ class UpdateOrgStock extends OrgAction
         $rules = [
             'state'        => ['sometimes', Rule::enum(OrgStockStateEnum::class)],
             'is_on_demand' => ['sometimes', 'boolean'],
+            'is_excluded_from_auto_ordering' => ['sometimes', 'boolean'],
             'estimated_lead_time_days' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],
             'name'         => ['sometimes', 'string', 'max:255'],
             'packed_in'    => ['sometimes', 'nullable', 'numeric', 'min:0'],

@@ -10,7 +10,7 @@ namespace App\Actions\Production\ManufactureTask\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\Production\Production\UI\ShowCraftsDashboard;
+use App\Actions\Production\Production\UI\ShowOperationsDashboard;
 use App\Enums\UI\Production\ManufactureTasksTabsEnum;
 use App\Http\Resources\Production\ManufactureTasksResource;
 use App\InertiaTable\InertiaTable;
@@ -153,7 +153,7 @@ class IndexManufactureTasks extends OrgAction
                                 'tooltip' => __('New manufacture task'),
                                 'label'   => __('manufacture task'),
                                 'route'   => [
-                                    'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.create',
+                                    'name'       => 'grp.org.productions.show.operations.manufacture_tasks.create',
                                     'parameters' => [
                                         $parent->organisation->slug,
                                         $parent->slug
@@ -217,7 +217,7 @@ class IndexManufactureTasks extends OrgAction
                                     'style' => 'create',
                                     'label' => __('task'),
                                     'route' => [
-                                        'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.create',
+                                        'name'       => 'grp.org.productions.show.operations.manufacture_tasks.create',
                                         'parameters' => $request->route()->originalParameters()
                                     ]
 
@@ -270,13 +270,13 @@ class IndexManufactureTasks extends OrgAction
                 ]
             ),
             default => array_merge(
-                ShowCraftsDashboard::make()->getBreadcrumbs($routeParameters),
+                ShowOperationsDashboard::make()->getBreadcrumbs($routeParameters),
                 [
                     [
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.index',
+                                'name'       => 'grp.org.productions.show.operations.manufacture_tasks.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Manufacture tasks'),

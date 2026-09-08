@@ -26,6 +26,7 @@ use App\Actions\Ordering\Order\SaveOrderModification;
 use App\Actions\Ordering\Order\SwitchOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\WriteOffOrderShortfall;
+use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrderExtraPacking;
 use App\Actions\Ordering\Order\UpdateOrderInsurance;
@@ -80,6 +81,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::post('update-faire', UpdateFaireOrder::class)->name('update_faire');
     Route::patch('rollback-dispatch', RollbackDispatchedOrder::class)->name('rollback_dispatch');
     Route::patch('delivery-address-update', UpdateOrderDeliveryAddress::class)->name('delivery_address_update');
+    Route::patch('billing-address-update', UpdateOrderBillingAddress::class)->name('billing_address_update');
     Route::patch('generate-invoice', GenerateInvoiceFromOrder::class)->name('generate_invoice');
     Route::post('payment-account/{paymentAccount:id}/payment', PayOrder::class)->name('payment.store')->withoutScopedBindings();
     Route::post('delivery-note/replacement', StoreReplacementDeliveryNote::class)->name('replacement_delivery_note.store')->withoutScopedBindings();

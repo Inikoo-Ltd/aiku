@@ -56,7 +56,7 @@ class StoreManufactureTask extends OrgAction
     {
         $production   = $manufactureTask->production;
         $organisation = $manufactureTask->organisation;
-        return Redirect::route('grp.org.productions.show.crafts.manufacture_tasks.index', [$organisation, $production]);
+        return Redirect::route('grp.org.productions.show.operations.manufacture_tasks.index', [$organisation, $production]);
     }
 
 
@@ -84,6 +84,7 @@ class StoreManufactureTask extends OrgAction
             'operative_reward_terms'            => ['required', Rule::enum(ManufactureTaskOperativeRewardTermsEnum::class)],
             'operative_reward_allowance_type'   => ['required', Rule::enum(ManufactureTaskOperativeRewardAllowanceTypeEnum::class)],
             'operative_reward_amount'           => ['required', 'numeric', 'min:0'],
+            'is_piece_rate'                     => ['sometimes', 'boolean'],
         ];
     }
 

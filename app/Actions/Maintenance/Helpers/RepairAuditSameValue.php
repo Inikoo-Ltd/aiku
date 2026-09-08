@@ -14,6 +14,7 @@ use App\Models\Helpers\Audit;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairAuditSameValue
 {
@@ -37,6 +38,7 @@ class RepairAuditSameValue
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         try {
             $this->handle();
         } catch (Throwable $e) {

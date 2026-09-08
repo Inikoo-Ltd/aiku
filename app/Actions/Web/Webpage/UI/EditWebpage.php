@@ -155,7 +155,7 @@ class EditWebpage extends OrgAction
             ],
         ];
 
-        if ($isBlog) {
+        if ($isBlog && $webpage->sub_type != WebpageSubTypeEnum::MAILSHOT) {
             $fields['sub_type'] = [
                 'type'        => 'select',
                 'label'       => __('Blog Category'),

@@ -142,15 +142,8 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
         }
 
         if ($paymentPolicyId) {
-            $defaultLocationData = match ($platformUser->marketplace) {
-                'EBAY_ES' => 'esWarehouse',
-                'EBAY_DE' => 'deWarehouse',
-                default => 'mainWarehouse'
-            };
-
             UpdateEbayUser::run($platformUser, [
                 'payment_policy_id' => $paymentPolicyId,
-                'location_key' => $platformUser->location_key ?? $defaultLocationData,
             ]);
         }
 

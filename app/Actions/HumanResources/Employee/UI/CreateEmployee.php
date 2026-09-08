@@ -16,6 +16,7 @@ use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
 use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Http\Resources\HumanResources\JobPositionResource;
 use App\Http\Resources\Inventory\WarehouseResource;
+use App\Http\Resources\Production\ProductionsResource;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
@@ -249,6 +250,7 @@ class CreateEmployee extends OrgAction
                                         'shops'       => ShopResource::collection($this->organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get()),
                                         'fulfilments' => ShopResource::collection($this->organisation->shops()->where('type', '=', ShopTypeEnum::FULFILMENT)->get()),
                                         'warehouses'  => WarehouseResource::collection($this->organisation->warehouses),
+                                        'productions' => ProductionsResource::collection($this->organisation->productions),
                                     ],
                                     'value'    => new \stdClass(),
                                     'full'     => true

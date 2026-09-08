@@ -40,6 +40,9 @@ function jobOrderRoute(jobOrder: { slug: string }) {
                 {{ jobOrder.reference }}
             </Link>
         </template>
+        <template #cell(artisan)="{ item: jobOrder }">
+            {{ jobOrder.artisan ?? '-' }}
+        </template>
         <template #cell(state)="{ item: jobOrder }">
             {{ jobOrder.state_label }}
         </template>

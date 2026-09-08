@@ -11,6 +11,8 @@ namespace App\Actions\Production\Artefact;
 use App\Actions\OrgAction;
 use App\Models\Production\Artefact;
 use App\Models\Production\ManufactureTask;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class DetachManufactureTaskFromArtefact extends OrgAction
@@ -49,5 +51,10 @@ class DetachManufactureTaskFromArtefact extends OrgAction
         $this->initialisationFromProduction($artefact->production, $request);
 
         return $this->handle($artefact, $manufactureTask);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return Redirect::back();
     }
 }

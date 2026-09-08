@@ -9,9 +9,11 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoImage;
 use App\Actions\Catalogue\WithUpdateWebImages;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Helpers\CanUpdateImages;
 use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\ActionRequest;
@@ -30,6 +32,9 @@ class UpdateProductCategoryImages extends OrgAction
 
         UpdateProductCategoryWebImages::run($productCategory);
 
+        if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
+            ShopHydrateFamiliesWithNoImage::dispatch($productCategory->shop)->delay($this->hydratorsDelay);
+        }
 
         return $productCategory;
     }

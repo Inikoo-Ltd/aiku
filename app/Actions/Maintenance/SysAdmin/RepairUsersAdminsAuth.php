@@ -15,6 +15,7 @@ use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\SysAdmin\Role;
 use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairUsersAdminsAuth
 {
@@ -89,6 +90,7 @@ class RepairUsersAdminsAuth
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $users = User::all();
 
         foreach ($users as $user) {

@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order\UpdateState;
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToSubscribers;
 use App\Actions\Dropshipping\Allegro\Order\FulfilOrderToAllegro;
+use App\Actions\Dropshipping\Wix\Order\FulfilOrderToWix;
 use App\Actions\Dropshipping\Ebay\Orders\FulfillOrderToEbay;
 use App\Actions\Dropshipping\Magento\Orders\FulfillOrderToMagento;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
@@ -24,6 +25,8 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
@@ -71,6 +74,11 @@ class DispatchOrder extends OrgAction
                 ]);
             }
 
+            PartnerShoppingListItem::whereIn('transaction_id', $order->transactions()->select('id'))
+                ->whereNull('partner_organisation_id')
+                ->where('state', ShoppingListItemStateEnum::OPEN)
+                ->update(['state' => ShoppingListItemStateEnum::ORDERED]);
+
             $this->update($order, $data);
 
             if ($order->shop->masterShop && !$repair) {
@@ -94,6 +102,7 @@ class DispatchOrder extends OrgAction
                         //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
                         PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order, $deliveryNote),
                         PlatformTypeEnum::ALLEGRO => FulfilOrderToAllegro::run($order),
+                        PlatformTypeEnum::WIX => FulfilOrderToWix::run($order),
                         default => null,
                     };
                 } elseif ($order->customerSalesChannel?->platform?->type !== PlatformTypeEnum::MANUAL) {

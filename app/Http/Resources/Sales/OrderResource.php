@@ -8,11 +8,27 @@
 
 namespace App\Http\Resources\Sales;
 
+use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class OrderResource extends JsonResource
 {
+    private function getCancellation(mixed $cancellation): ?array
+    {
+        if (!$cancellation) {
+            return null;
+        }
+
+        $reason = OrderCancellationReasonEnum::tryFrom((string)data_get($cancellation, 'reason'));
+
+        return [
+            'reason' => $reason?->value,
+            'label'  => $reason?->label(),
+            'notes'  => data_get($cancellation, 'notes'),
+        ];
+    }
+
     public function toArray($request): array
     {
         /** @var Order $order */
@@ -54,6 +70,7 @@ class OrderResource extends JsonResource
             'has_extra_packing'   => $order->has_extra_packing,
             'has_insurance'       => $order->has_insurance,
             'cancelled_at'        => $order->cancelled_at,
+            'cancellation'        => $this->getCancellation(data_get($order->data, 'cancellation')),
             'is_collection'       => (bool) $order->collection_address_id,
             'is_shipping_by_external'       => $order->is_shipping_by_external,
             'platform_milestones'         => data_get($order->data, 'platform_milestones'),

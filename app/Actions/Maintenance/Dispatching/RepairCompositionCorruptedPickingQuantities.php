@@ -14,6 +14,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 /**
  * Repairs orders whose delivery note item quantities were rewritten by a product
@@ -33,6 +34,7 @@ class RepairCompositionCorruptedPickingQuantities
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $commit = (bool)$command->option('commit');
         $sync   = SyncDeliveryNoteItemsRequiredPickQuantity::make();
 

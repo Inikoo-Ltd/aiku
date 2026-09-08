@@ -8,10 +8,12 @@
 
 namespace App\Actions\CRM\WebUser\Retina;
 
+use App\Actions\Traits\WithRetinaAuthRedirect;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
+use Inertia\Inertia;
 use Lorisleiva\Actions\Concerns\AsController;
 use Illuminate\Support\Facades\Redirect;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,6 +21,7 @@ use Symfony\Component\HttpFoundation\Response;
 class RetinaLogout
 {
     use AsController;
+    use WithRetinaAuthRedirect;
 
 
     public function handle(Request $request): Response
@@ -35,8 +38,15 @@ class RetinaLogout
         Cookie::queue(Cookie::forget('aiku_tsd'));
         Cookie::queue(Cookie::forget('aiku_lts'));
 
-        return Redirect::back();
+        $storefrontUrl = $this->getRetinaLogoutRedirectUrl($request->input('website'));
 
+        if (!$storefrontUrl) {
+            return Redirect::back();
+        }
+
+        /* The storefront is served by the iris bundle, which resolves its pages from a different
+           root than retina, so inertia must do a full page visit instead of following a redirect. */
+        return Inertia::location($storefrontUrl);
     }
 
 }

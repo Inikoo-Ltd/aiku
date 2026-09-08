@@ -109,25 +109,6 @@ trait WithWooCommerceApiRequest
         return ['message' => 'Unknown error occurred'];
     }
 
-    protected function isWooCommerceUnauthorizedResponse(array $response): bool
-    {
-        foreach ($response as $item) {
-            if (is_string($item)) {
-                $item = json_decode($item, true);
-            }
-
-            if (!is_array($item)) {
-                continue;
-            }
-
-            if (Arr::get($item, 'data.status') === 401 || Arr::get($item, 'status') === 401) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     /**
      * Initialize the WooCommerce API credentials
      *
@@ -632,26 +613,47 @@ trait WithWooCommerceApiRequest
         return Arr::get($response, 'value', 'kg');
     }
 
+    /**
+     * Connected means the store answers with data. Settings is the cheap probe, and when a key
+     * cannot read settings the orders list is asked instead, because being able to read orders
+     * is what the channel exists for.
+     */
     public function checkConnection(): bool
     {
         try {
             if (!$this->woocommerceApiUrl || !$this->woocommerceConsumerKey || !$this->woocommerceConsumerSecret) {
                 $this->initWooCommerceApi();
             }
-            $result = $this->makeWooCommerceRequest('GET', 'settings');
-            if ($result === null) {
-                return false;
+            if ($this->isSettingsGroupList($this->makeWooCommerceRequest('GET', 'settings'))) {
+                return true;
             }
 
-            if ($this->isWooCommerceUnauthorizedResponse($result)) {
-                return false;
-            }
+            $orders = $this->makeWooCommerceRequest('GET', 'orders', ['per_page' => 1]);
 
-            return count($result) > 0;
+            return is_array($orders) && array_is_list($orders) && ($orders === [] || Arr::has($orders, '0.id'));
         } catch (\Exception $e) {
             \Sentry::captureMessage($e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * A store that answers GET settings sends a list of setting groups, each with an id. Anything
+     * else (an error body, an HTML page, a message) means the credentials or the store are not usable.
+     */
+    protected function isSettingsGroupList(?array $result): bool
+    {
+        if (!$result || !array_is_list($result)) {
+            return false;
+        }
+
+        foreach ($result as $group) {
+            if (!is_array($group) || !Arr::has($group, 'id')) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function checkSettings(): array

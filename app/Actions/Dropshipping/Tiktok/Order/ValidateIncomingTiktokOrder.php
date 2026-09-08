@@ -78,6 +78,8 @@ class ValidateIncomingTiktokOrder extends RetinaAction
         $lineItems = collect(Arr::get($order, 'line_items', []))
             ->pluck('product_id')
             ->filter()
+            ->unique()
+            ->values()
             ->toArray();
 
         $externalProductIds = [];
@@ -89,8 +91,10 @@ class ValidateIncomingTiktokOrder extends RetinaAction
 
         $hasOutProducts = DB::table('portfolios')
             ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
-            ->whereIn('platform_product_id', $lineItems)
-            ->orWhereIn('id', $externalProductIds)
+            ->where(function ($query) use ($lineItems, $externalProductIds) {
+                $query->whereIn('platform_product_id', $lineItems)
+                    ->orWhereIn('id', array_filter($externalProductIds, fn ($id) => is_string($id) && ctype_digit($id)));
+            })
             ->first();
 
         if ($hasOutProducts) {

@@ -19,6 +19,7 @@ use App\Models\Catalogue\Shop;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairProductsWebpages
 {
@@ -83,6 +84,7 @@ class RepairProductsWebpages
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $shops = Shop::where('state', ShopStateEnum::OPEN)->pluck('id');
 
         // Process webpages in chunks to save memory

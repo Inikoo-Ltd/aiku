@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel;
 use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
 use App\Actions\Dropshipping\Ebay\ReAuthorizeRetinaEbayUser;
 use App\Actions\Dropshipping\Magento\ReAuthorizeMagentoUser;
+use App\Actions\Dropshipping\Wix\User\AuthenticateWixAccount;
 use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -43,6 +44,7 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
             PlatformTypeEnum::MAGENTO => ReAuthorizeMagentoUser::run($platformUser),
             PlatformTypeEnum::EBAY => ReAuthorizeRetinaEbayUser::make()->action($platformUser, $request),
             PlatformTypeEnum::ALLEGRO => AuthenticateAllegroAccount::make()->redirectToAllegro($customerSalesChannel->customer),
+            PlatformTypeEnum::WIX => AuthenticateWixAccount::make()->redirectToWix($customerSalesChannel->customer),
             default => null
         };
     }

@@ -9,6 +9,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoImage;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithImageUpdate;
@@ -30,6 +31,7 @@ class UpdateProductImages extends OrgAction
 
         UpdateProductWebImages::run($product);
 
+        ShopHydrateProductsWithNoImage::dispatch($product->shop)->delay($this->hydratorsDelay);
 
         return $product;
     }

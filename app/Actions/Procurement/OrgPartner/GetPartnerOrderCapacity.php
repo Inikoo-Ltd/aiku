@@ -260,8 +260,8 @@ class GetPartnerOrderCapacity
                 'Shopping list is at the level :partner historically delivers to us monthly (:cap :currency). Remove or deprioritize items first — only A-rank or out-of-stock items can be added past the cap.',
                 [
                     'partner'  => $orgPartner->partner->name,
-                    'cap'      => number_format((float) $capacity['partner_capacity']['delivers_to_us_per_30d'], 2),
-                    'currency' => $orgPartner->partner->currency->code,
+                    'cap'      => number_format((float) $capacity['partner_capacity']['delivers_to_us_per_30d'] * $orgPartner->exchangeToOrgCurrency(), 2),
+                    'currency' => $orgPartner->organisation->currency->code,
                 ]
             ));
         }

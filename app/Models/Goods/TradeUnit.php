@@ -160,6 +160,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Collection<int, SupplierProduct> $supplierProducts
  * @property-read Collection<int, Tag> $tags
  * @property-read Media|null $threeQuarterImage
+ * @property-read Collection<int, TradeUnitTariffCodeOverride> $tariffCodeOverrides
  * @property-read Collection<int, \App\Models\Goods\TradeUnitTimeSeries> $timeSeries
  * @property-read Media|null $topImage
  * @property-read \App\Models\Goods\TradeUnitFamily|null $tradeUnitFamily
@@ -295,6 +296,30 @@ class TradeUnit extends Model implements HasMedia, Auditable
     public function supplierProducts(): MorphToMany
     {
         return $this->morphedByMany(SupplierProduct::class, 'model', 'model_has_trade_units')->withPivot(['quantity']);
+    }
+
+    public function tariffCodeOverrides(): HasMany
+    {
+        return $this->hasMany(TradeUnitTariffCodeOverride::class);
+    }
+
+    public function getTariffCodeHeading(): ?string
+    {
+        $code = str_replace(' ', '', (string) $this->tariff_code);
+
+        return preg_match('/^\d{6}/', $code) ? substr($code, 0, 6) : null;
+    }
+
+    public function getTariffCodeForOrganisation(?int $organisationId): ?string
+    {
+        $heading = $this->getTariffCodeHeading();
+        if (!$organisationId || !$heading) {
+            return $this->tariff_code;
+        }
+
+        $override = $this->tariffCodeOverrides->firstWhere('organisation_id', $organisationId);
+
+        return $override ? $heading.$override->national_extension : $this->tariff_code;
     }
 
     public function barcode(): BelongsTo

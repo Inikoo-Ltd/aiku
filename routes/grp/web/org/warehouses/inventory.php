@@ -39,6 +39,8 @@ use App\Actions\Inventory\OrgStock\UI\ShowOrgStockProcurement;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockProducts;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockStockHistory;
 use App\Actions\Inventory\OrgStock\UI\PdfOrgStockLabel;
+use App\Actions\Inventory\OrgStock\UI\ShowSkoBarcodeScanner;
+use App\Actions\Inventory\OrgStock\AssignSkoBarcodeToOrgStock;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Inventory\OrgStock\UpdateOrgStockUnitBarcode;
 use App\Actions\Inventory\OrgStockFamily\UI\IndexInvoicesInOrgStockFamily;
@@ -63,7 +65,9 @@ Route::prefix('stock-histories')->as('org_stock_histories.')->group(function () 
 
 
 Route::prefix('stocks')->as('org_stocks.')->group(function () {
+    Route::get('barcode-scanner', ShowSkoBarcodeScanner::class)->name('barcode_scanner');
     Route::patch('{orgStock}/update', UpdateOrgStock::class)->name('update');
+    Route::patch('{orgStock}/assign-sko-barcode', AssignSkoBarcodeToOrgStock::class)->name('assign_sko_barcode');
     Route::patch('{orgStock}/update-unit-barcode', UpdateOrgStockUnitBarcode::class)->name('update_unit_barcode');
     Route::get('{orgStock}/label', PdfOrgStockLabel::class)->name('label');
 

@@ -168,6 +168,12 @@ class SaveShopifyProductData extends RetinaAction
                 data_set($dataToUpdate, 'sku', $sku);
             }
 
+            $inventoryQuantity = Arr::get($productData, 'variants.edges.0.node.inventoryQuantity');
+            if ($portfolio->last_stock_value === null && $inventoryQuantity !== null) {
+                data_set($dataToUpdate, 'last_stock_value', (int) $inventoryQuantity);
+                data_set($dataToUpdate, 'stock_last_updated_at', now());
+            }
+
             UpdatePortfolio::run($portfolio, $dataToUpdate);
             CustomerSalesChannelsHydratePortfolios::dispatch($portfolio->customerSalesChannel)->delay(1);
 

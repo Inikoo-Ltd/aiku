@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairNewVariantsProductsIsForSale
 {
@@ -29,6 +30,7 @@ class RepairNewVariantsProductsIsForSale
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $count = Product::whereNotNull('variant_id')->count();
 
         $bar = $command->getOutput()->createProgressBar($count);

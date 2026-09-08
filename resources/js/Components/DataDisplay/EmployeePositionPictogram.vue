@@ -368,14 +368,27 @@ const optionsJob = reactive<optionsJob>({
             {
                 slug: "prod-m",
                 grade: "manager",
-                label: trans("Supervisor"),
+                label: trans("Floor supervisor"),
                 number_employees: props.options.positions.data.find(position => position.slug == 'prod-m')?.number_employees || 0,
             },
             {
-                slug: "prod-w",
+                slug: "prod-p",
                 grade: "clerk",
-                label: trans("Worker"),
-                number_employees: props.options.positions.data.find(position => position.slug == 'prod-w')?.number_employees || 0,
+                label: trans("Mix preparer"),
+                optionsType: ["productions"],
+                number_employees: props.options.positions.data.find(position => position.slug == "prod-p")?.number_employees || 0
+            },
+            {
+                slug: "prod-d",
+                grade: "clerk",
+                label: trans("Foreman"),
+                number_employees: props.options.positions.data.find(position => position.slug == 'prod-d')?.number_employees || 0,
+            },
+            {
+                slug: "prod-c",
+                grade: "clerk",
+                label: trans("Operative"),
+                number_employees: props.options.positions.data.find(position => position.slug == 'prod-c')?.number_employees || 0,
             }
         ],
         isHide: productionsLength < 1,

@@ -111,6 +111,9 @@ class EditFulfilmentCustomer extends OrgAction
                                     'label'   => __('Tax number'),
                                     'value'   => $fulfilmentCustomer->customer->taxNumber ? TaxNumberResource::make($fulfilmentCustomer->customer->taxNumber)->getArray() : null,
                                     'country' => $fulfilmentCustomer->customer->address->country_code,
+                                    'options' => [
+                                        'countriesAddressData' => GetAddressData::run()
+                                    ],
                                 ],
                                 'is_re'                    => [
                                     'type'   => 'toggle',

@@ -596,6 +596,21 @@ class Product extends Model implements Auditable, HasMedia
         return $this->exclusiveCustomers()->exists();
     }
 
+    /**
+     * Whether stock may be advertised on a customer's sales channel. Exclusive products (bundles and
+     * private label ranges) never carry is_for_sale, that flag keeps them off the public site, yet the
+     * customer they belong to must still receive their real stock.
+     */
+    public function isSellableThroughSalesChannels(): bool
+    {
+        if ($this->is_for_sale) {
+            return true;
+        }
+
+        return (bool) $this->exclusive_for_customer_id
+            && in_array($this->state, [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING]);
+    }
+
     public function isExclusiveFor(?int $customerId): bool
     {
         if (!$this->isExclusive()) {

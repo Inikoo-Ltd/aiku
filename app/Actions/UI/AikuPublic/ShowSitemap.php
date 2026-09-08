@@ -21,6 +21,7 @@ class ShowSitemap
             ['loc' => route('aiku-public.home'), 'lastmod' => BlogPosts::all()->first()['date'] ?? now()],
             ['loc' => route('aiku-public.blog.index'), 'lastmod' => BlogPosts::all()->first()['date'] ?? now()],
             ['loc' => route('aiku-public.docs.index'), 'lastmod' => BlogPosts::all('docs')->first()['date'] ?? now()],
+            ['loc' => route('aiku-public.whatsapp-term-policies'), 'lastmod' => ShowWhatsappTermsAndPolicies::effectiveDate()],
         ])->concat(
             BlogPosts::all()->map(fn (array $post) => [
                 'loc' => route('aiku-public.blog.show', $post['slug']),

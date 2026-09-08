@@ -16,6 +16,7 @@ use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMissingFixedWebBlocksInCollectionWebpages
 {
@@ -119,6 +120,7 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $websiteId      = $command->option('website_id');
         $webpageSlug      = $command->option('webpage_slug');
         if ($webpageSlug) {

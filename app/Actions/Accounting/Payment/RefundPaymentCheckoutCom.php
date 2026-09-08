@@ -34,7 +34,9 @@ class RefundPaymentCheckoutCom extends OrgAction
         list($publicKey, $secretKey) = $paymentAccountShop->getCredentials();
 
         $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
-
+        if (!$checkoutApi) {
+            throw new \RuntimeException('checkout.com credentials rejected for payment account shop '.$paymentAccountShop->id);
+        }
 
         try {
             $refundRequest = new RefundRequest();

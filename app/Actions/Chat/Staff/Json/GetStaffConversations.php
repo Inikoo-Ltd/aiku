@@ -29,6 +29,10 @@ class GetStaffConversations
                     ->where('me.user_id', $user->id)
                     ->whereNull('me.archived_at');
             })
+            ->where(function ($query) use ($user) {
+                $query->whereNotNull('staff_conversations.last_message_at')
+                    ->orWhere('staff_conversations.created_by_user_id', $user->id);
+            })
             ->select('staff_conversations.*')
             ->addSelect([
                 'unread_count' => StaffMessage::selectRaw('count(*)')

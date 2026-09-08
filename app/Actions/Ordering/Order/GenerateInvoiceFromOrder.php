@@ -10,6 +10,7 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\UpdateInvoicePaymentState;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
@@ -144,17 +145,31 @@ class GenerateInvoiceFromOrder extends OrgAction
                 }
             }
 
+            /**
+             * The header is a function of the lines that were actually stored, never of a parallel
+             * calculation: whatever recalculateTotals estimated above, the figures the customer and
+             * the tax return see are re-derived here from the invoice's own rows (HELP-3081).
+             */
+            CalculateInvoiceTotals::make()->action($invoice);
+            $invoice->refresh();
+            $order->update([
+                'net_amount'   => $invoice->net_amount,
+                'tax_amount'   => $invoice->tax_amount,
+                'total_amount' => $invoice->total_amount,
+            ]);
+
             $totalPaid = $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->whereNot('payments.state', PaymentStateEnum::CANCELLED)->sum('payments.amount');
 
             $amountToCredit = round($totalPaid - $invoice->total_amount, 2);
 
-            $hasManuallySettledPayment = $order->payments()
+            $hasPaymentSettledAtInvoicing = $order->payments()
+                ->where('payments.status', PaymentStatusEnum::SUCCESS)
                 ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
                 ->whereHas('paymentAccount', function ($query) {
-                    $query->whereIn('type', PaymentAccountTypeEnum::MANUALLY_SETTLED);
+                    $query->whereIn('type', PaymentAccountTypeEnum::SETTLED_AT_INVOICING);
                 })->exists();
 
-            if ($amountToCredit > 0 && !$hasManuallySettledPayment) {
+            if ($amountToCredit > 0 && !$hasPaymentSettledAtInvoicing) {
                 /** @var \App\Models\Accounting\PaymentAccountShop $paymentAccountShop */
                 $paymentAccountShop = $order->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
                 $paymentData        = [
@@ -183,9 +198,7 @@ class GenerateInvoiceFromOrder extends OrgAction
 
             foreach ($order->payments as $payment) {
                 if ($payment->status == PaymentStatusEnum::SUCCESS) {
-                    $invoice->payments()->attach($payment, [
-                        'amount' => $payment->amount,
-                    ]);
+                    $invoice->payments()->attach($payment);
                 }
             }
             UpdateInvoicePaymentState::run($invoice);
@@ -213,25 +226,22 @@ class GenerateInvoiceFromOrder extends OrgAction
 
         $itemsNet = $lines->sum('net_amount');
 
-        foreach ($order->transactions()->where('model_type', 'Service')->get(['tax_category_id', 'net_amount']) as $serviceLine) {
-            $lines->push((object)[
-                'tax_category_id' => $serviceLine->tax_category_id,
-                'net_amount'      => $serviceLine->net_amount,
-            ]);
+        /**
+         * Shipping and charges are read from the same transactions that become invoice lines,
+         * never from the order's shipping_amount / charges_amount columns: those columns lag the
+         * lines at dispatch, and a header computed from them while the lines were stored from the
+         * transactions is how invoices ended up with a VAT figure their own rows did not add up
+         * to (HELP-3081).
+         */
+        $modelTypes = ['Service', 'Charge', 'Adjustment', 'Packaging', 'Leaflet'];
+        if (!$order->collection_address_id) {
+            $modelTypes[] = 'ShippingZone';
         }
 
-        /* Packaging and add-ons are charged on the order, so they belong in the invoice
-           net; the total is derived from these lines rather than summed directly. */
-        $lines->push((object)[
-            'tax_category_id' => $order->tax_category_id,
-            'net_amount'      => $order->shipping_amount + $order->charges_amount
-                + $order->packaging_amount + $order->leaflet_amount,
-        ]);
-
-        foreach ($order->transactions()->where('model_type', 'Adjustment')->get(['tax_category_id', 'net_amount']) as $adjustmentLine) {
+        foreach ($order->transactions()->whereIn('model_type', $modelTypes)->get(['tax_category_id', 'net_amount']) as $line) {
             $lines->push((object)[
-                'tax_category_id' => $adjustmentLine->tax_category_id,
-                'net_amount'      => $adjustmentLine->net_amount,
+                'tax_category_id' => $line->tax_category_id,
+                'net_amount'      => $line->net_amount,
             ]);
         }
 

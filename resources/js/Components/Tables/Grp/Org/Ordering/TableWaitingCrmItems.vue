@@ -128,9 +128,9 @@ const quantityLabelParts = (translation: string): { before: string; after: strin
     return { before: before.trim(), after: after.trim() }
 }
 
-const notPickLabelParts = computed(() => quantityLabelParts(ctrans(`Don't pick :itemNotPick items`)))
+const notPickLabelParts = computed(() => quantityLabelParts(ctrans(`Don't pick :itemNotPick SKO`)))
 
-const replaceLabelParts = computed(() => quantityLabelParts(ctrans('Replace :itemNotPick items')))
+const replaceLabelParts = computed(() => quantityLabelParts(ctrans('Replace :itemNotPick SKO')))
 
 // Mirrors the "_ds" fractional shape the backend sends: whole packs read as 32/16, a cut as 2/16.
 const toFractionData = (quantity: number, packedIn: number) => {
@@ -192,7 +192,9 @@ const quantityRemainingAfterReplace = computed(() => {
 const onUpdateQuantityToReplace = (value: number | null) => {
     const raw = Number(value) || 0
     const quantity = isCutViewReplace.value ? unitsToPacks(raw, replacePackedIn.value) : raw
-    quantityToReplace.value = Math.min(Math.max(quantity, 0), waitingQuantity.value)
+    // Nothing to replace is not a swap: the floor is one unit in cut view, one pack otherwise.
+    const minimum = isCutViewReplace.value ? unitsToPacks(1, replacePackedIn.value) : 1
+    quantityToReplace.value = Math.min(Math.max(quantity, minimum), waitingQuantity.value)
 }
 
 // Leaving cut view rounds each cut up to the pack it sits in, the only amount that view can express.
@@ -511,7 +513,7 @@ const submitSendBackWarehouse = () => {
                                 :fractionData="subItem.quantity_waiting_crm_fractional_ds"
                             />
                             <template v-else>{{ Number(subItem.quantity_waiting_crm) }}</template>
-                            {{ ctrans("items") }}
+                            {{ ctrans("SKO") }}
                         </div>
                         <div v-if="subItem.notes" class="text-left border border-gray-300 bg-gray-100 px-2 py-1 rounded text-xs w-fit">
                             <FontAwesomeIcon icon="fal fa-sticky-note" fixed-width aria-hidden="true" />
@@ -522,7 +524,7 @@ const submitSendBackWarehouse = () => {
                     <!-- Actions -->
                     <div class="flex gap-2 shrink-0 flex-wrap">
                         <ButtonWithLink
-                            v-tooltip="ctrans(':itemNotPick items will not picked, and will not billed to customer', { itemNotPick: waitingQuantityLabel(subItem) })"
+                            v-tooltip="ctrans(':itemNotPick SKO will not be picked and will not be billed to the customer', { itemNotPick: waitingQuantityLabel(subItem) })"
                             :url="setAsNotPickRoute(subItem)"
                             method="post"
                             type="negative"
@@ -626,7 +628,7 @@ const submitSendBackWarehouse = () => {
                                     :numerator="packsToUnits(waitingQuantity, replacePackedIn)"
                                     :denominator="replacePackedIn"
                                 />
-                                <span class="ml-1">{{ ctrans("items") }}</span>
+                                <span class="ml-1">{{ ctrans("SKO") }}</span>
                             </div>
                             <div v-if="selectedItem?.net_amount" class="tabular-nums text-xs opacity-70 mt-0.5">
                                 {{ locale.currencyFormat(selectedItem?.currency_code, selectedItem?.net_amount) }}
@@ -669,7 +671,7 @@ const submitSendBackWarehouse = () => {
                         :modelValue="replaceQuantityInput"
                         @update:model-value="onUpdateQuantityToReplace"
                         @input="(e) => onUpdateQuantityToReplace(Number(e.value))"
-                        :min="0"
+                        :min="1"
                         :max="maxQuantityToReplace"
                         :suffix="isCutViewReplace && replacePackedIn > 1 ? `/${replacePackedIn}` : undefined"
                         :key="String(isCutViewReplace) + selectedItem?.id"
@@ -678,7 +680,7 @@ const submitSendBackWarehouse = () => {
                     />
 
                     <span class="text-sm text-gray-500">
-                        {{ isCutViewReplace ? ctrans('of :max items', { max: String(maxQuantityToReplace) }) : ctrans('of :max outers', { max: String(maxQuantityToReplace) }) }}
+                        {{ isCutViewReplace ? ctrans('of :max units', { max: String(maxQuantityToReplace) }) : ctrans('of :max SKO', { max: String(maxQuantityToReplace) }) }}
                     </span>
                 </div>
 
@@ -871,7 +873,7 @@ const submitSendBackWarehouse = () => {
                             :fractionData="selectedItemSendBack.quantity_waiting_crm_fractional_ds"
                         />
                         <template v-else>{{ Number(selectedItemSendBack?.quantity_waiting_crm) }}</template>
-                        {{ ctrans('items') }}
+                        {{ ctrans('SKO') }}
                     </div>
                 </div>
             </div>
@@ -946,7 +948,7 @@ const submitSendBackWarehouse = () => {
                             <FractionDisplay
                                 :fractionData="toFractionData(successContext.replacedQuantity, Number(successContext.replacedItem.packed_in) || 1)"
                             />
-                            {{ ctrans('items') }}
+                            {{ ctrans('SKO') }}
                         </div>
                         <div v-if="successContext.replacedItem.net_amount" class="text-xs opacity-70 mt-0.5">
                             {{ locale.currencyFormat(successContext.replacedItem.currency_code, successContext.replacedItem.net_amount) }}
@@ -984,7 +986,7 @@ const submitSendBackWarehouse = () => {
                         </div>
                         <div class="flex items-center justify-end gap-x-1 tabular-nums text-gray-500 shrink-0">
                             <FractionDisplayFE :numerator="product.numerator" :denominator="product.denominator" />
-                            {{ ctrans('items') }}
+                            {{ ctrans('SKO') }}
                         </div>
                     </div>
                 </div>

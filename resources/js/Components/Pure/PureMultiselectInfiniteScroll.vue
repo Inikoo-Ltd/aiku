@@ -33,6 +33,7 @@ const props = defineProps<{
     clearOnSelect? : boolean,
     clearOnBlur? : boolean
     clearOnFocus? :boolean
+    fetchOnOpen?: boolean
     optionFunc?: () => boolean
 }>()
 const emits = defineEmits<{
@@ -152,6 +153,10 @@ const onOpen = () => {
 
     if (!isOpenedByTyping) {
         _multiselectRef.value?.clearSearch?.()
+
+        if (props.fetchOnOpen && !optionsList.value.length && isComponentLoading.value !== 'fetchProduct') {
+            fetchProductList(getUrlFetch({ 'filter[global]': '' }))
+        }
     }
 
     // Get internal input element and trigger input event with empty string

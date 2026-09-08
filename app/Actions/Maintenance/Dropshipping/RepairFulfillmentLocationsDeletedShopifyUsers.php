@@ -14,6 +14,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairFulfillmentLocationsDeletedShopifyUsers
 {
@@ -36,6 +37,7 @@ class RepairFulfillmentLocationsDeletedShopifyUsers
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         foreach (ShopifyUser::withTrashed()
                      ->whereNotNull('deleted_at')
                      ->get() as $shopifyUser) {

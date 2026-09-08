@@ -9,10 +9,14 @@
 namespace App\Actions\Dropshipping\ShopifyUser;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
@@ -62,11 +66,14 @@ class StoreShopifyUser extends RetinaAction
                 $shopifyUser = $customer->shopifyUser()->create($modelData);
             }
 
-            $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
-                'platform_user_type' => class_basename($shopifyUser),
-                'platform_user_id'   => $shopifyUser->id,
-                'reference'          => Arr::get(explode('.myshopify.com', $shopifyUser->name), '0'),
-            ]);
+            $reference = Arr::get(explode('.myshopify.com', $shopifyUser->name), '0');
+
+            $customerSalesChannel = $this->reconnectExistingChannel($customer, $platform, $reference, $shopifyUser)
+                ?? StoreCustomerSalesChannel::make()->action($customer, $platform, [
+                    'platform_user_type' => class_basename($shopifyUser),
+                    'platform_user_id'   => $shopifyUser->id,
+                    'reference'          => $reference,
+                ]);
 
             $shopifyUser->update([
                 'customer_sales_channel_id' => $customerSalesChannel->id,
@@ -74,6 +81,40 @@ class StoreShopifyUser extends RetinaAction
 
             return $shopifyUser;
         });
+    }
+
+    private function reconnectExistingChannel(Customer $customer, Platform $platform, string $reference, ShopifyUser $shopifyUser): ?CustomerSalesChannel
+    {
+        /** @var CustomerSalesChannel|null $customerSalesChannel */
+        $customerSalesChannel = $customer->customerSalesChannels()
+            ->where('platform_id', $platform->id)
+            ->where('reference', $reference)
+            ->orderByRaw("status = 'open' desc")
+            ->orderByDesc('id')
+            ->first();
+
+        if (!$customerSalesChannel) {
+            return null;
+        }
+
+        $wasClosed = $customerSalesChannel->status == CustomerSalesChannelStatusEnum::CLOSED;
+
+        $this->update($customerSalesChannel, [
+            'platform_user_type' => class_basename($shopifyUser),
+            'platform_user_id'   => $shopifyUser->id,
+            'status'             => CustomerSalesChannelStatusEnum::OPEN,
+            'state'              => CustomerSalesChannelStateEnum::CREATED,
+            'name'               => preg_replace('/ - deleted - \d+$/', '', (string) $customerSalesChannel->name) ?: null,
+            'closed_at'          => null,
+        ]);
+
+        if ($wasClosed) {
+            foreach ($customerSalesChannel->portfolios as $portfolio) {
+                UpdatePortfolio::run($portfolio, ['status' => true]);
+            }
+        }
+
+        return $customerSalesChannel;
     }
 
 

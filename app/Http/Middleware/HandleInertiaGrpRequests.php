@@ -51,14 +51,16 @@ class HandleInertiaGrpRequests extends Middleware
                 'auth'  => [
                     'user' => $request->user() ? GetLoggedUser::run($request->user()) : null,
                 ],
+                'tickets_read_only' => (bool) config('tickets.read_only'),
                 'flash' => [
                     'notification' => fn () => $request->session()->get('notification'),
                     'modal'        => fn () => $request->session()->get('modal')
                 ],
-                'help' => fn () => BlogPosts::helpFor($routeName),
+                'help' => fn () => BlogPosts::helpFor($routeName, $user?->language?->code),
                 'ziggy' => [
                     'location' => $request->url(),
                 ],
+                'phpComponent' => app()->environment('local') ? str_replace('\\', '/', $request->route()->getActionName()) : null,
 
             ],
             parent::share($request),

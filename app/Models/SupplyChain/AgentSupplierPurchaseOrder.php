@@ -141,6 +141,12 @@ class AgentSupplierPurchaseOrder extends Model implements HasMedia, Auditable
         'deposit_paid_at'        => 'datetime',
         'balance_paid_at'        => 'datetime',
         'estimated_received_at'  => 'datetime',
+        'proposed_ready_at'      => 'datetime',
+        'approved_ready_at'      => 'datetime',
+        'handed_over_at'         => 'datetime',
+        'qc_passed_at'           => 'datetime',
+        'compliance_complete_at' => 'datetime',
+        'chs_excluded'           => 'boolean',
     ];
 
     protected $attributes = [
@@ -155,6 +161,13 @@ class AgentSupplierPurchaseOrder extends Model implements HasMedia, Auditable
         'state',
         'delivery_state',
         'notes',
+        'proposed_ready_at',
+        'approved_ready_at',
+        'handed_over_at',
+        'qc_passed_at',
+        'compliance_complete_at',
+        'chs_excluded',
+        'chs_exclusion_reason',
     ];
 
     public function getRouteKeyName(): string

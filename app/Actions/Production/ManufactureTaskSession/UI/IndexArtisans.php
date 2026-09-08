@@ -9,7 +9,7 @@
 namespace App\Actions\Production\ManufactureTaskSession\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Production\Production\UI\ShowOperationsDashboard;
+use App\Actions\Production\Production\UI\ShowArtisansDashboard;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
@@ -133,13 +133,13 @@ class IndexArtisans extends OrgAction
         $routeParameters = Arr::only($routeParameters, ['organisation', 'production']);
 
         return array_merge(
-            (new ShowOperationsDashboard())->getBreadcrumbs($routeParameters),
+            (new ShowArtisansDashboard())->getBreadcrumbs($routeParameters),
             [
                 [
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.productions.show.operations.artisans.index',
+                            'name'       => 'grp.org.productions.show.artisans.index',
                             'parameters' => $routeParameters,
                         ],
                         'label' => __('Artisans'),

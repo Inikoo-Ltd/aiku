@@ -118,18 +118,6 @@ class IndexOrgPartners extends OrgAction
                     'model'       => __('Procurement'),
                     'icon'        => ['fal', 'fa-users-class'],
                     'title'       => __('Partners'),
-                    'actions'     => [
-                        [
-                            'type'  => 'button',
-                            'style' => 'secondary',
-                            'label' => __('Shipping list'),
-                            'icon'  => ['fal', 'fa-truck-loading'],
-                            'route' => [
-                                'name'       => 'grp.org.procurement.org_partners.shipping_list.index',
-                                'parameters' => $request->route()->originalParameters(),
-                            ],
-                        ],
-                    ],
                 ],
                 'data'        => OrgPartnersResource::collection($partners),
 

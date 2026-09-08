@@ -1741,6 +1741,15 @@ test('UI hr staff chat analytics and conversation scoped to organisation', funct
     $response = get(route('grp.org.hr.dashboard', [$organisation->slug]));
     $response->assertInertia(fn (AssertableInertia $page) => $page->where('stats.5.name', 'Staff chat')->where('stats.5.stat', 3));
 
+    $response = get(route('grp.org.hr.dashboard', [$organisation->slug, 'show' => 'absent']));
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('show', 'absent')
+        ->where('attendanceStats.4.key', 'absent')
+        ->where('attendanceStats.4.route.parameters.show', 'absent')
+        ->has('people'));
+    $props = $response->inertiaProps();
+    expect(count($props['people']))->toBe($props['attendanceStats'][4]['stat']);
+
     $response = get(route('grp.org.hr.staff_chat.index', [$organisation->slug]));
     $response->assertInertia(function (AssertableInertia $page) use ($organisation) {
         $page
@@ -1780,7 +1789,8 @@ test('UI sysadmin user show/edit/create/actions', function (User $user) {
 
     get(route('grp.sysadmin.users.create'))->assertOk();
     get(route('grp.sysadmin.users.show', [$user]))->assertOk();
-    get(route('grp.sysadmin.users.edit', [$user]))->assertOk();
+    get(route('grp.sysadmin.users.edit', [$user]))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('formData.blueprint.permissions.fields.permissions.options.'.$user->getOrganisation()->slug.'.productions'));
     get(route('grp.sysadmin.users.show.actions.index', [$user]))->assertOk();
 })->depends('SetUserAuthorisedModels command');
 

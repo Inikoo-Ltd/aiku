@@ -21,6 +21,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairWebpageSeoData
 {
@@ -128,6 +129,7 @@ class RepairWebpageSeoData
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
 
         //        $webpage = Webpage::where('slug','aclb-06-ace')->first();
         //        $this->handle($webpage, $command);

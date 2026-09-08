@@ -7,13 +7,13 @@ import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
 import { trans } from "laravel-vue-i18n"
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
-import { Navigation } from 'swiper/modules'
+import { Navigation, FreeMode } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/navigation'
+import 'swiper/css/free-mode'
 
 import Family3Render from '@/Iris/Components/Families3Render.vue'
 import { getStyles } from '@/Composables/styles'
-
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -31,6 +31,9 @@ const props = defineProps<{
     settings?: { per_row?: { desktop?: number, tablet?: number, mobile?: number } }
     container?: any
     card?: any
+    chip?: any
+    button?: any
+    show_overview_button?: boolean
   }
   webpageData?: any
   blockData?: Record<string, any>
@@ -38,19 +41,12 @@ const props = defineProps<{
   indexBlock?: number
 }>()
 
-
-const prevEl = ref<HTMLElement | null>(null)
-const nextEl = ref<HTMLElement | null>(null)
 const swiperInstance = ref<any>(null)
-const refreshTrigger = ref(0)
 const containerRef = ref<HTMLElement | null>(null)
+const maxHeight = ref(0)
 
-const allItems = computed(() => [
-  {
-    __type: 'view_all'
-  },
-  ...(props.modelValue?.families || [])
-])
+const allItems = computed(() => [...(props.modelValue?.families || [])])
+
 const perRow = computed(() => {
   const cfg = props.modelValue?.settings?.per_row
 
@@ -71,36 +67,11 @@ const spaceBetween = computed(() => {
   return 24
 })
 
-
-
-
-
-/* ==== SAFE NAVIGATION INIT ==== */
-function bindNavigation(swiper: any) {
-  nextTick(() => {
-    if (!swiper) return
-    if (!prevEl.value || !nextEl.value) return
-
-    swiper.params.navigation.prevEl = prevEl.value
-    swiper.params.navigation.nextEl = nextEl.value
-
-    if (swiper.navigation) {
-      swiper.navigation.destroy()
-      swiper.navigation.init()
-      swiper.navigation.update()
-    }
-  })
-}
-
-const maxHeight = ref(0)
-
 function onSwiper(swiper: any) {
   swiperInstance.value = swiper
-  bindNavigation(swiper)
 }
 
-/* update when screen/perRow change */
-watch(() => props.screenType, async () => {
+watch([perRow, spaceBetween], async () => {
   await nextTick()
   swiperInstance.value?.update?.()
 })
@@ -116,7 +87,7 @@ async function computeMaxHeight() {
   }
 
   const heights = [...nodes].map(n => Math.ceil(n.getBoundingClientRect().height))
-  maxHeight.value = Math.max(...heights) - 5
+  maxHeight.value = Math.max(...heights)
   swiperInstance.value?.update?.()
 }
 
@@ -136,50 +107,47 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', resizeHandler)
 })
 
-watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container, refreshTrigger], async () => {
+watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container, () => props.screenType], async () => {
   await nextTick()
   await computeMaxHeight()
 }, { deep: true })
-
 </script>
 
 <template>
-  <!-- swiper + view all -->
-  <div class="mx-8 flex items-stretch" :style="{ gap: `${spaceBetween}px`}">
+  <div ref="containerRef">
+    <div class="px-4 py-10" :style="getStyles(props.modelValue?.container?.properties, props.screenType)">
+      <div class="relative flex-1 overflow-hidden group">
+        <div class="swiper-mask px-8">
+          <Swiper :modules="[Navigation, FreeMode]" :loop="false" :slides-per-view="perRow"
+            :space-between="spaceBetween" :freeMode="true" :grabCursor="true" :touchRatio="1.2" :allow-touch-move="true"
+            :initial-slide="0" @swiper="onSwiper" class="w-full swiper-inner">
 
-    <!-- view all -->
-    <div class="shrink-0" :style="{
-      width: `calc((100% - (${perRow - 1} * ${spaceBetween}px)) / ${perRow})`
-    }">
-      <div
-        class="family-item w-full h-full cursor-pointer flex flex-col rounded-xl overflow-hidden border bg-white hover:bg-gray-50 transition-all">
-        <div :style="{
-          fontWeight: 600,
-          minHeight: maxHeight ? maxHeight + 'px' : undefined,
-          ...getStyles(props.modelValue?.button?.view_more?.properties, props.screenType),
-        }" class="flex-1 flex items-center justify-center bg-gray-100">
-          <span class="text-sm font-semibold">
-            {{ trans('View All') }}
-          </span>
+            <SwiperSlide v-if="props.modelValue?.show_overview_button" class="flex !w-[220px]">
+              <div
+                class="family-item w-full h-full cursor-pointer flex flex-col rounded-xl overflow-hidden border bg-white hover:bg-gray-50 transition-all">
+                <div :style="{
+                  fontWeight: 600,
+                  minHeight: maxHeight ? maxHeight + 'px' : undefined,
+                  ...getStyles(props.modelValue?.button?.view_more?.properties, props.screenType),
+                }" class="flex-1 flex items-center justify-center bg-gray-100">
+                  <span class="text-sm font-semibold">
+                    {{ trans('View All') }}
+                  </span>
+                </div>
+              </div>
+            </SwiperSlide>
+
+            <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="flex h-auto">
+              <div class="w-full h-full flex">
+                <Family3Render class="family-item w-full h-full" :data="item" :style="{
+                  ...getStyles(props.modelValue?.chip?.container?.properties, props.screenType),
+                  fontWeight: 600
+                }" :screenType="props.screenType" />
+              </div>
+            </SwiperSlide>
+          </Swiper>
         </div>
       </div>
-    </div>
-
-    <!-- swiper -->
-    <div class="min-w-0" :style="{
-      width: `calc(100% - ((100% - (${perRow - 1} * ${spaceBetween}px)) / ${perRow}) - ${spaceBetween}px)`
-    }">
-      <Swiper :modules="[Navigation]" :loop="true" :slides-per-view="perRow" :space-between="spaceBetween"
-        :allow-touch-move="true" :navigation="true" :initial-slide="0" @swiper="onSwiper" class="w-full swiper-mask">
-        <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="flex h-auto">
-          <div class="w-full h-full flex">
-            <Family3Render class="family-item w-full h-full" :data="item" :style="{
-              ...getStyles(props.modelValue?.chip?.container?.properties, props.screenType),
-              fontWeight: 600
-            }" :screenType="props.screenType" />
-          </div>
-        </SwiperSlide>
-      </Swiper>
     </div>
   </div>
 </template>
@@ -188,5 +156,16 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
 :deep(.swiper-button-prev),
 :deep(.swiper-button-next) {
   display: none !important;
+}
+
+.swiper-inner {
+  box-sizing: border-box;
+}
+
+@media (max-width:768px) {
+  .swiper-inner {
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 </style>

@@ -16,6 +16,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairDiscontinuedProductsWebpages
 {
@@ -47,6 +48,7 @@ class RepairDiscontinuedProductsWebpages
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $query = Product::query()
             ->with(['webpage', 'shop'])
             ->whereHas('shop', function ($q) {

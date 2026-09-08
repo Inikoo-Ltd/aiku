@@ -12,6 +12,7 @@ namespace App\Actions\Maintenance\Catalogue;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairProductBucketImages
 {
@@ -31,6 +32,7 @@ class RepairProductBucketImages
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $command->info('Repairing Products bucket_images');
 
         $query  = Product::query();

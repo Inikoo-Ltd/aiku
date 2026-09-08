@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, inject, nextTick, onMounted, onUnmounted, ref } from "vue"
+import { computed, defineAsyncComponent, inject, nextTick, onMounted, onUnmounted, ref } from "vue"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -15,8 +15,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router } from "@inertiajs/vue3"
 import Image from "@/Common/Components/Image.vue"
 import RailControls from "@/Layouts/Grp/RailControls.vue"
-import FooterMessage from "@/Components/Footer/FooterMessage.vue"
-import ManageTeamModal from "@/Components/Messaging/ManageTeamModal.vue"
+const FooterMessage = defineAsyncComponent(() => import("@/Components/Footer/FooterMessage.vue"))
+const ManageTeamModal = defineAsyncComponent(() => import("@/Components/Messaging/ManageTeamModal.vue"))
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useLiveUsers } from "@/Stores/active-users"
 import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
@@ -76,7 +76,7 @@ const presence = (c: StaffCoworker) => isOnline(c.id) ? (isActive(c) ? 'online' 
 
 const fetchCoworkers = async (q: string) => {
     const { data } = await axios.get(route("grp.chat.staff.coworkers.index"), { params: q ? { q } : {} })
-    coworkers.value = data.data
+    coworkers.value = data.data ?? []
 }
 
 const fetchSearchResults = async (q: string) => {
@@ -85,7 +85,7 @@ const fetchSearchResults = async (q: string) => {
         return
     }
     const { data } = await axios.get(route("grp.chat.staff.coworkers.index"), { params: { q } })
-    searchResults.value = data.data
+    searchResults.value = data.data ?? []
 }
 
 // ponytail: "+" search hits the server (needs offline matches too); the auto filter (>10 online) just narrows the already-fetched list client side

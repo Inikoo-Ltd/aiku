@@ -20,6 +20,7 @@ use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMissingFixedWebBlocksInFamiliesWebpages
 {
@@ -103,7 +104,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         $scope = WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION;
         $liveWebBlockSnapshot = $webpage->website->{"live{$scope->value}Snapshot"};
         $usedWebBlockTemplateCodes = data_get($liveWebBlockSnapshot?->layout, 'code', array_first($scope->templateCodes())); // Get published WebBlock layout code
-        
+
         // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILY_DESCRIPTION->templateCodes(), WebBlockTemplateEnum::FAMILY_DESCRIPTION);
 
@@ -192,6 +193,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $singleWebpageId = $command->option('webpage_id');
 
         if ($singleWebpageId) {

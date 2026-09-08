@@ -35,6 +35,7 @@ const isLoggedIn = computed(() => {
 provide("isPreviewLoggedIn", isLoggedIn);
 
 const isLoadingLogout = ref(false)
+let restoreIrisSession: (() => void) | null = null
 const onClickLogout = () => {
     router.post(
         '/app/logout',
@@ -44,13 +45,12 @@ const onClickLogout = () => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingLogout.value = true
-            },
-            onSuccess: () => {
-                clearIrisSession(layout)
+                restoreIrisSession = clearIrisSession(layout)
             },
             onError: errors => {
+                restoreIrisSession?.()
                 notify({
                     title: trans("Something went wrong"),
                     text: trans("Failed to logout"),

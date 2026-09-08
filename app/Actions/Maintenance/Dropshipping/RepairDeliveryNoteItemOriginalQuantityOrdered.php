@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairDeliveryNoteItemOriginalQuantityOrdered
 {
@@ -33,6 +34,7 @@ class RepairDeliveryNoteItemOriginalQuantityOrdered
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $count = DeliveryNote::count();
 
         $bar = $command->getOutput()->createProgressBar($count);

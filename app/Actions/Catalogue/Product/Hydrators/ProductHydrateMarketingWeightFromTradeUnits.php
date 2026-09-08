@@ -26,12 +26,41 @@ class ProductHydrateMarketingWeightFromTradeUnits implements ShouldBeUnique
     public function handle(Product $product): void
     {
         if (!$product->is_single_trade_unit) {
+            $this->hydrateFromSeveralTradeUnits($product);
+
             return;
         }
 
         $tradeUnit       = $product->tradeUnits()->whereNotNull('marketing_weight')->orderBy('marketing_weight', 'desc')->first();
         $marketingWeight = $tradeUnit?->marketing_weight;
 
+
+        $product->updateQuietly(
+            [
+                'marketing_weight' => $marketingWeight,
+            ]
+        );
+    }
+
+    /**
+     * Products made of several trade units used to be skipped entirely, which left every
+     * multi-component bundle with no marketing weight and so no weight at all on the sales
+     * channels that read it.
+     *
+     * Only an empty weight is filled in: thousands of multi trade unit products carry a weight
+     * set elsewhere, and this hydrator has never owned those values.
+     */
+    private function hydrateFromSeveralTradeUnits(Product $product): void
+    {
+        if ($product->marketing_weight !== null) {
+            return;
+        }
+
+        $marketingWeight = $this->getMarketingWeightFromTradeUnits($product);
+
+        if ($marketingWeight === null) {
+            return;
+        }
 
         $product->updateQuietly(
             [

@@ -51,6 +51,27 @@ const onSubmitWoocommerce = async () => {
 	}
 }
 
+const manualKeys = useForm({
+	consumer_key: "",
+	consumer_secret: ""
+});
+const showManualKeys = ref(false)
+
+const onSubmitManualKeys = async () => {
+	try {
+		isLoadingStep.value = true;
+		errors.value = {};
+		await axios.post(route('retina.models.dropshipping.woocommerce.tmp_user.store'), {
+			...manualKeys.data(),
+			...(wooCommerceInput.url ? { url: wooCommerceInput.url.trim().replace(/\/+$/, '') } : {})
+		});
+		await submitForm();
+	} catch (err: any) {
+		isLoadingStep.value = false;
+		errors.value = err.response?.data?.errors;
+	}
+}
+
 const submitForm = async () => {
 	isLoadingStep.value = true
 	errors.value = {};
@@ -84,6 +105,16 @@ const submitForm = async () => {
                 icon="fal fa-info-circle" class="hidden md:block size-5 text-black"/>
         </div>
         <p v-if="errors?.url" class="text-sm text-red-600 mt-1">{{ errors?.url?.[0] }}</p>
+
+        <button type="button" class="text-sm text-left underline text-gray-600 w-fit" @click="showManualKeys = !showManualKeys">
+            {{ trans("My store could not send the keys, let me paste them") }}
+        </button>
+        <div v-if="showManualKeys" class="flex flex-col gap-2 w-full md:w-96">
+            <p class="text-sm text-gray-600">{{ trans("In WooCommerce go to Settings, Advanced, REST API and create a key with Read/Write permissions, then paste it here.") }}</p>
+            <PureInputWithAddOn v-model="manualKeys.consumer_key" :leftAddOn="{ icon: 'fal fa-key' }" :placeholder="'ck_...'" />
+            <PureInputWithAddOn v-model="manualKeys.consumer_secret" :leftAddOn="{ icon: 'fal fa-lock' }" :placeholder="'cs_...'" />
+            <Button size="sm" :loading="isLoadingStep" :disabled="!manualKeys.consumer_key || !manualKeys.consumer_secret" @click="onSubmitManualKeys">{{ trans("Use these keys") }}</Button>
+        </div>
 
         <hr class="w-full border-t"/>
 

@@ -18,6 +18,7 @@ use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrder
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Rules\IUnique;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateAgentSupplierPurchaseOrder extends OrgAction
@@ -25,6 +26,15 @@ class UpdateAgentSupplierPurchaseOrder extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
+
+    public const array MANAGEMENT_ONLY_FIELDS = [
+        'approved_ready_at',
+        'handed_over_at',
+        'qc_passed_at',
+        'compliance_complete_at',
+        'chs_excluded',
+        'chs_exclusion_reason',
+    ];
 
     private AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder;
 
@@ -46,7 +56,12 @@ class UpdateAgentSupplierPurchaseOrder extends OrgAction
             return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
         }
 
-        return $request->user()->authTo('supply-chain.edit');
+        $agentOrganisationId = $this->agentSupplierPurchaseOrder->supplier->agent?->organisation_id;
+
+        return $request->user()->authTo(array_filter([
+            'supply-chain.edit',
+            $agentOrganisationId ? "procurement.$agentOrganisationId.edit" : null,
+        ]));
     }
 
     public function rules(): array
@@ -69,7 +84,18 @@ class UpdateAgentSupplierPurchaseOrder extends OrgAction
             'balance_paid_at'          => ['sometimes', 'nullable', 'date'],
             'estimated_delivery_days'  => ['sometimes', 'nullable', 'integer', 'min:0'],
             'estimated_received_at'   => ['sometimes', 'nullable', 'date'],
+            'proposed_ready_at'        => ['sometimes', 'nullable', 'date'],
+            'approved_ready_at'        => ['sometimes', 'nullable', 'date'],
+            'handed_over_at'           => ['sometimes', 'nullable', 'date'],
+            'qc_passed_at'             => ['sometimes', 'nullable', 'date'],
+            'compliance_complete_at'   => ['sometimes', 'nullable', 'date'],
+            'chs_excluded'             => ['sometimes', 'boolean'],
+            'chs_exclusion_reason'     => ['sometimes', 'nullable', 'string'],
         ];
+
+        if (!$this->asAction && request()->user()->authorisedShopOrganisations()->doesntExist()) {
+            $rules = Arr::except($rules, self::MANAGEMENT_ONLY_FIELDS);
+        }
 
         if ($this->strict) {
             $rules['reference'][] = new IUnique(

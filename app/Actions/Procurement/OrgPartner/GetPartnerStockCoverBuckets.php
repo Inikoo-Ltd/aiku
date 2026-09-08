@@ -69,7 +69,8 @@ class GetPartnerStockCoverBuckets
             })
             ->leftJoin('org_stock_stats as s', 's.org_stock_id', 'os.id')
             ->where('p.organisation_id', $orgPartner->partner_id)
-            ->where('p.state', OrgStockStateEnum::ACTIVE->value);
+            ->where('p.state', OrgStockStateEnum::ACTIVE->value)
+            ->whereRaw('coalesce(os.is_on_demand, false) = false');
     }
 
     private function onShoppingListExpression(OrgPartner $orgPartner): string

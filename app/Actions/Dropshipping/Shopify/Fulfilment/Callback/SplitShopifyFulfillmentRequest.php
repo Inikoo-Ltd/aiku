@@ -3,15 +3,17 @@
 namespace App\Actions\Dropshipping\Shopify\Fulfilment\Callback;
 
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
+use App\Actions\Dropshipping\Shopify\WithShopifyPortfolioMatching;
 use App\Actions\OrgAction;
-use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Sentry;
 
 class SplitShopifyFulfillmentRequest extends OrgAction
 {
     use WithShopifyApi;
+    use WithShopifyPortfolioMatching;
 
     /**
      * @throws \Throwable
@@ -24,24 +26,38 @@ class SplitShopifyFulfillmentRequest extends OrgAction
             $lineItems = $fulfillmentOrder['lineItems']['edges'];
 
             $fulfillmentOrderItemsDefined = [];
+            $unmatchedLineItems           = [];
             foreach ($lineItems as $fulfillmentOrderItems) {
                 $lineItem = $fulfillmentOrderItems['node'];
-                $productId = Arr::get($lineItem, 'lineItem.product.id');
 
-                if (! $productId) {
+                $portfolio = $this->matchShopifyLineItemToPortfolio(
+                    $shopifyUser->customerSalesChannel,
+                    Arr::get($lineItem, 'lineItem.product.id'),
+                    Arr::get($lineItem, 'lineItem.variant.id'),
+                    Arr::get($lineItem, 'sku')
+                );
+
+                if (!$portfolio) {
+                    $unmatchedLineItems[] = [
+                        'sku'                => Arr::get($lineItem, 'sku'),
+                        'product_id'         => Arr::get($lineItem, 'lineItem.product.id'),
+                        'product_variant_id' => Arr::get($lineItem, 'lineItem.variant.id'),
+                    ];
+
                     continue;
                 }
 
-                /** @var Portfolio $portfolio */
-                $portfolio = $shopifyUser->customerSalesChannel->portfolios()
-                    ->where('platform_product_id', $productId)->exists();
+                $fulfillmentOrderItemsDefined[] = [
+                    'id' => $lineItem['id'],
+                    'quantity' => $lineItem['remainingQuantity']
+                ];
+            }
 
-                if ($portfolio) {
-                    $fulfillmentOrderItemsDefined[] = [
-                        'id' => $lineItem['id'],
-                        'quantity' => $lineItem['remainingQuantity']
-                    ];
-                }
+            if ($unmatchedLineItems) {
+                Log::info(
+                    'Shopify fulfillment request has line items outside the portfolio of customer sales channel '
+                    .$shopifyUser->customer_sales_channel_id.': '.json_encode($unmatchedLineItems)
+                );
             }
 
             $destination = isset($fulfillmentOrder['destination']);
@@ -119,6 +135,10 @@ class SplitShopifyFulfillmentRequest extends OrgAction
             ];
 
             list($status, $response) = $this->doPost($shopifyUser, $mutation, $variables);
+
+            if (!$status) {
+                return ['error' => $response];
+            }
 
             $body = $response['body']->toArray();
 

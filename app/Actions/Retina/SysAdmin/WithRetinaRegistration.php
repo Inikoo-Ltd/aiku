@@ -18,6 +18,7 @@ use App\Models\CRM\PollOption;
 use App\Models\Helpers\Country;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
+use App\Actions\Traits\WithPrepareTaxNumberValidation;
 use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cookie;
@@ -28,6 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
 trait WithRetinaRegistration
 {
     use SanitizeInputs;
+    use WithPrepareTaxNumberValidation;
 
     public function handle(array $modelData): void
     {
@@ -167,21 +169,7 @@ trait WithRetinaRegistration
         $this->set('traffic_sources', $request->cookie('aiku_tsd'));
         $this->set('session_id', $request->session()->getId());
 
-        if ($request->has('tax_number')) {
-            $taxNumberValue = (string)Arr::get($request->input('tax_number'), 'value');
-            if ($taxNumberValue) {
-                $countryCode   = Arr::get($request->input('tax_number'), 'country.isoCode.short');
-                $country       = Country::where('code', $countryCode)->first();
-                $taxNumberData = [
-                    'number'     => strip_tags((string)Arr::get($request->input('tax_number'), 'value')),
-                    'country_id' => $country?->id,
-                ];
-            } else {
-                $taxNumberData = null;
-            }
-
-            $this->set('tax_number', $taxNumberData);
-        }
+        $this->prepareTaxNumberInput($request);
     }
 
 

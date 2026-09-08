@@ -54,6 +54,20 @@ class EditArtefact extends OrgAction
     }
 
 
+    private function getTagRoutes(Artefact $artefact): array
+    {
+        $parameters = ['artefact' => $artefact->id];
+
+        return [
+            'index_tag'  => ['name' => 'grp.json.artefacts.tags.index', 'parameters' => $parameters],
+            'store_tag'  => ['name' => 'grp.models.artefact.tags.store', 'parameters' => $parameters],
+            'update_tag' => ['name' => 'grp.models.artefact.tags.update', 'parameters' => $parameters, 'method' => 'patch'],
+            'delete_tag' => ['name' => 'grp.models.artefact.tags.delete', 'parameters' => $parameters, 'method' => 'delete'],
+            'attach_tag' => ['name' => 'grp.models.artefact.tags.attach', 'parameters' => $parameters, 'method' => 'post'],
+            'detach_tag' => ['name' => 'grp.models.artefact.tags.detach', 'parameters' => $parameters, 'method' => 'delete'],
+        ];
+    }
+
     public function htmlResponse(Artefact $artefact, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -62,9 +76,21 @@ class EditArtefact extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Edit artefact'),
+                'title'       => __('Edit artefact') . ' ' . $artefact->code,
                 'pageHead'    => [
-                    'title'     => __('Edit artefact'),
+                    'icon'      => ['fal', 'fa-hamsa'],
+                    'model' => __('Edit Artefact'),
+                    'title'     => $artefact->name,
+                    'actions'   => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'exitEdit',
+                            'route' => [
+                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ]
+                    ],
                     // 'actions'   => [
                     //     [
                     //         'type'  => 'button',
@@ -101,6 +127,29 @@ class EditArtefact extends OrgAction
                                     'value'    => $artefact->recommended_batch_size,
                                     'required' => false
                                 ],
+                                'artefact_family_id' => [
+                                    'type'       => 'select_infinite',
+                                    'label'      => __('Family'),
+                                    'options'    => array_filter([
+                                        $artefact->artefactFamily ? ['id' => $artefact->artefactFamily->id, 'name' => $artefact->artefactFamily->name] : null,
+                                    ]),
+                                    'fetchRoute' => [
+                                        'name'       => 'grp.json.production.artefact_families.index',
+                                        'parameters' => ['production' => $artefact->production_id]
+                                    ],
+                                    'valueProp' => 'id',
+                                    'labelProp' => 'name',
+                                    'required'  => false,
+                                    'value'     => $artefact->artefact_family_id,
+                                ],
+                                'tags' => [
+                                    'type'                   => 'tags-trade-unit',
+                                    'label'                  => __('Tags'),
+                                    'value'                  => $artefact->tags->pluck('id')->toArray(),
+                                    'tag_routes'             => $this->getTagRoutes($artefact),
+                                    'noSaveButton'           => true,
+                                    'isWithRefreshFieldForm' => true
+                                ],
                                 'trade_unit_id' => [
                                     'type'       => 'select_infinite',
                                     'label'      => __('Trade unit'),
@@ -125,7 +174,7 @@ class EditArtefact extends OrgAction
                                     'fetchRoute' => [
                                         'name'       => 'grp.json.org_stocks.index',
                                         'parameters' => [
-                                            'organisation' => $artefact->organisation->slug,
+                                            'organisation' => $artefact->organisation->id,
                                         ]
                                     ],
                                     'valueProp' => 'id',

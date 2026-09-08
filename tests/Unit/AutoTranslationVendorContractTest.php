@@ -118,3 +118,44 @@ it('strips an echoed newline only when the source proves it cannot be a literal'
        guard that gates the historic repair must keep refusing it. */
     expect(App\Actions\Helpers\Translations\Translate::hasOnlyJsonEchoEscapes('line\nbreak'))->toBeFalse();
 });
+
+class BrokenTranslationDriver implements TranslationDriver
+{
+    public function __construct(public array $config)
+    {
+    }
+
+    public function translate(array $texts, string $sourceLang, string $targetLang): array
+    {
+        throw new RuntimeException('engine down');
+    }
+}
+
+it('falls back to the source text on engine failure, but the interactive button gets an error', function () {
+    config()->set('auto-translations.drivers.broken', ['class' => BrokenTranslationDriver::class]);
+    $english = App\Models\Helpers\Language::firstWhere('code', 'en');
+    $polish  = App\Models\Helpers\Language::firstWhere('code', 'pl');
+    $text    = 'hello '.uniqid();
+
+    expect(App\Actions\Helpers\Translations\Translate::make()->handle($text, $english, $polish, 'broken'))->toBe($text);
+
+    expect(fn () => App\Actions\Helpers\Translations\Translate::make()->handle($text, $english, $polish, 'broken', throwOnFailure: true))
+        ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
+});
+
+it('sends the batch to ChatGPT as a json object, never a list', function () {
+    Illuminate\Support\Facades\Http::fake([
+        'api.openai.com/*' => Illuminate\Support\Facades\Http::response([
+            'choices' => [['message' => ['content' => '{"0":"bonjour","1":"monde"}']]],
+        ]),
+    ]);
+
+    $translated = (new App\Actions\Helpers\Translations\ChatGPT5Driver(['api_key' => 'x', 'max_tokens' => 16384]))
+        ->translate(['a' => 'hello', 'b' => 'world'], 'en', 'fr');
+
+    expect($translated)->toBe(['a' => 'bonjour', 'b' => 'monde']);
+
+    Illuminate\Support\Facades\Http::assertSent(function (Illuminate\Http\Client\Request $request) {
+        return $request['messages'][1]['content'] === '{"0":"hello","1":"world"}';
+    });
+});

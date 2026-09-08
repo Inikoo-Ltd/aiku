@@ -165,7 +165,7 @@ class GetSectionRoute extends OrgAction
     {
         $sectionCode = match (true) {
             str_starts_with($route, 'crafts') => AikuSectionEnum::PRODUCTION_CRAFT,
-            str_starts_with($route, 'operations') => AikuSectionEnum::PRODUCTION_OPERATION,
+            str_starts_with($route, 'operations'), str_starts_with($route, 'artisans') => AikuSectionEnum::PRODUCTION_OPERATION,
             default => null,
         };
 

@@ -21,6 +21,7 @@ use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\HydrateCustomers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\StoreCustomer;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\CRM\Customer\SyncCustomersToGoogleAds;
 use App\Actions\CRM\Customer\UpdateCustomer;
@@ -49,6 +50,9 @@ use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\HydrateWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
+use App\Actions\Maintenance\CRM\RepairTaxNumbersGuessedAsAustralia;
+use App\Actions\Web\Website\LaunchWebsite;
+use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Actions\Helpers\TaxNumber\ValidateEuropeanTaxNumber;
 use App\Actions\Ordering\Order\ResetCustomerOrdersTaxCategory;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -67,6 +71,7 @@ use App\Enums\CRM\Prospect\ProspectContactedStateEnum;
 use App\Enums\CRM\Prospect\ProspectFailStatusEnum;
 use App\Enums\CRM\Prospect\ProspectStateEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
+use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberValidationTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Analytics\AikuScopedSection;
@@ -81,6 +86,7 @@ use App\Models\CRM\PollOption;
 use App\Models\CRM\PollReply;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
+use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Models\Ordering\Order;
 use App\Models\Web\Website;
@@ -98,6 +104,8 @@ use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
+use function Pest\Laravel\post;
 
 beforeAll(function () {
     loadDB();
@@ -811,6 +819,32 @@ test('UI edit customer', function () {
     });
 });
 
+test('external shop customer: edit form is tax number only and update ignores every other field', function () {
+    $customer     = Customer::first();
+    $originalType = $this->shop->type;
+    $originalName = $customer->contact_name;
+    $this->shop->update(['type' => ShopTypeEnum::EXTERNAL]);
+
+    get(route('grp.org.shops.show.crm.customers.edit', [$this->organisation->slug, $this->shop->slug, $customer->slug]))
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->component('EditModel')
+                ->has('formData.blueprint', 1)
+                ->has('formData.blueprint.0.fields', 1)
+                ->has('formData.blueprint.0.fields.tax_number')
+        );
+
+    patch(route('grp.models.customer.update', [$customer->id]), [
+        'contact_name' => 'Faire does not know this name',
+        'tax_number'   => ['number' => 'GB123456789', 'country_code' => 'GB'],
+    ])->assertStatus(302);
+
+    $customer->refresh();
+    expect($customer->contact_name)->toBe($originalName)
+        ->and($customer->taxNumber?->number)->toBe('GB123456789');
+
+    $this->shop->update(['type' => $originalType]);
+});
 
 test('UI Index customer web users', function () {
     $customer = Customer::first();
@@ -1328,9 +1362,11 @@ test('sync customers to google ads uploads hashed identifiers', function () {
 
     $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     $customer->update(['email' => 'match@example.com', 'phone' => '+447911123456']);
+    $customer->comms()->update(['is_subscribed_to_marketing' => true]);
 
     $eligibleCustomersCount = $this->shop->customers()
         ->where(fn ($query) => $query->whereNotNull('email')->orWhereNotNull('phone'))
+        ->whereHas('comms', fn ($q) => $q->where('is_subscribed_to_marketing', true)->where('is_suspended', false))
         ->count();
 
     Http::fake([
@@ -1341,7 +1377,7 @@ test('sync customers to google ads uploads hashed identifiers', function () {
     $result = SyncCustomersToGoogleAds::make()->handle($this->shop);
 
     expect($result['uploaded'])->toBe($eligibleCustomersCount)
-        ->and($result['request_ids'])->toBe(['req-1']);
+        ->and($result['request_ids'])->toContain('req-1');
 
     Http::assertSent(fn ($request) => $request->url() === 'https://oauth2.googleapis.com/token'
         && $request['refresh_token'] === 'refresh-token'
@@ -1368,6 +1404,80 @@ test('sync customers to google ads uploads hashed identifiers', function () {
             && $request['termsOfService']['customerMatchTermsOfServiceStatus'] === 'ACCEPTED'
             && $matchedMember !== null;
     });
+});
+
+test('sync customers to google ads filters by marketing consent and removes unsubscribed', function () {
+    Config::set('services.google_ads.client_id', 'client-id');
+    Config::set('services.google_ads.client_secret', 'client-secret');
+
+    $this->shop->update([
+        'settings' => array_merge($this->shop->settings ?? [], [
+            'google_ads' => [
+                'refresh_token' => 'refresh-token',
+                'customer_id'   => '123-456-7890',
+                'user_list_id'  => '999',
+            ],
+        ]),
+    ]);
+
+    $subscribedCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $subscribedCustomer->update(['email' => 'subscribed@example.com', 'phone' => null]);
+    $subscribedCustomer->comms()->update(['is_subscribed_to_marketing' => true]);
+
+    $unsubscribedCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $unsubscribedCustomer->update(['email' => 'unsubscribed@example.com', 'phone' => null]);
+    $unsubscribedCustomer->comms()->update(['is_subscribed_to_marketing' => false]);
+
+    $eligibleComms = fn ($q) => $q->where('is_subscribed_to_marketing', true)->where('is_suspended', false);
+
+    $expectedUploaded = $this->shop->customers()
+        ->where(fn ($query) => $query->whereNotNull('email')->orWhereNotNull('phone'))
+        ->whereHas('comms', $eligibleComms)
+        ->count();
+
+    $expectedRemoved = $this->shop->customers()
+        ->where(fn ($query) => $query->whereNotNull('email')->orWhereNotNull('phone'))
+        ->whereDoesntHave('comms', $eligibleComms)
+        ->count();
+
+    Http::fake([
+        'oauth2.googleapis.com/*'      => Http::response(['access_token' => 'fake-access-token']),
+        'datamanager.googleapis.com/*' => Http::response(['requestId' => 'req-1']),
+    ]);
+
+    $result = SyncCustomersToGoogleAds::make()->handle($this->shop);
+
+    expect($result['uploaded'])->toBe($expectedUploaded)->toBeGreaterThan(0)
+        ->and($result['removed'])->toBe($expectedRemoved)->toBeGreaterThan(0);
+
+    Http::assertSent(function ($request) {
+        if ($request->url() !== 'https://datamanager.googleapis.com/v1/audienceMembers:ingest') {
+            return false;
+        }
+
+        $identifiers = collect($request['audienceMembers'])->flatMap(fn ($member) => $member['compositeData']['userData']['userIdentifiers']);
+
+        return $identifiers->contains('emailAddress', hash('sha256', 'subscribed@example.com'))
+            && !$identifiers->contains('emailAddress', hash('sha256', 'unsubscribed@example.com'));
+    });
+
+    Http::assertSent(function ($request) {
+        if ($request->url() !== 'https://datamanager.googleapis.com/v1/audienceMembers:remove') {
+            return false;
+        }
+
+        $identifiers = collect($request['audienceMembers'])->flatMap(fn ($member) => $member['compositeData']['userData']['userIdentifiers']);
+
+        return $identifiers->contains('emailAddress', hash('sha256', 'unsubscribed@example.com'))
+            && !$identifiers->contains('emailAddress', hash('sha256', 'subscribed@example.com'))
+            && !array_key_exists('termsOfService', $request->data());
+    });
+
+    $this->shop->refresh();
+
+    expect(Arr::get($this->shop->settings, 'google_ads.last_sync.uploaded'))->toBe($expectedUploaded)
+        ->and(Arr::get($this->shop->settings, 'google_ads.last_sync.removed'))->toBe($expectedRemoved)
+        ->and(Arr::get($this->shop->settings, 'google_ads.last_sync.at'))->not->toBeNull();
 });
 
 describe('EU VAT re-validation (HELP-2374)', function () {
@@ -1403,6 +1513,15 @@ describe('EU VAT re-validation (HELP-2374)', function () {
         ValidateEuropeanTaxNumber::make()->scheduleRechecks($taxNumber);
 
         Queue::assertNothingPushed();
+    });
+
+    test('only INVALID_INPUT VIES faults mark a number invalid', function () {
+        $action = ValidateEuropeanTaxNumber::make();
+
+        expect($action->isMalformedNumberFault('INVALID_INPUT'))->toBeTrue()
+            ->and($action->isMalformedNumberFault('MS_MAX_CONCURRENT_REQ'))->toBeFalse()
+            ->and($action->isMalformedNumberFault('MS_UNAVAILABLE'))->toBeFalse()
+            ->and($action->isMalformedNumberFault('SERVICE_UNAVAILABLE'))->toBeFalse();
     });
 
     test('implausible EU tax numbers are not re-checked', function () use ($storeTaxNumber) {
@@ -1527,3 +1646,66 @@ test('store customer from shopify dedups on external id', function (Customer $cu
             Customer::where('shop_id', $this->shop->id)->where('external_id', '987654321')->count()
         )->toBe(1);
 })->depends('store customer from shopify payload');
+
+test('web registration files the tax number under the contact address country, not the browser guess', function () {
+    if ($this->website->state != WebsiteStateEnum::LIVE) {
+        LaunchWebsite::make()->action($this->website);
+    }
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($this->website);
+    $italy = Country::where('code', 'IT')->first();
+
+    auth()->logout();
+    post(route('retina.register_from_standalone.store'), [
+        'contact_name'    => 'Ylenia Test',
+        'company_name'    => 'Arcana Test',
+        'email'           => 'registration-tax@example.com',
+        'password'        => 'password',
+        'is_opt_in'       => true,
+        'contact_address' => array_merge(Address::factory()->definition(), ['country_id' => $italy->id, 'country_code' => 'IT']),
+        'tax_number'      => ['number' => '04851400400'],
+    ]);
+
+    $customer = Customer::where('email', 'registration-tax@example.com')->firstOrFail();
+    expect($customer->taxNumber->country_code)->toBe('IT')
+        ->and($customer->taxNumber->number)->toBe('04851400400');
+});
+
+test('a picked tax number country wins over the customer address country', function () {
+    $customer = StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), [
+        'contact_address' => array_merge(Address::factory()->definition(), ['country_id' => Country::where('code', 'IT')->first()->id, 'country_code' => 'IT']),
+    ]));
+
+    patch(route('grp.models.customer.update', [$customer->id]), [
+        'tax_number' => ['number' => 'FR12345678901', 'country_code' => 'FR'],
+    ])->assertStatus(302);
+
+    expect($customer->refresh()->taxNumber->country_code)->toBe('FR');
+});
+
+test('posting a tax number with no country and no address country is rejected', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $customer->address->update(['country_id' => null, 'country_code' => null]);
+
+    patch(route('grp.models.customer.update', [$customer->id]), [
+        'tax_number' => ['number' => '04851400400'],
+    ])->assertSessionHasErrors('tax_number');
+
+    expect($customer->refresh()->taxNumber)->toBeNull();
+});
+
+test('repair moves never-validated australian tax numbers to the customer country', function () {
+    $italy    = Country::where('code', 'IT')->first();
+    $customer = StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), [
+        'contact_address' => array_merge(Address::factory()->definition(), ['country_id' => $italy->id, 'country_code' => 'IT']),
+    ]));
+    StoreTaxNumber::run($customer, ['number' => '04851400400', 'country_id' => Country::where('code', 'AU')->first()->id], false);
+    expect($customer->refresh()->taxNumber->country_code)->toBe('AU');
+
+    $repair = RepairTaxNumbersGuessedAsAustralia::make();
+    $row    = $repair->query()->where('tax_numbers.owner_id', $customer->id)->first();
+    $repair->handle($row, $row->address_country_id);
+
+    expect($customer->refresh()->taxNumber->country_code)->toBe('IT')
+        ->and($customer->taxNumber->status)->not->toBe(TaxNumberStatusEnum::UNKNOWN)
+        ->and($repair->query()->where('tax_numbers.owner_id', $customer->id)->exists())->toBeFalse();
+});

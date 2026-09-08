@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgPartner\UI;
 
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -40,8 +41,8 @@ class GetPartnerMiniCart
         return [
             'partner_name' => $orgPartner->partner->name,
             'count'      => $orgPartner->stats->number_open_shopping_list_items,
-            'total'      => (float) $orgPartner->stats->open_shopping_list_items_value,
-            'currency'   => $orgPartner->partner->currency->code,
+            'total'      => round((float) $orgPartner->stats->open_shopping_list_items_value * $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner), 2),
+            'currency'   => $orgPartner->organisation->currency->code,
             'items'      => $items,
             'listRoute'  => [
                 'name'       => 'grp.org.procurement.org_partners.show.shopping_list.index',

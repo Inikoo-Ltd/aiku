@@ -1,0 +1,442 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Aiku Platform Architecture",
+    "output": "aiku-architecture.html",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1180,
+      704
+    ],
+    "views": [
+      {
+        "id": "request-path",
+        "label": "Request path",
+        "focus": [
+          "grp",
+          "retina",
+          "iris",
+          "pupil",
+          "aikuPublic",
+          "apiClients",
+          "haproxy",
+          "varnish",
+          "app",
+          "postgres"
+        ],
+        "note": "HAProxy is the TLS edge for every front end; only iris page GETs fall through Varnish."
+      },
+      {
+        "id": "async-work",
+        "label": "Queues and integrations",
+        "focus": [
+          "app",
+          "redis",
+          "horizon",
+          "channels",
+          "aurora"
+        ],
+        "note": "Redis carries the queue; Horizon workers drive channel sync and the Aurora import."
+      },
+      {
+        "id": "read-side",
+        "label": "Search and realtime",
+        "focus": [
+          "app",
+          "typesense",
+          "soketi",
+          "grp"
+        ],
+        "note": "Scout indexes into Meilisearch; Soketi pushes broadcast events back to the browser."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "grp",
+      "type": "frontend",
+      "label": "grp",
+      "sublabel": "Staff back office",
+      "tag": "Inertia + Vue 3",
+      "pos": [
+        40,
+        70
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "retina",
+      "type": "frontend",
+      "label": "retina",
+      "sublabel": "Customer portal",
+      "pos": [
+        40,
+        155
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "iris",
+      "type": "frontend",
+      "label": "iris",
+      "sublabel": "Public webshops",
+      "tag": "SSR",
+      "pos": [
+        40,
+        240
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "pupil",
+      "type": "frontend",
+      "label": "pupil",
+      "sublabel": "Shopify embedded app",
+      "pos": [
+        40,
+        325
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "aikuPublic",
+      "type": "frontend",
+      "label": "aiku-public",
+      "sublabel": "aiku.io site, docs, blog",
+      "pos": [
+        40,
+        410
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "apiClients",
+      "type": "external",
+      "label": "api.aiku.io",
+      "sublabel": "Retina API + MCP",
+      "pos": [
+        40,
+        495
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "soketi",
+      "type": "messagebus",
+      "label": "Soketi",
+      "sublabel": "Pusher protocol :443",
+      "pos": [
+        250,
+        90
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "varnish",
+      "type": "cloud",
+      "label": "Varnish",
+      "sublabel": "iris page cache",
+      "pos": [
+        250,
+        400
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "app",
+      "type": "backend",
+      "label": "Aiku Laravel app",
+      "sublabel": "PHP 8.4 on Octane / RoadRunner",
+      "tag": "Actions per domain",
+      "pos": [
+        480,
+        240
+      ],
+      "size": [
+        170,
+        80
+      ]
+    },
+    {
+      "id": "typesense",
+      "type": "database",
+      "label": "Typesense",
+      "sublabel": "Scout index",
+      "pos": [
+        720,
+        90
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL",
+      "sublabel": "aiku primary",
+      "pos": [
+        720,
+        255
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Redis",
+      "sublabel": "cache + queue",
+      "pos": [
+        480,
+        410
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "horizon",
+      "type": "backend",
+      "label": "Horizon workers",
+      "sublabel": "hydrators, jobs",
+      "pos": [
+        720,
+        410
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "channels",
+      "type": "external",
+      "label": "Sales channels & carriers",
+      "sublabel": "Shopify, Faire, Wix, payments, mail",
+      "pos": [
+        950,
+        406
+      ],
+      "size": [
+        170,
+        72
+      ]
+    },
+    {
+      "id": "aurora",
+      "type": "external",
+      "label": "Aurora legacy",
+      "sublabel": "source organisations",
+      "pos": [
+        40,
+        600
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "haproxy",
+      "type": "cloud",
+      "label": "HAProxy",
+      "sublabel": "TLS edge, routing ACLs",
+      "pos": [
+        250,
+        240
+      ],
+      "size": [
+        140,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Aiku production estate",
+      "wraps": [
+        "soketi",
+        "haproxy",
+        "varnish",
+        "app",
+        "typesense",
+        "postgres",
+        "redis",
+        "horizon"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "grp-edge",
+      "from": "grp",
+      "to": "haproxy"
+    },
+    {
+      "id": "retina-edge",
+      "from": "retina",
+      "to": "haproxy"
+    },
+    {
+      "id": "iris-edge",
+      "from": "iris",
+      "to": "haproxy"
+    },
+    {
+      "id": "pupil-edge",
+      "from": "pupil",
+      "to": "haproxy"
+    },
+    {
+      "id": "public-edge",
+      "from": "aikuPublic",
+      "to": "haproxy"
+    },
+    {
+      "id": "api-edge",
+      "from": "apiClients",
+      "to": "haproxy",
+      "label": "Sanctum token",
+      "labelAt": [
+        215,
+        550
+      ]
+    },
+    {
+      "id": "edge-app",
+      "from": "haproxy",
+      "to": "app",
+      "label": "app requests",
+      "variant": "emphasis"
+    },
+    {
+      "id": "edge-varnish",
+      "from": "haproxy",
+      "to": "varnish",
+      "label": "iris cacheable GETs",
+      "labelDy": 42
+    },
+    {
+      "id": "varnish-app",
+      "from": "varnish",
+      "to": "app",
+      "label": "cache miss",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "app-sql",
+      "from": "app",
+      "to": "postgres",
+      "label": "SQL",
+      "labelDy": 16
+    },
+    {
+      "id": "app-search",
+      "from": "app",
+      "to": "typesense",
+      "label": "index + search"
+    },
+    {
+      "id": "app-broadcast",
+      "from": "app",
+      "to": "soketi",
+      "label": "broadcast",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "right"
+    },
+    {
+      "id": "soketi-browser",
+      "from": "soketi",
+      "to": "grp",
+      "label": "websocket",
+      "variant": "dashed"
+    },
+    {
+      "id": "app-redis",
+      "from": "app",
+      "to": "redis",
+      "label": "cache + enqueue",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "redis-horizon",
+      "from": "redis",
+      "to": "horizon",
+      "label": "jobs"
+    },
+    {
+      "id": "horizon-channels",
+      "from": "horizon",
+      "to": "channels",
+      "label": "sync stock, orders, mail",
+      "labelDy": -34
+    },
+    {
+      "id": "aurora-import",
+      "from": "aurora",
+      "to": "horizon",
+      "label": "fetch + transfer"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Front ends",
+      "items": [
+        "Six Inertia/Vue fronts: grp, retina, iris, pupil, aiku-public, API",
+        "HAProxy fronts all hosts; Varnish caches iris pages only"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Application",
+      "items": [
+        "Single Laravel 12 codebase on Octane",
+        "Scout indexes into Typesense; Redis for cache and queue"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Async and edges",
+      "items": [
+        "Horizon drains hydrators and channel jobs",
+        "Shopify, Faire, Wix, payment and carrier APIs"
+      ]
+    }
+  ]
+}

@@ -17,6 +17,7 @@ use App\Models\Fulfilment\RecurringBillTransaction;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairFulfilmentInvoiceMissingPalletData
 {
@@ -103,6 +104,7 @@ class RepairFulfilmentInvoiceMissingPalletData
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         if ($command->argument('invoice_id')) {
             $invoice = Invoice::find($command->argument('invoice_id'));
             $this->handle($command, $invoice);

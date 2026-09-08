@@ -244,7 +244,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                                     icon="fas fa-plus"
                                 />
                                 <Button
-                                    v-else
+                                    v-else-if="data?.shortcut?.order?.number_manual_channels > 1"
                                     @click="isModalCreateManualOrder = true"
                                     :label="trans('Create manual Orders')"
                                     full

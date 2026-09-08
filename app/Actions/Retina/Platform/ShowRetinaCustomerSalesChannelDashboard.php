@@ -108,6 +108,13 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform,
             'platform_status'         => $platformStatus,
+            'fetch_orders_route'      => $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL ? null : [
+                'name'       => 'retina.models.customer_sales_channel.fetch_orders',
+                'parameters' => [
+                    'customerSalesChannel' => $customerSalesChannel->id,
+                ],
+                'method'     => 'post',
+            ],
             'stock_update_notice'     => $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL ? null : [
                 'enabled'    => (bool)$customerSalesChannel->stock_update,
                 'edit_route' => [
@@ -118,6 +125,8 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                     ]
                 ]
             ],
+            'ebay_registration_notice' => $customerSalesChannel->platform->type == PlatformTypeEnum::EBAY
+                && Arr::get($customerSalesChannel->user?->data, 'seller_registration_completed') === false,
             'ebay_seller_notice'      => $customerSalesChannel->platform->type == PlatformTypeEnum::EBAY && !in_array('ebay_seller', Arr::get($customerSalesChannel->settings, 'dismissed_notices', [])) ? [
                 'dismiss_route' => [
                     'name'       => 'retina.models.customer_sales_channel.dismiss_notice',

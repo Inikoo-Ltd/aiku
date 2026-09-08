@@ -36,8 +36,8 @@ class CallbackRetinaEbayUser extends RetinaAction
      */
     public function handle(Customer $customer, array $modelData): string
     {
-
-        $config = $this->getEbayConfig();
+        $this->customer = $customer;
+        $config         = $this->getEbayConfig();
 
         try {
             $response = Http::asForm()->withHeaders([
@@ -72,7 +72,9 @@ class CallbackRetinaEbayUser extends RetinaAction
                         ]
                     ]);
 
-                CheckEbayChannel::run($ebayUser);
+                ReconnectEbayChannel::run($ebayUser);
+
+                CheckEbayChannel::run($ebayUser->refresh());
 
                 $routeName = match ($ebayUser->customer->is_fulfilment) {
                     true => 'retina.fulfilment.dropshipping.customer_sales_channels.show',

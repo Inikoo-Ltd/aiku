@@ -14,6 +14,7 @@ use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Shop\BreakShopPricesCache;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoDescription;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
@@ -258,6 +259,8 @@ class UpdateProduct extends OrgAction
                 ]
             ]);
 
+            ShopHydrateProductsWithNoDescription::dispatch($product->shop)->delay($this->hydratorsDelay);
+
             if ($product->master_product_id) {
                 MasterAssetHydrateMissingChildDescription::dispatch(
                     MasterAsset::find($product->master_product_id)
@@ -469,7 +472,7 @@ class UpdateProduct extends OrgAction
                 'sometimes',
                 'nullable',
                 'integer',
-                Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
+                Rule::exists('customers', 'id')->where('shop_id', $this->shop->id)
             ],
 
             'name_i8n'              => ['sometimes', 'array'],

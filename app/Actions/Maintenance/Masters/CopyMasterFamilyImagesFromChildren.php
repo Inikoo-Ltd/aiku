@@ -14,6 +14,7 @@ use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class CopyMasterFamilyImagesFromChildren
 {
@@ -101,6 +102,7 @@ class CopyMasterFamilyImagesFromChildren
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $fromShop = MasterShop::where('slug', $command->argument('master'))->firstOrFail();
 
         $this->handle($fromShop, $command);

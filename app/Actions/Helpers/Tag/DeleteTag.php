@@ -14,6 +14,7 @@ use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
+use App\Models\Production\Artefact;
 use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Http\RedirectResponse;
@@ -25,6 +26,13 @@ class DeleteTag extends OrgAction
     public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request): void
     {
         $this->initialisationFromGroup($tradeUnit->group, $request);
+
+        $this->handle($tag);
+    }
+
+    public function inArtefact(Artefact $artefact, Tag $tag, ActionRequest $request): void
+    {
+        $this->initialisationFromGroup($artefact->group, $request);
 
         $this->handle($tag);
     }
@@ -95,6 +103,8 @@ class DeleteTag extends OrgAction
         if (!empty($tag->tradeUnits())) {
             $tag->tradeUnits()->detach();
         }
+
+        $tag->artefacts()->detach();
 
         if (!empty($tag->customers())) {
             $tag->customers()->detach();

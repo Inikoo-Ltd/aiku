@@ -12,6 +12,7 @@ use App\Models\Inventory\GroupStockHistory;
 use App\Models\Inventory\OrganisationStockHistory;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class CreateMissingGroupStockHistories
 {
@@ -26,6 +27,7 @@ class CreateMissingGroupStockHistories
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
 
         $command->info('Creating missing group stock histories');
         foreach (OrganisationStockHistory::all() as $organisationStockHistory) {

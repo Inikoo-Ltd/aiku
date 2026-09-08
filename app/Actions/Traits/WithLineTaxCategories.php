@@ -15,6 +15,7 @@ use App\Models\Helpers\TaxCategory;
 use App\Models\Masters\MasterAsset;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -249,7 +250,7 @@ trait WithLineTaxCategories
 
         if (empty($taxRows)) {
             $taxRows[] = [
-                'label'       => __('Tax').' ('.$order->taxCategory->getLocalizedName().')',
+                'label'       => __('Tax'),
                 'information' => '',
                 'price_total' => $order->tax_amount,
             ];
@@ -351,6 +352,41 @@ trait WithLineTaxCategories
                 ->get(['tax_category_id', 'net_amount']),
             $invoice->amount_off
         );
+    }
+
+    /**
+     * What a document shows must add up to its own total. The rows are derived from the lines,
+     * the totals are a stored header written when the document was issued; when the two disagree
+     * (an invoice already declared with a wrong header, HELP-3081) the header wins on the page,
+     * the caller falls back to the single stored figure, and the mismatch is logged so it is
+     * found and repaired rather than quietly displayed.
+     *
+     * @param  array<int, array{tax_category_id: int, name: string, rate: float, net_amount: float, tax_amount: float}>  $breakdown
+     *
+     * @return array<int, array{tax_category_id: int, name: string, rate: float, net_amount: float, tax_amount: float}>
+     */
+    public function breakdownMatchingHeader(array $breakdown, Order|Invoice $document): array
+    {
+        if (!$breakdown) {
+            return $breakdown;
+        }
+
+        $rowsTax = round(array_sum(array_column($breakdown, 'tax_amount')), 2);
+        $rowsNet = round(array_sum(array_column($breakdown, 'net_amount')), 2);
+
+        if (abs($rowsTax - (float)$document->tax_amount) > 0.01 || abs($rowsNet - (float)$document->net_amount) > 0.01) {
+            Log::warning('Tax rows do not add up to the stored header', [
+                'document'   => class_basename($document).' '.$document->id,
+                'header_net' => $document->net_amount,
+                'header_tax' => $document->tax_amount,
+                'rows_net'   => $rowsNet,
+                'rows_tax'   => $rowsTax,
+            ]);
+
+            return [];
+        }
+
+        return $breakdown;
     }
 
     /**

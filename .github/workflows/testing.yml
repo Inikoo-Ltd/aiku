@@ -4,6 +4,10 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+concurrency:
+  group: backend_tests_${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   HOME: /home/aiku_test
 
@@ -39,7 +43,8 @@ jobs:
           MIGRATIONS_HASH=$(git ls-files -s database/migrations database/seeders | git hash-object --stdin)
           if [ ! -f ../../../../artifacts/aiku.dump ] || [ "$MIGRATIONS_HASH" != "$(cat ../../../../artifacts/aiku.dump.migrations_hash 2>/dev/null)" ]; then
             ./generate_testing_db_dumps.sh php8.4 aiku_test
-            cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/
+            cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/aiku.dump.tmp
+            mv ../../../../artifacts/aiku.dump.tmp ../../../../artifacts/aiku.dump
             echo "$MIGRATIONS_HASH" > ../../../../artifacts/aiku.dump.migrations_hash
           else
             echo "Migrations unchanged, reusing cached aiku.dump"

@@ -875,7 +875,7 @@ const hasDirtyDeliveryNoteItem = computed(() => {
 });
 
 const hasPickedMoreThanRequired = computed(() => {
-    return Object.values(props.data?.data ?? {}).some((item: any) => item.quantity_picked > item.quantity_required)
+    return Object.values(props.data?.data ?? {}).some((item: any) => parseFloat(item.quantity_picked) > parseFloat(item.quantity_required))
 })
 
 const warningMsg = computed(() => {
@@ -922,7 +922,7 @@ const warningMsg = computed(() => {
             if (item.is_dirty) {
                 return '!bg-[#fff6db]'
             }
-            if (item.quantity_picked > item.quantity_required) {
+            if (parseFloat(item.quantity_picked) > parseFloat(item.quantity_required)) {
                 return '!bg-[#f5463d66]'
             }
             return ''

@@ -10,6 +10,8 @@ namespace App\Actions\Production\ManufactureTaskSession;
 
 use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Actions\OrgAction;
+use App\Actions\Production\JobOrder\ConfirmJobOrder;
+use App\Actions\Production\JobOrderItemTask\UI\ShowManufactureFloor;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
@@ -25,7 +27,19 @@ class StartManufactureTaskSession extends OrgAction
 {
     public function handle(User $user, JobOrderItemTask $jobOrderItemTask): ManufactureTaskSession
     {
-        if ($jobOrderItemTask->jobOrder()->first()->state != JobOrderStateEnum::CONFIRMED) {
+        $employee = GetUserCurrentEmployee::run($user, $jobOrderItemTask->organisation_id);
+        $jobOrder = $jobOrderItemTask->jobOrder()->first();
+        $isMine   = $employee && $jobOrder->employee_id == $employee->id;
+
+        if (!$isMine && !ShowManufactureFloor::canPickOpenJobs($user, $jobOrderItemTask->production)) {
+            throw ValidationException::withMessages([
+                'job_order_item_task_id' => __('This job is not addressed to you'),
+            ]);
+        }
+
+        if ($jobOrder->state == JobOrderStateEnum::IN_PROCESS && $isMine) {
+            ConfirmJobOrder::make()->action($jobOrder);
+        } elseif ($jobOrder->state != JobOrderStateEnum::CONFIRMED) {
             throw ValidationException::withMessages([
                 'job_order_item_task_id' => __('This job order has not been released to the floor'),
             ]);
@@ -47,7 +61,7 @@ class StartManufactureTaskSession extends OrgAction
             'job_order_item_task_id' => $jobOrderItemTask->id,
             'manufacture_task_id'    => $jobOrderItemTask->manufacture_task_id,
             'user_id'                => $user->id,
-            'employee_id'            => GetUserCurrentEmployee::run($user, $jobOrderItemTask->organisation_id)?->id,
+            'employee_id'            => $employee?->id,
             'state'                  => ManufactureTaskSessionStateEnum::OPEN,
             'started_at'             => now(),
         ]);

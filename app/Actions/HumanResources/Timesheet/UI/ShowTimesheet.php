@@ -79,11 +79,22 @@ class ShowTimesheet extends OrgAction
                             'parameters' => $request->route()->originalParameters()
                         ]
                     ] : false,
+                    'actions' => $this->parent instanceof Organisation && $timesheet->subject instanceof Employee ? [
+                        [
+                            'type'  => 'button',
+                            'style' => 'tertiary',
+                            'icon'  => 'fal fa-user-hard-hat',
+                            'label' => __('View employee'),
+                            'route' => [
+                                'name'       => 'grp.org.hr.employees.show',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'employee'     => $timesheet->subject->slug,
+                                ],
+                            ],
+                        ],
+                    ] : [],
                 ],
-                'delete_route' => $this->canEdit ? [
-                    'name'       => 'grp.models.timesheet.delete',
-                    'parameters' => ['timesheet' => $timesheet->id],
-                ] : false,
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => TimesheetTabsEnum::navigation()

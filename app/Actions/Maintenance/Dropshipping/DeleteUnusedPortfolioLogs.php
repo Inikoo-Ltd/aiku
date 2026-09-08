@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Dropshipping;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class DeleteUnusedPortfolioLogs
 {
@@ -32,6 +33,7 @@ class DeleteUnusedPortfolioLogs
 
     public function asCommand(): void
     {
+        Nightwatch::dontSample();
         $this->handle();
     }
 }

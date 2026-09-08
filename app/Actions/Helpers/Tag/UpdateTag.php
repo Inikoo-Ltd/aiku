@@ -16,6 +16,7 @@ use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
+use App\Models\Production\Artefact;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Exception;
@@ -39,6 +40,13 @@ class UpdateTag extends OrgAction
     public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request): void
     {
         $this->initialisationFromGroup($tradeUnit->group, $request);
+
+        $this->handle($tag, $this->validatedData);
+    }
+
+    public function inArtefact(Artefact $artefact, Tag $tag, ActionRequest $request): void
+    {
+        $this->initialisationFromGroup($artefact->group, $request);
 
         $this->handle($tag, $this->validatedData);
     }

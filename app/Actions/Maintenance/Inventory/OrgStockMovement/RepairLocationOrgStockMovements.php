@@ -21,6 +21,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairLocationOrgStockMovements
 {
@@ -1008,6 +1009,7 @@ class RepairLocationOrgStockMovements
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $location = Location::withTrashed()->where('slug', $command->argument('location'))->firstOrFail();
         $orgStock = OrgStock::withTrashed()->where('slug', $command->argument('orgStock'))->firstOrFail();
         $this->handle($location->id, $orgStock->id, $command);

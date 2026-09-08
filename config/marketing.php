@@ -158,6 +158,23 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Staff email domains
+    |--------------------------------------------------------------------------
+    |
+    | Company domains that are not storefronts (those are taken from the websites
+    | table). A customer account with an email on any of them belongs to staff and
+    | is kept out of customer analytics.
+    |
+    */
+
+    'staff_email_domains' => [
+        'aw-advantage.com',
+        'aw-aromatics.com',
+        'inikoo.com',
+    ],
+
     'webmail_referrer_domains' => [
         'abv.bg',
         'mail.ru',

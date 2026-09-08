@@ -113,6 +113,7 @@ else
   for unit in "${runner_units[@]}"; do
     place "$DEVOPS/systemd/actions-runner.conf" "$unit.d/aiku.conf"
   done
+  place "$DEVOPS/cron/actions-runner-watchdog" /etc/cron.d/actions-runner-watchdog
 fi
 
 echo "cron:"

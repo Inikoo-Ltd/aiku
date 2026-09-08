@@ -6,7 +6,20 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
+use App\Actions\Production\PartnerShippingList\SetToProduceItemPreparing;
+use App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems;
+use App\Actions\Production\PartnerShippingList\UnassignToProduceItems;
+use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
+use App\Actions\Production\Artisan\ToggleArtisanInRoster;
+use App\Actions\Production\PartnerShippingList\SendPartnerOrderToWarehouse;
+use App\Actions\Production\PartnerShippingList\UI\IndexPartnerShippingList;
 use App\Actions\Production\Artefact\UI\CreateArtefact;
+use App\Actions\Production\ArtefactFamily\UI\CreateArtefactFamily;
+use App\Actions\Production\ArtefactFamily\UI\EditArtefactFamily;
+use App\Actions\Production\ArtefactFamily\UI\IndexArtefactFamilies;
+use App\Actions\Production\ArtefactFamily\UI\ShowArtefactFamily;
+use App\Actions\Production\Artefact\SetArtefactAsMix;
 use App\Actions\Production\Artefact\UI\EditArtefact;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\Artefact\UI\ShowArtefact;
@@ -15,6 +28,7 @@ use App\Actions\Production\JobOrder\UI\ShowJobOrder;
 use App\Actions\Production\JobOrderItemTask\UI\ShowManufactureFloor;
 use App\Actions\Production\ManufactureTaskSession\ExportManufacturePayroll;
 use App\Actions\Production\ManufactureTaskSession\UI\IndexArtisans;
+use App\Actions\Production\ManufactureTaskSession\UI\ShowManufacturePayroll;
 use App\Actions\Production\ManufactureTask\UI\CreateManufactureTask;
 use App\Actions\Production\ManufactureTask\UI\EditManufactureTask;
 use App\Actions\Production\ManufactureTask\UI\IndexManufactureTasks;
@@ -23,6 +37,7 @@ use App\Actions\Production\Production\UI\CreateProduction;
 use App\Actions\Production\Production\UI\EditProduction;
 use App\Actions\Production\Production\UI\IndexProductions;
 use App\Actions\Production\Production\UI\ShowProduction;
+use App\Actions\Production\Production\UI\ShowArtisansDashboard;
 use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Actions\Production\Production\UI\ShowOperationsDashboard;
 use App\Actions\Production\RawMaterial\UI\CreateRawMaterial;
@@ -46,11 +61,38 @@ Route::prefix('{production}')
                 Route::name('.operations.')->prefix('operations')
                     ->group(function () {
                         Route::get('', ShowOperationsDashboard::class)->name('dashboard');
-                        Route::get('artisans', IndexArtisans::class)->name('artisans.index');
-
-                        Route::get('payroll/export', ExportManufacturePayroll::class)->name('payroll.export');
                         Route::get('job-orders', IndexJobOrders::class)->name('job-orders.index');
                         Route::get('job-orders/{jobOrder}', ShowJobOrder::class)->name('job-orders.show');
+                        Route::get('manufacture-tasks', IndexManufactureTasks::class)->name('manufacture_tasks.index');
+                        Route::get('manufacture-tasks/create', CreateManufactureTask::class)->name('manufacture_tasks.create');
+                        Route::get('manufacture-tasks/{manufactureTask}', ShowManufactureTask::class)->name('manufacture_tasks.show');
+                        Route::get('manufacture-tasks/{manufactureTask}/edit', EditManufactureTask::class)->name('manufacture_tasks.edit');
+                    });
+
+                Route::name('.artisans.')->prefix('artisans')
+                    ->group(function () {
+                        Route::get('', ShowArtisansDashboard::class)->name('dashboard');
+                        Route::get('performance', IndexArtisans::class)->name('index');
+                        Route::get('payroll', ShowManufacturePayroll::class)->name('payroll');
+                        Route::get('payroll/export', ExportManufacturePayroll::class)->name('payroll.export');
+                    });
+
+                Route::name('.to_produce.')->prefix('to-produce')
+                    ->group(function () {
+                        Route::get('', [IndexPartnerShippingList::class, 'board'])->name('index');
+                        Route::get('list', IndexPartnerShippingList::class)->name('list');
+                        Route::get('by-artisan', [IndexPartnerShippingList::class, 'byArtisan'])->name('by_artisan');
+                        Route::get('by-category', [IndexPartnerShippingList::class, 'byFamily'])->name('by_category');
+                        Route::get('for', [IndexPartnerShippingList::class, 'byFor'])->name('by_for');
+                        Route::get('mixes', [IndexPartnerShippingList::class, 'mixes'])->name('mixes');
+                        Route::post('mixes/job-orders', StoreJobOrdersForMixes::class)->name('mixes.job_orders.store');
+                        Route::post('cherry-pick', CherryPickPartnerShoppingListItems::class)->name('cherry_pick');
+                        Route::post('job-orders', StoreJobOrdersFromToProduceItems::class)->name('job_orders.store');
+                        Route::post('items/preparing', SetToProduceItemPreparing::class)->name('items.preparing');
+                        Route::post('items/unassign', UnassignToProduceItems::class)->name('items.unassign');
+                        Route::post('artisans/{employee:id}/hide', [ToggleArtisanInRoster::class, 'hide'])->name('artisans.hide')->withoutScopedBindings();
+                        Route::post('artisans/{employee:id}/show', [ToggleArtisanInRoster::class, 'show'])->name('artisans.show')->withoutScopedBindings();
+                        Route::post('orders/{order}/send-to-warehouse', SendPartnerOrderToWarehouse::class)->name('send_to_warehouse');
                     });
 
                 Route::name('.crafts.')->prefix('crafts')
@@ -66,12 +108,14 @@ Route::prefix('{production}')
                         Route::get('artefacts/create', CreateArtefact::class)->name('artefacts.create');
                         Route::get('artefacts/{artefact}', ShowArtefact::class)->name('artefacts.show');
                         Route::get('artefacts/{artefact}/edit', EditArtefact::class)->name('artefacts.edit');
+                        Route::post('artefacts/{artefact}/mix', SetArtefactAsMix::class)->name('artefacts.mix');
+
+                        Route::get('artefact-families', IndexArtefactFamilies::class)->name('artefact_families.index');
+                        Route::get('artefact-families/create', CreateArtefactFamily::class)->name('artefact_families.create');
+                        Route::get('artefact-families/{artefactFamily}', ShowArtefactFamily::class)->name('artefact_families.show');
+                        Route::get('artefact-families/{artefactFamily}/edit', EditArtefactFamily::class)->name('artefact_families.edit');
 
 
-                        Route::get('manufacture-tasks', IndexManufactureTasks::class)->name('manufacture_tasks.index');
-                        Route::get('manufacture-tasks/create', CreateManufactureTask::class)->name('manufacture_tasks.create');
-                        Route::get('manufacture-tasks/{manufactureTask}', ShowManufactureTask::class)->name('manufacture_tasks.show');
-                        Route::get('manufacture-tasks/{manufactureTask}/edit', EditManufactureTask::class)->name('manufacture_tasks.edit');
 
 
 

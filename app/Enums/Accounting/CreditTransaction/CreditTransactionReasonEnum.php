@@ -20,6 +20,7 @@ enum CreditTransactionReasonEnum: string
     case COMPENSATE_CUSTOMER = 'compensate_customer';
     case TRANSFER = 'transfer';
     case MONEY_BACK = 'money_back';
+    case ORDER_CANCELLED = 'order_cancelled';
     case OTHER = 'other';
 
     public function label(): string
@@ -30,6 +31,7 @@ enum CreditTransactionReasonEnum: string
             CreditTransactionReasonEnum::COMPENSATE_CUSTOMER => 'Compensate customer',
             CreditTransactionReasonEnum::TRANSFER => 'Transfer from other customer account',
             CreditTransactionReasonEnum::MONEY_BACK => 'Customer requested a return of funds',
+            CreditTransactionReasonEnum::ORDER_CANCELLED => 'Order cancelled',
             CreditTransactionReasonEnum::OTHER => 'Other reason',
         };
     }
@@ -42,6 +44,7 @@ enum CreditTransactionReasonEnum: string
             CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->value => CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->label(),
             CreditTransactionReasonEnum::TRANSFER->value => CreditTransactionReasonEnum::TRANSFER->label(),
             CreditTransactionReasonEnum::MONEY_BACK->value => CreditTransactionReasonEnum::MONEY_BACK->label(),
+            CreditTransactionReasonEnum::ORDER_CANCELLED->value => CreditTransactionReasonEnum::ORDER_CANCELLED->label(),
             CreditTransactionReasonEnum::OTHER->value => CreditTransactionReasonEnum::OTHER->label(),
         };
     }

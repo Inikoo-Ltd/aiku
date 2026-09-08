@@ -13,6 +13,7 @@ use App\Actions\Traits\WithFixedAddressActions;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairDeliveryNotesAddress
 {
@@ -43,6 +44,7 @@ class RepairDeliveryNotesAddress
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $count = DeliveryNote::whereNull('source_id')->count();
 
         $bar = $command->getOutput()->createProgressBar($count);

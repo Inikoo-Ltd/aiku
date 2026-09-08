@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 /**
  * Fills org_amount on historic picking movements that were written before cost capture
@@ -130,6 +131,7 @@ class BackfillPickedOrgStockMovementCost
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $dryRun = (bool) $command->option('dry-run');
         $before = (string) $command->option('before');
         $fromOrgStock = (int) $command->option('from-org-stock');

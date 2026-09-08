@@ -14,6 +14,7 @@ use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairGrpOrgAmounts
 {
@@ -24,6 +25,7 @@ class RepairGrpOrgAmounts
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
 
 
         $tables = [

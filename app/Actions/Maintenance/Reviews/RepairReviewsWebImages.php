@@ -7,6 +7,7 @@ use App\Models\Helpers\Media;
 use App\Models\Reviews\Review;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairReviewsWebImages
 {
@@ -22,6 +23,7 @@ class RepairReviewsWebImages
 
     public function asCommand(Command $command)
     {
+        Nightwatch::dontSample();
         $command->info('Repairing Media Model Type');
         $reviewIdsFromMedia = Media::where('model_type', (new Review())->getMorphClass())
             ->distinct()

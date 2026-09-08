@@ -87,20 +87,29 @@ function loadDB(): void
         $_SERVER['DB_DATABASE'] = $databaseName;
     }
 
-    shell_exec(
+    exec(
         './devops/devel/reset_test_database.sh '.
         $databaseName.' '.
         env('DB_PORT').' '.
         env('DB_USERNAME').' '.
         env('DB_PASSWORD').' '.
         env('DB_HOST').
-        ' tests/datasets/db_dumps/aiku.dump '.$numberParallelRestoreJobs
+        ' tests/datasets/db_dumps/aiku.dump '.$numberParallelRestoreJobs.' 2>&1',
+        $output,
+        $exitCode
     );
+
+    /* A silently half-restored database shows up much later as an unrelated test failing on a
+       missing sequence or an empty table - fail here, where the cause is still readable. */
+    if ($exitCode !== 0) {
+        throw new RuntimeException("Restoring {$databaseName} failed:\n".implode("\n", $output));
+    }
 }
 
 function createGroup(): Group
 {
-    $group = Group::first();
+    // ponytail: ordered, a test creating a second group must not change which one every other test gets
+    $group = Group::orderBy('id')->first();
     if (!$group) {
         $group = StoreGroup::make()->action(Group::factory()->definition());
     }
@@ -119,7 +128,7 @@ function createOrganisation(): Organisation
 
     $group = createGroup();
 
-    $organisation = Organisation::first();
+    $organisation = Organisation::where('code', 'acme')->first();
     if (!$organisation) {
         $modelData = Organisation::factory()->definition();
         data_set($modelData, 'code', 'acme');
@@ -137,7 +146,7 @@ function createAdminGuest(Group $group): Guest
     app()->instance('group', $group);
     setPermissionsTeamId($group->id);
 
-    $guest = Guest::all()->first(fn (Guest $candidate) => $candidate->getUser()?->hasRole('group-admin'));
+    $guest = Guest::where('group_id', $group->id)->get()->first(fn (Guest $candidate) => $candidate->getUser()?->hasRole('group-admin'));
     if (!$guest) {
         try {
             $guest = StoreGuest::make()

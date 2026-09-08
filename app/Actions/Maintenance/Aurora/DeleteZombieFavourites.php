@@ -19,6 +19,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class DeleteZombieFavourites
 {
@@ -60,6 +61,7 @@ class DeleteZombieFavourites
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         try {
             $this->handle($command);
         } catch (Throwable $e) {

@@ -10,6 +10,7 @@ namespace App\Actions\Maintenance\Database;
 
 use App\Actions\Traits\WithActionUpdate;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairOrganisationIdIndexes
 {
@@ -19,6 +20,7 @@ class RepairOrganisationIdIndexes
 
     public function asCommand(): void
     {
+        Nightwatch::dontSample();
         // Discover all base tables in the public schema that have an organisation_id column
         $tables = collect(DB::select(<<<'SQL'
             SELECT c.table_name

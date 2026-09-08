@@ -74,6 +74,7 @@ class GetAgentShowcase
                 ],
             ],
             'depositWorkspace' => $this->getDepositWorkspace($agent),
+            'cleanHandover'    => GetAgentCleanHandoverScore::run($agent),
         ];
     }
 

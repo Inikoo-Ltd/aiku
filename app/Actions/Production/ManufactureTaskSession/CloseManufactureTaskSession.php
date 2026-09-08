@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\ManufactureTaskSession;
 
+use App\Actions\Production\JobOrderItemTask\UI\ShowManufactureFloor;
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrderItemTask\CalculateJobOrderItemTaskQuantities;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
@@ -36,10 +37,10 @@ class CloseManufactureTaskSession extends OrgAction
             'quantity_rejected'               => $modelData['quantity_rejected'] ?? 0,
             'ended_at'                        => now(),
             'state'                           => ManufactureTaskSessionStateEnum::CLOSED,
-            'task_work_cost'                  => $manufactureTask->task_work_cost,
+            'task_work_cost'                  => $manufactureTask->is_piece_rate ? $manufactureTask->task_work_cost : 0,
             'operative_reward_terms'          => $manufactureTask->operative_reward_terms,
             'operative_reward_allowance_type' => $manufactureTask->operative_reward_allowance_type,
-            'operative_reward_amount'         => $manufactureTask->operative_reward_amount,
+            'operative_reward_amount'         => $manufactureTask->is_piece_rate ? $manufactureTask->operative_reward_amount : 0,
             'break_minutes'                   => $modelData['break_minutes'] ?? $session->break_minutes ?? 0,
             'activity_type'                   => $modelData['activity_type'] ?? $session->activity_type ?? ManufactureTaskSessionActivityTypeEnum::PRODUCTION,
             'non_productive_reason'           => $modelData['non_productive_reason'] ?? null,
@@ -102,7 +103,12 @@ class CloseManufactureTaskSession extends OrgAction
         $this->manufactureTaskSession = $manufactureTaskSession;
         $this->initialisationFromProduction($manufactureTaskSession->production, $request);
 
-        return $this->handle($manufactureTaskSession, $this->validatedData);
+        $modelData = $this->validatedData;
+        if (!ShowManufactureFloor::canPickOpenJobs($request->user(), $manufactureTaskSession->production)) {
+            unset($modelData['quantity_rejected']);
+        }
+
+        return $this->handle($manufactureTaskSession, $modelData);
     }
 
     public function htmlResponse(): RedirectResponse

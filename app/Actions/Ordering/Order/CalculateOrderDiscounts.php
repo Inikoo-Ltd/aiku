@@ -308,6 +308,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 ->select(['id', 'trigger_data', 'allowance_signature', 'name'])
                 ->where('shop_id', $order->shop_id)
                 ->where('type', OfferTypeEnum::GIFT->value)
+                ->whereNull('deleted_at')
                 ->where('status', true)->get() as $giftOfferData
         ) {
             $triggerData = json_decode($giftOfferData->trigger_data, true);
@@ -334,6 +335,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         $voucherData = DB::table('offers')
             ->select(['id', 'trigger_data', 'allowance_signature', 'name', 'allowance_type'])
             ->where('shop_id', $order->shop_id)
+            ->whereNull('deleted_at')
             ->where('status', true)
             ->whereIn('allowance_type', ['gift', 'discounted_shipping'])
             ->where('id', $order->offer_voucher_id)
@@ -453,7 +455,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             } elseif ($offerData->type == 'Shop Ordered') {
                 $enabledOffers[$offerData->allowance_signature] = [
                     'offer_id'    => $offerData->id,
-                    'offer_label' => $offerData->name
+                    'offer_label' => $offerData->name,
+                    'sub_trigger' => 'so',
                 ];
             } elseif ($offerData->type == 'Department Ordered') {
                 if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'departments_ids', []))) {
@@ -638,12 +641,13 @@ class CalculateOrderDiscounts implements ShouldBeUnique
      */
     private function scopeOffersValidity(\Illuminate\Database\Query\Builder $query): \Illuminate\Database\Query\Builder
     {
+        $query->whereNull('deleted_at');
+
         if (!$this->honorOffersAt) {
             return $query->where('status', true);
         }
 
         return $query
-            ->whereNull('deleted_at')
             ->where(function ($subQuery) {
                 $subQuery->where('status', true)->orWhere('state', OfferStateEnum::FINISHED->value);
             })
@@ -799,9 +803,12 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             return;
         }
 
+        $isStepDiscount = false;
+
         if ($steps = Arr::get($allowanceOpsData, 'steps')) {
-            $totalQuantity = (int)$productTransactions->sum('quantity_ordered');
-            $percentageOff = 0.0;
+            $isStepDiscount = true;
+            $totalQuantity  = (int)$productTransactions->sum('quantity_ordered');
+            $percentageOff  = 0.0;
             foreach (collect($steps)->sortBy('min_quantity') as $step) {
                 if ($totalQuantity >= (int)Arr::get($step, 'min_quantity', PHP_INT_MAX)) {
                     $percentageOff = (float)Arr::get($step, 'percentage_off', 0);
@@ -832,7 +839,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     $transaction,
                     $percentageOff,
                     $offerData['offer_label'],
-                    $allowanceData
+                    $allowanceData,
+                    $isStepDiscount ? 'sd' : null
                 );
             }
         }
@@ -954,6 +962,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 ->where('collection_id', Arr::get($allowanceOpsData, 'collection_id'))
                 ->where('model_type', 'Product')
                 ->pluck('model_id')
+                ->flip()
                 ->all();
             if ($collectionProductIds === []) {
                 return collect();
@@ -965,7 +974,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 'family' => Arr::get($allowanceOpsData, 'category_id') == $transaction->family_id,
                 'department' => Arr::get($allowanceOpsData, 'category_id') == $transaction->department_id,
                 'sub_department' => Arr::get($allowanceOpsData, 'category_id') == $transaction->sub_department_id,
-                'collection' => in_array($transaction->model_id, $collectionProductIds),
+                'collection' => isset($collectionProductIds[$transaction->model_id]),
                 'product' => Arr::get($allowanceOpsData, 'product_id') == $transaction->model_id,
                 default => true,
             }

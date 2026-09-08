@@ -17,12 +17,13 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOffers;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithStoreOffer;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Http\Resources\Catalogue\OfferResource;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOffer extends OrgAction
@@ -46,40 +47,20 @@ class UpdateOffer extends OrgAction
             $modelData['trigger_data'] = $newTriggerData;
         }
 
-        // Section: edit Discount
+        $allowancesChanged = false;
         if (isset($modelData['edit_offer_discount'])) {
-            $editOfferDiscount = $modelData['edit_offer_discount'];
+            $percentageOff = Arr::get($modelData['edit_offer_discount'], 'percentage_off');
+            unset($modelData['edit_offer_discount']);
 
-            // Set percentage_off to allowance_signature
-            if (!empty($editOfferDiscount['percentage_off'])) {
-                $percentage_off = ((float)$editOfferDiscount['percentage_off']) / 100; // Convert 25 → 0.25
-
-                $signature = trim((string)$offer['allowance_signature']);
-
-                // Try to replace existing percentage_off
-                $newSignature = preg_replace(
-                    '/(percentage_off:)[0-9.]+/',
-                    '${1}'.$percentage_off,
-                    $signature,
-                    -1,
-                    $count
-                );
-
-                // If percentage_off does not exist, append it
-                if ($count === 0) {
-                    // Remove trailing colon if any
-                    $signature = rtrim($signature, ':');
-
-                    if ($signature === '') {
-                        // Signature is empty → don't prefix with colon
-                        $newSignature = 'percentage_off:'.$percentage_off;
-                    } else {
-                        $newSignature = $signature.':percentage_off:'.$percentage_off;
-                    }
+            if (!empty($percentageOff)) {
+                $percentageOff = ((float)$percentageOff) / 100;
+                foreach ($offer->offerAllowances()->where('type', OfferAllowanceType::PERCENTAGE_OFF)->get() as $offerAllowance) {
+                    $allowanceData = $offerAllowance->data;
+                    data_set($allowanceData, 'percentage_off', $percentageOff);
+                    $offerAllowance->update(['data' => $allowanceData]);
+                    $allowancesChanged = $allowancesChanged || $offerAllowance->wasChanged('data');
                 }
-
-                unset($modelData['edit_offer_discount']);
-                $modelData['allowance_signature'] = $newSignature;
+                UpdateOfferAllowanceSignature::run($offer);
             }
         }
 
@@ -143,8 +124,6 @@ class UpdateOffer extends OrgAction
         // Section: prepare Offer Date
         $modelData = $this->prepareOfferDate($offer, $modelData);
 
-        // dd($modelData);
-
         $offer = $this->update($offer, $modelData);
 
         if ($offer->wasChanged(['start_at', 'end_at'])) {
@@ -157,8 +136,10 @@ class UpdateOffer extends OrgAction
             }
         }
 
-        if ($offer->wasChanged(['label'])) {
-            if ($this->offer->trigger instanceof ProductCategory) {
+        if ($offer->wasChanged(['trigger_data']) || $allowancesChanged) {
+            $this->handleOfferSideEffects($offer, $offer->status);
+        } elseif ($offer->wasChanged(['label'])) {
+            if ($offer->hydratesCatalogueOffersData()) {
                 UpdateProductCategoryOffersData::run($offer);
             }
             $this->cleanWebpagesCache($offer);

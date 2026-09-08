@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\Order\UI;
 
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
@@ -262,13 +263,14 @@ class GetEcomOrderActions
                 array_unshift(
                     $actions,
                     [
-                        'type'  => 'button',
-                        'style' => 'cancel',
-                        'key'   => 'cancel',
-                        'tooltip' => __("Cancel the order. If payment has already been made, the amount will be credited to the customer's balance"),
-                        'icon'  => 'fas fa-skull',
-                        'label' => __('Cancel'),
-                        'route' => [
+                        'type'                 => 'button',
+                        'style'                => 'cancel',
+                        'key'                  => 'cancel',
+                        'tooltip'              => __("Cancel the order. If payment has already been made, the amount will be credited to the customer's balance"),
+                        'icon'                 => 'fas fa-skull',
+                        'label'                => __('Cancel'),
+                        'cancellation_reasons' => OrderCancellationReasonEnum::valuesWithLabels(),
+                        'route'                => [
                             'method'     => 'patch',
                             'name'       => 'grp.models.order.state.cancelled',
                             'parameters' => [

@@ -40,6 +40,8 @@ use App\Actions\CRM\TrafficSource\RecordTrafficSourceClick;
 use App\Actions\Iris\CaptureTrafficSource;
 use App\Actions\CRM\TrafficSource\StoreTrafficSourceCost;
 use App\Actions\CRM\TrafficSource\UI\IndexTrafficSources;
+use App\Actions\CRM\TrafficSourceCampaign\UI\IndexGoogleAdsCampaigns;
+use App\Actions\CRM\TrafficSourceCampaign\UI\ShowGoogleAdsCampaign;
 use App\Actions\CRM\TrafficSource\UI\TrafficSourceTabsEnum;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Comms\EmailTrackingEvent\StoreEmailTrackingEvent;
@@ -283,6 +285,68 @@ function metaRow(string $campaignId, float $spend, string $currency, string $dat
         'account_currency'   => $currency,
         'date_start'         => $date,
         'date_stop'          => $date,
+    ];
+}
+
+function googleAdsCampaignRow(string $campaignId, string $name, string $status, string $channelType, int $budgetAmountMicros): array
+{
+    return [
+        'campaign'       => [
+            'id'                        => $campaignId,
+            'name'                      => $name,
+            'status'                    => $status,
+            'advertisingChannelType'    => $channelType,
+        ],
+        'campaignBudget' => ['amountMicros' => (string) $budgetAmountMicros],
+        'customer'       => ['currencyCode' => 'GBP'],
+    ];
+}
+
+function googleAdsAdRow(string $campaignId, string $adGroupId, string $adGroupName, array $headlines): array
+{
+    return [
+        'campaign' => ['id' => $campaignId],
+        'adGroup'  => ['id' => $adGroupId, 'name' => $adGroupName, 'status' => 'ENABLED'],
+        'adGroupAd' => [
+            'status' => 'ENABLED',
+            'ad'     => [
+                'id'   => '999',
+                'type' => 'RESPONSIVE_SEARCH_AD',
+                'finalUrls' => ['https://example.com'],
+                'responsiveSearchAd' => [
+                    'headlines'    => collect($headlines)->map(fn ($text) => ['text' => $text])->all(),
+                    'descriptions' => [['text' => 'Great products, fast delivery.']],
+                ],
+            ],
+        ],
+    ];
+}
+
+function googleAdsKeywordRow(string $campaignId, string $adGroupId, string $text): array
+{
+    return [
+        'campaign'          => ['id' => $campaignId],
+        'adGroup'           => ['id' => $adGroupId],
+        'adGroupCriterion'  => [
+            'criterionId' => '1',
+            'keyword'     => ['text' => $text, 'matchType' => 'BROAD'],
+            'status'      => 'ENABLED',
+        ],
+    ];
+}
+
+function googleAdsMetricsRow(string $campaignId, string $date, int $impressions, int $clicks, int $costMicros): array
+{
+    return [
+        'campaign' => ['id' => $campaignId],
+        'segments' => ['date' => $date],
+        'metrics'  => [
+            'impressions'      => $impressions,
+            'clicks'           => $clicks,
+            'costMicros'       => $costMicros,
+            'conversions'      => 1,
+            'conversionsValue' => 20,
+        ],
     ];
 }
 
@@ -837,6 +901,65 @@ describe('attribution window', function () {
         expect($channel['revenue'] ?? 0.0)->toBe(0.0);
     });
 
+    it('credits a basket opened before the touch but checked out after it', function () {
+        $customer = $this->customer;
+        $customer->trafficSources()->detach();
+        DB::table('invoices')->where('customer_id', $customer->id)->delete();
+
+        $customer->trafficSources()->attach($this->googleAds->id, [
+            'share'          => 1,
+            'first_touch_at' => now()->subHours(6),
+            'last_touch_at'  => now()->subHours(6),
+        ]);
+
+        $orderId = DB::table('orders')->insertGetId([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $customer->id,
+            'currency_id'     => $this->shop->currency_id,
+            'tax_category_id' => App\Models\Helpers\TaxCategory::firstOrFail()->id,
+            'slug'            => 'ord-'.uniqid(),
+            'state'           => 'dispatched',
+            'status'          => 'settled',
+            'payment_data'    => '{}',
+            'data'            => '{}',
+            'date'            => now()->subDays(30)->toDateTimeString(),
+            'submitted_at'    => now()->subHours(2)->toDateTimeString(),
+            'created_at'      => now()->subDays(30)->toDateTimeString(),
+            'updated_at'      => now()->toDateTimeString(),
+        ]);
+
+        DB::table('invoices')->insert([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $customer->id,
+            'order_id'        => $orderId,
+            'currency_id'     => $this->shop->currency_id,
+            'tax_category_id' => App\Models\Helpers\TaxCategory::firstOrFail()->id,
+            'reference'       => 'INV-'.uniqid(),
+            'slug'            => 'inv-'.uniqid(),
+            'type'            => 'invoice',
+            'net_amount'      => 500,
+            'org_net_amount'  => 500,
+            'grp_net_amount'  => 500,
+            'total_amount'    => 500,
+            'in_process'      => false,
+            'payment_data'    => '{}',
+            'data'            => '{}',
+            'date'            => now()->toDateTimeString(),
+            'created_at'      => now()->toDateTimeString(),
+            'updated_at'      => now()->toDateTimeString(),
+        ]);
+
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
+        $channel  = collect($overview['channels'])->firstWhere('type', $this->googleAds->type);
+
+        expect($channel['revenue'])->toBe(500.0)
+            ->and($channel['orders'])->toBe(1.0);
+    });
+
     it('lets the recording start date be set, so a fix to capture is not judged by what came before it', function () {
         config()->set('marketing.attribution_started_at', '2026-08-07 19:30:00');
 
@@ -1118,6 +1241,35 @@ describe('referral traffic sources', function () {
             ->and($referrers['esources.co.uk']['revenue'])->toBe(250.0);
     });
 
+    it('counts a referring host\'s visits from the click log, one per browser per day, bots excluded', function () {
+        StoreCustomer::make()->action(
+            $this->shop,
+            array_merge(Customer::factory()->definition(), [
+                'traffic_sources' => now()->subDay()->timestamp.'qesources.co.uk',
+            ])
+        );
+
+        $click = fn (array $overrides = []) => DB::table('traffic_source_clicks')->insert($overrides + [
+            'shop_id'      => $this->shop->id,
+            'type'         => 'referral',
+            'campaign_ref' => 'esources.co.uk',
+            'ip'           => '203.0.113.7',
+            'user_agent'   => 'Mozilla/5.0',
+            'is_bot'       => false,
+            'created_at'   => now()->subDay()->toDateTimeString(),
+        ]);
+        $click();
+        $click(['created_at' => now()->subDay()->addHours(3)->toDateTimeString()]);
+        $click(['created_at' => now()->toDateTimeString()]);
+        $click(['ip' => '198.51.100.9']);
+        $click(['is_bot' => true, 'ip' => '192.0.2.1']);
+
+        $referrers = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['referrers'])
+            ->keyBy('host');
+
+        expect($referrers['esources.co.uk']['visits'])->toBe(3);
+    });
+
     it('refuses a referral campaign whose reference is not a hostname', function () {
         StoreCustomer::make()->action(
             $this->shop,
@@ -1214,7 +1366,7 @@ describe('referral traffic sources', function () {
             ->and(GetTrafficSourceFromRefererHeader::run('https://mail.ru/inbox'))->toBeNull();
     });
 
-    it('reclassifies the AI touches recorded before the channel existed', function () {
+    it('reads an assistant filed as a referral by an old cookie as AI, so registration cannot mint a Referral campaign for it', function () {
         $ai       = createTrafficSource($this->shop, TrafficSourcesTypeEnum::AI->value, 'AI Assistants');
         $recorded = now()->subDay()->timestamp;
 
@@ -1225,13 +1377,68 @@ describe('referral traffic sources', function () {
             ])
         );
 
+        $aiAbbr = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::AI->value];
+
+        expect($customer->refresh()->traffic_sources)->toBe($recorded.$aiAbbr.'chatgpt.com|'.$recorded.'qesources.co.uk')
+            ->and(TrafficSourceCampaign::where('reference', 'chatgpt.com')->pluck('traffic_source_id')->all())->toBe([$ai->id])
+            ->and($customer->trafficSources()->pluck('type')->all())->toContain(TrafficSourcesTypeEnum::AI->value);
+    });
+
+    it('reclassifies the AI touches recorded before the channel existed', function () {
+        $ai       = createTrafficSource($this->shop, TrafficSourcesTypeEnum::AI->value, 'AI Assistants');
+        $recorded = now()->subDay()->timestamp;
+
+        /* The AI source already knows the host from arrivals since the channel existed: the old
+           Referral row must fold into this one rather than collide with it. */
+        $aiCampaign = TrafficSourceCampaign::create([
+            'traffic_source_id' => $ai->id,
+            'reference'         => 'chatgpt.com',
+            'name'              => 'chatgpt.com',
+            'type'              => TrafficSourcesTypeEnum::AI->value,
+        ]);
+
+        $customer = StoreCustomer::make()->action(
+            $this->shop,
+            array_merge(Customer::factory()->definition(), [
+                'traffic_sources' => $recorded.'qchatgpt.com|'.$recorded.'qesources.co.uk',
+            ])
+        );
+
+        /* Two ChatGPT arrivals from one browser and one from another, all filed under Referral on the
+           day, plus the day's Referral visit row that counted them. */
+        $day = now()->subDay();
+        foreach ([['203.0.113.7', 0], ['203.0.113.7', 2], ['198.51.100.9', 1]] as [$ip, $hours]) {
+            DB::table('traffic_source_clicks')->insert([
+                'shop_id'      => $this->shop->id,
+                'type'         => 'referral',
+                'campaign_ref' => 'chatgpt.com',
+                'ip'           => $ip,
+                'user_agent'   => 'Mozilla/5.0',
+                'is_bot'       => false,
+                'created_at'   => $day->copy()->addHours($hours)->toDateTimeString(),
+            ]);
+        }
+        DB::table('traffic_source_visits')->insert([
+            'shop_id'           => $this->shop->id,
+            'traffic_source_id' => $this->referral->id,
+            'date'              => $day->toDateString(),
+            'visits'            => 5,
+            'created_at'        => now(),
+            'updated_at'        => now(),
+        ]);
+
         ReclassifyAiTrafficSourceTouches::run();
+
+        expect(DB::table('traffic_source_clicks')->where('campaign_ref', 'chatgpt.com')->where('type', 'ai')->count())->toBe(3)
+            ->and(DB::table('traffic_source_visits')->where('traffic_source_id', $this->referral->id)->where('date', $day->toDateString())->value('visits'))->toBe(3)
+            ->and(DB::table('traffic_source_visits')->where('traffic_source_id', $ai->id)->where('date', $day->toDateString())->value('visits'))->toBe(2);
 
         $aiAbbr = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::AI->value];
 
         expect($customer->refresh()->traffic_sources)
             ->toBe($recorded.$aiAbbr.'chatgpt.com|'.$recorded.'qesources.co.uk')
-            ->and(TrafficSourceCampaign::where('reference', 'chatgpt.com')->value('traffic_source_id'))->toBe($ai->id)
+            ->and(TrafficSourceCampaign::where('reference', 'chatgpt.com')->pluck('id')->all())->toBe([$aiCampaign->id])
+            ->and($customer->trafficSources()->wherePivot('traffic_source_campaign_id', $aiCampaign->id)->exists())->toBeTrue()
             ->and($customer->trafficSources()->pluck('type')->all())
             ->toContain(TrafficSourcesTypeEnum::AI->value)
             ->and(TrafficSourceCampaign::where('reference', 'esources.co.uk')->value('traffic_source_id'))
@@ -1856,6 +2063,79 @@ describe('traffic source costs', function () {
         expect((float) $row->cac)->toBe(12.5);
     });
 
+    it('lists the shop Google Ads campaigns with their spend', function () {
+        $campaign = TrafficSourceCampaign::create([
+            'traffic_source_id' => $this->trafficSource->id,
+            'reference'         => 'ref-'.uniqid(),
+            'name'              => 'Spring Sale',
+            'type'              => 'google-ads',
+            'data'              => [
+                'status'        => 'ENABLED',
+                'channel_type'  => 'SEARCH',
+                'budget_amount' => 25.00,
+                'currency'      => $this->currency->code,
+            ],
+        ]);
+
+        StoreTrafficSourceCost::run($this->trafficSource, [
+            'date'                       => now()->subDays(1)->toDateString(),
+            'source_amount'              => 10.00,
+            'source_currency_id'         => $this->currency->id,
+            'traffic_source_campaign_id' => $campaign->id,
+        ]);
+
+        fakeCurrentRoute();
+
+        $row = IndexGoogleAdsCampaigns::make()->handle($this->shop)
+            ->firstWhere('id', $campaign->id);
+
+        expect($row->name)->toBe('Spring Sale');
+        expect($row->status)->toBe('ENABLED');
+        expect((float) $row->spend_30d)->toBe(10.0);
+        expect((float) $row->spend_total)->toBe(10.0);
+    });
+
+    it('shows a Google Ads campaign with its spend', function () {
+        $campaign = TrafficSourceCampaign::create([
+            'traffic_source_id' => $this->trafficSource->id,
+            'reference'         => 'ref-'.uniqid(),
+            'name'              => 'Spring Sale',
+            'type'              => 'google-ads',
+            'data'              => [
+                'status'        => 'ENABLED',
+                'channel_type'  => 'SEARCH',
+                'budget_amount' => 25.00,
+                'currency'      => $this->currency->code,
+            ],
+        ]);
+
+        StoreTrafficSourceCost::run($this->trafficSource, [
+            'date'                       => now()->subDays(1)->toDateString(),
+            'source_amount'              => 10.00,
+            'source_currency_id'         => $this->currency->id,
+            'traffic_source_campaign_id' => $campaign->id,
+        ]);
+
+        $testRequest = \Illuminate\Http\Request::create('/'.$this->organisation->slug.'/'.$this->shop->slug.'/'.$campaign->slug);
+        $route = (new Route('GET', '/{organisation}/{shop}/{trafficSourceCampaign}', []))->name('test.traffic_sources.show');
+        $route->bind($testRequest);
+        $testRequest->setRouteResolver(fn () => $route);
+        $actionRequest = \Lorisleiva\Actions\ActionRequest::createFrom($testRequest);
+
+        $action          = ShowGoogleAdsCampaign::make();
+        $model           = $action->asController($this->organisation, $this->shop, $campaign, $actionRequest);
+        $inertiaResponse = $action->htmlResponse($model, $actionRequest);
+
+        $reflection = new ReflectionClass($inertiaResponse);
+        $component  = $reflection->getProperty('component');
+        $component->setAccessible(true);
+        $props = $reflection->getProperty('props');
+        $props->setAccessible(true);
+
+        expect($component->getValue($inertiaResponse))->toBe('Org/Shop/CRM/GoogleAdsCampaign');
+        expect($props->getValue($inertiaResponse)['campaign']['name'])->toBe('Spring Sale');
+    });
+
     it('aggregates period spend per channel into the marketing overview', function () {
         $organic = createTrafficSource($this->shop, 'organic-google', 'Organic Google');
 
@@ -2301,6 +2581,96 @@ describe('fetching meta ads costs', function () {
         Artisan::call('traffic-source:fetch-meta-costs', ['shop' => $this->shop->slug, '--dry-run' => true]);
 
         expect(TrafficSourceCost::where('traffic_source_id', $this->metaAds->id)->get())->toHaveCount(0);
+    });
+});
+
+describe('fetching google ads campaigns', function () {
+    beforeEach(function () {
+        resetMarketingFixtures();
+
+        list(
+            $this->organisation,
+            $this->user,
+            $this->shop
+        ) = createOwnShop('fetching google ads campaigns');
+
+        $this->googleAds = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
+
+        $settings = $this->shop->settings ?? [];
+        data_set($settings, 'google_ads.refresh_token', 'refresh-token');
+        data_set($settings, 'google_ads.customer_id', '123-456-7890');
+        data_set($settings, 'google_ads.login_customer_id', '999-888-7777');
+        $this->shop->update(['settings' => $settings]);
+
+        config()->set('services.google_ads.client_id', 'client-id');
+        config()->set('services.google_ads.client_secret', 'client-secret');
+        config()->set('services.google_ads.developer_token', 'developer-token');
+    });
+
+    it('stores campaigns from the search api, following pagination', function () {
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'oauth2.googleapis.com')) {
+                return Http::response(['access_token' => 'fake-access-token']);
+            }
+
+            $query = $request['query'] ?? '';
+
+            if (str_starts_with($query, 'SELECT campaign.id, campaign.name')) {
+                if ($request['pageToken'] ?? null) {
+                    return Http::response([
+                        'results' => [googleAdsCampaignRow('222', 'Search Brand', 'PENDING_REVIEW', 'SEARCH', 5_000_000)],
+                    ]);
+                }
+
+                return Http::response([
+                    'results'       => [googleAdsCampaignRow('111', 'Video Push', 'ENABLED', 'VIDEO', 10_000_000)],
+                    'nextPageToken' => 'page2',
+                ]);
+            }
+
+            if (str_contains($query, 'FROM ad_group_ad')) {
+                return Http::response(['results' => [googleAdsAdRow('111', '11', 'Video Ad Group', ['Great deal', 'Buy now'])]]);
+            }
+
+            if (str_contains($query, 'FROM keyword_view')) {
+                return Http::response(['results' => [googleAdsKeywordRow('111', '11', 'video push')]]);
+            }
+
+            if (str_contains($query, 'FROM campaign WHERE segments.date')) {
+                return Http::response(['results' => [googleAdsMetricsRow('111', '2026-09-01', 100, 8, 4_000_000)]]);
+            }
+
+            return Http::response(['results' => []]);
+        });
+
+        $exit = Artisan::call('google-ads:fetch-campaigns', ['shop' => $this->shop->slug]);
+
+        expect($exit)->toBe(0);
+
+        $campaigns = TrafficSourceCampaign::where('traffic_source_id', $this->googleAds->id)->get()->keyBy('reference');
+        expect($campaigns)->toHaveCount(2);
+        expect($campaigns['111']->name)->toBe('Video Push');
+        expect($campaigns['111']->data['status'])->toBe('ENABLED');
+        expect((float) $campaigns['111']->data['budget_amount'])->toBe(10.0);
+        expect($campaigns['222']->data['status'])->toBe('PENDING_REVIEW');
+        expect($campaigns['111']->data['ad_groups'][0]['ads'][0]['headlines'])->toBe(['Great deal', 'Buy now']);
+        expect($campaigns['111']->data['metrics_30d']['clicks'])->toBe(8);
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'googleads.googleapis.com')
+            && $request->hasHeader('developer-token', 'developer-token')
+            && $request->hasHeader('login-customer-id', '9998887777'));
+    });
+
+    it('reports failure and stores nothing when the api rejects the request', function () {
+        Http::fake([
+            'oauth2.googleapis.com/*'    => Http::response(['access_token' => 'fake-access-token']),
+            'googleads.googleapis.com/*' => Http::response(['error' => ['message' => 'User does not have permission to access customer.']], 403),
+        ]);
+
+        $exit = Artisan::call('google-ads:fetch-campaigns', ['shop' => $this->shop->slug]);
+
+        expect($exit)->toBe(1);
+        expect(TrafficSourceCampaign::where('traffic_source_id', $this->googleAds->id)->get())->toHaveCount(0);
     });
 });
 
@@ -3411,6 +3781,26 @@ describe('marketing periods', function () {
             ->and($overview['baseline']['registrations'])->toBeGreaterThan(0.0);
     });
 
+    it('reports direct visits and the unattributed remainder as an untraced row on the shop dashboard', function () {
+        $direct = App\Models\CRM\TrafficSource::where('shop_id', $this->shop->id)->where('type', 'direct')->first();
+
+        DB::table('traffic_source_visits')->insert([
+            'shop_id'           => $this->shop->id,
+            'traffic_source_id' => $direct->id,
+            'date'              => now()->subDay()->toDateString(),
+            'visits'            => 33,
+            'created_at'        => now(),
+            'updated_at'        => now(),
+        ]);
+
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
+
+        expect(collect($overview['channels'])->firstWhere('type', 'direct'))->toBeNull()
+            ->and($overview['untraced']['visits'])->toBe(33)
+            ->and($overview['untraced']['revenue'])->toBe(round($overview['baseline']['revenue'] - $overview['totals']['revenue'], 2))
+            ->and($overview['untraced']['orders'])->toBe(round($overview['baseline']['orders'] - array_sum(array_column($overview['channels'], 'orders')), 2));
+    });
+
     it('shows visits a channel sent even when none of them converted', function () {
         $source = App\Models\CRM\TrafficSource::where('shop_id', $this->shop->id)->where('type', 'google-ads')->first();
 
@@ -3555,6 +3945,133 @@ describe('the aggregated marketing overview', function () {
 
         expect($channel['revenue'])->toBe(250.0)
             ->and($channel['registrations'])->toBe(1.0);
+    });
+
+    it('reports direct visits and the unattributed remainder as an untraced row, not a channel', function () {
+        $direct = App\Models\CRM\TrafficSource::where('shop_id', $this->shop->id)->where('type', 'direct')->first();
+
+        DB::table('traffic_source_visits')->insert([
+            'shop_id'           => $this->shop->id,
+            'traffic_source_id' => $direct->id,
+            'date'              => now()->subDay()->toDateString(),
+            'visits'            => 77,
+            'created_at'        => now(),
+            'updated_at'        => now(),
+        ]);
+
+        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
+
+        expect(collect($overview['channels'])->firstWhere('type', 'direct'))->toBeNull()
+            ->and($overview['untraced']['visits'])->toBe(77)
+            ->and($overview['untraced']['revenue'])->toBe(round($overview['baseline']['revenue'] - $overview['totals']['revenue'], 2))
+            ->and($overview['untraced']['orders'])->toBe(round($overview['baseline']['orders'] - $overview['totals']['orders'], 2))
+            ->and($overview['untraced']['registrations'])->toBe(round($overview['baseline']['registrations'] - $overview['totals']['registrations'], 2));
+    });
+
+    it('lists phone and marketplace sales as out of scope and takes them off the direct remainder', function () {
+        /* A phone order from somebody a channel touched would be claimed twice; the row is about the
+           trade nobody touched. */
+        $this->customer->trafficSources()->detach();
+
+        $phone = App\Models\Ordering\SalesChannel::where('type', 'phone')->first()
+            ?? App\Models\Ordering\SalesChannel::create(['name' => 'Phone', 'code' => 'phone', 'type' => 'phone']);
+
+        DB::table('invoices')->insert([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $this->customer->id,
+            'sales_channel_id' => $phone->id,
+            'currency_id'     => $this->shop->currency_id,
+            'tax_category_id' => App\Models\Helpers\TaxCategory::firstOrFail()->id,
+            'reference'       => 'INV-PHONE-'.uniqid(),
+            'slug'            => 'inv-phone-'.uniqid(),
+            'type'            => 'invoice',
+            'net_amount'      => 40,
+            'org_net_amount'  => 40,
+            'grp_net_amount'  => 40,
+            'total_amount'    => 40,
+            'in_process'      => false,
+            'payment_data'    => '{}',
+            'data'            => '{}',
+            'date'            => now()->subDay()->toDateTimeString(),
+            'created_at'      => now()->subDay()->toDateTimeString(),
+            'updated_at'      => now()->subDay()->toDateTimeString(),
+        ]);
+
+        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
+        $row      = collect($overview['out_of_scope'])->firstWhere('name', 'Phone');
+
+        expect($row['revenue'])->toBe(40.0)
+            ->and($row['kind'])->toBe('non_web')
+            ->and($overview['untraced']['revenue'] + $overview['totals']['revenue'] + array_sum(array_column($overview['out_of_scope'], 'revenue')))
+                ->toBe($overview['baseline']['revenue']);
+    });
+
+    it('reports the slice of direct that comes from customers who registered before tracking started', function () {
+        config()->set('marketing.attribution_started_at', now()->subDays(3)->toDateTimeString());
+        $this->customer->trafficSources()->detach();
+        $this->customer->update(['created_at' => now()->subDays(30)]);
+        DB::table('invoices')->where('customer_id', $this->customer->id)->delete();
+        windowInvoice(now()->subDay()->toDateTimeString(), 120, $this->customer, $this->shop);
+
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
+
+        expect($overview['before_tracking']['revenue'])->toBeGreaterThanOrEqual(120.0)
+            ->and($overview['before_tracking']['revenue'])->toBeLessThanOrEqual($overview['untraced']['revenue'])
+            ->and($overview['before_tracking']['reliable_from'])->toBe(now()->subDays(3)->addDays(90)->toDateString());
+
+        $this->customer->trafficSources()->attach($this->googleAds->id, [
+            'share' => 1, 'first_touch_at' => now()->subDays(2), 'last_touch_at' => now()->subDays(2),
+        ]);
+
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
+
+        expect($overview['before_tracking']['revenue'])->toBeLessThan(120.0);
+
+        config()->set('marketing.attribution_started_at', null);
+    });
+
+    it('lists a sister company as a partner, whatever sales channel its orders were keyed under', function () {
+        $this->customer->trafficSources()->detach();
+        DB::table('invoices')->where('customer_id', $this->customer->id)->delete();
+
+        $phone = App\Models\Ordering\SalesChannel::where('type', 'phone')->first()
+            ?? App\Models\Ordering\SalesChannel::create(['name' => 'Phone', 'code' => 'phone', 'type' => 'phone']);
+        DB::table('invoices')->insert([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $this->customer->id,
+            'sales_channel_id' => $phone->id,
+            'currency_id'     => $this->shop->currency_id,
+            'tax_category_id' => App\Models\Helpers\TaxCategory::firstOrFail()->id,
+            'reference'       => 'INV-PARTNER-'.uniqid(),
+            'slug'            => 'inv-partner-'.uniqid(),
+            'type'            => 'invoice',
+            'net_amount'      => 70,
+            'org_net_amount'  => 70,
+            'grp_net_amount'  => 70,
+            'total_amount'    => 70,
+            'in_process'      => false,
+            'payment_data'    => '{}',
+            'data'            => '{}',
+            'date'            => now()->subDay()->toDateTimeString(),
+            'created_at'      => now()->subDay()->toDateTimeString(),
+            'updated_at'      => now()->subDay()->toDateTimeString(),
+        ]);
+
+        /* A partner is a customer that is one of our own organisations; the flag travels onto the
+           invoice at creation, which is what the query reads. */
+        DB::table('invoices')->where('customer_id', $this->customer->id)->update(['as_organisation_id' => $this->organisation->id]);
+
+        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
+        $rows     = collect($overview['out_of_scope']);
+
+        expect($rows->firstWhere('kind', 'partners')['revenue'])->toBe(70.0)
+            ->and($rows->firstWhere('kind', 'partners')['name'])->toBe($this->organisation->name)
+            ->and($rows->firstWhere('name', 'Phone')['revenue'] ?? 0.0)->toBe(0.0);
+
     });
 
     it('links each shop of the organisation to its own dashboard instead of repeating it', function () {
@@ -4079,6 +4596,32 @@ describe('traffic source clicks', function () {
             ->and($fraud['recent_bots'])->toHaveCount(1)
             ->and($fraud['recent_bots'][0]['ip'])->toBe('198.51.100.8')
             ->and(collect($fraud['channels'])->firstWhere('channel', 'Google Ads')['bot_pct'])->toBe(14.3);
+    });
+
+    it('counts an arrival with no referrer as a direct visit, once a day, and never an internal page view', function () {
+        $visitKey = 'traffic_visits:'.now()->toDateString().':'.$this->shop->id.':direct';
+        Illuminate\Support\Facades\Cache::forget($visitKey);
+
+        /* The fetch that runs capture always carries the storefront page as its Referer; only
+           document.referrer, forwarded as X-Original-Referer, says where the visitor came from. */
+        $arrive = function (array $server = [], array $cookies = []) {
+            $request = Illuminate\Http\Request::create('https://ecom.test/json/first-hit', 'GET', [], $cookies, [], $server + ['HTTP_REFERER' => 'https://ecom.test/']);
+            $request->attributes->set('website', (object) ['id' => 1, 'shop_id' => $this->shop->id, 'type' => null]);
+            app()->instance('request', $request);
+
+            return CaptureTrafficSource::make()->getCookies();
+        };
+
+        $cookies = $arrive();
+
+        expect(Illuminate\Support\Facades\Cache::get($visitKey))->toBe(1)
+            ->and($cookies['aiku_vcd']['value'])->toBe(now()->toDateString().'|w');
+
+        $arrive([], ['aiku_vcd' => $cookies['aiku_vcd']['value']]);
+        expect(Illuminate\Support\Facades\Cache::get($visitKey))->toBe(1);
+
+        $arrive(['HTTP_X_ORIGINAL_REFERER' => 'https://ecom.test/products']);
+        expect(Illuminate\Support\Facades\Cache::get($visitKey))->toBe(1);
     });
 
     it('queues a click record when capture matches a source', function () {

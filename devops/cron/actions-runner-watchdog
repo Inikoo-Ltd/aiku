@@ -1,0 +1,3 @@
+# GitHub runner listener can hang silently (stuck mid token refresh, service still "active").
+# A live listener writes _diag every ~50s while polling, so a stale log means it is dead.
+*/10 * * * * root f=$(ls -t /home/aiku_test/actions-runner/_diag/Runner_*.log 2>/dev/null | head -1); [ -n "$f" ] && [ -n "$(find "$f" -mmin +15)" ] && systemctl restart 'actions.runner.*.service' && logger -t runner-watchdog "restarted stale runner ($f)"

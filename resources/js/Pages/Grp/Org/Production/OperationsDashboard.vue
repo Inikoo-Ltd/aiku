@@ -8,7 +8,6 @@
 import { Head, Link, router } from "@inertiajs/vue3";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
-import FlatTreeMap from "@/Components/Navigation/FlatTreeMap.vue";
 import ManufactureWorkingCard from "@/Components/ManufactureWorkingCard.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSeedling, faThumbsDown, faUserHardHat, faTasks } from "@fal";
@@ -17,6 +16,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
 
 import { capitalize } from "@/Composables/capitalize";
+import { useLocaleStore } from "@/Stores/locale";
 
 import { PageHeadingTypes } from "@/types/PageHeading";
 
@@ -29,6 +29,7 @@ interface QueueTask {
     artefact_code: string
     artefact_name: string
     job_order_reference: string
+    job_order_slug: string
     quantity_made: number
     quantity_required: number
     start_route: { name: string, parameters: object }
@@ -37,9 +38,14 @@ interface QueueTask {
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
-    flatTreeMaps: {}
+    stats: {
+        name: string
+        stat: number
+        color: string
+        icon: string[]
+        route: { name: string, parameters: object }
+    }[]
     command_control?: {
-        payroll_export_route: { name: string, parameters: object }
         floor_route: { name: string, parameters: object }
         open_session: null | {
             id: number
@@ -60,6 +66,7 @@ const props = defineProps<{
             task_name: string
             artefact_code: string
             job_order_reference: string
+            job_order_slug: string
             started_at: string
             quantity_made: number
             quantity_required: number
@@ -69,6 +76,8 @@ const props = defineProps<{
             worker: string
             task_name: string
             artefact_code: string
+            job_order_reference: string
+            job_order_slug: string
             ended_at: string
             quantity_made: number
             void_route: { name: string, parameters: object }
@@ -88,6 +97,17 @@ function voidSession(session: { id: number, worker: string, quantity_made: numbe
 }
 
 const processing = ref(false)
+function jobOrderHref(slug: string) {
+    return route('grp.org.productions.show.operations.job-orders.show', [route().params['organisation'], route().params['production'], slug])
+}
+const locale = useLocaleStore()
+const iconColors: Record<string, string> = {
+    indigo: "text-indigo-500",
+    teal: "text-teal-500",
+    amber: "text-amber-500",
+    green: "text-green-500",
+    blue: "text-blue-500",
+}
 
 function startTask(task: QueueTask) {
     processing.value = true
@@ -103,28 +123,6 @@ let timer: ReturnType<typeof setInterval>
 onMounted(() => timer = setInterval(() => now.value = Date.now(), 1000))
 onUnmounted(() => clearInterval(timer))
 
-function previousMonday(weeksBack: number) {
-    const date = new Date()
-    const day = (date.getDay() + 6) % 7
-    date.setDate(date.getDate() - day - weeksBack * 7)
-    return date.toISOString().slice(0, 10)
-}
-const payrollFrom = ref(previousMonday(1))
-const payrollTo = ref((() => {
-    const date = new Date(previousMonday(1))
-    date.setDate(date.getDate() + 6)
-    return date.toISOString().slice(0, 10)
-})())
-
-function payrollExportUrl() {
-    if (!props.command_control) return '#'
-    return route(props.command_control.payroll_export_route.name, {
-        ...props.command_control.payroll_export_route.parameters,
-        from: payrollFrom.value,
-        to: payrollTo.value,
-    })
-}
-
 function elapsedSince(startedAt: string) {
     const seconds = Math.max(0, Math.floor((now.value - new Date(startedAt).getTime()) / 1000))
     const h = Math.floor(seconds / 3600)
@@ -137,7 +135,17 @@ function elapsedSince(startedAt: string) {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-    <FlatTreeMap class="mx-4" v-for="(treeMap, idx) in flatTreeMaps" :key="idx" :nodes="treeMap" />
+    <dl class="mx-4 mt-4 grid grid-cols-2 divide-x divide-gray-100 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100 md:grid-cols-5">
+        <Link
+            v-for="card in stats"
+            :key="card.name"
+            :href="route(card.route.name, card.route.parameters)"
+            class="flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-gray-50">
+            <FontAwesomeIcon :icon="card.icon" :class="iconColors[card.color] ?? 'text-gray-400'" fixed-width />
+            <dt class="truncate text-gray-500">{{ card.name }}</dt>
+            <dd class="ml-auto font-semibold tabular-nums text-gray-800">{{ locale.number(card.stat) }}</dd>
+        </Link>
+    </dl>
 
     <div v-if="command_control" class="mx-4 mt-6 grid gap-6 lg:grid-cols-2">
         <div>
@@ -169,7 +177,7 @@ function elapsedSince(startedAt: string) {
                     <div class="font-medium truncate">{{ session.worker }}</div>
                     <div class="text-sm text-gray-600 truncate">
                         {{ session.task_name }} · {{ session.artefact_code }}
-                        · {{ trans('Job order') }} {{ session.job_order_reference }}
+                        · {{ trans('Job order') }} <Link :href="jobOrderHref(session.job_order_slug)" class="text-indigo-700 hover:underline">{{ session.job_order_reference }}</Link>
                     </div>
                 </div>
                 <div class="text-right shrink-0">
@@ -184,7 +192,8 @@ function elapsedSince(startedAt: string) {
                     class="mb-2 rounded-lg border border-gray-200 bg-white px-4 py-2 flex items-center justify-between gap-3 text-sm">
                     <div class="min-w-0 truncate">
                         <span class="font-medium">{{ session.worker }}</span>
-                        <span class="text-gray-600"> · {{ session.task_name }} · {{ session.artefact_code }}</span>
+                        <span class="text-gray-600"> · {{ session.task_name }} · {{ session.artefact_code }} · </span>
+                        <Link :href="jobOrderHref(session.job_order_slug)" class="text-indigo-700 hover:underline">{{ session.job_order_reference }}</Link>
                     </div>
                     <div class="flex items-center gap-3 shrink-0">
                         <span class="tabular-nums text-gray-700">{{ session.quantity_made }}</span>
@@ -209,29 +218,13 @@ function elapsedSince(startedAt: string) {
             <div v-if="!command_control.queue.length" class="text-gray-400 text-sm py-6 text-center border border-dashed border-gray-200 rounded-lg">
                 {{ trans('The queue is empty') }}
             </div>
-            <div class="mb-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 flex items-end gap-3">
-                <div>
-                    <label class="block text-xs text-gray-500 mb-1">{{ trans('Payroll from') }}</label>
-                    <input type="date" v-model="payrollFrom" class="rounded border-gray-300 text-sm" />
-                </div>
-                <div>
-                    <label class="block text-xs text-gray-500 mb-1">{{ trans('To') }}</label>
-                    <input type="date" v-model="payrollTo" class="rounded border-gray-300 text-sm" />
-                </div>
-                <a
-                    :href="payrollExportUrl()"
-                    class="rounded bg-gray-700 text-white text-sm px-3 py-2"
-                >
-                    {{ trans('Export payroll CSV') }}
-                </a>
-            </div>
             <div v-for="task in command_control.queue" :key="task.id"
                 class="mb-2 rounded-lg border border-gray-200 bg-white px-4 py-3 flex items-center justify-between gap-3">
                 <div class="min-w-0">
                     <div class="font-medium truncate">{{ task.task_name }}</div>
                     <div class="text-sm text-gray-600 truncate">
                         {{ task.artefact_code }} — {{ task.artefact_name }}
-                        · {{ trans('Job order') }} {{ task.job_order_reference }}
+                        · {{ trans('Job order') }} <Link :href="jobOrderHref(task.job_order_slug)" class="text-indigo-700 hover:underline">{{ task.job_order_reference }}</Link>
                     </div>
                     <div class="text-xs text-gray-500 mt-0.5 tabular-nums">
                         {{ task.quantity_made }} / {{ task.quantity_required }}

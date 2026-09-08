@@ -98,6 +98,10 @@ class StoreInvoice extends OrgAction
         data_set($modelData, 'identity_document_number_alt', $customer->identity_document_number_alt, false);
         data_set($modelData, 'fiscal_name', $customer->fiscal_name, false);
 
+        data_set($modelData, 'is_vip', $customer->is_vip, false);
+        data_set($modelData, 'as_organisation_id', $customer->as_organisation_id, false);
+        data_set($modelData, 'as_employee_id', $customer->as_employee_id, false);
+
 
         $taxNumber = $customer->taxNumber;
         if ($taxNumber) {

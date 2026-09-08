@@ -15,6 +15,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 /**
  * The per SKU recalculation writes org_stock_histories directly, so the organisation and group
@@ -72,6 +73,7 @@ class RollUpOrgStockHistoriesPostCostFix
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $organisation = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
 
         $rolledUp = $this->handle($organisation, $command);

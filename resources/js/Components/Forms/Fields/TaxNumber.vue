@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import PureInput from "@/Components/Pure/PureInput.vue"
+import Multiselect from '@vueform/multiselect'
+import "@vueform/multiselect/themes/default.css"
 import { set, get, debounce } from 'lodash-es'
 import { checkVAT, countries } from "jsvat-next"
 import { ref, computed, watch ,inject} from "vue"
 import { faExclamationCircle, faCheckCircle } from '@fas'
-import { faCopy } from '@fal'
+import { faCopy, faCheck } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
@@ -12,6 +14,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { Tooltip } from 'floating-vue'
 import Modal from "@/Components/Utils/Modal.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { router } from "@inertiajs/vue3"
+import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
+import { notify } from "@kyvg/vue3-notification"
+
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 defineOptions({ inheritAttrs: false })
 
@@ -72,53 +79,6 @@ const getActualValue = (valueObj: any): string => {
 
     // Default fallback
     return valueObj.value || ''
-}
-
-// Helper function to set the actual value with conditional structure
-const setActualValue = (valueObj: any, newValue: string): any => {
-    if (!valueObj) {
-        return { value: newValue }
-    }
-
-    // Maintain existing structure patterns (backward compatibility)
-
-    // Case 1: if original structure has value.value.number
-    if (valueObj.value && typeof valueObj.value === 'object' && 'number' in valueObj.value) {
-        return {
-            ...valueObj,
-            value: {
-                ...valueObj.value,
-                number: newValue
-            }
-        }
-    }
-
-    // Case 2: if original structure has value.value as string
-    if (valueObj.value !== undefined && typeof valueObj.value === 'string') {
-        return {
-            ...valueObj,
-            value: newValue
-        }
-    }
-
-    // Case 3: Check if we should create fieldData-like structure
-    // Only if fieldData exists and form data seems empty
-    if (props.fieldData?.value?.number && (!valueObj.value || valueObj.value === '')) {
-        return {
-            value: {
-                number: newValue,
-                // Preserve other fieldData properties if they exist
-                ...(props.fieldData.value.id && { id: props.fieldData.value.id }),
-                ...(props.fieldData.value.type && { type: props.fieldData.value.type }),
-                ...(props.fieldData.value.country_id && { country_id: props.fieldData.value.country_id }),
-                ...(props.fieldData.value.status && { status: 'pending' }), // Reset status on new input
-                valid: false // Reset validation on new input
-            }
-        }
-    }
-
-    // Case 4: direct value (fallback)
-    return { value: newValue }
 }
 
 const value = ref(setFormValue(props.form, props.fieldName))
@@ -192,62 +152,103 @@ const getStatusText = (status: string, valid: boolean) => {
     return trans('Pending')
 }
 
-const validateVAT = (vatInput: any) => {
-    const vatNumber = getActualValue(vatInput)
+const countryOptions = computed(() => {
+    const countriesAddressData = props.options?.countriesAddressData ?? props.fieldData?.options?.countriesAddressData ?? {}
 
-    if (!vatNumber) {
-        vatValidationResult.value = null;
-        set(props.form, ['errors', props.fieldName], '');
-        // props.form.clearErrors(props.fieldName)
+    return Object.values(countriesAddressData).map((country: any) => ({
+        value: country.code,
+        label: country.label
+    }))
+})
 
+const number = ref(getActualValue(value.value))
+const countryCode = ref(
+    props.fieldData?.value?.country?.data?.code
+    || props.fieldData?.country
+    || props.country_code
+    || ''
+)
+const isCountryPickedByUser = ref(false)
+
+const isCountryMissing = computed(() => !!number.value && !countryCode.value)
+
+const updateFormValue = () => {
+    const payload = {
+        number: number.value,
+        value: number.value,
+        country_code: countryCode.value
     }
 
-    const vatNumberWithCountryCode = props.country_code ? props.country_code + vatNumber : vatNumber
+    if (Array.isArray(props.fieldName)) {
+        set(props.form, props.fieldName, payload)
+    } else {
+        props.form[props.fieldName] = payload
+    }
 
-    const validation = checkVAT(vatNumberWithCountryCode, countries);
-    vatValidationResult.value = validation.isValid ? trans("Valid tax number") : trans("Invalid tax number");
+    value.value = payload
+    emits("update:form", props.form)
+}
 
+const validateTaxNumber = () => {
+    if (isCountryMissing.value) {
+        vatValidationResult.value = null
+        set(props.form, ['errors', props.fieldName], trans('Tax number needs its country'))
+        set(registrationWarning.value, ['tax_number'], null)
 
+        return
+    }
 
-    // Handle invalid VAT
+    if (!number.value) {
+        vatValidationResult.value = null
+        set(props.form, ['errors', props.fieldName], '')
+        set(registrationWarning.value, ['tax_number'], null)
+
+        return
+    }
+
+    const validation = checkVAT(countryCode.value + number.value, countries)
+    vatValidationResult.value = validation.isValid ? trans("Valid tax number") : trans("Invalid tax number")
+
     if (!validation.isValid) {
         const messageWarning = '🤔 ' + trans('Tax number looks invalid. Are you sure you want to save it?')
-        set(registrationWarning.value, ['tax_number'], messageWarning);
-        set(props.form, ['errors', props.fieldName], messageWarning);
-        // props.form.reset();
-        return updateFormValue(validation);;
+        set(registrationWarning.value, ['tax_number'], messageWarning)
+        set(props.form, ['errors', props.fieldName], messageWarning)
+
+        return
     }
 
-    // Valid VAT and no mismatch, update the form value
-    updateFormValue(validation);
-    set(registrationWarning.value, ['tax_number'], null);
-    set(props.form, ['errors', props.fieldName], '');
-    // props.form.clearErrors(props.fieldName)
-};
+    set(registrationWarning.value, ['tax_number'], null)
+    set(props.form, ['errors', props.fieldName], '')
+}
 
-const debouncedValidation = debounce((newValue: any) => {
-
-    validateVAT(newValue)
-}, 500)
-
-const updateFormValue = (newValue) => {
-    let target = props.form;
-    if (Array.isArray(props.fieldName)) {
-        set(target, props.fieldName, newValue);
-    } else {
-        target[props.fieldName] = newValue;
-    }
-    emits("update:form", target);
-};
+const debouncedValidation = debounce(() => validateTaxNumber(), 500)
 
 const updateVat = (newInputValue: string) => {
-    // Set form as dirty when the user starts typing
     isFormDirty.value = true
-
-    // Update the value ref with the new input while preserving the structure
-    value.value = setActualValue(value.value, newInputValue)
-    debouncedValidation(value.value)
+    number.value = newInputValue
+    updateFormValue()
+    debouncedValidation()
 }
+
+const updateCountry = (newCountryCode: string) => {
+    isCountryPickedByUser.value = true
+    countryCode.value = newCountryCode ?? ''
+    updateFormValue()
+    validateTaxNumber()
+}
+
+watch(() => props.country_code, (newCountryCode) => {
+    if (!newCountryCode || isCountryPickedByUser.value) {
+        return
+    }
+
+    countryCode.value = newCountryCode
+
+    if (number.value) {
+        updateFormValue()
+        validateTaxNumber()
+    }
+}, { immediate: true })
 
 // Watch for changes in fieldData to reset the dirty state and show validation status
 watch(
@@ -264,18 +265,66 @@ watch(
     },
     { deep: true }
 )
+
+const isLoadingMarkValid = ref(false);
+const markAsValid = () => {
+    router.patch(route('grp.models.customer.update', {
+            customer: props.fieldData.mark_as_valid_button.cus_id
+        }), {
+            mark_tax_number_valid: true
+        }, 
+        {
+            onStart: () => (
+                isLoadingMarkValid.value = true
+            ),
+            onFinish: () => {
+                isLoadingMarkValid.value = false
+                reload?.()
+                notify({
+                    title: ctrans("Success"),
+                    text: ctrans("Marked Tax Number as Valid"),
+                    type: "success",
+                })
+            },
+            onError: (errors: any) => {
+                notify({
+                    title: ctrans("Error Occured"),
+                    text: errors?.message || ctrans("Unknown error occurred"),
+                    type: "error",
+                })
+            },
+        }
+    )
+}
+
 </script>
 
 <template>
     <div class="relative">
         <div class="relative">
-            <PureInput
-                :model-value="getActualValue(value)"
-                @update:model-value="updateVat"
-                :prefix="{
-                    label: props.country_code
-                }"
-            />
+            <div class="flex gap-x-2">
+                <Multiselect
+                    class="w-44"
+                    searchable
+                    :options="countryOptions"
+                    :model-value="countryCode"
+                    @update:model-value="updateCountry"
+                    :placeholder="trans('Country')"
+                    :canDeselect="false"
+                    :canClear="false"
+                    name="tax_number_country_code"
+                />
+                <PureInput
+                    :model-value="number"
+                    @update:model-value="updateVat"
+                    :prefix="{
+                        label: countryCode
+                    }"
+                />
+            </div>
+            <p v-if="isCountryMissing" class="mt-1 text-sm text-red-600">
+                {{ trans('Tax number needs its country') }}
+            </p>
             <span class="italic text-xs" v-if="fieldData?.europeanUnion">
                 <span style="color: red">*</span> {{ trans("This will affect your VAT Rate") }}
                 <FontAwesomeIcon v-on:click="isModalOpen = true" v-tooltip="ctrans('Click to view detailed explanation')" icon='fal fa-info-circle' class="opacity-60 hover:opacity-100 cursor-pointer" fixed-width aria-hidden='true' />
@@ -323,6 +372,29 @@ watch(
                         </p>
                     </div>
                 </div>
+            </div>
+            <div v-if="validationStatus.status == 'invalid' && fieldData.mark_as_valid_button?.show" class="flex items-start pt-2">
+                <ModalConfirmation
+                    :title="ctrans('Are you sure you want to proceed?')"
+                    :description="ctrans(`Please make sure you've checked the VAT Details with upmost detail first before proceeding`)"
+                    hideCancel
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+                        <Button :style="'secondary'" :icon="faCheck" :loading="isLoadingMarkValid" :label="'Mark as Valid'" @click="() => changeModel()" />
+                    </template>
+                    <template #btn-yes="{ closeModal }">
+                        <Button
+                            :label="trans('Confirm')"
+                            @click="
+                                () => {
+                                    markAsValid()
+                                    closeModal()
+                                }
+                            "
+                            type="negative"
+                            :icon="faWarning" />
+                    </template>
+                </ModalConfirmation>
             </div>
         </div>
     </div>

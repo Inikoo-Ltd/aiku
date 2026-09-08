@@ -20,6 +20,7 @@ use App\Actions\SysAdmin\User\UpdateUser;
 use App\Models\SysAdmin\User;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Traits\UI\WithProfile;
 use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
@@ -38,6 +39,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Rules\Password;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -49,6 +51,7 @@ class UpdateEmployee extends OrgAction
     use WithReorganisePositions;
     use WithNoStrictRules;
     use WithModelAddressActions;
+    use WithProfile;
 
     protected bool $asAction = false;
 
@@ -129,6 +132,9 @@ class UpdateEmployee extends OrgAction
         data_forget($modelData, 'auth_type');
         data_forget($modelData, 'user_model_status');
 
+        $employee = $this->processProfileAvatar($modelData, $employee);
+        data_forget($modelData, 'image');
+
         $oldUserId = $employee->user_id;
         $oldState  = $employee->state;
         $employee  = $this->update($employee, $modelData, ['data', 'salary']);
@@ -177,6 +183,7 @@ class UpdateEmployee extends OrgAction
     public function rules(): array
     {
         $rules = [
+            'image'                                     => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
             'worker_number'                             => [
                 'sometimes',
                 'max:64',
@@ -243,6 +250,7 @@ class UpdateEmployee extends OrgAction
             'job_positions.*.scopes.warehouses.slug.*'  => ['sometimes', Rule::exists('warehouses', 'slug')->where('organisation_id', $this->organisation->id)],
             'job_positions.*.scopes.fulfilments.slug.*' => ['sometimes', Rule::exists('fulfilments', 'slug')->where('organisation_id', $this->organisation->id)],
             'job_positions.*.scopes.shops.slug.*'       => ['sometimes', Rule::exists('shops', 'slug')->where('organisation_id', $this->organisation->id)],
+            'job_positions.*.scopes.productions.slug.*' => ['sometimes', Rule::exists('productions', 'slug')->where('organisation_id', $this->organisation->id)],
             'email'                                     => ['sometimes', 'nullable', 'email'],
             'emergency_contact'                         => ['sometimes', 'nullable', 'array'],
             'emergency_contact.contact'                 => ['sometimes', 'nullable', 'string', 'max:255'],

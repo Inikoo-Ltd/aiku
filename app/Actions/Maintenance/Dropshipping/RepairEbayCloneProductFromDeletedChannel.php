@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairEbayCloneProductFromDeletedChannel
 {
@@ -36,6 +37,7 @@ class RepairEbayCloneProductFromDeletedChannel
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $fromCustomerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('fromCustomerSalesChannel'))
             ->withTrashed()
             ->first();

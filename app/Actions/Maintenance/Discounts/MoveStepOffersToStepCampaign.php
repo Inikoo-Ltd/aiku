@@ -20,6 +20,7 @@ use App\Models\Discounts\OfferCampaign;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class MoveStepOffersToStepCampaign
 {
@@ -32,6 +33,7 @@ class MoveStepOffersToStepCampaign
      */
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
         $live = $command->option('live');
 
         $shopIds = Offer::where('code', 'like', 'po-step-%')->distinct()->pluck('shop_id');

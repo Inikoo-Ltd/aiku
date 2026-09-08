@@ -192,8 +192,14 @@ class StoreProductToTiktok extends RetinaAction
             $portfolio->refresh();
 
             if ($portfolio->platform_status) {
+                $warnings = collect(Arr::get($tiktokProduct, 'data.warnings', []))
+                    ->pluck('message')
+                    ->filter()
+                    ->implode(' ');
+
                 UpdatePortfolio::run($portfolio, [
-                    'errors_response' => null
+                    'errors_response' => null,
+                    'upload_warning'  => $warnings ?: $portfolio->upload_warning
                 ]);
 
                 UpdatePlatformPortfolioLog::dispatch($logs, [

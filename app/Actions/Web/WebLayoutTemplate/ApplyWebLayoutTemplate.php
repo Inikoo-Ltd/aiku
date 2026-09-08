@@ -55,7 +55,7 @@ class ApplyWebLayoutTemplate extends OrgAction
                         $visibility
                     );
 
-                    data_set($webBlocks, "{$key}.id", $newBlock->id);
+                    data_set($webBlock, "id", $newBlock->id);
                 }
 
                 DB::table('model_has_web_blocks')

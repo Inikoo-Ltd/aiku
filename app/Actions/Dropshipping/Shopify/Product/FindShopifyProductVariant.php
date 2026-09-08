@@ -115,7 +115,7 @@ class FindShopifyProductVariant
 
                 $products[] = [
                     'id'           => $product['id'],
-                    'title'        => $product['title'],
+                    'name'         => $product['title'],
                     'handle'       => $product['handle'],
                     'vendor'       => $product['vendor'],
                     'images'       => array_map(function ($imageEdge) {
@@ -171,7 +171,7 @@ class FindShopifyProductVariant
             $command->info("\nProduct #".($index + 1).":");
             $command->table(['Field', 'Value'], [
                 ['ID', $product['id']],
-                ['Title', $product['title']],
+                ['Title', $product['name']],
                 ['Handle', $product['handle']],
                 ['Product Type', $product['product_type']],
                 ['Vendor', $product['vendor']]

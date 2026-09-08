@@ -87,14 +87,17 @@ class ShowAggregatedMarketingDashboard extends OrgAction
                 ],
                 'intervals'   => $this->intervalsProp($userSettings),
                 'settings'    => [],
-                'overview'    => array_merge(
+                /* The roll-up scans every shop's invoices, orders and customers over the period, which
+                   is the slow part of the screen. Deferred, so the page head and the period picker
+                   arrive immediately and the figures land when they are ready. */
+                'overview'    => Inertia::defer(fn () => array_merge(
                     GetAggregatedMarketingOverview::run($this->parent, $this->periodFrom, $this->periodTo),
                     $this->periodLabels(),
                     [
                         'scope'          => $isGroup ? 'group' : 'organisation',
                         'children_label' => $isGroup ? __('Organisations') : __('Shops'),
                     ]
-                ),
+                )),
             ]
         );
     }

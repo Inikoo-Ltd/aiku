@@ -168,15 +168,7 @@ class CallApiApcGbShipping extends OrgAction
             return $this->sizeFailure();
         }
 
-        // ponytail: LQ16 and XS16 keep their code on 2-5 day routes; APC lists no TD limited-quantity or excess service
-        if ($this->isTwoToFiveDayPostcode($postalCode)) {
-            $productCode = match ($productCode) {
-                'LW16' => 'TDLW',
-                'ND16' => 'TDAY',
-                'NC16' => 'TDNC',
-                default => $productCode,
-            };
-        }
+        $productCode = $this->productCodeForPostcode($postalCode, $productCode);
 
 
         $prepareParams['ProductCode'] = $productCode;
@@ -300,19 +292,68 @@ class CallApiApcGbShipping extends OrgAction
 
     public function isTwoToFiveDayPostcode(string $postalCode): bool
     {
+        if ($this->requiresTdayProductCode($postalCode)) {
+            return true;
+        }
+
         if (!preg_match('/^([A-Z]{1,2})(\d{1,2})/', strtoupper(trim($postalCode)), $matches)) {
             return false;
         }
+        return in_array($matches[1], ['JE', 'GG', 'IM']);
+    }
+
+    public function productCodeForPostcode(string $postalCode, string $productCode): string
+    {
+        if ($this->requiresTdayProductCode($postalCode)) {
+            return 'TDAY';
+        }
+
+        if (!$this->isTwoToFiveDayPostcode($postalCode)) {
+            return $productCode;
+        }
+
+        return match ($productCode) {
+            'LW16' => 'TDLW',
+            'ND16' => 'TDAY',
+            'NC16' => 'TDNC',
+            default => $productCode,
+        };
+    }
+
+    public function requiresTdayProductCode(string $postalCode): bool
+    {
+        if (!preg_match('/^([A-Z]{1,2})(\d{1,2})/', strtoupper(trim($postalCode)), $matches)) {
+            return false;
+        }
+
         $area     = $matches[1];
         $district = (int)$matches[2];
 
         return match ($area) {
-            'JE', 'GG', 'IM', 'KW', 'HS', 'ZE' => true,
-            'AB' => in_array($district, [37, 38, 43, 44, 45, 55, 56]),
-            'IV' => in_array($district, [21, 22, 26, 27, 28]) || ($district >= 40 && $district <= 49) || ($district >= 51 && $district <= 56),
-            'PA' => $district == 20 || ($district >= 41 && $district <= 49) || ($district >= 60 && $district <= 78),
-            'PH' => $district >= 42 && $district <= 44,
-            'KA' => $district == 27 || $district == 28,
+            'AB' => ($district >= 30 && $district <= 39)
+                || ($district >= 41 && $district <= 45)
+                || ($district >= 51 && $district <= 56),
+            'IV' => ($district >= 1 && $district <= 28)
+                || ($district >= 30 && $district <= 32)
+                || $district === 36
+                || ($district >= 40 && $district <= 49)
+                || ($district >= 51 && $district <= 56)
+                || $district === 63,
+            'PH' => ($district >= 3 && $district <= 13)
+                || ($district >= 15 && $district <= 26)
+                || ($district >= 30 && $district <= 44)
+                || ($district >= 49 && $district <= 50),
+            'PA' => ($district >= 20 && $district <= 38)
+                || ($district >= 41 && $district <= 49)
+                || ($district >= 60 && $district <= 78)
+                || $district === 80,
+            'DD' => $district >= 8 && $district <= 11,
+            'FK' => $district >= 7 && $district <= 21,
+            'KY' => $district === 66,
+            'KA' => $district >= 27 && $district <= 28,
+            'KW' => $district >= 1 && $district <= 17,
+            'HS' => $district >= 1 && $district <= 9,
+            'ZE' => $district >= 1 && $district <= 3,
             default => false,
         };
     }

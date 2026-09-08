@@ -215,9 +215,6 @@ trait WithEbayApiRequest
                         $product->attributes['style'] ??
                         ['Not Specified'];
                     break;
-                case 'Brand':
-                    $attributes['Brand'] = [$brand?->name ?? 'Ancient Wisdom'];
-                    break;
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
                     break;
@@ -242,7 +239,8 @@ trait WithEbayApiRequest
             }
         }
 
-        // Use this as default value and always included
+        $attributes['Brand'] = [$brand?->name ?? 'Ancient Wisdom'];
+
         if ($product->country_of_origin) {
             $attributes['Country/Region of Manufacture'] = [$product->country_of_origin];
         }
@@ -260,8 +258,7 @@ trait WithEbayApiRequest
 
     public function getDefaultValueForAspect($aspect)
     {
-        // Return the first recommended value or "Not Specified"
-        return $aspect['aspectValues'][0]['localizedValue'] ?? ['Not Specified'];
+        return Arr::get($aspect, 'aspectValues.0.localizedValue') ?? 'Not Specified';
     }
 
     public function parseMissingAspects($errorMessage)
@@ -321,12 +318,7 @@ trait WithEbayApiRequest
                 'category_id' => $categoryId
             ]);
         } catch (\Exception $e) {
-            \Log::error('Failed to get eBay category aspects', [
-                'category_id' => $categoryId,
-                'error'       => $e->getMessage()
-            ]);
-
-            return ['aspects' => []]; // Return empty aspects on failure
+            return ['aspects' => []];
         }
     }
 
@@ -1452,11 +1444,14 @@ trait WithEbayApiRequest
             $endpoint = "/sell/fulfillment/v1/order/$orderId/shipping_fulfillment";
 
             $fulfillment = [
-                'lineItems'           => $fulfillmentData['line_items'],
-                'shippedDate'         => now()->toISOString(),
-                'shippingCarrierCode' => $fulfillmentData['carrier_code'] ?? 'USPS',
-                'trackingNumber'      => $fulfillmentData['tracking_number'] ?? null
+                'lineItems'   => $fulfillmentData['line_items'],
+                'shippedDate' => now()->toISOString(),
             ];
+
+            if (filled(Arr::get($fulfillmentData, 'tracking_number'))) {
+                $fulfillment['trackingNumber']      = $fulfillmentData['tracking_number'];
+                $fulfillment['shippingCarrierCode'] = Arr::get($fulfillmentData, 'carrier_code') ?: 'Other';
+            }
 
             return $this->makeEbayRequest('post', $endpoint, $fulfillment);
         } catch (Exception $e) {
@@ -1877,7 +1872,7 @@ trait WithEbayApiRequest
     public function getInventoryLocations()
     {
         try {
-            $endpoint = "/sell/inventory/v1/location?limit=20&offset=0";
+            $endpoint = "/sell/inventory/v1/location?limit=100&offset=0";
 
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {
@@ -1980,8 +1975,12 @@ trait WithEbayApiRequest
     public function getUser($data = [], $queryParams = [])
     {
         try {
+            $config = $this->getEbayConfig();
+
+            $baseUrl = $config['sandbox'] ? "https://apiz.sandbox.ebay.com" : "https://apiz.ebay.com";
+
             $token = $this->getEbayAccessToken();
-            $url   = "https://apiz.ebay.com/commerce/identity/v1/user/";
+            $url   = $baseUrl . "/commerce/identity/v1/user/";
 
             $response = Http::withHeaders([
                 'Authorization'    => 'Bearer '.$token,

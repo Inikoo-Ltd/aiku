@@ -134,6 +134,11 @@ class Production extends Model implements Auditable
         return $this->hasMany(ManufacturePayBand::class);
     }
 
+    public function artefactFamilies(): HasMany
+    {
+        return $this->hasMany(ArtefactFamily::class);
+    }
+
     public function artefacts(): HasMany
     {
         return $this->hasMany(Artefact::class);

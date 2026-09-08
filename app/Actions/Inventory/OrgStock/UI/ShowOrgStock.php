@@ -132,7 +132,10 @@ class ShowOrgStock extends OrgAction
                     'afterTitle'    => $orgStock->is_on_demand ? [
                         'label'   => __('On Demand'),
                         'tooltip' => __('Stock figure is not tracked, products advertise a fixed quantity')
-                    ] : null,
+                    ] : ($orgStock->is_excluded_from_auto_ordering ? [
+                        'label'   => __('No auto order'),
+                        'tooltip' => __('Procurement auto-fill proposals skip this SKO')
+                    ] : null),
                     'iconRight'          => $orgStock->state->stateIcon()[$orgStock->state->value],
                     'actions'       => [
                         [

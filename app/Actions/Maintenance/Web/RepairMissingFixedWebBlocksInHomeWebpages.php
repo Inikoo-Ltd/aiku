@@ -14,6 +14,7 @@ use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMissingFixedWebBlocksInHomeWebpages
 {
@@ -63,6 +64,7 @@ class RepairMissingFixedWebBlocksInHomeWebpages
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
         $webpagesID = DB::table('webpages')->select('id')->where('type', 'storefront')->get();
 
 
