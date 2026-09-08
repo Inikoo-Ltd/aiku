@@ -2571,6 +2571,10 @@ test('ial01 bom removal is blocked until a consumable replaces the instruction',
     ));
 
     $product->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 1]]);
+
+    // Blocking asks whether ANY org stock of the product carries a consumable, and earlier tests
+    // in the worker leave the picked item's product sharing org stocks that already do
+    DB::table('org_stocks')->whereIn('id', $product->orgStocks()->pluck('org_stocks.id'))->update(['consumables' => null]);
     $orgStock->update(['consumables' => null]);
 
     $action = new RemoveIal01FromBillsOfMaterials();

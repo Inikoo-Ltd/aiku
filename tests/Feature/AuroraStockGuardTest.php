@@ -4,13 +4,13 @@ use App\Actions\Transfers\Aurora\WithFetchStock;
 use App\Models\Goods\Stock;
 use App\Models\Inventory\OrgStock;
 use App\Transfers\SourceOrganisationService;
-use Illuminate\Support\Facades\DB;
 
 /**
- * This one genuinely needs rows: processOrgStock looks the org stock up before deciding.
- * Everything runs inside a transaction that is rolled back, so the suite sees no trace of
- * it — createOrganisation() is deliberately not used, because building the organisation the
- * feature tests share from a unit test leaves InventoryTest unable to run.
+ * This one genuinely needs rows: processOrgStock looks the org stock up before deciding, so it
+ * lives with the feature tests and builds the shared organisation the way they do. It used to
+ * sit in tests/Unit behind a hand-rolled transaction, which did not hold: the rollback left a
+ * group behind carrying only 43 of its 45 job position categories, and every later test in that
+ * worker died inside SeedJobPositions on a category that was never there.
  */
 function auroraStockGuardHarness(): object
 {
@@ -35,20 +35,12 @@ function auroraStockGuardHarness(): object
 }
 
 beforeEach(function () {
-    DB::beginTransaction();
-});
-
-afterEach(function () {
-    DB::rollBack();
+    $this->organisation = createOrganisation();
 });
 
 it('never lets aurora update an existing org stock, whichever organisation it belongs to', function (bool $aikuStockControl) {
-    $unique = uniqid();
-
-    // createOrganisation() is safe here only because the surrounding transaction is
-    // rolled back: creating the shared organisation from a unit test and leaving it behind
-    // is what breaks InventoryTest.
-    $organisation = createOrganisation();
+    $unique       = uniqid();
+    $organisation = $this->organisation;
     $organisation->update(['is_aiku_stock_control' => $aikuStockControl]);
 
     $stock = Stock::create([
