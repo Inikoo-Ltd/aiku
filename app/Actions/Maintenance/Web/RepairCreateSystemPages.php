@@ -69,17 +69,34 @@ class RepairCreateSystemPages
                 'sub_type'      => WebpageSubTypeEnum::FORGOT_PASSWORD_PAGE,
             ]);
         }
+            
+        $blogDashboard = Webpage::where('website_id', $website->id)
+            ->where('type', WebpageTypeEnum::SYSTEM_PAGE)
+            ->where('sub_type', WebpageSubTypeEnum::BLOG_DASHBOARD_PAGE)
+            ->first();
+
+        if (!$blogDashboard) {
+            $blogDashboard = StoreWebpage::make()->action($website, [
+                'url'           => 'blog',
+                'code'          => 'blog',
+                'title'         => 'Our Blog',
+                'type'          => WebpageTypeEnum::SYSTEM_PAGE,
+                'sub_type'      => WebpageSubTypeEnum::BLOG_DASHBOARD_PAGE,
+            ]);
+        }
 
 
         $website->update([
-            'login_page_id'   => $loginPage->id,
-            'register_page_id'   => $registerPage->id,
-            'forgot_password_page_id'   => $forgotPassword->id
+            'login_page_id'             => $loginPage->id,
+            'register_page_id'          => $registerPage->id,
+            'forgot_password_page_id'   => $forgotPassword->id,
+            'blog_dashboard_page_id'    => $blogDashboard->id
         ]);
 
         $command->info("Login Page created: {$loginPage->canonical_url}");
         $command->info("Register Page created: {$registerPage->canonical_url}");
         $command->info("Forgot Password Page created: {$forgotPassword->canonical_url}");
+        $command->info("Blog Dashboard Page created: {$blogDashboard->canonical_url}");
     }
 
     public string $commandSignature = 'repair:create_system_pages {--website_id=}';

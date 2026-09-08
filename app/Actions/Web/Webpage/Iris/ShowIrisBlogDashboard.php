@@ -17,6 +17,7 @@ use App\Http\Resources\Web\BlogsIrisResource;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -31,17 +32,31 @@ class ShowIrisBlogDashboard
 
     private const COVER_LOOKUP_LIMIT = 10;
 
-    public function handle(Website $website): LengthAwarePaginator
+    public function handle(Website $website, ?ActionRequest $request = null): LengthAwarePaginator|RedirectResponse
     {
+        if ($website->blogDashboardPage && $request) {
+            $url = ShowIrisWebpage::run('blog', [], $request);
+
+            parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $params);
+
+            if ($request->has('ref')) {
+                $params['ref'] = $request->query('ref');
+            }
+
+            $url = strtok($url, '?') . '?' . http_build_query($params);
+
+            return redirect()->to($url);
+        }
+    
         return IndexIrisBlogs::make()->handle($website, IndexIrisBlogs::PREFIX, WebpageSubTypeEnum::blogCategories());
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function asController(ActionRequest $request): LengthAwarePaginator|RedirectResponse
     {
         /** @var Website $website */
         $website = $request->input('website');
 
-        return $this->handle($website);
+        return $this->handle($website, $request);
     }
 
     public function htmlResponse(LengthAwarePaginator $blogs, ActionRequest $request): Response

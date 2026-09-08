@@ -239,6 +239,10 @@ class StoreWebpage extends OrgAction
                     if ($webpage->sub_type == WebpageSubTypeEnum::FORGOT_PASSWORD_PAGE) {
                         $this->createWebBlock($webpage, 'forgot-password');
                     }
+
+                    if ($webpage->sub_type == WebpageSubTypeEnum::BLOG_DASHBOARD_PAGE) {
+                        $this->createWebBlock($webpage, 'blog-categories');
+                    }
                 }
             }
 

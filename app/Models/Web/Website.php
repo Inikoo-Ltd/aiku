@@ -325,6 +325,11 @@ class Website extends Model implements Auditable, HasMedia
         return $this->hasOne(Webpage::class, 'id', 'forgot_password_page_id');
     }
 
+    public function blogDashboardPage(): HasOne
+    {
+        return $this->hasOne(Webpage::class, 'id', 'blog_dashboard_page_id');
+    }
+
     public function logo(): BelongsTo
     {
         return $this->belongsTo(Media::class, 'logo_id');
