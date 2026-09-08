@@ -21,6 +21,7 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockCarousel;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockCta;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSlider;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlog;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlogCategories;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlogList;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsCRB;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsFromMaster;
@@ -87,6 +88,13 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetIrisWebBlockBlog::run($webpage, $webBlock);
         } elseif ($webBlockType == 'blog-list') {
             $webBlockData = GetIrisWebBlockBlogList::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
+        } elseif ($webBlockType == 'blog-categories') {
+            $webBlockData = GetIrisWebBlockBlogCategories::run($webpage, $webBlock);
             if ($webBlockData) {
                 $parsedWebBlocks[$key] = $webBlockData;
             } else {

@@ -10,9 +10,50 @@
 	"is_in_test": false,
 	"data": {
 		"fieldValue": {
-			"title": "Browse by category",
+			"title": "Our Blog",
 			"subtitle": null,
 			"categories": [],
+			"category_content": {
+				"newsletters": {
+					"label": null,
+					"description": null,
+					"image": null,
+					"image_alt": null
+				},
+				"product_guides": {
+					"label": null,
+					"description": null,
+					"image": null,
+					"image_alt": null
+				},
+				"business_tips": {
+					"label": null,
+					"description": null,
+					"image": null,
+					"image_alt": null
+				}
+			},
+			"show_list": true,
+			"list_title": "Latest blogs",
+			"number_of_posts": 8,
+			"list_show_published_date": true,
+			"list_show_cta": true,
+			"list_cta_label": "Read More",
+			"list_load_more_label": "Load more blogs",
+			"explore": {
+				"show": true,
+				"eyebrow": "New here?",
+				"title": "Start exploring",
+				"description": "<p>Dive into the latest stories, guides, and tips across all categories.</p>",
+				"label": "Browse All Blogs"
+			},
+			"newsletter": {
+				"show": true,
+				"eyebrow": "Stay in the loop",
+				"title": "Get the newsletter",
+				"description": "<p>Join thousands of readers and get stories, guides, and tips delivered to your inbox.</p>",
+				"label": "Subscribe"
+			},
 			"columns": {
 				"desktop": 3,
 				"tablet": 2,

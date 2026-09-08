@@ -242,6 +242,7 @@ class StoreWebpage extends OrgAction
 
                     if ($webpage->sub_type == WebpageSubTypeEnum::BLOG_DASHBOARD_PAGE) {
                         $this->createWebBlock($webpage, 'blog-categories');
+                        $webpage->website->update(['blog_dashboard_page_id' => $webpage->id]);
                     }
                 }
             }

@@ -52,6 +52,7 @@ use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
 use App\Actions\Iris\Reviews\FetchIrisReviewsInWebpage;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use App\Actions\Retina\Dropshipping\Portfolio\ZentradaWebApi;
+use App\Actions\Iris\Blog\GetIrisBlogs;
 use App\Actions\Reviews\GetReviewableReviews;
 use App\Actions\Reviews\GetReviews;
 use App\Actions\Reviews\Iris\GetIrisReviews;
@@ -144,6 +145,9 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     // Families list for range comparison in Family Page Workshop
     Route::get('{productCategory}/comparison-detail', GetFamiliesComparisonDetail::class)->name('website.category.comparison_detail');
     Route::get('{productCategory}/comparison-option', GetFamiliesForComparisonOption::class)->name('website.category.comparison_option');
+
+    // Blogs
+    Route::get('blogs', GetIrisBlogs::class)->name('blogs.index');
 
     Route::get('{webpage:slug}/reviews', FetchIrisReviewsInWebpage::class)->name('fetch_reviews');
     Route::get('reviews/{webpage:id}', GetIrisReviews::class)->name('fetch_reviews_new')->whereNumber('webpage');

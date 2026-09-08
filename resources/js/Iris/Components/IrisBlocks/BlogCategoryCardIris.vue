@@ -36,8 +36,10 @@ const props = withDefaults(
 	}
 )
 
-const displayLabel = computed(() =>
-	getBlogCategoryDisplayName(props.category.value, props.category.label)
+const displayLabel = computed(
+	() =>
+		props.category.custom_label?.trim() ||
+		getBlogCategoryDisplayName(props.category.value, props.category.label)
 )
 
 const ctaText = computed(() => props.ctaLabel || trans("View Dashboard"))
@@ -88,9 +90,11 @@ const ctaText = computed(() => props.ctaLabel || trans("View Dashboard"))
 				{{ displayLabel }}
 			</h2>
 
-			<p v-if="showDescription" class="text-sm leading-relaxed text-gray-500">
-				{{ category.description }}
-			</p>
+			<div v-if="showDescription" class="editor-class text-sm leading-relaxed text-gray-500">
+				<slot name="description">
+					<div v-html="category.description" />
+				</slot>
+			</div>
 
 			<span
 				v-if="showCta"
