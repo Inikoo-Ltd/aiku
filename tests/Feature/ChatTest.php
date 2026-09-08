@@ -2597,3 +2597,47 @@ describe('staff chat audience seeding', function () {
         expect(\Illuminate\Support\Arr::get($this->shop->fresh()->settings, 'staff_chat.crm_user_ids'))->toBe([$curated->id]);
     });
 });
+
+test('a chat session cannot be bound to a web user the caller is not logged in as', function () {
+    $victim = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+
+    $modelData = [
+        'web_user_id' => $victim->id,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL->value,
+        'shop_id'     => $this->shop->id,
+    ];
+
+    config()->set('app.enforce_chat_identity', true);
+    \Illuminate\Support\Facades\Auth::guard('retina')->logout();
+
+    $hijacked = $this->action->handle($modelData);
+
+    expect($hijacked->web_user_id)->toBeNull()
+        ->and($hijacked->guest_identifier)->not->toBeNull();
+
+    \Illuminate\Support\Facades\Auth::guard('retina')->login($victim);
+
+    $legitimate = $this->action->handle($modelData);
+
+    expect($legitimate->web_user_id)->toBe($victim->id);
+});
+
+test('a claimed chat web user is recorded but honoured while enforcement is off', function () {
+    $victim = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+
+    config()->set('app.enforce_chat_identity', false);
+    \Illuminate\Support\Facades\Auth::guard('retina')->logout();
+    \Illuminate\Support\Facades\Log::spy();
+
+    $chatSession = $this->action->handle([
+        'web_user_id' => $victim->id,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL->value,
+        'shop_id'     => $this->shop->id,
+    ]);
+
+    expect($chatSession->web_user_id)->toBe($victim->id);
+    \Illuminate\Support\Facades\Log::shouldHaveReceived('warning')
+        ->withArgs(fn ($message) => $message === 'Chat web user claimed without a matching login');
+});

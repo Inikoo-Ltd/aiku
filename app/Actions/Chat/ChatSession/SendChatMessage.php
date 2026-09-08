@@ -32,6 +32,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class SendChatMessage
 {
+    use WithTrustedChatWebUser;
     use AsAction;
 
     /**
@@ -382,8 +383,9 @@ class SendChatMessage
             ];
         }
 
-        if (!empty($validated['sender_id']) && $senderType === ChatSenderTypeEnum::USER->value) {
-            $webUser = WebUser::find($validated['sender_id']);
+        if ($senderType === ChatSenderTypeEnum::USER->value) {
+            $webUserId = $this->trustedWebUserId($validated['sender_id'] ?? null);
+            $webUser   = $webUserId ? WebUser::find($webUserId) : null;
 
             if ($webUser) {
                 $chatSession->update([
