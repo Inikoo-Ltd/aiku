@@ -155,6 +155,7 @@ class IndexRawMaterials extends OrgAction
             }
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('raw material'), __('raw materials')])
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     match (class_basename($parent)) {

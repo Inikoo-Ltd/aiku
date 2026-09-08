@@ -125,6 +125,7 @@ class IndexArtefactFamilies extends OrgAction
             }
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('family'), __('families')])
                 ->withEmptyState([
                     'title'       => __('No artefact families yet'),
                     'description' => $this->canEdit ? __('Families group the artefacts of a department, the way stock families group org stocks.') : null,

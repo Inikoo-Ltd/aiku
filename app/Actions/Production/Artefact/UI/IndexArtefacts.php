@@ -318,6 +318,7 @@ class IndexArtefacts extends OrgAction
             }
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('artefact'), __('artefacts')])
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     match (class_basename($parent)) {
