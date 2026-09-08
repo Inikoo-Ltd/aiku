@@ -524,6 +524,8 @@ onMounted(async () => {
                             <img :src="logo.image"
                                 class="h-4 px-1"
                                 :alt="ctrans('Logo of :paymentLabel', { paymentLabel: logo.name })"
+                                loading="lazy"
+                                decoding="async"
                             />
                         </template>
                     </div>
@@ -820,6 +822,8 @@ onMounted(async () => {
                         :src="logo.image"
                         :alt="ctrans('Logo of :paymentLabel', { paymentLabel: logo.name })"
                         class="h-4"
+                        loading="lazy"
+                        decoding="async"
                     />
                 </div>
             </div>
