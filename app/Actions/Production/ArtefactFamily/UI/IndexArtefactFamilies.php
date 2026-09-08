@@ -174,7 +174,7 @@ class IndexArtefactFamilies extends OrgAction
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => __('family'),
+                            'label' => __('Family'),
                             'route' => [
                                 'name'       => 'grp.org.productions.show.crafts.artefact_families.create',
                                 'parameters' => $request->route()->originalParameters()
