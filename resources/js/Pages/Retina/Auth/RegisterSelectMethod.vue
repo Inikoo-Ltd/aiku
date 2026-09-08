@@ -82,11 +82,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
         })
     }
 }
-const goToRegister = () => {
-    window.location.href = route('retina.register_standalone', {
-        tiktok_code: route().queryParams?.tiktok_code
-    })
-}
+const isLoadingVisit = ref(false)
 </script>
 
 <template>
@@ -100,27 +96,17 @@ const goToRegister = () => {
             <form class="flex flex-col gap-y-6">
 
 				<!-- Submit Button -->
-				<ButtonWithLink
-					:routeTarget="{
-						name: 'retina.register_standalone',
-                        parameters: {
-                            tiktok_code: route().queryParams?.tiktok_code
-                        }
-					}"
-					full
-					xlabel="trans('Register')"
+				<a
+					:href="route('retina.register_standalone', {
+                        tiktok_code: route().queryParams?.tiktok_code
+                    })"
+					@click="isLoadingVisit = true"
+					class="w-full relative flex items-center justify-center gap-2 bg-[#1D252E] text-white hover:bg-black font-normal border border-[#1D252E] rounded-sm px-16 py-2 cursor-pointer transition duration-75 ease-in-out"
+					:class="{ 'pointer-events-none bg-[#393e49] text-gray-300': isLoadingVisit }"
 				>
-                    <template #default="{ isLoadingVisit }">
-                        <button
-                            @click="goToRegister"
-                            class="w-full relative flex items-center justify-center gap-2 bg-[#1D252E] disabled:bg-[#393e49] text-white disabled:text-gray-300 hover:bg-black font-normal border border-[#1D252E] rounded-sm px-16 py-2 cursor-pointer transition duration-75 ease-in-out"
-                            :disabled="isLoadingVisit"
-                        >
-                            {{ trans("Register") }}
-                            <LoadingIcon v-if="isLoadingVisit" />
-                        </button>
-                    </template>
-                </ButtonWithLink>
+					{{ trans("Register") }}
+					<LoadingIcon v-if="isLoadingVisit" />
+				</a>
 
                 
 
