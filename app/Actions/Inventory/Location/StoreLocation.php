@@ -20,6 +20,7 @@ use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use App\Rules\IUnique;
+use Illuminate\Validation\Rule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
@@ -39,8 +40,9 @@ class StoreLocation extends OrgAction
         data_set($modelData, 'organisation_id', $parent->organisation_id);
 
         if (class_basename($parent::class) == 'WarehouseArea') {
-            $modelData['warehouse_id'] = $parent->warehouse_id;
-            $organisation              = $parent->warehouse->organisation;
+            $modelData['warehouse_id']      = $parent->warehouse_id;
+            $modelData['warehouse_area_id'] = $parent->id;
+            $organisation                   = $parent->warehouse->organisation;
         } else {
             $organisation = $parent->organisation;
         }
@@ -78,6 +80,11 @@ class StoreLocation extends OrgAction
                         ['column' => 'warehouse_id', 'value' => $this->warehouse->id],
                     ]
                 ),
+            ],
+            'warehouse_area_id' => [
+                'sometimes',
+                'nullable',
+                Rule::exists('warehouse_areas', 'id')->where('warehouse_id', $this->warehouse->id)->whereNull('deleted_at'),
             ],
             'data' => ['sometimes', 'nullable', 'array'],
             'max_weight' => ['sometimes', 'nullable', 'numeric', 'min:0.1', 'max:1000000'],

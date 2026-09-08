@@ -87,6 +87,17 @@ class ShowWarehouseArea extends OrgAction
                             ]
                             : null,
                         $this->canEdit ? $this->getEditActionIcon($request) : null,
+                        $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'delete',
+                            'key'   => 'delete',
+                            'label' => __('Delete area'),
+                            'route' => [
+                                'name'       => 'grp.models.warehouse_area.delete',
+                                'parameters' => ['warehouseArea' => $warehouseArea->id],
+                                'method'     => 'delete',
+                            ]
+                        ] : null,
                     ],
                     'meta'    => [
                         [

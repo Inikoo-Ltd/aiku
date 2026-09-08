@@ -20,7 +20,9 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Models\Inventory\Location;
+use App\Models\Inventory\WarehouseArea;
 use App\Rules\IUnique;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateLocation extends OrgAction
@@ -33,8 +35,9 @@ class UpdateLocation extends OrgAction
 
     public function handle(Location $location, array $modelData): Location
     {
+        $originalWarehouseAreaId = $location->warehouse_area_id;
+
         $location = $this->update($location, $modelData, ['data']);
-        $changes  = $location->getChanges();
 
         if ($location->wasChanged('status')) {
             GroupHydrateLocations::dispatch($location->group)->delay($this->hydratorsDelay);
@@ -43,6 +46,15 @@ class UpdateLocation extends OrgAction
 
             if ($location->warehouse_area_id) {
                 WarehouseAreaHydrateLocations::dispatch($location->warehouseArea)->delay($this->hydratorsDelay);
+            }
+        }
+
+        if ($location->wasChanged('warehouse_area_id')) {
+            $location->locationOrgStocks()->update(['warehouse_area_id' => $location->warehouse_area_id]);
+            $location->pallets()->update(['warehouse_area_id' => $location->warehouse_area_id]);
+
+            foreach (array_filter([$originalWarehouseAreaId, $location->warehouse_area_id]) as $warehouseAreaId) {
+                WarehouseAreaHydrateLocations::dispatch(WarehouseArea::find($warehouseAreaId))->delay($this->hydratorsDelay);
             }
         }
 
@@ -83,6 +95,11 @@ class UpdateLocation extends OrgAction
                         ]
                     ]
                 ),
+            ],
+            'warehouse_area_id'  => [
+                'sometimes',
+                'nullable',
+                Rule::exists('warehouse_areas', 'id')->where('warehouse_id', $this->location->warehouse_id)->whereNull('deleted_at'),
             ],
             'allow_stocks'       => ['sometimes', 'required', 'boolean'],
             'allow_fulfilment'   => ['sometimes', 'required', 'boolean'],

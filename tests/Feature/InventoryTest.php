@@ -1188,7 +1188,7 @@ test('store org stock audit delta from location org stock', function () {
         ->and($delta->location_id)->toBe($locationOrgStock->location_id);
 });
 
-test('delete warehouse area with its locations', function () {
+test('delete warehouse area orphans its locations', function () {
     $warehouse = StoreWarehouse::make()->action($this->organisation, [
         'code' => 'WA-DEL',
         'name' => 'Warehouse for area delete test',
@@ -1199,12 +1199,39 @@ test('delete warehouse area with its locations', function () {
         'name' => 'Area for delete test',
     ]);
 
-    StoreLocation::make()->action($area, array_merge(Location::factory()->definition(), ['code' => 'LO-D']));
+    $location = StoreLocation::make()->action($area, array_merge(Location::factory()->definition(), ['code' => 'LO-D']));
 
     $areaId = $area->id;
     DeleteWarehouseArea::make()->handle($area);
 
-    expect(WarehouseArea::find($areaId))->toBeNull();
+    expect(WarehouseArea::find($areaId))->toBeNull()
+        ->and(Location::find($location->id)->warehouse_area_id)->toBeNull();
+});
+
+test('move location between warehouse areas', function () {
+    $warehouse = StoreWarehouse::make()->action($this->organisation, [
+        'code' => 'WA-MOV',
+        'name' => 'Warehouse for area move test',
+    ]);
+
+    $areaA = StoreWarehouseArea::make()->action($warehouse, ['code' => 'AR-MA', 'name' => 'Area A']);
+    $areaB = StoreWarehouseArea::make()->action($warehouse, ['code' => 'AR-MB', 'name' => 'Area B']);
+
+    $location = StoreLocation::make()->action($warehouse, array_merge(Location::factory()->definition(), [
+        'code'              => 'LO-MOV',
+        'warehouse_area_id' => $areaA->id,
+    ]));
+
+    expect($location->warehouse_area_id)->toBe($areaA->id);
+
+    $location = UpdateLocation::make()->action($location, ['warehouse_area_id' => $areaB->id]);
+    expect($location->warehouse_area_id)->toBe($areaB->id)
+        ->and($areaA->refresh()->stats->number_locations)->toBe(0)
+        ->and($areaB->refresh()->stats->number_locations)->toBe(1);
+
+    $location = UpdateLocation::make()->action($location, ['warehouse_area_id' => null]);
+    expect($location->warehouse_area_id)->toBeNull()
+        ->and($areaB->refresh()->stats->number_locations)->toBe(0);
 });
 
 test('delete org stock family dissociates its org stocks', function () {
