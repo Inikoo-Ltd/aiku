@@ -64,7 +64,7 @@ class GetMailshotUrls extends OrgAction
 
         return collect($urls)
             ->map(fn (string $url) => trim(html_entity_decode($url)))
-            ->filter(fn (string $url) => Str::startsWith($url, ['http://', 'https://']) && !Str::contains($url, ['{{', '[unsubscribe]'], true))
+            ->filter(fn (string $url) => Str::startsWith(Str::lower($url), ['http://', 'https://']) && !Str::contains($url, ['{{', '[unsubscribe]'], true))
             ->unique()
             ->values()
             ->all();
