@@ -2295,6 +2295,32 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     expect($lanes['Pre-pick'])->toBe([$stocks[1]->code])
         ->and($lanes['Assigned'])->toBe([$stocks[0]->code]);
 
+    $made->manufactureTasks()->syncWithoutDetaching([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+    $jobOrder = \App\Models\Production\JobOrder::find($covered->refresh()->job_order_id);
+    $jobOrderItem = $jobOrder->jobOrderItems()->where('artefact_id', $made->id)->first();
+    \App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks::make()->handle($jobOrderItem);
+    $task = $jobOrderItem->tasks()->first();
+    ConfirmJobOrder::make()->action($jobOrder);
+    $laneOf = fn () => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
+        ->assertOk()->viewData('page')['props']['groups'])
+        ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
+    expect($laneOf()['Assigned'])->toBe([$stocks[0]->code])
+        ->and($laneOf()['Producing'])->toBe([]);
+
+    $session = StartManufactureTaskSession::make()->action($this->guest->getUser(), $task);
+    expect($laneOf()['Producing'])->toBe([$stocks[0]->code])
+        ->and($laneOf()['Assigned'])->toBe([]);
+
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => $task->quantity_required]);
+    expect($laneOf()['Done'])->toBe([$stocks[0]->code])
+        ->and($laneOf()['Producing'])->toBe([]);
+
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-BRD', 'name' => 'Board warehouse']);
+    $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-BRD', 'name' => 'Board area']);
+    $location  = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-BRD', 'name' => 'Board loc'] + \App\Models\Inventory\Location::factory()->definition());
+    \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($jobOrder->refresh(), ['location_id' => $location->id]);
+    expect($laneOf()->flatten()->all())->not->toContain($stocks[0]->code);
+
     $byArtisan = get(route('grp.org.productions.show.to_produce.by_artisan', $routeParameters))
         ->assertOk()->viewData('page')['props'];
     expect(collect($byArtisan['groups'])->pluck('items')->flatten(1)->pluck('stock_code')->all())->toBe([$stocks[0]->code]);

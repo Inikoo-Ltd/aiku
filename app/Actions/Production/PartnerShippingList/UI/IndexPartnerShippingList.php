@@ -132,6 +132,8 @@ class IndexPartnerShippingList extends OrgAction
                 'job_orders.state as job_order_state',
                 'job_order_artisans.contact_name as job_order_artisan',
                 DB::raw('(select sum(quantity) from job_order_items where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as job_order_quantity'),
+                DB::raw("exists(select 1 from job_order_item_tasks join job_order_items on job_order_items.id = job_order_item_tasks.job_order_item_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id and job_order_item_tasks.state = 'in_progress') as is_in_progress"),
+                DB::raw("(select count(*) > 0 and bool_and(job_order_item_tasks.state = 'done') from job_order_item_tasks join job_order_items on job_order_items.id = job_order_item_tasks.job_order_item_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as is_finished"),
             ])
             ->defaultSort('-created_at')
             ->allowedFilters([$globalSearch])
@@ -266,18 +268,8 @@ class IndexPartnerShippingList extends OrgAction
     /** @return array<int, array{label: string, items: array<int, array<string, mixed>>}> */
     public function getBoardLanes(LengthAwarePaginator $items): array
     {
-        $stageByJobOrderState = [
-            ''             => 'backlog',
-            'in_process'   => 'assigned',
-            'submitted'    => 'assigned',
-            'confirmed'    => 'producing',
-            'received'     => 'done',
-            'not_received' => 'done',
-            'booking_in'   => 'done',
-            'booked_in'    => 'done',
-        ];
         $lanes  = ['to_pick' => __('Pre-pick'), 'backlog' => __('Backlog'), 'preparing' => __('Preparing'), 'assigned' => __('Assigned'), 'producing' => __('Producing'), 'done' => __('Done')];
-        $byLane = collect($items->items())->groupBy(function ($item) use ($stageByJobOrderState) {
+        $byLane = collect($items->items())->groupBy(function ($item) {
             if (!$item->job_order_id) {
                 if (!$item->artefact_id) {
                     return 'to_pick';
@@ -286,7 +278,15 @@ class IndexPartnerShippingList extends OrgAction
                 return $item->preparing_at ? 'preparing' : 'backlog';
             }
 
-            return $stageByJobOrderState[$item->job_order_state] ?? 'assigned';
+            if ($item->job_order_state !== 'confirmed') {
+                return in_array($item->job_order_state, ['in_process', 'submitted']) ? 'assigned' : 'received';
+            }
+
+            if ($item->is_finished) {
+                return 'done';
+            }
+
+            return $item->is_in_progress ? 'producing' : 'assigned';
         });
 
         return collect($lanes)
