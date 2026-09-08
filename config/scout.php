@@ -8,6 +8,18 @@
 
 use App\Actions\Billables\Charge\Search\GetChargeSearchSchema;
 use App\Actions\Chat\ChatMessage\Search\GetChatMessageSearchSchema;
+use App\Actions\Production\Artefact\Search\GetArtefactSearchSchema;
+use App\Actions\Production\ArtefactDepartment\Search\GetArtefactDepartmentSearchSchema;
+use App\Actions\Production\ArtefactFamily\Search\GetArtefactFamilySearchSchema;
+use App\Actions\Production\JobOrder\Search\GetJobOrderSearchSchema;
+use App\Actions\Production\ManufactureTask\Search\GetManufactureTaskSearchSchema;
+use App\Actions\Production\RawMaterial\Search\GetRawMaterialSearchSchema;
+use App\Models\Production\Artefact;
+use App\Models\Production\ArtefactDepartment;
+use App\Models\Production\ArtefactFamily;
+use App\Models\Production\JobOrder;
+use App\Models\Production\ManufactureTask;
+use App\Models\Production\RawMaterial;
 use App\Actions\Billables\Service\Search\GetServiceSearchSchema;
 use App\Actions\Billables\ShippingZone\Search\GetShippingZoneSearchSchema;
 use App\Actions\Billables\ShippingZoneSchema\Search\GetShippingZoneSchemaSearchSchema;
@@ -271,7 +283,13 @@ return [
             Tag::class             => GetTagSearchSchema::run(),
             Barcode::class         => GetBarcodeSearchSchema::run(),
             Employee::class        => GetEmployeeSearchSchema::run(),
-            ChatMessage::class     => GetChatMessageSearchSchema::run()
+            ChatMessage::class     => GetChatMessageSearchSchema::run(),
+            Artefact::class           => GetArtefactSearchSchema::run(),
+            ArtefactFamily::class     => GetArtefactFamilySearchSchema::run(),
+            ArtefactDepartment::class => GetArtefactDepartmentSearchSchema::run(),
+            RawMaterial::class        => GetRawMaterialSearchSchema::run(),
+            ManufactureTask::class    => GetManufactureTaskSearchSchema::run(),
+            JobOrder::class           => GetJobOrderSearchSchema::run()
 
         ],
     ],

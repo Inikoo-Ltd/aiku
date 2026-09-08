@@ -17,7 +17,16 @@ use App\Actions\Search\SearchOrders;
 use App\Actions\Search\SearchSysAdmin;
 use App\Actions\Search\StoreSearchLog;
 use App\Models\Helpers\SearchLog;
+use App\Enums\Production\Artefact\ArtefactStateEnum;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Enums\Production\RawMaterial\RawMaterialStateEnum;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\Production\Artefact;
+use App\Models\Production\ArtefactDepartment;
+use App\Models\Production\ArtefactFamily;
+use App\Models\Production\JobOrder;
+use App\Models\Production\ManufactureTask;
+use App\Models\Production\RawMaterial;
 use App\Models\SupplyChain\Agent;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
@@ -63,6 +72,30 @@ it('maps known route prefixes to expected scopes', function (string $route, stri
     ['grp.org.hr.employees.index', 'hr'],
     ['grp.chat.dashboard', 'chat'],
     ['grp.org.chat.dashboard', 'chat'],
+    ['grp.org.productions.show.crafts.artefacts.index', 'production'],
+    ['grp.org.productions.show.crafts.artefact_families.show', 'production'],
+    ['grp.org.productions.show.operations.job-orders.index', 'production'],
+]);
+
+it('indexes production models against their production', function (string $model, array $attributes, string $label) {
+    $record = new $model([...$attributes, 'production_id' => 7, 'organisation_id' => 3]);
+    $record->id         = 11;
+    $record->slug       = 'slug-11';
+    $record->created_at = now();
+
+    $searchable = $record->toSearchableArray();
+
+    expect($searchable['production_id'])->toBe(7)
+        ->and($searchable['organisation_id'])->toBe(3)
+        ->and($searchable['slug'])->toBe('slug-11')
+        ->and($searchable[$label])->not->toBeEmpty();
+})->with([
+    [Artefact::class, ['code' => 'ART-1', 'state' => ArtefactStateEnum::ACTIVE], 'code'],
+    [ArtefactFamily::class, ['code' => 'FAM-1'], 'code'],
+    [ArtefactDepartment::class, ['code' => 'DEP-1'], 'code'],
+    [RawMaterial::class, ['code' => 'RAW-1', 'state' => RawMaterialStateEnum::IN_USE], 'code'],
+    [ManufactureTask::class, ['code' => 'TASK-1'], 'code'],
+    [JobOrder::class, ['reference' => 'JO-1', 'state' => JobOrderStateEnum::IN_PROCESS], 'reference'],
 ]);
 
 it('includes orders and invoices in the crm customers scope', function () {

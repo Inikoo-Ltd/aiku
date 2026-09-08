@@ -15,6 +15,7 @@ use App\Models\Helpers\Tag;
 use App\Models\HumanResources\Employee;
 use App\Models\Inventory\OrgStock;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasSearch;
 use App\Models\Traits\InProduction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -72,6 +73,7 @@ class Artefact extends Model implements Auditable
 {
     use SoftDeletes;
     use HasSlug;
+    use HasSearch;
     use InProduction;
     use HasHistory;
 
@@ -99,6 +101,20 @@ class Artefact extends Model implements Auditable
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'code'            => (string)$this->code,
+            'name'            => (string)$this->name,
+            'state'           => $this->state->value,
+            'slug'            => (string)$this->slug,
+            'production_id'   => $this->production_id,
+            'organisation_id' => $this->organisation_id,
+            'created_at'      => $this->created_at?->timestamp ?? 0,
+        ];
     }
 
     public function getSlugOptions(): SlugOptions
