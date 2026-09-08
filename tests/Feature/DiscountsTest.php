@@ -109,6 +109,7 @@ use Illuminate\Support\Arr;
 use App\Jobs\BoundedUniqueJobDecorator;
 use App\Actions\Ordering\Order\CleanFinishedVouchers;
 use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
@@ -430,6 +431,25 @@ test('a permanent offer started in the past stays live through the sweep', funct
     $offer->refresh();
     expect($offer->state)->toBe(OfferStateEnum::ACTIVE)
         ->and($offer->status)->toBeTrue();
+});
+
+test('offer dates are the shop own midnight, not UTC midnight', function () {
+    $offerCampaign = $this->shop->offerCampaigns()->first();
+    $timezone      = $this->shop->timezoneName();
+
+    $offerData = Offer::factory()->definition();
+    data_set($offerData, 'start_at', '2026-09-06');
+    data_set($offerData, 'end_at', '2026-09-08');
+
+    $offer = StoreOffer::make()->action($offerCampaign, $offerData);
+    $offer->refresh();
+
+    expect($offer->start_at->toDateTimeString())
+        ->toBe(Carbon::parse('2026-09-06', $timezone)->startOfDay()->utc()->toDateTimeString())
+        ->and($offer->end_at->toDateTimeString())
+        ->toBe(Carbon::parse('2026-09-08', $timezone)->endOfDay()->utc()->toDateTimeString())
+        ->and($offer->start_at->setTimezone($timezone)->toDateString())->toBe('2026-09-06')
+        ->and($offer->end_at->setTimezone($timezone)->toDateString())->toBe('2026-09-08');
 });
 
 test('an offer created with a future start date is not live', function () {

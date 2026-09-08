@@ -117,6 +117,7 @@ class GetOfferCalendarData
                 'offerCampaign.shop' => function ($q) {
                     $q->select('id', 'organisation_id', 'slug', 'code', 'name');
                 },
+                'shop.timezone',
             ])
             ->get();
 
@@ -163,9 +164,11 @@ class GetOfferCalendarData
         $previewEnd = $endOfYear->copy()->addYears(2)->endOfDay();
 
         foreach ($offers as $offer) {
-            $startAt = $offer->start_at?->copy()->startOfDay();
-            $rangeEndAt = $offer->end_at?->copy()->endOfDay() ?? $previewEnd->copy();
-            $holidayEndAt = $offer->end_at?->copy()->endOfDay() ?? $endOfYear->copy();
+            $timezone = $offer->shop->timezoneName();
+
+            $startAt = $offer->start_at?->copy()->setTimezone($timezone)->startOfDay();
+            $rangeEndAt = $offer->end_at?->copy()->setTimezone($timezone)->endOfDay() ?? $previewEnd->copy();
+            $holidayEndAt = $offer->end_at?->copy()->setTimezone($timezone)->endOfDay() ?? $endOfYear->copy();
 
             if (!$startAt) {
                 continue;
@@ -197,7 +200,7 @@ class GetOfferCalendarData
                 'from'           => $fromDate->toDateString(),
                 'to'             => $toDate->toDateString(),
                 'raw_from'       => $startAt->toDateString(),
-                'raw_to'         => $offer->end_at?->copy()->endOfDay()?->toDateString(),
+                'raw_to'         => $offer->end_at?->copy()->setTimezone($timezone)->toDateString(),
                 'label'          => $label,
                 'offer_code'     => $offer->code,
                 'campaign_code'  => $campaign?->code,

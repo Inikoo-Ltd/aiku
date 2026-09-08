@@ -37,14 +37,19 @@ trait WithStoreOffer
         return $modelData;
     }
 
+    /**
+     * A date typed in by a shop's staff means midnight in the shop's own timezone, not in UTC.
+     */
     protected function prepareOfferDate(OfferCampaign|Offer $parent, array $modelData): array
     {
+        $timezone = $parent->shop->timezoneName();
+
         if (Arr::has($modelData, 'start_at') && Arr::get($modelData, 'start_at') != '' && is_string(Arr::get($modelData, 'start_at'))) {
-            $startAt = Carbon::parse(Arr::get($modelData, 'start_at'))->startOfDay();
+            $startAt = Carbon::parse(Arr::get($modelData, 'start_at'), $timezone)->startOfDay()->utc();
             data_set($modelData, 'start_at', $startAt);
         }
         if (Arr::has($modelData, 'end_at') && Arr::get($modelData, 'end_at') != '' && is_string(Arr::get($modelData, 'end_at'))) {
-            $endAt = Carbon::parse(Arr::get($modelData, 'end_at'))->endOfDay();
+            $endAt = Carbon::parse(Arr::get($modelData, 'end_at'), $timezone)->endOfDay()->utc();
             data_set($modelData, 'end_at', $endAt);
         }
 
