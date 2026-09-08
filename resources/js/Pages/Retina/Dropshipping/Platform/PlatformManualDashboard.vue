@@ -14,6 +14,8 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import PlatformWarningChannelDeleted from "@/Components/Retina/Platform/PlatformWarningChannelDeleted.vue"
+import { routeType } from "@/types/route"
 library.add(faArrowRight, faCube, faLink, farArrowRight)
 
 
@@ -34,6 +36,9 @@ const props = defineProps<{
         reference: string
         slug: string
     }
+    deleted_notice?: {
+        create_route: routeType
+    } | null
     timeline: {
         current_state: string
         options: {}[]
@@ -68,6 +73,10 @@ const locale = inject('locale', aikuLocaleStructure)
             />
         </template>
     </PageHeading>
+
+    <div v-if="deleted_notice" class="mx-8">
+        <PlatformWarningChannelDeleted :create_route="deleted_notice.create_route" />
+    </div>
 
     <div v-if="headline" class="mt-4 md:mt-10 xpx-8 lg:col-start-2 mx-8 border-b border-gray-200 pb-12 ">
         <div class="xmx-auto max-w-2xl xlg:mr-0 xlg:max-w-lg">
