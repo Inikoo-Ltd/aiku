@@ -383,8 +383,8 @@ class SendChatMessage
             ];
         }
 
-        if ($senderType === ChatSenderTypeEnum::USER->value) {
-            $webUserId = $this->trustedWebUserId($validated['sender_id'] ?? null);
+        if (!empty($validated['sender_id']) && $senderType === ChatSenderTypeEnum::USER->value) {
+            $webUserId = $this->trustedWebUserId($validated['sender_id']);
             $webUser   = $webUserId ? WebUser::find($webUserId) : null;
 
             if ($webUser) {
