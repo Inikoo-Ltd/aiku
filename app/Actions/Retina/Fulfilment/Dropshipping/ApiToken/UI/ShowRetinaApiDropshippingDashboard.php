@@ -11,11 +11,13 @@
 namespace App\Actions\Retina\Fulfilment\Dropshipping\ApiToken\UI;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Retina\Dropshipping\ApiToken\UI\IndexRetinaApiRequests;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\SysAdmin\ApiTokenRetinaTabsEnum;
 use App\Http\Resources\Api\ApiTokensRetinaResource;
+use App\Http\Resources\Api\RetinaApiRequestsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -132,11 +134,15 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                 ApiTokenRetinaTabsEnum::API_TOKENS->value => $this->tab == ApiTokenRetinaTabsEnum::API_TOKENS->value ?
                     fn () => ApiTokensRetinaResource::collection($apiTokens)
                     : Inertia::optional(fn () => ApiTokensRetinaResource::collection($apiTokens)),
+                ApiTokenRetinaTabsEnum::API_REQUESTS->value => $this->tab == ApiTokenRetinaTabsEnum::API_REQUESTS->value ?
+                    fn () => RetinaApiRequestsResource::collection(IndexRetinaApiRequests::run($this->customer, ApiTokenRetinaTabsEnum::API_REQUESTS->value))
+                    : Inertia::optional(fn () => RetinaApiRequestsResource::collection(IndexRetinaApiRequests::run($this->customer, ApiTokenRetinaTabsEnum::API_REQUESTS->value))),
                 ApiTokenRetinaTabsEnum::HISTORY->value => $this->tab == ApiTokenRetinaTabsEnum::HISTORY->value ?
                 fn () => HistoryResource::collection(IndexHistory::run($this->customer, prefix: ApiTokenRetinaTabsEnum::HISTORY->value))
                 : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($this->customer, prefix: ApiTokenRetinaTabsEnum::HISTORY->value))),
             ]
         )
+        ->table(IndexRetinaApiRequests::make()->tableStructure(prefix: ApiTokenRetinaTabsEnum::API_REQUESTS->value))
         ->table(IndexHistory::make()->tableStructure(prefix: ApiTokenRetinaTabsEnum::HISTORY->value))
         ->table($this->tableStructure(prefix: ApiTokenRetinaTabsEnum::API_TOKENS->value));
     }

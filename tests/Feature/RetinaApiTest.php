@@ -20,6 +20,7 @@ use App\Actions\Ordering\Order\StoreOrder;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerClient;
@@ -238,11 +239,20 @@ test('retina api dropshipping order submit', function () {
         'quantity_ordered' => 2,
     ])->assertCreated();
 
+    DB::table('customers')->where('id', $this->dropshippingCustomer->id)->update(['balance' => 1000]);
+
     $response = patchJson(route('retina.api.dropshipping.order.submit', $order));
     $response->assertOk();
     $response->assertJsonStructure([
         'data' => ['id', 'state'],
     ]);
+
+    /** The endpoint charged the order and returned "submitted successfully" without ever calling
+     * SubmitOrder once (commit b32903604a, 2 to 4 Sep 2026, HELP-3064). A 200 is not enough,
+     * assert the order actually left the basket. */
+    $order->refresh();
+    expect($order->submitted_at)->not->toBeNull()
+        ->and($order->state)->not->toBe(OrderStateEnum::CREATING);
 });
 
 // ---- Dropshipping: products & portfolios ----
@@ -481,4 +491,106 @@ test('retina api real bearer token authenticates', function () {
     $plain = \App\Actions\Retina\Dropshipping\ApiToken\StoreCustomerToken::make()->handle($this->dropshippingChannel);
 
     getJson(route('retina.api.profile'), ['Authorization' => 'Bearer '.$plain])->assertOk();
+});
+
+test('retina api requests are logged with credentials redacted', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    postJson(route('retina.api.dropshipping.clients.create'), [
+        'first_name' => 'Api',
+        'last_name'  => 'Logged',
+        'email'      => 'api-logged@example.com',
+        'password'   => 'super-secret',
+    ]);
+
+    $logged = \App\Models\CRM\RetinaApiRequest::where('customer_id', $this->dropshippingCustomer->id)
+        ->orderByDesc('id')->first();
+
+    expect($logged)->not->toBeNull()
+        ->and($logged->method)->toBe('POST')
+        ->and($logged->customer_sales_channel_id)->toBe($this->dropshippingChannel->id)
+        ->and($logged->duration_ms)->not->toBeNull()
+        ->and($logged->payload['first_name'])->toBe('Api')
+        ->and($logged->payload['password'])->toBe('***');
+});
+
+test('retina api failures keep the response message', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    postJson(route('retina.api.dropshipping.clients.create'), [])->assertStatus(422);
+
+    $logged = \App\Models\CRM\RetinaApiRequest::where('customer_id', $this->dropshippingCustomer->id)
+        ->orderByDesc('id')->first();
+
+    expect($logged->status)->toBe(422)
+        ->and($logged->message)->not->toBeNull();
+});
+
+test('retina api requests are pruned after the retention window and capped per customer', function () {
+    \App\Models\CRM\RetinaApiRequest::insert([
+        [
+            'customer_id' => $this->dropshippingCustomer->id,
+            'method'      => 'GET',
+            'path'        => 'app/re-api/user-profile',
+            'status'      => 200,
+            'created_at'  => now()->subDays(\App\Actions\CRM\Customer\PruneRetinaApiRequests::RETENTION_DAYS + 1),
+        ],
+        [
+            'customer_id' => $this->dropshippingCustomer->id,
+            'method'      => 'GET',
+            'path'        => 'app/re-api/user-profile',
+            'status'      => 200,
+            'created_at'  => now(),
+        ],
+    ]);
+
+    \App\Actions\CRM\Customer\PruneRetinaApiRequests::run();
+
+    expect(\App\Models\CRM\RetinaApiRequest::where('created_at', '<', now()->subDays(\App\Actions\CRM\Customer\PruneRetinaApiRequests::RETENTION_DAYS))->count())->toBe(0)
+        ->and(\App\Models\CRM\RetinaApiRequest::where('customer_id', $this->dropshippingCustomer->id)->count())->toBeGreaterThan(0)
+        ->and(\App\Models\CRM\RetinaApiRequest::where('customer_id', $this->dropshippingCustomer->id)->count())->toBeLessThanOrEqual(\App\Actions\CRM\Customer\PruneRetinaApiRequests::CAP_PER_CUSTOMER);
+});
+
+test('retina api requests index only shows the customer own calls', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+    getJson(route('retina.api.profile'))->assertOk();
+
+    \App\Models\CRM\RetinaApiRequest::create([
+        'customer_id' => $this->fulfilmentCustomer->id,
+        'method'      => 'GET',
+        'path'        => 'app/re-api/user-profile',
+        'status'      => 200,
+    ]);
+
+    $requests = \App\Actions\Retina\Dropshipping\ApiToken\UI\IndexRetinaApiRequests::run($this->dropshippingCustomer);
+
+    expect($requests->total())->toBeGreaterThan(0)
+        ->and($requests->pluck('customer_id')->unique()->all())->toBe([$this->dropshippingCustomer->id]);
+});
+
+test('api inflow monitor alerts discord when a customer floods', function () {
+    config()->set('services.discord.webhook_url', 'https://discord.test/webhook');
+    \Illuminate\Support\Facades\Http::fake();
+
+    $monitor = \App\Actions\DevOps\MonitorRetinaApiInflow::class;
+    expect($monitor::run())->toBe([]);
+
+    $rows = [];
+    for ($i = 0; $i <= $monitor::CUSTOMER_HOURLY_THRESHOLD; $i++) {
+        $rows[] = [
+            'customer_id' => $this->dropshippingCustomer->id,
+            'method'      => 'GET',
+            'path'        => 'app/re-api/dropshipping/products',
+            'status'      => $i % 2 ? 200 : 500,
+            'created_at'  => now(),
+        ];
+    }
+    \Illuminate\Support\Facades\DB::table('retina_api_requests')->insert($rows);
+
+    $issues = $monitor::run();
+
+    expect($issues)->toHaveCount(1)
+        ->and($issues[0])->toContain((string) $this->dropshippingCustomer->id);
+
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request['content'], 'API Inflow Alert'));
 });

@@ -28,6 +28,7 @@ enum CustomerTabsEnum: string
     case REMINDERS           = 'reminders';
     case DISPATCHED_EMAILS   = 'dispatched_emails';
     case OFFERS   = 'offers';
+    case API_REQUESTS = 'api_requests';
 
 
     public function blueprint(): array
@@ -47,6 +48,12 @@ enum CustomerTabsEnum: string
                 'icon'  => 'fal fa-route',
             ],
 
+            CustomerTabsEnum::API_REQUESTS => [
+                'align' => 'right',
+                'title' => __('API calls'),
+                'icon'  => 'fal fa-exchange',
+                'type'  => 'icon',
+            ],
             CustomerTabsEnum::HISTORY => [
                 'title' => __('History'),
                 'icon'  => 'fal fa-clock',

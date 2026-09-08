@@ -31,11 +31,13 @@ use App\Actions\Comms\Outbox\PriceChange\RunPriceChangeEmailBulkRunsToSubscriber
 use App\Actions\Comms\Outbox\ReviewReminder\RunReviewReminderEmailBulkRuns;
 use App\Actions\CRM\Customer\HydrateCustomersClv;
 use App\Actions\CRM\Customer\PruneCustomerWebActivities;
+use App\Actions\CRM\Customer\PruneRetinaApiRequests;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\DevOps\MonitorNightowlIngest;
 use App\Actions\DevOps\MonitorQueueBacklogs;
+use App\Actions\DevOps\MonitorRetinaApiInflow;
 use App\Actions\DevOps\WebsiteHealthLog\MonitorWebsitesUptime;
 use App\Actions\Web\Website\Cloudflare\FetchFirewallBlockedCountryEvents;
 use App\Actions\Reviews\AutoPublishReviews;
@@ -175,6 +177,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'MonitorQueueBacklogs',
                 ),
                 name: 'MonitorQueueBacklogs',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(MonitorRetinaApiInflow::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'MonitorRetinaApiInflow',
+                ),
+                name: 'MonitorRetinaApiInflow',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
@@ -833,6 +844,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'PruneCustomerWebActivities',
                 ),
                 name: 'PruneCustomerWebActivities',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(PruneRetinaApiRequests::makeJob())->dailyAt('03:25')->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'PruneRetinaApiRequests',
+                ),
+                name: 'PruneRetinaApiRequests',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

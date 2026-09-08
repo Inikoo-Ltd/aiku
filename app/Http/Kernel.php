@@ -30,6 +30,7 @@ use App\Http\Middleware\DetectWebsite;
 use App\Http\Middleware\HandleAikuPublicInertiaRequests;
 use App\Http\Middleware\HandleRetinaInertiaRequests;
 use App\Http\Middleware\LogAikuPublicPageVisit;
+use App\Http\Middleware\LogRetinaApiRequest;
 use App\Http\Middleware\LogUserRequestMiddleware;
 use App\Http\Middleware\EncryptCookies;
 use App\Http\Middleware\ForceJsonResponse;
@@ -118,6 +119,7 @@ class Kernel extends HttpKernel
         ],
 
         'retina-api' => [
+            LogRetinaApiRequest::class,
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
