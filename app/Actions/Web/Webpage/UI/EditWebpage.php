@@ -306,7 +306,7 @@ class EditWebpage extends OrgAction
                                 ],
                             ]
                         ],
-                        [
+                        $webpage->type == WebpageTypeEnum::SYSTEM_PAGE ? null : [
                             'label'  => __('Delete'),
                             'icon'   => 'fal fa-trash-alt',
                             'fields' => [
