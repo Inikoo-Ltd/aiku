@@ -135,6 +135,7 @@ const workshopLoaders: Record<string, AsyncComponentLoader> = {
     'faq-department': () => import('@/Components/CMS/Webpage/FaqDepartment/FaqDepartmentWorkshop.vue'),
     'top-families': () => import('@/Components/CMS/Webpage/TopFamilies/TopFamiliesWorkshop.vue'),
     'blog-list': () => import('@/Components/CMS/Webpage/BlogList/BlogListWorkshop.vue'),
+    'blog-categories': () => import('@/Components/CMS/Webpage/BlogCategories/BlogCategoriesWorkshop.vue'),
     'category-comparison': () => import('@/Components/CMS/Webpage/CategoryComparison/CategoryComparisonWorkshop.vue'),
 }
 

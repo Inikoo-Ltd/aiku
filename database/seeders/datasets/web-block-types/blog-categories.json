@@ -1,0 +1,37 @@
+{
+	"slug": "blog-categories",
+	"code": "blog-categories",
+	"name": "Blog Categories",
+	"scope": "webpage",
+	"category": "block",
+	"icon": ["fal", "grid-2"],
+	"website_type": ["b2b", "b2c", "dropshipping", "fulfilment"],
+	"shop_availability": [],
+	"is_in_test": false,
+	"data": {
+		"fieldValue": {
+			"title": "Browse by category",
+			"subtitle": null,
+			"categories": [],
+			"columns": {
+				"desktop": 3,
+				"tablet": 2,
+				"mobile": 1
+			},
+			"show_icon": true,
+			"show_position": true,
+			"show_description": true,
+			"show_cta": true,
+			"cta_label": "View Dashboard",
+			"show_url": true,
+			"card": {
+				"container": {
+					"properties": null
+				}
+			},
+			"container": {
+				"properties": null
+			}
+		}
+	}
+}
