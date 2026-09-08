@@ -37,20 +37,38 @@ jobs:
         run: php8.4 /usr/local/bin/composer update --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
       - name: Get Next Version
         id: semver
-        uses: ietf-tools/semver-action@v1
-        with:
-          token: ${{ github.token }}
-          branch: production
-          noVersionBumpBehavior: current
-          noNewCommitBehavior: current
-          majorList: MAJOR-RELEASE!
-          minorList: feature, features, feat, features, enhancement, enhancements
-          patchList: small, fix, bugfix, perf, refactor, test, tests, clean, cleanup, pint, partial, review, update-deps, chores, review, update, upgrade, change, changes, improve, improves, improvement, improvements,new, added, add, adds
-          patchAll: true
+        run: |
+          set -euo pipefail
+
+          # Highest semver tag, never merely the nearest: a stray non-semver tag
+          # must not drag the version backwards
+          latest=$(git tag --list 'v*' --sort=-v:refname | grep -m1 -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)
+          if [ -z "$latest" ]; then
+            echo "No semver tag found, starting from v0.0.0"
+            latest=v0.0.0
+            range=HEAD
+          else
+            range="$latest..HEAD"
+          fi
+          IFS=. read -r major minor patch <<< "${latest#v}"
+          subjects=$(git log --no-merges --format=%s $range || true)
+
+          # Both conventions in this repo mark a feature: a sparkle subject, and a
+          # feat:/enhance: prefix. Either takes the minor, everything else is a patch
+          if printf '%s\n' "$subjects" | grep -qiE '^(✨|(feat|features?|enhance|enhancements?)(\(.+\))?!?:)'; then
+            next="v${major}.$((minor + 1)).0"
+            reason="feature commit since $latest"
+          else
+            next="v${major}.${minor}.$((patch + 1))"
+            reason="no feature commit since $latest"
+          fi
+
+          echo "Next version $next ($reason)"
+          echo "next=$next" >> "$GITHUB_OUTPUT"
       - name: Set .env
         run: |
           touch .env.aiku.production.deploy
-          echo RELEASE=${{ steps.semver.outputs.next }} >> .env.aiku.production.deploy
+          echo RELEASE=${{ steps.semver.outputs.next }}+${GITHUB_SHA::7} >> .env.aiku.production.deploy
       - name: Authenticate server git fetches with the job token
         run: |
           auth=$(printf 'x-access-token:%s' "${{ github.token }}" | base64 -w0)
