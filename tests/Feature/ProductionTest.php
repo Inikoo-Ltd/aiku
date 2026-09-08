@@ -787,6 +787,41 @@ test('work queue is generated from the artefact recipe and sessions pay the work
         ->and((float)$task->quantity_rejected)->toBe(1.0);
 });
 
+test('closing short can finish the job or carry the shortfall to a new job order', function () {
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $user = $this->guest->getUser();
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 25]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task = $item->tasks()->first();
+
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 10, 'outcome' => 'complete']);
+    expect($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and((float)$task->quantity_required)->toBe(10.0)
+        ->and($item->refresh()->quantity)->toBe(10)
+        ->and(\App\Models\Production\JobOrder::where('production_id', $this->production->id)->count())->toBe($before = \App\Models\Production\JobOrder::where('production_id', $this->production->id)->count());
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 25]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task = $item->tasks()->first();
+
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 10, 'outcome' => 'carry_over']);
+    $carried = \App\Models\Production\JobOrder::where('production_id', $this->production->id)->orderByDesc('id')->first();
+    expect($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and($item->refresh()->quantity)->toBe(10)
+        ->and($carried->id)->not->toBe($jobOrder->id)
+        ->and($carried->state)->toBe(JobOrderStateEnum::CONFIRMED)
+        ->and($carried->jobOrderItems()->first()->quantity)->toBe(15)
+        ->and((float)$carried->jobOrderItems()->first()->tasks()->first()->quantity_required)->toBe(15.0);
+
+});
+
 test('historic job orders do not generate a work queue', function () {
     $jobOrder = StoreJobOrder::make()->action($this->production, [
         'state'       => JobOrderStateEnum::RECEIVED,
