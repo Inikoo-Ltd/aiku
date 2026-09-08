@@ -376,7 +376,7 @@ class IndexArtefacts extends OrgAction
                             'button' => [
                                 [
                                     'type'  => 'button',
-                                    'style' => 'primary',
+                                    'style' => 'secondary',
                                     'icon'  => ['fal', 'fa-upload'],
                                     'label' => __('Upload'),
                                     // 'route' => [
