@@ -2353,8 +2353,14 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-BRD', 'name' => 'Board warehouse']);
     $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-BRD', 'name' => 'Board area']);
     $location  = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-BRD', 'name' => 'Board loc'] + \App\Models\Inventory\Location::factory()->definition());
-    \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($jobOrder->refresh(), ['location_id' => $location->id]);
-    expect($laneOf()->flatten()->all())->not->toContain($stocks[0]->code);
+    $hubOutput = fn () => collect(get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $warehouse->slug]))
+        ->assertOk()->viewData('page')['props']['production_output'])->pluck('reference')->all();
+    expect($hubOutput())->toBe([$jobOrder->reference]);
+
+    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, $jobOrder->refresh(), 'L-BRD');
+    expect($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
+        ->and($hubOutput())->toBe([])
+        ->and($laneOf()->flatten()->all())->not->toContain($stocks[0]->code);
 
     $byArtisan = get(route('grp.org.productions.show.to_produce.by_artisan', $routeParameters))
         ->assertOk()->viewData('page')['props'];
